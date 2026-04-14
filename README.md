@@ -61,3 +61,18 @@ When you are done testing the linked CLI, remove the global link:
 ```sh
 pnpm dev:unlink
 ```
+
+## Changing templates
+
+Templates are versioned product artifacts. When changing any file under `templates/`, use the local `ekko-template-change` skill if available and update `templates/manifest.json` in the same change.
+
+Template change checklist:
+
+- Bump the global `templateVersion` when any template changes.
+- Bump each changed template's own `version`.
+- Add user-facing change notes that explain what changed and why it matters.
+- Avoid renaming template paths unless migration or backwards compatibility is handled.
+- Run `pnpm verify`.
+- Test `ekko init`, `ekko doctor`, and `ekko sync` in a temporary project when practical.
+
+The `changes` entries in `templates/manifest.json` are shown by `ekko sync`, so write them for users rather than as code-level diff notes. If using an AI coding agent, explicitly ask it to use the `ekko-template-change` skill before editing templates.

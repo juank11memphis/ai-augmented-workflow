@@ -17,3 +17,15 @@ This repository is the home for establishing an AI-augmented development workflo
 - After confirmation, proceed with all agreed in-scope changes without re-asking.
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
+
+## Template changes
+
+When changing files under `templates/`, use the local `ekko-template-change` skill if available and treat the templates as versioned product artifacts.
+
+- Update `templates/manifest.json` in the same change.
+- Bump the global `templateVersion` when any template changes.
+- Bump each changed template's own `version`.
+- Add user-facing change notes that explain what changed and why it matters for `ekko sync` users.
+- Avoid renaming template paths unless state migration or backwards compatibility is handled.
+- Run `pnpm verify` after template changes.
+- When practical, test the lifecycle with `ekko init`, `ekko doctor`, and `ekko sync` in a temporary project.
