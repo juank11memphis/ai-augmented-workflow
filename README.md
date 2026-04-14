@@ -12,7 +12,11 @@ From a project directory, run:
 npx ekko init
 ```
 
-`ekko init` is idempotent: it opens a polished interactive flow, lets you select supported agents with the keyboard, creates missing workflow files for that selection, keeps existing files unchanged, and reports when no changes are needed. When `AGENTS.md` is missing, the CLI asks for a project overview and writes the file based on the template in this repository. It can also create Codex, Gemini, and Claude support files when selected.
+`ekko init` is idempotent: it opens a polished interactive flow, lets you select supported agents with the keyboard, creates missing workflow files for that selection, keeps existing files unchanged, and reports when no changes are needed. When `AGENTS.md` is missing, the CLI asks for a project overview and writes the file based on the template in this repository. It can also create Codex, Gemini, and Claude support files when selected. Ekko records the generated workflow state in `.ekko/state.json` so `ekko doctor` can detect drift safely.
+
+Use `ekko doctor` to run a read-only health check. It reports missing managed files, local modifications, malformed state metadata, and template version drift without changing files.
+
+Use `ekko sync` to review template updates interactively. It explains human-readable template changes, protects local edits from automatic overwrites, and lets you apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later. Ekko records each file as `managed`, `customized`, or `unmanaged` in `.ekko/state.json`.
 
 ## Development
 
@@ -40,6 +44,8 @@ mkdir /tmp/test-ekko-project
 cd /tmp/test-ekko-project
 git init
 ekko init
+ekko doctor
+ekko sync
 find . -maxdepth 2 -type f | sort
 ```
 

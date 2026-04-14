@@ -1,0 +1,34 @@
+{
+  "templateVersion": "1",
+  "templates": {
+    "AGENTS.md": {
+      "version": "1",
+      "description": "Project-level agent instructions and Ekko maintenance guidance.",
+      "changes": [
+        "Defines project overview, security and safety, and agent-specific instructions.",
+        "Adds Ekko maintenance guidance for init and doctor workflows."
+      ]
+    },
+    ".codex/config.toml": {
+      "version": "1",
+      "description": "Codex configuration pointing to AGENTS.md.",
+      "changes": [
+        "Configures Codex to use the root AGENTS.md instructions file."
+      ]
+    },
+    "GEMINI.md": {
+      "version": "1",
+      "description": "Gemini instructions delegating to AGENTS.md.",
+      "changes": [
+        "Delegates Gemini project instructions to AGENTS.md as the source of truth."
+      ]
+    },
+    "CLAUDE.md": {
+      "version": "1",
+      "description": "Claude instructions delegating to AGENTS.md.",
+      "changes": [
+        "Delegates Claude project instructions to AGENTS.md as the source of truth."
+      ]
+    }
+  }
+}
