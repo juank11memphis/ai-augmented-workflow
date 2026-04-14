@@ -1,0 +1,24 @@
+{
+  "name": "ekko",
+  "version": "0.1.0",
+  "description": "CLI for setting up a local AI-augmented development workflow.",
+  "bin": {
+    "ekko": "./bin/ekko.js"
+  },
+  "files": [
+    "bin/",
+    "templates/",
+    "README.md"
+  ],
+  "scripts": {
+    "smoke:init": "node ./bin/ekko.js init"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "workflow",
+    "cli"
+  ],
+  "license": "UNLICENSED",
+  "private": true
+}
