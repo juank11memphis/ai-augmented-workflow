@@ -4,7 +4,7 @@ A local workspace for developing and refining an AI-augmented software developme
 
 ## CLI
 
-This first iteration focuses only on initializing brand-new projects with AI workflow files.
+This first iteration focuses on safely initializing or repairing missing AI workflow files.
 
 From a project directory, run:
 
@@ -12,7 +12,7 @@ From a project directory, run:
 npx ekko init
 ```
 
-The CLI asks for a project overview, writes an `AGENTS.md` file based on the template in this repository, and creates `.codex/config.toml` so Codex uses that instructions file.
+`ekko init` is idempotent: it creates missing workflow files, keeps existing files unchanged, and reports when no changes are needed. When `AGENTS.md` is missing, the CLI asks for a project overview and writes the file based on the template in this repository. It also creates `.codex/config.toml` when missing so Codex uses that instructions file.
 
 ## Development
 

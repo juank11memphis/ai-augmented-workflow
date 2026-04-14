@@ -34,47 +34,40 @@ async function initProject(): Promise<void> {
   const rootPath = process.cwd();
   const agentsPath = path.join(rootPath, 'AGENTS.md');
   const codexConfigPath = path.join(rootPath, '.codex', 'config.toml');
-  const existingTargets = [agentsPath, codexConfigPath].filter((targetPath) => fs.existsSync(targetPath));
+  const hasAgentsFile = fs.existsSync(agentsPath);
+  const hasCodexConfig = fs.existsSync(codexConfigPath);
 
-  if (existingTargets.length > 0) {
-    console.error('Ekko found existing AI workflow files in this directory:');
-    for (const targetPath of existingTargets) {
-      console.error(`- ${path.relative(rootPath, targetPath)}`);
-    }
-    console.error('This first iteration only initializes brand-new projects and will not overwrite existing files.');
-    process.exitCode = 1;
+  if (hasAgentsFile && hasCodexConfig) {
+    console.log('I found existing AI workflow files. No changes needed.');
+    console.log('- AGENTS.md already exists.');
+    console.log('- .codex/config.toml already exists.');
     return;
   }
 
-  console.log('Ekko will create AI workflow files for this project.');
-  console.log('- AGENTS.md tells AI coding agents what the project is about and how they should work here.');
-  console.log('- .codex/config.toml points Codex at that AGENTS.md file.');
-  console.log('');
+  console.log('I will make sure this project has the expected AI workflow files.');
 
-  const rl = readline.createInterface({ input, output });
-  let overview: string;
-
-  try {
-    overview = await askRequired(
-      rl,
-      [
-        'Tell Ekko what this project is about.',
-        'A short sentence or paragraph is enough.',
-        'Example: "A local-first notes app for software teams."',
-        '',
-        'Project overview: ',
-      ].join('\n'),
-      'Please enter a short project overview so Ekko can initialize the workflow files.'
-    );
-  } finally {
-    rl.close();
+  if (hasAgentsFile) {
+    console.log('- AGENTS.md already exists. I will keep it unchanged.');
+  } else {
+    console.log('- AGENTS.md is missing. I will create it.');
   }
 
-  const files = renderWorkflowFiles({
+  if (hasCodexConfig) {
+    console.log('- .codex/config.toml already exists. I will keep it unchanged.');
+  } else {
+    console.log('- .codex/config.toml is missing. I will create it.');
+  }
+
+  console.log('');
+
+  const overview = hasAgentsFile ? undefined : await askForProjectOverview();
+  const files = renderMissingWorkflowFiles({
     rootPath,
     agentsPath,
     codexConfigPath,
-    overview: overview.trim(),
+    overview,
+    hasAgentsFile,
+    hasCodexConfig,
   });
 
   for (const file of files) {
@@ -84,32 +77,64 @@ async function initProject(): Promise<void> {
   }
 }
 
-function renderWorkflowFiles({
+async function askForProjectOverview(): Promise<string> {
+  const rl = readline.createInterface({ input, output });
+
+  try {
+    return await askRequired(
+      rl,
+      [
+        'Tell me what this project is about.',
+        'A short sentence or paragraph is enough.',
+        'Example: "A local-first notes app for software teams."',
+        '',
+        'Project overview: ',
+      ].join('\n'),
+      'Please enter a short project overview so I can create AGENTS.md.'
+    );
+  } finally {
+    rl.close();
+  }
+}
+
+function renderMissingWorkflowFiles({
   rootPath,
   agentsPath,
   codexConfigPath,
   overview,
+  hasAgentsFile,
+  hasCodexConfig,
 }: {
   rootPath: string;
   agentsPath: string;
   codexConfigPath: string;
-  overview: string;
+  overview?: string;
+  hasAgentsFile: boolean;
+  hasCodexConfig: boolean;
 }): FileToCreate[] {
-  const agentsTemplate = readTemplate('AGENTS.md');
-  const codexConfigTemplate = readTemplate('.codex/config.toml');
+  const files: FileToCreate[] = [];
 
-  return [
-    {
+  if (!hasAgentsFile) {
+    if (!overview?.trim()) {
+      throw new Error('Project overview is required to create AGENTS.md.');
+    }
+
+    files.push({
       label: path.relative(rootPath, agentsPath),
       targetPath: agentsPath,
-      contents: agentsTemplate.replace('{{PROJECT_OVERVIEW}}', overview),
-    },
-    {
+      contents: readTemplate('AGENTS.md').replace('{{PROJECT_OVERVIEW}}', overview.trim()),
+    });
+  }
+
+  if (!hasCodexConfig) {
+    files.push({
       label: path.relative(rootPath, codexConfigPath),
       targetPath: codexConfigPath,
-      contents: codexConfigTemplate,
-    },
-  ];
+      contents: readTemplate('.codex/config.toml'),
+    });
+  }
+
+  return files;
 }
 
 function readTemplate(relativePath: string): string {
@@ -137,7 +162,7 @@ Usage:
   ekko init
 
 Commands:
-  init    Initialize a brand-new project with AI workflow files
+  init    Safely initialize or repair missing AI workflow files
 `);
 }
 
