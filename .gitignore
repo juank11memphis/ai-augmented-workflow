@@ -1,5 +1,6 @@
 .idea
 node_modules/
+bin/
 npm-debug.log*
 .DS_Store
 .env

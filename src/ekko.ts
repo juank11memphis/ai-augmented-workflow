@@ -7,6 +7,12 @@ import { stdin as input, stdout as output } from 'node:process';
 
 const command = process.argv[2];
 
+type FileToCreate = {
+  label: string;
+  targetPath: string;
+  contents: string;
+};
+
 async function main(): Promise<void> {
   if (!command || command === '--help' || command === '-h') {
     printHelp();
@@ -25,17 +31,24 @@ async function main(): Promise<void> {
 }
 
 async function initProject(): Promise<void> {
-  const targetPath = path.join(process.cwd(), 'AGENTS.md');
+  const rootPath = process.cwd();
+  const agentsPath = path.join(rootPath, 'AGENTS.md');
+  const codexConfigPath = path.join(rootPath, '.codex', 'config.toml');
+  const existingTargets = [agentsPath, codexConfigPath].filter((targetPath) => fs.existsSync(targetPath));
 
-  if (fs.existsSync(targetPath)) {
-    console.error('AGENTS.md already exists in this directory.');
+  if (existingTargets.length > 0) {
+    console.error('Ekko found existing AI workflow files in this directory:');
+    for (const targetPath of existingTargets) {
+      console.error(`- ${path.relative(rootPath, targetPath)}`);
+    }
     console.error('This first iteration only initializes brand-new projects and will not overwrite existing files.');
     process.exitCode = 1;
     return;
   }
 
-  console.log('Ekko will create an AGENTS.md file for this project.');
-  console.log('This file tells AI coding agents what the project is about and how they should work here.');
+  console.log('Ekko will create AI workflow files for this project.');
+  console.log('- AGENTS.md tells AI coding agents what the project is about and how they should work here.');
+  console.log('- .codex/config.toml points Codex at that AGENTS.md file.');
   console.log('');
 
   const rl = readline.createInterface({ input, output });
@@ -51,18 +64,56 @@ async function initProject(): Promise<void> {
         '',
         'Project overview: ',
       ].join('\n'),
-      'Please enter a short project overview so Ekko can initialize AGENTS.md.'
+      'Please enter a short project overview so Ekko can initialize the workflow files.'
     );
   } finally {
     rl.close();
   }
 
-  const templatePath = path.join(__dirname, '..', 'templates', 'AGENTS.md');
-  const template = fs.readFileSync(templatePath, 'utf8');
-  const rendered = template.replace('{{PROJECT_OVERVIEW}}', overview.trim());
+  const files = renderWorkflowFiles({
+    rootPath,
+    agentsPath,
+    codexConfigPath,
+    overview: overview.trim(),
+  });
 
-  fs.writeFileSync(targetPath, rendered, { encoding: 'utf8', flag: 'wx' });
-  console.log('Created AGENTS.md');
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, { encoding: 'utf8', flag: 'wx' });
+    console.log(`Created ${file.label}`);
+  }
+}
+
+function renderWorkflowFiles({
+  rootPath,
+  agentsPath,
+  codexConfigPath,
+  overview,
+}: {
+  rootPath: string;
+  agentsPath: string;
+  codexConfigPath: string;
+  overview: string;
+}): FileToCreate[] {
+  const agentsTemplate = readTemplate('AGENTS.md');
+  const codexConfigTemplate = readTemplate('.codex/config.toml');
+
+  return [
+    {
+      label: path.relative(rootPath, agentsPath),
+      targetPath: agentsPath,
+      contents: agentsTemplate.replace('{{PROJECT_OVERVIEW}}', overview),
+    },
+    {
+      label: path.relative(rootPath, codexConfigPath),
+      targetPath: codexConfigPath,
+      contents: codexConfigTemplate,
+    },
+  ];
+}
+
+function readTemplate(relativePath: string): string {
+  return fs.readFileSync(path.join(__dirname, '..', 'templates', relativePath), 'utf8');
 }
 
 async function askRequired(
@@ -86,7 +137,7 @@ Usage:
   ekko init
 
 Commands:
-  init    Initialize a brand-new project with an AGENTS.md file
+  init    Initialize a brand-new project with AI workflow files
 `);
 }
 
