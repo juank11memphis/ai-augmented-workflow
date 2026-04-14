@@ -30,6 +30,7 @@
   "private": true,
   "devDependencies": {
     "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
     "typescript": "^6.0.2"
   },
   "packageManager": "pnpm@10.28.2",
@@ -40,5 +41,6 @@
     "gradient-string": "^3.0.0",
     "ink": "^7.0.0",
     "react": "^19.2.5"
-  }
+  },
+  "type": "module"
 }

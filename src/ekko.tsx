@@ -82,23 +82,34 @@ program.parseAsync(process.argv).catch((error: unknown) => {
 
 async function initProject(): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Initializing AI workflow'));
+  intro(chalk.cyan('Synchronizing workflow loop'));
 
   const rootPath = process.cwd();
+  const allTargets = getWorkflowTargets(rootPath, SUPPORTED_AGENTS);
+
+  if (allTargets.every((target) => fs.existsSync(target.targetPath))) {
+    log.success('The workflow loop is already fully stable. No changes needed.');
+    for (const target of allTargets) {
+      log.info(`${target.label} already exists.`);
+    }
+    outro(chalk.green('Workflow loop stable.'));
+    return;
+  }
+
   const selectedAgents = await askForSupportedAgents();
   const targets = getWorkflowTargets(rootPath, selectedAgents);
   const missingTargets = targets.filter((target) => !fs.existsSync(target.targetPath));
 
   if (missingTargets.length === 0) {
-    log.success('I found all selected AI workflow files. No changes needed.');
+    log.success('The selected workflow loop is already stable. No changes needed.');
     for (const target of targets) {
       log.info(`${target.label} already exists.`);
     }
-    outro(chalk.green('Workflow is ready.'));
+    outro(chalk.green('Workflow loop stable.'));
     return;
   }
 
-  log.message('I will make sure this project has the selected AI workflow files.');
+  log.message('I will tune this project’s selected AI workflow files.');
   for (const target of targets) {
     if (fs.existsSync(target.targetPath)) {
       log.info(`${target.label} already exists. I will keep it unchanged.`);
@@ -117,11 +128,11 @@ async function initProject(): Promise<void> {
     log.success(`Created ${file.label}`);
   }
 
-  outro(chalk.green('AI workflow initialized.'));
+  outro(chalk.green('Workflow loop stabilized.'));
 }
 
 async function renderIntro(): Promise<void> {
-  console.log(gradient(['#00d4ff', '#7c3aed', '#ff4ecd']).multiline('E K K O'));
+  console.log(gradient(['#39ff14', '#00e5ff', '#9b5de5']).multiline('⧖  E K K O  ⧖'));
 
   const app = render(<IntroPanel />);
   await app.waitUntilExit();
@@ -137,8 +148,8 @@ function IntroPanel(): React.ReactElement {
 
   return (
     <Box borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1} flexDirection="column">
-      <Text color="cyanBright">AI workflow bootstrapper online</Text>
-      <Text color="gray">Build. Test. Rewind. Improve.</Text>
+      <Text color="cyanBright">Loop engine online</Text>
+      <Text color="greenBright">Build. Test. Rewind. Improve.</Text>
     </Box>
   );
 }
@@ -164,7 +175,7 @@ async function askForSupportedAgents(): Promise<SupportedAgent[]> {
 
 async function askForProjectOverview(): Promise<string> {
   const overview = await text({
-    message: 'Tell me what this project is about.',
+    message: 'Tell me what this timeline is about.',
     placeholder: 'A local-first notes app for software teams.',
     validate(value) {
       if (!value?.trim()) {
