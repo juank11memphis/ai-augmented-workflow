@@ -7,10 +7,17 @@
   },
   "files": [
     "bin/",
+    "src/",
     "templates/",
     "README.md"
   ],
   "scripts": {
+    "build": "tsc && chmod +x bin/ekko.js",
+    "check": "tsc --noEmit",
+    "verify": "pnpm build && pnpm check",
+    "dev:link": "pnpm install && pnpm build && pnpm link --global",
+    "dev:unlink": "pnpm unlink --global ekko",
+    "prepack": "pnpm run build",
     "smoke:init": "node ./bin/ekko.js init"
   },
   "keywords": [
@@ -20,5 +27,10 @@
     "cli"
   ],
   "license": "UNLICENSED",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.2"
+  },
+  "packageManager": "pnpm@10.28.2"
 }

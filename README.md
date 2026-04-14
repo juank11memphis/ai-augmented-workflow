@@ -13,3 +13,45 @@ npx ekko init
 ```
 
 The CLI asks for a project overview and writes an `AGENTS.md` file based on the template in this repository.
+
+## Development
+
+The CLI source lives in `src/ekko.ts` and compiles to `bin/ekko.js`.
+
+```sh
+pnpm install
+pnpm verify
+```
+
+## Test locally
+
+Use `pnpm link --global` to make the local `ekko` command available from any directory while developing.
+
+From this repository:
+
+```sh
+pnpm dev:link
+```
+
+Then test it in a new project directory:
+
+```sh
+mkdir /tmp/test-ekko-project
+cd /tmp/test-ekko-project
+git init
+ekko init
+cat AGENTS.md
+```
+
+After editing `src/ekko.ts`, rebuild before testing again:
+
+```sh
+cd /home/juanca/code/ai-augmented-workflow
+pnpm build
+```
+
+When you are done testing the linked CLI, remove the global link:
+
+```sh
+pnpm dev:unlink
+```
