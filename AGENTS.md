@@ -18,14 +18,30 @@ This repository is the home for establishing an AI-augmented development workflo
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
 
-## Template changes
+## Skill routing
 
-When changing files under `templates/`, use the local `ekko-template-change` skill if available and treat the templates as versioned product artifacts.
+- For any code-writing task, use `clean-code`.
+- For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 
-- Update `templates/manifest.json` in the same change.
-- Bump the global `templateVersion` when any template changes.
-- Bump each changed template's own `version`.
-- Add user-facing change notes that explain what changed and why it matters for `ekko sync` users.
-- Avoid renaming template paths unless state migration or backwards compatibility is handled.
-- Run `pnpm verify` after template changes.
-- When practical, test the lifecycle with `ekko init`, `ekko doctor`, and `ekko sync` in a temporary project.
+## Ekko maintenance
+
+This repository uses Ekko to manage AI workflow setup.
+
+- `ekko init` is a one-time bootstrap command for adopting Ekko in a project. It creates the initial agent support files, keeps existing files unchanged, and creates `.ekko/state.json` metadata. Do not rerun `ekko init` to apply updates to an existing Ekko project.
+- `ekko doctor` is the read-only health check for this workflow. It inspects whether Ekko-managed files are missing, modified, unrecorded, or generated from older templates.
+- `ekko sync` is the post-init workflow maintenance command. It reviews template updates interactively, repairs missing managed files, adopts newly added managed templates, protects local edits from automatic overwrites, and lets the user apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later.
+
+At the start of each session in this repository, run `ekko doctor` before making changes or giving workflow guidance. Treat it as a read-only preflight check.
+
+After `ekko doctor` finishes, guide the user based on the outcome:
+
+- If the workflow is healthy, mention that the Ekko check passed and proceed with the requested work.
+- If `.ekko/state.json` is missing because the project has not been initialized, tell the user to run `ekko init` once before continuing.
+- If managed workflow files are missing, unrecorded, modified, or generated from older templates, tell the user to run `ekko sync` to review and repair them.
+- If `ekko doctor` cannot run because Ekko is unavailable, tell the user how to install or run Ekko for this project before relying on template status.
+
+Ekko records managed workflow file metadata in `.ekko/state.json`, including template versions, file hashes, selected agent support, and whether files are `managed`, `customized`, or `unmanaged`.
+
+If `.ekko/state.json` is missing because Ekko has not been adopted in the project, ask the user to run `ekko init` once.
+If workflow files may be missing, modified, unrecorded, or drifted from the recorded Ekko state, ask the user to run `ekko doctor` first.
+If `ekko doctor` reports missing managed files, unrecorded expected files, local edits, or older templates, ask the user to run `ekko sync`.

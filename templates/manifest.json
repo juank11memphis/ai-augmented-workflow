@@ -1,12 +1,11 @@
 {
-  "templateVersion": "8",
+  "templateVersion": "11",
   "templates": {
     "AGENTS.md": {
-      "version": "4",
+      "version": "6",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Clarified that ekko init is a one-time bootstrap command for adopting Ekko in a project.",
-        "Directed all post-init workflow maintenance, including missing files, newly managed templates, local edits, and template updates, to ekko sync."
+        "Renders additional skill routing instructions in AGENTS.md based on selected language skills."
       ]
     },
     ".codex/config.toml": {
@@ -36,6 +35,13 @@
       "changes": [
         "Installs the clean-code skill once at .agents/skills/clean-code/SKILL.md for any selected agent instead of duplicating per-agent copies.",
         "Uses the shared .agents/skills workspace path to test common skill discovery across Codex, Gemini, and Claude."
+      ]
+    },
+    "skills/typescript/SKILL.md": {
+      "version": "1",
+      "description": "Selectable TypeScript skill installed when TypeScript language support is selected.",
+      "changes": [
+        "Adds an optional TypeScript skill for projects that use .ts or .tsx files."
       ]
     }
   }

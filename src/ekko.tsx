@@ -16,6 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 type AgentId = 'codex' | 'gemini' | 'claude';
+type LanguageSkillId = 'typescript';
 
 type SupportedAgent = {
   id: AgentId;
@@ -28,6 +29,13 @@ type SupportedAgent = {
 type SkillTemplate = {
   templateRelativePath: string;
   targetRelativePathsByAgent: Partial<Record<AgentId, string>>;
+};
+
+type SelectableLanguageSkill = SkillTemplate & {
+  id: LanguageSkillId;
+  name: string;
+  description: string;
+  routingInstruction: string;
 };
 
 type FileToCreate = {
@@ -49,6 +57,8 @@ type EkkoState = {
   generatedAt: string;
   updatedAt: string;
   selectedAgents: AgentId[];
+  selectedLanguageSkills?: LanguageSkillId[];
+  reviewedLanguageSkills?: LanguageSkillId[];
   managedFiles: Record<string, ManagedFileState>;
 };
 
@@ -90,6 +100,21 @@ const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/clean-code/SKILL.md',
       gemini: '.agents/skills/clean-code/SKILL.md',
       claude: '.agents/skills/clean-code/SKILL.md',
+    },
+  },
+];
+
+const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
+  {
+    id: 'typescript',
+    name: 'TypeScript',
+    description: 'Install practical guidance for writing and modifying .ts and .tsx files',
+    routingInstruction: 'For any task that changes `.ts` or `.tsx` files, also use `typescript`.',
+    templateRelativePath: 'skills/typescript/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/typescript/SKILL.md',
+      gemini: '.agents/skills/typescript/SKILL.md',
+      claude: '.agents/skills/typescript/SKILL.md',
     },
   },
 ];
@@ -178,7 +203,8 @@ async function initProject(): Promise<void> {
   }
 
   const selectedAgents = await askForSupportedAgents();
-  const targets = getWorkflowTargets(rootPath, selectedAgents);
+  const selectedLanguageSkills = await askForLanguageSkills();
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills);
   const missingTargets = targets.filter((target) => !fs.existsSync(target.targetPath));
 
   log.message('I will create this project’s initial AI workflow files.');
@@ -194,7 +220,7 @@ async function initProject(): Promise<void> {
 
   const shouldAskForOverview = missingTargets.some((target) => target.requiresProjectOverview);
   const overview = shouldAskForOverview ? await askForProjectOverview() : undefined;
-  const files = renderMissingWorkflowFiles({ missingTargets, overview });
+  const files = renderMissingWorkflowFiles({ missingTargets, overview, selectedLanguageSkills });
 
   for (const file of files) {
     fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
@@ -202,7 +228,7 @@ async function initProject(): Promise<void> {
     log.success(`Created ${file.label}`);
   }
 
-  writeEkkoState({ rootPath, statePath, selectedAgents, targets });
+  writeEkkoState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, targets });
   log.success(`Created ${STATE_RELATIVE_PATH}`);
 
   outro(chalk.green('Workflow loop initialized.'));
@@ -271,7 +297,8 @@ async function syncProject(): Promise<void> {
     return;
   }
 
-  let state = stateResult.state;
+  const languageSkillSelection = await askForNewLanguageSkills(stateResult.state);
+  let state = languageSkillSelection.state;
   const manifest = readTemplateManifest();
   const previews = getSyncPreviews({ rootPath, state, manifest });
   const actionablePreviews = previews.filter((preview) =>
@@ -281,7 +308,7 @@ async function syncProject(): Promise<void> {
   if (actionablePreviews.length === 0) {
     log.success('No template updates or local drift detected.');
 
-    if (state.templateVersion !== manifest.templateVersion) {
+    if (state.templateVersion !== manifest.templateVersion || languageSkillSelection.changedState) {
       state = {
         ...state,
         templateVersion: manifest.templateVersion,
@@ -299,7 +326,7 @@ async function syncProject(): Promise<void> {
 
   log.warn('Workflow sync found items to review.');
 
-  let changedState = false;
+  let changedState = languageSkillSelection.changedState;
   let changedFiles = false;
 
   for (const preview of previews) {
@@ -450,7 +477,8 @@ function getSyncPreviews({
   });
 
   const selectedAgents = SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
-  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents);
+  const selectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
+  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills);
 
   for (const target of expectedTargets) {
     const relativePath = path.relative(rootPath, target.targetPath);
@@ -643,7 +671,11 @@ function applySyncAction({
 
   switch (action) {
     case 'apply-update': {
-      const contents = renderTemplateForSync({ templateRelativePath: managedFile.template, currentPath: targetPath });
+      const contents = renderTemplateForSync({
+        templateRelativePath: managedFile.template,
+        currentPath: targetPath,
+        selectedLanguageSkills: getSelectedLanguageSkillsFromState(nextState),
+      });
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, contents, 'utf8');
       nextState.templateVersion = manifest.templateVersion;
@@ -672,7 +704,11 @@ function applySyncAction({
     }
     case 'write-side-template': {
       const sideTemplatePath = getSideTemplatePath(rootPath, preview.relativePath, currentTemplateVersion);
-      const contents = renderTemplateForSync({ templateRelativePath: managedFile.template, currentPath: targetPath });
+      const contents = renderTemplateForSync({
+        templateRelativePath: managedFile.template,
+        currentPath: targetPath,
+        selectedLanguageSkills: getSelectedLanguageSkillsFromState(state),
+      });
       fs.mkdirSync(path.dirname(sideTemplatePath), { recursive: true });
       fs.writeFileSync(sideTemplatePath, contents, 'utf8');
       log.success(`Wrote latest template to ${path.relative(rootPath, sideTemplatePath)}`);
@@ -701,9 +737,11 @@ function applySyncAction({
 function renderTemplateForSync({
   templateRelativePath,
   currentPath,
+  selectedLanguageSkills,
 }: {
   templateRelativePath: string;
   currentPath: string;
+  selectedLanguageSkills: SelectableLanguageSkill[];
 }): string {
   let contents = readTemplate(templateRelativePath);
 
@@ -711,7 +749,20 @@ function renderTemplateForSync({
     contents = contents.replace('{{PROJECT_OVERVIEW}}', extractProjectOverview(currentPath) ?? 'Describe this project.');
   }
 
-  return contents;
+  return renderSkillRouting(contents, selectedLanguageSkills);
+}
+
+function getSelectedLanguageSkillsFromState(state: EkkoState): SelectableLanguageSkill[] {
+  return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
+}
+
+function renderSkillRouting(contents: string, selectedLanguageSkills: SelectableLanguageSkill[]): string {
+  if (!contents.includes('{{OPTIONAL_SKILL_ROUTING}}')) {
+    return contents;
+  }
+
+  const optionalRouting = selectedLanguageSkills.map((skill) => `- ${skill.routingInstruction}`).join('\n');
+  return contents.replace('{{OPTIONAL_SKILL_ROUTING}}', optionalRouting);
 }
 
 function extractProjectOverview(filePath: string): string | undefined {
@@ -791,6 +842,70 @@ async function askForSupportedAgents(): Promise<SupportedAgent[]> {
   return SUPPORTED_AGENTS.filter((agent) => selectedAgentIds.includes(agent.id));
 }
 
+async function askForLanguageSkills(): Promise<SelectableLanguageSkill[]> {
+  const selectedLanguageSkillIds = await multiselect<LanguageSkillId>({
+    message: 'Select the languages this project should support.',
+    required: false,
+    options: SELECTABLE_LANGUAGE_SKILLS.map((skill) => ({
+      value: skill.id,
+      label: skill.name,
+      hint: skill.description,
+    })),
+  });
+
+  if (isCancel(selectedLanguageSkillIds)) {
+    cancel('Initialization cancelled.');
+    process.exit(0);
+  }
+
+  return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => selectedLanguageSkillIds.includes(skill.id));
+}
+
+async function askForNewLanguageSkills(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
+  const selectedLanguageSkillIds = new Set(state.selectedLanguageSkills ?? []);
+  const reviewedLanguageSkillIds = new Set(state.reviewedLanguageSkills ?? []);
+  const unreviewedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter(
+    (skill) => !selectedLanguageSkillIds.has(skill.id) && !reviewedLanguageSkillIds.has(skill.id)
+  );
+
+  if (unreviewedLanguageSkills.length === 0) {
+    return { state, changedState: false };
+  }
+
+  const selectedNewLanguageSkillIds = await multiselect<LanguageSkillId>({
+    message: 'Select any new languages this project should support.',
+    required: false,
+    options: unreviewedLanguageSkills.map((skill) => ({
+      value: skill.id,
+      label: skill.name,
+      hint: skill.description,
+    })),
+  });
+
+  if (isCancel(selectedNewLanguageSkillIds)) {
+    cancel('Sync cancelled.');
+    process.exit(0);
+  }
+
+  for (const skill of unreviewedLanguageSkills) {
+    reviewedLanguageSkillIds.add(skill.id);
+  }
+
+  for (const selectedSkillId of selectedNewLanguageSkillIds) {
+    selectedLanguageSkillIds.add(selectedSkillId);
+  }
+
+  return {
+    state: {
+      ...state,
+      selectedLanguageSkills: [...selectedLanguageSkillIds],
+      reviewedLanguageSkills: [...reviewedLanguageSkillIds],
+      updatedAt: new Date().toISOString(),
+    },
+    changedState: true,
+  };
+}
+
 async function askForProjectOverview(): Promise<string> {
   const overview = await text({
     message: 'Tell me what this timeline is about.',
@@ -817,11 +932,15 @@ type SkillTarget = {
   templateRelativePath: string;
 };
 
-function getSkillTargetsForAgents(selectedAgents: SupportedAgent[]): SkillTarget[] {
+function getSelectedSkillTargetsForAgents(
+  selectedAgents: SupportedAgent[],
+  selectedLanguageSkills: SelectableLanguageSkill[]
+): SkillTarget[] {
   const skillTargets = new Map<string, SkillTarget>();
+  const selectedSkills = [...MANDATORY_SKILLS, ...selectedLanguageSkills];
 
   for (const agent of selectedAgents) {
-    for (const skill of MANDATORY_SKILLS) {
+    for (const skill of selectedSkills) {
       const targetRelativePath = skill.targetRelativePathsByAgent[agent.id];
 
       if (!targetRelativePath) {
@@ -838,7 +957,11 @@ function getSkillTargetsForAgents(selectedAgents: SupportedAgent[]): SkillTarget
   return [...skillTargets.values()];
 }
 
-function getWorkflowTargets(rootPath: string, selectedAgents: SupportedAgent[]): WorkflowTarget[] {
+function getWorkflowTargets(
+  rootPath: string,
+  selectedAgents: SupportedAgent[],
+  selectedLanguageSkills: SelectableLanguageSkill[] = []
+): WorkflowTarget[] {
   return [
     {
       label: 'AGENTS.md',
@@ -852,7 +975,7 @@ function getWorkflowTargets(rootPath: string, selectedAgents: SupportedAgent[]):
       templateRelativePath: agent.templateRelativePath,
       requiresProjectOverview: false,
     })),
-    ...getSkillTargetsForAgents(selectedAgents).map((skillTarget) => ({
+    ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills).map((skillTarget) => ({
       label: skillTarget.targetRelativePath,
       targetPath: path.join(rootPath, skillTarget.targetRelativePath),
       templateRelativePath: skillTarget.templateRelativePath,
@@ -864,9 +987,11 @@ function getWorkflowTargets(rootPath: string, selectedAgents: SupportedAgent[]):
 function renderMissingWorkflowFiles({
   missingTargets,
   overview,
+  selectedLanguageSkills,
 }: {
   missingTargets: WorkflowTarget[];
   overview?: string;
+  selectedLanguageSkills: SelectableLanguageSkill[];
 }): FileToCreate[] {
   return missingTargets.map((target) => {
     let contents = readTemplate(target.templateRelativePath);
@@ -878,6 +1003,8 @@ function renderMissingWorkflowFiles({
 
       contents = contents.replace('{{PROJECT_OVERVIEW}}', overview.trim());
     }
+
+    contents = renderSkillRouting(contents, selectedLanguageSkills);
 
     return {
       label: target.label,
@@ -891,11 +1018,13 @@ function writeEkkoState({
   rootPath,
   statePath,
   selectedAgents,
+  selectedLanguageSkills,
   targets,
 }: {
   rootPath: string;
   statePath: string;
   selectedAgents: SupportedAgent[];
+  selectedLanguageSkills: SelectableLanguageSkill[];
   targets: WorkflowTarget[];
 }): void {
   const previousState = readExistingState(statePath);
@@ -907,6 +1036,8 @@ function writeEkkoState({
     generatedAt: previousState?.generatedAt ?? now,
     updatedAt: now,
     selectedAgents: selectedAgents.map((agent) => agent.id),
+    selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
+    reviewedLanguageSkills: SELECTABLE_LANGUAGE_SKILLS.map((skill) => skill.id),
     managedFiles: Object.fromEntries(
       targets
         .filter((target) => fs.existsSync(target.targetPath))
@@ -1050,8 +1181,27 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
     }
   }
 
+  for (const selectedLanguageSkill of state.selectedLanguageSkills ?? []) {
+    if (!SELECTABLE_LANGUAGE_SKILLS.some((skill) => skill.id === selectedLanguageSkill)) {
+      issues.push({
+        severity: 'warning',
+        message: `State references unsupported language skill: ${selectedLanguageSkill}.`,
+      });
+    }
+  }
+
+  for (const reviewedLanguageSkill of state.reviewedLanguageSkills ?? []) {
+    if (!SELECTABLE_LANGUAGE_SKILLS.some((skill) => skill.id === reviewedLanguageSkill)) {
+      issues.push({
+        severity: 'warning',
+        message: `State references unsupported reviewed language skill: ${reviewedLanguageSkill}.`,
+      });
+    }
+  }
+
   const selectedAgents = SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
-  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents);
+  const selectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
+  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills);
   const reportedMissingPaths = new Set<string>();
 
   for (const target of expectedTargets) {
@@ -1169,6 +1319,10 @@ function isEkkoState(value: unknown): value is EkkoState {
     typeof state.updatedAt === 'string' &&
     Array.isArray(state.selectedAgents) &&
     state.selectedAgents.every((agent) => typeof agent === 'string') &&
+    (state.selectedLanguageSkills === undefined ||
+      (Array.isArray(state.selectedLanguageSkills) && state.selectedLanguageSkills.every((skill) => typeof skill === 'string'))) &&
+    (state.reviewedLanguageSkills === undefined ||
+      (Array.isArray(state.reviewedLanguageSkills) && state.reviewedLanguageSkills.every((skill) => typeof skill === 'string'))) &&
     !!state.managedFiles &&
     typeof state.managedFiles === 'object' &&
     Object.values(state.managedFiles).every(isManagedFileState)

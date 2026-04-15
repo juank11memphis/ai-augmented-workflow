@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "3",
+  "templateVersion": "11",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-15T02:46:31.069Z",
+  "updatedAt": "2026-04-15T16:48:31.296Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -11,8 +11,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "3",
-      "sha256": "f7e746a1d23c97c3e402025f2c1eda04f8cdee8831a83b65c6a3267f66583497",
+      "templateVersion": "6",
+      "sha256": "22700d1e9bfa1cee9ec1a42e8a867fce5cb9c88cbb2ab9f81045a4328c58a3be",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -32,6 +32,24 @@
       "templateVersion": "1",
       "sha256": "d6376126e77149ca1fc08a2ee9003fb78fe01aefb9d387a449890b533e28da89",
       "status": "managed"
+    },
+    ".agents/skills/clean-code/SKILL.md": {
+      "template": "skills/clean-code/SKILL.md",
+      "templateVersion": "4",
+      "sha256": "e3d115728f12557162ed3322a32bcf5d33e64fa65cd05b1eeb7f2877a25860f1",
+      "status": "managed"
+    },
+    ".agents/skills/typescript/SKILL.md": {
+      "template": "skills/typescript/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "1d0c05af8482918e0d01dec88b9f0af1f89adcea341339e190bc69bd352081bd",
+      "status": "managed"
     }
-  }
+  },
+  "selectedLanguageSkills": [
+    "typescript"
+  ],
+  "reviewedLanguageSkills": [
+    "typescript"
+  ]
 }

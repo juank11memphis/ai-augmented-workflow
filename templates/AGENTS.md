@@ -18,6 +18,11 @@
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
 
+## Skill routing
+
+- For any code-writing task, use `clean-code`.
+{{OPTIONAL_SKILL_ROUTING}}
+
 ## Ekko maintenance
 
 This repository uses Ekko to manage AI workflow setup.
