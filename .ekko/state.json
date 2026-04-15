@@ -1,0 +1,37 @@
+{
+  "ekkoVersion": "0.1.0",
+  "templateVersion": "3",
+  "generatedAt": "2026-04-15T02:46:31.069Z",
+  "updatedAt": "2026-04-15T02:46:31.069Z",
+  "selectedAgents": [
+    "codex",
+    "gemini",
+    "claude"
+  ],
+  "managedFiles": {
+    "AGENTS.md": {
+      "template": "AGENTS.md",
+      "templateVersion": "3",
+      "sha256": "f7e746a1d23c97c3e402025f2c1eda04f8cdee8831a83b65c6a3267f66583497",
+      "status": "managed"
+    },
+    ".codex/config.toml": {
+      "template": ".codex/config.toml",
+      "templateVersion": "1",
+      "sha256": "ad6c7dcde6649a2232ee7113ad412ac9dd1df88c0101ec3729fa30833fcde909",
+      "status": "managed"
+    },
+    "GEMINI.md": {
+      "template": "GEMINI.md",
+      "templateVersion": "1",
+      "sha256": "62e3be879911f9b24f3401f8455c1da9d9689a817574dd08e779c54766bb33c1",
+      "status": "managed"
+    },
+    "CLAUDE.md": {
+      "template": "CLAUDE.md",
+      "templateVersion": "1",
+      "sha256": "d6376126e77149ca1fc08a2ee9003fb78fe01aefb9d387a449890b533e28da89",
+      "status": "managed"
+    }
+  }
+}

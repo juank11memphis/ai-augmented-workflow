@@ -257,7 +257,7 @@ async function doctorProject(): Promise<void> {
     }
   }
 
-  log.info('Run `ekko init` to repair missing files or refresh metadata.');
+  log.info('Run `ekko init` to repair missing files or metadata. Run `ekko sync` to review template updates.');
   outro(chalk.yellow('Workflow loop needs attention.'));
   process.exitCode = 1;
 }
@@ -907,7 +907,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
     issues.push({
       severity: 'warning',
       message: `State was generated from template version ${state.templateVersion}; current template version is ${manifest.templateVersion}.`,
-      hint: 'Run `ekko init` to refresh metadata, or a future `ekko sync` to update managed templates.',
+      hint: 'Run `ekko sync` to review and apply or dismiss template updates.',
     });
   }
 
@@ -974,7 +974,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
       issues.push({
         severity: 'warning',
         message: `${relativePath} has changed since Ekko last recorded it.`,
-        hint: 'If this was intentional, keep it. A future `ekko sync` should avoid overwriting local edits.',
+        hint: 'If this was intentional, keep it. `ekko sync` will not overwrite local edits automatically.',
       });
     }
 
@@ -983,6 +983,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
       issues.push({
         severity: 'warning',
         message: `${relativePath} was generated from template version ${managedFile.templateVersion}; current template version is ${currentTemplateVersion}.`,
+        hint: 'Run `ekko sync` to review and apply or dismiss this template update.',
       });
     }
   }

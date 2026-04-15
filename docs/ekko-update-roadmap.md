@@ -339,7 +339,7 @@ Ekko should stop warning about template drift for that file, but can continue ma
 
 Use this when the user wants to decide later.
 
-Ekko should make no metadata changes. `ekko doctor` or a future `ekko sync` should continue reporting the drift.
+Ekko should make no metadata changes. `ekko doctor` and `ekko sync` should continue reporting the drift.
 
 ### Phase 5D: Evolve metadata statuses
 
