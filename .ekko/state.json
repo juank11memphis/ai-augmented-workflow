@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "11",
+  "templateVersion": "12",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-15T16:48:31.296Z",
+  "updatedAt": "2026-04-15T17:28:38.153Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -11,8 +11,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "6",
-      "sha256": "22700d1e9bfa1cee9ec1a42e8a867fce5cb9c88cbb2ab9f81045a4328c58a3be",
+      "templateVersion": "7",
+      "sha256": "b5dec1e9c1e3e22b2182c5eca7fd1992e914898b60eecb10c2d2425f64954ca8",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -44,6 +44,12 @@
       "templateVersion": "1",
       "sha256": "1d0c05af8482918e0d01dec88b9f0af1f89adcea341339e190bc69bd352081bd",
       "status": "managed"
+    },
+    ".agents/skills/ddd-hexagonal/SKILL.md": {
+      "template": "skills/architecture/ddd-hexagonal/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "2a4cc059b0bbfef51c3f5c8925bcd3c4afb3719f4d5d9eaa8a2bd2aa533b12fd",
+      "status": "managed"
     }
   },
   "selectedLanguageSkills": [
@@ -51,5 +57,9 @@
   ],
   "reviewedLanguageSkills": [
     "typescript"
+  ],
+  "selectedArchitectureSkill": "ddd-hexagonal",
+  "reviewedArchitectureSkills": [
+    "ddd-hexagonal"
   ]
 }

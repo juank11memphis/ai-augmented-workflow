@@ -17,6 +17,7 @@ const __dirname = path.dirname(__filename);
 
 type AgentId = 'codex' | 'gemini' | 'claude';
 type LanguageSkillId = 'typescript';
+type ArchitectureSkillId = 'ddd-hexagonal';
 
 type SupportedAgent = {
   id: AgentId;
@@ -33,6 +34,13 @@ type SkillTemplate = {
 
 type SelectableLanguageSkill = SkillTemplate & {
   id: LanguageSkillId;
+  name: string;
+  description: string;
+  routingInstruction: string;
+};
+
+type SelectableArchitectureSkill = SkillTemplate & {
+  id: ArchitectureSkillId;
   name: string;
   description: string;
   routingInstruction: string;
@@ -59,6 +67,8 @@ type EkkoState = {
   selectedAgents: AgentId[];
   selectedLanguageSkills?: LanguageSkillId[];
   reviewedLanguageSkills?: LanguageSkillId[];
+  selectedArchitectureSkill?: ArchitectureSkillId;
+  reviewedArchitectureSkills?: ArchitectureSkillId[];
   managedFiles: Record<string, ManagedFileState>;
 };
 
@@ -115,6 +125,22 @@ const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
       codex: '.agents/skills/typescript/SKILL.md',
       gemini: '.agents/skills/typescript/SKILL.md',
       claude: '.agents/skills/typescript/SKILL.md',
+    },
+  },
+];
+
+const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
+  {
+    id: 'ddd-hexagonal',
+    name: 'DDD + Hexagonal Architecture',
+    description: 'Install back-end architecture guidance for DDD, ports/adapters, and inward dependencies',
+    routingInstruction:
+      'For back-end tasks involving domain modeling, application/service boundaries, dependency direction, persistence boundaries, external integrations, or architectural tradeoffs, also use `ddd-hexagonal`.',
+    templateRelativePath: 'skills/architecture/ddd-hexagonal/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/ddd-hexagonal/SKILL.md',
+      gemini: '.agents/skills/ddd-hexagonal/SKILL.md',
+      claude: '.agents/skills/ddd-hexagonal/SKILL.md',
     },
   },
 ];
@@ -204,7 +230,8 @@ async function initProject(): Promise<void> {
 
   const selectedAgents = await askForSupportedAgents();
   const selectedLanguageSkills = await askForLanguageSkills();
-  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills);
+  const selectedArchitectureSkill = await askForArchitectureSkill();
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedArchitectureSkill);
   const missingTargets = targets.filter((target) => !fs.existsSync(target.targetPath));
 
   log.message('I will create this project’s initial AI workflow files.');
@@ -220,7 +247,7 @@ async function initProject(): Promise<void> {
 
   const shouldAskForOverview = missingTargets.some((target) => target.requiresProjectOverview);
   const overview = shouldAskForOverview ? await askForProjectOverview() : undefined;
-  const files = renderMissingWorkflowFiles({ missingTargets, overview, selectedLanguageSkills });
+  const files = renderMissingWorkflowFiles({ missingTargets, overview, selectedLanguageSkills, selectedArchitectureSkill });
 
   for (const file of files) {
     fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
@@ -228,7 +255,7 @@ async function initProject(): Promise<void> {
     log.success(`Created ${file.label}`);
   }
 
-  writeEkkoState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, targets });
+  writeEkkoState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedArchitectureSkill, targets });
   log.success(`Created ${STATE_RELATIVE_PATH}`);
 
   outro(chalk.green('Workflow loop initialized.'));
@@ -298,7 +325,8 @@ async function syncProject(): Promise<void> {
   }
 
   const languageSkillSelection = await askForNewLanguageSkills(stateResult.state);
-  let state = languageSkillSelection.state;
+  const architectureSkillSelection = await askForNewArchitectureSkill(languageSkillSelection.state);
+  let state = architectureSkillSelection.state;
   const manifest = readTemplateManifest();
   const previews = getSyncPreviews({ rootPath, state, manifest });
   const actionablePreviews = previews.filter((preview) =>
@@ -308,7 +336,7 @@ async function syncProject(): Promise<void> {
   if (actionablePreviews.length === 0) {
     log.success('No template updates or local drift detected.');
 
-    if (state.templateVersion !== manifest.templateVersion || languageSkillSelection.changedState) {
+    if (state.templateVersion !== manifest.templateVersion || languageSkillSelection.changedState || architectureSkillSelection.changedState) {
       state = {
         ...state,
         templateVersion: manifest.templateVersion,
@@ -326,7 +354,7 @@ async function syncProject(): Promise<void> {
 
   log.warn('Workflow sync found items to review.');
 
-  let changedState = languageSkillSelection.changedState;
+  let changedState = languageSkillSelection.changedState || architectureSkillSelection.changedState;
   let changedFiles = false;
 
   for (const preview of previews) {
@@ -478,7 +506,8 @@ function getSyncPreviews({
 
   const selectedAgents = SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
   const selectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
-  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills);
+  const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
+  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedArchitectureSkill);
 
   for (const target of expectedTargets) {
     const relativePath = path.relative(rootPath, target.targetPath);
@@ -675,6 +704,7 @@ function applySyncAction({
         templateRelativePath: managedFile.template,
         currentPath: targetPath,
         selectedLanguageSkills: getSelectedLanguageSkillsFromState(nextState),
+        selectedArchitectureSkill: getSelectedArchitectureSkillFromState(nextState),
       });
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, contents, 'utf8');
@@ -708,6 +738,7 @@ function applySyncAction({
         templateRelativePath: managedFile.template,
         currentPath: targetPath,
         selectedLanguageSkills: getSelectedLanguageSkillsFromState(state),
+        selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
       });
       fs.mkdirSync(path.dirname(sideTemplatePath), { recursive: true });
       fs.writeFileSync(sideTemplatePath, contents, 'utf8');
@@ -738,10 +769,12 @@ function renderTemplateForSync({
   templateRelativePath,
   currentPath,
   selectedLanguageSkills,
+  selectedArchitectureSkill,
 }: {
   templateRelativePath: string;
   currentPath: string;
   selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedArchitectureSkill?: SelectableArchitectureSkill;
 }): string {
   let contents = readTemplate(templateRelativePath);
 
@@ -749,19 +782,29 @@ function renderTemplateForSync({
     contents = contents.replace('{{PROJECT_OVERVIEW}}', extractProjectOverview(currentPath) ?? 'Describe this project.');
   }
 
-  return renderSkillRouting(contents, selectedLanguageSkills);
+  return renderSkillRouting(contents, selectedLanguageSkills, selectedArchitectureSkill);
 }
 
 function getSelectedLanguageSkillsFromState(state: EkkoState): SelectableLanguageSkill[] {
   return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
 }
 
-function renderSkillRouting(contents: string, selectedLanguageSkills: SelectableLanguageSkill[]): string {
+function getSelectedArchitectureSkillFromState(state: EkkoState): SelectableArchitectureSkill | undefined {
+  return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === state.selectedArchitectureSkill);
+}
+
+function renderSkillRouting(
+  contents: string,
+  selectedLanguageSkills: SelectableLanguageSkill[],
+  selectedArchitectureSkill?: SelectableArchitectureSkill
+): string {
   if (!contents.includes('{{OPTIONAL_SKILL_ROUTING}}')) {
     return contents;
   }
 
-  const optionalRouting = selectedLanguageSkills.map((skill) => `- ${skill.routingInstruction}`).join('\n');
+  const optionalRouting = [...selectedLanguageSkills, ...(selectedArchitectureSkill ? [selectedArchitectureSkill] : [])]
+    .map((skill) => `- ${skill.routingInstruction}`)
+    .join('\n');
   return contents.replace('{{OPTIONAL_SKILL_ROUTING}}', optionalRouting);
 }
 
@@ -861,6 +904,31 @@ async function askForLanguageSkills(): Promise<SelectableLanguageSkill[]> {
   return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => selectedLanguageSkillIds.includes(skill.id));
 }
 
+async function askForArchitectureSkill(): Promise<SelectableArchitectureSkill | undefined> {
+  const selectedArchitectureSkillId = await select<ArchitectureSkillId | 'none'>({
+    message: 'Select an architecture style for this project.',
+    options: [
+      { value: 'none', label: 'None', hint: 'Do not install opinionated architecture guidance.' },
+      ...SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => ({
+        value: skill.id,
+        label: skill.name,
+        hint: skill.description,
+      })),
+    ],
+  });
+
+  if (isCancel(selectedArchitectureSkillId)) {
+    cancel('Initialization cancelled.');
+    process.exit(0);
+  }
+
+  if (selectedArchitectureSkillId === 'none') {
+    return undefined;
+  }
+
+  return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === selectedArchitectureSkillId);
+}
+
 async function askForNewLanguageSkills(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
   const selectedLanguageSkillIds = new Set(state.selectedLanguageSkills ?? []);
   const reviewedLanguageSkillIds = new Set(state.reviewedLanguageSkills ?? []);
@@ -906,6 +974,50 @@ async function askForNewLanguageSkills(state: EkkoState): Promise<{ state: EkkoS
   };
 }
 
+async function askForNewArchitectureSkill(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
+  if (state.selectedArchitectureSkill) {
+    return { state, changedState: false };
+  }
+
+  const reviewedArchitectureSkillIds = new Set(state.reviewedArchitectureSkills ?? []);
+  const unreviewedArchitectureSkills = SELECTABLE_ARCHITECTURE_SKILLS.filter((skill) => !reviewedArchitectureSkillIds.has(skill.id));
+
+  if (unreviewedArchitectureSkills.length === 0) {
+    return { state, changedState: false };
+  }
+
+  const selectedArchitectureSkillId = await select<ArchitectureSkillId | 'none'>({
+    message: 'Select an architecture style for this project.',
+    options: [
+      { value: 'none', label: 'None', hint: 'Do not install opinionated architecture guidance.' },
+      ...unreviewedArchitectureSkills.map((skill) => ({
+        value: skill.id,
+        label: skill.name,
+        hint: skill.description,
+      })),
+    ],
+  });
+
+  if (isCancel(selectedArchitectureSkillId)) {
+    cancel('Sync cancelled.');
+    process.exit(0);
+  }
+
+  for (const skill of unreviewedArchitectureSkills) {
+    reviewedArchitectureSkillIds.add(skill.id);
+  }
+
+  return {
+    state: {
+      ...state,
+      selectedArchitectureSkill: selectedArchitectureSkillId === 'none' ? undefined : selectedArchitectureSkillId,
+      reviewedArchitectureSkills: [...reviewedArchitectureSkillIds],
+      updatedAt: new Date().toISOString(),
+    },
+    changedState: true,
+  };
+}
+
 async function askForProjectOverview(): Promise<string> {
   const overview = await text({
     message: 'Tell me what this timeline is about.',
@@ -934,10 +1046,11 @@ type SkillTarget = {
 
 function getSelectedSkillTargetsForAgents(
   selectedAgents: SupportedAgent[],
-  selectedLanguageSkills: SelectableLanguageSkill[]
+  selectedLanguageSkills: SelectableLanguageSkill[],
+  selectedArchitectureSkill?: SelectableArchitectureSkill
 ): SkillTarget[] {
   const skillTargets = new Map<string, SkillTarget>();
-  const selectedSkills = [...MANDATORY_SKILLS, ...selectedLanguageSkills];
+  const selectedSkills = [...MANDATORY_SKILLS, ...selectedLanguageSkills, ...(selectedArchitectureSkill ? [selectedArchitectureSkill] : [])];
 
   for (const agent of selectedAgents) {
     for (const skill of selectedSkills) {
@@ -960,7 +1073,8 @@ function getSelectedSkillTargetsForAgents(
 function getWorkflowTargets(
   rootPath: string,
   selectedAgents: SupportedAgent[],
-  selectedLanguageSkills: SelectableLanguageSkill[] = []
+  selectedLanguageSkills: SelectableLanguageSkill[] = [],
+  selectedArchitectureSkill?: SelectableArchitectureSkill
 ): WorkflowTarget[] {
   return [
     {
@@ -975,7 +1089,7 @@ function getWorkflowTargets(
       templateRelativePath: agent.templateRelativePath,
       requiresProjectOverview: false,
     })),
-    ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills).map((skillTarget) => ({
+    ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills, selectedArchitectureSkill).map((skillTarget) => ({
       label: skillTarget.targetRelativePath,
       targetPath: path.join(rootPath, skillTarget.targetRelativePath),
       templateRelativePath: skillTarget.templateRelativePath,
@@ -988,10 +1102,12 @@ function renderMissingWorkflowFiles({
   missingTargets,
   overview,
   selectedLanguageSkills,
+  selectedArchitectureSkill,
 }: {
   missingTargets: WorkflowTarget[];
   overview?: string;
   selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedArchitectureSkill?: SelectableArchitectureSkill;
 }): FileToCreate[] {
   return missingTargets.map((target) => {
     let contents = readTemplate(target.templateRelativePath);
@@ -1004,7 +1120,7 @@ function renderMissingWorkflowFiles({
       contents = contents.replace('{{PROJECT_OVERVIEW}}', overview.trim());
     }
 
-    contents = renderSkillRouting(contents, selectedLanguageSkills);
+    contents = renderSkillRouting(contents, selectedLanguageSkills, selectedArchitectureSkill);
 
     return {
       label: target.label,
@@ -1019,12 +1135,14 @@ function writeEkkoState({
   statePath,
   selectedAgents,
   selectedLanguageSkills,
+  selectedArchitectureSkill,
   targets,
 }: {
   rootPath: string;
   statePath: string;
   selectedAgents: SupportedAgent[];
   selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedArchitectureSkill?: SelectableArchitectureSkill;
   targets: WorkflowTarget[];
 }): void {
   const previousState = readExistingState(statePath);
@@ -1038,6 +1156,8 @@ function writeEkkoState({
     selectedAgents: selectedAgents.map((agent) => agent.id),
     selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
     reviewedLanguageSkills: SELECTABLE_LANGUAGE_SKILLS.map((skill) => skill.id),
+    selectedArchitectureSkill: selectedArchitectureSkill?.id,
+    reviewedArchitectureSkills: SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => skill.id),
     managedFiles: Object.fromEntries(
       targets
         .filter((target) => fs.existsSync(target.targetPath))
@@ -1199,9 +1319,29 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
     }
   }
 
+  if (
+    state.selectedArchitectureSkill &&
+    !SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === state.selectedArchitectureSkill)
+  ) {
+    issues.push({
+      severity: 'warning',
+      message: `State references unsupported architecture skill: ${state.selectedArchitectureSkill}.`,
+    });
+  }
+
+  for (const reviewedArchitectureSkill of state.reviewedArchitectureSkills ?? []) {
+    if (!SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === reviewedArchitectureSkill)) {
+      issues.push({
+        severity: 'warning',
+        message: `State references unsupported reviewed architecture skill: ${reviewedArchitectureSkill}.`,
+      });
+    }
+  }
+
   const selectedAgents = SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
   const selectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
-  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills);
+  const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
+  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedArchitectureSkill);
   const reportedMissingPaths = new Set<string>();
 
   for (const target of expectedTargets) {
@@ -1323,6 +1463,9 @@ function isEkkoState(value: unknown): value is EkkoState {
       (Array.isArray(state.selectedLanguageSkills) && state.selectedLanguageSkills.every((skill) => typeof skill === 'string'))) &&
     (state.reviewedLanguageSkills === undefined ||
       (Array.isArray(state.reviewedLanguageSkills) && state.reviewedLanguageSkills.every((skill) => typeof skill === 'string'))) &&
+    (state.selectedArchitectureSkill === undefined || typeof state.selectedArchitectureSkill === 'string') &&
+    (state.reviewedArchitectureSkills === undefined ||
+      (Array.isArray(state.reviewedArchitectureSkills) && state.reviewedArchitectureSkills.every((skill) => typeof skill === 'string'))) &&
     !!state.managedFiles &&
     typeof state.managedFiles === 'object' &&
     Object.values(state.managedFiles).every(isManagedFileState)

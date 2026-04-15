@@ -1,11 +1,11 @@
 {
-  "templateVersion": "11",
+  "templateVersion": "12",
   "templates": {
     "AGENTS.md": {
-      "version": "6",
+      "version": "7",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Renders additional skill routing instructions in AGENTS.md based on selected language skills."
+        "Renders additional skill routing instructions in AGENTS.md based on selected language and architecture skills."
       ]
     },
     ".codex/config.toml": {
@@ -42,6 +42,13 @@
       "description": "Selectable TypeScript skill installed when TypeScript language support is selected.",
       "changes": [
         "Adds an optional TypeScript skill for projects that use .ts or .tsx files."
+      ]
+    },
+    "skills/architecture/ddd-hexagonal/SKILL.md": {
+      "version": "1",
+      "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
+      "changes": [
+        "Adds an optional DDD + Hexagonal Architecture skill for projects that want opinionated back-end architecture guidance."
       ]
     }
   }
