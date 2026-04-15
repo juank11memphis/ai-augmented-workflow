@@ -18,6 +18,13 @@ This repository is the home for establishing an AI-augmented development workflo
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
 
+## Communication style
+
+- Keep responses as short as practical while still being clear and useful.
+- Prefer concise, pragmatic answers over long explanations.
+- Ask focused questions when needed; otherwise make reasonable assumptions and proceed.
+- If the user wants more detail, they can ask follow-up questions.
+
 ## Skill routing
 
 - For any code-writing task, use `clean-code`.

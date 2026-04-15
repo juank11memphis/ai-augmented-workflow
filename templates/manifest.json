@@ -1,11 +1,11 @@
 {
-  "templateVersion": "12",
+  "templateVersion": "13",
   "templates": {
     "AGENTS.md": {
-      "version": "7",
+      "version": "8",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Renders additional skill routing instructions in AGENTS.md based on selected language and architecture skills."
+        "Adds concise communication guidance so agents keep answers short, clear, and pragmatic by default."
       ]
     },
     ".codex/config.toml": {
