@@ -1,5 +1,5 @@
 {
-  "templateVersion": "15",
+  "templateVersion": "16",
   "templates": {
     "AGENTS.md": {
       "version": "9",
@@ -52,10 +52,10 @@
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "1",
-      "description": "Selectable architecture skill for applying the Command Pattern to executable operations and handlers.",
+      "version": "2",
+      "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Adds an optional Command Pattern skill for projects that want simple, use-case-agnostic guidance for structuring actions, workflows, command handlers, dispatch, request processing, and executable tasks."
+        "Reframes Command Pattern guidance around command-oriented vertical slices, feature-local ports, thin entrypoints, and infrastructure adapters."
       ]
     }
   }

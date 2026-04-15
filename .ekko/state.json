@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "15",
+  "templateVersion": "16",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-15T18:43:35.070Z",
+  "updatedAt": "2026-04-15T20:30:53.474Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -54,8 +54,8 @@
     },
     ".agents/skills/command-pattern/SKILL.md": {
       "template": "skills/architecture/command-pattern/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "11fe41f29a7455085f8a1378d54a0e5feb6ffe9f395057a09698dd60de488671",
+      "templateVersion": "2",
+      "sha256": "076440fc00dd9862542672280e8398b793c7fe9e4dff4482462d946ec81d761d",
       "status": "managed"
     }
   },
