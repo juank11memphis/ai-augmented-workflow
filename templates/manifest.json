@@ -1,12 +1,12 @@
 {
-  "templateVersion": "6",
+  "templateVersion": "8",
   "templates": {
     "AGENTS.md": {
-      "version": "3",
+      "version": "4",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Added a session-start Ekko doctor preflight so agents check workflow health before making changes.",
-        "Explained how agents should guide users after ekko doctor reports healthy workflows, missing files, template updates, or unavailable Ekko."
+        "Clarified that ekko init is a one-time bootstrap command for adopting Ekko in a project.",
+        "Directed all post-init workflow maintenance, including missing files, newly managed templates, local edits, and template updates, to ekko sync."
       ]
     },
     ".codex/config.toml": {
@@ -31,11 +31,11 @@
       ]
     },
     "skills/clean-code/SKILL.md": {
-      "version": "3",
-      "description": "Mandatory clean-code skill copied into each selected agent's native or documented workspace skills directory.",
+      "version": "4",
+      "description": "Mandatory clean-code skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds Gemini support by copying the shared clean-code template to .agents/skills/clean-code/SKILL.md when Gemini is selected.",
-        "Keeps Codex and Claude support on their native skill discovery paths while using Gemini's documented .agents/skills workspace alias."
+        "Installs the clean-code skill once at .agents/skills/clean-code/SKILL.md for any selected agent instead of duplicating per-agent copies.",
+        "Uses the shared .agents/skills workspace path to test common skill discovery across Codex, Gemini, and Claude."
       ]
     }
   }

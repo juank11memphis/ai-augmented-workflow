@@ -87,9 +87,9 @@ const MANDATORY_SKILLS: SkillTemplate[] = [
   {
     templateRelativePath: 'skills/clean-code/SKILL.md',
     targetRelativePathsByAgent: {
-      codex: '.codex/skills/clean-code/SKILL.md',
+      codex: '.agents/skills/clean-code/SKILL.md',
       gemini: '.agents/skills/clean-code/SKILL.md',
-      claude: '.claude/skills/clean-code/SKILL.md',
+      claude: '.agents/skills/clean-code/SKILL.md',
     },
   },
 ];
@@ -127,7 +127,7 @@ program
 
 program
   .command('init')
-  .description('Safely initialize or repair missing AI workflow files')
+  .description('Initialize Ekko workflow files once for a project')
   .action(async () => {
     await initProject();
   });
@@ -153,67 +153,44 @@ program.parseAsync(process.argv).catch((error: unknown) => {
 
 async function initProject(): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Synchronizing workflow loop'));
+  intro(chalk.cyan('Initializing workflow loop'));
 
   const rootPath = process.cwd();
   const statePath = path.join(rootPath, STATE_RELATIVE_PATH);
-  const existingState = readExistingState(statePath);
-  const allTargets = getWorkflowTargets(rootPath, SUPPORTED_AGENTS);
 
-  if (allTargets.every((target) => fs.existsSync(target.targetPath))) {
-    const allAgentsSelected = existingState
-      ? haveSameSelectedAgents(existingState.selectedAgents, SUPPORTED_AGENTS)
-      : false;
-    const existingIssues = existingState ? diagnoseState({ rootPath, state: existingState }) : [];
+  if (fs.existsSync(statePath)) {
+    const stateResult = readStateForDoctor(statePath);
 
-    if (existingState && allAgentsSelected && existingIssues.length === 0) {
-      log.success('The workflow loop is already fully stable. No changes needed.');
-      for (const target of allTargets) {
-        log.info(`${target.label} already exists.`);
-      }
-      log.info(`${STATE_RELATIVE_PATH} already exists.`);
-      outro(chalk.green('Workflow loop stable.'));
+    if (stateResult.ok) {
+      log.success('This project is already initialized with Ekko.');
+      log.info('Run `ekko doctor` for a read-only health check.');
+      log.info('Run `ekko sync` to review template updates, missing files, or workflow changes.');
+      outro(chalk.green('Workflow loop already initialized.'));
       return;
     }
 
-    log.message('I found all supported workflow files. I will refresh the loop metadata without changing them.');
-    logInitMetadataNotes({ statePath, existingState, targets: allTargets });
-    writeEkkoState({ rootPath, statePath, selectedAgents: SUPPORTED_AGENTS, targets: allTargets });
-    log.success(`Updated ${STATE_RELATIVE_PATH}`);
-    outro(chalk.green('Workflow loop stabilized.'));
+    log.error(stateResult.message);
+    log.info(`${STATE_RELATIVE_PATH} already exists, so I will not overwrite it from init.`);
+    log.info('Fix or restore the state file before running `ekko doctor` or `ekko sync`.');
+    outro(chalk.yellow('Workflow loop needs attention.'));
+    process.exitCode = 1;
     return;
   }
 
   const selectedAgents = await askForSupportedAgents();
   const targets = getWorkflowTargets(rootPath, selectedAgents);
   const missingTargets = targets.filter((target) => !fs.existsSync(target.targetPath));
-  const metadataIssues = getInitMetadataIssues({ existingState, targets });
-  const shouldWriteState =
-    missingTargets.length > 0 ||
-    !existingState ||
-    metadataIssues.length > 0 ||
-    !haveSameSelectedAgents(existingState.selectedAgents, selectedAgents);
 
-  if (!shouldWriteState) {
-    log.success('The selected workflow loop is already stable. No changes needed.');
-    for (const target of targets) {
-      log.info(`${target.label} already exists.`);
-    }
-    log.info(`${STATE_RELATIVE_PATH} already exists.`);
-    outro(chalk.green('Workflow loop stable.'));
-    return;
-  }
-
-  log.message('I will tune this project’s selected AI workflow files.');
+  log.message('I will create this project’s initial AI workflow files.');
   for (const target of targets) {
     if (fs.existsSync(target.targetPath)) {
-      log.info(`${target.label} already exists. I will keep it unchanged.`);
+      log.info(`${target.label} already exists. I will keep it unchanged and record it in ${STATE_RELATIVE_PATH}.`);
     } else {
       log.info(`${target.label} is missing. I will create it.`);
     }
   }
 
-  logInitMetadataNotes({ statePath, existingState, targets });
+  log.info(`${STATE_RELATIVE_PATH} is missing. I will create it.`);
 
   const shouldAskForOverview = missingTargets.some((target) => target.requiresProjectOverview);
   const overview = shouldAskForOverview ? await askForProjectOverview() : undefined;
@@ -226,9 +203,9 @@ async function initProject(): Promise<void> {
   }
 
   writeEkkoState({ rootPath, statePath, selectedAgents, targets });
-  log.success(`Updated ${STATE_RELATIVE_PATH}`);
+  log.success(`Created ${STATE_RELATIVE_PATH}`);
 
-  outro(chalk.green('Workflow loop stabilized.'));
+  outro(chalk.green('Workflow loop initialized.'));
 }
 
 async function doctorProject(): Promise<void> {
@@ -241,7 +218,7 @@ async function doctorProject(): Promise<void> {
 
   if (!stateResult.ok) {
     log.error(stateResult.message);
-    log.info('Run `ekko init` to create or repair Ekko workflow metadata.');
+    log.info('Run `ekko init` once to create Ekko workflow metadata.');
     outro(chalk.yellow('Workflow loop needs attention.'));
     process.exitCode = 1;
     return;
@@ -273,7 +250,7 @@ async function doctorProject(): Promise<void> {
     }
   }
 
-  log.info('Run `ekko init` to repair missing files or metadata. Run `ekko sync` to review template updates.');
+  log.info('Run `ekko sync` to repair missing managed files, adopt new templates, or review template updates.');
   outro(chalk.yellow('Workflow loop needs attention.'));
   process.exitCode = 1;
 }
@@ -298,12 +275,24 @@ async function syncProject(): Promise<void> {
   const manifest = readTemplateManifest();
   const previews = getSyncPreviews({ rootPath, state, manifest });
   const actionablePreviews = previews.filter((preview) =>
-    ['missing', 'modified', 'update-available', 'modified-with-update', 'unknown-template'].includes(preview.status)
+    ['new-template', 'missing', 'modified', 'update-available', 'modified-with-update', 'unknown-template'].includes(preview.status)
   );
 
   if (actionablePreviews.length === 0) {
     log.success('No template updates or local drift detected.');
-    log.info('No files changed.');
+
+    if (state.templateVersion !== manifest.templateVersion) {
+      state = {
+        ...state,
+        templateVersion: manifest.templateVersion,
+        updatedAt: new Date().toISOString(),
+      };
+      writeStateFile(statePath, state);
+      log.success(`Updated ${STATE_RELATIVE_PATH}`);
+    } else {
+      log.info('No files changed.');
+    }
+
     outro(chalk.green('Workflow loop already in sync.'));
     return;
   }
@@ -316,7 +305,7 @@ async function syncProject(): Promise<void> {
   for (const preview of previews) {
     logSyncPreview(preview);
 
-    if (!['modified', 'update-available', 'modified-with-update'].includes(preview.status)) {
+    if (!['new-template', 'missing', 'modified', 'update-available', 'modified-with-update'].includes(preview.status)) {
       continue;
     }
 
@@ -347,11 +336,12 @@ async function syncProject(): Promise<void> {
 
 type SyncPreview = {
   relativePath: string;
-  status: 'up-to-date' | 'missing' | 'modified' | 'update-available' | 'modified-with-update' | 'unknown-template' | 'unmanaged';
+  status: 'up-to-date' | 'new-template' | 'missing' | 'modified' | 'update-available' | 'modified-with-update' | 'unknown-template' | 'unmanaged';
   managedFile: ManagedFileState;
   recordedTemplateVersion?: string;
   currentTemplateVersion?: string;
   changes: string[];
+  hasLocalFile?: boolean;
 };
 
 type SyncAction =
@@ -370,12 +360,12 @@ function getSyncPreviews({
   state: EkkoState;
   manifest: TemplateManifest;
 }): SyncPreview[] {
-  return Object.entries(state.managedFiles).map(([relativePath, managedFile]) => {
+  const previews: SyncPreview[] = Object.entries(state.managedFiles).map(([relativePath, managedFile]) => {
     if (managedFile.status === 'unmanaged') {
       return {
         relativePath,
         managedFile,
-        status: 'unmanaged',
+        status: 'unmanaged' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         changes: [],
       };
@@ -387,7 +377,7 @@ function getSyncPreviews({
       return {
         relativePath,
         managedFile,
-        status: 'unknown-template',
+        status: 'unknown-template' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         changes: [],
       };
@@ -404,10 +394,11 @@ function getSyncPreviews({
       return {
         relativePath,
         managedFile,
-        status: 'missing',
+        status: 'missing' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         currentTemplateVersion: template.version,
         changes: template.changes,
+        hasLocalFile,
       };
     }
 
@@ -415,10 +406,11 @@ function getSyncPreviews({
       return {
         relativePath,
         managedFile,
-        status: 'modified-with-update',
+        status: 'modified-with-update' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         currentTemplateVersion: template.version,
         changes: template.changes,
+        hasLocalFile,
       };
     }
 
@@ -426,10 +418,11 @@ function getSyncPreviews({
       return {
         relativePath,
         managedFile,
-        status: 'modified',
+        status: 'modified' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         currentTemplateVersion: template.version,
         changes: [],
+        hasLocalFile,
       };
     }
 
@@ -437,22 +430,68 @@ function getSyncPreviews({
       return {
         relativePath,
         managedFile,
-        status: 'update-available',
+        status: 'update-available' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         currentTemplateVersion: template.version,
         changes: template.changes,
+        hasLocalFile,
       };
     }
 
     return {
       relativePath,
       managedFile,
-      status: 'up-to-date',
+      status: 'up-to-date' as const,
       recordedTemplateVersion: managedFile.templateVersion,
       currentTemplateVersion: template.version,
       changes: [],
+      hasLocalFile,
     };
   });
+
+  const selectedAgents = SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
+  const expectedTargets = getWorkflowTargets(rootPath, selectedAgents);
+
+  for (const target of expectedTargets) {
+    const relativePath = path.relative(rootPath, target.targetPath);
+
+    if (state.managedFiles[relativePath]) {
+      continue;
+    }
+
+    const template = manifest.templates[target.templateRelativePath];
+
+    if (!template) {
+      previews.push({
+        relativePath,
+        managedFile: {
+          template: target.templateRelativePath,
+          templateVersion: 'unknown',
+          sha256: '',
+        },
+        status: 'unknown-template',
+        changes: [],
+        hasLocalFile: fs.existsSync(target.targetPath),
+      });
+      continue;
+    }
+
+    previews.push({
+      relativePath,
+      managedFile: {
+        template: target.templateRelativePath,
+        templateVersion: template.version,
+        sha256: '',
+        status: 'managed',
+      },
+      status: 'new-template',
+      currentTemplateVersion: template.version,
+      changes: template.changes,
+      hasLocalFile: fs.existsSync(target.targetPath),
+    });
+  }
+
+  return previews;
 }
 
 function logSyncPreview(preview: SyncPreview): void {
@@ -460,9 +499,18 @@ function logSyncPreview(preview: SyncPreview): void {
     case 'up-to-date':
       log.success(`${preview.relativePath} is up to date.`);
       return;
+    case 'new-template':
+      if (preview.hasLocalFile) {
+        log.warn(`${preview.relativePath} is expected but is not recorded in ${STATE_RELATIVE_PATH}.`);
+        log.info('I will not overwrite it automatically. You can start managing it or write the latest template beside it.');
+      } else {
+        log.warn(`${preview.relativePath} is a new Ekko-managed workflow file.`);
+      }
+      logTemplateChanges(preview);
+      return;
     case 'missing':
       log.error(`${preview.relativePath} is missing.`);
-      log.info('Run `ekko init` to recreate missing workflow files before syncing.');
+      log.info('You can recreate it from the latest template during this sync.');
       return;
     case 'modified':
       log.warn(`${preview.relativePath} has local edits.`);
@@ -506,6 +554,39 @@ async function askForSyncAction(preview: SyncPreview): Promise<SyncAction> {
         { value: 'apply-update', label: 'Apply update', hint: 'Safe because no local edits were detected.' },
         { value: 'skip', label: 'Skip for now' },
       ],
+    });
+
+    return handleSyncActionCancel(action);
+  }
+
+  if (preview.status === 'missing') {
+    const action = await select<SyncAction>({
+      message: `What should I do with ${preview.relativePath}?`,
+      options: [
+        { value: 'apply-update', label: 'Recreate file', hint: 'Write the latest template and update Ekko state.' },
+        { value: 'stop-managing', label: 'Stop managing this file', hint: 'Opt this file out of Ekko missing-file warnings.' },
+        { value: 'skip', label: 'Skip for now' },
+      ],
+    });
+
+    return handleSyncActionCancel(action);
+  }
+
+  if (preview.status === 'new-template') {
+    const options: Array<{ value: SyncAction; label: string; hint?: string }> = preview.hasLocalFile
+      ? [
+          { value: 'mark-reviewed', label: 'Start managing existing file', hint: 'Keep the file unchanged and record it in Ekko state.' },
+          { value: 'write-side-template', label: 'Write latest template beside my file', hint: 'Create a reference copy under .ekko/sync/.' },
+          { value: 'skip', label: 'Skip for now' },
+        ]
+      : [
+          { value: 'apply-update', label: 'Create file', hint: 'Write the latest template and record it in Ekko state.' },
+          { value: 'skip', label: 'Skip for now' },
+        ];
+
+    const action = await select<SyncAction>({
+      message: `What should I do with ${preview.relativePath}?`,
+      options,
     });
 
     return handleSyncActionCancel(action);
@@ -556,13 +637,14 @@ function applySyncAction({
   action: SyncAction;
 }): { state: EkkoState; changedFiles: boolean; changedState: boolean } {
   const nextState = cloneState(state);
-  const managedFile = nextState.managedFiles[preview.relativePath];
+  const managedFile = nextState.managedFiles[preview.relativePath] ?? preview.managedFile;
   const targetPath = path.join(rootPath, preview.relativePath);
   const currentTemplateVersion = preview.currentTemplateVersion ?? getTemplateVersion(manifest, managedFile.template);
 
   switch (action) {
     case 'apply-update': {
       const contents = renderTemplateForSync({ templateRelativePath: managedFile.template, currentPath: targetPath });
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, contents, 'utf8');
       nextState.templateVersion = manifest.templateVersion;
       nextState.updatedAt = new Date().toISOString();
@@ -736,22 +818,24 @@ type SkillTarget = {
 };
 
 function getSkillTargetsForAgents(selectedAgents: SupportedAgent[]): SkillTarget[] {
-  return selectedAgents.flatMap((agent) =>
-    MANDATORY_SKILLS.flatMap((skill) => {
+  const skillTargets = new Map<string, SkillTarget>();
+
+  for (const agent of selectedAgents) {
+    for (const skill of MANDATORY_SKILLS) {
       const targetRelativePath = skill.targetRelativePathsByAgent[agent.id];
 
       if (!targetRelativePath) {
-        return [];
+        continue;
       }
 
-      return [
-        {
-          targetRelativePath,
-          templateRelativePath: skill.templateRelativePath,
-        },
-      ];
-    })
-  );
+      skillTargets.set(targetRelativePath, {
+        targetRelativePath,
+        templateRelativePath: skill.templateRelativePath,
+      });
+    }
+  }
+
+  return [...skillTargets.values()];
 }
 
 function getWorkflowTargets(rootPath: string, selectedAgents: SupportedAgent[]): WorkflowTarget[] {
@@ -983,7 +1067,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
       issues.push({
         severity: 'error',
         message: `${relativePath} is missing.`,
-        hint: 'Run `ekko init` to recreate missing workflow files.',
+        hint: 'Run `ekko sync` to recreate missing managed workflow files.',
       });
       continue;
     }
@@ -992,7 +1076,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
       issues.push({
         severity: 'warning',
         message: `${relativePath} exists but is not recorded in ${STATE_RELATIVE_PATH}.`,
-        hint: 'Run `ekko init` to refresh Ekko metadata.',
+        hint: 'Run `ekko sync` to review and record this workflow file.',
       });
     }
   }
@@ -1009,7 +1093,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
         issues.push({
           severity: 'error',
           message: `${relativePath} is recorded in ${STATE_RELATIVE_PATH} but is missing.`,
-          hint: 'Run `ekko init` to recreate missing workflow files.',
+          hint: 'Run `ekko sync` to recreate missing managed workflow files.',
         });
       }
       continue;
