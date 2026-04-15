@@ -210,6 +210,15 @@ program
     await syncProject();
   });
 
+program
+  .command('manage')
+  .description('Manage Ekko-tracked workflow files')
+  .command('stop <file>')
+  .description('Stop managing an Ekko-tracked workflow file')
+  .action(async (file: string) => {
+    await stopManagingFile(file);
+  });
+
 program.parseAsync(process.argv).catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
@@ -402,6 +411,72 @@ async function syncProject(): Promise<void> {
   outro(chalk.green('Workflow sync complete.'));
 }
 
+async function stopManagingFile(file: string): Promise<void> {
+  await renderIntro();
+  intro(chalk.cyan('Stopping file management'));
+
+  const rootPath = process.cwd();
+  const statePath = path.join(rootPath, STATE_RELATIVE_PATH);
+  const stateResult = readStateForDoctor(statePath);
+
+  if (!stateResult.ok) {
+    log.error(stateResult.message);
+    log.info('Run `ekko init` before managing workflow file state.');
+    outro(chalk.yellow('File management unavailable.'));
+    process.exitCode = 1;
+    return;
+  }
+
+  const managedPath = resolveManagedFilePath(rootPath, file);
+  const managedFile = stateResult.state.managedFiles[managedPath.relativePath];
+
+  if (!managedFile) {
+    log.error(`${managedPath.relativePath} is not recorded in ${STATE_RELATIVE_PATH}.`);
+    log.info('Run `ekko doctor` to see currently managed workflow files.');
+    outro(chalk.yellow('No file management changed.'));
+    process.exitCode = 1;
+    return;
+  }
+
+  const nextState = cloneState(stateResult.state);
+  const currentHash = readFileHashIfPresent(managedPath.absolutePath);
+
+  nextState.managedFiles[managedPath.relativePath] = removeUndefinedFields({
+    ...managedFile,
+    sha256: currentHash ?? managedFile.sha256,
+    status: 'unmanaged',
+    reason: 'Stopped by `ekko manage stop`.',
+  });
+  clearSelectedSkillForStoppedFile(nextState, managedFile);
+  nextState.updatedAt = new Date().toISOString();
+  writeStateFile(statePath, nextState);
+
+  if (managedFile.status === 'unmanaged') {
+    log.info(`${managedPath.relativePath} was already unmanaged.`);
+  } else {
+    log.success(`Stopped managing ${managedPath.relativePath}.`);
+  }
+
+  await askToDeleteStoppedFile(managedPath, managedFile);
+  outro(chalk.green('File management updated.'));
+}
+
+function clearSelectedSkillForStoppedFile(state: EkkoState, managedFile: ManagedFileState): void {
+  const languageSkill = SELECTABLE_LANGUAGE_SKILLS.find((skill) => skill.templateRelativePath === managedFile.template);
+
+  if (languageSkill && state.selectedLanguageSkills?.includes(languageSkill.id)) {
+    state.selectedLanguageSkills = state.selectedLanguageSkills.filter((skillId) => skillId !== languageSkill.id);
+    log.info(`Removed ${languageSkill.id} from selected language skills.`);
+  }
+
+  const architectureSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.templateRelativePath === managedFile.template);
+
+  if (architectureSkill && state.selectedArchitectureSkill === architectureSkill.id) {
+    delete state.selectedArchitectureSkill;
+    log.info(`Removed ${architectureSkill.id} as the selected architecture skill.`);
+  }
+}
+
 type SyncPreview = {
   relativePath: string;
   status: 'up-to-date' | 'new-template' | 'missing' | 'modified' | 'update-available' | 'modified-with-update' | 'unknown-template' | 'unmanaged';
@@ -428,6 +503,8 @@ function getSyncPreviews({
   state: EkkoState;
   manifest: TemplateManifest;
 }): SyncPreview[] {
+  const selectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
+  const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
   const previews: SyncPreview[] = Object.entries(state.managedFiles).map(([relativePath, managedFile]) => {
     if (managedFile.status === 'unmanaged') {
       return {
@@ -457,6 +534,15 @@ function getSyncPreviews({
       ? sha256(fs.readFileSync(targetPath, 'utf8')) !== managedFile.sha256
       : false;
     const hasTemplateUpdate = managedFile.templateVersion !== template.version && !hasReviewedTemplateVersion(managedFile, template.version);
+    const hasSelectionUpdate = hasRenderedSelectionUpdate({
+      relativePath,
+      currentPath: targetPath,
+      managedFile,
+      selectedLanguageSkills,
+      selectedArchitectureSkill,
+    });
+    const hasUpdate = hasTemplateUpdate || hasSelectionUpdate;
+    const changes = hasTemplateUpdate ? template.changes : ['Refreshes generated skill routing for the current selected skills.'];
 
     if (!hasLocalFile) {
       return {
@@ -470,14 +556,14 @@ function getSyncPreviews({
       };
     }
 
-    if (hasLocalEdits && hasTemplateUpdate) {
+    if (hasLocalEdits && hasUpdate) {
       return {
         relativePath,
         managedFile,
         status: 'modified-with-update' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         currentTemplateVersion: template.version,
-        changes: template.changes,
+        changes,
         hasLocalFile,
       };
     }
@@ -494,14 +580,14 @@ function getSyncPreviews({
       };
     }
 
-    if (hasTemplateUpdate) {
+    if (hasUpdate) {
       return {
         relativePath,
         managedFile,
         status: 'update-available' as const,
         recordedTemplateVersion: managedFile.templateVersion,
         currentTemplateVersion: template.version,
-        changes: template.changes,
+        changes,
         hasLocalFile,
       };
     }
@@ -518,8 +604,6 @@ function getSyncPreviews({
   });
 
   const selectedAgents = SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
-  const selectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
-  const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
   const expectedTargets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedArchitectureSkill);
 
   for (const target of expectedTargets) {
@@ -564,6 +648,33 @@ function getSyncPreviews({
   return previews;
 }
 
+function hasRenderedSelectionUpdate({
+  relativePath,
+  currentPath,
+  managedFile,
+  selectedLanguageSkills,
+  selectedArchitectureSkill,
+}: {
+  relativePath: string;
+  currentPath: string;
+  managedFile: ManagedFileState;
+  selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedArchitectureSkill?: SelectableArchitectureSkill;
+}): boolean {
+  if (relativePath !== 'AGENTS.md') {
+    return false;
+  }
+
+  const renderedContents = renderTemplateForSync({
+    templateRelativePath: managedFile.template,
+    currentPath,
+    selectedLanguageSkills,
+    selectedArchitectureSkill,
+  });
+
+  return sha256(renderedContents) !== managedFile.sha256;
+}
+
 function logSyncPreview(preview: SyncPreview): void {
   switch (preview.status) {
     case 'up-to-date':
@@ -587,11 +698,19 @@ function logSyncPreview(preview: SyncPreview): void {
       log.info('I will not overwrite it automatically. No newer template changes were found.');
       return;
     case 'update-available':
-      log.warn(`${preview.relativePath} has a newer template available (${preview.recordedTemplateVersion} → ${preview.currentTemplateVersion}).`);
+      if (preview.recordedTemplateVersion === preview.currentTemplateVersion) {
+        log.warn(`${preview.relativePath} has generated content changes from updated project selections.`);
+      } else {
+        log.warn(`${preview.relativePath} has a newer template available (${preview.recordedTemplateVersion} → ${preview.currentTemplateVersion}).`);
+      }
       logTemplateChanges(preview);
       return;
     case 'modified-with-update':
-      log.warn(`${preview.relativePath} has local edits and a newer template is available (${preview.recordedTemplateVersion} → ${preview.currentTemplateVersion}).`);
+      if (preview.recordedTemplateVersion === preview.currentTemplateVersion) {
+        log.warn(`${preview.relativePath} has local edits and generated content changes from updated project selections.`);
+      } else {
+        log.warn(`${preview.relativePath} has local edits and a newer template is available (${preview.recordedTemplateVersion} → ${preview.currentTemplateVersion}).`);
+      }
       log.info('I will not overwrite it automatically. Review the template changes below and decide what to adopt.');
       logTemplateChanges(preview);
       return;
@@ -856,6 +975,90 @@ function writeStateFile(statePath: string, state: EkkoState): void {
   fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 }
 
+type ManagedFilePath = {
+  relativePath: string;
+  absolutePath: string;
+};
+
+function resolveManagedFilePath(rootPath: string, file: string): ManagedFilePath {
+  const absolutePath = path.isAbsolute(file) ? path.resolve(file) : path.resolve(rootPath, file);
+  const relativePath = path.relative(rootPath, absolutePath);
+
+  if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error(`Managed file path must be inside this project: ${file}`);
+  }
+
+  return {
+    absolutePath,
+    relativePath: relativePath.split(path.sep).join('/'),
+  };
+}
+
+function readFileHashIfPresent(filePath: string): string | undefined {
+  if (!fs.existsSync(filePath) || !fs.lstatSync(filePath).isFile()) {
+    return undefined;
+  }
+
+  return sha256(fs.readFileSync(filePath, 'utf8'));
+}
+
+async function askToDeleteStoppedFile(managedPath: ManagedFilePath, managedFile: ManagedFileState): Promise<void> {
+  if (!fs.existsSync(managedPath.absolutePath)) {
+    log.info(`${managedPath.relativePath} does not exist locally, so there is nothing to delete.`);
+    return;
+  }
+
+  if (!fs.lstatSync(managedPath.absolutePath).isFile()) {
+    log.warn(`${managedPath.relativePath} is not a regular file. I will not delete it.`);
+    return;
+  }
+
+  const deleteAction = await select<'keep' | 'delete'>({
+    message: `Do you also want to delete ${managedPath.relativePath} for good?`,
+    options: [
+      { value: 'keep', label: 'Keep file', hint: 'Recommended. Leave the local file unchanged.' },
+      { value: 'delete', label: 'Delete file', hint: 'Permanently remove this file from the project.' },
+    ],
+  });
+
+  if (isCancel(deleteAction)) {
+    cancel('Delete prompt cancelled. The file is no longer managed, but it was not deleted.');
+    process.exit(0);
+  }
+
+  if (deleteAction === 'keep') {
+    log.info(`Kept ${managedPath.relativePath}.`);
+    return;
+  }
+
+  if (hasLocalEdits(managedPath.absolutePath, managedFile)) {
+    const confirmDelete = await select<'keep' | 'delete'>({
+      message: `${managedPath.relativePath} differs from the last Ekko-recorded hash. Delete it anyway?`,
+      options: [
+        { value: 'keep', label: 'Keep file', hint: 'Recommended. Preserve local edits.' },
+        { value: 'delete', label: 'Delete anyway', hint: 'Permanently remove the edited file.' },
+      ],
+    });
+
+    if (isCancel(confirmDelete)) {
+      cancel('Delete prompt cancelled. The file is no longer managed, but it was not deleted.');
+      process.exit(0);
+    }
+
+    if (confirmDelete === 'keep') {
+      log.info(`Kept ${managedPath.relativePath}.`);
+      return;
+    }
+  }
+
+  fs.unlinkSync(managedPath.absolutePath);
+  log.success(`Deleted ${managedPath.relativePath}.`);
+}
+
+function hasLocalEdits(filePath: string, managedFile: ManagedFileState): boolean {
+  return readFileHashIfPresent(filePath) !== managedFile.sha256;
+}
+
 async function renderIntro(): Promise<void> {
   console.log(gradient(['#39ff14', '#00e5ff', '#9b5de5']).multiline('⧖  E K K O  ⧖'));
 
@@ -944,19 +1147,16 @@ async function askForArchitectureSkill(): Promise<SelectableArchitectureSkill | 
 
 async function askForNewLanguageSkills(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
   const selectedLanguageSkillIds = new Set(state.selectedLanguageSkills ?? []);
-  const reviewedLanguageSkillIds = new Set(state.reviewedLanguageSkills ?? []);
-  const unreviewedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter(
-    (skill) => !selectedLanguageSkillIds.has(skill.id) && !reviewedLanguageSkillIds.has(skill.id)
-  );
+  const unselectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => !selectedLanguageSkillIds.has(skill.id));
 
-  if (unreviewedLanguageSkills.length === 0) {
+  if (unselectedLanguageSkills.length === 0) {
     return { state, changedState: false };
   }
 
   const selectedNewLanguageSkillIds = await multiselect<LanguageSkillId>({
     message: 'Select any new languages this project should support.',
     required: false,
-    options: unreviewedLanguageSkills.map((skill) => ({
+    options: unselectedLanguageSkills.map((skill) => ({
       value: skill.id,
       label: skill.name,
       hint: skill.description,
@@ -968,19 +1168,18 @@ async function askForNewLanguageSkills(state: EkkoState): Promise<{ state: EkkoS
     process.exit(0);
   }
 
-  for (const skill of unreviewedLanguageSkills) {
-    reviewedLanguageSkillIds.add(skill.id);
-  }
-
   for (const selectedSkillId of selectedNewLanguageSkillIds) {
     selectedLanguageSkillIds.add(selectedSkillId);
+  }
+
+  if (selectedNewLanguageSkillIds.length === 0) {
+    return { state, changedState: false };
   }
 
   return {
     state: {
       ...state,
       selectedLanguageSkills: [...selectedLanguageSkillIds],
-      reviewedLanguageSkills: [...reviewedLanguageSkillIds],
       updatedAt: new Date().toISOString(),
     },
     changedState: true,
@@ -992,18 +1191,11 @@ async function askForNewArchitectureSkill(state: EkkoState): Promise<{ state: Ek
     return { state, changedState: false };
   }
 
-  const reviewedArchitectureSkillIds = new Set(state.reviewedArchitectureSkills ?? []);
-  const unreviewedArchitectureSkills = SELECTABLE_ARCHITECTURE_SKILLS.filter((skill) => !reviewedArchitectureSkillIds.has(skill.id));
-
-  if (unreviewedArchitectureSkills.length === 0) {
-    return { state, changedState: false };
-  }
-
   const selectedArchitectureSkillId = await select<ArchitectureSkillId | 'none'>({
     message: 'Select an architecture style for this project.',
     options: [
       { value: 'none', label: 'None', hint: 'Do not install opinionated architecture guidance.' },
-      ...unreviewedArchitectureSkills.map((skill) => ({
+      ...SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => ({
         value: skill.id,
         label: skill.name,
         hint: skill.description,
@@ -1016,18 +1208,16 @@ async function askForNewArchitectureSkill(state: EkkoState): Promise<{ state: Ek
     process.exit(0);
   }
 
-  for (const skill of unreviewedArchitectureSkills) {
-    reviewedArchitectureSkillIds.add(skill.id);
-  }
-
   return {
-    state: {
-      ...state,
-      selectedArchitectureSkill: selectedArchitectureSkillId === 'none' ? undefined : selectedArchitectureSkillId,
-      reviewedArchitectureSkills: [...reviewedArchitectureSkillIds],
-      updatedAt: new Date().toISOString(),
-    },
-    changedState: true,
+    state:
+      selectedArchitectureSkillId === 'none'
+        ? state
+        : {
+            ...state,
+            selectedArchitectureSkill: selectedArchitectureSkillId,
+            updatedAt: new Date().toISOString(),
+          },
+    changedState: selectedArchitectureSkillId !== 'none',
   };
 }
 
@@ -1168,9 +1358,7 @@ function writeEkkoState({
     updatedAt: now,
     selectedAgents: selectedAgents.map((agent) => agent.id),
     selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
-    reviewedLanguageSkills: SELECTABLE_LANGUAGE_SKILLS.map((skill) => skill.id),
     selectedArchitectureSkill: selectedArchitectureSkill?.id,
-    reviewedArchitectureSkills: SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => skill.id),
     managedFiles: Object.fromEntries(
       targets
         .filter((target) => fs.existsSync(target.targetPath))
