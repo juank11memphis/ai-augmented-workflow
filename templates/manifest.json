@@ -1,5 +1,5 @@
 {
-  "templateVersion": "3",
+  "templateVersion": "4",
   "templates": {
     "AGENTS.md": {
       "version": "3",
@@ -28,6 +28,14 @@
       "description": "Claude instructions delegating to AGENTS.md.",
       "changes": [
         "Delegates Claude project instructions to AGENTS.md as the source of truth."
+      ]
+    },
+    "skills/clean-code/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory Codex clean-code skill with baseline implementation-quality guidance.",
+      "changes": [
+        "Added the mandatory clean-code skill so ekko init installs baseline code-quality guidance for Codex users.",
+        "Tracks the clean-code skill as an Ekko-managed template so ekko doctor and ekko sync can report drift or updates."
       ]
     }
   }

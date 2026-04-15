@@ -25,6 +25,11 @@ type SupportedAgent = {
   templateRelativePath: string;
 };
 
+type SkillTemplate = {
+  targetRelativePath: string;
+  templateRelativePath: string;
+};
+
 type FileToCreate = {
   label: string;
   targetPath: string;
@@ -77,6 +82,13 @@ type TemplateManifestEntry = {
 
 const EKKO_VERSION = '0.1.0';
 const STATE_RELATIVE_PATH = '.ekko/state.json';
+
+const MANDATORY_SKILLS: SkillTemplate[] = [
+  {
+    targetRelativePath: '.codex/skills/clean-code/SKILL.md',
+    templateRelativePath: 'skills/clean-code/SKILL.md',
+  },
+];
 
 const SUPPORTED_AGENTS: SupportedAgent[] = [
   {
@@ -726,6 +738,12 @@ function getWorkflowTargets(rootPath: string, selectedAgents: SupportedAgent[]):
       label: agent.targetRelativePath,
       targetPath: path.join(rootPath, agent.targetRelativePath),
       templateRelativePath: agent.templateRelativePath,
+      requiresProjectOverview: false,
+    })),
+    ...MANDATORY_SKILLS.map((skill) => ({
+      label: skill.targetRelativePath,
+      targetPath: path.join(rootPath, skill.targetRelativePath),
+      templateRelativePath: skill.templateRelativePath,
       requiresProjectOverview: false,
     })),
   ];
