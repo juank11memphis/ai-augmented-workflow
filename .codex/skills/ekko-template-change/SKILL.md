@@ -22,7 +22,7 @@ Use this skill whenever changing files under `templates/`, including:
 3. Update `templates/manifest.json` in the same change.
 4. Bump the global `templateVersion` if any template changed.
 5. Bump each changed template's own `version`.
-6. Add user-facing `changes` entries for each changed template.
+6. Replace each changed template's `changes` entries with user-facing notes for the current template version only.
 7. Run `pnpm verify`.
 8. When practical, test the lifecycle in a temporary project:
    - `ekko init`
@@ -35,6 +35,8 @@ Use this skill whenever changing files under `templates/`, including:
 - The global `templateVersion` represents the version of the full template set.
 - Each template's `version` represents the version of that specific template file.
 - The `changes` entries are shown by `ekko sync`, so write them for users.
+- Treat `changes` as release notes for the template's current version, not as an accumulated changelog.
+- When bumping a template version, remove older-version change notes from that template and keep only the changes introduced by the new version.
 
 ## Change note style
 

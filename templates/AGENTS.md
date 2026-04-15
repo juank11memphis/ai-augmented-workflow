@@ -26,6 +26,15 @@ This repository uses Ekko to manage AI workflow setup.
 - `ekko doctor` is the read-only health check for this workflow. It inspects whether Ekko-managed files are missing, modified, or generated from older templates.
 - `ekko sync` reviews template updates interactively. It explains human-readable template changes, protects local edits from automatic overwrites, and lets the user apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later.
 
+At the start of each session in this repository, run `ekko doctor` before making changes or giving workflow guidance. Treat it as a read-only preflight check.
+
+After `ekko doctor` finishes, guide the user based on the outcome:
+
+- If the workflow is healthy, mention that the Ekko check passed and proceed with the requested work.
+- If managed workflow files are missing or state metadata needs repair, tell the user to run `ekko init` before continuing.
+- If newer template versions are available, tell the user to run `ekko sync` to review and apply or dismiss template updates.
+- If `ekko doctor` cannot run because Ekko is unavailable, tell the user how to install or run Ekko for this project before relying on template status.
+
 Ekko records managed workflow file metadata in `.ekko/state.json`, including template versions, file hashes, selected agent support, and whether files are `managed`, `customized`, or `unmanaged`.
 
 If workflow files appear missing, ask the user to run `ekko init`.

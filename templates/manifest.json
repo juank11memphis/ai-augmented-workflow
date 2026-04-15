@@ -1,13 +1,12 @@
 {
-  "templateVersion": "2",
+  "templateVersion": "3",
   "templates": {
     "AGENTS.md": {
-      "version": "2",
+      "version": "3",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Added Ekko sync guidance for reviewing template updates interactively.",
-        "Explained that Ekko tracks managed, customized, and unmanaged workflow files in .ekko/state.json.",
-        "Clarified when agents should recommend ekko init, ekko doctor, or ekko sync."
+        "Added a session-start Ekko doctor preflight so agents check workflow health before making changes.",
+        "Explained how agents should guide users after ekko doctor reports healthy workflows, missing files, template updates, or unavailable Ekko."
       ]
     },
     ".codex/config.toml": {
