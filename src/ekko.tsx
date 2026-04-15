@@ -88,6 +88,7 @@ const MANDATORY_SKILLS: SkillTemplate[] = [
     templateRelativePath: 'skills/clean-code/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.codex/skills/clean-code/SKILL.md',
+      gemini: '.agents/skills/clean-code/SKILL.md',
       claude: '.claude/skills/clean-code/SKILL.md',
     },
   },

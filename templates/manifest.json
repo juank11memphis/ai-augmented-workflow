@@ -1,5 +1,5 @@
 {
-  "templateVersion": "5",
+  "templateVersion": "6",
   "templates": {
     "AGENTS.md": {
       "version": "3",
@@ -31,11 +31,11 @@
       ]
     },
     "skills/clean-code/SKILL.md": {
-      "version": "2",
-      "description": "Mandatory clean-code skill copied into each selected agent's native skills directory when supported.",
+      "version": "3",
+      "description": "Mandatory clean-code skill copied into each selected agent's native or documented workspace skills directory.",
       "changes": [
-        "Installs the clean-code skill into each selected agent's native skills directory when Ekko knows that agent's discovery path.",
-        "Adds Claude support by copying the shared clean-code template to .claude/skills/clean-code/SKILL.md when Claude is selected."
+        "Adds Gemini support by copying the shared clean-code template to .agents/skills/clean-code/SKILL.md when Gemini is selected.",
+        "Keeps Codex and Claude support on their native skill discovery paths while using Gemini's documented .agents/skills workspace alias."
       ]
     }
   }
