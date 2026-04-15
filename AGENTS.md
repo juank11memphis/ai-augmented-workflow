@@ -29,7 +29,7 @@ This repository is the home for establishing an AI-augmented development workflo
 
 - For any code-writing task, use `clean-code`.
 - For any task that changes `.ts` or `.tsx` files, also use `typescript`.
-- For back-end tasks involving domain modeling, application/service boundaries, dependency direction, persistence boundaries, external integrations, or architectural tradeoffs, also use `ddd-hexagonal`.
+- For any back-end work, use `ddd-hexagonal`. This includes new features, refactors, bug fixes, persistence, external integrations, application/service boundaries, domain modeling, and architectural tradeoffs.
 
 ## Ekko maintenance
 

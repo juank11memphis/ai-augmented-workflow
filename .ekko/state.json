@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "13",
+  "templateVersion": "14",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-15T17:37:46.208Z",
+  "updatedAt": "2026-04-15T17:45:06.198Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -11,8 +11,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "8",
-      "sha256": "ed62a98188932bfbf3ad08a6cc66680782db258995767cc9c68bb80d5c3648b5",
+      "templateVersion": "9",
+      "sha256": "35b68ef9b56b11137acd3bc9c39eb3849624110c0576dc81d7e0096636d43a57",
       "status": "managed"
     },
     ".codex/config.toml": {

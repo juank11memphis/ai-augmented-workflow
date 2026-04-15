@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 type AgentId = 'codex' | 'gemini' | 'claude';
 type LanguageSkillId = 'typescript';
-type ArchitectureSkillId = 'ddd-hexagonal';
+type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
 
 type SupportedAgent = {
   id: AgentId;
@@ -135,12 +135,25 @@ const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
     name: 'DDD + Hexagonal Architecture',
     description: 'Install back-end architecture guidance for DDD, ports/adapters, and inward dependencies',
     routingInstruction:
-      'For back-end tasks involving domain modeling, application/service boundaries, dependency direction, persistence boundaries, external integrations, or architectural tradeoffs, also use `ddd-hexagonal`.',
+      'For any back-end work, use `ddd-hexagonal`. This includes new features, refactors, bug fixes, persistence, external integrations, application/service boundaries, domain modeling, and architectural tradeoffs.',
     templateRelativePath: 'skills/architecture/ddd-hexagonal/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/ddd-hexagonal/SKILL.md',
       gemini: '.agents/skills/ddd-hexagonal/SKILL.md',
       claude: '.agents/skills/ddd-hexagonal/SKILL.md',
+    },
+  },
+  {
+    id: 'command-pattern',
+    name: 'Command Pattern',
+    description: 'Install architecture guidance for structuring executable operations as commands and handlers',
+    routingInstruction:
+      'For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.',
+    templateRelativePath: 'skills/architecture/command-pattern/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/command-pattern/SKILL.md',
+      gemini: '.agents/skills/command-pattern/SKILL.md',
+      claude: '.agents/skills/command-pattern/SKILL.md',
     },
   },
 ];

@@ -1,11 +1,11 @@
 {
-  "templateVersion": "13",
+  "templateVersion": "15",
   "templates": {
     "AGENTS.md": {
-      "version": "8",
+      "version": "9",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Adds concise communication guidance so agents keep answers short, clear, and pragmatic by default."
+        "Broadens DDD + Hexagonal Architecture skill routing so agents use it for any back-end work, including features, refactors, bug fixes, persistence, integrations, and architecture decisions."
       ]
     },
     ".codex/config.toml": {
@@ -49,6 +49,13 @@
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
         "Adds an optional DDD + Hexagonal Architecture skill for projects that want opinionated back-end architecture guidance."
+      ]
+    },
+    "skills/architecture/command-pattern/SKILL.md": {
+      "version": "1",
+      "description": "Selectable architecture skill for applying the Command Pattern to executable operations and handlers.",
+      "changes": [
+        "Adds an optional Command Pattern skill for projects that want simple, use-case-agnostic guidance for structuring actions, workflows, command handlers, dispatch, request processing, and executable tasks."
       ]
     }
   }
