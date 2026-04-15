@@ -1,5 +1,5 @@
 {
-  "templateVersion": "4",
+  "templateVersion": "5",
   "templates": {
     "AGENTS.md": {
       "version": "3",
@@ -31,11 +31,11 @@
       ]
     },
     "skills/clean-code/SKILL.md": {
-      "version": "1",
-      "description": "Mandatory Codex clean-code skill with baseline implementation-quality guidance.",
+      "version": "2",
+      "description": "Mandatory clean-code skill copied into each selected agent's native skills directory when supported.",
       "changes": [
-        "Added the mandatory clean-code skill so ekko init installs baseline code-quality guidance for Codex users.",
-        "Tracks the clean-code skill as an Ekko-managed template so ekko doctor and ekko sync can report drift or updates."
+        "Installs the clean-code skill into each selected agent's native skills directory when Ekko knows that agent's discovery path.",
+        "Adds Claude support by copying the shared clean-code template to .claude/skills/clean-code/SKILL.md when Claude is selected."
       ]
     }
   }

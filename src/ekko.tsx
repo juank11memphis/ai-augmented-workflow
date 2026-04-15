@@ -26,8 +26,8 @@ type SupportedAgent = {
 };
 
 type SkillTemplate = {
-  targetRelativePath: string;
   templateRelativePath: string;
+  targetRelativePathsByAgent: Partial<Record<AgentId, string>>;
 };
 
 type FileToCreate = {
@@ -85,8 +85,11 @@ const STATE_RELATIVE_PATH = '.ekko/state.json';
 
 const MANDATORY_SKILLS: SkillTemplate[] = [
   {
-    targetRelativePath: '.codex/skills/clean-code/SKILL.md',
     templateRelativePath: 'skills/clean-code/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.codex/skills/clean-code/SKILL.md',
+      claude: '.claude/skills/clean-code/SKILL.md',
+    },
   },
 ];
 
@@ -726,6 +729,30 @@ async function askForProjectOverview(): Promise<string> {
   return overview;
 }
 
+type SkillTarget = {
+  targetRelativePath: string;
+  templateRelativePath: string;
+};
+
+function getSkillTargetsForAgents(selectedAgents: SupportedAgent[]): SkillTarget[] {
+  return selectedAgents.flatMap((agent) =>
+    MANDATORY_SKILLS.flatMap((skill) => {
+      const targetRelativePath = skill.targetRelativePathsByAgent[agent.id];
+
+      if (!targetRelativePath) {
+        return [];
+      }
+
+      return [
+        {
+          targetRelativePath,
+          templateRelativePath: skill.templateRelativePath,
+        },
+      ];
+    })
+  );
+}
+
 function getWorkflowTargets(rootPath: string, selectedAgents: SupportedAgent[]): WorkflowTarget[] {
   return [
     {
@@ -740,10 +767,10 @@ function getWorkflowTargets(rootPath: string, selectedAgents: SupportedAgent[]):
       templateRelativePath: agent.templateRelativePath,
       requiresProjectOverview: false,
     })),
-    ...MANDATORY_SKILLS.map((skill) => ({
-      label: skill.targetRelativePath,
-      targetPath: path.join(rootPath, skill.targetRelativePath),
-      templateRelativePath: skill.templateRelativePath,
+    ...getSkillTargetsForAgents(selectedAgents).map((skillTarget) => ({
+      label: skillTarget.targetRelativePath,
+      targetPath: path.join(rootPath, skillTarget.targetRelativePath),
+      templateRelativePath: skillTarget.templateRelativePath,
       requiresProjectOverview: false,
     })),
   ];
