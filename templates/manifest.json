@@ -1,11 +1,11 @@
 {
-  "templateVersion": "20",
+  "templateVersion": "22",
   "templates": {
     "AGENTS.md": {
-      "version": "10",
+      "version": "11",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Adds routing guidance for the product vision writer skill so agents use it only for product vision, strategy narrative, positioning, principles, voice, target user, boundaries, and success signal work."
+        "Clarifies that agents should run ekko doctor once at the start of a session, not before every follow-up, while still allowing reruns after workflow changes or when verification is needed."
       ]
     },
     ".codex/config.toml": {
@@ -38,10 +38,10 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes docs/product-vision.md the default output file for product vision documents and clarifies how agents should handle revisions, existing files, and inline responses."
+        "Changes product vision discovery to ask one question at a time so users can shape the vision through a focused interview instead of answering a large batch up front."
       ]
     },
     "skills/typescript/SKILL.md": {

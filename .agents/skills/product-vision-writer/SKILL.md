@@ -17,9 +17,11 @@ Default output path: `docs/product-vision.md`.
 
 Ask focused questions before writing the document unless the user has already provided enough source material.
 
-Prefer one compact batch of questions. Ask follow-ups only when an answer materially changes the document or when a critical input is missing.
+Ask one question at a time. Wait for the user's answer before asking the next discovery question.
 
-Cover these areas:
+Prefer the fewest questions that can produce a useful document. Ask follow-ups only when an answer materially changes the document or when a critical input is missing.
+
+Cover these areas over the course of the interview:
 
 - **Product essence:** What is the product? What should it help people do, feel, or become?
 - **Current context:** Is this a new concept, an active project, or an existing product?
