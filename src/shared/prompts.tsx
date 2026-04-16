@@ -3,8 +3,8 @@ import gradient from 'gradient-string';
 import { Box, Text, render, useApp } from 'ink';
 import React, { useEffect } from 'react';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
-import type { ArchitectureSkillId, EkkoState, LanguageSkillId, SelectableArchitectureSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import type { ArchitectureSkillId, EkkoState, FrameworkSkillId, LanguageSkillId, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
 
 export async function renderIntro(): Promise<void> {
   console.log(gradient(['#39ff14', '#00e5ff', '#9b5de5']).multiline('⧖  E K K O  ⧖'));
@@ -67,6 +67,25 @@ export async function askForLanguageSkills(): Promise<SelectableLanguageSkill[]>
   return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => selectedLanguageSkillIds.includes(skill.id));
 }
 
+export async function askForFrameworkSkills(): Promise<SelectableFrameworkSkill[]> {
+  const selectedFrameworkSkillIds = await multiselect({
+    message: 'Select the frameworks this project should support.',
+    required: false,
+    options: SELECTABLE_FRAMEWORK_SKILLS.map((skill) => ({
+      value: skill.id,
+      label: skill.name,
+      hint: skill.description,
+    })),
+  });
+
+  if (isCancel(selectedFrameworkSkillIds)) {
+    cancel('Initialization cancelled.');
+    process.exit(0);
+  }
+
+  return SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => selectedFrameworkSkillIds.includes(skill.id));
+}
+
 export async function askForArchitectureSkill(): Promise<SelectableArchitectureSkill | undefined> {
   const selectedArchitectureSkillId = await select<ArchitectureSkillId | 'none'>({
     message: 'Select an architecture style for this project.',
@@ -127,6 +146,47 @@ export async function askForNewLanguageSkills(state: EkkoState): Promise<{ state
     state: {
       ...state,
       selectedLanguageSkills: [...selectedLanguageSkillIds],
+      updatedAt: new Date().toISOString(),
+    },
+    changedState: true,
+  };
+}
+
+export async function askForNewFrameworkSkills(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
+  const selectedFrameworkSkillIds = new Set(state.selectedFrameworkSkills ?? []);
+  const unselectedFrameworkSkills = SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => !selectedFrameworkSkillIds.has(skill.id));
+
+  if (unselectedFrameworkSkills.length === 0) {
+    return { state, changedState: false };
+  }
+
+  const selectedNewFrameworkSkillIds = await multiselect<FrameworkSkillId>({
+    message: 'Select any new frameworks this project should support.',
+    required: false,
+    options: unselectedFrameworkSkills.map((skill) => ({
+      value: skill.id,
+      label: skill.name,
+      hint: skill.description,
+    })),
+  });
+
+  if (isCancel(selectedNewFrameworkSkillIds)) {
+    cancel('Sync cancelled.');
+    process.exit(0);
+  }
+
+  for (const selectedSkillId of selectedNewFrameworkSkillIds) {
+    selectedFrameworkSkillIds.add(selectedSkillId);
+  }
+
+  if (selectedNewFrameworkSkillIds.length === 0) {
+    return { state, changedState: false };
+  }
+
+  return {
+    state: {
+      ...state,
+      selectedFrameworkSkills: [...selectedFrameworkSkillIds],
       updatedAt: new Date().toISOString(),
     },
     changedState: true,

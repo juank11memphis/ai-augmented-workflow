@@ -1,5 +1,5 @@
 {
-  "templateVersion": "16",
+  "templateVersion": "17",
   "templates": {
     "AGENTS.md": {
       "version": "9",
@@ -56,6 +56,13 @@
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
         "Reframes Command Pattern guidance around command-oriented vertical slices, feature-local ports, thin entrypoints, and infrastructure adapters."
+      ]
+    },
+    "skills/nextjs/SKILL.md": {
+      "version": "1",
+      "description": "Selectable framework skill for Next.js App Router and framework-specific behavior.",
+      "changes": [
+        "Adds an optional Next.js skill for projects that use App Router pages, layouts, route handlers, metadata, and Server/Client Component boundaries."
       ]
     }
   }

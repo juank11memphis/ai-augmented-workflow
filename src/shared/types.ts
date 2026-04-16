@@ -1,5 +1,6 @@
 export type AgentId = 'codex' | 'gemini' | 'claude';
 export type LanguageSkillId = 'typescript';
+export type FrameworkSkillId = 'nextjs';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
 
 export type SupportedAgent = {
@@ -17,6 +18,13 @@ export type SkillTemplate = {
 
 export type SelectableLanguageSkill = SkillTemplate & {
   id: LanguageSkillId;
+  name: string;
+  description: string;
+  routingInstruction: string;
+};
+
+export type SelectableFrameworkSkill = SkillTemplate & {
+  id: FrameworkSkillId;
   name: string;
   description: string;
   routingInstruction: string;
@@ -50,6 +58,8 @@ export type EkkoState = {
   selectedAgents: AgentId[];
   selectedLanguageSkills?: LanguageSkillId[];
   reviewedLanguageSkills?: LanguageSkillId[];
+  selectedFrameworkSkills?: FrameworkSkillId[];
+  reviewedFrameworkSkills?: FrameworkSkillId[];
   selectedArchitectureSkill?: ArchitectureSkillId;
   reviewedArchitectureSkills?: ArchitectureSkillId[];
   managedFiles: Record<string, ManagedFileState>;

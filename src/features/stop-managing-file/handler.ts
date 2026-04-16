@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { cancel, intro, isCancel, log, outro, select } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_LANGUAGE_SKILLS, STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { readFileHashIfPresent } from '../../shared/hash.js';
 import { getProjectContext, resolveManagedFilePath } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
@@ -67,6 +67,14 @@ function clearSelectedSkillForStoppedFile(state: EkkoState, managedFile: Managed
   if (languageSkill && state.selectedLanguageSkills?.includes(languageSkill.id)) {
     state.selectedLanguageSkills = state.selectedLanguageSkills.filter((skillId) => skillId !== languageSkill.id);
     log.info(`Removed ${languageSkill.id} from selected language skills.`);
+  }
+
+
+  const frameworkSkill = SELECTABLE_FRAMEWORK_SKILLS.find((skill) => skill.templateRelativePath === managedFile.template);
+
+  if (frameworkSkill && state.selectedFrameworkSkills?.includes(frameworkSkill.id)) {
+    state.selectedFrameworkSkills = state.selectedFrameworkSkills.filter((skillId) => skillId !== frameworkSkill.id);
+    log.info(`Removed ${frameworkSkill.id} from selected framework skills.`);
   }
 
   const architectureSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.templateRelativePath === managedFile.template);

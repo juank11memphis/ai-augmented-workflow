@@ -1,4 +1,4 @@
-import type { SelectableArchitectureSkill, SelectableLanguageSkill, SkillTemplate, SupportedAgent } from './types.js';
+import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SkillTemplate, SupportedAgent } from './types.js';
 
 export const EKKO_VERSION = '0.1.0';
 export const STATE_RELATIVE_PATH = '.ekko/state.json';
@@ -25,6 +25,23 @@ export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
       codex: '.agents/skills/typescript/SKILL.md',
       gemini: '.agents/skills/typescript/SKILL.md',
       claude: '.agents/skills/typescript/SKILL.md',
+    },
+  },
+];
+
+
+export const SELECTABLE_FRAMEWORK_SKILLS: SelectableFrameworkSkill[] = [
+  {
+    id: 'nextjs',
+    name: 'Next.js',
+    description: 'Install guidance for Next.js App Router and framework-specific files',
+    routingInstruction:
+      'For tasks that change Next.js App Router or framework-specific files, including `src/app/**`, pages, layouts, route handlers, loading/error/not-found files, metadata, or Server/Client Component boundaries, use `nextjs`.',
+    templateRelativePath: 'skills/nextjs/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/nextjs/SKILL.md',
+      gemini: '.agents/skills/nextjs/SKILL.md',
+      claude: '.agents/skills/nextjs/SKILL.md',
     },
   },
 ];

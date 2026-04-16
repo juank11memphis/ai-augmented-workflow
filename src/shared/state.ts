@@ -67,6 +67,10 @@ function isEkkoState(value: unknown): value is EkkoState {
       (Array.isArray(state.selectedLanguageSkills) && state.selectedLanguageSkills.every((skill) => typeof skill === 'string'))) &&
     (state.reviewedLanguageSkills === undefined ||
       (Array.isArray(state.reviewedLanguageSkills) && state.reviewedLanguageSkills.every((skill) => typeof skill === 'string'))) &&
+    (state.selectedFrameworkSkills === undefined ||
+      (Array.isArray(state.selectedFrameworkSkills) && state.selectedFrameworkSkills.every((skill) => typeof skill === 'string'))) &&
+    (state.reviewedFrameworkSkills === undefined ||
+      (Array.isArray(state.reviewedFrameworkSkills) && state.reviewedFrameworkSkills.every((skill) => typeof skill === 'string'))) &&
     (state.selectedArchitectureSkill === undefined || typeof state.selectedArchitectureSkill === 'string') &&
     (state.reviewedArchitectureSkills === undefined ||
       (Array.isArray(state.reviewedArchitectureSkills) && state.reviewedArchitectureSkills.every((skill) => typeof skill === 'string'))) &&

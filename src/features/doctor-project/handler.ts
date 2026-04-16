@@ -4,7 +4,7 @@ import path from 'node:path';
 import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_LANGUAGE_SKILLS, STATE_RELATIVE_PATH, SUPPORTED_AGENTS } from '../../shared/catalog.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, STATE_RELATIVE_PATH, SUPPORTED_AGENTS } from '../../shared/catalog.js';
 import { sha256 } from '../../shared/hash.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
@@ -14,6 +14,7 @@ import type { DoctorIssue, EkkoState, ManagedFileStatus } from '../../shared/typ
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
+  getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getWorkflowTargets,
 } from '../../shared/workflow-targets.js';
@@ -103,6 +104,19 @@ function addUnsupportedSelectionIssues(state: EkkoState, issues: DoctorIssue[]):
     }
   }
 
+
+  for (const selectedFrameworkSkill of state.selectedFrameworkSkills ?? []) {
+    if (!SELECTABLE_FRAMEWORK_SKILLS.some((skill) => skill.id === selectedFrameworkSkill)) {
+      issues.push({ severity: 'warning', message: `State references unsupported framework skill: ${selectedFrameworkSkill}.` });
+    }
+  }
+
+  for (const reviewedFrameworkSkill of state.reviewedFrameworkSkills ?? []) {
+    if (!SELECTABLE_FRAMEWORK_SKILLS.some((skill) => skill.id === reviewedFrameworkSkill)) {
+      issues.push({ severity: 'warning', message: `State references unsupported reviewed framework skill: ${reviewedFrameworkSkill}.` });
+    }
+  }
+
   if (state.selectedArchitectureSkill && !SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === state.selectedArchitectureSkill)) {
     issues.push({ severity: 'warning', message: `State references unsupported architecture skill: ${state.selectedArchitectureSkill}.` });
   }
@@ -120,6 +134,7 @@ function addExpectedTargetIssues(rootPath: string, state: EkkoState, issues: Doc
     rootPath,
     getSelectedAgentsFromState(state),
     getSelectedLanguageSkillsFromState(state),
+    getSelectedFrameworkSkillsFromState(state),
     getSelectedArchitectureSkillFromState(state)
   );
 

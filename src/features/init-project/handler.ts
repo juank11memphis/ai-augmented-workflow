@@ -6,7 +6,7 @@ import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { askForArchitectureSkill, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, renderIntro } from '../../shared/prompts.js';
+import { askForArchitectureSkill, askForFrameworkSkills, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor } from '../../shared/state.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeEkkoState } from '../../shared/workflow-targets.js';
 import type { InitProjectCommand } from './command.js';
@@ -38,8 +38,9 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
 
   const selectedAgents = await askForSupportedAgents();
   const selectedLanguageSkills = await askForLanguageSkills();
+  const selectedFrameworkSkills = await askForFrameworkSkills();
   const selectedArchitectureSkill = await askForArchitectureSkill();
-  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedArchitectureSkill);
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
   const missingTargets = targets.filter((target) => !fs.existsSync(target.targetPath));
 
   log.message('I will create this project’s initial AI workflow files.');
@@ -55,7 +56,13 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
 
   const shouldAskForOverview = missingTargets.some((target) => target.requiresProjectOverview);
   const overview = shouldAskForOverview ? await askForProjectOverview() : undefined;
-  const files = renderMissingWorkflowFiles({ missingTargets, overview, selectedLanguageSkills, selectedArchitectureSkill });
+  const files = renderMissingWorkflowFiles({
+    missingTargets,
+    overview,
+    selectedLanguageSkills,
+    selectedFrameworkSkills,
+    selectedArchitectureSkill,
+  });
 
   for (const file of files) {
     fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
@@ -63,7 +70,7 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
     log.success(`Created ${file.label}`);
   }
 
-  writeEkkoState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedArchitectureSkill, targets });
+  writeEkkoState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
   log.success(`Created ${STATE_RELATIVE_PATH}`);
 
   outro(chalk.green('Workflow loop initialized.'));

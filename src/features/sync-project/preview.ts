@@ -4,10 +4,11 @@ import path from 'node:path';
 import { sha256 } from '../../shared/hash.js';
 import { hasReviewedTemplateVersion } from '../../shared/state.js';
 import { renderTemplateForSync } from '../../shared/templates.js';
-import type { EkkoState, ManagedFileState, SelectableArchitectureSkill, SelectableLanguageSkill, TemplateManifest } from '../../shared/types.js';
+import type { EkkoState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, TemplateManifest } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
+  getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getWorkflowTargets,
 } from '../../shared/workflow-targets.js';
@@ -51,15 +52,25 @@ export function shouldAskForSyncAction(preview: SyncPreview): boolean {
 
 export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: string; state: EkkoState; manifest: TemplateManifest }): SyncPreview[] {
   const selectedLanguageSkills = getSelectedLanguageSkillsFromState(state);
+  const selectedFrameworkSkills = getSelectedFrameworkSkillsFromState(state);
   const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
   const previews = Object.entries(state.managedFiles).map(([relativePath, managedFile]) =>
-    getManagedFileSyncPreview({ rootPath, manifest, relativePath, managedFile, selectedLanguageSkills, selectedArchitectureSkill })
+    getManagedFileSyncPreview({
+      rootPath,
+      manifest,
+      relativePath,
+      managedFile,
+      selectedLanguageSkills,
+      selectedFrameworkSkills,
+      selectedArchitectureSkill,
+    })
   );
 
   const expectedTargets = getWorkflowTargets(
     rootPath,
     getSelectedAgentsFromState(state),
     selectedLanguageSkills,
+    selectedFrameworkSkills,
     selectedArchitectureSkill
   );
 
@@ -111,6 +122,7 @@ function getManagedFileSyncPreview({
   relativePath,
   managedFile,
   selectedLanguageSkills,
+  selectedFrameworkSkills,
   selectedArchitectureSkill,
 }: {
   rootPath: string;
@@ -118,6 +130,7 @@ function getManagedFileSyncPreview({
   relativePath: string;
   managedFile: ManagedFileState;
   selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
 }): SyncPreview {
   if (managedFile.status === 'unmanaged') {
@@ -139,6 +152,7 @@ function getManagedFileSyncPreview({
     currentPath: targetPath,
     managedFile,
     selectedLanguageSkills,
+    selectedFrameworkSkills,
     selectedArchitectureSkill,
   });
   const hasUpdate = hasTemplateUpdate || hasSelectionUpdate;
@@ -208,12 +222,14 @@ function hasRenderedSelectionUpdate({
   currentPath,
   managedFile,
   selectedLanguageSkills,
+  selectedFrameworkSkills,
   selectedArchitectureSkill,
 }: {
   relativePath: string;
   currentPath: string;
   managedFile: ManagedFileState;
   selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
 }): boolean {
   if (relativePath !== 'AGENTS.md') {
@@ -224,6 +240,7 @@ function hasRenderedSelectionUpdate({
     templateRelativePath: managedFile.template,
     currentPath,
     selectedLanguageSkills,
+    selectedFrameworkSkills,
     selectedArchitectureSkill,
   });
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { EKKO_VERSION, MANDATORY_SKILLS, SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import { EKKO_VERSION, MANDATORY_SKILLS, SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import { sha256 } from './hash.js';
 import { removeUndefinedFields } from './object.js';
 import { readExistingState } from './state.js';
@@ -11,6 +11,7 @@ import type {
   FileToCreate,
   ManagedFileState,
   SelectableArchitectureSkill,
+  SelectableFrameworkSkill,
   SelectableLanguageSkill,
   SkillTemplate,
   SupportedAgent,
@@ -26,6 +27,10 @@ export function getSelectedLanguageSkillsFromState(state: EkkoState): Selectable
   return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
 }
 
+export function getSelectedFrameworkSkillsFromState(state: EkkoState): SelectableFrameworkSkill[] {
+  return SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => state.selectedFrameworkSkills?.includes(skill.id));
+}
+
 export function getSelectedArchitectureSkillFromState(state: EkkoState): SelectableArchitectureSkill | undefined {
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === state.selectedArchitectureSkill);
 }
@@ -33,12 +38,14 @@ export function getSelectedArchitectureSkillFromState(state: EkkoState): Selecta
 export function getSelectedSkillTargetsForAgents(
   selectedAgents: SupportedAgent[],
   selectedLanguageSkills: SelectableLanguageSkill[],
+  selectedFrameworkSkills: SelectableFrameworkSkill[],
   selectedArchitectureSkill?: SelectableArchitectureSkill
 ): SkillTarget[] {
   const skillTargets = new Map<string, SkillTarget>();
   const selectedSkills: SkillTemplate[] = [
     ...MANDATORY_SKILLS,
     ...selectedLanguageSkills,
+    ...selectedFrameworkSkills,
     ...(selectedArchitectureSkill ? [selectedArchitectureSkill] : []),
   ];
 
@@ -64,6 +71,7 @@ export function getWorkflowTargets(
   rootPath: string,
   selectedAgents: SupportedAgent[],
   selectedLanguageSkills: SelectableLanguageSkill[] = [],
+  selectedFrameworkSkills: SelectableFrameworkSkill[] = [],
   selectedArchitectureSkill?: SelectableArchitectureSkill
 ): WorkflowTarget[] {
   return [
@@ -79,7 +87,7 @@ export function getWorkflowTargets(
       templateRelativePath: agent.templateRelativePath,
       requiresProjectOverview: false,
     })),
-    ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills, selectedArchitectureSkill).map((skillTarget) => ({
+    ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill).map((skillTarget) => ({
       label: skillTarget.targetRelativePath,
       targetPath: path.join(rootPath, skillTarget.targetRelativePath),
       templateRelativePath: skillTarget.templateRelativePath,
@@ -92,11 +100,13 @@ export function renderMissingWorkflowFiles({
   missingTargets,
   overview,
   selectedLanguageSkills,
+  selectedFrameworkSkills,
   selectedArchitectureSkill,
 }: {
   missingTargets: WorkflowTarget[];
   overview?: string;
   selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
 }): FileToCreate[] {
   return missingTargets.map((target) => {
@@ -110,7 +120,7 @@ export function renderMissingWorkflowFiles({
       contents = contents.replace('{{PROJECT_OVERVIEW}}', overview.trim());
     }
 
-    contents = renderSkillRouting(contents, selectedLanguageSkills, selectedArchitectureSkill);
+    contents = renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
 
     return {
       label: target.label,
@@ -125,6 +135,7 @@ export function writeEkkoState({
   statePath,
   selectedAgents,
   selectedLanguageSkills,
+  selectedFrameworkSkills,
   selectedArchitectureSkill,
   targets,
 }: {
@@ -132,6 +143,7 @@ export function writeEkkoState({
   statePath: string;
   selectedAgents: SupportedAgent[];
   selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   targets: WorkflowTarget[];
 }): void {
@@ -145,6 +157,7 @@ export function writeEkkoState({
     updatedAt: now,
     selectedAgents: selectedAgents.map((agent) => agent.id),
     selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
+    selectedFrameworkSkills: selectedFrameworkSkills.map((skill) => skill.id),
     selectedArchitectureSkill: selectedArchitectureSkill?.id,
     managedFiles: Object.fromEntries(
       targets

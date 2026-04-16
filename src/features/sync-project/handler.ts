@@ -3,7 +3,7 @@ import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { askForNewArchitectureSkill, askForNewLanguageSkills, renderIntro } from '../../shared/prompts.js';
+import { askForNewArchitectureSkill, askForNewFrameworkSkills, askForNewLanguageSkills, renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor, writeStateFile } from '../../shared/state.js';
 import { readTemplateManifest } from '../../shared/templates.js';
 import { askForSyncAction } from './action-prompt.js';
@@ -28,7 +28,8 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
   }
 
   const languageSkillSelection = await askForNewLanguageSkills(stateResult.state);
-  const architectureSkillSelection = await askForNewArchitectureSkill(languageSkillSelection.state);
+  const frameworkSkillSelection = await askForNewFrameworkSkills(languageSkillSelection.state);
+  const architectureSkillSelection = await askForNewArchitectureSkill(frameworkSkillSelection.state);
   let state = architectureSkillSelection.state;
   const manifest = readTemplateManifest();
   const previews = getSyncPreviews({ rootPath, state, manifest });
@@ -37,7 +38,10 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
   if (actionablePreviews.length === 0) {
     log.success('No template updates or local drift detected.');
 
-    if (state.templateVersion !== manifest.templateVersion || languageSkillSelection.changedState || architectureSkillSelection.changedState) {
+    if (state.templateVersion !== manifest.templateVersion ||
+      languageSkillSelection.changedState ||
+      frameworkSkillSelection.changedState ||
+      architectureSkillSelection.changedState) {
       state = {
         ...state,
         templateVersion: manifest.templateVersion,
@@ -55,7 +59,7 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
 
   log.warn('Workflow sync found items to review.');
 
-  let changedState = languageSkillSelection.changedState || architectureSkillSelection.changedState;
+  let changedState = languageSkillSelection.changedState || frameworkSkillSelection.changedState || architectureSkillSelection.changedState;
   let changedFiles = false;
 
   for (const preview of previews) {

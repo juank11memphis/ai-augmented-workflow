@@ -8,7 +8,7 @@ import { getSideTemplatePath } from '../../shared/paths.js';
 import { cloneState } from '../../shared/state.js';
 import { getTemplateVersion, renderTemplateForSync } from '../../shared/templates.js';
 import type { EkkoState, TemplateManifest } from '../../shared/types.js';
-import { getSelectedArchitectureSkillFromState, getSelectedLanguageSkillsFromState } from '../../shared/workflow-targets.js';
+import { getSelectedArchitectureSkillFromState, getSelectedFrameworkSkillsFromState, getSelectedLanguageSkillsFromState } from '../../shared/workflow-targets.js';
 import type { SyncAction } from './action-prompt.js';
 import type { SyncPreview } from './preview.js';
 
@@ -36,6 +36,7 @@ export function applySyncAction({
         templateRelativePath: managedFile.template,
         currentPath: targetPath,
         selectedLanguageSkills: getSelectedLanguageSkillsFromState(nextState),
+        selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(nextState),
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(nextState),
       });
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -70,6 +71,7 @@ export function applySyncAction({
         templateRelativePath: managedFile.template,
         currentPath: targetPath,
         selectedLanguageSkills: getSelectedLanguageSkillsFromState(state),
+        selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(state),
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
       });
       fs.mkdirSync(path.dirname(sideTemplatePath), { recursive: true });
