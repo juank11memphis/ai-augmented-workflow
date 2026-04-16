@@ -28,6 +28,7 @@
 ## Skill routing
 
 - For any code-writing task, use `clean-code`.
+- For requests to create, revise, or clarify a product vision, product strategy narrative, product north star, positioning, product principles, product voice, target user definition, product boundaries, or success signals, use `product-vision-writer`.
 {{OPTIONAL_SKILL_ROUTING}}
 
 ## Ekko maintenance

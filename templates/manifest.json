@@ -1,11 +1,11 @@
 {
-  "templateVersion": "18",
+  "templateVersion": "20",
   "templates": {
     "AGENTS.md": {
-      "version": "9",
+      "version": "10",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Broadens DDD + Hexagonal Architecture skill routing so agents use it for any back-end work, including features, refactors, bug fixes, persistence, integrations, and architecture decisions."
+        "Adds routing guidance for the product vision writer skill so agents use it only for product vision, strategy narrative, positioning, principles, voice, target user, boundaries, and success signal work."
       ]
     },
     ".codex/config.toml": {
@@ -35,6 +35,13 @@
       "changes": [
         "Installs the clean-code skill once at .agents/skills/clean-code/SKILL.md for any selected agent instead of duplicating per-agent copies.",
         "Uses the shared .agents/skills workspace path to test common skill discovery across Codex, Gemini, and Claude."
+      ]
+    },
+    "skills/product-vision-writer/SKILL.md": {
+      "version": "2",
+      "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
+      "changes": [
+        "Makes docs/product-vision.md the default output file for product vision documents and clarifies how agents should handle revisions, existing files, and inline responses."
       ]
     },
     "skills/typescript/SKILL.md": {

@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "17",
+  "templateVersion": "20",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-16T00:38:49.776Z",
+  "updatedAt": "2026-04-16T21:45:53.802Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -11,8 +11,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "9",
-      "sha256": "1d15fa303317f00e22368fedd8c4161917dab8c29ec48fd7f4d9815258ffc392",
+      "templateVersion": "10",
+      "sha256": "b00a17a0cc28e02d21f9dad1559310f535ca7f08a7bfd3db99c4869b0a1c9ba3",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -56,6 +56,12 @@
       "template": "skills/architecture/command-pattern/SKILL.md",
       "templateVersion": "2",
       "sha256": "076440fc00dd9862542672280e8398b793c7fe9e4dff4482462d946ec81d761d",
+      "status": "managed"
+    },
+    ".agents/skills/product-vision-writer/SKILL.md": {
+      "template": "skills/product-vision-writer/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "599850ab045087b44c8a7a59908cf2ff4ca176ffed28a70e52510b6c19e7ce06",
       "status": "managed"
     }
   },
