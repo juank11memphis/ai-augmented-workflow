@@ -23,12 +23,17 @@ export function createProgram(): CommanderCommand {
     .description('Interactively review and apply Ekko template updates')
     .action(() => executeCliCommand({ type: 'sync' }));
 
-  cli
-    .command('manage')
-    .description('Manage Ekko-tracked workflow files')
+  const skills = cli.command('skills').description('Manage Ekko workflow skills');
+
+  skills
+    .command('list')
+    .description('List available Ekko skills')
+    .action(() => executeCliCommand({ type: 'skills:list' }));
+
+  skills
     .command('stop <file>')
     .description('Stop managing an Ekko-tracked workflow file')
-    .action((file: string) => executeCliCommand({ type: 'manage:stop', file }));
+    .action((file: string) => executeCliCommand({ type: 'skills:stop', file }));
 
   return cli;
 }

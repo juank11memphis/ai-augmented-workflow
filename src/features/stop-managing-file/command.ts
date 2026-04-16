@@ -1,4 +1,4 @@
 export type StopManagingFileCommand = {
-  type: 'manage:stop';
+  type: 'skills:stop';
   file: string;
 };

@@ -45,7 +45,7 @@ export async function handleStopManagingFile({ file }: StopManagingFileCommand):
     ...managedFile,
     sha256: currentHash ?? managedFile.sha256,
     status: 'unmanaged',
-    reason: 'Stopped by `ekko manage stop`.',
+    reason: 'Stopped by `ekko skills stop`.',
   });
   clearSelectedSkillForStoppedFile(nextState, managedFile);
   nextState.updatedAt = new Date().toISOString();
