@@ -2,7 +2,7 @@
   "ekkoVersion": "0.1.0",
   "templateVersion": "17",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-15T20:30:53.474Z",
+  "updatedAt": "2026-04-16T00:38:49.776Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -62,5 +62,6 @@
   "selectedLanguageSkills": [
     "typescript"
   ],
-  "selectedArchitectureSkill": "command-pattern"
+  "selectedArchitectureSkill": "command-pattern",
+  "selectedFrameworkSkills": []
 }

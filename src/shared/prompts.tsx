@@ -6,6 +6,10 @@ import React, { useEffect } from 'react';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import type { ArchitectureSkillId, EkkoState, FrameworkSkillId, LanguageSkillId, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
 
+const NONE_OPTION_ID = 'none';
+
+type FrameworkSkillSelectionId = FrameworkSkillId | typeof NONE_OPTION_ID;
+
 export async function renderIntro(): Promise<void> {
   console.log(gradient(['#39ff14', '#00e5ff', '#9b5de5']).multiline('⧖  E K K O  ⧖'));
 
@@ -68,19 +72,39 @@ export async function askForLanguageSkills(): Promise<SelectableLanguageSkill[]>
 }
 
 export async function askForFrameworkSkills(): Promise<SelectableFrameworkSkill[]> {
-  const selectedFrameworkSkillIds = await multiselect({
+  return askForFrameworkSkillSelection({
     message: 'Select the frameworks this project should support.',
+    cancelMessage: 'Initialization cancelled.',
+  });
+}
+
+async function askForFrameworkSkillSelection({
+  message,
+  cancelMessage,
+}: {
+  message: string;
+  cancelMessage: string;
+}): Promise<SelectableFrameworkSkill[]> {
+  const selectedFrameworkSkillIds = await multiselect<FrameworkSkillSelectionId>({
+    message,
     required: false,
-    options: SELECTABLE_FRAMEWORK_SKILLS.map((skill) => ({
-      value: skill.id,
-      label: skill.name,
-      hint: skill.description,
-    })),
+    options: [
+      { value: NONE_OPTION_ID, label: 'None', hint: 'Do not install framework-specific guidance.' },
+      ...SELECTABLE_FRAMEWORK_SKILLS.map((skill) => ({
+        value: skill.id,
+        label: skill.name,
+        hint: skill.description,
+      })),
+    ],
   });
 
   if (isCancel(selectedFrameworkSkillIds)) {
-    cancel('Initialization cancelled.');
+    cancel(cancelMessage);
     process.exit(0);
+  }
+
+  if (selectedFrameworkSkillIds.includes(NONE_OPTION_ID)) {
+    return [];
   }
 
   return SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => selectedFrameworkSkillIds.includes(skill.id));
@@ -152,41 +176,20 @@ export async function askForNewLanguageSkills(state: EkkoState): Promise<{ state
   };
 }
 
-export async function askForNewFrameworkSkills(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
-  const selectedFrameworkSkillIds = new Set(state.selectedFrameworkSkills ?? []);
-  const unselectedFrameworkSkills = SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => !selectedFrameworkSkillIds.has(skill.id));
-
-  if (unselectedFrameworkSkills.length === 0) {
+export async function askForMissingFrameworkSkills(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
+  if (state.selectedFrameworkSkills !== undefined) {
     return { state, changedState: false };
   }
 
-  const selectedNewFrameworkSkillIds = await multiselect<FrameworkSkillId>({
-    message: 'Select any new frameworks this project should support.',
-    required: false,
-    options: unselectedFrameworkSkills.map((skill) => ({
-      value: skill.id,
-      label: skill.name,
-      hint: skill.description,
-    })),
+  const selectedFrameworkSkills = await askForFrameworkSkillSelection({
+    message: 'Select the frameworks this project should support.',
+    cancelMessage: 'Sync cancelled.',
   });
-
-  if (isCancel(selectedNewFrameworkSkillIds)) {
-    cancel('Sync cancelled.');
-    process.exit(0);
-  }
-
-  for (const selectedSkillId of selectedNewFrameworkSkillIds) {
-    selectedFrameworkSkillIds.add(selectedSkillId);
-  }
-
-  if (selectedNewFrameworkSkillIds.length === 0) {
-    return { state, changedState: false };
-  }
 
   return {
     state: {
       ...state,
-      selectedFrameworkSkills: [...selectedFrameworkSkillIds],
+      selectedFrameworkSkills: selectedFrameworkSkills.map((skill) => skill.id),
       updatedAt: new Date().toISOString(),
     },
     changedState: true,

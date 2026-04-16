@@ -111,12 +111,6 @@ function addUnsupportedSelectionIssues(state: EkkoState, issues: DoctorIssue[]):
     }
   }
 
-  for (const reviewedFrameworkSkill of state.reviewedFrameworkSkills ?? []) {
-    if (!SELECTABLE_FRAMEWORK_SKILLS.some((skill) => skill.id === reviewedFrameworkSkill)) {
-      issues.push({ severity: 'warning', message: `State references unsupported reviewed framework skill: ${reviewedFrameworkSkill}.` });
-    }
-  }
-
   if (state.selectedArchitectureSkill && !SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === state.selectedArchitectureSkill)) {
     issues.push({ severity: 'warning', message: `State references unsupported architecture skill: ${state.selectedArchitectureSkill}.` });
   }

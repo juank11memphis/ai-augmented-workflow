@@ -3,7 +3,7 @@ import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { askForNewArchitectureSkill, askForNewFrameworkSkills, askForNewLanguageSkills, renderIntro } from '../../shared/prompts.js';
+import { askForMissingFrameworkSkills, askForNewArchitectureSkill, askForNewLanguageSkills, renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor, writeStateFile } from '../../shared/state.js';
 import { readTemplateManifest } from '../../shared/templates.js';
 import { askForSyncAction } from './action-prompt.js';
@@ -28,7 +28,7 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
   }
 
   const languageSkillSelection = await askForNewLanguageSkills(stateResult.state);
-  const frameworkSkillSelection = await askForNewFrameworkSkills(languageSkillSelection.state);
+  const frameworkSkillSelection = await askForMissingFrameworkSkills(languageSkillSelection.state);
   const architectureSkillSelection = await askForNewArchitectureSkill(frameworkSkillSelection.state);
   let state = architectureSkillSelection.state;
   const manifest = readTemplateManifest();

@@ -59,7 +59,6 @@ export type EkkoState = {
   selectedLanguageSkills?: LanguageSkillId[];
   reviewedLanguageSkills?: LanguageSkillId[];
   selectedFrameworkSkills?: FrameworkSkillId[];
-  reviewedFrameworkSkills?: FrameworkSkillId[];
   selectedArchitectureSkill?: ArchitectureSkillId;
   reviewedArchitectureSkills?: ArchitectureSkillId[];
   managedFiles: Record<string, ManagedFileState>;
