@@ -1,6 +1,6 @@
 export type AgentId = 'codex' | 'gemini' | 'claude';
 export type LanguageSkillId = 'typescript';
-export type FrameworkSkillId = 'nextjs';
+export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
 
 export type SupportedAgent = {

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "17",
+  "templateVersion": "18",
   "templates": {
     "AGENTS.md": {
       "version": "9",
@@ -63,6 +63,13 @@
       "description": "Selectable framework skill for Next.js App Router and framework-specific behavior.",
       "changes": [
         "Adds an optional Next.js skill for projects that use App Router pages, layouts, route handlers, metadata, and Server/Client Component boundaries."
+      ]
+    },
+    "skills/react/SKILL.md": {
+      "version": "1",
+      "description": "Selectable React skill for component design, props, state ownership, and presentational boundaries.",
+      "changes": [
+        "Adds an optional React skill for projects that create or change React components, props, state ownership, or presentational and data-owning boundaries."
       ]
     }
   }

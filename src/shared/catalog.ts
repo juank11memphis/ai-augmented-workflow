@@ -29,8 +29,20 @@ export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
   },
 ];
 
-
 export const SELECTABLE_FRAMEWORK_SKILLS: SelectableFrameworkSkill[] = [
+  {
+    id: 'react',
+    name: 'React',
+    description: 'Install guidance for React components, props, state ownership, and component boundaries',
+    routingInstruction:
+      'For tasks that create or change React components, component responsibility, props, state ownership, or presentational vs data-owning boundaries, use `react`.',
+    templateRelativePath: 'skills/react/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/react/SKILL.md',
+      gemini: '.agents/skills/react/SKILL.md',
+      claude: '.agents/skills/react/SKILL.md',
+    },
+  },
   {
     id: 'nextjs',
     name: 'Next.js',
