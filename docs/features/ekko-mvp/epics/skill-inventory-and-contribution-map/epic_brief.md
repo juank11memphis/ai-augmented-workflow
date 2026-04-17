@@ -19,7 +19,7 @@ Make required skills, selectable skills, and human-identified missing skill oppo
 - Making the missing-skill artifact drive CLI behavior in the MVP.
 
 ## User Stories
-- [Define required and selectable skill sets](./define-required-and-selectable-skill-sets.md)
+- [Present required and selectable skill sets](./present-required-and-selectable-skill-sets.md)
 - [Document missing skill opportunities](./document-missing-skill-opportunities.md)
 
 ## Acceptance Criteria
