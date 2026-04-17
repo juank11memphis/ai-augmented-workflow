@@ -1,11 +1,11 @@
 {
-  "templateVersion": "22",
+  "templateVersion": "23",
   "templates": {
     "AGENTS.md": {
-      "version": "11",
+      "version": "12",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Clarifies that agents should run ekko doctor once at the start of a session, not before every follow-up, while still allowing reruns after workflow changes or when verification is needed."
+        "Adds feature-brief-writer routing so agents use the required feature brief skill for business-level feature definition, scope, MVP boundaries, and acceptance criteria."
       ]
     },
     ".codex/config.toml": {
@@ -42,6 +42,14 @@
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
         "Changes product vision discovery to ask one question at a time so users can shape the vision through a focused interview instead of answering a large batch up front."
+      ]
+    },
+    "skills/feature-brief-writer/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
+      "changes": [
+        "Adds a required feature brief writer skill that reads docs/product-vision.md before drafting and keeps each business-level brief loyal to the product vision.",
+        "Instructs agents to stop and ask users to create docs/product-vision.md with product-vision-writer when the product vision is missing."
       ]
     },
     "skills/typescript/SKILL.md": {
