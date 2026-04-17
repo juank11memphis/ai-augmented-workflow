@@ -1,5 +1,5 @@
 {
-  "templateVersion": "23",
+  "templateVersion": "24",
   "templates": {
     "AGENTS.md": {
       "version": "12",
@@ -45,11 +45,11 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds a required feature brief writer skill that reads docs/product-vision.md before drafting and keeps each business-level brief loyal to the product vision.",
-        "Instructs agents to stop and ask users to create docs/product-vision.md with product-vision-writer when the product vision is missing."
+        "Clarifies that agents must not draft feature briefs from vague feature requests and should ask one focused discovery question at a time until the feature intent is clear.",
+        "Adds minimum context guidance so feature briefs are written only after the feature intent, target user or scenario, desired outcome, and rough MVP boundary are clear."
       ]
     },
     "skills/typescript/SKILL.md": {
