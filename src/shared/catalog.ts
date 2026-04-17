@@ -36,6 +36,14 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       claude: '.agents/skills/technical-design-writer/SKILL.md',
     },
   },
+  {
+    templateRelativePath: 'skills/scrum-master-planner/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/scrum-master-planner/SKILL.md',
+      gemini: '.agents/skills/scrum-master-planner/SKILL.md',
+      claude: '.agents/skills/scrum-master-planner/SKILL.md',
+    },
+  },
 ];
 
 export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [

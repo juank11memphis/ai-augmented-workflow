@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "30",
+  "templateVersion": "31",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-17T18:38:29.217Z",
+  "updatedAt": "2026-04-17T20:45:00.000Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -11,8 +11,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "13",
-      "sha256": "4d09242393b416b398a002142379debdbcc72f3eeda84982115ec43e419d4bf0",
+      "templateVersion": "14",
+      "sha256": "825c39a9d7f511aa127c95d7dde8b6491c1c6228e7f8414a739d7caf97178b01",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -74,6 +74,12 @@
       "template": "skills/technical-design-writer/SKILL.md",
       "templateVersion": "6",
       "sha256": "8fbc6d68521f781ef23a84ffdbb20ddf503f6863305358764b2a9d49098f2605",
+      "status": "managed"
+    },
+    ".agents/skills/scrum-master-planner/SKILL.md": {
+      "template": "skills/scrum-master-planner/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "071b342e54287941c1dd40d7cde4672d0c876bb7fc13fcdb1d90a28eee10cf47",
       "status": "managed"
     }
   },

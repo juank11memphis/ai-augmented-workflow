@@ -1,11 +1,11 @@
 {
-  "templateVersion": "30",
+  "templateVersion": "31",
   "templates": {
     "AGENTS.md": {
-      "version": "13",
+      "version": "14",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Adds technical-design-writer routing so agents use the required technical design skill for implementation-oriented design docs after feature briefs."
+        "Adds scrum-master-planner routing so agents create pragmatic Epics and User Stories from approved feature briefs and technical designs."
       ]
     },
     ".codex/config.toml": {
@@ -93,6 +93,13 @@
       "description": "Selectable React skill for component design, props, state ownership, and presentational boundaries.",
       "changes": [
         "Adds an optional React skill for projects that create or change React components, props, state ownership, or presentational and data-owning boundaries."
+      ]
+    },
+    "skills/scrum-master-planner/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
+      "changes": [
+        "Adds a Scrum planning skill that writes Epic briefs and User Stories under docs/features/<feature-slug>/epics/ while keeping every User Story attached to an Epic."
       ]
     }
   }
