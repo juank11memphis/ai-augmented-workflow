@@ -1,161 +1,109 @@
 ---
 name: technical-design-writer
-description: Use this skill to translate an approved feature brief and optional UX direction into an implementation-oriented technical design before user stories, delivery planning, or implementation. Applies the product vision, `clean-code` skill guidance, selected architecture skills, selected framework/language skills, and `ux-expert` skill artifacts when relevant.
+description: Use this skill to turn an approved feature brief into a concise, implementation-oriented technical design that delegates code-quality and architecture details to the relevant skills instead of restating them.
 ---
 
 # technical-design-writer
 
-Write a Feature Technical Design Doc that translates product intent, and optional UX direction, into an implementation-ready engineering design.
+Write the smallest useful technical design doc for an approved feature.
 
-This skill prepares the technical artifact that can later be combined with the feature brief and UX artifact to create user stories, delivery plans, or Jira-ready work.
+The doc should help a human say, “cool, I understand the implementation direction,” and help a later coding agent say, “nice, I know what to do next.” Avoid filler, generic engineering advice, and restating other skills.
 
-## Required grounding
+## Grounding
 
-Read `docs/product-vision.md` first. Internalize the product vision, target users, product principles, product boundaries, MVP bar, trust expectations, and success signals.
+Before writing, read:
 
-Read the feature brief for the feature before producing the technical design. Prefer feature briefs created by, or matching the structure of, the `feature-brief-writer` skill.
+1. `docs/product-vision.md`
+2. the feature brief
+3. `clean-code`
+4. any selected architecture, language, or framework skills that apply
+5. relevant existing repo files and flows
 
-Read the `clean-code` skill before producing the technical design. Apply its code-quality principles to keep the proposed implementation simple, readable, focused, and maintainable.
+Apply those inputs. Do not summarize them back into the technical design unless a specific implication changes the implementation.
 
-Read any user-selected architecture skills before producing the technical design. Apply the selected architecture guidance instead of restating it here. If no architecture skill is selected, say so in the technical design and use the lightest architecture that preserves clear boundaries and maintainability.
+## Required input
 
-For UI-impacting features, also require or request a UX artifact from the `ux-expert` skill. If the project has selected frontend or framework skills such as `react` or `nextjs`, read and apply those skills as well.
+Require a Markdown feature brief. If the user only has a vague idea, route to `feature-brief-writer` first.
 
-Do not restate these documents wholesale. Apply only the implications that matter for the feature design.
-
-## Required feature input
-
-Require a Markdown feature brief produced by, or matching the structure of, the `feature-brief-writer` skill.
-
-Do not write a technical design directly from a vague idea. If the user has only an idea, route to the `feature-brief-writer` skill first.
-
-If the feature brief indicates UI changes, require or request a UX artifact from the `ux-expert` skill unless the user explicitly wants a backend-only or technical-first design. If the UX artifact is missing, call that out in `Open Technical Questions` or route to the `ux-expert` skill before finalizing UI/frontend design.
+If the feature has UI impact, use an existing UX artifact when available. If missing, note the UI uncertainty briefly instead of inventing UX.
 
 ## Design stance
 
-Translate product and UX intent into software changes. Do not redefine the product scope or redesign the UX.
+Translate product intent into implementation direction.
 
 Prefer:
 
-1. the simplest implementation that satisfies the feature brief
-2. boundaries that match the selected architecture skills and the existing codebase
-3. framework entrypoints that stay focused on framework concerns
-4. explicit operations or flows for meaningful application behavior
-5. abstractions only where they make the implementation clearer, safer, or easier to test
-6. readable, focused, maintainable code structure
-7. concrete file/module impact over vague architecture language
-8. testable technical decisions
-9. explicit risks, tradeoffs, and open questions
+- concise decisions over long explanation
+- concrete file/module impact over abstract architecture language
+- current codebase patterns over speculative redesigns
+- explicit open questions over risky assumptions
+- delegation to the right skills instead of duplicating their guidance
 
 Avoid:
 
-- product scope expansion disguised as technical design
-- UI decisions that contradict the UX artifact
-- speculative abstractions
-- generic architecture diagrams without implementation value
-- architecture-specific concepts unless they come from the selected architecture skills or existing codebase
-- leaking external tool, storage, protocol, or framework details into places where they do not belong
-- user stories or tickets; leave those for a later delivery-planning or scrum-master skill
+- restating clean-code, architecture, language, or framework principles
+- product scope expansion
+- user stories, tickets, or delivery plans
+- invented CLI/database/API concepts that the feature brief did not ask for
+- large template sections that say “none” without adding value
+
+## Delegation rule
+
+A technical design may name the skills that later implementation should use, but it should not repeat their contents.
+
+Examples:
+
+- Good: “Implementation should follow `command-pattern` for the new `ekko skills use` command slice.”
+- Bad: restating the full command/handler/port responsibilities from the `command-pattern` skill.
+- Good: “Use `clean-code` during implementation; no extra code-quality rules are introduced here.”
+- Bad: adding a generic clean-code checklist to the doc.
 
 ## Workflow
 
-1. Read `docs/product-vision.md`.
-2. Read the `clean-code` skill.
-3. Read the user-selected architecture skills, if any.
-4. Read the required feature brief.
-5. If the feature has UI changes, read the UX artifact from the `ux-expert` skill plus any selected frontend/framework skills.
-6. Inspect the relevant repo files and existing flows before proposing changes.
-7. Identify affected product areas, existing flows, executable operations, framework entrypoints, data storage, integrations, UI components, and tests.
-8. Choose the lightest architecture that preserves clear boundaries and clean implementation.
-9. Document the proposed design with enough specificity for implementation and later user-story generation.
-10. Separate decisions from open questions. Do not silently assume risky product, UX, or architecture choices.
+1. Read the required grounding artifacts.
+2. Inspect the relevant existing code before proposing changes.
+3. Identify only the implementation decisions that matter.
+4. Write the doc at `docs/features/<feature-slug>/technical_design.md`.
+5. Keep it concise. Remove any section that does not help implementation.
 
 ## Output location
 
-Always create or update a Markdown technical design file at:
+Always create or update:
 
 ```txt
 docs/features/<feature-slug>/technical_design.md
 ```
 
-Use the same short kebab-case feature slug as the feature brief. Keep all artifacts for the same feature together under `docs/features/<feature-slug>/`; do not place technical designs in product, UX, user story, or implementation plan files.
+Use the same kebab-case feature slug as the feature brief.
 
 ## Output format
 
-Prefer a concise Markdown technical design with these sections when useful:
+Use this structure as a starting point, not a contract. Delete sections that do not add value.
 
 ```md
 # Technical Design: <Feature Name>
 
-## Input Artifacts
-- Product vision: <path/title>
-- Feature brief: <path/title>
-- UX artifact: <path/title or "Not applicable / missing">
-- Architecture skills: <selected architecture skills or "None selected">
+## Inputs
+- Product vision: <path>
+- Feature brief: <path>
+- Delegated skills: <skills later implementation should apply>
 
 ## Summary
-<Short engineering summary of what will be built.>
+<2-4 sentences describing the implementation direction.>
 
-## Goals
-- <Technical outcome required by the feature brief.>
+## Existing Context
+<Only the current files, commands, modules, state, templates, or integrations that materially affect the change.>
 
-## Non-Goals
-- <Technical/product/UX work intentionally excluded.>
+## Proposed Design
+<Concrete implementation decisions. Include command flows, file/module impact, state changes, and integration boundaries when relevant.>
 
-## Product / UX Implications
-<Only the implications that materially affect the implementation.>
+## Validation
+<Focused test/build/manual checks.>
 
-## Existing System Context
-<Relevant existing files, modules, entrypoints, workflows, data models, integrations, and constraints.>
-
-## Proposed Technical Approach
-<High-level implementation approach and rationale.>
-
-## Architecture and Boundaries
-- Selected architecture guidance:
-- Core responsibilities:
-- Execution flow:
-- Framework entrypoints:
-- Data/storage boundaries:
-- Integration boundaries:
-- Abstractions introduced or reused:
-
-## UI / Frontend Design
-<Only if relevant. Components, routes, Server vs Client Component boundaries, state ownership, responsive behavior, and UX artifact alignment.>
-
-## Code Quality / Maintainability Notes
-<Clean-code implications: naming, module boundaries, focused units, duplication risks, and simplicity concerns.>
-
-## API / Route Changes
-<New or changed endpoints, route handlers, server actions, request/response shapes, or "None".>
-
-## Data Model / Persistence Changes
-<Schema changes, migrations, repositories, indexes, lifecycle, backfills, or "None".>
-
-## External Integrations
-<Auth, AI providers, background jobs, queues, or other external systems if relevant.>
-
-## Error Handling and Edge Cases
-<How product edge cases and technical failures should behave.>
-
-## Testing Strategy
-- Unit:
-- Integration:
-- E2E / manual:
-- Fixtures / mocks:
-
-## Rollout / Migration Plan
-<How to ship safely if needed, or "Not needed".>
-
-## Risks and Tradeoffs
-- <Risk/tradeoff and mitigation.>
-
-## Implementation Plan
-1. <Ordered implementation step.>
-2. <Ordered implementation step.>
-
-## Open Technical Questions
-- <Decision needed before or during implementation.>
+## Risks / Open Questions
+- <Only unresolved decisions or meaningful risks.>
 ```
 
-Use only sections that help. Keep the doc specific enough that a later scrum-master or delivery-planning skill can turn it into clear implementation stories without rediscovering architecture decisions.
+## Quality bar
+
+A good technical design is short, specific, and useful. It should not try to be the product brief, architecture skill, clean-code skill, implementation plan, or ticket backlog.

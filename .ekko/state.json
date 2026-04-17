@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "29",
+  "templateVersion": "30",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-17T18:18:00.000Z",
+  "updatedAt": "2026-04-17T18:38:29.217Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -72,8 +72,8 @@
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "5",
-      "sha256": "5801b80990a5af05baf54d6fe0183e2f44f050def8386a3f57d717ae184ac961",
+      "templateVersion": "6",
+      "sha256": "8fbc6d68521f781ef23a84ffdbb20ddf503f6863305358764b2a9d49098f2605",
       "status": "managed"
     }
   },

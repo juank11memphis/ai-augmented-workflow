@@ -1,5 +1,5 @@
 {
-  "templateVersion": "29",
+  "templateVersion": "30",
   "templates": {
     "AGENTS.md": {
       "version": "13",
@@ -53,10 +53,11 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Requires technical-design-writer to always create or update a Markdown technical design file at docs/features/<feature-slug>/technical_design.md."
+        "Makes technical design docs shorter and more implementation-focused.",
+        "Clarifies that technical designs should delegate clean-code, architecture, language, and framework guidance instead of restating those skills."
       ]
     },
     "skills/typescript/SKILL.md": {
