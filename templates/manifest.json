@@ -1,11 +1,11 @@
 {
-  "templateVersion": "24",
+  "templateVersion": "29",
   "templates": {
     "AGENTS.md": {
-      "version": "12",
+      "version": "13",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Adds feature-brief-writer routing so agents use the required feature brief skill for business-level feature definition, scope, MVP boundaries, and acceptance criteria."
+        "Adds technical-design-writer routing so agents use the required technical design skill for implementation-oriented design docs after feature briefs."
       ]
     },
     ".codex/config.toml": {
@@ -50,6 +50,13 @@
       "changes": [
         "Clarifies that agents must not draft feature briefs from vague feature requests and should ask one focused discovery question at a time until the feature intent is clear.",
         "Adds minimum context guidance so feature briefs are written only after the feature intent, target user or scenario, desired outcome, and rough MVP boundary are clear."
+      ]
+    },
+    "skills/technical-design-writer/SKILL.md": {
+      "version": "5",
+      "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
+      "changes": [
+        "Requires technical-design-writer to always create or update a Markdown technical design file at docs/features/<feature-slug>/technical_design.md."
       ]
     },
     "skills/typescript/SKILL.md": {
