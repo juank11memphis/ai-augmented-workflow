@@ -1,7 +1,7 @@
 # Present Required and Selectable Skill Sets
 
 ## Epic
-[Skill Inventory and Contribution Map](./epic_brief.md)
+[Skill Inventory and Contribution Map](../epic_brief.md)
 
 ## User Story
 As a developer inspecting an Ekko-enabled project, I want `ekko skills list` to show both required and selectable skills clearly, so that I understand what Ekko considers baseline workflow support versus project-specific additions.

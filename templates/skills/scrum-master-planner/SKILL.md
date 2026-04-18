@@ -45,7 +45,7 @@ write Epics and User Stories under:
 
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
-docs/features/<feature-slug>/epics/<epic-slug>/<user-story-slug>.md
+docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<user-story-slug>.md
 ```
 
 Rules:
@@ -53,6 +53,8 @@ Rules:
 - Every User Story must belong to exactly one Epic.
 - Never create orphan User Stories outside an Epic folder.
 - Use kebab-case slugs for Epic folders and User Story filenames.
+- Prefix every User Story filename with a two-digit execution order within its Epic, such as `01-`, `02-`, or `03-`.
+- Use the same order number for User Stories that can be developed in parallel within the same Epic.
 - Keep all artifacts for the feature under the same `docs/features/<feature-slug>/` tree.
 
 ## Planning rule
@@ -117,7 +119,7 @@ Each `epic_brief.md` should use this structure:
 - <What this Epic intentionally does not cover.>
 
 ## User Stories
-- [<Story title>](./<user-story-slug>.md)
+- [<Story title>](./stories/<order>-<user-story-slug>.md)
 
 ## Acceptance Criteria
 - <Epic-level criteria that prove the outcome is complete.>
@@ -128,7 +130,9 @@ Each `epic_brief.md` should use this structure:
 
 Adapt headings only when it improves clarity. Keep the Epic brief short.
 
-### 4. Write User Stories
+### 4. Sequence and write User Stories
+
+Within each Epic, decide the order of execution before writing User Story files. Use the lowest practical sequence number for the first story that should be implemented, then increment only when later stories depend on earlier work. If two or more stories can be developed at the same time, give them the same order number.
 
 Each User Story should be independently understandable and should represent a reviewable slice of work.
 
@@ -170,6 +174,8 @@ Before finishing, verify:
 
 - every MVP scope item from the feature brief is covered by at least one Epic or Story, or intentionally left out with a reason
 - every Story belongs to exactly one Epic
+- every Story filename includes a two-digit execution order prefix
+- Stories with the same order number are actually parallelizable
 - Story count is pragmatic, not inflated
 - no Story adds scope that is absent from the feature brief or technical design
 - acceptance criteria are testable enough for a reviewer

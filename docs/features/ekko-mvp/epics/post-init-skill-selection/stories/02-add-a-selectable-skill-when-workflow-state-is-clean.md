@@ -1,7 +1,7 @@
 # Add a Selectable Skill When Workflow State Is Clean
 
 ## Epic
-[Post-Init Skill Selection](./epic_brief.md)
+[Post-Init Skill Selection](../epic_brief.md)
 
 ## User Story
 As a developer with a clean Ekko-enabled repository, I want `ekko skills use <skill_name>` to add an available selectable skill, so that I can extend the project workflow without rerunning init.

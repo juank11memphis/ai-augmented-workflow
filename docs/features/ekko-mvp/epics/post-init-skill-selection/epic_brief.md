@@ -21,9 +21,9 @@ Deliver `ekko skills use <skill_name>` as a narrow, safe command for adding one 
 - A remote skill registry or marketplace.
 
 ## User Stories
-- [Resolve a selectable skill by name](./resolve-a-selectable-skill-by-name.md)
-- [Add a selectable skill when workflow state is clean](./add-a-selectable-skill-when-workflow-state-is-clean.md)
-- [Refuse unsafe post-init skill selection](./refuse-unsafe-post-init-skill-selection.md)
+- [Resolve a selectable skill by name](./stories/01-resolve-a-selectable-skill-by-name.md)
+- [Add a selectable skill when workflow state is clean](./stories/02-add-a-selectable-skill-when-workflow-state-is-clean.md)
+- [Refuse unsafe post-init skill selection](./stories/03-refuse-unsafe-post-init-skill-selection.md)
 
 ## Acceptance Criteria
 - A user can run `ekko skills use <skill_name>` after `ekko init` to add an available selectable skill.

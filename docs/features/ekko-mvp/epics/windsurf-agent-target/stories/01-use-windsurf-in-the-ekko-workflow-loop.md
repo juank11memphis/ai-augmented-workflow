@@ -1,7 +1,7 @@
 # Use Windsurf in the Ekko Workflow Loop
 
 ## Epic
-[Windsurf Agent Target](./epic_brief.md)
+[Windsurf Agent Target](../epic_brief.md)
 
 ## User Story
 As a developer who uses Windsurf, I want Ekko to support Windsurf as an agent target, so that I can participate in the same managed AI workflow loop as Codex, Claude, and Gemini users.

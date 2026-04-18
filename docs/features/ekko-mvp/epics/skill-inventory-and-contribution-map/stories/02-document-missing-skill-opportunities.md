@@ -1,7 +1,7 @@
 # Document Missing Skill Opportunities
 
 ## Epic
-[Skill Inventory and Contribution Map](./epic_brief.md)
+[Skill Inventory and Contribution Map](../epic_brief.md)
 
 ## User Story
 As a team member looking for a concrete way to contribute to Ekko, I want each missing required or selectable skill turned into a ready-to-claim Jira User Story, so that contributors can pick up concrete implementation work without needing extensive verbal onboarding.

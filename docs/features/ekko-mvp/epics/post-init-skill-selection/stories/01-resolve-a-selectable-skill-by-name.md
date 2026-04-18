@@ -1,7 +1,7 @@
 # Resolve a Selectable Skill by Name
 
 ## Epic
-[Post-Init Skill Selection](./epic_brief.md)
+[Post-Init Skill Selection](../epic_brief.md)
 
 ## User Story
 As a developer adding workflow guidance after adoption, I want Ekko to resolve a selectable skill by its exact id, so that I can intentionally add the skill I asked for.

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "31",
+  "templateVersion": "32",
   "templates": {
     "AGENTS.md": {
       "version": "14",
@@ -96,10 +96,11 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Adds a Scrum planning skill that writes Epic briefs and User Stories under docs/features/<feature-slug>/epics/ while keeping every User Story attached to an Epic."
+        "Moves Scrum User Stories into an Epic-local stories/ folder.",
+        "Adds two-digit execution-order filename prefixes for User Stories, with shared numbers indicating parallelizable work."
       ]
     }
   }

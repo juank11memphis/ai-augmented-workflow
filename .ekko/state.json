@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "31",
+  "templateVersion": "32",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-17T20:45:00.000Z",
+  "updatedAt": "2026-04-18T03:30:07.269Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -78,8 +78,8 @@
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "071b342e54287941c1dd40d7cde4672d0c876bb7fc13fcdb1d90a28eee10cf47",
+      "templateVersion": "2",
+      "sha256": "5afffd6c6a2edd84cce0c97543aac02c8b705d8224978b90570231afcf86b02b",
       "status": "managed"
     }
   },

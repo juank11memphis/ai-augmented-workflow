@@ -1,7 +1,7 @@
 # Refuse Unsafe Post-Init Skill Selection
 
 ## Epic
-[Post-Init Skill Selection](./epic_brief.md)
+[Post-Init Skill Selection](../epic_brief.md)
 
 ## User Story
 As a developer with a drifted or ambiguous Ekko-enabled repository, I want `ekko skills use <skill_name>` to refuse unsafe changes, so that my local workflow files stay under my control.

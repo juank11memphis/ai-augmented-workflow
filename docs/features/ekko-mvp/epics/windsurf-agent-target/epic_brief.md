@@ -19,7 +19,7 @@ Add Windsurf as a first-class Ekko agent target while preserving Ekko's cross-ag
 - Supporting every possible editor or agent in the MVP.
 
 ## User Stories
-- [Use Windsurf in the Ekko workflow loop](./use-windsurf-in-the-ekko-workflow-loop.md)
+- [Use Windsurf in the Ekko workflow loop](./stories/01-use-windsurf-in-the-ekko-workflow-loop.md)
 
 ## Acceptance Criteria
 - Windsurf is available as a supported agent target alongside Codex, Claude, and Gemini.
