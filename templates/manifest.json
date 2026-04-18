@@ -1,11 +1,11 @@
 {
-  "templateVersion": "32",
+  "templateVersion": "33",
   "templates": {
     "AGENTS.md": {
-      "version": "14",
+      "version": "15",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Adds scrum-master-planner routing so agents create pragmatic Epics and User Stories from approved feature briefs and technical designs."
+        "Adds ai-implementation-planner routing so agents can turn one approved User Story into an LLM-sized implementation checklist."
       ]
     },
     ".codex/config.toml": {
@@ -101,6 +101,14 @@
       "changes": [
         "Moves Scrum User Stories into an Epic-local stories/ folder.",
         "Adds two-digit execution-order filename prefixes for User Stories, with shared numbers indicating parallelizable work."
+      ]
+    },
+    "skills/ai-implementation-planner/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory AI implementation planner skill for turning one approved User Story into a small-step implementation checklist.",
+      "changes": [
+        "Adds an AI implementation planner skill that writes story-local implementation checklist files from approved User Stories, Epic context, feature briefs, technical designs, and relevant selected skills.",
+        "Requires checklist items to be concrete baby-step implementation changes with paths, high-level approach, and done conditions."
       ]
     }
   }

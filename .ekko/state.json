@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "32",
+  "templateVersion": "33",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-18T03:30:07.269Z",
+  "updatedAt": "2026-04-18T04:00:00.000Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -11,8 +11,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "14",
-      "sha256": "825c39a9d7f511aa127c95d7dde8b6491c1c6228e7f8414a739d7caf97178b01",
+      "templateVersion": "15",
+      "sha256": "8a476404f9930e05bb49223d9ad505fdf08ccbe2f0cd3594db63185d327df249",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -80,6 +80,12 @@
       "template": "skills/scrum-master-planner/SKILL.md",
       "templateVersion": "2",
       "sha256": "5afffd6c6a2edd84cce0c97543aac02c8b705d8224978b90570231afcf86b02b",
+      "status": "managed"
+    },
+    ".agents/skills/ai-implementation-planner/SKILL.md": {
+      "template": "skills/ai-implementation-planner/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "c5036a3a72b8c962651cc29068391ccfd2c1dfb38d20c834b7a84015fc9c357e",
       "status": "managed"
     }
   },
