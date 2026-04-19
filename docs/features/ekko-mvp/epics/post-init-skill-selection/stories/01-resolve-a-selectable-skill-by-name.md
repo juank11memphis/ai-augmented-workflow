@@ -29,3 +29,8 @@ The technical design calls for a shared helper that resolves user-provided skill
 ## Validation
 - Run `pnpm build` and `pnpm check`.
 - Smoke test `ekko skills use nope` and confirm it suggests `ekko skills list`.
+
+## Implementation Notes
+
+- Final validation for the shared selectable skill resolver passed with `pnpm build`, `pnpm check`, and `pnpm test`.
+- `ekko skills use nope` is currently blocked because `skills use` has not been registered yet and returns `unknown command 'use'`; command registration belongs to a later story in this Epic.
