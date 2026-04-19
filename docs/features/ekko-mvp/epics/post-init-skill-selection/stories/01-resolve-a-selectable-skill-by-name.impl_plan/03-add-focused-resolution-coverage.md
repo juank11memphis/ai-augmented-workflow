@@ -25,3 +25,9 @@ Add focused unit tests for the shared resolution helper so the story’s accepta
 - A required-only skill id is tested not to resolve as selectable.
 - A repeatable unit test command exists and passes.
 - `pnpm build` and `pnpm check` pass.
+
+## Review status
+
+- Status: approved
+- Approved by: user
+- Approved at: 2026-04-19T01:49:47Z

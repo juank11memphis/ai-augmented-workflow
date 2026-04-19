@@ -14,11 +14,12 @@
   "scripts": {
     "build": "tsc && chmod +x bin/ekko.js",
     "check": "tsc --noEmit",
-    "verify": "pnpm build && pnpm check",
+    "verify": "pnpm build && pnpm check && pnpm test",
     "dev:link": "pnpm install && pnpm build && pnpm link --global",
     "dev:unlink": "pnpm unlink --global ekko",
     "prepack": "pnpm run build",
-    "smoke:init": "node ./bin/ekko.js init"
+    "smoke:init": "node ./bin/ekko.js init",
+    "test": "pnpm build && node --test bin/shared/catalog.test.js"
   },
   "keywords": [
     "ai",
