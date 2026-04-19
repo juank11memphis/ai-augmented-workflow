@@ -36,3 +36,9 @@ Validate the completed `ekko skills use <skill_name>` clean-state path against t
 - `.ekko/state.json` reflects the new TypeScript selection and managed file metadata after the smoke test.
 - Re-running `ekko skills use typescript` succeeds as a no-op and does not change files.
 - Any remaining unsafe-state behavior is explicitly deferred to `03-refuse-unsafe-post-init-skill-selection.md` rather than hidden in this story.
+
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-04-19T04:02:26Z
