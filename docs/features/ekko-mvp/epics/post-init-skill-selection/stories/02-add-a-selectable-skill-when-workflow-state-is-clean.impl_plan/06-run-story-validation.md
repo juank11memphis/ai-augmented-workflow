@@ -18,12 +18,12 @@ Validate the completed `ekko skills use <skill_name>` clean-state path against t
 - src/entrypoints/cli/command.ts
 - src/entrypoints/cli/create-program.ts
 - src/entrypoints/cli/execute-command.ts
-- src/shared/workflow-cleanliness.ts
+- src/shared/workflow-mutation-readiness.ts
 - src/shared/workflow-targets.ts
 - src/shared/templates.ts
 - src/shared/state.ts
 - src/features/use-skill/handler.test.ts
-- src/shared/workflow-cleanliness.test.ts
+- src/shared/workflow-mutation-readiness.test.ts
 - docs/features/ekko-mvp/epics/post-init-skill-selection/stories/02-add-a-selectable-skill-when-workflow-state-is-clean.md
 
 ## Done when

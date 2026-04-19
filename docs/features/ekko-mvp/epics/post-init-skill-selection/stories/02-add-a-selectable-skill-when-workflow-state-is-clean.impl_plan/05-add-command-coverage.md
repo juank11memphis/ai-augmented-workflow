@@ -16,8 +16,8 @@ Add automated coverage for the new command behavior so clean selection and alrea
 
 - src/features/use-skill/handler.ts
 - src/features/use-skill/handler.test.ts
-- src/shared/workflow-cleanliness.ts
-- src/shared/workflow-cleanliness.test.ts
+- src/shared/workflow-mutation-readiness.ts
+- src/shared/workflow-mutation-readiness.test.ts
 - src/shared/catalog.test.ts
 - package.json
 
