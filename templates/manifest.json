@@ -1,5 +1,5 @@
 {
-  "templateVersion": "35",
+  "templateVersion": "36",
   "templates": {
     "AGENTS.md": {
       "version": "15",
@@ -104,11 +104,11 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Moves AI implementation planner skill-dependency guidance into required source context so agents read relevant skills before writing step files.",
-        "Keeps implementation plans as one Markdown file per step in a story-local .impl_plan folder."
+        "Changes AI implementation planner step files to use lowercase .md extensions.",
+        "Updates the step-file format to use Markdown headings for Step, Goal, Scope, Files, and Done when sections."
       ]
     }
   }

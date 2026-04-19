@@ -65,7 +65,7 @@ If any required source context file is missing:
 Write one Markdown file per implementation step under a story-local implementation plan folder:
 
 ```txt
-docs/features/<feature_slug>/epics/<epic_slug>/stories/<order>-<story_slug>.impl_plan/<step_order>-<step_slug>.MD
+docs/features/<feature_slug>/epics/<epic_slug>/stories/<order>-<story_slug>.impl_plan/<step_order>-<step_slug>.md
 ```
 
 Use the source story filename, without its `.md` extension, as the implementation plan folder name plus `.impl_plan`.
@@ -74,8 +74,8 @@ Examples:
 
 ```txt
 stories/01-resolve-a-selectable-skill-by-name.md
-stories/01-resolve-a-selectable-skill-by-name.impl_plan/01-add-skill-resolution-domain-step.MD
-stories/01-resolve-a-selectable-skill-by-name.impl_plan/02-wire-skill-resolution-command-step.MD
+stories/01-resolve-a-selectable-skill-by-name.impl_plan/01-add-skill-resolution-domain-step.md
+stories/01-resolve-a-selectable-skill-by-name.impl_plan/02-wire-skill-resolution-command-step.md
 ```
 
 File naming rules:
@@ -83,7 +83,7 @@ File naming rules:
 - use two-digit step order prefixes (`01`, `02`, `03`) unless the repository uses another explicit convention
 - use lowercase kebab-case step slugs
 - keep each step file focused on exactly one executable implementation step
-- use the uppercase `.MD` extension exactly as shown
+- use the lowercase `.md` extension exactly as shown
 - if the correct story slug, step order, or step slug is unclear, stop and ask before writing files
 
 ## Planning rules
@@ -149,26 +149,27 @@ Inspect only the files and commands needed to make the checklist actionable. Use
 
 ### 4. Write the implementation step files
 
-Create one `.MD` file per step in the story-local `.impl_plan` folder. Use this structure for every step file:
+Create one `.md` file per step in the story-local `.impl_plan` folder. Use this structure for every step file:
 
 ```md
-Step: <Imperative step title>
+# Step: <Imperative step title>
 
-Goal
+## Goal
+
 <One short paragraph describing the implementation outcome for this step.>
 
-Scope
+## Scope
 
 - <Specific in-scope action or boundary>
 - <Specific in-scope action or boundary>
 - Do not <explicit out-of-scope boundary when useful>
 
-Files
+## Files
 
 - <path/to/file.ext>
 - <path/to/test_file.ext>
 
-Done when
+## Done when
 
 - <Specific observable completion condition>
 - <Acceptance criterion or technical requirement covered by this step is satisfied>
@@ -177,8 +178,8 @@ Done when
 
 Step-file requirements:
 
-- the first line must be `Step: <Imperative step title>`
-- use exactly these section headings: `Goal`, `Scope`, `Files`, `Done when`
+- the first line must be `# Step: <Imperative step title>`
+- use exactly these Markdown section headings: `## Goal`, `## Scope`, `## Files`, `## Done when`
 - keep each step small enough for one AI coding pass
 - name every known file, module, command, or artifact to change or validate
 - include explicit out-of-scope boundaries in `Scope` when they prevent scope creep

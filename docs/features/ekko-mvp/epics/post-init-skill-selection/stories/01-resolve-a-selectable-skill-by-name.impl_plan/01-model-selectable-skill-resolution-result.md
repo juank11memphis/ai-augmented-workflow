@@ -1,9 +1,9 @@
-Step: Model selectable skill resolution results
+# Step: Model selectable skill resolution results
 
-Goal
+## Goal
 Add explicit shared TypeScript types for resolving one selectable skill id while preserving whether the resolved catalog entry is a language, framework, or architecture skill.
 
-Scope
+## Scope
 
 - Define a `ResolvedSelectableSkill` discriminated union for language, framework, and architecture selectable skills.
 - Define a resolution result type that can represent either a resolved selectable skill or an unknown skill failure with a short user-facing message.
@@ -11,11 +11,11 @@ Scope
 - Do not model selected/already-selected/conflicting architecture behavior in this step.
 - Do not include mandatory skills in the resolved-selectable type.
 
-Files
+## Files
 
 - src/shared/types.ts
 
-Done when
+## Done when
 
 - The shared type preserves the category for known language, framework, and architecture skills.
 - Unknown skill resolution can carry a concise message that suggests `ekko skills list`.

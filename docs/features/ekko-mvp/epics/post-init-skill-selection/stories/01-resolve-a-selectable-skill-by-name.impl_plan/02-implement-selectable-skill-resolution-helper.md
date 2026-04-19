@@ -1,9 +1,9 @@
-Step: Implement exact selectable skill lookup helper
+# Step: Implement exact selectable skill lookup helper
 
-Goal
+## Goal
 Add the shared catalog helper that resolves a user-provided skill id by exact match across selectable language, framework, and architecture catalog entries.
 
-Scope
+## Scope
 
 - Add a helper such as `resolveSelectableSkillById(skillId: string)` in the shared catalog module.
 - Search `SELECTABLE_LANGUAGE_SKILLS`, `SELECTABLE_FRAMEWORK_SKILLS`, and `SELECTABLE_ARCHITECTURE_SKILLS` only.
@@ -12,12 +12,12 @@ Scope
 - Do not add fuzzy matching, aliases, search, or normalization beyond exact id matching.
 - Do not traverse `MANDATORY_SKILLS` or allow required-only skills as selectable additions.
 
-Files
+## Files
 
 - src/shared/catalog.ts
 - src/shared/types.ts
 
-Done when
+## Done when
 
 - Known selectable ids such as `typescript`, `react`, `nextjs`, `ddd-hexagonal`, and `command-pattern` can resolve to their catalog entry and category.
 - Unknown ids such as `nope` produce a failure result whose message suggests `ekko skills list`.
