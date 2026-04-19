@@ -25,5 +25,5 @@ Add explicit shared TypeScript types for resolving one selectable skill id while
 ## Review status
 
 - Status: approved
-- Approved by: user
+- Approved by: juanca
 - Approved at: 2026-04-19T01:41:13Z

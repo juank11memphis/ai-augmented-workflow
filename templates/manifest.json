@@ -1,5 +1,5 @@
 {
-  "templateVersion": "38",
+  "templateVersion": "39",
   "templates": {
     "AGENTS.md": {
       "version": "16",
@@ -112,11 +112,11 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Requires the implementation plan executor to commit approved step changes before moving to the next step.",
-        "Clarifies that user approval is needed before marking a step approved, committing it, or continuing."
+        "Changes implementation plan executor review status to record the current Git user in the Approved by field.",
+        "Keeps the approved-step commit gate before moving to the next implementation step."
       ]
     }
   }

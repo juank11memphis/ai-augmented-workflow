@@ -29,5 +29,5 @@ Add focused unit tests for the shared resolution helper so the story’s accepta
 ## Review status
 
 - Status: approved
-- Approved by: user
+- Approved by: juanca
 - Approved at: 2026-04-19T01:49:47Z

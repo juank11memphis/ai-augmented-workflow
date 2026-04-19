@@ -28,5 +28,5 @@ Add the shared catalog helper that resolves a user-provided skill id by exact ma
 ## Review status
 
 - Status: approved
-- Approved by: user
+- Approved by: juanca
 - Approved at: 2026-04-19T01:45:13Z

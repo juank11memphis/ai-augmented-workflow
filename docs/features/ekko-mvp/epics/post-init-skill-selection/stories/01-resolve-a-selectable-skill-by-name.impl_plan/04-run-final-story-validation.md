@@ -28,5 +28,5 @@ Validate the completed helper against the story acceptance criteria and capture 
 ## Review status
 
 - Status: approved
-- Approved by: user
+- Approved by: juanca
 - Approved at: 2026-04-19T01:52:42Z

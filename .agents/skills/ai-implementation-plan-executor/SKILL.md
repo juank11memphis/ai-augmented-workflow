@@ -97,11 +97,11 @@ When the user explicitly approves the current step, update that step file by add
 ## Review status
 
 - Status: approved
-- Approved by: user
+- Approved by: <current git user>
 - Approved at: <ISO-8601 timestamp>
 ```
 
-After writing the approval marker, commit all changes for the approved step before continuing. Use a Conventional Commits 1.0.0 message that describes the completed step. If the commit fails, stop and report the failure instead of continuing.
+Before writing the approval marker, identify the current Git user with `git config user.name`; if it is unavailable, use `git config user.email`. Use that value for `Approved by`. After writing the approval marker, commit all changes for the approved step before continuing. Use a Conventional Commits 1.0.0 message that describes the completed step. If the commit fails, stop and report the failure instead of continuing.
 
 Then continue with the next unapproved step only after the approval marker is written and the approved step changes are committed.
 
