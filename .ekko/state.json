@@ -2,12 +2,17 @@
   "ekkoVersion": "0.1.0",
   "templateVersion": "39",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-19T01:55:04.350Z",
+  "updatedAt": "2026-04-19T04:13:05.239Z",
   "selectedAgents": [
     "codex",
     "gemini",
     "claude"
   ],
+  "selectedLanguageSkills": [
+    "typescript"
+  ],
+  "selectedFrameworkSkills": [],
+  "selectedArchitectureSkill": "command-pattern",
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
@@ -37,25 +42,6 @@
       "template": "skills/clean-code/SKILL.md",
       "templateVersion": "4",
       "sha256": "e3d115728f12557162ed3322a32bcf5d33e64fa65cd05b1eeb7f2877a25860f1",
-      "status": "managed"
-    },
-    ".agents/skills/typescript/SKILL.md": {
-      "template": "skills/typescript/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "1d0c05af8482918e0d01dec88b9f0af1f89adcea341339e190bc69bd352081bd",
-      "status": "managed"
-    },
-    ".agents/skills/ddd-hexagonal/SKILL.md": {
-      "template": "skills/architecture/ddd-hexagonal/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "2a4cc059b0bbfef51c3f5c8925bcd3c4afb3719f4d5d9eaa8a2bd2aa533b12fd",
-      "status": "unmanaged",
-      "reason": "Stopped by `ekko manage stop`."
-    },
-    ".agents/skills/command-pattern/SKILL.md": {
-      "template": "skills/architecture/command-pattern/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "076440fc00dd9862542672280e8398b793c7fe9e4dff4482462d946ec81d761d",
       "status": "managed"
     },
     ".agents/skills/product-vision-writer/SKILL.md": {
@@ -93,11 +79,25 @@
       "templateVersion": "3",
       "sha256": "0d0d3ea3b419960e3c529a7a29f40a80c71105734c7f31cef7ec49a053c3337f",
       "status": "managed"
+    },
+    ".agents/skills/typescript/SKILL.md": {
+      "template": "skills/typescript/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "1d0c05af8482918e0d01dec88b9f0af1f89adcea341339e190bc69bd352081bd",
+      "status": "managed"
+    },
+    ".agents/skills/nextjs/SKILL.md": {
+      "template": "skills/nextjs/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "ea477121b41ac1b683cfd8c8219a863c7fd7c825cbf236c98d9ec5bf028927d4",
+      "status": "unmanaged",
+      "reason": "Stopped by `ekko skills stop`."
+    },
+    ".agents/skills/command-pattern/SKILL.md": {
+      "template": "skills/architecture/command-pattern/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "076440fc00dd9862542672280e8398b793c7fe9e4dff4482462d946ec81d761d",
+      "status": "managed"
     }
-  },
-  "selectedLanguageSkills": [
-    "typescript"
-  ],
-  "selectedArchitectureSkill": "command-pattern",
-  "selectedFrameworkSkills": []
+  }
 }

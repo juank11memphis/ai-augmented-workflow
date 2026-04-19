@@ -19,7 +19,7 @@
     "dev:unlink": "pnpm unlink --global ekko",
     "prepack": "pnpm run build",
     "smoke:init": "node ./bin/ekko.js init",
-    "test": "pnpm build && node --test bin/shared/catalog.test.js bin/shared/workflow-mutation-readiness.test.js bin/features/use-skill/handler.test.js"
+    "test": "pnpm build && node --test bin/shared/catalog.test.js bin/shared/workflow-mutation-readiness.test.js bin/features/use-skill/handler.test.js bin/features/stop-managing-file/handler.test.js"
   },
   "keywords": [
     "ai",

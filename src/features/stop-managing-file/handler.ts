@@ -1,88 +1,218 @@
 import fs from 'node:fs';
+import path from 'node:path';
 
 import { cancel, intro, isCancel, log, outro, select } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import { readFileHashIfPresent } from '../../shared/hash.js';
-import { getProjectContext, resolveManagedFilePath } from '../../shared/paths.js';
+import { STATE_RELATIVE_PATH, resolveSelectableSkillById } from '../../shared/catalog.js';
+import { readFileHashIfPresent, sha256 } from '../../shared/hash.js';
+import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
 import { cloneState, readStateForDoctor, writeStateFile } from '../../shared/state.js';
-import type { EkkoState, ManagedFilePath, ManagedFileState } from '../../shared/types.js';
+import { getTemplateVersion, readTemplateManifest, renderTemplateForSync } from '../../shared/templates.js';
+import type { EkkoState, ManagedFilePath, ManagedFileState, ResolvedSelectableSkill } from '../../shared/types.js';
 import { removeUndefinedFields } from '../../shared/object.js';
+import {
+  getSelectedAgentsFromState,
+  getSelectedArchitectureSkillFromState,
+  getSelectedFrameworkSkillsFromState,
+  getSelectedLanguageSkillsFromState,
+} from '../../shared/workflow-targets.js';
 import type { StopManagingFileCommand } from './command.js';
 
-export async function handleStopManagingFile({ file }: StopManagingFileCommand): Promise<void> {
+export type StopSkillResult =
+  | { status: 'stopped'; state: EkkoState; stoppedPaths: ManagedFilePath[]; stoppedFiles: ManagedFileState[]; skillName: string }
+  | { status: 'noop'; message: string }
+  | { status: 'blocked'; message: string; hint?: string };
+
+export async function handleStopManagingFile({ skillName }: StopManagingFileCommand): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Stopping file management'));
+  intro(chalk.cyan('Stopping skill management'));
 
   const { rootPath, statePath } = getProjectContext();
   const stateResult = readStateForDoctor(statePath);
 
   if (!stateResult.ok) {
     log.error(stateResult.message);
-    log.info('Run `ekko init` before managing workflow file state.');
-    outro(chalk.yellow('File management unavailable.'));
+    log.info('Run `ekko init` before managing workflow skill state.');
+    outro(chalk.yellow('Skill management unavailable.'));
     process.exitCode = 1;
     return;
   }
 
-  const managedPath = resolveManagedFilePath(rootPath, file);
-  const managedFile = stateResult.state.managedFiles[managedPath.relativePath];
+  const result = stopSelectedSkill({ rootPath, state: stateResult.state, skillName });
 
-  if (!managedFile) {
-    log.error(`${managedPath.relativePath} is not recorded in ${STATE_RELATIVE_PATH}.`);
-    log.info('Run `ekko doctor` to see currently managed workflow files.');
-    outro(chalk.yellow('No file management changed.'));
-    process.exitCode = 1;
-    return;
+  switch (result.status) {
+    case 'blocked':
+      log.error(result.message);
+      if (result.hint) {
+        log.info(result.hint);
+      }
+      outro(chalk.yellow('No skill management changed.'));
+      process.exitCode = 1;
+      return;
+    case 'noop':
+      log.success(result.message);
+      log.info('No files changed.');
+      outro(chalk.green('Skill management already up to date.'));
+      return;
+    case 'stopped':
+      writeStateFile(statePath, result.state);
+      for (const stoppedPath of result.stoppedPaths) {
+        log.success(`Stopped managing ${stoppedPath.relativePath}.`);
+      }
+      log.success(`Refreshed AGENTS.md skill routing.`);
+      log.success(`Updated ${STATE_RELATIVE_PATH}.`);
+
+      for (const [index, stoppedPath] of result.stoppedPaths.entries()) {
+        await askToDeleteStoppedFile(stoppedPath, result.stoppedFiles[index]);
+      }
+
+      outro(chalk.green(`Stopped ${result.skillName}.`));
+      return;
   }
-
-  const nextState = cloneState(stateResult.state);
-  const currentHash = readFileHashIfPresent(managedPath.absolutePath);
-
-  nextState.managedFiles[managedPath.relativePath] = removeUndefinedFields({
-    ...managedFile,
-    sha256: currentHash ?? managedFile.sha256,
-    status: 'unmanaged',
-    reason: 'Stopped by `ekko skills stop`.',
-  });
-  clearSelectedSkillForStoppedFile(nextState, managedFile);
-  nextState.updatedAt = new Date().toISOString();
-  writeStateFile(statePath, nextState);
-
-  if (managedFile.status === 'unmanaged') {
-    log.info(`${managedPath.relativePath} was already unmanaged.`);
-  } else {
-    log.success(`Stopped managing ${managedPath.relativePath}.`);
-  }
-
-  await askToDeleteStoppedFile(managedPath, managedFile);
-  outro(chalk.green('File management updated.'));
 }
 
-function clearSelectedSkillForStoppedFile(state: EkkoState, managedFile: ManagedFileState): void {
-  const languageSkill = SELECTABLE_LANGUAGE_SKILLS.find((skill) => skill.templateRelativePath === managedFile.template);
+export function stopSelectedSkill({ rootPath, state, skillName }: { rootPath: string; state: EkkoState; skillName: string }): StopSkillResult {
+  const resolution = resolveSelectableSkillById(skillName);
 
-  if (languageSkill && state.selectedLanguageSkills?.includes(languageSkill.id)) {
-    state.selectedLanguageSkills = state.selectedLanguageSkills.filter((skillId) => skillId !== languageSkill.id);
-    log.info(`Removed ${languageSkill.id} from selected language skills.`);
+  if (!resolution.ok) {
+    return { status: 'blocked', message: resolution.message, hint: 'Use `ekko skills stop <skill_name>` with a selectable skill id from `ekko skills list`.' };
   }
 
-
-  const frameworkSkill = SELECTABLE_FRAMEWORK_SKILLS.find((skill) => skill.templateRelativePath === managedFile.template);
-
-  if (frameworkSkill && state.selectedFrameworkSkills?.includes(frameworkSkill.id)) {
-    state.selectedFrameworkSkills = state.selectedFrameworkSkills.filter((skillId) => skillId !== frameworkSkill.id);
-    log.info(`Removed ${frameworkSkill.id} from selected framework skills.`);
+  if (!isSkillSelected(state, resolution.resolved)) {
+    return { status: 'noop', message: `${resolution.resolved.skill.name} is not selected.` };
   }
 
-  const architectureSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.templateRelativePath === managedFile.template);
+  const stoppedPaths = getSkillManagedPaths(rootPath, state, resolution.resolved);
 
-  if (architectureSkill && state.selectedArchitectureSkill === architectureSkill.id) {
-    delete state.selectedArchitectureSkill;
-    log.info(`Removed ${architectureSkill.id} as the selected architecture skill.`);
+  if (stoppedPaths.length === 0) {
+    return { status: 'blocked', message: `${resolution.resolved.skill.name} does not have a managed target for the selected agents.` };
   }
+
+  const nextState = cloneState(state);
+  const stoppedFiles: ManagedFileState[] = [];
+
+  for (const stoppedPath of stoppedPaths) {
+    const managedFile = nextState.managedFiles[stoppedPath.relativePath];
+
+    if (!managedFile) {
+      return {
+        status: 'blocked',
+        message: `${stoppedPath.relativePath} is not recorded in ${STATE_RELATIVE_PATH}.`,
+        hint: 'Run `ekko sync` to review workflow state before stopping this skill.',
+      };
+    }
+
+    const currentHash = readFileHashIfPresent(stoppedPath.absolutePath);
+    const stoppedFile = removeUndefinedFields({
+      ...managedFile,
+      sha256: currentHash ?? managedFile.sha256,
+      status: 'unmanaged' as const,
+      reason: 'Stopped by `ekko skills stop`.',
+    });
+
+    nextState.managedFiles[stoppedPath.relativePath] = stoppedFile;
+    stoppedFiles.push(stoppedFile);
+  }
+
+  removeSelectedSkill(nextState, resolution.resolved);
+
+  const agentsUpdate = getAgentsUpdate(rootPath, nextState);
+  if (!agentsUpdate.ok) {
+    return { status: 'blocked', message: agentsUpdate.message, hint: 'Run `ekko sync` to review workflow state before stopping this skill.' };
+  }
+
+  fs.writeFileSync(agentsUpdate.path, agentsUpdate.contents, 'utf8');
+  const manifest = readTemplateManifest();
+  nextState.templateVersion = manifest.templateVersion;
+  nextState.updatedAt = new Date().toISOString();
+  nextState.managedFiles['AGENTS.md'] = removeUndefinedFields({
+    ...agentsUpdate.managedFile,
+    templateVersion: getTemplateVersion(manifest, agentsUpdate.managedFile.template),
+    sha256: sha256(agentsUpdate.contents),
+    status: agentsUpdate.managedFile.status ?? 'managed',
+  });
+
+  return { status: 'stopped', state: nextState, stoppedPaths, stoppedFiles, skillName: resolution.resolved.skill.name };
+}
+
+function isSkillSelected(state: EkkoState, resolved: ResolvedSelectableSkill): boolean {
+  switch (resolved.kind) {
+    case 'language':
+      return state.selectedLanguageSkills?.includes(resolved.skill.id) ?? false;
+    case 'framework':
+      return state.selectedFrameworkSkills?.includes(resolved.skill.id) ?? false;
+    case 'architecture':
+      return state.selectedArchitectureSkill === resolved.skill.id;
+  }
+}
+
+function removeSelectedSkill(state: EkkoState, resolved: ResolvedSelectableSkill): void {
+  switch (resolved.kind) {
+    case 'language':
+      state.selectedLanguageSkills = (state.selectedLanguageSkills ?? []).filter((skillId) => skillId !== resolved.skill.id);
+      return;
+    case 'framework':
+      state.selectedFrameworkSkills = (state.selectedFrameworkSkills ?? []).filter((skillId) => skillId !== resolved.skill.id);
+      return;
+    case 'architecture':
+      delete state.selectedArchitectureSkill;
+      return;
+  }
+}
+
+function getSkillManagedPaths(rootPath: string, state: EkkoState, resolved: ResolvedSelectableSkill): ManagedFilePath[] {
+  const relativePaths = new Set<string>();
+
+  for (const agent of getSelectedAgentsFromState(state)) {
+    const relativePath = resolved.skill.targetRelativePathsByAgent[agent.id];
+
+    if (relativePath) {
+      relativePaths.add(relativePath);
+    }
+  }
+
+  return [...relativePaths].map((relativePath) => ({
+    relativePath,
+    absolutePath: path.join(rootPath, relativePath),
+  }));
+}
+
+type AgentsUpdateResult =
+  | { ok: true; path: string; contents: string; managedFile: ManagedFileState }
+  | { ok: false; message: string };
+
+function getAgentsUpdate(rootPath: string, state: EkkoState): AgentsUpdateResult {
+  const agentsRelativePath = 'AGENTS.md';
+  const agentsPath = path.join(rootPath, agentsRelativePath);
+  const managedFile = state.managedFiles[agentsRelativePath];
+
+  if (!managedFile) {
+    return { ok: false, message: 'AGENTS.md is not recorded in `.ekko/state.json`.' };
+  }
+
+  if (!fs.existsSync(agentsPath)) {
+    return { ok: false, message: 'AGENTS.md is missing.' };
+  }
+
+  const currentHash = sha256(fs.readFileSync(agentsPath, 'utf8'));
+  if (currentHash !== managedFile.sha256) {
+    return { ok: false, message: 'AGENTS.md has changed since Ekko last recorded it.' };
+  }
+
+  return {
+    ok: true,
+    path: agentsPath,
+    managedFile,
+    contents: renderTemplateForSync({
+      templateRelativePath: managedFile.template,
+      currentPath: agentsPath,
+      selectedLanguageSkills: getSelectedLanguageSkillsFromState(state),
+      selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(state),
+      selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
+    }),
+  };
 }
 
 async function askToDeleteStoppedFile(managedPath: ManagedFilePath, managedFile: ManagedFileState): Promise<void> {

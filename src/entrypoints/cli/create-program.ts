@@ -36,9 +36,9 @@ export function createProgram(): CommanderCommand {
     .action((skillName: string) => executeCliCommand({ type: 'skills:use', skillName }));
 
   skills
-    .command('stop <file>')
-    .description('Stop managing an Ekko-tracked workflow file')
-    .action((file: string) => executeCliCommand({ type: 'skills:stop', file }));
+    .command('stop <skill_name>')
+    .description('Stop managing one selected Ekko skill')
+    .action((skillName: string) => executeCliCommand({ type: 'skills:stop', skillName }));
 
   return cli;
 }
