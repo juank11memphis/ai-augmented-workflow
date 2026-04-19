@@ -1,8 +1,8 @@
 {
   "ekkoVersion": "0.1.0",
-  "templateVersion": "33",
+  "templateVersion": "35",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-18T04:00:00.000Z",
+  "updatedAt": "2026-04-19T01:12:41.793Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -84,8 +84,8 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "c5036a3a72b8c962651cc29068391ccfd2c1dfb38d20c834b7a84015fc9c357e",
+      "templateVersion": "3",
+      "sha256": "579105fdcac475fc053b6c94be997c0d81db7f5b47a199126b1240463bfe4f90",
       "status": "managed"
     }
   },
