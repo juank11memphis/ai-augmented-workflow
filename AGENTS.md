@@ -33,6 +33,7 @@ This repository is the home for establishing an AI-augmented development workflo
 - For requests to create, revise, or clarify a technical design, implementation-oriented design doc, architecture approach, technical tradeoffs, technical risks, or implementation plan for an approved feature, use `technical-design-writer`.
 - For requests to create Epics, User Stories, Scrum planning artifacts, backlog slices, or delivery plans from an approved feature brief and technical design, use `scrum-master-planner`.
 - For requests to turn a specific User Story into an implementation checklist, coding plan, step-by-step execution plan, or baby-step plan, use `ai-implementation-planner`.
+- For requests to implement, execute, continue, or work through an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`.
 - For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.
 

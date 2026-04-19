@@ -1,11 +1,11 @@
 {
-  "templateVersion": "36",
+  "templateVersion": "38",
   "templates": {
     "AGENTS.md": {
-      "version": "15",
+      "version": "16",
       "description": "Project-level agent instructions and Ekko maintenance guidance.",
       "changes": [
-        "Adds ai-implementation-planner routing so agents can turn one approved User Story into an LLM-sized implementation checklist."
+        "Adds routing for the ai-implementation-plan-executor skill so agents execute existing implementation plans one approved step at a time."
       ]
     },
     ".codex/config.toml": {
@@ -109,6 +109,14 @@
       "changes": [
         "Changes AI implementation planner step files to use lowercase .md extensions.",
         "Updates the step-file format to use Markdown headings for Step, Goal, Scope, Files, and Done when sections."
+      ]
+    },
+    "skills/ai-implementation-plan-executor/SKILL.md": {
+      "version": "2",
+      "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
+      "changes": [
+        "Requires the implementation plan executor to commit approved step changes before moving to the next step.",
+        "Clarifies that user approval is needed before marking a step approved, committing it, or continuing."
       ]
     }
   }

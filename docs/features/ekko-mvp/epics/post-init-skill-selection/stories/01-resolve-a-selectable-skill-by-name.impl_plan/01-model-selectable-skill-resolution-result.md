@@ -21,3 +21,9 @@ Add explicit shared TypeScript types for resolving one selectable skill id while
 - Unknown skill resolution can carry a concise message that suggests `ekko skills list`.
 - Required-only skills are not represented as selectable resolution successes.
 - `pnpm check` passes.
+
+## Review status
+
+- Status: approved
+- Approved by: user
+- Approved at: 2026-04-19T01:41:13Z

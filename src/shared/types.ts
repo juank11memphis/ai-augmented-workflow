@@ -37,6 +37,15 @@ export type SelectableArchitectureSkill = SkillTemplate & {
   routingInstruction: string;
 };
 
+export type ResolvedSelectableSkill =
+  | { kind: 'language'; skill: SelectableLanguageSkill }
+  | { kind: 'framework'; skill: SelectableFrameworkSkill }
+  | { kind: 'architecture'; skill: SelectableArchitectureSkill };
+
+export type SelectableSkillResolutionResult =
+  | { ok: true; resolved: ResolvedSelectableSkill }
+  | { ok: false; message: string };
+
 export type FileToCreate = {
   label: string;
   targetPath: string;
