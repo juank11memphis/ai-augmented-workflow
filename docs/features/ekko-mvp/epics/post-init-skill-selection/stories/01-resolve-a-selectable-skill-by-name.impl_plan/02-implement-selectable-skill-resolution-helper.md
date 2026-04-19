@@ -24,3 +24,9 @@ Add the shared catalog helper that resolves a user-provided skill id by exact ma
 - Required-only catalog templates such as `clean-code` do not resolve as selectable additions.
 - The helper contains the catalog traversal logic in one reusable place instead of requiring command handlers to duplicate it.
 - `pnpm build` and `pnpm check` pass.
+
+## Review status
+
+- Status: approved
+- Approved by: user
+- Approved at: 2026-04-19T01:45:13Z

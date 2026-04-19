@@ -1,4 +1,4 @@
-import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SkillTemplate, SupportedAgent } from './types.js';
+import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableSkillResolutionResult, SkillTemplate, SupportedAgent } from './types.js';
 
 export const EKKO_VERSION = '0.1.0';
 export const STATE_RELATIVE_PATH = '.ekko/state.json';
@@ -158,3 +158,22 @@ export const SUPPORTED_AGENTS: SupportedAgent[] = [
     templateRelativePath: 'CLAUDE.md',
   },
 ];
+
+export function resolveSelectableSkillById(skillId: string): SelectableSkillResolutionResult {
+  const languageSkill = SELECTABLE_LANGUAGE_SKILLS.find((skill) => skill.id === skillId);
+  if (languageSkill) {
+    return { ok: true, resolved: { kind: 'language', skill: languageSkill } };
+  }
+
+  const frameworkSkill = SELECTABLE_FRAMEWORK_SKILLS.find((skill) => skill.id === skillId);
+  if (frameworkSkill) {
+    return { ok: true, resolved: { kind: 'framework', skill: frameworkSkill } };
+  }
+
+  const architectureSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === skillId);
+  if (architectureSkill) {
+    return { ok: true, resolved: { kind: 'architecture', skill: architectureSkill } };
+  }
+
+  return { ok: false, message: `Unknown skill \`${skillId}\`. Run \`ekko skills list\` to see available skills.` };
+}
