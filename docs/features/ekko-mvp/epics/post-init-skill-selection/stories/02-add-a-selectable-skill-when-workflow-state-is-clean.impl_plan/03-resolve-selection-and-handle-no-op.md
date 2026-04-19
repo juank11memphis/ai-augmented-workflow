@@ -27,3 +27,9 @@ Teach the `skills use` handler to resolve one selectable skill, detect already-s
 - Unknown skill handling remains exact-match only and suggests `ekko skills list`.
 - Conflicting architecture selection refuses to proceed without replacing the existing architecture skill.
 - `pnpm check` passes.
+
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-04-19T03:44:01Z
