@@ -142,6 +142,32 @@ describe('handleUseSkill', () => {
     assert.deepEqual(snapshotFiles(rootPath), beforeSnapshot);
     assert.equal(process.exitCode, undefined);
   });
+
+  it('refuses to overwrite or adopt an unrecorded existing skill file', async () => {
+    const rootPath = createCleanInitializedRepo();
+    const unrecordedSkillPath = path.join(rootPath, '.agents/skills/typescript/SKILL.md');
+    fs.mkdirSync(path.dirname(unrecordedSkillPath), { recursive: true });
+    fs.writeFileSync(unrecordedSkillPath, 'locally owned TypeScript skill\n', 'utf8');
+    const beforeSnapshot = snapshotFiles(rootPath);
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'typescript' });
+
+    assert.deepEqual(snapshotFiles(rootPath), beforeSnapshot);
+    assert.equal(process.exitCode, 1);
+  });
+
+  it('refuses to select a skill when AGENTS.md has local edits', async () => {
+    const rootPath = createCleanInitializedRepo();
+    fs.appendFileSync(path.join(rootPath, 'AGENTS.md'), '\nlocal edit\n', 'utf8');
+    const beforeSnapshot = snapshotFiles(rootPath);
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'typescript' });
+
+    assert.deepEqual(snapshotFiles(rootPath), beforeSnapshot);
+    assert.equal(process.exitCode, 1);
+  });
 });
 
 function createCleanInitializedRepo(): string {
@@ -180,8 +206,8 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   return agent;
 }
 
-function snapshotFiles(rootPath: string): Record<string, string> {
-  const snapshot: Record<string, string> = {};
+function snapshotFiles(rootPath: string): Record<string, string | undefined> {
+  const snapshot: Record<string, string | undefined> = {};
   const pathsToSnapshot = [
     'AGENTS.md',
     '.ekko/state.json',
@@ -189,7 +215,8 @@ function snapshotFiles(rootPath: string): Record<string, string> {
   ];
 
   for (const relativePath of pathsToSnapshot) {
-    snapshot[relativePath] = fs.readFileSync(path.join(rootPath, relativePath), 'utf8');
+    const absolutePath = path.join(rootPath, relativePath);
+    snapshot[relativePath] = fs.existsSync(absolutePath) ? fs.readFileSync(absolutePath, 'utf8') : undefined;
   }
 
   return snapshot;
