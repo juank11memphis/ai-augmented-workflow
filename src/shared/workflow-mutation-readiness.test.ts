@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SUPPORTED_AGENTS } from './catalog.js';
+import { SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import { getWorkflowMutationReadiness } from './workflow-mutation-readiness.js';
 import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeEkkoState } from './workflow-targets.js';
@@ -75,6 +75,23 @@ describe('getWorkflowMutationReadiness', () => {
     assert.equal(result.previews.every((preview) => preview.status === 'up-to-date'), true);
   });
 
+  it('is ready for a clean Windsurf-selected repo with shared skill files', () => {
+    const rootPath = createCleanInitializedRepo({
+      selectedAgents: [getSupportedAgent('windsurf')],
+      selectedLanguageSkills: [SELECTABLE_LANGUAGE_SKILLS[0]],
+    });
+    const result = getWorkflowMutationReadiness({ rootPath, statePath: path.join(rootPath, '.ekko/state.json') });
+
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+
+    assert.deepEqual(result.state.selectedAgents, ['windsurf']);
+    assert.equal(result.previews.every((preview) => preview.status === 'up-to-date'), true);
+    assert.equal(result.previews.some((preview) => preview.relativePath.startsWith('.windsurf/')), false);
+  });
+
   it('is not ready when a managed file has local edits', () => {
     const rootPath = createCleanInitializedRepo();
     fs.appendFileSync(path.join(rootPath, 'AGENTS.md'), '\nlocal edit\n', 'utf8');
@@ -94,13 +111,19 @@ describe('getWorkflowMutationReadiness', () => {
   });
 });
 
-function createCleanInitializedRepo(): string {
+function createCleanInitializedRepo({
+  selectedAgents = [getSupportedAgent('codex')],
+  selectedLanguageSkills = [],
+  selectedFrameworkSkills = [],
+  selectedArchitectureSkill = undefined,
+}: {
+  selectedAgents?: SupportedAgent[];
+  selectedLanguageSkills?: SelectableLanguageSkill[];
+  selectedFrameworkSkills?: SelectableFrameworkSkill[];
+  selectedArchitectureSkill?: SelectableArchitectureSkill;
+} = {}): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ekko-readiness-clean-'));
   temporaryRoots.push(rootPath);
-  const selectedAgents = [getSupportedAgent('codex')];
-  const selectedLanguageSkills: SelectableLanguageSkill[] = [];
-  const selectedFrameworkSkills: SelectableFrameworkSkill[] = [];
-  const selectedArchitectureSkill: SelectableArchitectureSkill | undefined = undefined;
   const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
   const files = renderMissingWorkflowFiles({
     missingTargets: targets,

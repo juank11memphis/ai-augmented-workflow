@@ -3,8 +3,8 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
-import type { SupportedAgent } from './types.js';
-import { getWorkflowTargets } from './workflow-targets.js';
+import type { EkkoState, SupportedAgent } from './types.js';
+import { getSelectedAgentsFromState, getWorkflowTargets } from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';
 
@@ -46,6 +46,21 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assertNoInvalidTargets(targets);
+  });
+});
+
+describe('getSelectedAgentsFromState', () => {
+  it('resolves Windsurf from selected agent state', () => {
+    const state: EkkoState = {
+      ekkoVersion: '0.1.0',
+      templateVersion: '39',
+      generatedAt: '2026-04-20T00:00:00.000Z',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      selectedAgents: ['windsurf'],
+      managedFiles: {},
+    };
+
+    assert.deepEqual(getSelectedAgentsFromState(state).map((agent) => agent.id), ['windsurf']);
   });
 });
 
