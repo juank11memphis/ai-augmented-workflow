@@ -1,8 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { SUPPORTED_AGENTS, resolveSelectableSkillById } from './catalog.js';
-import type { ResolvedSelectableSkill, SupportedAgent } from './types.js';
+import {
+  MANDATORY_SKILLS,
+  SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_FRAMEWORK_SKILLS,
+  SELECTABLE_LANGUAGE_SKILLS,
+  SUPPORTED_AGENTS,
+  resolveSelectableSkillById,
+} from './catalog.js';
+import type { ResolvedSelectableSkill, SkillTemplate, SupportedAgent } from './types.js';
 
 describe('SUPPORTED_AGENTS', () => {
   it('includes Windsurf without an agent-specific support file', () => {
@@ -48,6 +55,21 @@ describe('resolveSelectableSkillById', () => {
   });
 });
 
+describe('skill target paths', () => {
+  it('targets Windsurf through shared .agents skills for mandatory and selectable skills', () => {
+    const skillTemplates = [
+      ...MANDATORY_SKILLS,
+      ...SELECTABLE_LANGUAGE_SKILLS,
+      ...SELECTABLE_FRAMEWORK_SKILLS,
+      ...SELECTABLE_ARCHITECTURE_SKILLS,
+    ];
+
+    for (const skillTemplate of skillTemplates) {
+      assertWindsurfUsesSharedSkillPath(skillTemplate);
+    }
+  });
+});
+
 function assertResolvedSkill(skillId: string, expectedKind: ResolvedSelectableSkill['kind']): void {
   const result = resolveSelectableSkillById(skillId);
 
@@ -75,4 +97,16 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   }
 
   return agent;
+}
+
+function assertWindsurfUsesSharedSkillPath(skillTemplate: SkillTemplate): void {
+  const windsurfPath = skillTemplate.targetRelativePathsByAgent.windsurf;
+
+  assert.equal(typeof windsurfPath, 'string');
+  assert.ok(windsurfPath?.startsWith('.agents/skills/'));
+  assert.ok(windsurfPath?.endsWith('/SKILL.md'));
+  assert.equal(windsurfPath?.startsWith('.windsurf/skills/'), false);
+  assert.equal(windsurfPath, skillTemplate.targetRelativePathsByAgent.codex);
+  assert.equal(windsurfPath, skillTemplate.targetRelativePathsByAgent.gemini);
+  assert.equal(windsurfPath, skillTemplate.targetRelativePathsByAgent.claude);
 }
