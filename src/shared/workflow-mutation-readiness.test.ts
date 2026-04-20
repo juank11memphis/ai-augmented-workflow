@@ -29,6 +29,38 @@ describe('getWorkflowMutationReadiness', () => {
     });
   });
 
+  it('is not ready when state cannot be parsed', () => {
+    const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ekko-readiness-unparseable-'));
+    temporaryRoots.push(rootPath);
+    const statePath = path.join(rootPath, '.ekko/state.json');
+    fs.mkdirSync(path.dirname(statePath), { recursive: true });
+    fs.writeFileSync(statePath, '{not json', 'utf8');
+    const beforeSnapshot = snapshotFiles(rootPath, ['.ekko/state.json']);
+
+    assert.deepEqual(getWorkflowMutationReadiness({ rootPath, statePath }), {
+      ok: false,
+      message: '.ekko/state.json could not be parsed.',
+      hint: 'Run `ekko init` before selecting project skills.',
+    });
+    assert.deepEqual(snapshotFiles(rootPath, ['.ekko/state.json']), beforeSnapshot);
+  });
+
+  it('is not ready when state is structurally invalid', () => {
+    const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ekko-readiness-invalid-'));
+    temporaryRoots.push(rootPath);
+    const statePath = path.join(rootPath, '.ekko/state.json');
+    fs.mkdirSync(path.dirname(statePath), { recursive: true });
+    fs.writeFileSync(statePath, `${JSON.stringify({ selectedAgents: ['codex'], managedFiles: {} }, null, 2)}\n`, 'utf8');
+    const beforeSnapshot = snapshotFiles(rootPath, ['.ekko/state.json']);
+
+    assert.deepEqual(getWorkflowMutationReadiness({ rootPath, statePath }), {
+      ok: false,
+      message: '.ekko/state.json is not a valid Ekko state file.',
+      hint: 'Run `ekko init` before selecting project skills.',
+    });
+    assert.deepEqual(snapshotFiles(rootPath, ['.ekko/state.json']), beforeSnapshot);
+  });
+
   it('is ready for a clean initialized repo', () => {
     const rootPath = createCleanInitializedRepo();
     const result = getWorkflowMutationReadiness({ rootPath, statePath: path.join(rootPath, '.ekko/state.json') });
@@ -46,6 +78,7 @@ describe('getWorkflowMutationReadiness', () => {
   it('is not ready when a managed file has local edits', () => {
     const rootPath = createCleanInitializedRepo();
     fs.appendFileSync(path.join(rootPath, 'AGENTS.md'), '\nlocal edit\n', 'utf8');
+    const beforeSnapshot = snapshotFiles(rootPath, ['AGENTS.md', '.ekko/state.json']);
 
     const result = getWorkflowMutationReadiness({ rootPath, statePath: path.join(rootPath, '.ekko/state.json') });
 
@@ -55,7 +88,9 @@ describe('getWorkflowMutationReadiness', () => {
     }
 
     assert.equal(result.message, 'Workflow state is not clean enough to select a skill safely.');
+    assert.equal(result.hint, 'Run `ekko sync` to review workflow drift before selecting a skill.');
     assert.equal(result.actionablePreviews?.some((preview) => preview.relativePath === 'AGENTS.md' && preview.status === 'modified'), true);
+    assert.deepEqual(snapshotFiles(rootPath, ['AGENTS.md', '.ekko/state.json']), beforeSnapshot);
   });
 });
 
@@ -93,4 +128,8 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   }
 
   return agent;
+}
+
+function snapshotFiles(rootPath: string, relativePaths: string[]): Record<string, string> {
+  return Object.fromEntries(relativePaths.map((relativePath) => [relativePath, fs.readFileSync(path.join(rootPath, relativePath), 'utf8')]));
 }
