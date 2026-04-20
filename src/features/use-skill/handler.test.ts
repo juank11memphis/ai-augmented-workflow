@@ -124,6 +124,30 @@ describe('getNextSkillSelection', () => {
 });
 
 describe('handleUseSkill', () => {
+  it('refuses to select a skill when state is missing', async () => {
+    const rootPath = createCleanInitializedRepo();
+    fs.rmSync(path.join(rootPath, '.ekko/state.json'));
+    const beforeSnapshot = snapshotFiles(rootPath);
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'typescript' });
+
+    assert.deepEqual(snapshotFiles(rootPath), beforeSnapshot);
+    assert.equal(process.exitCode, 1);
+  });
+
+  it('refuses to select a skill when state is invalid', async () => {
+    const rootPath = createCleanInitializedRepo();
+    fs.writeFileSync(path.join(rootPath, '.ekko/state.json'), '{not json', 'utf8');
+    const beforeSnapshot = snapshotFiles(rootPath);
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'typescript' });
+
+    assert.deepEqual(snapshotFiles(rootPath), beforeSnapshot);
+    assert.equal(process.exitCode, 1);
+  });
+
   it('adds TypeScript in a clean initialized repo', async () => {
     const rootPath = createCleanInitializedRepo();
     process.chdir(rootPath);
