@@ -81,12 +81,20 @@ export function getWorkflowTargets(
       templateRelativePath: 'AGENTS.md',
       requiresProjectOverview: true,
     },
-    ...selectedAgents.map((agent) => ({
-      label: agent.targetRelativePath,
-      targetPath: path.join(rootPath, agent.targetRelativePath),
-      templateRelativePath: agent.templateRelativePath,
-      requiresProjectOverview: false,
-    })),
+    ...selectedAgents.flatMap((agent) => {
+      if (!agent.targetRelativePath || !agent.templateRelativePath) {
+        return [];
+      }
+
+      return [
+        {
+          label: agent.targetRelativePath,
+          targetPath: path.join(rootPath, agent.targetRelativePath),
+          templateRelativePath: agent.templateRelativePath,
+          requiresProjectOverview: false,
+        },
+      ];
+    }),
     ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill).map((skillTarget) => ({
       label: skillTarget.targetRelativePath,
       targetPath: path.join(rootPath, skillTarget.targetRelativePath),

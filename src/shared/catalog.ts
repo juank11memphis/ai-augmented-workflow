@@ -157,6 +157,11 @@ export const SUPPORTED_AGENTS: SupportedAgent[] = [
     targetRelativePath: 'CLAUDE.md',
     templateRelativePath: 'CLAUDE.md',
   },
+  {
+    id: 'windsurf',
+    name: 'Windsurf',
+    description: 'Use root AGENTS.md and shared .agents/skills/ discovery',
+  },
 ];
 
 export function resolveSelectableSkillById(skillId: string): SelectableSkillResolutionResult {

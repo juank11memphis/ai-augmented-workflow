@@ -1,4 +1,4 @@
-export type AgentId = 'codex' | 'gemini' | 'claude';
+export type AgentId = 'codex' | 'gemini' | 'claude' | 'windsurf';
 export type LanguageSkillId = 'typescript';
 export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
@@ -7,8 +7,8 @@ export type SupportedAgent = {
   id: AgentId;
   name: string;
   description: string;
-  targetRelativePath: string;
-  templateRelativePath: string;
+  targetRelativePath?: string;
+  templateRelativePath?: string;
 };
 
 export type SkillTemplate = {
