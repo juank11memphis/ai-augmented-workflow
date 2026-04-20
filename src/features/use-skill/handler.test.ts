@@ -113,6 +113,14 @@ describe('getNextSkillSelection', () => {
       hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
     });
   });
+
+  it('blocks replacing command pattern with DDD and Hexagonal Architecture', () => {
+    assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'command-pattern' }, 'ddd-hexagonal'), {
+      status: 'blocked',
+      message: 'Cannot select DDD + Hexagonal Architecture because another architecture skill is already selected.',
+      hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+    });
+  });
 });
 
 describe('handleUseSkill', () => {
@@ -168,22 +176,37 @@ describe('handleUseSkill', () => {
     assert.deepEqual(snapshotFiles(rootPath), beforeSnapshot);
     assert.equal(process.exitCode, 1);
   });
+
+  it('refuses to replace an existing architecture skill', async () => {
+    const rootPath = createCleanInitializedRepo({ selectedArchitectureSkill: 'ddd-hexagonal' });
+    const beforeSnapshot = snapshotFiles(rootPath, ['AGENTS.md', '.ekko/state.json', '.agents/skills/command-pattern/SKILL.md']);
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'command-pattern' });
+
+    assert.deepEqual(snapshotFiles(rootPath, ['AGENTS.md', '.ekko/state.json', '.agents/skills/command-pattern/SKILL.md']), beforeSnapshot);
+    assert.equal(process.exitCode, 1);
+  });
 });
 
-function createCleanInitializedRepo(): string {
+function createCleanInitializedRepo({
+  selectedArchitectureSkill,
+}: {
+  selectedArchitectureSkill?: SelectableArchitectureSkill['id'];
+} = {}): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'ekko-use-skill-test-'));
   temporaryRoots.push(rootPath);
   const selectedAgents = [getSupportedAgent('codex')];
   const selectedLanguageSkills: SelectableLanguageSkill[] = [];
   const selectedFrameworkSkills: SelectableFrameworkSkill[] = [];
-  const selectedArchitectureSkill: SelectableArchitectureSkill | undefined = undefined;
-  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
+  const architectureSkill = getArchitectureSkillById(selectedArchitectureSkill);
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, architectureSkill);
   const files = renderMissingWorkflowFiles({
     missingTargets: targets,
     overview: 'Test project.',
     selectedLanguageSkills,
     selectedFrameworkSkills,
-    selectedArchitectureSkill,
+    selectedArchitectureSkill: architectureSkill,
   });
 
   for (const file of files) {
@@ -191,7 +214,15 @@ function createCleanInitializedRepo(): string {
     fs.writeFileSync(file.targetPath, file.contents, 'utf8');
   }
 
-  writeEkkoState({ rootPath, statePath: path.join(rootPath, '.ekko/state.json'), selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
+  writeEkkoState({
+    rootPath,
+    statePath: path.join(rootPath, '.ekko/state.json'),
+    selectedAgents,
+    selectedLanguageSkills,
+    selectedFrameworkSkills,
+    selectedArchitectureSkill: architectureSkill,
+    targets,
+  });
 
   return rootPath;
 }
@@ -206,13 +237,25 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   return agent;
 }
 
-function snapshotFiles(rootPath: string): Record<string, string | undefined> {
+function getArchitectureSkillById(skillId: SelectableArchitectureSkill['id'] | undefined): SelectableArchitectureSkill | undefined {
+  if (!skillId) {
+    return undefined;
+  }
+
+  const skillSelection = getNextSkillSelection(BASE_STATE, skillId);
+
+  if (skillSelection.status !== 'selected') {
+    throw new Error(`Unsupported architecture skill for test setup: ${skillId}`);
+  }
+
+  return skillSelection.selection.selectedArchitectureSkill;
+}
+
+function snapshotFiles(
+  rootPath: string,
+  pathsToSnapshot: string[] = ['AGENTS.md', '.ekko/state.json', '.agents/skills/typescript/SKILL.md']
+): Record<string, string | undefined> {
   const snapshot: Record<string, string | undefined> = {};
-  const pathsToSnapshot = [
-    'AGENTS.md',
-    '.ekko/state.json',
-    '.agents/skills/typescript/SKILL.md',
-  ];
 
   for (const relativePath of pathsToSnapshot) {
     const absolutePath = path.join(rootPath, relativePath);
