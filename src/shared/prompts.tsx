@@ -135,7 +135,15 @@ export async function askForArchitectureSkill(): Promise<SelectableArchitectureS
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === selectedArchitectureSkillId);
 }
 
+export function shouldAskForNewLanguageSkills(state: EkkoState): boolean {
+  return (state.selectedLanguageSkills?.length ?? 0) === 0;
+}
+
 export async function askForNewLanguageSkills(state: EkkoState): Promise<{ state: EkkoState; changedState: boolean }> {
+  if (!shouldAskForNewLanguageSkills(state)) {
+    return { state, changedState: false };
+  }
+
   const selectedLanguageSkillIds = new Set(state.selectedLanguageSkills ?? []);
   const unselectedLanguageSkills = SELECTABLE_LANGUAGE_SKILLS.filter((skill) => !selectedLanguageSkillIds.has(skill.id));
 
