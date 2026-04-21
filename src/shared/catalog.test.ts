@@ -40,6 +40,7 @@ describe('SUPPORTED_AGENTS', () => {
 describe('resolveSelectableSkillById', () => {
   it('resolves selectable language, framework, and architecture skills with their category', () => {
     assertResolvedSkill('typescript', 'language');
+    assertResolvedSkill('golang', 'language');
     assertResolvedSkill('react', 'framework');
     assertResolvedSkill('nextjs', 'framework');
     assertResolvedSkill('ddd-hexagonal', 'architecture');

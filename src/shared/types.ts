@@ -1,5 +1,5 @@
 export type AgentId = 'codex' | 'gemini' | 'claude' | 'windsurf';
-export type LanguageSkillId = 'typescript';
+export type LanguageSkillId = 'typescript' | 'golang';
 export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
 

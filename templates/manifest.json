@@ -1,5 +1,5 @@
 {
-  "templateVersion": "39",
+  "templateVersion": "40",
   "templates": {
     "AGENTS.md": {
       "version": "16",
@@ -65,6 +65,13 @@
       "description": "Selectable TypeScript skill installed when TypeScript language support is selected.",
       "changes": [
         "Adds an optional TypeScript skill for projects that use .ts or .tsx files."
+      ]
+    },
+    "skills/golang/SKILL.md": {
+      "version": "1",
+      "description": "Selectable Go skill installed when Go language support is selected.",
+      "changes": [
+        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {

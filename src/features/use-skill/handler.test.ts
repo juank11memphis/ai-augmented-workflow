@@ -12,7 +12,7 @@ import { getNextSkillSelection, handleUseSkill } from './handler.js';
 
 const BASE_STATE: EkkoState = {
   ekkoVersion: '0.1.0',
-  templateVersion: '39',
+  templateVersion: '40',
   generatedAt: '2026-04-19T00:00:00.000Z',
   updatedAt: '2026-04-19T00:00:00.000Z',
   selectedAgents: ['codex'],
@@ -72,6 +72,23 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(
       result.selection.selectedLanguageSkills.map((skill) => skill.id),
       ['typescript']
+    );
+    assert.deepEqual(result.selection.selectedFrameworkSkills, []);
+    assert.equal(result.selection.selectedArchitectureSkill, undefined);
+  });
+
+  it('prepares a next selection for Go language support', () => {
+    const result = getNextSkillSelection(BASE_STATE, 'golang');
+
+    assert.equal(result.status, 'selected');
+    if (result.status !== 'selected') {
+      return;
+    }
+
+    assert.equal(result.skillName, 'Go');
+    assert.deepEqual(
+      result.selection.selectedLanguageSkills.map((skill) => skill.id),
+      ['golang']
     );
     assert.deepEqual(result.selection.selectedFrameworkSkills, []);
     assert.equal(result.selection.selectedArchitectureSkill, undefined);
@@ -160,6 +177,21 @@ describe('handleUseSkill', () => {
     assert.ok(state.managedFiles['.agents/skills/typescript/SKILL.md']);
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/typescript/SKILL.md')), true);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /For any task that changes `\.ts` or `\.tsx` files, also use `typescript`\./);
+    assert.equal(process.exitCode, undefined);
+  });
+
+  it('adds Go in a clean initialized repo', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'golang' });
+
+    const state = readExistingState(path.join(rootPath, '.ekko/state.json'));
+    assert.ok(state);
+    assert.deepEqual(state.selectedLanguageSkills, ['golang']);
+    assert.ok(state.managedFiles['.agents/skills/golang/SKILL.md']);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/golang/SKILL.md')), true);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /For any task that changes `\.go` files, also use `golang`\./);
     assert.equal(process.exitCode, undefined);
   });
 

@@ -83,6 +83,19 @@ export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
       windsurf: '.agents/skills/typescript/SKILL.md',
     },
   },
+  {
+    id: 'golang',
+    name: 'Go',
+    description: 'Install practical guidance for writing and modifying .go files',
+    routingInstruction: 'For any task that changes `.go` files, also use `golang`.',
+    templateRelativePath: 'skills/golang/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/golang/SKILL.md',
+      gemini: '.agents/skills/golang/SKILL.md',
+      claude: '.agents/skills/golang/SKILL.md',
+      windsurf: '.agents/skills/golang/SKILL.md',
+    },
+  },
 ];
 
 export const SELECTABLE_FRAMEWORK_SKILLS: SelectableFrameworkSkill[] = [

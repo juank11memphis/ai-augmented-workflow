@@ -53,7 +53,7 @@ describe('getSelectedAgentsFromState', () => {
   it('resolves Windsurf from selected agent state', () => {
     const state: EkkoState = {
       ekkoVersion: '0.1.0',
-      templateVersion: '39',
+      templateVersion: '40',
       generatedAt: '2026-04-20T00:00:00.000Z',
       updatedAt: '2026-04-20T00:00:00.000Z',
       selectedAgents: ['windsurf'],
