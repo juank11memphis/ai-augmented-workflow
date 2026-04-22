@@ -1,7 +1,7 @@
 import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableSkillResolutionResult, SkillTemplate, SupportedAgent } from './types.js';
 
-export const EKKO_VERSION = '0.1.0';
-export const STATE_RELATIVE_PATH = '.ekko/state.json';
+export const ECHO_VERSION = '0.1.0';
+export const STATE_RELATIVE_PATH = '.echo/state.json';
 
 export const MANDATORY_SKILLS: SkillTemplate[] = [
   {
@@ -205,5 +205,5 @@ export function resolveSelectableSkillById(skillId: string): SelectableSkillReso
     return { ok: true, resolved: { kind: 'architecture', skill: architectureSkill } };
   }
 
-  return { ok: false, message: `Unknown skill \`${skillId}\`. Run \`ekko skills list\` to see available skills.` };
+  return { ok: false, message: `Unknown skill \`${skillId}\`. Run \`echo skills list\` to see available skills.` };
 }

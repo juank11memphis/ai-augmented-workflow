@@ -36,25 +36,25 @@
 - For requests to implement, execute, continue, or work through an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`.
 {{OPTIONAL_SKILL_ROUTING}}
 
-## Ekko maintenance
+## Echo maintenance
 
-This repository uses Ekko to manage AI workflow setup.
+This repository uses Echo to manage AI workflow setup.
 
-- `ekko init` is a one-time bootstrap command for adopting Ekko in a project. It creates the initial agent support files, keeps existing files unchanged, and creates `.ekko/state.json` metadata. Do not rerun `ekko init` to apply updates to an existing Ekko project.
-- `ekko doctor` is the read-only health check for this workflow. It inspects whether Ekko-managed files are missing, modified, unrecorded, or generated from older templates.
-- `ekko sync` is the post-init workflow maintenance command. It reviews template updates interactively, repairs missing managed files, adopts newly added managed templates, protects local edits from automatic overwrites, and lets the user apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later.
+- `echo init` is a one-time bootstrap command for adopting Echo in a project. It creates the initial agent support files, keeps existing files unchanged, and creates `.echo/state.json` metadata. Do not rerun `echo init` to apply updates to an existing Echo project.
+- `echo doctor` is the read-only health check for this workflow. It inspects whether Echo-managed files are missing, modified, unrecorded, or generated from older templates.
+- `echo sync` is the post-init workflow maintenance command. It reviews template updates interactively, repairs missing managed files, adopts newly added managed templates, protects local edits from automatic overwrites, and lets the user apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later.
 
-At the start of each session in this repository, run `ekko doctor` once before making changes or giving workflow guidance. Treat it as a read-only preflight check. Do not rerun it before every follow-up in the same session unless workflow-managed files changed, the user asks, or you need to verify Ekko state after applying updates.
+At the start of each session in this repository, run `echo doctor` once before making changes or giving workflow guidance. Treat it as a read-only preflight check. Do not rerun it before every follow-up in the same session unless workflow-managed files changed, the user asks, or you need to verify Echo state after applying updates.
 
-After `ekko doctor` finishes, guide the user based on the outcome:
+After `echo doctor` finishes, guide the user based on the outcome:
 
-- If the workflow is healthy, mention that the Ekko check passed and proceed with the requested work.
-- If `.ekko/state.json` is missing because the project has not been initialized, tell the user to run `ekko init` once before continuing.
-- If managed workflow files are missing, unrecorded, modified, or generated from older templates, tell the user to run `ekko sync` to review and repair them.
-- If `ekko doctor` cannot run because Ekko is unavailable, tell the user how to install or run Ekko for this project before relying on template status.
+- If the workflow is healthy, mention that the Echo check passed and proceed with the requested work.
+- If `.echo/state.json` is missing because the project has not been initialized, tell the user to run `echo init` once before continuing.
+- If managed workflow files are missing, unrecorded, modified, or generated from older templates, tell the user to run `echo sync` to review and repair them.
+- If `echo doctor` cannot run because Echo is unavailable, tell the user how to install or run Echo for this project before relying on template status.
 
-Ekko records managed workflow file metadata in `.ekko/state.json`, including template versions, file hashes, selected agent support, and whether files are `managed`, `customized`, or `unmanaged`.
+Echo records managed workflow file metadata in `.echo/state.json`, including template versions, file hashes, selected agent support, and whether files are `managed`, `customized`, or `unmanaged`.
 
-If `.ekko/state.json` is missing because Ekko has not been adopted in the project, ask the user to run `ekko init` once.
-If workflow files may be missing, modified, unrecorded, or drifted from the recorded Ekko state, ask the user to run `ekko doctor` first.
-If `ekko doctor` reports missing managed files, unrecorded expected files, local edits, or older templates, ask the user to run `ekko sync`.
+If `.echo/state.json` is missing because Echo has not been adopted in the project, ask the user to run `echo init` once.
+If workflow files may be missing, modified, unrecorded, or drifted from the recorded Echo state, ask the user to run `echo doctor` first.
+If `echo doctor` reports missing managed files, unrecorded expected files, local edits, or older templates, ask the user to run `echo sync`.

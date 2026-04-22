@@ -4,7 +4,7 @@ import path from 'node:path';
 import { sha256 } from './hash.js';
 import { hasReviewedTemplateVersion } from './state.js';
 import { renderTemplateForSync } from './templates.js';
-import type { EkkoState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, TemplateManifest } from './types.js';
+import type { EchoState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, TemplateManifest } from './types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
@@ -50,7 +50,7 @@ export function shouldAskForSyncAction(preview: SyncPreview): boolean {
   return PROMPTABLE_SYNC_PREVIEW_STATUSES.has(preview.status);
 }
 
-export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: string; state: EkkoState; manifest: TemplateManifest }): SyncPreview[] {
+export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: string; state: EchoState; manifest: TemplateManifest }): SyncPreview[] {
   const selectedLanguageSkills = getSelectedLanguageSkillsFromState(state);
   const selectedFrameworkSkills = getSelectedFrameworkSkillsFromState(state);
   const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);

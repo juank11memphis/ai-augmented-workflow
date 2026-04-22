@@ -5,4 +5,4 @@ import type { StopManagingFileCommand } from '../../features/stop-managing-file/
 import type { SyncProjectCommand } from '../../features/sync-project/command.js';
 import type { UseSkillCommand } from '../../features/use-skill/command.js';
 
-export type EkkoCliCommand = InitProjectCommand | DoctorProjectCommand | SyncProjectCommand | ListSkillsCommand | StopManagingFileCommand | UseSkillCommand;
+export type EchoCliCommand = InitProjectCommand | DoctorProjectCommand | SyncProjectCommand | ListSkillsCommand | StopManagingFileCommand | UseSkillCommand;

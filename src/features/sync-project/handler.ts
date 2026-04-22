@@ -21,7 +21,7 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
 
   if (!stateResult.ok) {
     log.error(stateResult.message);
-    log.info('Run `ekko init` before syncing so I know which files are managed.');
+    log.info('Run `echo init` before syncing so I know which files are managed.');
     outro(chalk.yellow('Workflow sync unavailable.'));
     process.exitCode = 1;
     return;

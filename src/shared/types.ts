@@ -59,8 +59,8 @@ export type WorkflowTarget = {
   requiresProjectOverview: boolean;
 };
 
-export type EkkoState = {
-  ekkoVersion: string;
+export type EchoState = {
+  echoVersion: string;
   templateVersion: string;
   generatedAt: string;
   updatedAt: string;

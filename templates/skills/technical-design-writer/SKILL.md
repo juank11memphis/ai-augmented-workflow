@@ -53,7 +53,7 @@ A technical design may name the skills that later implementation should use, but
 
 Examples:
 
-- Good: “Implementation should follow `command-pattern` for the new `ekko skills use` command slice.”
+- Good: “Implementation should follow `command-pattern` for the new `echo skills use` command slice.”
 - Bad: restating the full command/handler/port responsibilities from the `command-pattern` skill.
 - Good: “Use `clean-code` during implementation; no extra code-quality rules are introduced here.”
 - Bad: adding a generic clean-code checklist to the doc.

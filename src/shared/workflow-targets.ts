@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { EKKO_VERSION, MANDATORY_SKILLS, SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import { ECHO_VERSION, MANDATORY_SKILLS, SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import { sha256 } from './hash.js';
 import { removeUndefinedFields } from './object.js';
 import { readExistingState } from './state.js';
 import { getTemplateVersion, readTemplate, readTemplateManifest, renderSkillRouting } from './templates.js';
 import type {
-  EkkoState,
+  EchoState,
   FileToCreate,
   ManagedFileState,
   SelectableArchitectureSkill,
@@ -23,15 +23,15 @@ type SkillTarget = {
   templateRelativePath: string;
 };
 
-export function getSelectedLanguageSkillsFromState(state: EkkoState): SelectableLanguageSkill[] {
+export function getSelectedLanguageSkillsFromState(state: EchoState): SelectableLanguageSkill[] {
   return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
 }
 
-export function getSelectedFrameworkSkillsFromState(state: EkkoState): SelectableFrameworkSkill[] {
+export function getSelectedFrameworkSkillsFromState(state: EchoState): SelectableFrameworkSkill[] {
   return SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => state.selectedFrameworkSkills?.includes(skill.id));
 }
 
-export function getSelectedArchitectureSkillFromState(state: EkkoState): SelectableArchitectureSkill | undefined {
+export function getSelectedArchitectureSkillFromState(state: EchoState): SelectableArchitectureSkill | undefined {
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === state.selectedArchitectureSkill);
 }
 
@@ -138,7 +138,7 @@ export function renderMissingWorkflowFiles({
   });
 }
 
-export function writeEkkoState({
+export function writeEchoState({
   rootPath,
   statePath,
   selectedAgents,
@@ -158,8 +158,8 @@ export function writeEkkoState({
   const previousState = readExistingState(statePath);
   const now = new Date().toISOString();
   const manifest = readTemplateManifest();
-  const state: EkkoState = {
-    ekkoVersion: EKKO_VERSION,
+  const state: EchoState = {
+    echoVersion: ECHO_VERSION,
     templateVersion: manifest.templateVersion,
     generatedAt: previousState?.generatedAt ?? now,
     updatedAt: now,
@@ -191,6 +191,6 @@ export function writeEkkoState({
   fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 }
 
-export function getSelectedAgentsFromState(state: EkkoState): SupportedAgent[] {
+export function getSelectedAgentsFromState(state: EchoState): SupportedAgent[] {
   return SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
 }

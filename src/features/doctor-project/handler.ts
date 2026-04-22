@@ -10,7 +10,7 @@ import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
 import { hasReviewedTemplateVersion, readStateForDoctor } from '../../shared/state.js';
 import { getTemplateVersion, readTemplateManifest } from '../../shared/templates.js';
-import type { DoctorIssue, EkkoState, ManagedFileStatus } from '../../shared/types.js';
+import type { DoctorIssue, EchoState, ManagedFileStatus } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
@@ -29,7 +29,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
 
   if (!stateResult.ok) {
     log.error(stateResult.message);
-    log.info('Run `ekko init` once to create Ekko workflow metadata.');
+    log.info('Run `echo init` once to create Echo workflow metadata.');
     outro(chalk.yellow('Workflow loop needs attention.'));
     process.exitCode = 1;
     return;
@@ -40,7 +40,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
 
   if (issues.length === 0) {
     log.success('Workflow loop is healthy. No drift detected.');
-    log.info(`Ekko version: ${state.ekkoVersion}`);
+    log.info(`Echo version: ${state.echoVersion}`);
     log.info(`Template version: ${state.templateVersion}`);
     log.info(`Managed files: ${Object.keys(state.managedFiles).length}`);
     log.info(`Statuses: ${formatManagedFileStatusCounts(state)}`);
@@ -61,12 +61,12 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
     }
   }
 
-  log.info('Run `ekko sync` to repair missing managed files, adopt new templates, or review template updates.');
+  log.info('Run `echo sync` to repair missing managed files, adopt new templates, or review template updates.');
   outro(chalk.yellow('Workflow loop needs attention.'));
   process.exitCode = 1;
 }
 
-function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState }): DoctorIssue[] {
+function diagnoseState({ rootPath, state }: { rootPath: string; state: EchoState }): DoctorIssue[] {
   const issues: DoctorIssue[] = [];
   const manifest = readTemplateManifest();
 
@@ -74,7 +74,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
     issues.push({
       severity: 'warning',
       message: `State was generated from template version ${state.templateVersion}; current template version is ${manifest.templateVersion}.`,
-      hint: 'Run `ekko sync` to review and apply or dismiss template updates.',
+      hint: 'Run `echo sync` to review and apply or dismiss template updates.',
     });
   }
 
@@ -85,7 +85,7 @@ function diagnoseState({ rootPath, state }: { rootPath: string; state: EkkoState
   return issues;
 }
 
-function addUnsupportedSelectionIssues(state: EkkoState, issues: DoctorIssue[]): void {
+function addUnsupportedSelectionIssues(state: EchoState, issues: DoctorIssue[]): void {
   for (const selectedAgent of state.selectedAgents) {
     if (!SUPPORTED_AGENTS.some((agent) => agent.id === selectedAgent)) {
       issues.push({ severity: 'warning', message: `State references unsupported agent: ${selectedAgent}.` });
@@ -122,7 +122,7 @@ function addUnsupportedSelectionIssues(state: EkkoState, issues: DoctorIssue[]):
   }
 }
 
-function addExpectedTargetIssues(rootPath: string, state: EkkoState, issues: DoctorIssue[]): Set<string> {
+function addExpectedTargetIssues(rootPath: string, state: EchoState, issues: DoctorIssue[]): Set<string> {
   const reportedMissingPaths = new Set<string>();
   const expectedTargets = getWorkflowTargets(
     rootPath,
@@ -145,7 +145,7 @@ function addExpectedTargetIssues(rootPath: string, state: EkkoState, issues: Doc
       issues.push({
         severity: 'error',
         message: `${relativePath} is missing.`,
-        hint: 'Run `ekko sync` to recreate missing managed workflow files.',
+        hint: 'Run `echo sync` to recreate missing managed workflow files.',
       });
       continue;
     }
@@ -154,7 +154,7 @@ function addExpectedTargetIssues(rootPath: string, state: EkkoState, issues: Doc
       issues.push({
         severity: 'warning',
         message: `${relativePath} exists but is not recorded in ${STATE_RELATIVE_PATH}.`,
-        hint: 'Run `ekko sync` to review and record this workflow file.',
+        hint: 'Run `echo sync` to review and record this workflow file.',
       });
     }
   }
@@ -162,7 +162,7 @@ function addExpectedTargetIssues(rootPath: string, state: EkkoState, issues: Doc
   return reportedMissingPaths;
 }
 
-function addManagedFileIssues(rootPath: string, state: EkkoState, issues: DoctorIssue[], reportedMissingPaths: Set<string>): void {
+function addManagedFileIssues(rootPath: string, state: EchoState, issues: DoctorIssue[], reportedMissingPaths: Set<string>): void {
   const manifest = readTemplateManifest();
 
   for (const [relativePath, managedFile] of Object.entries(state.managedFiles)) {
@@ -177,7 +177,7 @@ function addManagedFileIssues(rootPath: string, state: EkkoState, issues: Doctor
         issues.push({
           severity: 'error',
           message: `${relativePath} is recorded in ${STATE_RELATIVE_PATH} but is missing.`,
-          hint: 'Run `ekko sync` to recreate missing managed workflow files.',
+          hint: 'Run `echo sync` to recreate missing managed workflow files.',
         });
       }
       continue;
@@ -187,8 +187,8 @@ function addManagedFileIssues(rootPath: string, state: EkkoState, issues: Doctor
     if (currentHash !== managedFile.sha256) {
       issues.push({
         severity: 'warning',
-        message: `${relativePath} has changed since Ekko last recorded it.`,
-        hint: 'If this was intentional, keep it. `ekko sync` will not overwrite local edits automatically.',
+        message: `${relativePath} has changed since Echo last recorded it.`,
+        hint: 'If this was intentional, keep it. `echo sync` will not overwrite local edits automatically.',
       });
     }
 
@@ -197,13 +197,13 @@ function addManagedFileIssues(rootPath: string, state: EkkoState, issues: Doctor
       issues.push({
         severity: 'warning',
         message: `${relativePath} was generated from template version ${managedFile.templateVersion}; current template version is ${currentTemplateVersion}.`,
-        hint: 'Run `ekko sync` to review and apply or dismiss this template update.',
+        hint: 'Run `echo sync` to review and apply or dismiss this template update.',
       });
     }
   }
 }
 
-function formatManagedFileStatusCounts(state: EkkoState): string {
+function formatManagedFileStatusCounts(state: EchoState): string {
   const counts = Object.values(state.managedFiles).reduce<Record<ManagedFileStatus, number>>(
     (accumulator, managedFile) => {
       accumulator[managedFile.status ?? 'managed'] += 1;

@@ -21,8 +21,8 @@ export async function askForSyncAction(preview: SyncPreview): Promise<SyncAction
     const action = await select<SyncAction>({
       message: `What should I do with ${preview.relativePath}?`,
       options: [
-        { value: 'apply-update', label: 'Recreate file', hint: 'Write the latest template and update Ekko state.' },
-        { value: 'stop-managing', label: 'Stop managing this file', hint: 'Opt this file out of Ekko missing-file warnings.' },
+        { value: 'apply-update', label: 'Recreate file', hint: 'Write the latest template and update Echo state.' },
+        { value: 'stop-managing', label: 'Stop managing this file', hint: 'Opt this file out of Echo missing-file warnings.' },
         { value: 'skip', label: 'Skip for now' },
       ],
     });
@@ -33,12 +33,12 @@ export async function askForSyncAction(preview: SyncPreview): Promise<SyncAction
   if (preview.status === 'new-template') {
     const options: Array<{ value: SyncAction; label: string; hint?: string }> = preview.hasLocalFile
       ? [
-          { value: 'mark-reviewed', label: 'Start managing existing file', hint: 'Keep the file unchanged and record it in Ekko state.' },
-          { value: 'write-side-template', label: 'Write latest template beside my file', hint: 'Create a reference copy under .ekko/sync/.' },
+          { value: 'mark-reviewed', label: 'Start managing existing file', hint: 'Keep the file unchanged and record it in Echo state.' },
+          { value: 'write-side-template', label: 'Write latest template beside my file', hint: 'Create a reference copy under .echo/sync/.' },
           { value: 'skip', label: 'Skip for now' },
         ]
       : [
-          { value: 'apply-update', label: 'Create file', hint: 'Write the latest template and record it in Ekko state.' },
+          { value: 'apply-update', label: 'Create file', hint: 'Write the latest template and record it in Echo state.' },
           { value: 'skip', label: 'Skip for now' },
         ];
 
@@ -52,7 +52,7 @@ export async function askForSyncAction(preview: SyncPreview): Promise<SyncAction
 
   const options: Array<{ value: SyncAction; label: string; hint?: string }> = [
     { value: 'mark-reviewed', label: 'Mark as reviewed', hint: 'Keep my file and stop warning about this template version.' },
-    { value: 'stop-managing', label: 'Stop managing this file', hint: 'Opt this file out of Ekko template drift warnings.' },
+    { value: 'stop-managing', label: 'Stop managing this file', hint: 'Opt this file out of Echo template drift warnings.' },
     { value: 'skip', label: 'Skip for now' },
   ];
 
@@ -60,7 +60,7 @@ export async function askForSyncAction(preview: SyncPreview): Promise<SyncAction
     options.splice(1, 0, {
       value: 'write-side-template',
       label: 'Write latest template beside my file',
-      hint: 'Create a reference copy under .ekko/sync/.',
+      hint: 'Create a reference copy under .echo/sync/.',
     });
   }
 

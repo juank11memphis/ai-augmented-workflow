@@ -1,11 +1,11 @@
 {
-  "templateVersion": "40",
+  "templateVersion": "41",
   "templates": {
     "AGENTS.md": {
-      "version": "16",
-      "description": "Project-level agent instructions and Ekko maintenance guidance.",
+      "version": "17",
+      "description": "Project-level agent instructions and Echo maintenance guidance.",
       "changes": [
-        "Adds routing for the ai-implementation-plan-executor skill so agents execute existing implementation plans one approved step at a time."
+        "Renames the workflow maintenance commands and state path from Ekko to Echo so generated guidance matches the new product name."
       ]
     },
     ".codex/config.toml": {
@@ -53,11 +53,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes technical design docs shorter and more implementation-focused.",
-        "Clarifies that technical designs should delegate clean-code, architecture, language, and framework guidance instead of restating those skills."
+        "Updates the technical design examples to refer to the Echo command names instead of the old Ekko branding."
       ]
     },
     "skills/typescript/SKILL.md": {

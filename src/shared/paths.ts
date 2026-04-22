@@ -41,5 +41,5 @@ export function resolveManagedFilePath(rootPath: string, file: string): ManagedF
 
 export function getSideTemplatePath(rootPath: string, relativePath: string, templateVersion: string): string {
   const safeName = relativePath.replace(/[\\/]/g, '__');
-  return path.join(rootPath, '.ekko', 'sync', `${safeName}.template-v${templateVersion}`);
+  return path.join(rootPath, '.echo', 'sync', `${safeName}.template-v${templateVersion}`);
 }
