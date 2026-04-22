@@ -27,7 +27,7 @@ export type StopSkillResult =
 
 export async function handleStopManagingFile({ skillName }: StopManagingFileCommand): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Stopping skill management'));
+  intro(chalk.cyan('Updating skill management'));
 
   const { rootPath, statePath } = getProjectContext();
   const stateResult = readStateForDoctor(statePath);
@@ -35,7 +35,7 @@ export async function handleStopManagingFile({ skillName }: StopManagingFileComm
   if (!stateResult.ok) {
     log.error(stateResult.message);
     log.info('Run `sibu init` before managing workflow skill state.');
-    outro(chalk.yellow('Skill management unavailable.'));
+    outro(chalk.yellow('Skill update unavailable.'));
     process.exitCode = 1;
     return;
   }
@@ -48,27 +48,27 @@ export async function handleStopManagingFile({ skillName }: StopManagingFileComm
       if (result.hint) {
         log.info(result.hint);
       }
-      outro(chalk.yellow('No skill management changed.'));
+      outro(chalk.yellow('Nothing changed.'));
       process.exitCode = 1;
       return;
     case 'noop':
       log.success(result.message);
       log.info('No files changed.');
-      outro(chalk.green('Skill management already up to date.'));
+      outro(chalk.green('Skill selection is already up to date.'));
       return;
     case 'stopped':
       writeStateFile(statePath, result.state);
       for (const stoppedPath of result.stoppedPaths) {
         log.success(`Stopped managing ${stoppedPath.relativePath}.`);
       }
-      log.success(`Refreshed AGENTS.md skill routing.`);
+      log.success('Updated AGENTS.md skill routing.');
       log.success(`Updated ${STATE_RELATIVE_PATH}.`);
 
       for (const [index, stoppedPath] of result.stoppedPaths.entries()) {
         await askToDeleteStoppedFile(stoppedPath, result.stoppedFiles[index]);
       }
 
-      outro(chalk.green(`Stopped ${result.skillName}.`));
+      outro(chalk.green(`Updated ${result.skillName}.`));
       return;
   }
 }

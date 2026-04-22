@@ -14,7 +14,7 @@ import { getSyncPreviews, isActionableSyncPreview, shouldAskForSyncAction } from
 
 export async function handleSyncProject(_command: SyncProjectCommand): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Previewing workflow sync'));
+  intro(chalk.cyan('Reviewing workflow updates'));
 
   const { rootPath, statePath } = getProjectContext();
   const stateResult = readStateForDoctor(statePath);
@@ -22,7 +22,7 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
   if (!stateResult.ok) {
     log.error(stateResult.message);
     log.info('Run `sibu init` before syncing so I know which files are managed.');
-    outro(chalk.yellow('Workflow sync unavailable.'));
+    outro(chalk.yellow('Sync unavailable.'));
     process.exitCode = 1;
     return;
   }
@@ -36,7 +36,7 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
   const actionablePreviews = previews.filter(isActionableSyncPreview);
 
   if (actionablePreviews.length === 0) {
-    log.success('No template updates or local drift detected.');
+    log.success('No template updates or local changes need review.');
 
     if (state.templateVersion !== manifest.templateVersion ||
       languageSkillSelection.changedState ||
@@ -53,11 +53,11 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
       log.info('No files changed.');
     }
 
-    outro(chalk.green('Workflow loop already in sync.'));
+    outro(chalk.green('Everything is already in sync.'));
     return;
   }
 
-  log.warn('Workflow sync found items to review.');
+  log.warn('Found workflow updates to review.');
 
   let changedState = languageSkillSelection.changedState || frameworkSkillSelection.changedState || architectureSkillSelection.changedState;
   let changedFiles = false;
@@ -91,5 +91,5 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
     log.info('No files changed.');
   }
 
-  outro(chalk.green('Workflow sync complete.'));
+  outro(chalk.green('Sync complete.'));
 }

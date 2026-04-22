@@ -22,7 +22,7 @@ import type { DoctorProjectCommand } from './command.js';
 
 export async function handleDoctorProject(_command: DoctorProjectCommand): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Scanning workflow loop'));
+  intro(chalk.cyan('Checking workflow state'));
 
   const { rootPath, statePath } = getProjectContext();
   const stateResult = readStateForDoctor(statePath);
@@ -30,7 +30,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
   if (!stateResult.ok) {
     log.error(stateResult.message);
     log.info('Run `sibu init` once to create Sibu workflow metadata.');
-    outro(chalk.yellow('Workflow loop needs attention.'));
+    outro(chalk.yellow('Setup needs attention.'));
     process.exitCode = 1;
     return;
   }
@@ -39,16 +39,16 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
   const issues = diagnoseState({ rootPath, state });
 
   if (issues.length === 0) {
-    log.success('Workflow loop is healthy. No drift detected.');
+    log.success('Workflow is healthy. No drift detected.');
     log.info(`Sibu version: ${state.sibuVersion}`);
     log.info(`Template version: ${state.templateVersion}`);
-    log.info(`Managed files: ${Object.keys(state.managedFiles).length}`);
-    log.info(`Statuses: ${formatManagedFileStatusCounts(state)}`);
-    outro(chalk.green('Workflow loop stable.'));
+    log.info(`Managed workflow files: ${Object.keys(state.managedFiles).length}`);
+    log.info(`File statuses: ${formatManagedFileStatusCounts(state)}`);
+    outro(chalk.green('Check complete.'));
     return;
   }
 
-  log.warn('Workflow loop drift detected.');
+  log.warn('Found workflow changes that need review.');
   for (const issue of issues) {
     if (issue.severity === 'error') {
       log.error(issue.message);
@@ -62,7 +62,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
   }
 
   log.info('Run `sibu sync` to repair missing managed files, adopt new templates, or review template updates.');
-  outro(chalk.yellow('Workflow loop needs attention.'));
+  outro(chalk.yellow('Review needed.'));
   process.exitCode = 1;
 }
 

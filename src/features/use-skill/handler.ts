@@ -158,7 +158,7 @@ function applySelectedSkill({
 
   if (preflightError) {
     log.error(preflightError);
-    log.info('Run `sibu sync` to review workflow drift before selecting a skill.');
+    log.info('Run `sibu sync` to review workflow state before selecting a skill.');
     process.exitCode = 1;
     return;
   }
@@ -182,7 +182,7 @@ function applySelectedSkill({
   log.success(`Created ${newSkillFile.label}`);
 
   fs.writeFileSync(plan.agentsTarget.targetPath, agentsContents, 'utf8');
-  log.success('Refreshed AGENTS.md skill routing');
+  log.success('Updated AGENTS.md skill routing');
 
   writeSibuState({
     rootPath,
@@ -194,7 +194,7 @@ function applySelectedSkill({
     targets: plan.targets,
   });
   log.success(`Updated ${STATE_RELATIVE_PATH}`);
-  log.success(`Selected ${selectionResult.skillName}.`);
+  log.success(`Added ${selectionResult.skillName}.`);
 }
 
 function buildSkillApplicationPlan({

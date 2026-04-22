@@ -13,7 +13,7 @@ import type { InitProjectCommand } from './command.js';
 
 export async function handleInitProject(_command: InitProjectCommand): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Initializing workflow loop'));
+  intro(chalk.cyan('Setting up Sibu'));
 
   const { rootPath, statePath } = getProjectContext();
 
@@ -24,14 +24,14 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
       log.success('This project is already initialized with Sibu.');
       log.info('Run `sibu doctor` for a read-only health check.');
       log.info('Run `sibu sync` to review template updates, missing files, or workflow changes.');
-      outro(chalk.green('Workflow loop already initialized.'));
+      outro(chalk.green('Setup already complete.'));
       return;
     }
 
     log.error(stateResult.message);
     log.info(`${STATE_RELATIVE_PATH} already exists, so I will not overwrite it from init.`);
     log.info('Fix or restore the state file before running `sibu doctor` or `sibu sync`.');
-    outro(chalk.yellow('Workflow loop needs attention.'));
+    outro(chalk.yellow('Setup needs attention.'));
     process.exitCode = 1;
     return;
   }
@@ -73,5 +73,5 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
   writeSibuState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
   log.success(`Created ${STATE_RELATIVE_PATH}`);
 
-  outro(chalk.green('Workflow loop initialized.'));
+  outro(chalk.green('Setup complete.'));
 }

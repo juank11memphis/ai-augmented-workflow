@@ -105,7 +105,7 @@ describe('getWorkflowMutationReadiness', () => {
     }
 
     assert.equal(result.message, 'Workflow state is not clean enough to select a skill safely.');
-    assert.equal(result.hint, 'Run `sibu sync` to review workflow drift before selecting a skill.');
+    assert.equal(result.hint, 'Run `sibu sync` to review workflow state before selecting a skill.');
     assert.equal(result.actionablePreviews?.some((preview) => preview.relativePath === 'AGENTS.md' && preview.status === 'modified'), true);
     assert.deepEqual(snapshotFiles(rootPath, ['AGENTS.md', '.sibu/state.json']), beforeSnapshot);
   });

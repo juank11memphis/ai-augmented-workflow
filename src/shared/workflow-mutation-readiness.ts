@@ -36,7 +36,7 @@ export function getWorkflowMutationReadiness({ rootPath, statePath }: { rootPath
     return {
       ok: false,
       message: 'Workflow state is not clean enough to select a skill safely.',
-      hint: 'Run `sibu sync` to review workflow drift before selecting a skill.',
+      hint: 'Run `sibu sync` to review workflow state before selecting a skill.',
       actionablePreviews,
     };
   }

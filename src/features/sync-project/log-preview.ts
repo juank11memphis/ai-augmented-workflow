@@ -13,7 +13,7 @@ export function logSyncPreview(preview: SyncPreview): void {
         log.warn(`${preview.relativePath} is expected but is not recorded in ${STATE_RELATIVE_PATH}.`);
         log.info('I will not overwrite it automatically. You can start managing it or write the latest template beside it.');
       } else {
-        log.warn(`${preview.relativePath} is a new Sibu-managed workflow file.`);
+        log.warn(`${preview.relativePath} should now be part of this workflow.`);
       }
       logTemplateChanges(preview);
       return;
@@ -23,11 +23,11 @@ export function logSyncPreview(preview: SyncPreview): void {
       return;
     case 'modified':
       log.warn(`${preview.relativePath} has local edits.`);
-      log.info('I will not overwrite it automatically. No newer template changes were found.');
+      log.info('I will not overwrite it automatically. There are no newer template changes for it right now.');
       return;
     case 'update-available':
       if (preview.recordedTemplateVersion === preview.currentTemplateVersion) {
-        log.warn(`${preview.relativePath} has generated content changes from updated project selections.`);
+        log.warn(`${preview.relativePath} needs generated content updates from your current project selections.`);
       } else {
         log.warn(`${preview.relativePath} has a newer template available (${preview.recordedTemplateVersion} → ${preview.currentTemplateVersion}).`);
       }
@@ -35,7 +35,7 @@ export function logSyncPreview(preview: SyncPreview): void {
       return;
     case 'modified-with-update':
       if (preview.recordedTemplateVersion === preview.currentTemplateVersion) {
-        log.warn(`${preview.relativePath} has local edits and generated content changes from updated project selections.`);
+        log.warn(`${preview.relativePath} has local edits and also needs generated content updates from your current project selections.`);
       } else {
         log.warn(`${preview.relativePath} has local edits and a newer template is available (${preview.recordedTemplateVersion} → ${preview.currentTemplateVersion}).`);
       }

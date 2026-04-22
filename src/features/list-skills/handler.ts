@@ -17,14 +17,14 @@ type SkillListItem = {
 
 export async function handleListSkills(_command: ListSkillsCommand): Promise<void> {
   await renderIntro();
-  intro(chalk.cyan('Listing workflow skills'));
+  intro(chalk.cyan('Available workflow skills'));
 
   const { statePath } = getProjectContext();
   const stateResult = readStateForDoctor(statePath);
   const state = stateResult.ok ? stateResult.state : undefined;
 
   if (!stateResult.ok) {
-    log.warn(`${stateResult.message} Showing available skills without project selection state.`);
+    log.warn(`${stateResult.message} Showing available skills without project state.`);
     log.info('Run `sibu init` before selecting project skills.');
   }
 
@@ -32,7 +32,7 @@ export async function handleListSkills(_command: ListSkillsCommand): Promise<voi
   logSkillGroup('Frameworks', getFrameworkSkillItems(state));
   logSkillGroup('Architecture', getArchitectureSkillItems(state));
 
-  outro(chalk.green('Skill list complete.'));
+  outro(chalk.green('Skill list ready.'));
 }
 
 function getLanguageSkillItems(state: SibuState | undefined): SkillListItem[] {

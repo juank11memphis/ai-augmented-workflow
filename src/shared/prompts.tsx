@@ -27,7 +27,7 @@ function IntroPanel(): React.ReactElement {
 
   return (
     <Box borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1} flexDirection="column">
-      <Text color="cyanBright">Loop engine online</Text>
+      <Text color="cyanBright">Sibu is ready</Text>
       <Text color="greenBright">Build. Test. Rewind. Improve.</Text>
     </Box>
   );
