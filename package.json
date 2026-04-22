@@ -2,6 +2,14 @@
   "name": "sibu",
   "version": "0.1.0",
   "description": "CLI for setting up a local AI-augmented development workflow.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juank11memphis/ai-augmented-workflow.git"
+  },
+  "homepage": "https://github.com/juank11memphis/ai-augmented-workflow#readme",
+  "bugs": {
+    "url": "https://github.com/juank11memphis/ai-augmented-workflow/issues"
+  },
   "bin": {
     "sibu": "./bin/sibu.js"
   },
@@ -28,7 +36,9 @@
     "cli"
   ],
   "license": "UNLICENSED",
-  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
