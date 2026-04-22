@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { ECHO_VERSION, MANDATORY_SKILLS, SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import { SIBU_VERSION, MANDATORY_SKILLS, SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import { sha256 } from './hash.js';
 import { removeUndefinedFields } from './object.js';
 import { readExistingState } from './state.js';
 import { getTemplateVersion, readTemplate, readTemplateManifest, renderSkillRouting } from './templates.js';
 import type {
-  EchoState,
+  SibuState,
   FileToCreate,
   ManagedFileState,
   SelectableArchitectureSkill,
@@ -23,15 +23,15 @@ type SkillTarget = {
   templateRelativePath: string;
 };
 
-export function getSelectedLanguageSkillsFromState(state: EchoState): SelectableLanguageSkill[] {
+export function getSelectedLanguageSkillsFromState(state: SibuState): SelectableLanguageSkill[] {
   return SELECTABLE_LANGUAGE_SKILLS.filter((skill) => state.selectedLanguageSkills?.includes(skill.id));
 }
 
-export function getSelectedFrameworkSkillsFromState(state: EchoState): SelectableFrameworkSkill[] {
+export function getSelectedFrameworkSkillsFromState(state: SibuState): SelectableFrameworkSkill[] {
   return SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => state.selectedFrameworkSkills?.includes(skill.id));
 }
 
-export function getSelectedArchitectureSkillFromState(state: EchoState): SelectableArchitectureSkill | undefined {
+export function getSelectedArchitectureSkillFromState(state: SibuState): SelectableArchitectureSkill | undefined {
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === state.selectedArchitectureSkill);
 }
 
@@ -138,7 +138,7 @@ export function renderMissingWorkflowFiles({
   });
 }
 
-export function writeEchoState({
+export function writeSibuState({
   rootPath,
   statePath,
   selectedAgents,
@@ -158,8 +158,8 @@ export function writeEchoState({
   const previousState = readExistingState(statePath);
   const now = new Date().toISOString();
   const manifest = readTemplateManifest();
-  const state: EchoState = {
-    echoVersion: ECHO_VERSION,
+  const state: SibuState = {
+    sibuVersion: SIBU_VERSION,
     templateVersion: manifest.templateVersion,
     generatedAt: previousState?.generatedAt ?? now,
     updatedAt: now,
@@ -191,6 +191,6 @@ export function writeEchoState({
   fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 }
 
-export function getSelectedAgentsFromState(state: EchoState): SupportedAgent[] {
+export function getSelectedAgentsFromState(state: SibuState): SupportedAgent[] {
   return SUPPORTED_AGENTS.filter((agent) => state.selectedAgents.includes(agent.id));
 }

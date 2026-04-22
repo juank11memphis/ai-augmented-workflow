@@ -13,7 +13,7 @@ export function logSyncPreview(preview: SyncPreview): void {
         log.warn(`${preview.relativePath} is expected but is not recorded in ${STATE_RELATIVE_PATH}.`);
         log.info('I will not overwrite it automatically. You can start managing it or write the latest template beside it.');
       } else {
-        log.warn(`${preview.relativePath} is a new Echo-managed workflow file.`);
+        log.warn(`${preview.relativePath} is a new Sibu-managed workflow file.`);
       }
       logTemplateChanges(preview);
       return;

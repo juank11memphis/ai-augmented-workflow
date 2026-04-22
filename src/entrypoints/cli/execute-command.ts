@@ -4,9 +4,9 @@ import { handleListSkills } from '../../features/list-skills/handler.js';
 import { handleStopManagingFile } from '../../features/stop-managing-file/handler.js';
 import { handleSyncProject } from '../../features/sync-project/handler.js';
 import { handleUseSkill } from '../../features/use-skill/handler.js';
-import type { EchoCliCommand } from './command.js';
+import type { SibuCliCommand } from './command.js';
 
-export async function executeCliCommand(command: EchoCliCommand): Promise<void> {
+export async function executeCliCommand(command: SibuCliCommand): Promise<void> {
   switch (command.type) {
     case 'init':
       await handleInitProject(command);

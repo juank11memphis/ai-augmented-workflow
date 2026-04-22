@@ -1,12 +1,12 @@
 import { readStateForDoctor } from './state.js';
 import { getSyncPreviews, isActionableSyncPreview, type SyncPreview } from './sync-preview.js';
 import { readTemplateManifest } from './templates.js';
-import type { EchoState, TemplateManifest } from './types.js';
+import type { SibuState, TemplateManifest } from './types.js';
 
 export type WorkflowMutationReadinessResult =
   | {
       ok: true;
-      state: EchoState;
+      state: SibuState;
       manifest: TemplateManifest;
       previews: SyncPreview[];
     }
@@ -24,7 +24,7 @@ export function getWorkflowMutationReadiness({ rootPath, statePath }: { rootPath
     return {
       ok: false,
       message: stateResult.message,
-      hint: 'Run `echo init` before selecting project skills.',
+      hint: 'Run `sibu init` before selecting project skills.',
     };
   }
 
@@ -36,7 +36,7 @@ export function getWorkflowMutationReadiness({ rootPath, statePath }: { rootPath
     return {
       ok: false,
       message: 'Workflow state is not clean enough to select a skill safely.',
-      hint: 'Run `echo sync` to review workflow drift before selecting a skill.',
+      hint: 'Run `sibu sync` to review workflow drift before selecting a skill.',
       actionablePreviews,
     };
   }

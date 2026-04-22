@@ -4,14 +4,14 @@ import { Box, Text, render, useApp } from 'ink';
 import React, { useEffect } from 'react';
 
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
-import type { ArchitectureSkillId, EchoState, FrameworkSkillId, LanguageSkillId, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
+import type { ArchitectureSkillId, SibuState, FrameworkSkillId, LanguageSkillId, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
 
 const NONE_OPTION_ID = 'none';
 
 type FrameworkSkillSelectionId = FrameworkSkillId | typeof NONE_OPTION_ID;
 
 export async function renderIntro(): Promise<void> {
-  console.log(gradient(['#39ff14', '#00e5ff', '#9b5de5']).multiline('⧖  E C H O  ⧖'));
+  console.log(gradient(['#39ff14', '#00e5ff', '#9b5de5']).multiline('⧖  S I B U  ⧖'));
 
   const app = render(<IntroPanel />);
   await app.waitUntilExit();
@@ -135,11 +135,11 @@ export async function askForArchitectureSkill(): Promise<SelectableArchitectureS
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === selectedArchitectureSkillId);
 }
 
-export function shouldAskForNewLanguageSkills(state: EchoState): boolean {
+export function shouldAskForNewLanguageSkills(state: SibuState): boolean {
   return (state.selectedLanguageSkills?.length ?? 0) === 0;
 }
 
-export async function askForNewLanguageSkills(state: EchoState): Promise<{ state: EchoState; changedState: boolean }> {
+export async function askForNewLanguageSkills(state: SibuState): Promise<{ state: SibuState; changedState: boolean }> {
   if (!shouldAskForNewLanguageSkills(state)) {
     return { state, changedState: false };
   }
@@ -184,7 +184,7 @@ export async function askForNewLanguageSkills(state: EchoState): Promise<{ state
   };
 }
 
-export async function askForMissingFrameworkSkills(state: EchoState): Promise<{ state: EchoState; changedState: boolean }> {
+export async function askForMissingFrameworkSkills(state: SibuState): Promise<{ state: SibuState; changedState: boolean }> {
   if (state.selectedFrameworkSkills !== undefined) {
     return { state, changedState: false };
   }
@@ -204,7 +204,7 @@ export async function askForMissingFrameworkSkills(state: EchoState): Promise<{ 
   };
 }
 
-export async function askForNewArchitectureSkill(state: EchoState): Promise<{ state: EchoState; changedState: boolean }> {
+export async function askForNewArchitectureSkill(state: SibuState): Promise<{ state: SibuState; changedState: boolean }> {
   if (state.selectedArchitectureSkill) {
     return { state, changedState: false };
   }

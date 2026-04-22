@@ -8,7 +8,7 @@ import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { askForArchitectureSkill, askForFrameworkSkills, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor } from '../../shared/state.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeEchoState } from '../../shared/workflow-targets.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import type { InitProjectCommand } from './command.js';
 
 export async function handleInitProject(_command: InitProjectCommand): Promise<void> {
@@ -21,16 +21,16 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
     const stateResult = readStateForDoctor(statePath);
 
     if (stateResult.ok) {
-      log.success('This project is already initialized with Echo.');
-      log.info('Run `echo doctor` for a read-only health check.');
-      log.info('Run `echo sync` to review template updates, missing files, or workflow changes.');
+      log.success('This project is already initialized with Sibu.');
+      log.info('Run `sibu doctor` for a read-only health check.');
+      log.info('Run `sibu sync` to review template updates, missing files, or workflow changes.');
       outro(chalk.green('Workflow loop already initialized.'));
       return;
     }
 
     log.error(stateResult.message);
     log.info(`${STATE_RELATIVE_PATH} already exists, so I will not overwrite it from init.`);
-    log.info('Fix or restore the state file before running `echo doctor` or `echo sync`.');
+    log.info('Fix or restore the state file before running `sibu doctor` or `sibu sync`.');
     outro(chalk.yellow('Workflow loop needs attention.'));
     process.exitCode = 1;
     return;
@@ -70,7 +70,7 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
     log.success(`Created ${file.label}`);
   }
 
-  writeEchoState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
+  writeSibuState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
   log.success(`Created ${STATE_RELATIVE_PATH}`);
 
   outro(chalk.green('Workflow loop initialized.'));

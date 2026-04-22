@@ -59,8 +59,8 @@ export type WorkflowTarget = {
   requiresProjectOverview: boolean;
 };
 
-export type EchoState = {
-  echoVersion: string;
+export type SibuState = {
+  sibuVersion: string;
   templateVersion: string;
   generatedAt: string;
   updatedAt: string;

@@ -9,7 +9,7 @@ import { getProjectContext } from '../../shared/paths.js';
 import { renderTemplateForSync } from '../../shared/templates.js';
 import type {
   ArchitectureSkillId,
-  EchoState,
+  SibuState,
   FrameworkSkillId,
   LanguageSkillId,
   SelectableArchitectureSkill,
@@ -19,7 +19,7 @@ import type {
   WorkflowTarget,
 } from '../../shared/types.js';
 import { getWorkflowMutationReadiness } from '../../shared/workflow-mutation-readiness.js';
-import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeEchoState } from '../../shared/workflow-targets.js';
+import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import type { UseSkillCommand } from './command.js';
 
 type NextSkillSelection = {
@@ -76,7 +76,7 @@ export async function handleUseSkill(command: UseSkillCommand): Promise<void> {
   }
 }
 
-export function getNextSkillSelection(state: EchoState, skillName: string): SkillSelectionResult {
+export function getNextSkillSelection(state: SibuState, skillName: string): SkillSelectionResult {
   const resolution = resolveSelectableSkillById(skillName);
 
   if (!resolution.ok) {
@@ -150,7 +150,7 @@ function applySelectedSkill({
 }: {
   rootPath: string;
   statePath: string;
-  state: EchoState;
+  state: SibuState;
   selectionResult: Extract<SkillSelectionResult, { status: 'selected' }>;
 }): void {
   const plan = buildSkillApplicationPlan({ rootPath, state, selectionResult });
@@ -158,7 +158,7 @@ function applySelectedSkill({
 
   if (preflightError) {
     log.error(preflightError);
-    log.info('Run `echo sync` to review workflow drift before selecting a skill.');
+    log.info('Run `sibu sync` to review workflow drift before selecting a skill.');
     process.exitCode = 1;
     return;
   }
@@ -184,7 +184,7 @@ function applySelectedSkill({
   fs.writeFileSync(plan.agentsTarget.targetPath, agentsContents, 'utf8');
   log.success('Refreshed AGENTS.md skill routing');
 
-  writeEchoState({
+  writeSibuState({
     rootPath,
     statePath,
     selectedAgents: plan.selectedAgents,
@@ -203,7 +203,7 @@ function buildSkillApplicationPlan({
   selectionResult,
 }: {
   rootPath: string;
-  state: EchoState;
+  state: SibuState;
   selectionResult: Extract<SkillSelectionResult, { status: 'selected' }>;
 }): SkillApplicationPlan {
   const selectedAgents = getSelectedAgentsFromState(state);
@@ -236,7 +236,7 @@ function buildSkillApplicationPlan({
   return { agentsTarget, newSkillTarget, targets, selectedAgents };
 }
 
-function getSkillApplicationPreflightError({ rootPath, state, plan }: { rootPath: string; state: EchoState; plan: SkillApplicationPlan }): string | undefined {
+function getSkillApplicationPreflightError({ rootPath, state, plan }: { rootPath: string; state: SibuState; plan: SkillApplicationPlan }): string | undefined {
   if (fs.existsSync(plan.newSkillTarget.targetPath)) {
     return `${path.relative(rootPath, plan.newSkillTarget.targetPath)} already exists but is not recorded for this selection.`;
   }
@@ -245,7 +245,7 @@ function getSkillApplicationPreflightError({ rootPath, state, plan }: { rootPath
   const agentsManagedFile = state.managedFiles[agentsRelativePath];
 
   if (!agentsManagedFile) {
-    return 'AGENTS.md is not recorded in `.echo/state.json`.';
+    return 'AGENTS.md is not recorded in `.sibu/state.json`.';
   }
 
   if (!fs.existsSync(plan.agentsTarget.targetPath)) {
@@ -254,17 +254,17 @@ function getSkillApplicationPreflightError({ rootPath, state, plan }: { rootPath
 
   const agentsCurrentHash = sha256(fs.readFileSync(plan.agentsTarget.targetPath, 'utf8'));
   if (agentsCurrentHash !== agentsManagedFile.sha256) {
-    return 'AGENTS.md has changed since Echo last recorded it.';
+    return 'AGENTS.md has changed since Sibu last recorded it.';
   }
 
   return undefined;
 }
 
-function getSelectedLanguageSkillsFromState(state: EchoState): SelectableLanguageSkill[] {
+function getSelectedLanguageSkillsFromState(state: SibuState): SelectableLanguageSkill[] {
   return (state.selectedLanguageSkills ?? []).map(getLanguageSkillById);
 }
 
-function getSelectedFrameworkSkillsFromState(state: EchoState): SelectableFrameworkSkill[] {
+function getSelectedFrameworkSkillsFromState(state: SibuState): SelectableFrameworkSkill[] {
   return (state.selectedFrameworkSkills ?? []).map(getFrameworkSkillById);
 }
 

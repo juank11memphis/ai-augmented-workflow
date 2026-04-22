@@ -7,7 +7,7 @@ import { sha256 } from '../../shared/hash.js';
 import { getSideTemplatePath } from '../../shared/paths.js';
 import { cloneState } from '../../shared/state.js';
 import { getTemplateVersion, renderTemplateForSync } from '../../shared/templates.js';
-import type { EchoState, TemplateManifest } from '../../shared/types.js';
+import type { SibuState, TemplateManifest } from '../../shared/types.js';
 import { getSelectedArchitectureSkillFromState, getSelectedFrameworkSkillsFromState, getSelectedLanguageSkillsFromState } from '../../shared/workflow-targets.js';
 import type { SyncAction } from './action-prompt.js';
 import type { SyncPreview } from './preview.js';
@@ -20,11 +20,11 @@ export function applySyncAction({
   action,
 }: {
   rootPath: string;
-  state: EchoState;
+  state: SibuState;
   manifest: TemplateManifest;
   preview: SyncPreview;
   action: SyncAction;
-}): { state: EchoState; changedFiles: boolean; changedState: boolean } {
+}): { state: SibuState; changedFiles: boolean; changedState: boolean } {
   const nextState = cloneState(state);
   const managedFile = nextState.managedFiles[preview.relativePath] ?? preview.managedFile;
   const targetPath = path.join(rootPath, preview.relativePath);

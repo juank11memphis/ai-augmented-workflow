@@ -1,11 +1,11 @@
 {
-  "templateVersion": "41",
+  "templateVersion": "42",
   "templates": {
     "AGENTS.md": {
-      "version": "17",
-      "description": "Project-level agent instructions and Echo maintenance guidance.",
+      "version": "18",
+      "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Renames the workflow maintenance commands and state path from Ekko to Echo so generated guidance matches the new product name."
+        "Renames the workflow maintenance commands and state path from Echo to Sibu so generated guidance matches the new product name."
       ]
     },
     ".codex/config.toml": {
@@ -53,10 +53,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Updates the technical design examples to refer to the Echo command names instead of the old Ekko branding."
+        "Updates the technical design examples to refer to the Sibu command names instead of the old Echo branding."
       ]
     },
     "skills/typescript/SKILL.md": {

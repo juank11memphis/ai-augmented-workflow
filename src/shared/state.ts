@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { STATE_RELATIVE_PATH } from './catalog.js';
-import type { EchoState, ManagedFileState, ManagedFileStatus } from './types.js';
+import type { SibuState, ManagedFileState, ManagedFileStatus } from './types.js';
 
-export type StateReadResult = { ok: true; state: EchoState } | { ok: false; message: string };
+export type StateReadResult = { ok: true; state: SibuState } | { ok: false; message: string };
 
 export function readStateForDoctor(statePath: string): StateReadResult {
   if (!fs.existsSync(statePath)) {
@@ -14,8 +14,8 @@ export function readStateForDoctor(statePath: string): StateReadResult {
   try {
     const parsedState = JSON.parse(fs.readFileSync(statePath, 'utf8')) as unknown;
 
-    if (!isEchoState(parsedState)) {
-      return { ok: false, message: `${STATE_RELATIVE_PATH} is not a valid Echo state file.` };
+    if (!isSibuState(parsedState)) {
+      return { ok: false, message: `${STATE_RELATIVE_PATH} is not a valid Sibu state file.` };
     }
 
     return { ok: true, state: parsedState };
@@ -24,40 +24,40 @@ export function readStateForDoctor(statePath: string): StateReadResult {
   }
 }
 
-export function readExistingState(statePath: string): EchoState | undefined {
+export function readExistingState(statePath: string): SibuState | undefined {
   if (!fs.existsSync(statePath)) {
     return undefined;
   }
 
   try {
-    return JSON.parse(fs.readFileSync(statePath, 'utf8')) as EchoState;
+    return JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
   } catch {
     return undefined;
   }
 }
 
-export function writeStateFile(statePath: string, state: EchoState): void {
+export function writeStateFile(statePath: string, state: SibuState): void {
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
   fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 }
 
-export function cloneState(state: EchoState): EchoState {
-  return JSON.parse(JSON.stringify(state)) as EchoState;
+export function cloneState(state: SibuState): SibuState {
+  return JSON.parse(JSON.stringify(state)) as SibuState;
 }
 
 export function hasReviewedTemplateVersion(managedFile: ManagedFileState, templateVersion: string): boolean {
   return managedFile.lastReviewedTemplateVersion === templateVersion;
 }
 
-function isEchoState(value: unknown): value is EchoState {
+function isSibuState(value: unknown): value is SibuState {
   if (!value || typeof value !== 'object') {
     return false;
   }
 
-  const state = value as Partial<EchoState>;
+  const state = value as Partial<SibuState>;
 
   return (
-    typeof state.echoVersion === 'string' &&
+    typeof state.sibuVersion === 'string' &&
     typeof state.templateVersion === 'string' &&
     typeof state.generatedAt === 'string' &&
     typeof state.updatedAt === 'string' &&

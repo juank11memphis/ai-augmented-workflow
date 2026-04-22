@@ -37,25 +37,25 @@ This repository is the home for establishing an AI-augmented development workflo
 - For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.
 
-## Echo maintenance
+## Sibu maintenance
 
-This repository uses Echo to manage AI workflow setup.
+This repository uses Sibu to manage AI workflow setup.
 
-- `echo init` is a one-time bootstrap command for adopting Echo in a project. It creates the initial agent support files, keeps existing files unchanged, and creates `.echo/state.json` metadata. Do not rerun `echo init` to apply updates to an existing Echo project.
-- `echo doctor` is the read-only health check for this workflow. It inspects whether Echo-managed files are missing, modified, unrecorded, or generated from older templates.
-- `echo sync` is the post-init workflow maintenance command. It reviews template updates interactively, repairs missing managed files, adopts newly added managed templates, protects local edits from automatic overwrites, and lets the user apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later.
+- `sibu init` is a one-time bootstrap command for adopting Sibu in a project. It creates the initial agent support files, keeps existing files unchanged, and creates `.sibu/state.json` metadata. Do not rerun `sibu init` to apply updates to an existing Sibu project.
+- `sibu doctor` is the read-only health check for this workflow. It inspects whether Sibu-managed files are missing, modified, unrecorded, or generated from older templates.
+- `sibu sync` is the post-init workflow maintenance command. It reviews template updates interactively, repairs missing managed files, adopts newly added managed templates, protects local edits from automatic overwrites, and lets the user apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later.
 
-At the start of each session in this repository, run `echo doctor` once before making changes or giving workflow guidance. Treat it as a read-only preflight check. Do not rerun it before every follow-up in the same session unless workflow-managed files changed, the user asks, or you need to verify Echo state after applying updates.
+At the start of each session in this repository, run `sibu doctor` once before making changes or giving workflow guidance. Treat it as a read-only preflight check. Do not rerun it before every follow-up in the same session unless workflow-managed files changed, the user asks, or you need to verify Sibu state after applying updates.
 
-After `echo doctor` finishes, guide the user based on the outcome:
+After `sibu doctor` finishes, guide the user based on the outcome:
 
-- If the workflow is healthy, mention that the Echo check passed and proceed with the requested work.
-- If `.echo/state.json` is missing because the project has not been initialized, tell the user to run `echo init` once before continuing.
-- If managed workflow files are missing, unrecorded, modified, or generated from older templates, tell the user to run `echo sync` to review and repair them.
-- If `echo doctor` cannot run because Echo is unavailable, tell the user how to install or run Echo for this project before relying on template status.
+- If the workflow is healthy, mention that the Sibu check passed and proceed with the requested work.
+- If `.sibu/state.json` is missing because the project has not been initialized, tell the user to run `sibu init` once before continuing.
+- If managed workflow files are missing, unrecorded, modified, or generated from older templates, tell the user to run `sibu sync` to review and repair them.
+- If `sibu doctor` cannot run because Sibu is unavailable, tell the user how to install or run Sibu for this project before relying on template status.
 
-Echo records managed workflow file metadata in `.echo/state.json`, including template versions, file hashes, selected agent support, and whether files are `managed`, `customized`, or `unmanaged`.
+Sibu records managed workflow file metadata in `.sibu/state.json`, including template versions, file hashes, selected agent support, and whether files are `managed`, `customized`, or `unmanaged`.
 
-If `.echo/state.json` is missing because Echo has not been adopted in the project, ask the user to run `echo init` once.
-If workflow files may be missing, modified, unrecorded, or drifted from the recorded Echo state, ask the user to run `echo doctor` first.
-If `echo doctor` reports missing managed files, unrecorded expected files, local edits, or older templates, ask the user to run `echo sync`.
+If `.sibu/state.json` is missing because Sibu has not been adopted in the project, ask the user to run `sibu init` once.
+If workflow files may be missing, modified, unrecorded, or drifted from the recorded Sibu state, ask the user to run `sibu doctor` first.
+If `sibu doctor` reports missing managed files, unrecorded expected files, local edits, or older templates, ask the user to run `sibu sync`.

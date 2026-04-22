@@ -6,12 +6,12 @@ import { afterEach, describe, it } from 'node:test';
 
 import { SUPPORTED_AGENTS } from '../../shared/catalog.js';
 import { readExistingState } from '../../shared/state.js';
-import type { EchoState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeEchoState } from '../../shared/workflow-targets.js';
+import type { SibuState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../shared/types.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import { getNextSkillSelection, handleUseSkill } from './handler.js';
 
-const BASE_STATE: EchoState = {
-  echoVersion: '0.1.0',
+const BASE_STATE: SibuState = {
+  sibuVersion: '0.1.0',
   templateVersion: '40',
   generatedAt: '2026-04-19T00:00:00.000Z',
   updatedAt: '2026-04-19T00:00:00.000Z',
@@ -35,7 +35,7 @@ describe('getNextSkillSelection', () => {
   it('blocks unknown skills with the catalog resolution message', () => {
     assert.deepEqual(getNextSkillSelection(BASE_STATE, 'nope'), {
       status: 'blocked',
-      message: 'Unknown skill `nope`. Run `echo skills list` to see available skills.',
+      message: 'Unknown skill `nope`. Run `sibu skills list` to see available skills.',
     });
   });
 
@@ -143,7 +143,7 @@ describe('getNextSkillSelection', () => {
 describe('handleUseSkill', () => {
   it('refuses to select a skill when state is missing', async () => {
     const rootPath = createCleanInitializedRepo();
-    fs.rmSync(path.join(rootPath, '.echo/state.json'));
+    fs.rmSync(path.join(rootPath, '.sibu/state.json'));
     const beforeSnapshot = snapshotFiles(rootPath);
     process.chdir(rootPath);
 
@@ -155,7 +155,7 @@ describe('handleUseSkill', () => {
 
   it('refuses to select a skill when state is invalid', async () => {
     const rootPath = createCleanInitializedRepo();
-    fs.writeFileSync(path.join(rootPath, '.echo/state.json'), '{not json', 'utf8');
+    fs.writeFileSync(path.join(rootPath, '.sibu/state.json'), '{not json', 'utf8');
     const beforeSnapshot = snapshotFiles(rootPath);
     process.chdir(rootPath);
 
@@ -171,7 +171,7 @@ describe('handleUseSkill', () => {
 
     await handleUseSkill({ type: 'skills:use', skillName: 'typescript' });
 
-    const state = readExistingState(path.join(rootPath, '.echo/state.json'));
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
     assert.ok(state);
     assert.deepEqual(state.selectedLanguageSkills, ['typescript']);
     assert.ok(state.managedFiles['.agents/skills/typescript/SKILL.md']);
@@ -186,7 +186,7 @@ describe('handleUseSkill', () => {
 
     await handleUseSkill({ type: 'skills:use', skillName: 'golang' });
 
-    const state = readExistingState(path.join(rootPath, '.echo/state.json'));
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
     assert.ok(state);
     assert.deepEqual(state.selectedLanguageSkills, ['golang']);
     assert.ok(state.managedFiles['.agents/skills/golang/SKILL.md']);
@@ -235,12 +235,12 @@ describe('handleUseSkill', () => {
 
   it('refuses to replace an existing architecture skill', async () => {
     const rootPath = createCleanInitializedRepo({ selectedArchitectureSkill: 'ddd-hexagonal' });
-    const beforeSnapshot = snapshotFiles(rootPath, ['AGENTS.md', '.echo/state.json', '.agents/skills/command-pattern/SKILL.md']);
+    const beforeSnapshot = snapshotFiles(rootPath, ['AGENTS.md', '.sibu/state.json', '.agents/skills/command-pattern/SKILL.md']);
     process.chdir(rootPath);
 
     await handleUseSkill({ type: 'skills:use', skillName: 'command-pattern' });
 
-    assert.deepEqual(snapshotFiles(rootPath, ['AGENTS.md', '.echo/state.json', '.agents/skills/command-pattern/SKILL.md']), beforeSnapshot);
+    assert.deepEqual(snapshotFiles(rootPath, ['AGENTS.md', '.sibu/state.json', '.agents/skills/command-pattern/SKILL.md']), beforeSnapshot);
     assert.equal(process.exitCode, 1);
   });
 });
@@ -250,7 +250,7 @@ function createCleanInitializedRepo({
 }: {
   selectedArchitectureSkill?: SelectableArchitectureSkill['id'];
 } = {}): string {
-  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'echo-use-skill-test-'));
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-use-skill-test-'));
   temporaryRoots.push(rootPath);
   const selectedAgents = [getSupportedAgent('codex')];
   const selectedLanguageSkills: SelectableLanguageSkill[] = [];
@@ -270,9 +270,9 @@ function createCleanInitializedRepo({
     fs.writeFileSync(file.targetPath, file.contents, 'utf8');
   }
 
-  writeEchoState({
+  writeSibuState({
     rootPath,
-    statePath: path.join(rootPath, '.echo/state.json'),
+    statePath: path.join(rootPath, '.sibu/state.json'),
     selectedAgents,
     selectedLanguageSkills,
     selectedFrameworkSkills,
@@ -309,7 +309,7 @@ function getArchitectureSkillById(skillId: SelectableArchitectureSkill['id'] | u
 
 function snapshotFiles(
   rootPath: string,
-  pathsToSnapshot: string[] = ['AGENTS.md', '.echo/state.json', '.agents/skills/typescript/SKILL.md']
+  pathsToSnapshot: string[] = ['AGENTS.md', '.sibu/state.json', '.agents/skills/typescript/SKILL.md']
 ): Record<string, string | undefined> {
   const snapshot: Record<string, string | undefined> = {};
 

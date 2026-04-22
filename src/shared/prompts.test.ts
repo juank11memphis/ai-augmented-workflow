@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { EchoState } from './types.js';
+import type { SibuState } from './types.js';
 import { shouldAskForNewLanguageSkills } from './prompts.js';
 
-const BASE_STATE: EchoState = {
-  echoVersion: '0.1.0',
+const BASE_STATE: SibuState = {
+  sibuVersion: '0.1.0',
   templateVersion: '40',
   generatedAt: '2026-04-21T00:00:00.000Z',
   updatedAt: '2026-04-21T00:00:00.000Z',

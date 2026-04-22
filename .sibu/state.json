@@ -1,0 +1,103 @@
+{
+  "sibuVersion": "0.1.0",
+  "templateVersion": "42",
+  "generatedAt": "2026-04-15T02:46:31.069Z",
+  "updatedAt": "2026-04-22T20:27:17Z",
+  "selectedAgents": [
+    "codex",
+    "gemini",
+    "claude"
+  ],
+  "selectedLanguageSkills": [
+    "typescript"
+  ],
+  "selectedFrameworkSkills": [],
+  "selectedArchitectureSkill": "command-pattern",
+  "managedFiles": {
+    "AGENTS.md": {
+      "template": "AGENTS.md",
+      "templateVersion": "18",
+      "sha256": "854733ee1368e4f76304ca98fa6de690baf973a46a6acee986eb016e125d6a83",
+      "status": "managed"
+    },
+    ".codex/config.toml": {
+      "template": ".codex/config.toml",
+      "templateVersion": "1",
+      "sha256": "ad6c7dcde6649a2232ee7113ad412ac9dd1df88c0101ec3729fa30833fcde909",
+      "status": "managed"
+    },
+    "GEMINI.md": {
+      "template": "GEMINI.md",
+      "templateVersion": "1",
+      "sha256": "62e3be879911f9b24f3401f8455c1da9d9689a817574dd08e779c54766bb33c1",
+      "status": "managed"
+    },
+    "CLAUDE.md": {
+      "template": "CLAUDE.md",
+      "templateVersion": "1",
+      "sha256": "d6376126e77149ca1fc08a2ee9003fb78fe01aefb9d387a449890b533e28da89",
+      "status": "managed"
+    },
+    ".agents/skills/clean-code/SKILL.md": {
+      "template": "skills/clean-code/SKILL.md",
+      "templateVersion": "4",
+      "sha256": "e3d115728f12557162ed3322a32bcf5d33e64fa65cd05b1eeb7f2877a25860f1",
+      "status": "managed"
+    },
+    ".agents/skills/product-vision-writer/SKILL.md": {
+      "template": "skills/product-vision-writer/SKILL.md",
+      "templateVersion": "3",
+      "sha256": "073f7dcf2214cca87d6a995a0c87a0edd49f0202b4b95bbabde9d2e05c6da784",
+      "status": "managed"
+    },
+    ".agents/skills/feature-brief-writer/SKILL.md": {
+      "template": "skills/feature-brief-writer/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "1a1b840a0a50b29f80af4bde5b13086a53c3b226097787b9cd39e0bb1d6ac7cf",
+      "status": "managed"
+    },
+    ".agents/skills/technical-design-writer/SKILL.md": {
+      "template": "skills/technical-design-writer/SKILL.md",
+      "templateVersion": "8",
+      "sha256": "0f30e413c4670d779a79f2986ce8e2c081d0697d20d87f329b51bf4e1220e4ca",
+      "status": "managed"
+    },
+    ".agents/skills/scrum-master-planner/SKILL.md": {
+      "template": "skills/scrum-master-planner/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "5afffd6c6a2edd84cce0c97543aac02c8b705d8224978b90570231afcf86b02b",
+      "status": "managed"
+    },
+    ".agents/skills/ai-implementation-planner/SKILL.md": {
+      "template": "skills/ai-implementation-planner/SKILL.md",
+      "templateVersion": "4",
+      "sha256": "b28d692f10e04d3861c5168611d0cda0be184c72dbc29ea95a7a8b6c01787cbb",
+      "status": "managed"
+    },
+    ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
+      "template": "skills/ai-implementation-plan-executor/SKILL.md",
+      "templateVersion": "3",
+      "sha256": "0d0d3ea3b419960e3c529a7a29f40a80c71105734c7f31cef7ec49a053c3337f",
+      "status": "managed"
+    },
+    ".agents/skills/typescript/SKILL.md": {
+      "template": "skills/typescript/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "1d0c05af8482918e0d01dec88b9f0af1f89adcea341339e190bc69bd352081bd",
+      "status": "managed"
+    },
+    ".agents/skills/nextjs/SKILL.md": {
+      "template": "skills/nextjs/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "ea477121b41ac1b683cfd8c8219a863c7fd7c825cbf236c98d9ec5bf028927d4",
+      "status": "unmanaged",
+      "reason": "Stopped by `sibu skills stop`."
+    },
+    ".agents/skills/command-pattern/SKILL.md": {
+      "template": "skills/architecture/command-pattern/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "076440fc00dd9862542672280e8398b793c7fe9e4dff4482462d946ec81d761d",
+      "status": "managed"
+    }
+  }
+}

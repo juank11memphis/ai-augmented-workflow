@@ -6,7 +6,7 @@ import { afterEach, describe, it } from 'node:test';
 
 import { SELECTABLE_FRAMEWORK_SKILLS, SUPPORTED_AGENTS } from '../../shared/catalog.js';
 import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeEchoState } from '../../shared/workflow-targets.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import { stopSelectedSkill } from './handler.js';
 
 const temporaryRoots: string[] = [];
@@ -21,7 +21,7 @@ describe('stopSelectedSkill', () => {
   it('stops a selected framework skill by selectable skill id', () => {
     const rootPath = createInitializedRepoWithNextjs();
 
-    const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.echo/state.json'), 'utf8'));
+    const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'));
     const result = stopSelectedSkill({ rootPath, state, skillName: 'nextjs' });
 
     assert.equal(result.status, 'stopped');
@@ -37,7 +37,7 @@ describe('stopSelectedSkill', () => {
 
   it('rejects raw managed file paths', () => {
     const rootPath = createInitializedRepoWithNextjs();
-    const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.echo/state.json'), 'utf8'));
+    const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'));
 
     const result = stopSelectedSkill({ rootPath, state, skillName: '.agents/skills/nextjs/SKILL.md' });
 
@@ -46,12 +46,12 @@ describe('stopSelectedSkill', () => {
       return;
     }
 
-    assert.equal(result.message, 'Unknown skill `.agents/skills/nextjs/SKILL.md`. Run `echo skills list` to see available skills.');
+    assert.equal(result.message, 'Unknown skill `.agents/skills/nextjs/SKILL.md`. Run `sibu skills list` to see available skills.');
   });
 
   it('does not change files when the skill is not selected', () => {
     const rootPath = createInitializedRepoWithNextjs();
-    const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.echo/state.json'), 'utf8'));
+    const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'));
     const beforeAgents = fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8');
 
     const result = stopSelectedSkill({ rootPath, state, skillName: 'react' });
@@ -62,7 +62,7 @@ describe('stopSelectedSkill', () => {
 });
 
 function createInitializedRepoWithNextjs(): string {
-  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'echo-stop-skill-test-'));
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-stop-skill-test-'));
   temporaryRoots.push(rootPath);
   const selectedAgents = [getSupportedAgent('codex')];
   const selectedLanguageSkills: SelectableLanguageSkill[] = [];
@@ -82,7 +82,7 @@ function createInitializedRepoWithNextjs(): string {
     fs.writeFileSync(file.targetPath, file.contents, 'utf8');
   }
 
-  writeEchoState({ rootPath, statePath: path.join(rootPath, '.echo/state.json'), selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
+  writeSibuState({ rootPath, statePath: path.join(rootPath, '.sibu/state.json'), selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
 
   return rootPath;
 }

@@ -86,7 +86,7 @@ function assertResolvedSkill(skillId: string, expectedKind: ResolvedSelectableSk
 function assertUnknownSkill(skillId: string): void {
   assert.deepEqual(resolveSelectableSkillById(skillId), {
     ok: false,
-    message: `Unknown skill \`${skillId}\`. Run \`echo skills list\` to see available skills.`,
+    message: `Unknown skill \`${skillId}\`. Run \`sibu skills list\` to see available skills.`,
   });
 }
 

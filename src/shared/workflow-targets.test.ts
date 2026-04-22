@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
-import type { EchoState, SupportedAgent } from './types.js';
+import type { SibuState, SupportedAgent } from './types.js';
 import { getSelectedAgentsFromState, getWorkflowTargets } from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';
@@ -51,8 +51,8 @@ describe('getWorkflowTargets', () => {
 
 describe('getSelectedAgentsFromState', () => {
   it('resolves Windsurf from selected agent state', () => {
-    const state: EchoState = {
-      echoVersion: '0.1.0',
+    const state: SibuState = {
+      sibuVersion: '0.1.0',
       templateVersion: '40',
       generatedAt: '2026-04-20T00:00:00.000Z',
       updatedAt: '2026-04-20T00:00:00.000Z',

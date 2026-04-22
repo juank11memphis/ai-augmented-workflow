@@ -5,7 +5,7 @@ import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor } from '../../shared/state.js';
-import type { EchoState } from '../../shared/types.js';
+import type { SibuState } from '../../shared/types.js';
 import type { ListSkillsCommand } from './command.js';
 
 type SkillListItem = {
@@ -25,7 +25,7 @@ export async function handleListSkills(_command: ListSkillsCommand): Promise<voi
 
   if (!stateResult.ok) {
     log.warn(`${stateResult.message} Showing available skills without project selection state.`);
-    log.info('Run `echo init` before selecting project skills.');
+    log.info('Run `sibu init` before selecting project skills.');
   }
 
   logSkillGroup('Languages', getLanguageSkillItems(state));
@@ -35,7 +35,7 @@ export async function handleListSkills(_command: ListSkillsCommand): Promise<voi
   outro(chalk.green('Skill list complete.'));
 }
 
-function getLanguageSkillItems(state: EchoState | undefined): SkillListItem[] {
+function getLanguageSkillItems(state: SibuState | undefined): SkillListItem[] {
   const selectedSkillIds = new Set(state?.selectedLanguageSkills ?? []);
 
   return SELECTABLE_LANGUAGE_SKILLS.map((skill) => ({
@@ -46,7 +46,7 @@ function getLanguageSkillItems(state: EchoState | undefined): SkillListItem[] {
   }));
 }
 
-function getFrameworkSkillItems(state: EchoState | undefined): SkillListItem[] {
+function getFrameworkSkillItems(state: SibuState | undefined): SkillListItem[] {
   const selectedSkillIds = new Set(state?.selectedFrameworkSkills ?? []);
 
   return SELECTABLE_FRAMEWORK_SKILLS.map((skill) => ({
@@ -57,7 +57,7 @@ function getFrameworkSkillItems(state: EchoState | undefined): SkillListItem[] {
   }));
 }
 
-function getArchitectureSkillItems(state: EchoState | undefined): SkillListItem[] {
+function getArchitectureSkillItems(state: SibuState | undefined): SkillListItem[] {
   return SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => ({
     name: skill.name,
     id: skill.id,
