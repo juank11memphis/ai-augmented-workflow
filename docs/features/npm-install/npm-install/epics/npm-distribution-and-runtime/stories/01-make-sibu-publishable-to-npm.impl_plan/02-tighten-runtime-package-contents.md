@@ -20,3 +20,8 @@ Ensure the published package contains exactly the runtime files Sibu needs, with
 - `npm pack` produces a tarball whose contents can be inspected to confirm required runtime assets are present.
 - `pnpm check` passes if any source files changed.
 
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-04-22T22:52:37Z

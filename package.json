@@ -14,8 +14,12 @@
     "sibu": "./bin/sibu.js"
   },
   "files": [
-    "bin/",
-    "src/",
+    "bin/sibu.js",
+    "bin/entrypoints/",
+    "bin/features/",
+    "bin/shared/",
+    "!bin/**/*.test.js",
+    "!bin/echo.js",
     "templates/",
     "README.md"
   ],
