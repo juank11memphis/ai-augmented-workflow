@@ -21,3 +21,8 @@ Prove that the publishability changes actually produce a valid npm package by ad
 - A reviewer can confirm from the repo artifacts how to verify that the package metadata and packed contents satisfy this story.
 - Any touched validation commands or tests pass.
 
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-04-22T22:55:10Z

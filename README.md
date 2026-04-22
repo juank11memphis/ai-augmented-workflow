@@ -35,6 +35,8 @@ pnpm verify
 
 Use `pnpm link --global` to make the local `sibu` command available from any directory while developing.
 
+This linked workflow is useful for day-to-day development, but it is **not** the release-readiness check for npm publishing. For release readiness, prefer tarball-based validation with `npm pack` so you verify the exact package contents users will install.
+
 From this repository:
 
 ```sh
@@ -66,6 +68,26 @@ When you are done testing the linked CLI, remove the global link:
 ```sh
 pnpm dev:unlink
 ```
+
+## Validate the npm package
+
+Before treating a build as ready to publish, validate the packaged artifact instead of relying only on `pnpm link`.
+
+```sh
+pnpm verify
+mkdir -p /tmp/sibu-pack
+npm pack --json --pack-destination /tmp/sibu-pack
+tar -tzf /tmp/sibu-pack/sibu-*.tgz | sort
+```
+
+Use the tarball listing to confirm the packed artifact includes the expected runtime files:
+
+- `bin/sibu.js`
+- runtime code under `bin/entrypoints/`, `bin/features/`, and `bin/shared/`
+- `templates/`
+- `README.md`
+
+Treat this tarball-based check as the release-readiness path for packaging changes. Use `pnpm dev:link` only for interactive local development.
 
 ## Changing templates
 
