@@ -6,11 +6,12 @@ import chalk from 'chalk';
 
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, STATE_RELATIVE_PATH, SUPPORTED_AGENTS } from '../../shared/catalog.js';
 import { sha256 } from '../../shared/hash.js';
+import { checkForLatestSibuVersion } from '../../shared/npm-version.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
 import { hasReviewedTemplateVersion, readStateForDoctor } from '../../shared/state.js';
 import { getTemplateVersion, readTemplateManifest } from '../../shared/templates.js';
-import type { DoctorIssue, SibuState, ManagedFileStatus } from '../../shared/types.js';
+import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
@@ -37,6 +38,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
 
   const state = stateResult.state;
   const issues = diagnoseState({ rootPath, state });
+  const npmVersionResult = await checkForLatestSibuVersion();
 
   if (issues.length === 0) {
     log.success('Workflow is healthy. No drift detected.');
@@ -44,6 +46,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
     log.info(`Template version: ${state.templateVersion}`);
     log.info(`Managed workflow files: ${Object.keys(state.managedFiles).length}`);
     log.info(`File statuses: ${formatManagedFileStatusCounts(state)}`);
+    logNpmVersionAdvisory(npmVersionResult);
     outro(chalk.green('Check complete.'));
     return;
   }
@@ -61,9 +64,27 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
     }
   }
 
+  logNpmVersionAdvisory(npmVersionResult);
   log.info('Run `sibu sync` to repair missing managed files, adopt new templates, or review template updates.');
   outro(chalk.yellow('Review needed.'));
   process.exitCode = 1;
+}
+
+export function getNpmVersionAdvisoryLines(result: NpmVersionCheckResult): string[] {
+  if (result.status !== 'update-available') {
+    return [];
+  }
+
+  return [
+    `A newer Sibu version is available: ${result.latestVersion} (${result.currentVersion} installed).`,
+    'Update with `npm install -g sibu`.',
+  ];
+}
+
+function logNpmVersionAdvisory(result: NpmVersionCheckResult): void {
+  for (const line of getNpmVersionAdvisoryLines(result)) {
+    log.info(line);
+  }
 }
 
 function diagnoseState({ rootPath, state }: { rootPath: string; state: SibuState }): DoctorIssue[] {
@@ -103,7 +124,6 @@ function addUnsupportedSelectionIssues(state: SibuState, issues: DoctorIssue[]):
       issues.push({ severity: 'warning', message: `State references unsupported reviewed language skill: ${reviewedLanguageSkill}.` });
     }
   }
-
 
   for (const selectedFrameworkSkill of state.selectedFrameworkSkills ?? []) {
     if (!SELECTABLE_FRAMEWORK_SKILLS.some((skill) => skill.id === selectedFrameworkSkill)) {
