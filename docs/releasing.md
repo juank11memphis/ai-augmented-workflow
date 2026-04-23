@@ -17,6 +17,31 @@ A normal Sibu release will cover these stages:
 
 The detailed checklist for each stage belongs in this document.
 
+## First-time npm registry setup
+
+Use this section the first time you prepare Sibu for npm publication, or any time the package name or npm ownership model changes.
+
+Before the first release, confirm all of the following:
+
+1. the final package name is decided
+2. the package name is available or already owned by the correct npm account/org
+3. the GitHub repository is public if you intend to publish Sibu as a normal public npm package
+4. you can authenticate with npm locally
+5. the account you are using has publish rights for the chosen package name
+
+Helpful checks:
+
+```sh
+npm whoami
+npm view sibu version
+```
+
+Use `npm whoami` to confirm the active npm account. Use `npm view <package-name> version` to see whether a package already exists on the registry.
+
+If the final package uses a scope, make sure the scope owner and publish access are already configured before attempting the first release. If the intended unscoped package name is unavailable, resolve the naming decision before continuing with the release workflow.
+
+After the first successful `npm publish`, verify that the package page exists on npm and that the published metadata matches the version you intended to release.
+
 ## 1. Confirm release prerequisites
 
 Before starting a release, confirm all of the following:
