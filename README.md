@@ -53,6 +53,10 @@ When preparing a release, write or update the `CHANGELOG.md` entry first, then p
 
 This keeps one source of truth in the repo while still giving users a public release page they can browse from GitHub.
 
+## Maintainer release workflow
+
+If you are preparing a new Sibu npm release, use [`docs/releasing.md`](docs/releasing.md). That guide covers version bumping, `CHANGELOG.md`, tarball-based validation, npm publish, GitHub Release creation, and post-publish verification.
+
 ## Contributor development
 
 The rest of this README section is for contributors working on Sibu itself, not for end users installing the CLI.
