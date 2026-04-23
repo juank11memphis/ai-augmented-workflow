@@ -31,7 +31,8 @@
     "dev:unlink": "pnpm unlink --global sibu",
     "prepack": "pnpm run build",
     "smoke:init": "node ./bin/sibu.js init",
-    "test": "pnpm build && node --test bin/shared/catalog.test.js bin/shared/prompts.test.js bin/shared/workflow-targets.test.js bin/shared/workflow-mutation-readiness.test.js bin/features/use-skill/handler.test.js bin/features/stop-managing-file/handler.test.js"
+    "test": "pnpm build && node --test bin/shared/catalog.test.js bin/shared/prompts.test.js bin/shared/workflow-targets.test.js bin/shared/workflow-mutation-readiness.test.js bin/features/use-skill/handler.test.js bin/features/stop-managing-file/handler.test.js",
+    "validate:packed-runtime": "node ./scripts/validate-packed-cli-runtime.mjs"
   },
   "keywords": [
     "ai",
