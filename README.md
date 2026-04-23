@@ -2,6 +2,24 @@
 
 A local workspace for developing and refining an AI-augmented software development workflow.
 
+## Install Sibu
+
+The official way to install and update Sibu is with npm:
+
+```sh
+npm install -g sibu
+```
+
+After installing, the normal user flow is:
+
+1. run `sibu init` in your project
+2. run `sibu doctor` to check workflow health
+3. if `sibu doctor` says a newer npm version exists, run `npm install -g sibu`
+4. rerun `sibu doctor`
+5. if drift is reported, decide whether to run `sibu sync`
+
+Updating Sibu alone does not change project files. It only changes what `sibu doctor` can detect against the newer installed templates.
+
 ## CLI
 
 Sibu helps projects adopt and maintain AI workflow support files safely.
@@ -9,7 +27,7 @@ Sibu helps projects adopt and maintain AI workflow support files safely.
 From a project directory, run:
 
 ```sh
-npx sibu init
+sibu init
 ```
 
 `sibu init` is idempotent: it opens a polished interactive flow, lets you select supported agents with the keyboard, creates missing workflow files for that selection, keeps existing files unchanged, and reports when no changes are needed. When `AGENTS.md` is missing, the CLI asks for a project overview and writes the file based on the template in this repository. It can also create Codex, Gemini, and Claude support files when selected. Sibu records the generated workflow state in `.sibu/state.json` so `sibu doctor` can detect drift safely.
