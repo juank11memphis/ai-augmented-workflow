@@ -21,7 +21,7 @@ The feature brief and technical design place update detection in `sibu doctor`, 
 
 ## Acceptance Criteria
 - `sibu doctor` shows a clear advisory when a newer npm version exists.
-- The advisory tells the user to run `npm install -g sibu`.
+- The advisory tells the user to run `npm install -g @juancr11/sibu`.
 - Failure to reach npm does not fail the workflow health check.
 - A newer available CLI version does not by itself mark the workflow unhealthy.
 

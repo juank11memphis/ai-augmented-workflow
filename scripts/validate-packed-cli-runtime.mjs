@@ -91,7 +91,7 @@ function getInstalledPackageRoot({ npmCache, npmPrefix }) {
     cwd: getRepoRoot(),
     env: npmEnv({ npmCache, npmPrefix }),
   });
-  const packageRoot = path.join(globalNodeModulesPath, 'sibu');
+  const packageRoot = path.join(globalNodeModulesPath, '@juancr11', 'sibu');
 
   if (!existsSync(packageRoot)) {
     throw new Error(`Expected installed package root at ${packageRoot}.`);

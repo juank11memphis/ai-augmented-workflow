@@ -29,11 +29,11 @@ Concrete changes:
   - `homepage`
   - `bugs`
   - `engines.node` set to `>=20`
-  - `publishConfig.access` only if the final package name is scoped
+  - `publishConfig.access` set to `public` for the scoped package
 - Keep `files` narrow so the published tarball contains only runtime-required assets (`bin/`, `templates/`, `README.md`, and any other required runtime files).
 
 Decision:
-- Prefer an unscoped public package name if the name is available and aligned with the current brand. If the package must be scoped, the CLI binary should still stay short (`sibu`) unless there is a hard naming conflict.
+- Use the scoped public package name `@juancr11/sibu` while keeping the CLI binary short as `sibu`.
 
 ### 2. Build and pack flow
 Do not introduce a special install/update mechanism. Reuse the current npm lifecycle:
@@ -55,7 +55,7 @@ Behavior:
 - if npm cannot be reached, continue the doctor command without failing the workflow health check
 - if a newer npm version exists, show an advisory message such as:
   - a newer Sibu version is available
-  - update with `npm install -g sibu`
+  - update with `npm install -g @juancr11/sibu`
 - do not mark the workflow as unhealthy solely because a newer CLI version exists
 - do not mutate any local files as part of the version advisory
 
@@ -74,7 +74,7 @@ Recommended implementation detail:
 After the user updates with npm, the expected path should stay explicit:
 1. user runs `sibu doctor`
 2. Sibu advises that a newer npm version exists
-3. user runs `npm install -g sibu`
+3. user runs `npm install -g @juancr11/sibu`
 4. user reruns `sibu doctor`
 5. doctor reports any template-version drift against the newly installed version
 6. user runs `sibu sync` if they want to review/apply those updates
@@ -85,7 +85,7 @@ This keeps updates standard and keeps file mutation under the existing explicit 
 Make npm the only user-facing install and update path while keeping contributor setup separate.
 
 Concrete doc changes:
-- `README.md` should open with one canonical user flow built around `npm install -g sibu` and the doctor → update → doctor → sync path
+- `README.md` should open with one canonical user flow built around `npm install -g @juancr11/sibu` and the doctor → update → doctor → sync path
 - contributor-only flows (`pnpm install`, `pnpm dev:link`, local build/test) should stay under clearly labeled contributor sections
 - remove clone/link language from end-user onboarding
 - document the update advisory flow briefly:
@@ -153,7 +153,7 @@ Any path assumptions that only work inside the development checkout should be tr
 - manual check that maintainer release docs cover npm auth/access, version bumping, changelog/release notes, pack/publish, and post-publish verification
 
 ## Risks / Open Questions
-- The npm package name may already be taken; the design should not assume `sibu` is available until verified.
+- The npm package name decision is now `@juancr11/sibu`; release docs and version checks should stay aligned with that scoped name.
 - Minimum supported Node version is Node 20+; `engines.node` should be set to `>=20` before publishing.
 - If runtime template lookup depends on repo-relative paths, npm-installed execution may fail even if local development works.
 - npm version checks should be cached enough to avoid noisy repeated requests but still feel current.

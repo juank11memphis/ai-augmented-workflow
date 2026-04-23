@@ -27,4 +27,4 @@ Make Sibu publishable to npm and ensure the installed package works as a normal 
 - The installed CLI can access its required runtime assets, including templates.
 
 ## Dependencies / Risks
-- The final npm package name must be chosen during implementation; the minimum supported Node version is 20+.
+- The final npm package name is `@juancr11/sibu`; the minimum supported Node version is 20+.

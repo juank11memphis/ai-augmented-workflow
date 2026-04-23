@@ -1,5 +1,5 @@
 {
-  "name": "sibu",
+  "name": "@juancr11/sibu",
   "version": "0.1.0",
   "description": "CLI for setting up a local AI-augmented development workflow.",
   "repository": {
@@ -61,5 +61,8 @@
     "ink": "^7.0.0",
     "react": "^19.2.5"
   },
-  "type": "module"
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  }
 }

@@ -33,7 +33,7 @@ Helpful checks:
 
 ```sh
 npm whoami
-npm view sibu version
+npm view @juancr11/sibu version
 ```
 
 Use `npm whoami` to confirm the active npm account. Use `npm view <package-name> version` to see whether a package already exists on the registry.
@@ -107,7 +107,7 @@ A normal publication should follow npm's standard workflow:
 npm publish
 ```
 
-If the final package uses a scope that requires explicit public access, publish with the appropriate npm access configuration for that package.
+This repo uses the scoped public package name `@juancr11/sibu`, so `package.json` should keep `publishConfig.access` set to `public`.
 
 ## 5. Publish the matching GitHub Release
 

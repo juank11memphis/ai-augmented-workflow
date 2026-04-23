@@ -23,7 +23,7 @@ Teach `sibu doctor` to advisory-check for newer npm-published versions and guide
 
 ## Acceptance Criteria
 - `sibu doctor` can tell users when a newer npm version exists.
-- The advisory points to `npm install -g sibu` and does not mark the workflow unhealthy on its own.
+- The advisory points to `npm install -g @juancr11/sibu` and does not mark the workflow unhealthy on its own.
 - After an update, rerunning `sibu doctor` surfaces any resulting template drift through the existing doctor/sync model.
 
 ## Dependencies / Risks

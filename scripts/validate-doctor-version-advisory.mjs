@@ -14,7 +14,7 @@ try {
   });
 
   assertIncludes(newerVersionOutput, 'A newer Sibu version is available: 9.9.9 (0.1.0 installed).');
-  assertIncludes(newerVersionOutput, 'Update with `npm install -g sibu`.');
+  assertIncludes(newerVersionOutput, 'Update with `npm install -g @juancr11/sibu`.');
   assertIncludes(newerVersionOutput, 'Workflow is healthy. No drift detected.');
 
   const offlineOutput = runDoctorWithTty({
@@ -24,7 +24,7 @@ try {
 
   assertIncludes(offlineOutput, 'Workflow is healthy. No drift detected.');
   assertExcludes(offlineOutput, 'A newer Sibu version is available:');
-  assertExcludes(offlineOutput, 'Update with `npm install -g sibu`.');
+  assertExcludes(offlineOutput, 'Update with `npm install -g @juancr11/sibu`.');
 
   console.log('Doctor version advisory validation passed.');
 } finally {

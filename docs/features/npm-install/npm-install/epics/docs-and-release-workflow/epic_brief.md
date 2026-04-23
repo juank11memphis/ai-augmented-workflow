@@ -28,4 +28,4 @@ Document the canonical user install/update path and the maintainer release workf
 - The repo clearly states that every release updates both `CHANGELOG.md` and the matching GitHub Release.
 
 ## Dependencies / Risks
-- The final package name must be chosen during implementation; release notes are required in both `CHANGELOG.md` and GitHub Releases.
+- The npm package name decision is `@juancr11/sibu`; release notes are required in both `CHANGELOG.md` and GitHub Releases.

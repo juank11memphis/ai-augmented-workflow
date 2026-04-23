@@ -7,14 +7,14 @@ A local workspace for developing and refining an AI-augmented software developme
 The official way to install and update Sibu is with npm:
 
 ```sh
-npm install -g sibu
+npm install -g @juancr11/sibu
 ```
 
 After installing, the normal user flow is:
 
 1. run `sibu init` in your project
 2. run `sibu doctor` to check workflow health
-3. if `sibu doctor` says a newer npm version exists, run `npm install -g sibu`
+3. if `sibu doctor` says a newer npm version exists, run `npm install -g @juancr11/sibu`
 4. rerun `sibu doctor`
 5. if drift is reported, decide whether to run `sibu sync`
 
@@ -34,7 +34,7 @@ sibu init
 
 Use `sibu doctor` to run a read-only health check. It reports missing managed files, local modifications, malformed state metadata, and template version drift without changing files.
 
-If `sibu doctor` tells you that a newer npm version exists, update with `npm install -g sibu`, rerun `sibu doctor`, and only then decide whether to run `sibu sync`. Updating Sibu alone changes what doctor can detect; it does not change project files.
+If `sibu doctor` tells you that a newer npm version exists, update with `npm install -g @juancr11/sibu`, rerun `sibu doctor`, and only then decide whether to run `sibu sync`. Updating Sibu alone changes what doctor can detect; it does not change project files.
 
 Use `sibu sync` to review template updates interactively. It explains human-readable template changes, protects local edits from automatic overwrites, and lets you apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later. Sibu records each file as `managed`, `customized`, or `unmanaged` in `.sibu/state.json`.
 
@@ -116,7 +116,7 @@ Before treating a build as ready to publish, validate the packaged artifact inst
 pnpm verify
 mkdir -p /tmp/sibu-pack
 npm pack --json --pack-destination /tmp/sibu-pack
-tar -tzf /tmp/sibu-pack/sibu-*.tgz | sort
+tar -tzf /tmp/sibu-pack/juancr11-sibu-*.tgz | sort
 ```
 
 Use the tarball listing to confirm the packed artifact includes the expected runtime files:
@@ -156,7 +156,7 @@ pnpm run validate:doctor-version-advisory
 
 This validation proves both of these cases locally:
 
-- a newer npm version is available and `sibu doctor` suggests `npm install -g sibu`
+- a newer npm version is available and `sibu doctor` suggests `npm install -g @juancr11/sibu`
 - npm lookup is unavailable and `sibu doctor` still completes the local health check without failing
 
 For one-off manual checks, you can also run:

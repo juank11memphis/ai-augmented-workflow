@@ -1,7 +1,7 @@
 # npm Install Feature Brief
 
 ## Summary
-Provide a single, official installation and update path for Sibu using npm global install (`npm install -g sibu`). This makes Sibu easy to adopt without repo cloning, linking, custom scripts, or a bespoke updater, and it includes the maintainer-facing release documentation needed to publish and communicate new versions cleanly.
+Provide a single, official installation and update path for Sibu using npm global install (`npm install -g @juancr11/sibu`). This makes Sibu easy to adopt without repo cloning, linking, custom scripts, or a bespoke updater, and it includes the maintainer-facing release documentation needed to publish and communicate new versions cleanly.
 
 ## Product Vision Fit
 Sibu aims to make AI‑augmented development feel reliable, guided, and low-friction. A single, familiar npm install/update path lowers adoption friction, keeps behavior predictable, and avoids inventing custom package management behavior that would make the workflow feel strange or opaque. A clear, standard release process also protects trust: users should understand how to install and update Sibu, and maintainers should have one obvious way to package, publish, and explain each new version.
@@ -19,16 +19,16 @@ Reduce install friction, standardize updates, and increase first-time adoption w
 - A maintainer is ready to publish a new Sibu version and needs one documented release path that covers npm publishing, release notes, and user-facing install/update docs.
 
 ## Proposed Experience
-- User runs `npm install -g sibu`.
+- User runs `npm install -g @juancr11/sibu`.
 - `sibu` CLI becomes available immediately on PATH.
 - `sibu doctor` can advisory-check whether a newer npm-published version exists.
-- If a newer version exists, `sibu doctor` tells the user to update with `npm install -g sibu`.
+- If a newer version exists, `sibu doctor` tells the user to update with `npm install -g @juancr11/sibu`.
 - After updating, the user reruns `sibu doctor` to see whether the newer installed version introduces template drift that requires `sibu sync`.
 - All user-facing documentation points to npm as the only supported install and update method.
 - Maintainer-facing documentation explains how to prepare, package, publish, and announce a new npm release using standard npm workflows.
 
 ## MVP Scope
-- Publish Sibu to npm under the official package name.
+- Publish Sibu to npm under the official scoped package name `@juancr11/sibu`.
 - Provide one canonical install/update command in user-facing docs.
 - Ensure `sibu` runs correctly after npm global install.
 - Add an advisory npm-version check to `sibu doctor`.
@@ -52,7 +52,7 @@ Reduce install friction, standardize updates, and increase first-time adoption w
 
 ## Business-Level Acceptance Criteria
 - The official user docs show only npm install/update as the supported method.
-- A user can run `npm install -g sibu` and immediately execute `sibu --help` successfully.
+- A user can run `npm install -g @juancr11/sibu` and immediately execute `sibu --help` successfully.
 - A user running `sibu doctor` on an older installed version sees an advisory message telling them how to update with npm.
 - After updating, rerunning `sibu doctor` reports any resulting workflow/template drift without mutating files.
 - Maintainer docs explain how to release a new npm version, including npm registry setup/prerequisites, version publishing, and the requirement to update both `CHANGELOG.md` and the matching GitHub Release.
@@ -65,7 +65,7 @@ Reduce install friction, standardize updates, and increase first-time adoption w
 - A poorly documented release flow could still leave maintainers relying on memory or ad hoc steps even if npm distribution exists.
 
 ## Open Questions
-- Which npm org/package name should be used (e.g., `sibu` vs `@sibu/cli`)?
+- Official npm package name: `@juancr11/sibu`.
 - Minimum supported Node version is 20+.
 - How often should `sibu doctor` refresh the npm version advisory to avoid noisy repeated checks?
 - Release notes should use `CHANGELOG.md` as the canonical source and GitHub Releases as the public release surface; every release updates both.

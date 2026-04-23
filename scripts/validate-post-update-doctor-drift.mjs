@@ -39,7 +39,7 @@ try {
   });
 
   assertIncludes(advisoryOutput, 'A newer Sibu version is available: 0.1.0 (0.0.9 installed).');
-  assertIncludes(advisoryOutput, 'Update with `npm install -g sibu`.');
+  assertIncludes(advisoryOutput, 'Update with `npm install -g @juancr11/sibu`.');
   assertIncludes(advisoryOutput, 'Workflow is healthy. No drift detected.');
 
   const beforeHashes = snapshotProjectFiles(fixtureProjectPath);
@@ -96,7 +96,7 @@ function buildOlderTarballFromCurrent(newTarballPath) {
   patchOldPackageVersion(packageDir);
   patchOldTemplateManifest(packageDir);
 
-  const oldTarballPath = path.join(packDir, 'sibu-0.0.9.tgz');
+  const oldTarballPath = path.join(packDir, 'juancr11-sibu-0.0.9.tgz');
   execFileSync('tar', ['-czf', oldTarballPath, '-C', extractDir, 'package'], {
     env: buildChildEnv(),
     stdio: ['ignore', 'inherit', 'inherit'],
@@ -137,7 +137,7 @@ function getInstalledPackageRoot() {
     npm_config_cache: cacheRoot,
     npm_config_prefix: npmPrefix,
   });
-  const packageRoot = path.join(globalNodeModulesPath, 'sibu');
+  const packageRoot = path.join(globalNodeModulesPath, '@juancr11', 'sibu');
 
   if (!existsSync(packageRoot)) {
     throw new Error(`Expected installed package root at ${packageRoot}.`);

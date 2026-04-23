@@ -77,7 +77,7 @@ export function getNpmVersionAdvisoryLines(result: NpmVersionCheckResult): strin
 
   return [
     `A newer Sibu version is available: ${result.latestVersion} (${result.currentVersion} installed).`,
-    'Update with `npm install -g sibu`.',
+    'Update with `npm install -g @juancr11/sibu`.',
   ];
 }
 

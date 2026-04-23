@@ -1,6 +1,6 @@
 import type { NpmVersionLookupMode, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableSkillResolutionResult, SkillTemplate, SupportedAgent } from './types.js';
 
-export const SIBU_PACKAGE_NAME = 'sibu';
+export const SIBU_PACKAGE_NAME = '@juancr11/sibu';
 export const SIBU_VERSION = '0.1.0';
 export const STATE_RELATIVE_PATH = '.sibu/state.json';
 export const NPM_VERSION_LOOKUP_MODE_ENV = 'SIBU_NPM_LOOKUP_MODE';

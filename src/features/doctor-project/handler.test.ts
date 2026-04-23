@@ -15,7 +15,7 @@ test('returns advisory lines when a newer version is available', () => {
 
   assert.deepEqual(lines, [
     'A newer Sibu version is available: 0.2.0 (0.1.0 installed).',
-    'Update with `npm install -g sibu`.',
+    'Update with `npm install -g @juancr11/sibu`.',
   ]);
 });
 
