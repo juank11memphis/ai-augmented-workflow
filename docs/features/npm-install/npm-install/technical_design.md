@@ -85,8 +85,8 @@ This keeps updates standard and keeps file mutation under the existing explicit 
 Make npm the only user-facing install and update path while keeping contributor setup separate.
 
 Concrete doc changes:
-- `README.md` should open with one canonical user flow built around npm global install/update
-- contributor-only flows (`pnpm install`, `pnpm dev:link`, local build/test) should stay under a clearly labeled development section
+- `README.md` should open with one canonical user flow built around `npm install -g sibu` and the doctor → update → doctor → sync path
+- contributor-only flows (`pnpm install`, `pnpm dev:link`, local build/test) should stay under clearly labeled contributor sections
 - remove clone/link language from end-user onboarding
 - document the update advisory flow briefly:
   - run `sibu doctor`
