@@ -69,15 +69,18 @@ Write or update the changelog entry first. The GitHub Release should reuse that 
 
 Validate the exact package users will install, not just the source checkout.
 
-Run the baseline verification first:
+Run the full release-readiness validation flow:
+
+```sh
+pnpm run validate:release
+```
+
+This wrapper runs the baseline verification, creates a package tarball, and executes the installed-runtime and doctor advisory checks used by the release workflow.
+
+The underlying checks are:
 
 ```sh
 pnpm verify
-```
-
-Then validate the packed artifact and installed runtime:
-
-```sh
 npm pack
 pnpm run validate:packed-runtime
 pnpm run validate:doctor-version-advisory

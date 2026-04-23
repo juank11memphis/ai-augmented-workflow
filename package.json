@@ -34,7 +34,8 @@
     "test": "pnpm build && node --test bin/shared/catalog.test.js bin/shared/npm-version.test.js bin/shared/prompts.test.js bin/shared/workflow-targets.test.js bin/shared/workflow-mutation-readiness.test.js bin/features/doctor-project/handler.test.js bin/features/use-skill/handler.test.js bin/features/stop-managing-file/handler.test.js",
     "validate:packed-runtime": "node ./scripts/validate-packed-cli-runtime.mjs",
     "validate:doctor-version-advisory": "pnpm build && node ./scripts/validate-doctor-version-advisory.mjs",
-    "validate:post-update-doctor-drift": "pnpm build && node ./scripts/validate-post-update-doctor-drift.mjs"
+    "validate:post-update-doctor-drift": "pnpm build && node ./scripts/validate-post-update-doctor-drift.mjs",
+    "validate:release": "pnpm verify && npm pack && pnpm run validate:packed-runtime && pnpm run validate:doctor-version-advisory && pnpm run validate:post-update-doctor-drift"
   },
   "keywords": [
     "ai",
