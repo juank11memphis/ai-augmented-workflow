@@ -1,7 +1,12 @@
-import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableSkillResolutionResult, SkillTemplate, SupportedAgent } from './types.js';
+import type { NpmVersionLookupMode, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableSkillResolutionResult, SkillTemplate, SupportedAgent } from './types.js';
 
+export const SIBU_PACKAGE_NAME = 'sibu';
 export const SIBU_VERSION = '0.1.0';
 export const STATE_RELATIVE_PATH = '.sibu/state.json';
+export const NPM_VERSION_LOOKUP_MODE_ENV = 'SIBU_NPM_LOOKUP_MODE';
+export const NPM_VERSION_OVERRIDE_ENV = 'SIBU_NPM_LATEST_VERSION';
+export const SIBU_CACHE_HOME_ENV = 'SIBU_CACHE_HOME';
+export const SUPPORTED_NPM_LOOKUP_MODES: NpmVersionLookupMode[] = ['live', 'offline'];
 
 export const MANDATORY_SKILLS: SkillTemplate[] = [
   {

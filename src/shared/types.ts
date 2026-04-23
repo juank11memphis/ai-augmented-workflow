@@ -2,6 +2,9 @@ export type AgentId = 'codex' | 'gemini' | 'claude' | 'windsurf';
 export type LanguageSkillId = 'typescript' | 'golang';
 export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
+export type NpmVersionLookupMode = 'live' | 'offline';
+export type NpmVersionResultSource = 'cache' | 'live' | 'override';
+export type NpmVersionUnavailableReason = 'invalid-response' | 'network-error' | 'override';
 
 export type SupportedAgent = {
   id: AgentId;
@@ -105,3 +108,34 @@ export type ManagedFilePath = {
   relativePath: string;
   absolutePath: string;
 };
+
+export type NpmVersionUpToDateResult = {
+  checkedAt: string;
+  currentVersion: string;
+  latestVersion: string;
+  packageName: string;
+  source: NpmVersionResultSource;
+  status: 'up-to-date';
+};
+
+export type NpmVersionUpdateAvailableResult = {
+  checkedAt: string;
+  currentVersion: string;
+  latestVersion: string;
+  packageName: string;
+  source: NpmVersionResultSource;
+  status: 'update-available';
+};
+
+export type NpmVersionUnavailableResult = {
+  checkedAt: string;
+  packageName: string;
+  reason: NpmVersionUnavailableReason;
+  source: NpmVersionResultSource;
+  status: 'unavailable';
+};
+
+export type NpmVersionCheckResult = NpmVersionUpToDateResult | NpmVersionUpdateAvailableResult | NpmVersionUnavailableResult;
+export type NpmVersionCacheRecord = NpmVersionCheckResult;
+export type NpmVersionLiveStatus = 'up-to-date' | 'update-available';
+export type NpmVersionLiveOutcome = NpmVersionCheckResult;
