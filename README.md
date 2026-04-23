@@ -109,6 +109,26 @@ If this command fails, treat it as an installed-package runtime problem rather t
 
 Treat tarball inspection plus `pnpm run validate:packed-runtime` as the release-readiness path for npm packaging changes. Use `pnpm dev:link` only for interactive local development.
 
+## Validate the doctor npm update advisory
+
+Use the deterministic override hooks to verify both advisory scenarios without depending on a real npm publish cycle:
+
+```sh
+pnpm run validate:doctor-version-advisory
+```
+
+This validation proves both of these cases locally:
+
+- a newer npm version is available and `sibu doctor` suggests `npm install -g sibu`
+- npm lookup is unavailable and `sibu doctor` still completes the local health check without failing
+
+For one-off manual checks, you can also run:
+
+```sh
+SIBU_NPM_LATEST_VERSION=9.9.9 node ./bin/sibu.js doctor
+SIBU_NPM_LOOKUP_MODE=offline node ./bin/sibu.js doctor
+```
+
 ## Changing templates
 
 Templates are versioned product artifacts. When changing any file under `templates/`, use the local template-change skill if available and update `templates/manifest.json` in the same change.

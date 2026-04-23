@@ -67,6 +67,7 @@ Responsibility split:
 
 Recommended implementation detail:
 - cache the result for a short period so repeated `sibu doctor` runs do not hit the network every time in one session/day
+- keep one deterministic override path for validation (for example env vars) so maintainers can simulate update-available and npm-unavailable scenarios without a real publish cycle
 - treat npm registry access as an advisory integration, not a required dependency for local health checks
 
 ### 4. Post-update workflow
@@ -144,6 +145,7 @@ Any path assumptions that only work inside the development checkout should be tr
 - smoke test `sibu --help` from the tarball-installed binary
 - smoke test `sibu doctor` from a temporary fixture project outside the source checkout
 - verify that an older installed version receives a non-blocking npm update advisory
+- `pnpm run validate:doctor-version-advisory`
 - verify that after upgrading, rerunning `sibu doctor` reports any resulting template drift without changing files
 - manual check that README install/update instructions match the shipped package name and command
 - manual check that maintainer release docs cover npm auth/access, version bumping, changelog/release notes, pack/publish, and post-publish verification
