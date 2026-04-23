@@ -79,7 +79,7 @@ After the user updates with npm, the expected path should stay explicit:
 5. doctor reports any template-version drift against the newly installed version
 6. user runs `sibu sync` if they want to review/apply those updates
 
-This keeps updates standard and keeps file mutation under the existing explicit sync flow.
+This keeps updates standard and keeps file mutation under the existing explicit sync flow. Updating Sibu alone changes what `sibu doctor` can detect; it does not mutate project files.
 
 ### 5. Documentation split: user install/update vs contributor setup
 Make npm the only user-facing install and update path while keeping contributor setup separate.
@@ -147,6 +147,7 @@ Any path assumptions that only work inside the development checkout should be tr
 - verify that an older installed version receives a non-blocking npm update advisory
 - `pnpm run validate:doctor-version-advisory`
 - verify that after upgrading, rerunning `sibu doctor` reports any resulting template drift without changing files
+- `pnpm run validate:post-update-doctor-drift`
 - manual check that README install/update instructions match the shipped package name and command
 - manual check that maintainer release docs cover npm auth/access, version bumping, changelog/release notes, pack/publish, and post-publish verification
 

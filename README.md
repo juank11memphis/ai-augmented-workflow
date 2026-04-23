@@ -16,6 +16,8 @@ npx sibu init
 
 Use `sibu doctor` to run a read-only health check. It reports missing managed files, local modifications, malformed state metadata, and template version drift without changing files.
 
+If `sibu doctor` tells you that a newer npm version exists, update with `npm install -g sibu`, rerun `sibu doctor`, and only then decide whether to run `sibu sync`. Updating Sibu alone changes what doctor can detect; it does not change project files.
+
 Use `sibu sync` to review template updates interactively. It explains human-readable template changes, protects local edits from automatic overwrites, and lets you apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later. Sibu records each file as `managed`, `customized`, or `unmanaged` in `.sibu/state.json`.
 
 Use `sibu skills list` to list available workflow skills and see which selectable skills are currently enabled for the project.
@@ -128,6 +130,22 @@ For one-off manual checks, you can also run:
 SIBU_NPM_LATEST_VERSION=9.9.9 node ./bin/sibu.js doctor
 SIBU_NPM_LOOKUP_MODE=offline node ./bin/sibu.js doctor
 ```
+
+## Validate post-update drift after upgrading Sibu
+
+Use the local two-tarball validation flow to prove that upgrading Sibu can surface new drift without changing project files automatically:
+
+```sh
+pnpm run validate:post-update-doctor-drift
+```
+
+This validation proves the full explicit flow locally:
+
+- install an older local tarball
+- run `sibu doctor` and see the npm update advisory
+- update to a newer local tarball
+- rerun `sibu doctor` and see drift reported
+- confirm no files change until `sibu sync` is explicitly run
 
 ## Changing templates
 
