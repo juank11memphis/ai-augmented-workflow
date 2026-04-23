@@ -42,6 +42,17 @@ Use `sibu skills list` to list available workflow skills and see which selectabl
 
 Use `sibu skills stop <file>` to stop managing an Sibu-tracked workflow file. The file is marked as `unmanaged` in `.sibu/state.json`, removed from the selected skill state when applicable, and the CLI asks whether to keep or delete the local file.
 
+## Release notes and changelog
+
+For every Sibu release, update both release-note locations:
+
+- `CHANGELOG.md` is the canonical source in the repo
+- the matching GitHub Release is the public release surface
+
+When preparing a release, write or update the `CHANGELOG.md` entry first, then publish the matching GitHub Release using that same summary.
+
+This keeps one source of truth in the repo while still giving users a public release page they can browse from GitHub.
+
 ## Contributor development
 
 The rest of this README section is for contributors working on Sibu itself, not for end users installing the CLI.

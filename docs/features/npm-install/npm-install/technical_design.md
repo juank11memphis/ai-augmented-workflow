@@ -14,7 +14,7 @@ Add a publishable npm distribution for the CLI so a user can install or update S
 - `README.md` still mixes end-user install guidance with local development guidance (`pnpm dev:link`), so the current docs do not provide one canonical install/update story.
 - `AGENTS.md` already instructs agents to run `sibu doctor` once per session. That existing habit is the right trigger for advisory version checks; `AGENTS.md` itself should stay static and should not perform runtime detection.
 - `sibu doctor` currently diagnoses local workflow state only. It is the natural place to add a non-blocking npm version advisory because it already reports health and next steps.
-- The repo does not yet define where maintainers should record release notes/changelog entries or where npm publish instructions should live.
+- The repo uses `CHANGELOG.md` as the canonical release-notes source and matching GitHub Releases as the public release surface for each published version.
 
 ## Proposed Design
 
@@ -103,6 +103,7 @@ Recommended output locations:
 - record user-visible release notes in both required places:
   - `CHANGELOG.md` as the canonical source in the repo
   - GitHub Releases as the public release surface for each published version
+- maintainers should update `CHANGELOG.md` first during release preparation, then publish the matching GitHub Release from that same summary so both locations stay aligned
 
 Minimum maintainer release flow to document:
 1. confirm npm package ownership/access and registry auth are configured
