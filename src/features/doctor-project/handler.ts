@@ -65,7 +65,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
   }
 
   logNpmVersionAdvisory(npmVersionResult);
-  log.info('Run `sibu sync` to repair missing managed files, adopt new templates, or review template updates.');
+  logSyncNextStep();
   outro(chalk.yellow('Review needed.'));
   process.exitCode = 1;
 }
@@ -81,8 +81,21 @@ export function getNpmVersionAdvisoryLines(result: NpmVersionCheckResult): strin
   ];
 }
 
+export function getDoctorSyncNextStepLines(): string[] {
+  return [
+    'Run `sibu sync` to review these workflow changes and choose whether to apply them.',
+    'Sibu will not change project files until you explicitly run `sibu sync`.',
+  ];
+}
+
 function logNpmVersionAdvisory(result: NpmVersionCheckResult): void {
   for (const line of getNpmVersionAdvisoryLines(result)) {
+    log.info(line);
+  }
+}
+
+function logSyncNextStep(): void {
+  for (const line of getDoctorSyncNextStepLines()) {
     log.info(line);
   }
 }

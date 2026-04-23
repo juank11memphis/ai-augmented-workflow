@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getNpmVersionAdvisoryLines } from './handler.js';
+import { getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
 
 test('returns advisory lines when a newer version is available', () => {
   const lines = getNpmVersionAdvisoryLines({
@@ -42,4 +42,13 @@ test('returns no advisory lines when current version is already up to date', () 
   });
 
   assert.deepEqual(lines, []);
+});
+
+test('returns explicit sync next-step lines for review-needed doctor output', () => {
+  const lines = getDoctorSyncNextStepLines();
+
+  assert.deepEqual(lines, [
+    'Run `sibu sync` to review these workflow changes and choose whether to apply them.',
+    'Sibu will not change project files until you explicitly run `sibu sync`.',
+  ]);
 });
