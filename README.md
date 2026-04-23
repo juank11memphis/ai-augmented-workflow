@@ -73,6 +73,8 @@ pnpm dev:unlink
 
 Before treating a build as ready to publish, validate the packaged artifact instead of relying only on `pnpm link`.
 
+### 1. Inspect the tarball contents
+
 ```sh
 pnpm verify
 mkdir -p /tmp/sibu-pack
@@ -87,7 +89,25 @@ Use the tarball listing to confirm the packed artifact includes the expected run
 - `templates/`
 - `README.md`
 
-Treat this tarball-based check as the release-readiness path for packaging changes. Use `pnpm dev:link` only for interactive local development.
+This check proves the package contents are correct, but it does **not** prove the installed CLI runs correctly after npm global install.
+
+### 2. Smoke test the installed tarball runtime
+
+```sh
+pnpm run validate:packed-runtime
+```
+
+This command:
+
+- runs `npm pack` in an isolated temporary workspace
+- installs the produced tarball into an isolated npm prefix
+- verifies `sibu --help` runs from the installed binary
+- creates a temporary fixture project outside this repo
+- runs `sibu doctor` in that fixture project to prove the installed CLI can read bundled runtime assets such as templates
+
+If this command fails, treat it as an installed-package runtime problem rather than a normal local-development issue.
+
+Treat tarball inspection plus `pnpm run validate:packed-runtime` as the release-readiness path for npm packaging changes. Use `pnpm dev:link` only for interactive local development.
 
 ## Changing templates
 

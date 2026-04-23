@@ -44,6 +44,7 @@ Do not introduce a special install/update mechanism. Reuse the current npm lifec
 Implementation implications:
 - treat `npm pack` as the local validation artifact for release readiness
 - verify that required runtime files exist in the tarball, especially templates consumed at runtime
+- complement tarball inspection with one scripted installed-runtime smoke check (for example `pnpm run validate:packed-runtime`) that installs the produced tarball into an isolated npm prefix and runs the CLI from there
 - avoid depending on repo-only development commands such as `pnpm link` for end-user installation or updates
 
 ### 3. Advisory npm version check in `sibu doctor`
@@ -139,8 +140,9 @@ Any path assumptions that only work inside the development checkout should be tr
 - validate on Node 20+
 - `npm pack`
 - global install from the produced tarball
-- smoke test `sibu --help`
-- smoke test `sibu doctor`
+- `pnpm run validate:packed-runtime`
+- smoke test `sibu --help` from the tarball-installed binary
+- smoke test `sibu doctor` from a temporary fixture project outside the source checkout
 - verify that an older installed version receives a non-blocking npm update advisory
 - verify that after upgrading, rerunning `sibu doctor` reports any resulting template drift without changing files
 - manual check that README install/update instructions match the shipped package name and command
