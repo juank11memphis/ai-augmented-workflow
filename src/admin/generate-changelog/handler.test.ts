@@ -282,3 +282,97 @@ function runGit(cwd: string, args: string[]): string {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 }
+
+describe('handleGenerateChangelogProposal', () => {
+  it('returns a categorized proposal from local git history', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add admin changelog proposal');
+    commitFile(rootPath, 'three.txt', 'three', 'fix: handle empty release range');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v0.1.0', toRef: 'HEAD' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.equal(result.proposal.commitCount, 2);
+    assert.deepEqual(texts(result.proposal, 'Added'), ['add admin changelog proposal']);
+    assert.deepEqual(texts(result.proposal, 'Fixed'), ['handle empty release range']);
+    assert.deepEqual(result.proposal.targetSection, { type: 'unreleased' });
+  });
+
+  it('adds maintainer-review warnings for breaking changes', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'feat!: change workflow state format');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v0.1.0' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.equal(result.proposal.warnings.some((warning) => warning.code === 'breaking-change'), true);
+    assert.equal(result.proposal.entriesByCategory.Added[0]?.reviewNeeded, true);
+  });
+
+  it('keeps non-conventional commits in the proposal as review-needed entries', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'Update release workflow docs');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v0.1.0' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.deepEqual(texts(result.proposal, 'Changed'), ['Update release workflow docs']);
+    assert.equal(result.proposal.entriesByCategory.Changed[0]?.reviewNeeded, true);
+    assert.equal(result.proposal.warnings.some((warning) => warning.code === 'review-needed'), true);
+  });
+
+  it('returns a usable proposal with a missing-tag warning when no tags exist', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first changelog proposal');
+
+    const result = handleGenerateChangelogProposal({}, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.deepEqual(texts(result.proposal, 'Added'), ['first changelog proposal']);
+    assert.equal(result.proposal.sourceRange.missingTag, true);
+    assert.equal(result.proposal.warnings.some((warning) => warning.code === 'missing-tag'), true);
+  });
+
+  it('returns a clear blocked result for invalid refs', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    const beforeFiles = new Set(fs.readdirSync(rootPath));
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'not-a-real-ref' }, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.message, /Could not resolve git ref `not-a-real-ref`\./);
+    assert.deepEqual(new Set(fs.readdirSync(rootPath)), beforeFiles);
+  });
+});

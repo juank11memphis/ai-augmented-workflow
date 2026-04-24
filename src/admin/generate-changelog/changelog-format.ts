@@ -19,7 +19,12 @@ export function createEmptyEntriesByCategory(): Record<ChangelogCategory, Change
   };
 }
 
-export function buildChangelogProposal(input: { commits: RawCommit[]; sourceRange: ChangelogProposal['sourceRange']; warnings?: ChangelogWarning[] }): ChangelogProposal {
+export function buildChangelogProposal(input: {
+  commits: RawCommit[];
+  sourceRange: ChangelogProposal['sourceRange'];
+  targetSection?: ChangelogProposal['targetSection'];
+  warnings?: ChangelogWarning[];
+}): ChangelogProposal {
   const entriesByCategory = createEmptyEntriesByCategory();
   const warnings = [...(input.warnings ?? [])];
 
@@ -31,6 +36,7 @@ export function buildChangelogProposal(input: { commits: RawCommit[]; sourceRang
 
   return {
     sourceRange: input.sourceRange,
+    targetSection: input.targetSection ?? { type: 'unreleased' },
     commitCount: input.commits.length,
     entriesByCategory,
     warnings,

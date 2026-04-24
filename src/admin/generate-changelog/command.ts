@@ -38,8 +38,13 @@ export type ChangelogSourceRange = {
   missingTag: boolean;
 };
 
+export type ChangelogTargetSection =
+  | { type: 'unreleased' }
+  | { type: 'version'; version: string; date: string };
+
 export type ChangelogProposal = {
   sourceRange: ChangelogSourceRange;
+  targetSection: ChangelogTargetSection;
   commitCount: number;
   entriesByCategory: Record<ChangelogCategory, ChangelogEntry[]>;
   warnings: ChangelogWarning[];
