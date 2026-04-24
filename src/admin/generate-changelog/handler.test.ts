@@ -1,7 +1,12 @@
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, it } from 'node:test';
 
 import { buildChangelogProposal, classifyCommit } from './changelog-format.js';
+import { readGitHistory } from './git-history.js';
 import type { ChangelogCategory, RawCommit } from './command.js';
 
 describe('classifyCommit', () => {
@@ -138,4 +143,142 @@ function commit(input: { hash?: string; subject: string; body?: string }): RawCo
     subject: input.subject,
     body: input.body ?? '',
   };
+}
+
+const temporaryRoots: string[] = [];
+
+afterEach(() => {
+  for (const temporaryRoot of temporaryRoots.splice(0)) {
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+describe('readGitHistory', () => {
+  it('reads commits from an explicit fromRef to toRef range', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add admin changelog proposal');
+    commitFile(rootPath, 'three.txt', 'three', 'fix: handle empty release range');
+
+    const result = readGitHistory({ fromRef: 'v0.1.0', toRef: 'HEAD' }, rootPath);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.equal(result.sourceRange.fromRef, 'v0.1.0');
+    assert.equal(result.sourceRange.toRef, 'HEAD');
+    assert.equal(result.sourceRange.usedLatestTag, false);
+    assert.deepEqual(
+      result.commits.map((commit) => commit.subject),
+      ['fix: handle empty release range', 'feat: add admin changelog proposal']
+    );
+  });
+
+  it('uses the latest reachable tag when fromRef is omitted', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add admin changelog proposal');
+
+    const result = readGitHistory({ toRef: 'HEAD' }, rootPath);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.equal(result.sourceRange.fromRef, 'v0.1.0');
+    assert.equal(result.sourceRange.usedLatestTag, true);
+    assert.equal(result.sourceRange.missingTag, false);
+    assert.deepEqual(
+      result.commits.map((commit) => commit.subject),
+      ['feat: add admin changelog proposal']
+    );
+  });
+
+  it('uses all reachable commits and warns when no tag exists', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first changelog proposal');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle empty release range');
+
+    const result = readGitHistory({}, rootPath);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.equal(result.sourceRange.fromRef, undefined);
+    assert.equal(result.sourceRange.usedLatestTag, false);
+    assert.equal(result.sourceRange.missingTag, true);
+    assert.equal(result.warnings.some((warning) => warning.code === 'missing-tag'), true);
+    assert.deepEqual(
+      result.commits.map((commit) => commit.subject),
+      ['fix: handle empty release range', 'feat: first changelog proposal']
+    );
+  });
+
+  it('blocks invalid refs with a clear error', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+
+    const result = readGitHistory({ fromRef: 'not-a-real-ref' }, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.message, /Could not resolve git ref `not-a-real-ref`\./);
+    assert.equal(result.warnings.some((warning) => warning.code === 'invalid-git-ref'), true);
+  });
+
+  it('blocks non-git directories with a clear error', () => {
+    const rootPath = createTemporaryRoot();
+
+    const result = readGitHistory({}, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.message, /inside a git repository/);
+    assert.equal(result.warnings.some((warning) => warning.code === 'not-git-repository'), true);
+  });
+});
+
+function createGitRepository(): string {
+  const rootPath = createTemporaryRoot();
+  runGit(rootPath, ['init']);
+  runGit(rootPath, ['config', 'user.name', 'Sibu Test']);
+  runGit(rootPath, ['config', 'user.email', 'sibu@example.com']);
+  return rootPath;
+}
+
+function createTemporaryRoot(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-changelog-test-'));
+  temporaryRoots.push(rootPath);
+  return rootPath;
+}
+
+function commitFile(rootPath: string, fileName: string, contents: string, subject: string): void {
+  fs.writeFileSync(path.join(rootPath, fileName), contents, 'utf8');
+  runGit(rootPath, ['add', fileName]);
+  runGit(rootPath, ['commit', '-m', subject]);
+}
+
+function tag(rootPath: string, tagName: string): void {
+  runGit(rootPath, ['tag', tagName]);
+}
+
+function runGit(cwd: string, args: string[]): string {
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 }
