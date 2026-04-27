@@ -40,6 +40,8 @@ export function parseChangelogArgs(args: string[]): ParseChangelogArgsResult {
     const arg = args[index];
 
     switch (arg) {
+      case '--':
+        break;
       case '--help':
       case '-h':
         return { status: 'help', usage: USAGE };

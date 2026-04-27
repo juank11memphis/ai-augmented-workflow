@@ -21,6 +21,7 @@ import type { ChangelogCategory, GenerateChangelogWritePorts, RawCommit } from '
 describe('parseChangelogArgs', () => {
   it('parses supported maintainer script flags into a changelog command', () => {
     const result = parseChangelogArgs([
+      '--',
       '--from',
       'v0.1.0',
       '--to',
