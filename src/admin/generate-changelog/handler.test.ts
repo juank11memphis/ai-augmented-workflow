@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { buildChangelogProposal, classifyCommit } from './changelog-format.js';
+import { buildChangelogProposal, classifyCommit, suggestSemverBump } from './changelog-format.js';
 import { readGitHistory } from './git-history.js';
 import { parseSemverVersion } from './semver.js';
 import type { ChangelogCategory, RawCommit } from './command.js';
@@ -112,6 +112,7 @@ describe('buildChangelogProposal', () => {
     assert.deepEqual(texts(proposal, 'Removed'), ['remove old release helper']);
     assert.equal(proposal.sourceRange.fromRef, 'v0.1.0');
     assert.equal(proposal.sourceRange.toRef, 'HEAD');
+    assert.equal(proposal.semverGuidance.suggestedBump, 'minor');
   });
 
   it('preserves input warnings such as missing tag warnings', () => {
@@ -131,6 +132,59 @@ describe('buildChangelogProposal', () => {
     });
 
     assert.equal(proposal.warnings.some((warning) => warning.code === 'missing-tag'), true);
+  });
+});
+
+describe('suggestSemverBump', () => {
+  it('suggests major when any entry is a breaking change', () => {
+    const proposal = buildChangelogProposal({
+      commits: [
+        commit({ hash: 'a1', subject: 'fix: keep workflow stable' }),
+        commit({ hash: 'b2', subject: 'feat!: change managed file state format' }),
+      ],
+      sourceRange: sourceRange(),
+    });
+
+    assert.equal(suggestSemverBump(proposal.entriesByCategory), 'major');
+    assert.equal(proposal.semverGuidance.suggestedBump, 'major');
+  });
+
+  it('suggests minor when feature commits are present without breaking changes', () => {
+    const proposal = buildChangelogProposal({
+      commits: [
+        commit({ hash: 'a1', subject: 'fix: handle empty release range' }),
+        commit({ hash: 'b2', subject: 'feat: add admin changelog proposal' }),
+      ],
+      sourceRange: sourceRange(),
+    });
+
+    assert.equal(suggestSemverBump(proposal.entriesByCategory), 'minor');
+    assert.equal(proposal.semverGuidance.suggestedBump, 'minor');
+  });
+
+  it('suggests patch for fix-only or lower-impact changes', () => {
+    const proposal = buildChangelogProposal({
+      commits: [
+        commit({ hash: 'a1', subject: 'fix: handle empty release range' }),
+        commit({ hash: 'b2', subject: 'docs: update release notes guidance' }),
+      ],
+      sourceRange: sourceRange(),
+    });
+
+    assert.equal(suggestSemverBump(proposal.entriesByCategory), 'patch');
+    assert.equal(proposal.semverGuidance.suggestedBump, 'patch');
+  });
+
+  it('does not let non-conventional entries hide feature guidance', () => {
+    const proposal = buildChangelogProposal({
+      commits: [
+        commit({ hash: 'a1', subject: 'Update release workflow docs' }),
+        commit({ hash: 'b2', subject: 'feat: add admin changelog proposal' }),
+      ],
+      sourceRange: sourceRange(),
+    });
+
+    assert.equal(proposal.semverGuidance.suggestedBump, 'minor');
   });
 });
 
@@ -183,6 +237,15 @@ function commit(input: { hash?: string; subject: string; body?: string }): RawCo
     hash: input.hash ?? 'abc1234',
     subject: input.subject,
     body: input.body ?? '',
+  };
+}
+
+function sourceRange(): ReturnType<typeof buildChangelogProposal>['sourceRange'] {
+  return {
+    fromRef: 'v0.1.0',
+    toRef: 'HEAD',
+    usedLatestTag: true,
+    missingTag: false,
   };
 }
 

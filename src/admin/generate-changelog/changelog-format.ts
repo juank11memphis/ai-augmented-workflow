@@ -1,4 +1,5 @@
 import type { ChangelogCategory, ChangelogEntry, ChangelogProposal, ChangelogWarning, RawCommit } from './command.js';
+import type { SemverBump } from './semver.js';
 
 export const CHANGELOG_CATEGORIES: ChangelogCategory[] = ['Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security'];
 
@@ -37,10 +38,27 @@ export function buildChangelogProposal(input: {
   return {
     sourceRange: input.sourceRange,
     targetSection: input.targetSection ?? { type: 'unreleased' },
+    semverGuidance: {
+      suggestedBump: suggestSemverBump(entriesByCategory),
+    },
     commitCount: input.commits.length,
     entriesByCategory,
     warnings,
   };
+}
+
+export function suggestSemverBump(entriesByCategory: Record<ChangelogCategory, ChangelogEntry[]>): SemverBump {
+  const entries = Object.values(entriesByCategory).flat();
+
+  if (entries.some((entry) => entry.breakingChange)) {
+    return 'major';
+  }
+
+  if (entriesByCategory.Added.some((entry) => entry.source === 'conventional-commit')) {
+    return 'minor';
+  }
+
+  return 'patch';
 }
 
 export function classifyCommit(commit: RawCommit): { entry: ChangelogEntry; warnings: ChangelogWarning[] } {

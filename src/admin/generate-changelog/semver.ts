@@ -5,6 +5,8 @@ export type ParsedSemverVersion = {
   patch: number;
 };
 
+export type SemverBump = 'major' | 'minor' | 'patch';
+
 export type ParseSemverVersionResult =
   | {
       status: 'ok';

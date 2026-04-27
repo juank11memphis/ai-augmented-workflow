@@ -1,3 +1,5 @@
+import type { SemverBump } from './semver.js';
+
 export type GenerateChangelogCommand = {
   fromRef?: string;
   toRef?: string;
@@ -51,6 +53,9 @@ export type ChangelogTargetSection =
 export type ChangelogProposal = {
   sourceRange: ChangelogSourceRange;
   targetSection: ChangelogTargetSection;
+  semverGuidance: {
+    suggestedBump: SemverBump;
+  };
   commitCount: number;
   entriesByCategory: Record<ChangelogCategory, ChangelogEntry[]>;
   warnings: ChangelogWarning[];
