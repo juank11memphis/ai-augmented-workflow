@@ -65,6 +65,36 @@ Prepare the release metadata before validating or publishing:
 
 Write or update the changelog entry first. The GitHub Release should reuse that same user-facing summary instead of inventing a second version of the release notes.
 
+Sibu maintainers can use the local changelog helper from the source repo to draft the changelog entry:
+
+```sh
+pnpm build
+pnpm admin:changelog -- --version 0.2.0
+```
+
+The script inspects local git history, prints a preview, shows SemVer guidance and warnings, then asks before writing `CHANGELOG.md`. Review the generated entries before accepting them; the script is a release-note assistant, not the release decision-maker.
+
+Useful options:
+
+```sh
+pnpm admin:changelog -- --from v0.1.0 --to HEAD --version 0.2.0 --date 2026-04-26
+pnpm admin:changelog -- --version 0.2.0 --yes
+```
+
+- `--from` and `--to` choose the git range. When `--from` is omitted, the latest reachable tag is used when available.
+- `--version` creates or updates a versioned changelog section. Versions may be entered with a leading `v`, but headings are normalized to SemVer without `v`.
+- `--date` sets the release date for a versioned section and must use `YYYY-MM-DD`.
+- `--yes` skips the confirmation prompt after printing the preview; it does not skip validation or warnings.
+
+The helper preserves existing changelog content outside the target section and blocks when it cannot parse the changelog safely. It does not update `package.json`, create git tags, publish to npm, create GitHub Releases, or expose a public `sibu changelog` command.
+
+After accepting a generated changelog update, inspect the diff and run the normal validation before publishing:
+
+```sh
+git diff -- CHANGELOG.md
+pnpm verify
+```
+
 ## 3. Validate the packaged artifact locally
 
 Validate the exact package users will install, not just the source checkout.
