@@ -15,7 +15,7 @@ import {
 import { readGitHistory } from './git-history.js';
 import { planChangelogUpdate } from './changelog-writer.js';
 import { parseSemverVersion } from './semver.js';
-import type { ChangelogCategory, RawCommit } from './command.js';
+import type { ChangelogCategory, GenerateChangelogWritePorts, RawCommit } from './command.js';
 
 describe('classifyCommit', () => {
   it('maps feat commits to Added entries', () => {
@@ -845,3 +845,119 @@ describe('handleGenerateChangelogProposal', () => {
     assert.deepEqual(new Set(fs.readdirSync(rootPath)), beforeFiles);
   });
 });
+
+describe('handleGenerateChangelogWrite', () => {
+  it('leaves CHANGELOG.md absent when confirmation is declined', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first changelog proposal');
+    const ports = createWritePorts({ confirmed: false });
+
+    const result = await handleGenerateChangelogWrite({}, ports, rootPath);
+
+    assert.equal(result.status, 'declined');
+    assert.equal(ports.writes.length, 0);
+    assert.equal(ports.previews.length, 1);
+    assert.match(ports.previews[0] ?? '', /Changelog preview/);
+  });
+
+  it('shows preview and writes when assumeYes is true', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first changelog proposal');
+    const ports = createWritePorts({ confirmed: false });
+
+    const result = await handleGenerateChangelogWrite({ assumeYes: true }, ports, rootPath);
+
+    assert.equal(result.status, 'written');
+    assert.equal(ports.confirmCalls, 0);
+    assert.equal(ports.previews.length, 1);
+    assert.ok(ports.writes[0]?.path.endsWith('CHANGELOG.md'));
+    assert.match(ports.writes[0]?.content ?? '', /# Changelog/);
+    assert.match(ports.writes[0]?.content ?? '', /## Unreleased/);
+  });
+
+  it('writes the planned changelog content after confirmation', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release range');
+    const ports = createWritePorts({ confirmed: true });
+
+    const result = await handleGenerateChangelogWrite({ fromRef: 'v1.2.3', version: '1.2.4', date: '2026-04-26' }, ports, rootPath);
+
+    assert.equal(result.status, 'written');
+    assert.equal(ports.confirmCalls, 1);
+    assert.match(ports.previews[0] ?? '', /Target section: 1\.2\.4 - 2026-04-26/);
+    assert.match(ports.writes[0]?.content ?? '', /## 1\.2\.4 - 2026-04-26/);
+    assert.match(ports.writes[0]?.content ?? '', /### Fixed\n- handle release range/);
+  });
+
+  it('does not write for invalid git input, invalid version input, or invalid date input', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+
+    for (const command of [
+      { fromRef: 'not-a-real-ref' },
+      { version: 'release-1' },
+      { version: '1.2.3', date: '04-26-2026' },
+    ]) {
+      const ports = createWritePorts({ confirmed: true });
+      const result = await handleGenerateChangelogWrite(command, ports, rootPath);
+
+      assert.equal(result.status, 'blocked');
+      assert.equal(ports.writes.length, 0);
+    }
+  });
+
+  it('does not write when changelog parsing is unsafe', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first changelog proposal');
+    const ports = createWritePorts({
+      confirmed: true,
+      existingContent: 'Release notes without a changelog heading.',
+    });
+
+    const result = await handleGenerateChangelogWrite({ assumeYes: true }, ports, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.preview ?? '', /Changelog preview/);
+    assert.equal(result.warnings.some((warning) => warning.code === 'unsafe-changelog'), true);
+    assert.equal(ports.writes.length, 0);
+  });
+});
+
+function createWritePorts(input: { confirmed: boolean; existingContent?: string }): GenerateChangelogWritePorts & {
+  writes: Array<{ path: string; content: string }>;
+  previews: string[];
+  confirmCalls: number;
+} {
+  const writes: Array<{ path: string; content: string }> = [];
+  const previews: string[] = [];
+
+  return {
+    writes,
+    previews,
+    confirmCalls: 0,
+    readFile() {
+      return input.existingContent;
+    },
+    writeFile(path, content) {
+      writes.push({ path, content });
+    },
+    confirmWrite() {
+      this.confirmCalls += 1;
+      return input.confirmed;
+    },
+    showPreview(preview) {
+      previews.push(preview);
+    },
+  };
+}

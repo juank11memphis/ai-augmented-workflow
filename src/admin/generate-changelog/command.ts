@@ -32,6 +32,7 @@ export type ChangelogWarningCode =
   | 'invalid-git-ref'
   | 'not-git-repository'
   | 'invalid-version'
+  | 'invalid-date'
   | 'semver-bump-mismatch'
   | 'unsafe-changelog';
 
@@ -66,3 +67,31 @@ export type ChangelogProposal = {
 export type GenerateChangelogProposalResult =
   | { status: 'proposed'; proposal: ChangelogProposal }
   | { status: 'blocked'; message: string; warnings: ChangelogWarning[] };
+
+export type GenerateChangelogWritePorts = {
+  readFile(path: string): string | undefined;
+  writeFile(path: string, content: string): void;
+  confirmWrite(): boolean | Promise<boolean>;
+  showPreview(preview: string): void;
+};
+
+export type GenerateChangelogWriteResult =
+  | {
+      status: 'written';
+      changelogPath: string;
+      preview: string;
+      content: string;
+      proposal: ChangelogProposal;
+    }
+  | {
+      status: 'declined';
+      changelogPath: string;
+      preview: string;
+      proposal: ChangelogProposal;
+    }
+  | {
+      status: 'blocked';
+      message: string;
+      warnings: ChangelogWarning[];
+      preview?: string;
+    };

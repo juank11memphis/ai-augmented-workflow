@@ -1,5 +1,17 @@
-import { buildChangelogProposal } from './changelog-format.js';
-import type { ChangelogProposal, ChangelogTargetSection, ChangelogWarning, GenerateChangelogCommand, GenerateChangelogProposalResult } from './command.js';
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { buildChangelogProposal, renderChangelogPreview } from './changelog-format.js';
+import { planChangelogUpdate } from './changelog-writer.js';
+import type {
+  ChangelogProposal,
+  ChangelogTargetSection,
+  ChangelogWarning,
+  GenerateChangelogCommand,
+  GenerateChangelogProposalResult,
+  GenerateChangelogWritePorts,
+  GenerateChangelogWriteResult,
+} from './command.js';
 import { readGitHistory } from './git-history.js';
 import { determineSemverBump, parseSemverVersion } from './semver.js';
 
@@ -30,6 +42,54 @@ export function handleGenerateChangelogProposal(command: GenerateChangelogComman
   return {
     status: 'proposed',
     proposal: addSemverMismatchWarning(proposal),
+  };
+}
+
+export async function handleGenerateChangelogWrite(
+  command: GenerateChangelogCommand,
+  ports: GenerateChangelogWritePorts = createNodeChangelogWritePorts(),
+  cwd = process.cwd()
+): Promise<GenerateChangelogWriteResult> {
+  const proposalResult = handleGenerateChangelogProposal(command, cwd);
+
+  if (proposalResult.status === 'blocked') {
+    return proposalResult;
+  }
+
+  const changelogPath = path.join(cwd, 'CHANGELOG.md');
+  const preview = renderChangelogPreview(proposalResult.proposal, 'CHANGELOG.md');
+  ports.showPreview(preview);
+
+  const updatePlan = planChangelogUpdate(ports.readFile(changelogPath), proposalResult.proposal);
+  if (updatePlan.status === 'blocked') {
+    return {
+      status: 'blocked',
+      message: updatePlan.message,
+      warnings: updatePlan.warnings,
+      preview,
+    };
+  }
+
+  if (!command.assumeYes) {
+    const confirmed = await ports.confirmWrite();
+    if (!confirmed) {
+      return {
+        status: 'declined',
+        changelogPath,
+        preview,
+        proposal: proposalResult.proposal,
+      };
+    }
+  }
+
+  ports.writeFile(changelogPath, updatePlan.content);
+
+  return {
+    status: 'written',
+    changelogPath,
+    preview,
+    content: updatePlan.content,
+    proposal: proposalResult.proposal,
   };
 }
 
@@ -69,12 +129,31 @@ function getTargetSection(command: GenerateChangelogCommand): TargetSectionResul
     };
   }
 
+  const date = command.date ?? new Date().toISOString().slice(0, 10);
+  if (!isIsoDate(date)) {
+    const message = `Release date \`${date}\` must use ISO format YYYY-MM-DD.`;
+
+    return {
+      status: 'blocked',
+      result: {
+        status: 'blocked',
+        message,
+        warnings: [
+          {
+            code: 'invalid-date',
+            message,
+          },
+        ],
+      },
+    };
+  }
+
   return {
     status: 'ok',
     value: {
       type: 'version',
       version: version.version.version,
-      date: command.date ?? new Date().toISOString().slice(0, 10),
+      date,
     },
   };
 }
@@ -107,5 +186,35 @@ function addSemverMismatchWarning(proposal: ChangelogProposal): ChangelogProposa
   return {
     ...proposal,
     warnings: [...proposal.warnings, warning],
+  };
+}
+
+function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function createNodeChangelogWritePorts(): GenerateChangelogWritePorts {
+  return {
+    readFile(filePath) {
+      if (!fs.existsSync(filePath)) {
+        return undefined;
+      }
+
+      return fs.readFileSync(filePath, 'utf8');
+    },
+    writeFile(filePath, content) {
+      fs.writeFileSync(filePath, content, 'utf8');
+    },
+    confirmWrite() {
+      return false;
+    },
+    showPreview(preview) {
+      process.stdout.write(preview);
+    },
   };
 }
