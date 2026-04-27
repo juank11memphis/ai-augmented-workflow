@@ -877,6 +877,89 @@ describe('handleGenerateChangelogWrite', () => {
     assert.match(ports.writes[0]?.content ?? '', /## Unreleased/);
   });
 
+  it('creates a new CHANGELOG.md from git history when the file is missing', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: add admin changelog proposal');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle empty release range');
+    const ports = createWritePorts({ confirmed: true });
+
+    const result = await handleGenerateChangelogWrite({}, ports, rootPath);
+
+    assert.equal(result.status, 'written');
+    assert.match(ports.writes[0]?.content ?? '', /^# Changelog/);
+    assert.match(ports.writes[0]?.content ?? '', /## Unreleased/);
+    assert.match(ports.writes[0]?.content ?? '', /### Added\n- add admin changelog proposal/);
+    assert.match(ports.writes[0]?.content ?? '', /### Fixed\n- handle empty release range/);
+  });
+
+  it('updates Unreleased through the write workflow without losing older releases', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle empty release range');
+    const ports = createWritePorts({
+      confirmed: true,
+      existingContent: `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## Unreleased
+
+### Changed
+- Old pending note.
+
+## 0.1.0 - 2026-04-01
+
+### Added
+- Initial release.
+`,
+    });
+
+    const result = await handleGenerateChangelogWrite({ fromRef: 'v0.1.0' }, ports, rootPath);
+
+    assert.equal(result.status, 'written');
+    assert.match(ports.writes[0]?.content ?? '', /## Unreleased\n\n### Fixed\n- handle empty release range/);
+    assert.doesNotMatch(ports.writes[0]?.content ?? '', /Old pending note/);
+    assert.match(ports.writes[0]?.content ?? '', /## 0\.1\.0 - 2026-04-01\n\n### Added\n- Initial release\./);
+  });
+
+  it('adds a dated versioned section with normalized SemVer through the write workflow', async () => {
+    const { handleGenerateChangelogWrite } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add admin changelog proposal');
+    const ports = createWritePorts({
+      confirmed: true,
+      existingContent: `# Changelog
+
+Custom introduction.
+
+## Unreleased
+
+### Changed
+- Pending note.
+
+## 1.2.3 - 2026-04-01
+
+### Added
+- Previous release.
+`,
+    });
+
+    const result = await handleGenerateChangelogWrite({ fromRef: 'v1.2.3', version: 'v1.3.0', date: '2026-04-26' }, ports, rootPath);
+
+    assert.equal(result.status, 'written');
+    const writtenContent = ports.writes[0]?.content ?? '';
+    assert.match(writtenContent, /Custom introduction\./);
+    assert.match(writtenContent, /## 1\.3\.0 - 2026-04-26\n\n### Added\n- add admin changelog proposal/);
+    assert.doesNotMatch(writtenContent, /## v1\.3\.0/);
+    assert.match(writtenContent, /## Unreleased\n\n### Changed\n- Pending note\./);
+    assert.match(writtenContent, /## 1\.2\.3 - 2026-04-01\n\n### Added\n- Previous release\./);
+  });
+
   it('writes the planned changelog content after confirmation', async () => {
     const { handleGenerateChangelogWrite } = await import('./handler.js');
     const rootPath = createGitRepository();
