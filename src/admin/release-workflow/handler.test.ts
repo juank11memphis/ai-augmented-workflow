@@ -7,6 +7,7 @@ import { afterEach, describe, it } from 'node:test';
 
 import { parseSemverVersion } from '../generate-changelog/semver.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
+import { planMaintainerRelease } from './handler.js';
 import { formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
 
 describe('incrementSemverVersion', () => {
@@ -151,6 +152,116 @@ describe('checkReleaseTagAvailable', () => {
   });
 });
 
+describe('planMaintainerRelease', () => {
+  it('plans a patch release from fix-only commits', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+
+    const result = planMaintainerRelease({}, rootPath);
+
+    assert.equal(result.status, 'planned');
+    if (result.status !== 'planned') {
+      return;
+    }
+
+    assert.equal(result.plan.targetVersion, '1.2.4');
+    assert.equal(result.plan.tagName, 'v1.2.4');
+    assert.equal(result.plan.suggestedBump, 'patch');
+    assert.equal(result.plan.commitCount, 1);
+    assert.deepEqual(result.plan.range, { fromRef: 'v1.2.3', toRef: 'HEAD' });
+  });
+
+  it('plans a minor release from feature commits', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add release planning');
+
+    const result = planMaintainerRelease({}, rootPath);
+
+    assert.equal(result.status, 'planned');
+    if (result.status !== 'planned') {
+      return;
+    }
+
+    assert.equal(result.plan.targetVersion, '1.3.0');
+    assert.equal(result.plan.suggestedBump, 'minor');
+  });
+
+  it('plans a major release from breaking-change commits', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'feat!: change release workflow contract');
+
+    const result = planMaintainerRelease({}, rootPath);
+
+    assert.equal(result.status, 'planned');
+    if (result.status !== 'planned') {
+      return;
+    }
+
+    assert.equal(result.plan.targetVersion, '2.0.0');
+    assert.equal(result.plan.suggestedBump, 'major');
+    assert.equal(result.plan.warnings.length > 0, true);
+  });
+
+  it('accepts and normalizes an explicit valid version override', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+
+    const result = planMaintainerRelease({ version: 'v1.4.0' }, rootPath);
+
+    assert.equal(result.status, 'planned');
+    if (result.status !== 'planned') {
+      return;
+    }
+
+    assert.equal(result.plan.targetVersion, '1.4.0');
+    assert.equal(result.plan.tagName, 'v1.4.0');
+  });
+
+  it('blocks invalid explicit version overrides', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+
+    const result = planMaintainerRelease({ version: 'release-1' }, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.equal(result.warnings.some((warning) => warning.code === 'invalid-version'), true);
+  });
+
+  it('blocks when the computed target tag already exists', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+    const releaseCommit = runGit(rootPath, ['rev-parse', 'HEAD']).trim();
+    tag(rootPath, 'v1.2.4');
+    runGit(rootPath, ['tag', '-d', 'v1.2.4']);
+    tagRef(rootPath, 'v1.2.4', releaseCommit);
+
+    const result = planMaintainerRelease({ fromRef: 'v1.2.3', version: '1.2.4' }, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.equal(result.warnings.some((warning) => warning.code === 'existing-target-tag'), true);
+  });
+});
+
 function parseVersion(value: string) {
   const result = parseSemverVersion(value);
 
@@ -178,6 +289,10 @@ function commitFile(rootPath: string, fileName: string, contents: string, subjec
 
 function tag(rootPath: string, tagName: string): void {
   runGit(rootPath, ['tag', tagName]);
+}
+
+function tagRef(rootPath: string, tagName: string, ref: string): void {
+  runGit(rootPath, ['tag', tagName, ref]);
 }
 
 function runGit(cwd: string, args: string[]): string {
