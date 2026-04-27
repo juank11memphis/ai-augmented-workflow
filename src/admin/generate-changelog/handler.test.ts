@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
+import { parseChangelogArgs } from '../changelog.js';
 import {
   buildChangelogProposal,
   classifyCommit,
@@ -16,6 +17,57 @@ import { readGitHistory } from './git-history.js';
 import { planChangelogUpdate } from './changelog-writer.js';
 import { parseSemverVersion } from './semver.js';
 import type { ChangelogCategory, GenerateChangelogWritePorts, RawCommit } from './command.js';
+
+describe('parseChangelogArgs', () => {
+  it('parses supported maintainer script flags into a changelog command', () => {
+    const result = parseChangelogArgs([
+      '--from',
+      'v0.1.0',
+      '--to',
+      'HEAD',
+      '--version',
+      'v0.2.0',
+      '--date',
+      '2026-04-26',
+      '--yes',
+    ]);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.deepEqual(result.command, {
+      fromRef: 'v0.1.0',
+      toRef: 'HEAD',
+      version: 'v0.2.0',
+      date: '2026-04-26',
+      assumeYes: true,
+    });
+  });
+
+  it('rejects unknown maintainer script flags with a clear error', () => {
+    const result = parseChangelogArgs(['--publish']);
+
+    assert.equal(result.status, 'error');
+    if (result.status !== 'error') {
+      return;
+    }
+
+    assert.match(result.message, /Unknown option `--publish`/);
+  });
+
+  it('rejects missing maintainer script flag values with a clear error', () => {
+    const result = parseChangelogArgs(['--version']);
+
+    assert.equal(result.status, 'error');
+    if (result.status !== 'error') {
+      return;
+    }
+
+    assert.match(result.message, /Option `--version` requires a value/);
+  });
+});
 
 describe('classifyCommit', () => {
   it('maps feat commits to Added entries', () => {
