@@ -7,6 +7,7 @@ import { afterEach, describe, it } from 'node:test';
 
 import { buildChangelogProposal, classifyCommit } from './changelog-format.js';
 import { readGitHistory } from './git-history.js';
+import { parseSemverVersion } from './semver.js';
 import type { ChangelogCategory, RawCommit } from './command.js';
 
 describe('classifyCommit', () => {
@@ -130,6 +131,46 @@ describe('buildChangelogProposal', () => {
     });
 
     assert.equal(proposal.warnings.some((warning) => warning.code === 'missing-tag'), true);
+  });
+});
+
+describe('parseSemverVersion', () => {
+  it('accepts MAJOR.MINOR.PATCH versions', () => {
+    const result = parseSemverVersion('1.2.3');
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.equal(result.version.version, '1.2.3');
+    assert.equal(result.version.major, 1);
+    assert.equal(result.version.minor, 2);
+    assert.equal(result.version.patch, 3);
+  });
+
+  it('accepts an optional leading v and normalizes it away', () => {
+    const result = parseSemverVersion('v1.2.3');
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.equal(result.version.version, '1.2.3');
+  });
+
+  it('rejects invalid release versions with a clear message', () => {
+    for (const version of ['1', '1.2', 'release-1', '', '1.two.3']) {
+      const result = parseSemverVersion(version);
+
+      assert.equal(result.status, 'invalid');
+      if (result.status !== 'invalid') {
+        continue;
+      }
+
+      assert.match(result.message, /SemVer format MAJOR\.MINOR\.PATCH/);
+    }
   });
 });
 
@@ -303,6 +344,72 @@ describe('handleGenerateChangelogProposal', () => {
     assert.deepEqual(texts(result.proposal, 'Added'), ['add admin changelog proposal']);
     assert.deepEqual(texts(result.proposal, 'Fixed'), ['handle empty release range']);
     assert.deepEqual(result.proposal.targetSection, { type: 'unreleased' });
+  });
+
+  it('uses valid SemVer input as the target version section', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release range');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v0.1.0', version: '1.2.3', date: '2026-04-26' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.deepEqual(result.proposal.targetSection, { type: 'version', version: '1.2.3', date: '2026-04-26' });
+  });
+
+  it('normalizes leading v SemVer input in the target version section', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v0.1.0');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release range');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v0.1.0', version: 'v1.2.3', date: '2026-04-26' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.deepEqual(result.proposal.targetSection, { type: 'version', version: '1.2.3', date: '2026-04-26' });
+  });
+
+  it('blocks invalid SemVer input before reading git history or writing files', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createTemporaryRoot();
+    const beforeFiles = new Set(fs.readdirSync(rootPath));
+
+    const result = handleGenerateChangelogProposal({ version: 'release-1' }, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.message, /Release version `release-1` must use SemVer format/);
+    assert.equal(result.warnings.some((warning) => warning.code === 'invalid-version'), true);
+    assert.deepEqual(new Set(fs.readdirSync(rootPath)), beforeFiles);
+  });
+
+  it('blocks short SemVer-like inputs before proposal generation', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+
+    for (const version of ['1', '1.2']) {
+      const result = handleGenerateChangelogProposal({ version }, createTemporaryRoot());
+
+      assert.equal(result.status, 'blocked');
+      if (result.status !== 'blocked') {
+        continue;
+      }
+
+      assert.equal(result.warnings.some((warning) => warning.code === 'invalid-version'), true);
+    }
   });
 
   it('adds maintainer-review warnings for breaking changes', async () => {

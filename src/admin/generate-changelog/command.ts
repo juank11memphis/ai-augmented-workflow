@@ -23,7 +23,13 @@ export type ChangelogEntry = {
   source: 'conventional-commit' | 'commit-message';
 };
 
-export type ChangelogWarningCode = 'breaking-change' | 'review-needed' | 'missing-tag' | 'invalid-git-ref' | 'not-git-repository';
+export type ChangelogWarningCode =
+  | 'breaking-change'
+  | 'review-needed'
+  | 'missing-tag'
+  | 'invalid-git-ref'
+  | 'not-git-repository'
+  | 'invalid-version';
 
 export type ChangelogWarning = {
   code: ChangelogWarningCode;
