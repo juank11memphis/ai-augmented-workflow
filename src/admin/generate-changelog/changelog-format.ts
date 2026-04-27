@@ -61,6 +61,85 @@ export function suggestSemverBump(entriesByCategory: Record<ChangelogCategory, C
   return 'patch';
 }
 
+export function renderChangelogSection(proposal: ChangelogProposal): string {
+  const lines = [renderTargetSectionHeading(proposal.targetSection), ...renderEntriesByCategory(proposal.entriesByCategory)];
+
+  return `${lines.join('\n')}\n`;
+}
+
+export function renderChangelogPreview(proposal: ChangelogProposal, targetPath: string): string {
+  const lines = [
+    'Changelog preview',
+    '',
+    `Git range: ${formatSourceRange(proposal.sourceRange)}`,
+    `Commits inspected: ${proposal.commitCount}`,
+    `Target path: ${targetPath}`,
+    `Target section: ${formatTargetSection(proposal.targetSection)}`,
+    `Suggested SemVer bump: ${proposal.semverGuidance.suggestedBump}`,
+    '',
+    'Entries:',
+    ...renderPreviewEntries(proposal.entriesByCategory),
+  ];
+
+  if (proposal.warnings.length > 0) {
+    lines.push('', 'Warnings:', ...proposal.warnings.map(formatWarning));
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+function renderTargetSectionHeading(targetSection: ChangelogProposal['targetSection']): string {
+  if (targetSection.type === 'unreleased') {
+    return '## Unreleased';
+  }
+
+  return `## ${targetSection.version} - ${targetSection.date}`;
+}
+
+function renderEntriesByCategory(entriesByCategory: Record<ChangelogCategory, ChangelogEntry[]>): string[] {
+  return CHANGELOG_CATEGORIES.flatMap((category) => {
+    const entries = entriesByCategory[category];
+
+    if (entries.length === 0) {
+      return [];
+    }
+
+    return ['', `### ${category}`, ...entries.map((entry) => `- ${entry.text}`)];
+  });
+}
+
+function renderPreviewEntries(entriesByCategory: Record<ChangelogCategory, ChangelogEntry[]>): string[] {
+  const lines = renderEntriesByCategory(entriesByCategory);
+
+  if (lines.length === 0) {
+    return ['- No generated entries.'];
+  }
+
+  return lines;
+}
+
+function formatSourceRange(sourceRange: ChangelogProposal['sourceRange']): string {
+  if (sourceRange.fromRef) {
+    return `${sourceRange.fromRef}..${sourceRange.toRef}`;
+  }
+
+  return sourceRange.toRef;
+}
+
+function formatTargetSection(targetSection: ChangelogProposal['targetSection']): string {
+  if (targetSection.type === 'unreleased') {
+    return 'Unreleased';
+  }
+
+  return `${targetSection.version} - ${targetSection.date}`;
+}
+
+function formatWarning(warning: ChangelogWarning): string {
+  const commitSuffix = warning.commitHash ? ` (${warning.commitHash})` : '';
+
+  return `- [${warning.code}] ${warning.message}${commitSuffix}`;
+}
+
 export function classifyCommit(commit: RawCommit): { entry: ChangelogEntry; warnings: ChangelogWarning[] } {
   const conventionalCommit = parseConventionalCommit(commit.subject);
 

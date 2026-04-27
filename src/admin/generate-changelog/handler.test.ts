@@ -5,7 +5,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { buildChangelogProposal, classifyCommit, suggestSemverBump } from './changelog-format.js';
+import {
+  buildChangelogProposal,
+  classifyCommit,
+  renderChangelogPreview,
+  renderChangelogSection,
+  suggestSemverBump,
+} from './changelog-format.js';
 import { readGitHistory } from './git-history.js';
 import { parseSemverVersion } from './semver.js';
 import type { ChangelogCategory, RawCommit } from './command.js';
@@ -185,6 +191,81 @@ describe('suggestSemverBump', () => {
     });
 
     assert.equal(proposal.semverGuidance.suggestedBump, 'minor');
+  });
+});
+
+describe('renderChangelogSection', () => {
+  it('renders an Unreleased Keep a Changelog-style section', () => {
+    const proposal = buildChangelogProposal({
+      commits: [
+        commit({ hash: 'a1', subject: 'feat: add admin changelog proposal' }),
+        commit({ hash: 'b2', subject: 'fix: handle empty release range' }),
+      ],
+      sourceRange: sourceRange(),
+      targetSection: { type: 'unreleased' },
+    });
+
+    const markdown = renderChangelogSection(proposal);
+
+    assert.match(markdown, /^## Unreleased/);
+    assert.match(markdown, /### Added\n- add admin changelog proposal/);
+    assert.match(markdown, /### Fixed\n- handle empty release range/);
+  });
+
+  it('renders a versioned section with normalized SemVer and ISO date', () => {
+    const proposal = buildChangelogProposal({
+      commits: [commit({ hash: 'a1', subject: 'feat: add admin changelog proposal' })],
+      sourceRange: sourceRange(),
+      targetSection: { type: 'version', version: '1.2.3', date: '2026-04-26' },
+    });
+
+    const markdown = renderChangelogSection(proposal);
+
+    assert.match(markdown, /^## 1\.2\.3 - 2026-04-26/);
+  });
+
+  it('omits empty categories from generated Markdown', () => {
+    const proposal = buildChangelogProposal({
+      commits: [commit({ hash: 'a1', subject: 'fix: handle empty release range' })],
+      sourceRange: sourceRange(),
+    });
+
+    const markdown = renderChangelogSection(proposal);
+
+    assert.doesNotMatch(markdown, /### Added/);
+    assert.match(markdown, /### Fixed\n- handle empty release range/);
+  });
+});
+
+describe('renderChangelogPreview', () => {
+  it('renders source metadata, target details, entries, SemVer guidance, and warnings', () => {
+    const proposal = buildChangelogProposal({
+      commits: [
+        commit({ hash: 'a1', subject: 'feat: add admin changelog proposal' }),
+        commit({ hash: 'b2', subject: 'Update release workflow docs' }),
+      ],
+      sourceRange: sourceRange(),
+      targetSection: { type: 'version', version: '1.2.3', date: '2026-04-26' },
+      warnings: [
+        {
+          code: 'missing-tag',
+          message: 'No previous tag found. Using all reachable commits.',
+        },
+      ],
+    });
+
+    const preview = renderChangelogPreview(proposal, 'CHANGELOG.md');
+
+    assert.match(preview, /Git range: v0\.1\.0\.\.HEAD/);
+    assert.match(preview, /Commits inspected: 2/);
+    assert.match(preview, /Target path: CHANGELOG\.md/);
+    assert.match(preview, /Target section: 1\.2\.3 - 2026-04-26/);
+    assert.match(preview, /Suggested SemVer bump: minor/);
+    assert.match(preview, /### Added\n- add admin changelog proposal/);
+    assert.match(preview, /### Changed\n- Update release workflow docs/);
+    assert.match(preview, /Warnings:/);
+    assert.match(preview, /\[missing-tag\] No previous tag found/);
+    assert.match(preview, /\[review-needed\] Commit message is not a Conventional Commit/);
   });
 });
 
