@@ -107,6 +107,18 @@ Then continue with the next unapproved step only after the approval marker is wr
 
 If the user asks to continue without clearly approving the current step, ask for explicit approval before marking it approved, committing, or moving on.
 
+## Epic continuation check
+
+When all step files in the current story implementation plan are approved and committed:
+
+1. Inspect the current Epic's `stories/` folder in filename order.
+2. Identify whether there is a next User Story after the completed story.
+3. If a next User Story exists and its `.impl_plan/` folder exists with ordered step files, ask the user whether they want to implement that next story.
+4. If a next User Story exists but its `.impl_plan/` folder is missing or empty, ask the user whether they want to plan that next story with `ai-implementation-planner`.
+5. If there is no next User Story in the Epic, tell the user the Epic appears ready.
+
+Do not automatically start planning or implementing the next story. This check is a handoff prompt after the current story is complete, not permission to continue without the user's explicit direction.
+
 ## Implementation rules
 
 Do:
@@ -136,3 +148,9 @@ After implementing one step, briefly report:
 - validation run and result
 - any risks, blockers, or follow-up questions
 - that you are waiting for user approval before marking the step approved, committing it, and continuing to the next step
+
+After approving and committing the final step in a story implementation plan, also briefly report the Epic continuation check result:
+
+- next story ready to implement
+- next story needs an implementation plan
+- or Epic appears ready

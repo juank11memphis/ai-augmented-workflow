@@ -1,11 +1,11 @@
 {
-  "templateVersion": "42",
+  "templateVersion": "43",
   "templates": {
     "AGENTS.md": {
-      "version": "18",
+      "version": "19",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Renames the workflow maintenance commands and state path from Echo to Sibu so generated guidance matches the new product name."
+        "Clarifies that agents should ask for confirmation before code changes, while non-code work can proceed without confirmation unless it is risky or ambiguous."
       ]
     },
     ".codex/config.toml": {
@@ -118,11 +118,11 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Changes implementation plan executor review status to record the current Git user in the Approved by field.",
-        "Keeps the approved-step commit gate before moving to the next implementation step."
+        "Adds an Epic continuation check after a story plan is fully approved and committed.",
+        "Prompts users to implement the next planned story, plan the next unplanned story, or confirms when the Epic appears ready."
       ]
     }
   }

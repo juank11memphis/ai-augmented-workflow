@@ -13,7 +13,8 @@
 
 ## Agent-specific instructions
 
-- Before any task that requires code changes, propose a brief plan and wait for user confirmation once per requested task.
+- Before any task that writes or modifies code, propose a brief plan and wait for user confirmation once per requested task.
+- For read-only work, research, planning, documentation-only edits, or other non-code changes, do not ask for confirmation unless the action is destructive, risky, ambiguous, or explicitly requires user approval.
 - After confirmation, proceed with all agreed in-scope changes without re-asking.
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
