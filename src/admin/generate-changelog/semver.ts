@@ -17,6 +17,15 @@ export type ParseSemverVersionResult =
       message: string;
     };
 
+export type DetermineSemverBumpResult =
+  | {
+      status: 'ok';
+      bump: SemverBump;
+    }
+  | {
+      status: 'not-comparable';
+    };
+
 export function parseSemverVersion(input: string): ParseSemverVersionResult {
   const trimmedInput = input.trim();
   const match = /^v?(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)$/.exec(trimmedInput);
@@ -41,4 +50,28 @@ export function parseSemverVersion(input: string): ParseSemverVersionResult {
       patch,
     },
   };
+}
+
+export function determineSemverBump(previousVersion: ParsedSemverVersion, nextVersion: ParsedSemverVersion): DetermineSemverBumpResult {
+  if (nextVersion.major > previousVersion.major) {
+    return { status: 'ok', bump: 'major' };
+  }
+
+  if (nextVersion.major !== previousVersion.major) {
+    return { status: 'not-comparable' };
+  }
+
+  if (nextVersion.minor > previousVersion.minor) {
+    return { status: 'ok', bump: 'minor' };
+  }
+
+  if (nextVersion.minor !== previousVersion.minor) {
+    return { status: 'not-comparable' };
+  }
+
+  if (nextVersion.patch > previousVersion.patch) {
+    return { status: 'ok', bump: 'patch' };
+  }
+
+  return { status: 'not-comparable' };
 }

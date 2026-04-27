@@ -31,7 +31,8 @@ export type ChangelogWarningCode =
   | 'missing-tag'
   | 'invalid-git-ref'
   | 'not-git-repository'
-  | 'invalid-version';
+  | 'invalid-version'
+  | 'semver-bump-mismatch';
 
 export type ChangelogWarning = {
   code: ChangelogWarningCode;

@@ -475,6 +475,84 @@ describe('handleGenerateChangelogProposal', () => {
     }
   });
 
+  it('warns without blocking when breaking changes suggest a major bump but the chosen version is non-major', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'feat!: change managed file state format');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v1.2.3', version: '1.3.0', date: '2026-04-26' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.equal(result.proposal.semverGuidance.suggestedBump, 'major');
+    assert.equal(result.proposal.warnings.some((warning) => warning.code === 'semver-bump-mismatch'), true);
+  });
+
+  it('warns without blocking when feature changes suggest a minor bump but the chosen version is patch', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add admin changelog proposal');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v1.2.3', version: '1.2.4', date: '2026-04-26' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.equal(result.proposal.semverGuidance.suggestedBump, 'minor');
+    assert.equal(result.proposal.warnings.some((warning) => warning.code === 'semver-bump-mismatch'), true);
+  });
+
+  it('does not warn when the chosen bump matches commit-derived guidance', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add admin changelog proposal');
+
+    const result = handleGenerateChangelogProposal({ fromRef: 'v1.2.3', version: '1.3.0', date: '2026-04-26' }, rootPath);
+
+    assert.equal(result.status, 'proposed');
+    if (result.status !== 'proposed') {
+      return;
+    }
+
+    assert.equal(result.proposal.semverGuidance.suggestedBump, 'minor');
+    assert.equal(result.proposal.warnings.some((warning) => warning.code === 'semver-bump-mismatch'), false);
+  });
+
+  it('does not warn when the previous ref is missing or not SemVer', async () => {
+    const { handleGenerateChangelogProposal } = await import('./handler.js');
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    tag(rootPath, 'release-baseline');
+    commitFile(rootPath, 'two.txt', 'two', 'feat: add admin changelog proposal');
+
+    const nonSemverRefResult = handleGenerateChangelogProposal(
+      { fromRef: 'release-baseline', version: '1.2.4', date: '2026-04-26' },
+      rootPath
+    );
+    const missingRefResult = handleGenerateChangelogProposal({ version: '1.2.4', date: '2026-04-26' }, rootPath);
+
+    for (const result of [nonSemverRefResult, missingRefResult]) {
+      assert.equal(result.status, 'proposed');
+      if (result.status !== 'proposed') {
+        continue;
+      }
+
+      assert.equal(result.proposal.warnings.some((warning) => warning.code === 'semver-bump-mismatch'), false);
+      assert.deepEqual(result.proposal.targetSection, { type: 'version', version: '1.2.4', date: '2026-04-26' });
+    }
+  });
+
   it('adds maintainer-review warnings for breaking changes', async () => {
     const { handleGenerateChangelogProposal } = await import('./handler.js');
     const rootPath = createGitRepository();
