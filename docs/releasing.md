@@ -6,16 +6,16 @@ Use this guide when preparing, validating, publishing, and announcing a new Sibu
 
 ## Release workflow overview
 
-A normal Sibu release will cover these stages:
+A normal Sibu release covers these stages:
 
-1. confirm npm package ownership, access, and auth are ready
-2. update the package version and release notes
+1. confirm release prerequisites
+2. prepare release notes and package metadata
 3. validate the packaged artifact locally
 4. publish the new version to npm
 5. publish the matching GitHub Release
 6. verify the published version behaves as expected
 
-The detailed checklist for each stage belongs in this document.
+`CHANGELOG.md` is the canonical source for release notes. The maintainer changelog helper can draft or update that file, but maintainers still own the final release decision and wording.
 
 ## First-time npm registry setup
 
@@ -51,28 +51,32 @@ Before starting a release, confirm all of the following:
 - the repo is in the state you intend to release
 - Node 20 or newer is installed locally
 - the package version and binary name you plan to publish are correct
+- the previous release tag or intended git range is clear enough to generate release notes
 
-If the package name, access model, or npm org setup is still unsettled, resolve that before publishing.
+If the package name, access model, npm org setup, or release scope is still unsettled, resolve that before publishing.
 
-## 2. Update version and release notes
+## 2. Prepare release notes and package metadata
 
-Prepare the release metadata before validating or publishing:
+Prepare release metadata before validating or publishing:
 
-1. update the package version in `package.json`
-2. add the new release entry to `CHANGELOG.md`
-3. treat `CHANGELOG.md` as the canonical source for release notes
-4. plan to publish the matching GitHub Release from that same changelog summary
+1. decide the release version
+2. draft or update the `CHANGELOG.md` entry
+3. review the changelog diff and generated warnings
+4. update the package version in `package.json`
+5. treat the finalized `CHANGELOG.md` entry as the source for the matching GitHub Release
 
 Write or update the changelog entry first. The GitHub Release should reuse that same user-facing summary instead of inventing a second version of the release notes.
 
-Sibu maintainers can use the local changelog helper from the source repo to draft the changelog entry:
+### Draft the changelog with the maintainer helper
+
+Sibu maintainers can use the local maintainer script from the source repo:
 
 ```sh
 pnpm build
 pnpm admin:changelog -- --version 0.2.0
 ```
 
-The script inspects local git history, prints a preview, shows SemVer guidance and warnings, then asks before writing `CHANGELOG.md`. Review the generated entries before accepting them; the script is a release-note assistant, not the release decision-maker.
+The helper inspects local git history, prints a preview, shows SemVer guidance and warnings, then asks before writing `CHANGELOG.md`. Review the generated entries before accepting them; the script is a release-note assistant, not the release decision-maker.
 
 Useful options:
 
@@ -88,12 +92,17 @@ pnpm admin:changelog -- --version 0.2.0 --yes
 
 The helper preserves existing changelog content outside the target section and blocks when it cannot parse the changelog safely. It does not update `package.json`, create git tags, publish to npm, create GitHub Releases, or expose a public `sibu changelog` command.
 
-After accepting a generated changelog update, inspect the diff and run the normal validation before publishing:
+After accepting a generated changelog update, inspect the diff:
 
 ```sh
 git diff -- CHANGELOG.md
-pnpm verify
 ```
+
+Edit the changelog manually if the generated text is too raw, too technical, or misses maintainer context. Keep the final entry human-readable and useful for Sibu users.
+
+### Update package metadata
+
+After the changelog entry is ready, update the package version in `package.json` to match the release version. Do not rely on the changelog helper for this; it intentionally does not bump package metadata.
 
 ## 3. Validate the packaged artifact locally
 
@@ -144,7 +153,7 @@ This repo uses the scoped public package name `@juancr11/sibu`, so `package.json
 After npm publish succeeds:
 
 1. create the matching GitHub Release for the same version
-2. use the `CHANGELOG.md` entry as the source for the GitHub Release notes
+2. use the finalized `CHANGELOG.md` entry as the source for the GitHub Release notes
 3. keep the changelog and GitHub Release aligned
 
 `CHANGELOG.md` is the canonical source in the repo. The GitHub Release is the public release surface users can browse from GitHub.
