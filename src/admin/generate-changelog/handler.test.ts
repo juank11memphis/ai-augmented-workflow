@@ -13,6 +13,7 @@ import {
   suggestSemverBump,
 } from './changelog-format.js';
 import { readGitHistory } from './git-history.js';
+import { planChangelogUpdate } from './changelog-writer.js';
 import { parseSemverVersion } from './semver.js';
 import type { ChangelogCategory, RawCommit } from './command.js';
 
@@ -266,6 +267,145 @@ describe('renderChangelogPreview', () => {
     assert.match(preview, /Warnings:/);
     assert.match(preview, /\[missing-tag\] No previous tag found/);
     assert.match(preview, /\[review-needed\] Commit message is not a Conventional Commit/);
+  });
+});
+
+describe('planChangelogUpdate', () => {
+  it('creates a standard changelog when content is missing', () => {
+    const proposal = buildChangelogProposal({
+      commits: [commit({ hash: 'a1', subject: 'feat: add admin changelog proposal' })],
+      sourceRange: sourceRange(),
+    });
+
+    const result = planChangelogUpdate(undefined, proposal);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.match(result.content, /^# Changelog/);
+    assert.match(result.content, /Keep a Changelog/);
+    assert.match(result.content, /## Unreleased/);
+    assert.match(result.content, /### Added\n- add admin changelog proposal/);
+    assert.equal(result.replacingExistingSection, false);
+  });
+
+  it('updates an existing Unreleased section without losing older releases', () => {
+    const existingContent = `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## Unreleased
+
+### Changed
+- Old pending note.
+
+## 0.1.0 - 2026-04-01
+
+### Added
+- Initial release.
+`;
+    const proposal = buildChangelogProposal({
+      commits: [commit({ hash: 'a1', subject: 'fix: handle empty release range' })],
+      sourceRange: sourceRange(),
+      targetSection: { type: 'unreleased' },
+    });
+
+    const result = planChangelogUpdate(existingContent, proposal);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.match(result.content, /## Unreleased\n\n### Fixed\n- handle empty release range/);
+    assert.doesNotMatch(result.content, /Old pending note/);
+    assert.match(result.content, /## 0\.1\.0 - 2026-04-01\n\n### Added\n- Initial release\./);
+    assert.equal(result.replacingExistingSection, true);
+  });
+
+  it('adds a dated versioned section near the top with a normalized version heading', () => {
+    const existingContent = `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## Unreleased
+
+### Changed
+- Pending note.
+
+## 0.1.0 - 2026-04-01
+
+### Added
+- Initial release.
+`;
+    const proposal = buildChangelogProposal({
+      commits: [commit({ hash: 'a1', subject: 'feat: add admin changelog proposal' })],
+      sourceRange: sourceRange(),
+      targetSection: { type: 'version', version: '1.2.3', date: '2026-04-26' },
+    });
+
+    const result = planChangelogUpdate(existingContent, proposal);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.match(result.content, /## 1\.2\.3 - 2026-04-26\n\n### Added\n- add admin changelog proposal/);
+    assert.match(result.content, /## Unreleased\n\n### Changed\n- Pending note\./);
+    assert.match(result.content, /## 0\.1\.0 - 2026-04-01\n\n### Added\n- Initial release\./);
+    assert.ok(result.content.indexOf('## 1.2.3 - 2026-04-26') < result.content.indexOf('## Unreleased'));
+  });
+
+  it('preserves content outside the target section', () => {
+    const existingContent = `# Changelog
+
+Custom introduction.
+
+## Unreleased
+
+### Changed
+- Old pending note.
+
+## 0.1.0 - 2026-04-01
+
+### Added
+- Initial release.
+`;
+    const proposal = buildChangelogProposal({
+      commits: [commit({ hash: 'a1', subject: 'fix: handle empty release range' })],
+      sourceRange: sourceRange(),
+      targetSection: { type: 'unreleased' },
+    });
+
+    const result = planChangelogUpdate(existingContent, proposal);
+
+    assert.equal(result.status, 'ok');
+    if (result.status !== 'ok') {
+      return;
+    }
+
+    assert.match(result.content, /Custom introduction\./);
+    assert.match(result.content, /## 0\.1\.0 - 2026-04-01/);
+  });
+
+  it('blocks unsafe changelog content with a clear warning', () => {
+    const proposal = buildChangelogProposal({
+      commits: [commit({ hash: 'a1', subject: 'fix: handle empty release range' })],
+      sourceRange: sourceRange(),
+    });
+
+    const result = planChangelogUpdate('Release notes without a changelog heading.', proposal);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.message, /does not start with a # Changelog heading/);
+    assert.equal(result.warnings.some((warning) => warning.code === 'unsafe-changelog'), true);
   });
 });
 

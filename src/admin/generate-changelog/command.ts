@@ -32,7 +32,8 @@ export type ChangelogWarningCode =
   | 'invalid-git-ref'
   | 'not-git-repository'
   | 'invalid-version'
-  | 'semver-bump-mismatch';
+  | 'semver-bump-mismatch'
+  | 'unsafe-changelog';
 
 export type ChangelogWarning = {
   code: ChangelogWarningCode;
