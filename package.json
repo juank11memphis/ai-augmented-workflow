@@ -27,6 +27,7 @@
     "build": "tsc && chmod +x bin/sibu.js",
     "check": "tsc --noEmit",
     "verify": "pnpm build && pnpm check && pnpm test",
+    "admin:changelog": "node ./bin/admin/changelog.js",
     "dev:link": "pnpm install && pnpm build && pnpm link --global",
     "dev:unlink": "pnpm unlink --global sibu",
     "prepack": "pnpm run build",
