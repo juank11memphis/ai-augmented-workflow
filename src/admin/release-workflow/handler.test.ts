@@ -68,6 +68,8 @@ describe('buildReleaseMetadataPlan', () => {
       tagName: 'v1.2.4',
       suggestedBump: 'patch',
       commitCount: 1,
+      metadataAlreadyPrepared: false,
+      existingTagAtHead: false,
       metadata,
       warnings: [],
     };
@@ -149,10 +151,13 @@ describe('renderReleasePlanPreview', () => {
     assert.match(preview, /## 1\.2\.4 - 2026-04-27/);
     assert.match(preview, /- Fix release metadata planning\./);
     assert.match(preview, /Update package\.json version: 1\.2\.3 -> 1\.2\.4/);
+    assert.match(preview, /Check npm authentication: npm whoami/);
+    assert.match(preview, /Check GitHub authentication: gh auth status/);
+    assert.match(preview, /Build release artifacts: pnpm build/);
     assert.match(preview, /Run validation: pnpm run validate:release/);
     assert.match(preview, /Create release commit: chore\(release\): 1\.2\.4/);
     assert.match(preview, /Create git tag: v1\.2\.4/);
-    assert.match(preview, /Publish package: npm publish/);
+    assert.match(preview, /Publish package: npm publish --access public/);
     assert.match(preview, /Push release commit: git push origin HEAD/);
     assert.match(preview, /Push release tag: git push origin v1\.2\.4/);
     assert.match(preview, /Create GitHub Release: gh release create v1\.2\.4/);
@@ -272,6 +277,7 @@ describe('checkReleaseTagAvailable', () => {
     const rootPath = createGitRepository();
     commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
     tag(rootPath, 'v0.2.0');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: move past existing tag');
 
     const result = checkReleaseTagAvailable('v0.2.0', rootPath);
 
@@ -391,10 +397,7 @@ describe('planMaintainerRelease', () => {
     commitReleaseMetadata(rootPath, '1.2.3');
     tag(rootPath, 'v1.2.3');
     commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
-    const releaseCommit = runGit(rootPath, ['rev-parse', 'HEAD']).trim();
-    tag(rootPath, 'v1.2.4');
-    runGit(rootPath, ['tag', '-d', 'v1.2.4']);
-    tagRef(rootPath, 'v1.2.4', releaseCommit);
+    tagRef(rootPath, 'v1.2.4', 'v1.2.3');
 
     const result = planMaintainerRelease({ fromRef: 'v1.2.3', version: '1.2.4' }, rootPath);
 
@@ -543,15 +546,21 @@ describe('executeConfirmedRelease', () => {
 
     assert.equal(result.status, 'executed');
     assert.deepEqual(ports.writes.map((write) => write.path), ['CHANGELOG.md', 'package.json']);
-    assert.deepEqual(ports.commands.slice(0, 5), [
+    assert.deepEqual(ports.commands.slice(0, 8), [
+      { command: 'npm', args: ['whoami'] },
+      { command: 'gh', args: ['auth', 'status'] },
+      { command: 'pnpm', args: ['build'] },
       { command: 'pnpm', args: ['run', 'validate:release'] },
       { command: 'git', args: ['add', 'CHANGELOG.md', 'package.json'] },
       { command: 'git', args: ['commit', '-m', 'chore(release): 1.2.4'] },
       { command: 'git', args: ['tag', 'v1.2.4'] },
-      { command: 'npm', args: ['publish'] },
+      { command: 'npm', args: ['publish', '--access', 'public'] },
     ]);
     if (result.status === 'executed') {
       assert.deepEqual(result.completedSteps.map((step) => step.name), [
+        'check-npm-auth',
+        'check-github-auth',
+        'build-release',
         'write-changelog',
         'write-package-json',
         'validate-release',
@@ -571,24 +580,32 @@ describe('executeConfirmedRelease', () => {
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
     assert.equal(result.status, 'failed');
-    assert.deepEqual(ports.commands, [{ command: 'pnpm', args: ['run', 'validate:release'] }]);
+    assert.deepEqual(ports.commands, [
+      { command: 'npm', args: ['whoami'] },
+      { command: 'gh', args: ['auth', 'status'] },
+      { command: 'pnpm', args: ['build'] },
+      { command: 'pnpm', args: ['run', 'validate:release'] },
+    ]);
     if (result.status === 'failed') {
       assert.equal(result.failedStep.name, 'validate-release');
-      assert.deepEqual(result.completedSteps.map((step) => step.name), ['write-changelog', 'write-package-json']);
+      assert.deepEqual(result.completedSteps.map((step) => step.name), ['check-npm-auth', 'check-github-auth', 'build-release', 'write-changelog', 'write-package-json']);
     }
   });
 
   it('stops before push and GitHub Release when npm publish fails', async () => {
-    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish' });
+    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish --access public' });
 
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
     assert.equal(result.status, 'failed');
     assert.equal(ports.commands.some((command) => command.command === 'git' && command.args[0] === 'push'), false);
-    assert.equal(ports.commands.some((command) => command.command === 'gh'), false);
+    assert.equal(ports.commands.some((command) => command.command === 'gh' && command.args[0] === 'release'), false);
     if (result.status === 'failed') {
       assert.equal(result.failedStep.name, 'publish-npm');
       assert.deepEqual(result.completedSteps.map((step) => step.name), [
+        'check-npm-auth',
+        'check-github-auth',
+        'build-release',
         'write-changelog',
         'write-package-json',
         'validate-release',
@@ -604,7 +621,7 @@ describe('executeConfirmedRelease', () => {
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
     assert.equal(result.status, 'failed');
-    assert.equal(ports.commands.some((command) => command.command === 'gh'), false);
+    assert.equal(ports.commands.some((command) => command.command === 'gh' && command.args[0] === 'release'), false);
     if (result.status === 'failed') {
       assert.equal(result.failedStep.name, 'push-commit');
       assert.match(result.failedStep.recoveryGuidance, /Push the release commit manually/);
@@ -617,7 +634,7 @@ describe('executeConfirmedRelease', () => {
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
     assert.equal(result.status, 'executed');
-    const ghCommand = ports.commands.find((command) => command.command === 'gh');
+    const ghCommand = ports.commands.find((command) => command.command === 'gh' && command.args[0] === 'release');
     assert.deepEqual(ghCommand, {
       command: 'gh',
       args: [
@@ -658,6 +675,9 @@ describe('executeConfirmedRelease', () => {
     assert.equal(result.status, 'executed');
     if (result.status === 'executed') {
       assert.deepEqual(result.completedSteps.map((step) => step.name), [
+        'check-npm-auth',
+        'check-github-auth',
+        'build-release',
         'write-changelog',
         'write-package-json',
         'validate-release',
@@ -672,7 +692,7 @@ describe('executeConfirmedRelease', () => {
   });
 
   it('prints progress and failure guidance during execution', async () => {
-    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish' });
+    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish --access public' });
 
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
@@ -681,6 +701,39 @@ describe('executeConfirmedRelease', () => {
     assert.equal(ports.printed.some((message) => /Publishing package to npm/.test(message)), true);
     assert.equal(ports.printed.some((message) => /Failed: Publishing to npm failed/.test(message)), true);
     assert.equal(ports.printed.some((message) => /Recovery: Review npm authentication/.test(message)), true);
+  });
+
+  it('fails before writes when npm authentication is unavailable', async () => {
+    const ports = createFakeExecutionPorts({ failingCommand: 'npm whoami' });
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'failed');
+    assert.deepEqual(ports.writes, []);
+    assert.deepEqual(ports.commands, [{ command: 'npm', args: ['whoami'] }]);
+    if (result.status === 'failed') {
+      assert.equal(result.failedStep.name, 'check-npm-auth');
+      assert.match(result.failedStep.recoveryGuidance, /npm login/);
+    }
+  });
+
+  it('skips completed local release steps when retrying with an existing tag at HEAD', async () => {
+    const ports = createFakeExecutionPorts();
+
+    const result = await executeConfirmedRelease(
+      {
+        ...buildPreviewPlan(),
+        metadataAlreadyPrepared: true,
+        existingTagAtHead: true,
+      },
+      ports
+    );
+
+    assert.equal(result.status, 'executed');
+    assert.deepEqual(ports.writes, []);
+    assert.equal(ports.commands.some((command) => command.command === 'git' && command.args[0] === 'commit'), false);
+    assert.equal(ports.commands.some((command) => command.command === 'git' && command.args[0] === 'tag'), false);
+    assert.equal(ports.commands.some((command) => command.command === 'npm' && command.args.join(' ') === 'publish --access public'), true);
   });
 
 });
@@ -817,6 +870,8 @@ function buildPreviewPlan(): ReleasePlan {
     tagName: 'v1.2.4',
     suggestedBump: 'patch',
     commitCount: 2,
+    metadataAlreadyPrepared: false,
+    existingTagAtHead: false,
     metadata: {
       changelog: {
         path: 'CHANGELOG.md',

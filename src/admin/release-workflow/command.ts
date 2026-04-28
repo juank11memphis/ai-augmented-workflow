@@ -55,6 +55,8 @@ export type ReleasePlan = {
   tagName: string;
   suggestedBump: SemverBump;
   commitCount: number;
+  metadataAlreadyPrepared: boolean;
+  existingTagAtHead: boolean;
   metadata?: ReleaseMetadataPlan;
   warnings: ReleaseWarning[];
 };
@@ -95,6 +97,9 @@ export type ReleaseFailedStep = {
 };
 
 export type ReleaseExecutionStepName =
+  | 'check-npm-auth'
+  | 'check-github-auth'
+  | 'build-release'
   | 'write-changelog'
   | 'write-package-json'
   | 'validate-release'

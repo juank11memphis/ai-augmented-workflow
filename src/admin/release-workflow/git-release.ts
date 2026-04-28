@@ -18,6 +18,7 @@ export type ResolveReleaseRangeResult =
 export type CheckReleaseTagResult =
   | {
       status: 'ok';
+      existingTagAtHead: boolean;
     }
   | {
       status: 'blocked';
@@ -70,11 +71,17 @@ export function resolveReleaseRange(command: { fromRef?: string; toRef?: string 
 }
 
 export function checkReleaseTagAvailable(tagName: string, cwd = process.cwd()): CheckReleaseTagResult {
-  if (tagExists(tagName, cwd)) {
-    return blocked('existing-target-tag', `Release tag \`${tagName}\` already exists.`);
+  const tagCommit = resolveRef(`refs/tags/${tagName}`, cwd);
+  if (!tagCommit) {
+    return { status: 'ok', existingTagAtHead: false };
   }
 
-  return { status: 'ok' };
+  const headCommit = resolveRef('HEAD', cwd);
+  if (tagCommit === headCommit) {
+    return { status: 'ok', existingTagAtHead: true };
+  }
+
+  return blockedTag('existing-target-tag', `Release tag \`${tagName}\` already exists and does not point at HEAD.`);
 }
 
 function isInsideGitRepository(cwd: string): boolean {
@@ -114,16 +121,23 @@ function readReachableTags(toRef: string, cwd: string): string[] {
   }
 }
 
-function tagExists(tagName: string, cwd: string): boolean {
+function resolveRef(ref: string, cwd: string): string | undefined {
   try {
-    runGit(['rev-parse', '--verify', '--quiet', `refs/tags/${tagName}`], cwd);
-    return true;
+    return runGit(['rev-parse', '--verify', '--quiet', ref], cwd).trim();
   } catch {
-    return false;
+    return undefined;
   }
 }
 
 function blocked(code: ReleaseWarning['code'], message: string): ResolveReleaseRangeResult {
+  return {
+    status: 'blocked',
+    message,
+    warnings: [{ code, message }],
+  };
+}
+
+function blockedTag(code: ReleaseWarning['code'], message: string): CheckReleaseTagResult {
   return {
     status: 'blocked',
     message,

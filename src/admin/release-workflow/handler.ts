@@ -91,6 +91,9 @@ export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = pro
   if (packageJsonUpdatePlan.status === 'blocked') {
     return packageJsonUpdatePlan;
   }
+  const existingChangelogSection = extractReleaseChangelogSection(readFileIfExists(path.join(cwd, 'CHANGELOG.md')) ?? '', targetVersion.version);
+  const metadataAlreadyPrepared =
+    packageJsonUpdatePlan.plan.currentVersion === targetVersion.version && existingChangelogSection !== undefined && tagAvailability.existingTagAtHead;
 
   return {
     status: 'planned',
@@ -100,6 +103,8 @@ export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = pro
       tagName,
       suggestedBump,
       commitCount: gitHistory.commits.length,
+      metadataAlreadyPrepared,
+      existingTagAtHead: tagAvailability.existingTagAtHead,
       metadata: buildReleaseMetadataPlan({
         changelog: {
           path: 'CHANGELOG.md',
@@ -175,15 +180,44 @@ export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseE
     return failExecution(completedSteps, 'write-changelog', 'Release plan does not include metadata updates.');
   }
 
-  printExecutionProgress(ports, `Writing changelog update to ${plan.metadata.changelog.path}...`);
-  ports.writeFile(plan.metadata.changelog.path, plan.metadata.changelog.nextContent);
-  completedSteps.push({ name: 'write-changelog', message: `Wrote ${plan.metadata.changelog.path}.` });
-  printExecutionProgress(ports, `Done: wrote ${plan.metadata.changelog.path}.`);
+  const npmAuth = await runStep(ports, completedSteps, 'check-npm-auth', 'Checking npm authentication: npm whoami...', 'npm', ['whoami'], 'npm authentication check passed.');
+  if (npmAuth.status === 'failed') {
+    return npmAuth;
+  }
 
-  printExecutionProgress(ports, `Writing package version ${plan.metadata.packageJson.targetVersion} to ${plan.metadata.packageJson.path}...`);
-  ports.writeFile(plan.metadata.packageJson.path, plan.metadata.packageJson.nextContent);
-  completedSteps.push({ name: 'write-package-json', message: `Wrote ${plan.metadata.packageJson.path}.` });
-  printExecutionProgress(ports, `Done: wrote ${plan.metadata.packageJson.path}.`);
+  const githubAuth = await runStep(
+    ports,
+    completedSteps,
+    'check-github-auth',
+    'Checking GitHub authentication: gh auth status...',
+    'gh',
+    ['auth', 'status'],
+    'GitHub authentication check passed.'
+  );
+  if (githubAuth.status === 'failed') {
+    return githubAuth;
+  }
+
+  const build = await runStep(ports, completedSteps, 'build-release', 'Building release artifacts: pnpm build...', 'pnpm', ['build'], 'Release build passed.');
+  if (build.status === 'failed') {
+    return build;
+  }
+
+  if (plan.metadataAlreadyPrepared) {
+    completedSteps.push({ name: 'write-changelog', message: `${plan.metadata.changelog.path} already prepared for ${plan.targetVersion}; skipped write.` });
+    completedSteps.push({ name: 'write-package-json', message: `${plan.metadata.packageJson.path} already prepared for ${plan.targetVersion}; skipped write.` });
+    printExecutionProgress(ports, `Metadata already prepared for ${plan.targetVersion}; skipping changelog and package.json writes.`);
+  } else {
+    printExecutionProgress(ports, `Writing changelog update to ${plan.metadata.changelog.path}...`);
+    ports.writeFile(plan.metadata.changelog.path, plan.metadata.changelog.nextContent);
+    completedSteps.push({ name: 'write-changelog', message: `Wrote ${plan.metadata.changelog.path}.` });
+    printExecutionProgress(ports, `Done: wrote ${plan.metadata.changelog.path}.`);
+
+    printExecutionProgress(ports, `Writing package version ${plan.metadata.packageJson.targetVersion} to ${plan.metadata.packageJson.path}...`);
+    ports.writeFile(plan.metadata.packageJson.path, plan.metadata.packageJson.nextContent);
+    completedSteps.push({ name: 'write-package-json', message: `Wrote ${plan.metadata.packageJson.path}.` });
+    printExecutionProgress(ports, `Done: wrote ${plan.metadata.packageJson.path}.`);
+  }
 
   printExecutionProgress(ports, 'Running release validation: pnpm run validate:release...');
   const validation = await ports.run('pnpm', ['run', 'validate:release']);
@@ -195,37 +229,47 @@ export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseE
   completedSteps.push({ name: 'validate-release', message: 'Release validation passed.' });
   printExecutionProgress(ports, 'Done: release validation passed.');
 
-  printExecutionProgress(ports, 'Staging release metadata: git add CHANGELOG.md package.json...');
-  const gitAdd = await ports.run('git', ['add', 'CHANGELOG.md', 'package.json']);
-  if (gitAdd.exitCode !== 0) {
-    const failure = failExecution(completedSteps, 'create-release-commit', 'Staging release metadata failed.', gitAdd);
-    printExecutionFailure(ports, failure);
-    return failure;
-  }
-
   const releaseCommitMessage = `chore(release): ${plan.targetVersion}`;
-  printExecutionProgress(ports, `Creating release commit: ${releaseCommitMessage}...`);
-  const gitCommit = await ports.run('git', ['commit', '-m', releaseCommitMessage]);
-  if (gitCommit.exitCode !== 0) {
-    const failure = failExecution(completedSteps, 'create-release-commit', 'Creating the release commit failed.', gitCommit);
-    printExecutionFailure(ports, failure);
-    return failure;
-  }
-  completedSteps.push({ name: 'create-release-commit', message: `Created release commit: ${releaseCommitMessage}.` });
-  printExecutionProgress(ports, `Done: created release commit ${releaseCommitMessage}.`);
+  if (plan.metadataAlreadyPrepared) {
+    completedSteps.push({ name: 'create-release-commit', message: `Release commit already exists at HEAD for ${plan.targetVersion}; skipped commit.` });
+    printExecutionProgress(ports, `Release commit already exists at HEAD for ${plan.targetVersion}; skipping commit.`);
+  } else {
+    printExecutionProgress(ports, 'Staging release metadata: git add CHANGELOG.md package.json...');
+    const gitAdd = await ports.run('git', ['add', 'CHANGELOG.md', 'package.json']);
+    if (gitAdd.exitCode !== 0) {
+      const failure = failExecution(completedSteps, 'create-release-commit', 'Staging release metadata failed.', gitAdd);
+      printExecutionFailure(ports, failure);
+      return failure;
+    }
 
-  printExecutionProgress(ports, `Creating release tag: ${plan.tagName}...`);
-  const gitTag = await ports.run('git', ['tag', plan.tagName]);
-  if (gitTag.exitCode !== 0) {
-    const failure = failExecution(completedSteps, 'create-release-tag', `Creating release tag ${plan.tagName} failed.`, gitTag);
-    printExecutionFailure(ports, failure);
-    return failure;
+    printExecutionProgress(ports, `Creating release commit: ${releaseCommitMessage}...`);
+    const gitCommit = await ports.run('git', ['commit', '-m', releaseCommitMessage]);
+    if (gitCommit.exitCode !== 0) {
+      const failure = failExecution(completedSteps, 'create-release-commit', 'Creating the release commit failed.', gitCommit);
+      printExecutionFailure(ports, failure);
+      return failure;
+    }
+    completedSteps.push({ name: 'create-release-commit', message: `Created release commit: ${releaseCommitMessage}.` });
+    printExecutionProgress(ports, `Done: created release commit ${releaseCommitMessage}.`);
   }
-  completedSteps.push({ name: 'create-release-tag', message: `Created release tag: ${plan.tagName}.` });
-  printExecutionProgress(ports, `Done: created release tag ${plan.tagName}.`);
 
-  printExecutionProgress(ports, 'Publishing package to npm: npm publish...');
-  const npmPublish = await ports.run('npm', ['publish']);
+  if (plan.existingTagAtHead) {
+    completedSteps.push({ name: 'create-release-tag', message: `Release tag ${plan.tagName} already points at HEAD; skipped tag creation.` });
+    printExecutionProgress(ports, `Release tag ${plan.tagName} already points at HEAD; skipping tag creation.`);
+  } else {
+    printExecutionProgress(ports, `Creating release tag: ${plan.tagName}...`);
+    const gitTag = await ports.run('git', ['tag', plan.tagName]);
+    if (gitTag.exitCode !== 0) {
+      const failure = failExecution(completedSteps, 'create-release-tag', `Creating release tag ${plan.tagName} failed.`, gitTag);
+      printExecutionFailure(ports, failure);
+      return failure;
+    }
+    completedSteps.push({ name: 'create-release-tag', message: `Created release tag: ${plan.tagName}.` });
+    printExecutionProgress(ports, `Done: created release tag ${plan.tagName}.`);
+  }
+
+  printExecutionProgress(ports, 'Publishing package to npm: npm publish --access public...');
+  const npmPublish = await ports.run('npm', ['publish', '--access', 'public']);
   if (npmPublish.exitCode !== 0) {
     const failure = failExecution(completedSteps, 'publish-npm', 'Publishing to npm failed.', npmPublish);
     printExecutionFailure(ports, failure);
@@ -289,6 +333,28 @@ function printExecutionProgress(ports: ReleaseExecutionPorts, message: string): 
 function printExecutionFailure(ports: ReleaseExecutionPorts, failure: FailedReleaseExecutionResult): void {
   ports.print?.(`Failed: ${failure.failedStep.message}\n`);
   ports.print?.(`Recovery: ${failure.failedStep.recoveryGuidance}\n`);
+}
+
+async function runStep(
+  ports: ReleaseExecutionPorts,
+  completedSteps: ReleaseCompletedStep[],
+  stepName: ReleaseExecutionStepName,
+  startMessage: string,
+  command: string,
+  args: string[],
+  completedMessage: string
+): Promise<{ status: 'ok' } | FailedReleaseExecutionResult> {
+  printExecutionProgress(ports, startMessage);
+  const result = await ports.run(command, args);
+  if (result.exitCode !== 0) {
+    const failure = failExecution(completedSteps, stepName, `${completedMessage.replace(/\.$/, '')} failed.`, result);
+    printExecutionFailure(ports, failure);
+    return failure;
+  }
+
+  completedSteps.push({ name: stepName, message: completedMessage });
+  printExecutionProgress(ports, `Done: ${completedMessage}`);
+  return { status: 'ok' };
 }
 
 type ResolveTargetVersionResult =
@@ -372,12 +438,18 @@ function buildRecoveryGuidance(name: ReleaseExecutionStepName): string {
   switch (name) {
     case 'validate-release':
       return 'Fix validation failures, restore or review local release metadata changes, then rerun the release workflow.';
+    case 'check-npm-auth':
+      return 'Run `npm login` with an account that can publish this package, then rerun the release workflow.';
+    case 'check-github-auth':
+      return 'Run `gh auth login` or fix GitHub CLI authentication, then rerun the release workflow.';
+    case 'build-release':
+      return 'Fix the build failure, then rerun the release workflow.';
     case 'create-release-commit':
       return 'Review local release metadata changes, resolve git commit issues, then rerun or complete the release manually.';
     case 'create-release-tag':
       return 'Review the release commit and tag state, then create the tag manually or rerun after cleanup.';
     case 'publish-npm':
-      return 'Review npm authentication/package state. If the package was not published, rerun after fixing npm publish.';
+      return 'Review npm authentication/package state. If the package was not published, rerun after fixing npm publish. The workflow publishes with `npm publish --access public`.';
     case 'write-changelog':
     case 'write-package-json':
       return 'Review local file permissions and release metadata, then rerun the release workflow.';
