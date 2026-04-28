@@ -29,6 +29,8 @@ import {
   extractReleaseChangelogSection,
 } from './release-plan.js';
 
+type FailedReleaseExecutionResult = Extract<ReleaseExecutionResult, { status: 'failed' }>;
+
 export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = process.cwd()): ReleasePlanningResult {
   const releaseRange = resolveReleaseRange(command, cwd);
   if (releaseRange.status === 'blocked') {
@@ -118,15 +120,22 @@ export async function previewAndConfirmMaintainerRelease(
   ports: ReleaseWorkflowPorts,
   cwd = process.cwd()
 ): Promise<ReleaseWorkflowResult> {
+  ports.print('Starting maintainer release planning...\n');
   const planningResult = planMaintainerRelease(command, cwd);
   if (planningResult.status === 'blocked') {
+    ports.print(`Release planning blocked: ${planningResult.message}\n`);
+    printWarnings(planningResult.warnings, ports);
     return planningResult;
   }
 
+  ports.print(
+    `Release plan ready for ${planningResult.plan.targetVersion} from ${planningResult.plan.range.fromRef} to ${planningResult.plan.range.toRef}.\n\n`
+  );
   const preview = renderReleasePlanPreview(planningResult.plan);
   ports.print(preview);
 
   if (command.dryRun) {
+    ports.print('Dry run requested; no files, commands, tags, publishes, pushes, or GitHub Releases will be created.\n');
     return {
       status: 'dry-run',
       plan: planningResult.plan,
@@ -135,17 +144,22 @@ export async function previewAndConfirmMaintainerRelease(
   }
 
   if (!command.assumeYes) {
+    ports.print('Waiting for maintainer confirmation before making changes...\n');
     const confirmed = await ports.confirmRelease(planningResult.plan);
 
     if (!confirmed) {
+      ports.print('Release confirmation declined; no changes were written.\n');
       return {
         status: 'declined',
         plan: planningResult.plan,
         preview,
       };
     }
+  } else {
+    ports.print('--yes provided; continuing after preview without prompting.\n');
   }
 
+  ports.print('Release confirmed; starting execution.\n');
   return {
     status: 'confirmed',
     plan: planningResult.plan,
@@ -161,65 +175,120 @@ export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseE
     return failExecution(completedSteps, 'write-changelog', 'Release plan does not include metadata updates.');
   }
 
+  printExecutionProgress(ports, `Writing changelog update to ${plan.metadata.changelog.path}...`);
   ports.writeFile(plan.metadata.changelog.path, plan.metadata.changelog.nextContent);
   completedSteps.push({ name: 'write-changelog', message: `Wrote ${plan.metadata.changelog.path}.` });
+  printExecutionProgress(ports, `Done: wrote ${plan.metadata.changelog.path}.`);
 
+  printExecutionProgress(ports, `Writing package version ${plan.metadata.packageJson.targetVersion} to ${plan.metadata.packageJson.path}...`);
   ports.writeFile(plan.metadata.packageJson.path, plan.metadata.packageJson.nextContent);
   completedSteps.push({ name: 'write-package-json', message: `Wrote ${plan.metadata.packageJson.path}.` });
+  printExecutionProgress(ports, `Done: wrote ${plan.metadata.packageJson.path}.`);
 
+  printExecutionProgress(ports, 'Running release validation: pnpm run validate:release...');
   const validation = await ports.run('pnpm', ['run', 'validate:release']);
   if (validation.exitCode !== 0) {
-    return failExecution(completedSteps, 'validate-release', 'Release validation failed.', validation);
+    const failure = failExecution(completedSteps, 'validate-release', 'Release validation failed.', validation);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
   completedSteps.push({ name: 'validate-release', message: 'Release validation passed.' });
+  printExecutionProgress(ports, 'Done: release validation passed.');
 
+  printExecutionProgress(ports, 'Staging release metadata: git add CHANGELOG.md package.json...');
   const gitAdd = await ports.run('git', ['add', 'CHANGELOG.md', 'package.json']);
   if (gitAdd.exitCode !== 0) {
-    return failExecution(completedSteps, 'create-release-commit', 'Staging release metadata failed.', gitAdd);
+    const failure = failExecution(completedSteps, 'create-release-commit', 'Staging release metadata failed.', gitAdd);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
 
   const releaseCommitMessage = `chore(release): ${plan.targetVersion}`;
+  printExecutionProgress(ports, `Creating release commit: ${releaseCommitMessage}...`);
   const gitCommit = await ports.run('git', ['commit', '-m', releaseCommitMessage]);
   if (gitCommit.exitCode !== 0) {
-    return failExecution(completedSteps, 'create-release-commit', 'Creating the release commit failed.', gitCommit);
+    const failure = failExecution(completedSteps, 'create-release-commit', 'Creating the release commit failed.', gitCommit);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
   completedSteps.push({ name: 'create-release-commit', message: `Created release commit: ${releaseCommitMessage}.` });
+  printExecutionProgress(ports, `Done: created release commit ${releaseCommitMessage}.`);
 
+  printExecutionProgress(ports, `Creating release tag: ${plan.tagName}...`);
   const gitTag = await ports.run('git', ['tag', plan.tagName]);
   if (gitTag.exitCode !== 0) {
-    return failExecution(completedSteps, 'create-release-tag', `Creating release tag ${plan.tagName} failed.`, gitTag);
+    const failure = failExecution(completedSteps, 'create-release-tag', `Creating release tag ${plan.tagName} failed.`, gitTag);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
   completedSteps.push({ name: 'create-release-tag', message: `Created release tag: ${plan.tagName}.` });
+  printExecutionProgress(ports, `Done: created release tag ${plan.tagName}.`);
 
+  printExecutionProgress(ports, 'Publishing package to npm: npm publish...');
   const npmPublish = await ports.run('npm', ['publish']);
   if (npmPublish.exitCode !== 0) {
-    return failExecution(completedSteps, 'publish-npm', 'Publishing to npm failed.', npmPublish);
+    const failure = failExecution(completedSteps, 'publish-npm', 'Publishing to npm failed.', npmPublish);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
   completedSteps.push({ name: 'publish-npm', message: 'Published package to npm.' });
+  printExecutionProgress(ports, 'Done: published package to npm.');
 
+  printExecutionProgress(ports, 'Pushing release commit: git push origin HEAD...');
   const pushCommit = await ports.run('git', ['push', 'origin', 'HEAD']);
   if (pushCommit.exitCode !== 0) {
-    return failExecution(completedSteps, 'push-commit', 'Pushing the release commit failed.', pushCommit);
+    const failure = failExecution(completedSteps, 'push-commit', 'Pushing the release commit failed.', pushCommit);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
   completedSteps.push({ name: 'push-commit', message: 'Pushed release commit to origin.' });
+  printExecutionProgress(ports, 'Done: pushed release commit to origin.');
 
+  printExecutionProgress(ports, `Pushing release tag: git push origin ${plan.tagName}...`);
   const pushTag = await ports.run('git', ['push', 'origin', plan.tagName]);
   if (pushTag.exitCode !== 0) {
-    return failExecution(completedSteps, 'push-tag', `Pushing release tag ${plan.tagName} failed.`, pushTag);
+    const failure = failExecution(completedSteps, 'push-tag', `Pushing release tag ${plan.tagName} failed.`, pushTag);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
   completedSteps.push({ name: 'push-tag', message: `Pushed release tag ${plan.tagName} to origin.` });
+  printExecutionProgress(ports, `Done: pushed release tag ${plan.tagName} to origin.`);
 
   const releaseBody = extractReleaseBody(plan);
+  printExecutionProgress(ports, `Creating GitHub Release: gh release create ${plan.tagName}...`);
   const githubRelease = await ports.run('gh', ['release', 'create', plan.tagName, '--title', plan.tagName, '--notes', releaseBody]);
   if (githubRelease.exitCode !== 0) {
-    return failExecution(completedSteps, 'create-github-release', 'Creating the GitHub Release failed.', githubRelease);
+    const failure = failExecution(completedSteps, 'create-github-release', 'Creating the GitHub Release failed.', githubRelease);
+    printExecutionFailure(ports, failure);
+    return failure;
   }
   completedSteps.push({ name: 'create-github-release', message: `Created GitHub Release ${plan.tagName}.` });
+  printExecutionProgress(ports, `Done: created GitHub Release ${plan.tagName}.`);
 
   return {
     status: 'executed',
     completedSteps,
   };
+}
+
+function printWarnings(warnings: ReleaseWarning[], ports: Pick<ReleaseWorkflowPorts, 'print'>): void {
+  if (warnings.length === 0) {
+    return;
+  }
+
+  ports.print('Warnings:\n');
+  for (const warning of warnings) {
+    ports.print(`- [${warning.code}] ${warning.message}\n`);
+  }
+}
+
+function printExecutionProgress(ports: ReleaseExecutionPorts, message: string): void {
+  ports.print?.(`${message}\n`);
+}
+
+function printExecutionFailure(ports: ReleaseExecutionPorts, failure: FailedReleaseExecutionResult): void {
+  ports.print?.(`Failed: ${failure.failedStep.message}\n`);
+  ports.print?.(`Recovery: ${failure.failedStep.recoveryGuidance}\n`);
 }
 
 type ResolveTargetVersionResult =
@@ -284,7 +353,7 @@ function failExecution(
   name: ReleaseExecutionStepName,
   message: string,
   commandResult?: ReleaseCommandResult
-): ReleaseExecutionResult {
+): FailedReleaseExecutionResult {
   const stderr = commandResult?.stderr?.trim();
   const commandContext = stderr ? ` ${stderr}` : '';
 

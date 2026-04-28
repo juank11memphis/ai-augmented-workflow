@@ -111,9 +111,10 @@ describe('runReleaseCli', () => {
 
     assert.equal(exitCode, 0);
     assert.equal(ports.confirmCalls, 0);
-    assert.equal(ports.events[0], 'print:Release plan preview');
-    assert.equal(ports.events.some((event) => event.startsWith('write:')), true);
+    assert.equal(ports.events.some((event) => event === 'print:Release plan preview'), true);
+    assert.equal(ports.events.indexOf('print:Release plan preview') < ports.events.findIndex((event) => event.startsWith('write:')), true);
     assert.equal(ports.events.some((event) => event.startsWith('run:')), true);
+    assert.equal(ports.printed.some((message) => /Release confirmed; starting execution/.test(message)), true);
   });
 });
 

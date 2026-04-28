@@ -106,6 +106,7 @@ export type ReleaseExecutionStepName =
   | 'create-github-release';
 
 export type ReleaseExecutionPorts = {
+  print?(message: string): void;
   writeFile(path: string, contents: string): void;
   run(command: string, args: string[]): ReleaseCommandResult | Promise<ReleaseCommandResult>;
 };

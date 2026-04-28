@@ -485,9 +485,9 @@ describe('previewAndConfirmMaintainerRelease', () => {
     const result = await previewAndConfirmMaintainerRelease({ date: '2026-04-27', dryRun: true }, ports, rootPath);
 
     assert.equal(result.status, 'dry-run');
-    assert.equal(ports.printed.length, 1);
-    assert.match(ports.printed[0] ?? '', /Release plan preview/);
-    assert.match(ports.printed[0] ?? '', /Proposed version: 1\.2\.4/);
+    assert.equal(ports.printed.some((message) => /Starting maintainer release planning/.test(message)), true);
+    assert.equal(ports.printed.some((message) => /Dry run requested/.test(message)), true);
+    assert.match(findPrintedMessage(ports.printed, /Release plan preview/), /Proposed version: 1\.2\.4/);
     assert.equal(ports.confirmCalls, 0);
   });
 
@@ -498,8 +498,9 @@ describe('previewAndConfirmMaintainerRelease', () => {
     const result = await previewAndConfirmMaintainerRelease({ date: '2026-04-27' }, ports, rootPath);
 
     assert.equal(result.status, 'declined');
-    assert.equal(ports.printed.length, 1);
-    assert.match(ports.printed[0] ?? '', /Release plan preview/);
+    assert.equal(ports.printed.some((message) => /Waiting for maintainer confirmation/.test(message)), true);
+    assert.equal(ports.printed.some((message) => /Release confirmation declined/.test(message)), true);
+    assert.match(findPrintedMessage(ports.printed, /Release plan preview/), /Release plan preview/);
     assert.equal(ports.confirmCalls, 1);
     assert.equal(fs.readFileSync(path.join(rootPath, 'package.json'), 'utf8').includes('"version": "1.2.3"'), true);
   });
@@ -511,11 +512,24 @@ describe('previewAndConfirmMaintainerRelease', () => {
     const result = await previewAndConfirmMaintainerRelease({ date: '2026-04-27', assumeYes: true }, ports, rootPath);
 
     assert.equal(result.status, 'confirmed');
-    assert.equal(ports.printed.length, 1);
-    assert.match(ports.printed[0] ?? '', /Release plan preview/);
+    assert.match(findPrintedMessage(ports.printed, /Release plan preview/), /Release plan preview/);
+    assert.equal(ports.printed.some((message) => /--yes provided/.test(message)), true);
+    assert.equal(ports.printed.some((message) => /Release confirmed; starting execution/.test(message)), true);
     assert.equal(ports.confirmCalls, 0);
     assert.equal(ports.writes.length > 0, true);
     assert.equal(ports.commands.length > 0, true);
+  });
+
+  it('prints blocked planning messages and warnings', async () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    const ports = createFakeWorkflowPorts({ confirmResult: true });
+
+    const result = await previewAndConfirmMaintainerRelease({ dryRun: true }, ports, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    assert.equal(ports.printed.some((message) => /Release planning blocked/.test(message)), true);
+    assert.equal(ports.printed.some((message) => /\[missing-semver-tag\]/.test(message)), true);
   });
 });
 
@@ -657,6 +671,18 @@ describe('executeConfirmedRelease', () => {
     }
   });
 
+  it('prints progress and failure guidance during execution', async () => {
+    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish' });
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'failed');
+    assert.equal(ports.printed.some((message) => /Running release validation/.test(message)), true);
+    assert.equal(ports.printed.some((message) => /Publishing package to npm/.test(message)), true);
+    assert.equal(ports.printed.some((message) => /Failed: Publishing to npm failed/.test(message)), true);
+    assert.equal(ports.printed.some((message) => /Recovery: Review npm authentication/.test(message)), true);
+  });
+
 });
 
 describe('release execution ports', () => {
@@ -701,14 +727,19 @@ function createPlannedReleaseRepository(): string {
 }
 
 type FakeExecutionPorts = ReleaseExecutionPorts & {
+  printed: string[];
   writes: Array<{ path: string; contents: string }>;
   commands: Array<{ command: string; args: string[] }>;
 };
 
 function createFakeExecutionPorts(input: { failingCommand?: string } = {}): FakeExecutionPorts {
   return {
+    printed: [],
     writes: [],
     commands: [],
+    print(message: string) {
+      this.printed.push(message);
+    },
     writeFile(path: string, contents: string) {
       this.writes.push({ path, contents });
     },
@@ -720,6 +751,16 @@ function createFakeExecutionPorts(input: { failingCommand?: string } = {}): Fake
       return { exitCode: 0, stdout: '', stderr: '' };
     },
   };
+}
+
+function findPrintedMessage(messages: string[], pattern: RegExp): string {
+  const message = messages.find((candidate) => pattern.test(candidate));
+
+  if (!message) {
+    throw new Error(`Expected printed message matching ${pattern}.`);
+  }
+
+  return message;
 }
 
 type FakeWorkflowPorts = FakeExecutionPorts & {
