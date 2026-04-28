@@ -73,6 +73,8 @@ export type ReleasePlanningResult =
 export type ReleaseWorkflowPorts = {
   print(message: string): void;
   confirmRelease(plan: ReleasePlan): boolean | Promise<boolean>;
+  writeFile(path: string, contents: string): void;
+  run(command: string, args: string[]): ReleaseCommandResult | Promise<ReleaseCommandResult>;
 };
 
 export type ReleaseCommandResult = {
@@ -124,6 +126,7 @@ export type ReleaseWorkflowResult =
       status: 'confirmed';
       plan: ReleasePlan;
       preview: string;
+      execution: ReleaseExecutionResult;
     }
   | {
       status: 'dry-run';

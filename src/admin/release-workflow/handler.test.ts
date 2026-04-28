@@ -514,6 +514,8 @@ describe('previewAndConfirmMaintainerRelease', () => {
     assert.equal(ports.printed.length, 1);
     assert.match(ports.printed[0] ?? '', /Release plan preview/);
     assert.equal(ports.confirmCalls, 0);
+    assert.equal(ports.writes.length > 0, true);
+    assert.equal(ports.commands.length > 0, true);
   });
 });
 
@@ -720,7 +722,7 @@ function createFakeExecutionPorts(input: { failingCommand?: string } = {}): Fake
   };
 }
 
-type FakeWorkflowPorts = {
+type FakeWorkflowPorts = FakeExecutionPorts & {
   printed: string[];
   confirmCalls: number;
   print(message: string): void;
@@ -729,6 +731,7 @@ type FakeWorkflowPorts = {
 
 function createFakeWorkflowPorts(input: { confirmResult: boolean }): FakeWorkflowPorts {
   return {
+    ...createFakeExecutionPorts(),
     printed: [],
     confirmCalls: 0,
     print(message: string) {

@@ -150,6 +150,7 @@ export async function previewAndConfirmMaintainerRelease(
     status: 'confirmed',
     plan: planningResult.plan,
     preview,
+    execution: await executeConfirmedRelease(planningResult.plan, ports),
   };
 }
 

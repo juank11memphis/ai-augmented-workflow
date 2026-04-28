@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { parseReleaseArgs } from './release.js';
+import { parseReleaseArgs, runReleaseCli } from './release.js';
 
 describe('parseReleaseArgs', () => {
   it('parses release planning flags', () => {
@@ -55,3 +59,103 @@ describe('parseReleaseArgs', () => {
     assert.match(result.usage, /Usage: pnpm admin:release/);
   });
 });
+
+
+describe('runReleaseCli', () => {
+  it('keeps dry-run free of writes and command side effects', async () => {
+    const rootPath = createCliReleaseRepository();
+    const ports = createFakeCliPorts({ confirmResult: true });
+
+    const exitCode = await runReleaseCli(['--date', '2026-04-27', '--dry-run'], ports, rootPath);
+
+    assert.equal(exitCode, 0);
+    assert.equal(ports.printed.some((message) => /Release plan preview/.test(message)), true);
+    assert.equal(ports.writes.length, 0);
+    assert.equal(ports.commands.length, 0);
+  });
+
+  it('keeps declined confirmation free of writes and command side effects', async () => {
+    const rootPath = createCliReleaseRepository();
+    const ports = createFakeCliPorts({ confirmResult: false });
+
+    const exitCode = await runReleaseCli(['--date', '2026-04-27'], ports, rootPath);
+
+    assert.equal(exitCode, 0);
+    assert.equal(ports.confirmCalls, 1);
+    assert.equal(ports.writes.length, 0);
+    assert.equal(ports.commands.length, 0);
+  });
+
+  it('prints the preview before executing side effects when yes is assumed', async () => {
+    const rootPath = createCliReleaseRepository();
+    const ports = createFakeCliPorts({ confirmResult: false });
+
+    const exitCode = await runReleaseCli(['--date', '2026-04-27', '--yes'], ports, rootPath);
+
+    assert.equal(exitCode, 0);
+    assert.equal(ports.confirmCalls, 0);
+    assert.equal(ports.events[0], 'print:Release plan preview');
+    assert.equal(ports.events.some((event) => event.startsWith('write:')), true);
+    assert.equal(ports.events.some((event) => event.startsWith('run:')), true);
+  });
+});
+
+type FakeCliPorts = {
+  printed: string[];
+  writes: Array<{ path: string; contents: string }>;
+  commands: Array<{ command: string; args: string[] }>;
+  events: string[];
+  confirmCalls: number;
+  print(message: string): void;
+  confirmRelease(): boolean;
+  writeFile(path: string, contents: string): void;
+  run(command: string, args: string[]): { exitCode: number; stdout: string; stderr: string };
+};
+
+function createFakeCliPorts(input: { confirmResult: boolean }): FakeCliPorts {
+  return {
+    printed: [],
+    writes: [],
+    commands: [],
+    events: [],
+    confirmCalls: 0,
+    print(message: string) {
+      this.printed.push(message);
+      this.events.push(`print:${message.split("\n")[0]}`);
+    },
+    confirmRelease() {
+      this.confirmCalls += 1;
+      this.events.push('confirm');
+      return input.confirmResult;
+    },
+    writeFile(path: string, contents: string) {
+      this.writes.push({ path, contents });
+      this.events.push(`write:${path}`);
+    },
+    run(command: string, args: string[]) {
+      this.commands.push({ command, args });
+      this.events.push(`run:${command} ${args.join(" ")}`);
+      return { exitCode: 0, stdout: '', stderr: '' };
+    },
+  };
+}
+
+function createCliReleaseRepository(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-release-cli-test-'));
+  const runGit = (args: string[]) => execFileSync('git', args, { cwd: rootPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  runGit(['init']);
+  runGit(['config', 'user.name', 'Sibu Test']);
+  runGit(['config', 'user.email', 'sibu@example.com']);
+  fs.writeFileSync(path.join(rootPath, 'one.txt'), 'one', 'utf8');
+  runGit(['add', 'one.txt']);
+  runGit(['commit', '-m', 'feat: first release baseline']);
+  fs.writeFileSync(path.join(rootPath, 'CHANGELOG.md'), '# Changelog\n\n## 1.2.3 - 2026-04-01\n\n### Added\n- Baseline.\n', 'utf8');
+  fs.writeFileSync(path.join(rootPath, 'package.json'), '{\n  "name": "sibu",\n  "version": "1.2.3"\n}\n', 'utf8');
+  runGit(['add', 'CHANGELOG.md', 'package.json']);
+  runGit(['commit', '-m', 'chore: prepare 1.2.3 metadata']);
+  runGit(['tag', 'v1.2.3']);
+  fs.writeFileSync(path.join(rootPath, 'two.txt'), 'two', 'utf8');
+  runGit(['add', 'two.txt']);
+  runGit(['commit', '-m', 'fix: handle release planning']);
+  return rootPath;
+}

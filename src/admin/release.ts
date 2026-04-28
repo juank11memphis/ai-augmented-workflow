@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import { createInterface } from 'node:readline/promises';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import type { ReleasePlan, ReleaseWorkflowCommand, ReleaseWorkflowPorts } from './release-workflow/command.js';
+import type { ReleaseCommandResult, ReleaseExecutionResult, ReleasePlan, ReleaseWorkflowCommand, ReleaseWorkflowPorts } from './release-workflow/command.js';
 import { previewAndConfirmMaintainerRelease } from './release-workflow/handler.js';
 
 export type ParseReleaseArgsResult =
@@ -116,8 +118,8 @@ export async function runReleaseCli(args = process.argv.slice(2), ports = create
 
   switch (result.status) {
     case 'confirmed':
-      ports.print('\nRelease confirmed. Execution is not implemented in this story.\n');
-      return 0;
+      printExecutionResult(result.execution, ports);
+      return result.execution.status === 'executed' ? 0 : 1;
     case 'dry-run':
       ports.print('\nDry run complete. No changes written.\n');
       return 0;
@@ -179,7 +181,74 @@ function createTerminalPorts(): ReleaseWorkflowPorts {
         readline.close();
       }
     },
+    writeFile(path, contents) {
+      fs.writeFileSync(path, contents, 'utf8');
+    },
+    run(command, args) {
+      try {
+        const stdout = execFileSync(command, args, {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+
+        return {
+          exitCode: 0,
+          stdout,
+          stderr: '',
+        };
+      } catch (error) {
+        return commandFailure(error);
+      }
+    },
   };
+}
+
+function printExecutionResult(result: ReleaseExecutionResult, ports: Pick<ReleaseWorkflowPorts, 'print'>): void {
+  ports.print('\nRelease execution results:\n');
+  for (const completedStep of result.completedSteps) {
+    ports.print(`- ${completedStep.message}\n`);
+  }
+
+  if (result.status === 'failed') {
+    ports.print(`\nRelease failed at ${result.failedStep.name}: ${result.failedStep.message}\n`);
+    ports.print(`Recovery: ${result.failedStep.recoveryGuidance}\n`);
+    return;
+  }
+
+  ports.print('\nRelease completed successfully.\n');
+}
+
+function commandFailure(error: unknown): ReleaseCommandResult {
+  if (isExecFileError(error)) {
+    return {
+      exitCode: typeof error.status === 'number' ? error.status : 1,
+      stdout: bufferToString(error.stdout),
+      stderr: bufferToString(error.stderr),
+    };
+  }
+
+  return {
+    exitCode: 1,
+    stderr: error instanceof Error ? error.message : String(error),
+  };
+}
+
+type ExecFileError = Error & {
+  status?: number;
+  stdout?: Buffer | string;
+  stderr?: Buffer | string;
+};
+
+function isExecFileError(error: unknown): error is ExecFileError {
+  return typeof error === 'object' && error !== null;
+}
+
+function bufferToString(value: Buffer | string | undefined): string {
+  if (Buffer.isBuffer(value)) {
+    return value.toString('utf8');
+  }
+
+  return value ?? '';
 }
 
 async function main(): Promise<void> {
