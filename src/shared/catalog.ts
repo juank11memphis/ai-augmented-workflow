@@ -189,6 +189,20 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       windsurf: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
     },
   },
+  {
+    id: 'ux-expert',
+    name: 'UX Expert',
+    description: 'Install senior UX/UI guidance for UI-changing features, responsive layouts, flows, states, accessibility, and binding mockups',
+    routingInstruction:
+      'For UX/UI design after product definition when a feature has UI changes, use `ux-expert`; downstream technical design, Scrum planning, implementation planning, and implementation must treat mockups in `docs/features/<feature-slug>/ux.md` as binding UI goals, not redesign targets.',
+    templateRelativePath: 'skills/ux-expert/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/ux-expert/SKILL.md',
+      gemini: '.agents/skills/ux-expert/SKILL.md',
+      claude: '.agents/skills/ux-expert/SKILL.md',
+      windsurf: '.agents/skills/ux-expert/SKILL.md',
+    },
+  },
 ];
 
 export const SUPPORTED_AGENTS: SupportedAgent[] = [

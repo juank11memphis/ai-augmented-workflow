@@ -145,6 +145,20 @@ describe('getNextSkillSelection', () => {
     );
   });
 
+  it('prepares a next selection for UX Expert while preserving existing workflow skills', () => {
+    const result = getNextSkillSelection({ ...BASE_STATE, selectedWorkflowSkills: ['ai-prompt-engineer-master'] }, 'ux-expert');
+
+    assert.equal(result.status, 'selected');
+    if (result.status !== 'selected') {
+      return;
+    }
+
+    assert.deepEqual(
+      result.selection.selectedWorkflowSkills.map((skill) => skill.id),
+      ['ai-prompt-engineer-master', 'ux-expert']
+    );
+  });
+
   it('blocks replacing an existing architecture skill', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'ddd-hexagonal' }, 'command-pattern'), {
       status: 'blocked',
@@ -229,6 +243,21 @@ describe('handleUseSkill', () => {
     assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/ai-prompt-engineer-master/SKILL.md')), true);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
+    assert.equal(process.exitCode, undefined);
+  });
+
+  it('adds UX Expert in a clean initialized repo', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'ux-expert' });
+
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
+    assert.ok(state);
+    assert.deepEqual(state.selectedWorkflowSkills, ['ux-expert']);
+    assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/ux-expert/SKILL.md')), true);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
     assert.equal(process.exitCode, undefined);
   });
 

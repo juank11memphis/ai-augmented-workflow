@@ -47,6 +47,7 @@ describe('resolveSelectableSkillById', () => {
     assertResolvedSkill('ddd-hexagonal', 'architecture');
     assertResolvedSkill('command-pattern', 'architecture');
     assertResolvedSkill('ai-prompt-engineer-master', 'workflow');
+    assertResolvedSkill('ux-expert', 'workflow');
   });
 
   it('fails with a skills list suggestion for unknown skill ids', () => {

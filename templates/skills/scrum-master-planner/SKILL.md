@@ -18,9 +18,14 @@ Before planning, read:
 ```txt
 docs/features/<feature-slug>/feature_brief.md
 docs/features/<feature-slug>/technical_design.md
+docs/features/<feature-slug>/ux.md  # when the feature has UI impact
 ```
 
 Also read `docs/product-vision.md` when it exists and the planning decision depends on product fit, scope boundaries, user value, or success signals.
+
+If the feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before Scrum planning.
+
+When `ux.md` includes mockups, treat them as binding UI goals. Epics and Stories must preserve the mockup structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the UI in Scrum planning; create delivery slices that implement the approved UX.
 
 ## Hard start rule
 

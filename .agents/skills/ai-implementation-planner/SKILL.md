@@ -30,9 +30,14 @@ docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
 docs/features/<feature-slug>/feature_brief.md
 docs/features/<feature-slug>/technical_design.md
+docs/features/<feature-slug>/ux.md  # when the story or feature has UI impact
 ```
 
 Also read `docs/product-vision.md` when product fit, target user, scope boundaries, or success signals are ambiguous.
+
+If the story or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation planning.
+
+When `ux.md` includes mockups, treat them as binding UI goals. Implementation steps must preserve the mockup structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the UI in the implementation plan; plan code steps that implement the approved UX and stop if technical constraints require a UX revision.
 
 Before writing the step files, read and apply the required planning skills as source context:
 

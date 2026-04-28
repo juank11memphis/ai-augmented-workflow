@@ -15,9 +15,10 @@ Before writing, read:
 
 1. `docs/product-vision.md`
 2. the feature brief
-3. `clean-code`
-4. any selected architecture, language, or framework skills that apply
-5. relevant existing repo files and flows
+3. `docs/features/<feature-slug>/ux.md` when the feature has UI impact
+4. `clean-code`
+5. any selected architecture, language, or framework skills that apply
+6. relevant existing repo files and flows
 
 Apply those inputs. Do not summarize them back into the technical design unless a specific implication changes the implementation.
 
@@ -25,7 +26,11 @@ Apply those inputs. Do not summarize them back into the technical design unless 
 
 Require a Markdown feature brief. If the user only has a vague idea, route to `feature-brief-writer` first.
 
-If the feature has UI impact, use an existing UX artifact when available. If missing, note the UI uncertainty briefly instead of inventing UX.
+If the feature has UI impact, require `docs/features/<feature-slug>/ux.md`. If it is missing, stop and ask the user to create the UX spec with `ux-expert` first.
+
+## UX binding rule
+
+For UI-related features, `ux.md` is source context, not inspiration. If `ux.md` includes mockups, treat those mockups as binding UI goals for structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the mockups in the technical design. Translate them into implementation direction and call out only technical feasibility issues, missing states, or conflicts that require UX revision.
 
 ## Design stance
 

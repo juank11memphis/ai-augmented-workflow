@@ -1,5 +1,5 @@
 {
-  "templateVersion": "46",
+  "templateVersion": "47",
   "templates": {
     "AGENTS.md": {
       "version": "20",
@@ -54,10 +54,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Updates the technical design examples to refer to the Sibu command names instead of the old Echo branding."
+        "Requires UI-related technical designs to read ux.md and treat UX mockups as binding implementation goals instead of redesign targets."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -103,28 +103,24 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Moves Scrum User Stories into an Epic-local stories/ folder.",
-        "Adds two-digit execution-order filename prefixes for User Stories, with shared numbers indicating parallelizable work."
+        "Requires UI-related Scrum planning to read ux.md and preserve binding mockups in Epics and User Stories."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Changes AI implementation planner step files to use lowercase .md extensions.",
-        "Updates the step-file format to use Markdown headings for Step, Goal, Scope, Files, and Done when sections."
+        "Requires UI-related implementation plans to read ux.md and turn binding mockups into implementation steps without redesigning them."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Clarifies that missing story implementation plans must be created with the AI implementation planner before execution.",
-        "Allows agents to begin the first unapproved implementation step immediately when a valid plan exists, while preserving review approval between steps.",
-        "Clarifies that after user approval, agents should mark the step approved, commit it, and continue to the next step without another pre-implementation confirmation."
+        "Requires UI-related implementation execution to read ux.md and implement binding mockups without redesigning them."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
@@ -132,6 +128,13 @@
       "description": "Selectable AI prompt engineering skill for prompt creation, optimization, compression, and evaluation.",
       "changes": [
         "Adds an optional AI prompt engineering skill for projects that create, improve, evaluate, or maintain reusable prompts for AI models, agents, tools, and coding assistants."
+      ]
+    },
+    "skills/ux-expert/SKILL.md": {
+      "version": "1",
+      "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
+      "changes": [
+        "Adds an optional UX expert skill for UI-changing features, including implementation-ready UX guidance and binding mockups."
       ]
     }
   }
