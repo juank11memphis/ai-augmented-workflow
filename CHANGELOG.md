@@ -23,6 +23,8 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 - add release metadata plan models
 
 ### Changed
+- ignore local npm credentials
+- 0.2.0
 - 0.2.0
 - 0.2.0
 - 0.2.0
