@@ -7,6 +7,7 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 ## 0.2.0 - 2026-04-28
 
 ### Added
+- harden maintainer release execution
 - log maintainer release workflow progress
 - expose maintainer release script
 - wire confirmed release execution
@@ -21,6 +22,7 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 - add release metadata plan models
 
 ### Changed
+- 0.2.0
 - derive post-update template version expectation
 - validate maintainer release exposure
 - cover maintainer release script boundaries
