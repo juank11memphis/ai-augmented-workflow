@@ -15,7 +15,8 @@ export type ReleaseWarningCode =
   | 'existing-target-tag'
   | 'invalid-version'
   | 'invalid-git-ref'
-  | 'not-git-repository';
+  | 'not-git-repository'
+  | 'malformed-package-json';
 
 export type ReleaseWarning = {
   code: ReleaseWarningCode;
