@@ -54,6 +54,18 @@ export function renderReleasePlanPreview(plan: ReleasePlan): string {
   return `${lines.join('\n')}\n`;
 }
 
+export function extractReleaseChangelogSection(changelogContent: string, targetVersion: string): string | undefined {
+  const sectionStart = changelogContent.indexOf(`## ${targetVersion} - `);
+  if (sectionStart < 0) {
+    return undefined;
+  }
+
+  const nextSectionStart = changelogContent.indexOf('\n## ', sectionStart + 1);
+  const sectionEnd = nextSectionStart >= 0 ? nextSectionStart : changelogContent.length;
+
+  return changelogContent.slice(sectionStart, sectionEnd).trim();
+}
+
 function buildParsedVersion(major: number, minor: number, patch: number): ParsedSemverVersion {
   return {
     version: `${major}.${minor}.${patch}`,
@@ -85,15 +97,7 @@ function renderChangelogSectionPreview(changelogContent: string, targetVersion: 
 }
 
 function extractChangelogVersionSection(changelogContent: string, targetVersion: string): string {
-  const sectionStart = changelogContent.indexOf(`## ${targetVersion} - `);
-  if (sectionStart < 0) {
-    return '(target changelog section not found in planned content)';
-  }
-
-  const nextSectionStart = changelogContent.indexOf('\n## ', sectionStart + 1);
-  const sectionEnd = nextSectionStart >= 0 ? nextSectionStart : changelogContent.length;
-
-  return changelogContent.slice(sectionStart, sectionEnd).trim();
+  return extractReleaseChangelogSection(changelogContent, targetVersion) ?? '(target changelog section not found in planned content)';
 }
 
 function formatReleaseWarning(warning: ReleaseWarning): string {

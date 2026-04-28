@@ -15,6 +15,7 @@ import {
   formatReleaseTagName,
   incrementSemverVersion,
   renderReleasePlanPreview,
+  extractReleaseChangelogSection,
 } from './release-plan.js';
 
 describe('incrementSemverVersion', () => {
@@ -119,6 +120,18 @@ describe('deriveSuggestedBumpFromChangelogProposal', () => {
       }),
       'minor'
     );
+  });
+});
+
+
+describe('extractReleaseChangelogSection', () => {
+  it('extracts the finalized changelog section for the target version', () => {
+    const section = extractReleaseChangelogSection(buildPreviewPlan().metadata?.changelog.nextContent ?? '', '1.2.4');
+
+    assert.equal(section, `## 1.2.4 - 2026-04-27
+
+### Fixed
+- Fix release metadata planning.`);
   });
 });
 
@@ -514,7 +527,7 @@ describe('executeConfirmedRelease', () => {
 
     assert.equal(result.status, 'executed');
     assert.deepEqual(ports.writes.map((write) => write.path), ['CHANGELOG.md', 'package.json']);
-    assert.deepEqual(ports.commands, [
+    assert.deepEqual(ports.commands.slice(0, 5), [
       { command: 'pnpm', args: ['run', 'validate:release'] },
       { command: 'git', args: ['add', 'CHANGELOG.md', 'package.json'] },
       { command: 'git', args: ['commit', '-m', 'chore(release): 1.2.4'] },
@@ -529,6 +542,9 @@ describe('executeConfirmedRelease', () => {
         'create-release-commit',
         'create-release-tag',
         'publish-npm',
+        'push-commit',
+        'push-tag',
+        'create-github-release',
       ]);
     }
   });
@@ -565,6 +581,80 @@ describe('executeConfirmedRelease', () => {
       ]);
     }
   });
+
+  it('stops before GitHub Release creation when push fails', async () => {
+    const ports = createFakeExecutionPorts({ failingCommand: 'git push origin HEAD' });
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'failed');
+    assert.equal(ports.commands.some((command) => command.command === 'gh'), false);
+    if (result.status === 'failed') {
+      assert.equal(result.failedStep.name, 'push-commit');
+      assert.match(result.failedStep.recoveryGuidance, /Push the release commit manually/);
+    }
+  });
+
+  it('creates the GitHub Release with the finalized changelog section as notes', async () => {
+    const ports = createFakeExecutionPorts();
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'executed');
+    const ghCommand = ports.commands.find((command) => command.command === 'gh');
+    assert.deepEqual(ghCommand, {
+      command: 'gh',
+      args: [
+        'release',
+        'create',
+        'v1.2.4',
+        '--title',
+        'v1.2.4',
+        '--notes',
+        `## 1.2.4 - 2026-04-27
+
+### Fixed
+- Fix release metadata planning.`,
+      ],
+    });
+  });
+
+  it('reports manual recovery guidance when GitHub Release creation fails', async () => {
+    const ports = createFakeExecutionPorts({
+      failingCommand: 'gh release create v1.2.4 --title v1.2.4 --notes ## 1.2.4 - 2026-04-27\n\n### Fixed\n- Fix release metadata planning.',
+    });
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'failed');
+    if (result.status === 'failed') {
+      assert.equal(result.failedStep.name, 'create-github-release');
+      assert.match(result.failedStep.recoveryGuidance, /Create the GitHub Release manually/);
+      assert.equal(result.completedSteps.at(-1)?.name, 'push-tag');
+    }
+  });
+
+  it('reports all completed steps through GitHub Release creation', async () => {
+    const ports = createFakeExecutionPorts();
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'executed');
+    if (result.status === 'executed') {
+      assert.deepEqual(result.completedSteps.map((step) => step.name), [
+        'write-changelog',
+        'write-package-json',
+        'validate-release',
+        'create-release-commit',
+        'create-release-tag',
+        'publish-npm',
+        'push-commit',
+        'push-tag',
+        'create-github-release',
+      ]);
+    }
+  });
+
 });
 
 describe('release execution ports', () => {

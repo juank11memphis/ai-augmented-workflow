@@ -26,6 +26,7 @@ import {
   formatReleaseTagName,
   incrementSemverVersion,
   renderReleasePlanPreview,
+  extractReleaseChangelogSection,
 } from './release-plan.js';
 
 export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = process.cwd()): ReleasePlanningResult {
@@ -195,6 +196,25 @@ export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseE
   }
   completedSteps.push({ name: 'publish-npm', message: 'Published package to npm.' });
 
+  const pushCommit = await ports.run('git', ['push', 'origin', 'HEAD']);
+  if (pushCommit.exitCode !== 0) {
+    return failExecution(completedSteps, 'push-commit', 'Pushing the release commit failed.', pushCommit);
+  }
+  completedSteps.push({ name: 'push-commit', message: 'Pushed release commit to origin.' });
+
+  const pushTag = await ports.run('git', ['push', 'origin', plan.tagName]);
+  if (pushTag.exitCode !== 0) {
+    return failExecution(completedSteps, 'push-tag', `Pushing release tag ${plan.tagName} failed.`, pushTag);
+  }
+  completedSteps.push({ name: 'push-tag', message: `Pushed release tag ${plan.tagName} to origin.` });
+
+  const releaseBody = extractReleaseBody(plan);
+  const githubRelease = await ports.run('gh', ['release', 'create', plan.tagName, '--title', plan.tagName, '--notes', releaseBody]);
+  if (githubRelease.exitCode !== 0) {
+    return failExecution(completedSteps, 'create-github-release', 'Creating the GitHub Release failed.', githubRelease);
+  }
+  completedSteps.push({ name: 'create-github-release', message: `Created GitHub Release ${plan.tagName}.` });
+
   return {
     status: 'executed',
     completedSteps,
@@ -292,8 +312,18 @@ function buildRecoveryGuidance(name: ReleaseExecutionStepName): string {
     case 'write-package-json':
       return 'Review local file permissions and release metadata, then rerun the release workflow.';
     case 'push-commit':
+      return 'npm publish may have completed. Push the release commit manually after resolving git remote issues.';
     case 'push-tag':
+      return 'npm publish and the release commit push may have completed. Push the release tag manually after resolving git remote issues.';
     case 'create-github-release':
-      return 'Review completed release side effects and continue manually from the failed step.';
+      return 'npm publish and git push may have completed. Create the GitHub Release manually with the finalized CHANGELOG.md section.';
   }
+}
+
+function extractReleaseBody(plan: ReleasePlan): string {
+  if (!plan.metadata) {
+    return `Release ${plan.targetVersion}`;
+  }
+
+  return extractReleaseChangelogSection(plan.metadata.changelog.nextContent, plan.targetVersion) ?? `Release ${plan.targetVersion}`;
 }
