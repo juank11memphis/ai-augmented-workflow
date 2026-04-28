@@ -61,6 +61,23 @@ describe('parseReleaseArgs', () => {
 });
 
 
+
+describe('release script boundaries', () => {
+  it('exposes release automation only as a maintainer package script', () => {
+    const packageJson = readRootPackageJson();
+
+    assert.equal(packageJson.scripts['admin:release'], 'node ./bin/admin/release.js');
+    assert.deepEqual(packageJson.bin, { sibu: './bin/sibu.js' });
+  });
+
+  it('does not wire a public release command into the Sibu CLI', () => {
+    const createProgramSource = fs.readFileSync('src/entrypoints/cli/create-program.ts', 'utf8');
+
+    assert.doesNotMatch(createProgramSource, /\.command\(['"]release['"]\)/);
+    assert.doesNotMatch(createProgramSource, /program\.command\(['"]release['"]\)/);
+  });
+});
+
 describe('runReleaseCli', () => {
   it('keeps dry-run free of writes and command side effects', async () => {
     const rootPath = createCliReleaseRepository();
@@ -99,6 +116,15 @@ describe('runReleaseCli', () => {
     assert.equal(ports.events.some((event) => event.startsWith('run:')), true);
   });
 });
+
+type RootPackageJson = {
+  scripts: Record<string, string>;
+  bin: Record<string, string>;
+};
+
+function readRootPackageJson(): RootPackageJson {
+  return JSON.parse(fs.readFileSync('package.json', 'utf8')) as RootPackageJson;
+}
 
 type FakeCliPorts = {
   printed: string[];
