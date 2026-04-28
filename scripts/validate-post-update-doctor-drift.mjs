@@ -10,6 +10,8 @@ const workspace = mkdtempSync(path.join(os.tmpdir(), 'sibu-post-update-drift-'))
 const cacheRoot = path.join(workspace, 'cache');
 const npmPrefix = path.join(workspace, 'prefix');
 const packDir = path.join(workspace, 'pack');
+const oldTemplateVersion = '41';
+const currentTemplateVersion = readCurrentTemplateVersion();
 
 mkdirSync(cacheRoot, { recursive: true });
 mkdirSync(npmPrefix, { recursive: true });
@@ -57,7 +59,7 @@ try {
   });
 
   assertIncludes(driftOutput, 'Found workflow changes that need review.');
-  assertIncludes(driftOutput, 'State was generated from template version 41; current template version is 42.');
+  assertIncludes(driftOutput, `State was generated from template version ${oldTemplateVersion}; current template version is ${currentTemplateVersion}.`);
   assertIncludes(driftOutput, 'Run `sibu sync` to review these workflow changes and choose whether to apply them.');
   assertIncludes(driftOutput, 'Sibu will not change project files until you explicitly run `sibu sync`.');
   assertExcludes(driftOutput, 'A newer Sibu version is available:');
@@ -120,9 +122,19 @@ function patchOldPackageVersion(packageDir) {
 function patchOldTemplateManifest(packageDir) {
   const manifestPath = path.join(packageDir, 'templates', 'manifest.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  manifest.templateVersion = '41';
+  manifest.templateVersion = oldTemplateVersion;
   manifest.templates['AGENTS.md'].version = '17';
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+}
+
+function readCurrentTemplateVersion() {
+  const manifest = JSON.parse(readFileSync(path.join(repoRoot(), 'templates', 'manifest.json'), 'utf8'));
+
+  if (typeof manifest.templateVersion !== 'string') {
+    throw new Error('Expected templates/manifest.json to contain a string templateVersion.');
+  }
+
+  return manifest.templateVersion;
 }
 
 function installTarball(tarballPath) {
