@@ -57,17 +57,43 @@ If the package name, access model, npm org setup, or release scope is still unse
 
 ## 2. Prepare release notes and package metadata
 
-Prepare release metadata before validating or publishing:
+The preferred maintainer workflow is the guided release script:
 
-1. decide the release version
-2. draft or update the `CHANGELOG.md` entry
-3. review the changelog diff and generated warnings
-4. update the package version in `package.json`
-5. treat the finalized `CHANGELOG.md` entry as the source for the matching GitHub Release
+```sh
+pnpm build
+pnpm admin:release -- --dry-run
+```
 
-Write or update the changelog entry first. The GitHub Release should reuse that same user-facing summary instead of inventing a second version of the release notes.
+Run the dry run first when you are ready to release from a clean working tree. The workflow inspects commits since the previous SemVer-like tag, proposes the target version, plans the `CHANGELOG.md` and `package.json` updates, and prints the full release sequence before changing files or performing public side effects.
 
-### Draft the changelog with the maintainer helper
+When the preview looks right, run the same command without `--dry-run` and confirm the prompt:
+
+```sh
+pnpm admin:release
+```
+
+After confirmation, the workflow writes the planned changelog and package metadata, runs `pnpm run validate:release`, creates the release commit, creates the git tag, publishes to npm, pushes the release commit and tag, and creates the matching GitHub Release from the finalized changelog section.
+
+Useful options:
+
+```sh
+pnpm admin:release -- --from v0.1.0 --to HEAD --version 0.2.0 --date 2026-04-26
+pnpm admin:release -- --version 0.2.0 --yes
+```
+
+- `--from` and `--to` choose the git range. When `--from` is omitted, the latest reachable SemVer-like tag is used.
+- `--version` overrides the commit-derived version. Versions may be entered with a leading `v`, but release metadata is normalized to SemVer without `v`.
+- `--date` sets the release date for the versioned changelog section.
+- `--dry-run` prints the plan and performs no writes, commits, tags, publishes, pushes, or GitHub Release creation.
+- `--yes` skips only the confirmation prompt after printing the preview. It does not skip warnings, metadata safety checks, or release validation.
+
+This is repository-local maintainer tooling. It is not a public `sibu release` command and is not exposed through package `bin` metadata.
+
+If a public side effect fails after an earlier public step succeeds, do not expect automatic rollback. Read the reported completed steps and recovery guidance, then continue manually from the failed step. For example, if GitHub Release creation fails after npm publish and git push succeed, create the GitHub Release manually from the finalized `CHANGELOG.md` section.
+
+`CHANGELOG.md` remains the canonical source for release notes. The GitHub Release should reuse that same user-facing summary instead of inventing a second version of the release notes.
+
+### Lower-level changelog helper
 
 Sibu maintainers can use the local maintainer script from the source repo:
 
@@ -100,9 +126,9 @@ git diff -- CHANGELOG.md
 
 Edit the changelog manually if the generated text is too raw, too technical, or misses maintainer context. Keep the final entry human-readable and useful for Sibu users.
 
-### Update package metadata
+### Manual package metadata fallback
 
-After the changelog entry is ready, update the package version in `package.json` to match the release version. Do not rely on the changelog helper for this; it intentionally does not bump package metadata.
+The guided release workflow updates the root `package.json` version after confirmation. If you are preparing a release manually instead of using `pnpm admin:release`, update the package version in `package.json` to match the release version after the changelog entry is ready.
 
 ## 3. Validate the packaged artifact locally
 
