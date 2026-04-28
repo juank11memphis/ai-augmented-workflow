@@ -2,6 +2,7 @@ export type AgentId = 'codex' | 'gemini' | 'claude' | 'windsurf';
 export type LanguageSkillId = 'typescript' | 'golang';
 export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
+export type WorkflowSkillId = 'ai-prompt-engineer-master';
 export type NpmVersionLookupMode = 'live' | 'offline';
 export type NpmVersionResultSource = 'cache' | 'live' | 'override';
 export type NpmVersionUnavailableReason = 'invalid-response' | 'network-error' | 'override';
@@ -40,10 +41,18 @@ export type SelectableArchitectureSkill = SkillTemplate & {
   routingInstruction: string;
 };
 
+export type SelectableWorkflowSkill = SkillTemplate & {
+  id: WorkflowSkillId;
+  name: string;
+  description: string;
+  routingInstruction: string;
+};
+
 export type ResolvedSelectableSkill =
   | { kind: 'language'; skill: SelectableLanguageSkill }
   | { kind: 'framework'; skill: SelectableFrameworkSkill }
-  | { kind: 'architecture'; skill: SelectableArchitectureSkill };
+  | { kind: 'architecture'; skill: SelectableArchitectureSkill }
+  | { kind: 'workflow'; skill: SelectableWorkflowSkill };
 
 export type SelectableSkillResolutionResult =
   | { ok: true; resolved: ResolvedSelectableSkill }
@@ -72,6 +81,7 @@ export type SibuState = {
   reviewedLanguageSkills?: LanguageSkillId[];
   selectedFrameworkSkills?: FrameworkSkillId[];
   selectedArchitectureSkill?: ArchitectureSkillId;
+  selectedWorkflowSkills?: WorkflowSkillId[];
   reviewedArchitectureSkills?: ArchitectureSkillId[];
   managedFiles: Record<string, ManagedFileState>;
 };

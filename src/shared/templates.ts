@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { getTemplatesPath } from './paths.js';
-import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, TemplateManifest } from './types.js';
+import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from './types.js';
 
 export function readTemplate(relativePath: string): string {
   return fs.readFileSync(path.join(getTemplatesPath(), relativePath), 'utf8');
@@ -34,12 +34,14 @@ export function renderTemplateForSync({
   selectedLanguageSkills,
   selectedFrameworkSkills,
   selectedArchitectureSkill,
+  selectedWorkflowSkills = [],
 }: {
   templateRelativePath: string;
   currentPath: string;
   selectedLanguageSkills: SelectableLanguageSkill[];
   selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
+  selectedWorkflowSkills?: SelectableWorkflowSkill[];
 }): string {
   let contents = readTemplate(templateRelativePath);
 
@@ -47,20 +49,21 @@ export function renderTemplateForSync({
     contents = contents.replace('{{PROJECT_OVERVIEW}}', extractProjectOverview(currentPath) ?? 'Describe this project.');
   }
 
-  return renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
+  return renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills);
 }
 
 export function renderSkillRouting(
   contents: string,
   selectedLanguageSkills: SelectableLanguageSkill[],
   selectedFrameworkSkills: SelectableFrameworkSkill[],
-  selectedArchitectureSkill?: SelectableArchitectureSkill
+  selectedArchitectureSkill?: SelectableArchitectureSkill,
+  selectedWorkflowSkills: SelectableWorkflowSkill[] = []
 ): string {
   if (!contents.includes('{{OPTIONAL_SKILL_ROUTING}}')) {
     return contents;
   }
 
-  const optionalRouting = [...selectedLanguageSkills, ...selectedFrameworkSkills, ...(selectedArchitectureSkill ? [selectedArchitectureSkill] : [])]
+  const optionalRouting = [...selectedLanguageSkills, ...selectedFrameworkSkills, ...(selectedArchitectureSkill ? [selectedArchitectureSkill] : []), ...selectedWorkflowSkills]
     .map((skill) => `- ${skill.routingInstruction}`)
     .join('\n');
 

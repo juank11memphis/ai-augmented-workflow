@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import type { SibuState, SupportedAgent } from './types.js';
 import { getSelectedAgentsFromState, getWorkflowTargets } from './workflow-targets.js';
 
@@ -15,7 +15,8 @@ describe('getWorkflowTargets', () => {
       [getSupportedAgent('windsurf')],
       [SELECTABLE_LANGUAGE_SKILLS[0]],
       [SELECTABLE_FRAMEWORK_SKILLS[0]],
-      SELECTABLE_ARCHITECTURE_SKILLS[0]
+      SELECTABLE_ARCHITECTURE_SKILLS[0],
+      [SELECTABLE_WORKFLOW_SKILLS[0]]
     );
 
     assert.deepEqual(getRelativeTargetPaths(targets), [
@@ -30,6 +31,7 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/typescript/SKILL.md',
       '.agents/skills/react/SKILL.md',
       '.agents/skills/ddd-hexagonal/SKILL.md',
+      '.agents/skills/ai-prompt-engineer-master/SKILL.md',
     ]);
     assertNoInvalidTargets(targets);
     assert.equal(getRelativeTargetPaths(targets).some((relativePath) => relativePath.startsWith('.windsurf/')), false);

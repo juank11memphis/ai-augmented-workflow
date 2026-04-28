@@ -15,7 +15,9 @@ import type {
   SelectableArchitectureSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
+  SelectableWorkflowSkill,
   SupportedAgent,
+  WorkflowSkillId,
   WorkflowTarget,
 } from '../../shared/types.js';
 import { getWorkflowMutationReadiness } from '../../shared/workflow-mutation-readiness.js';
@@ -26,6 +28,7 @@ type NextSkillSelection = {
   selectedLanguageSkills: SelectableLanguageSkill[];
   selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
+  selectedWorkflowSkills: SelectableWorkflowSkill[];
 };
 
 type SkillSelectionResult =
@@ -85,6 +88,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
 
   const selectedLanguageSkills = [...(state.selectedLanguageSkills ?? [])];
   const selectedFrameworkSkills = [...(state.selectedFrameworkSkills ?? [])];
+  const selectedWorkflowSkills = [...(state.selectedWorkflowSkills ?? [])];
 
   switch (resolution.resolved.kind) {
     case 'language':
@@ -99,6 +103,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
           selectedLanguageSkills: [...selectedLanguageSkills, resolution.resolved.skill.id].map(getLanguageSkillById),
           selectedFrameworkSkills: selectedFrameworkSkills.map(getFrameworkSkillById),
           selectedArchitectureSkill: getArchitectureSkillById(state.selectedArchitectureSkill),
+          selectedWorkflowSkills: selectedWorkflowSkills.map(getWorkflowSkillById),
         },
       };
 
@@ -114,6 +119,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
           selectedLanguageSkills: selectedLanguageSkills.map(getLanguageSkillById),
           selectedFrameworkSkills: [...selectedFrameworkSkills, resolution.resolved.skill.id].map(getFrameworkSkillById),
           selectedArchitectureSkill: getArchitectureSkillById(state.selectedArchitectureSkill),
+          selectedWorkflowSkills: selectedWorkflowSkills.map(getWorkflowSkillById),
         },
       };
 
@@ -137,6 +143,23 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
           selectedLanguageSkills: selectedLanguageSkills.map(getLanguageSkillById),
           selectedFrameworkSkills: selectedFrameworkSkills.map(getFrameworkSkillById),
           selectedArchitectureSkill: resolution.resolved.skill,
+          selectedWorkflowSkills: selectedWorkflowSkills.map(getWorkflowSkillById),
+        },
+      };
+
+    case 'workflow':
+      if (selectedWorkflowSkills.includes(resolution.resolved.skill.id)) {
+        return { status: 'noop', message: `${resolution.resolved.skill.name} is already selected.` };
+      }
+
+      return {
+        status: 'selected',
+        skillName: resolution.resolved.skill.name,
+        selection: {
+          selectedLanguageSkills: selectedLanguageSkills.map(getLanguageSkillById),
+          selectedFrameworkSkills: selectedFrameworkSkills.map(getFrameworkSkillById),
+          selectedArchitectureSkill: getArchitectureSkillById(state.selectedArchitectureSkill),
+          selectedWorkflowSkills: [...selectedWorkflowSkills, resolution.resolved.skill.id].map(getWorkflowSkillById),
         },
       };
   }
@@ -169,6 +192,7 @@ function applySelectedSkill({
     selectedLanguageSkills: selectionResult.selection.selectedLanguageSkills,
     selectedFrameworkSkills: selectionResult.selection.selectedFrameworkSkills,
     selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
+    selectedWorkflowSkills: selectionResult.selection.selectedWorkflowSkills,
   });
   const [newSkillFile] = renderMissingWorkflowFiles({
     missingTargets: [plan.newSkillTarget],
@@ -191,6 +215,7 @@ function applySelectedSkill({
     selectedLanguageSkills: selectionResult.selection.selectedLanguageSkills,
     selectedFrameworkSkills: selectionResult.selection.selectedFrameworkSkills,
     selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
+    selectedWorkflowSkills: selectionResult.selection.selectedWorkflowSkills,
     targets: plan.targets,
   });
   log.success(`Updated ${STATE_RELATIVE_PATH}`);
@@ -212,14 +237,16 @@ function buildSkillApplicationPlan({
     selectedAgents,
     getSelectedLanguageSkillsFromState(state),
     getSelectedFrameworkSkillsFromState(state),
-    getArchitectureSkillById(state.selectedArchitectureSkill)
+    getArchitectureSkillById(state.selectedArchitectureSkill),
+    getSelectedWorkflowSkillsFromState(state)
   );
   const targets = getWorkflowTargets(
     rootPath,
     selectedAgents,
     selectionResult.selection.selectedLanguageSkills,
     selectionResult.selection.selectedFrameworkSkills,
-    selectionResult.selection.selectedArchitectureSkill
+    selectionResult.selection.selectedArchitectureSkill,
+    selectionResult.selection.selectedWorkflowSkills
   );
   const previousTargetPaths = new Set(previousTargets.map((target) => target.targetPath));
   const newSkillTarget = targets.find((target) => !previousTargetPaths.has(target.targetPath));
@@ -268,6 +295,10 @@ function getSelectedFrameworkSkillsFromState(state: SibuState): SelectableFramew
   return (state.selectedFrameworkSkills ?? []).map(getFrameworkSkillById);
 }
 
+function getSelectedWorkflowSkillsFromState(state: SibuState): SelectableWorkflowSkill[] {
+  return (state.selectedWorkflowSkills ?? []).map(getWorkflowSkillById);
+}
+
 function getLanguageSkillById(skillId: LanguageSkillId): SelectableLanguageSkill {
   const resolution = resolveSelectableSkillById(skillId);
 
@@ -297,6 +328,16 @@ function getArchitectureSkillById(skillId: ArchitectureSkillId | undefined): Sel
 
   if (!resolution.ok || resolution.resolved.kind !== 'architecture') {
     throw new Error(`Unsupported architecture skill in state: ${skillId}`);
+  }
+
+  return resolution.resolved.skill;
+}
+
+function getWorkflowSkillById(skillId: WorkflowSkillId): SelectableWorkflowSkill {
+  const resolution = resolveSelectableSkillById(skillId);
+
+  if (!resolution.ok || resolution.resolved.kind !== 'workflow') {
+    throw new Error(`Unsupported workflow skill in state: ${skillId}`);
   }
 
   return resolution.resolved.skill;

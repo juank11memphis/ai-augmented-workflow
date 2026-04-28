@@ -1,7 +1,7 @@
 import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS } from '../../shared/catalog.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor } from '../../shared/state.js';
@@ -31,6 +31,7 @@ export async function handleListSkills(_command: ListSkillsCommand): Promise<voi
   logSkillGroup('Languages', getLanguageSkillItems(state));
   logSkillGroup('Frameworks', getFrameworkSkillItems(state));
   logSkillGroup('Architecture', getArchitectureSkillItems(state));
+  logSkillGroup('Workflow', getWorkflowSkillItems(state));
 
   outro(chalk.green('Skill list ready.'));
 }
@@ -63,6 +64,17 @@ function getArchitectureSkillItems(state: SibuState | undefined): SkillListItem[
     id: skill.id,
     description: skill.description,
     selected: state?.selectedArchitectureSkill === skill.id,
+  }));
+}
+
+function getWorkflowSkillItems(state: SibuState | undefined): SkillListItem[] {
+  const selectedSkillIds = new Set(state?.selectedWorkflowSkills ?? []);
+
+  return SELECTABLE_WORKFLOW_SKILLS.map((skill) => ({
+    name: skill.name,
+    id: skill.id,
+    description: skill.description,
+    selected: selectedSkillIds.has(skill.id),
   }));
 }
 

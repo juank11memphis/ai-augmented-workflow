@@ -8,7 +8,12 @@ import { getSideTemplatePath } from '../../shared/paths.js';
 import { cloneState } from '../../shared/state.js';
 import { getTemplateVersion, renderTemplateForSync } from '../../shared/templates.js';
 import type { SibuState, TemplateManifest } from '../../shared/types.js';
-import { getSelectedArchitectureSkillFromState, getSelectedFrameworkSkillsFromState, getSelectedLanguageSkillsFromState } from '../../shared/workflow-targets.js';
+import {
+  getSelectedArchitectureSkillFromState,
+  getSelectedFrameworkSkillsFromState,
+  getSelectedLanguageSkillsFromState,
+  getSelectedWorkflowSkillsFromState,
+} from '../../shared/workflow-targets.js';
 import type { SyncAction } from './action-prompt.js';
 import type { SyncPreview } from './preview.js';
 
@@ -38,6 +43,7 @@ export function applySyncAction({
         selectedLanguageSkills: getSelectedLanguageSkillsFromState(nextState),
         selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(nextState),
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(nextState),
+        selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(nextState),
       });
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, contents, 'utf8');
@@ -73,6 +79,7 @@ export function applySyncAction({
         selectedLanguageSkills: getSelectedLanguageSkillsFromState(state),
         selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(state),
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
+        selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(state),
       });
       fs.mkdirSync(path.dirname(sideTemplatePath), { recursive: true });
       fs.writeFileSync(sideTemplatePath, contents, 'utf8');

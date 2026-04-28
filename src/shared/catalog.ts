@@ -1,4 +1,13 @@
-import type { NpmVersionLookupMode, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableSkillResolutionResult, SkillTemplate, SupportedAgent } from './types.js';
+import type {
+  NpmVersionLookupMode,
+  SelectableArchitectureSkill,
+  SelectableFrameworkSkill,
+  SelectableLanguageSkill,
+  SelectableSkillResolutionResult,
+  SelectableWorkflowSkill,
+  SkillTemplate,
+  SupportedAgent,
+} from './types.js';
 
 export const SIBU_PACKAGE_NAME = '@juancr11/sibu';
 export const SIBU_VERSION = '0.1.0';
@@ -165,6 +174,23 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
   },
 ];
 
+export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
+  {
+    id: 'ai-prompt-engineer-master',
+    name: 'AI Prompt Engineer Master',
+    description: 'Install guidance for creating, rewriting, optimizing, compressing, and evaluating AI prompts',
+    routingInstruction:
+      'For requests to create, rewrite, optimize, compress, evaluate, or systematize prompts for AI models, agents, tools, coding assistants, product workflows, or reusable prompt templates, use `ai-prompt-engineer-master`.',
+    templateRelativePath: 'skills/ai-prompt-engineer-master/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
+      gemini: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
+      claude: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
+      windsurf: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
+    },
+  },
+];
+
 export const SUPPORTED_AGENTS: SupportedAgent[] = [
   {
     id: 'codex',
@@ -208,6 +234,11 @@ export function resolveSelectableSkillById(skillId: string): SelectableSkillReso
   const architectureSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === skillId);
   if (architectureSkill) {
     return { ok: true, resolved: { kind: 'architecture', skill: architectureSkill } };
+  }
+
+  const workflowSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === skillId);
+  if (workflowSkill) {
+    return { ok: true, resolved: { kind: 'workflow', skill: workflowSkill } };
   }
 
   return { ok: false, message: `Unknown skill \`${skillId}\`. Run \`sibu skills list\` to see available skills.` };

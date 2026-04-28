@@ -1,7 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { SIBU_VERSION, MANDATORY_SKILLS, SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import {
+  SIBU_VERSION,
+  MANDATORY_SKILLS,
+  SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_FRAMEWORK_SKILLS,
+  SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_WORKFLOW_SKILLS,
+  SUPPORTED_AGENTS,
+} from './catalog.js';
 import { sha256 } from './hash.js';
 import { removeUndefinedFields } from './object.js';
 import { readExistingState } from './state.js';
@@ -13,6 +21,7 @@ import type {
   SelectableArchitectureSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
+  SelectableWorkflowSkill,
   SkillTemplate,
   SupportedAgent,
   WorkflowTarget,
@@ -35,11 +44,16 @@ export function getSelectedArchitectureSkillFromState(state: SibuState): Selecta
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === state.selectedArchitectureSkill);
 }
 
+export function getSelectedWorkflowSkillsFromState(state: SibuState): SelectableWorkflowSkill[] {
+  return SELECTABLE_WORKFLOW_SKILLS.filter((skill) => state.selectedWorkflowSkills?.includes(skill.id));
+}
+
 export function getSelectedSkillTargetsForAgents(
   selectedAgents: SupportedAgent[],
   selectedLanguageSkills: SelectableLanguageSkill[],
   selectedFrameworkSkills: SelectableFrameworkSkill[],
-  selectedArchitectureSkill?: SelectableArchitectureSkill
+  selectedArchitectureSkill?: SelectableArchitectureSkill,
+  selectedWorkflowSkills: SelectableWorkflowSkill[] = []
 ): SkillTarget[] {
   const skillTargets = new Map<string, SkillTarget>();
   const selectedSkills: SkillTemplate[] = [
@@ -47,6 +61,7 @@ export function getSelectedSkillTargetsForAgents(
     ...selectedLanguageSkills,
     ...selectedFrameworkSkills,
     ...(selectedArchitectureSkill ? [selectedArchitectureSkill] : []),
+    ...selectedWorkflowSkills,
   ];
 
   for (const agent of selectedAgents) {
@@ -72,7 +87,8 @@ export function getWorkflowTargets(
   selectedAgents: SupportedAgent[],
   selectedLanguageSkills: SelectableLanguageSkill[] = [],
   selectedFrameworkSkills: SelectableFrameworkSkill[] = [],
-  selectedArchitectureSkill?: SelectableArchitectureSkill
+  selectedArchitectureSkill?: SelectableArchitectureSkill,
+  selectedWorkflowSkills: SelectableWorkflowSkill[] = []
 ): WorkflowTarget[] {
   return [
     {
@@ -95,7 +111,7 @@ export function getWorkflowTargets(
         },
       ];
     }),
-    ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill).map((skillTarget) => ({
+    ...getSelectedSkillTargetsForAgents(selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills).map((skillTarget) => ({
       label: skillTarget.targetRelativePath,
       targetPath: path.join(rootPath, skillTarget.targetRelativePath),
       templateRelativePath: skillTarget.templateRelativePath,
@@ -110,12 +126,14 @@ export function renderMissingWorkflowFiles({
   selectedLanguageSkills,
   selectedFrameworkSkills,
   selectedArchitectureSkill,
+  selectedWorkflowSkills = [],
 }: {
   missingTargets: WorkflowTarget[];
   overview?: string;
   selectedLanguageSkills: SelectableLanguageSkill[];
   selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
+  selectedWorkflowSkills?: SelectableWorkflowSkill[];
 }): FileToCreate[] {
   return missingTargets.map((target) => {
     let contents = readTemplate(target.templateRelativePath);
@@ -128,7 +146,7 @@ export function renderMissingWorkflowFiles({
       contents = contents.replace('{{PROJECT_OVERVIEW}}', overview.trim());
     }
 
-    contents = renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
+    contents = renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills);
 
     return {
       label: target.label,
@@ -145,6 +163,7 @@ export function writeSibuState({
   selectedLanguageSkills,
   selectedFrameworkSkills,
   selectedArchitectureSkill,
+  selectedWorkflowSkills = [],
   targets,
 }: {
   rootPath: string;
@@ -153,6 +172,7 @@ export function writeSibuState({
   selectedLanguageSkills: SelectableLanguageSkill[];
   selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
+  selectedWorkflowSkills?: SelectableWorkflowSkill[];
   targets: WorkflowTarget[];
 }): void {
   const previousState = readExistingState(statePath);
@@ -167,6 +187,7 @@ export function writeSibuState({
     selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
     selectedFrameworkSkills: selectedFrameworkSkills.map((skill) => skill.id),
     selectedArchitectureSkill: selectedArchitectureSkill?.id,
+    selectedWorkflowSkills: selectedWorkflowSkills.map((skill) => skill.id),
     managedFiles: Object.fromEntries(
       targets
         .filter((target) => fs.existsSync(target.targetPath))

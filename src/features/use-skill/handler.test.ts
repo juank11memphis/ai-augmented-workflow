@@ -6,7 +6,7 @@ import { afterEach, describe, it } from 'node:test';
 
 import { SUPPORTED_AGENTS } from '../../shared/catalog.js';
 import { readExistingState } from '../../shared/state.js';
-import type { SibuState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../shared/types.js';
+import type { SibuState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import { getNextSkillSelection, handleUseSkill } from './handler.js';
 
@@ -57,6 +57,13 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'command-pattern' }, 'command-pattern'), {
       status: 'noop',
       message: 'Command Pattern is already selected.',
+    });
+  });
+
+  it('returns no-op success when a workflow skill is already selected', () => {
+    assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedWorkflowSkills: ['ai-prompt-engineer-master'] }, 'ai-prompt-engineer-master'), {
+      status: 'noop',
+      message: 'AI Prompt Engineer Master is already selected.',
     });
   });
 
@@ -121,6 +128,21 @@ describe('getNextSkillSelection', () => {
     }
 
     assert.equal(result.selection.selectedArchitectureSkill?.id, 'command-pattern');
+  });
+
+  it('prepares a next selection for a new workflow skill', () => {
+    const result = getNextSkillSelection(BASE_STATE, 'ai-prompt-engineer-master');
+
+    assert.equal(result.status, 'selected');
+    if (result.status !== 'selected') {
+      return;
+    }
+
+    assert.equal(result.skillName, 'AI Prompt Engineer Master');
+    assert.deepEqual(
+      result.selection.selectedWorkflowSkills.map((skill) => skill.id),
+      ['ai-prompt-engineer-master']
+    );
   });
 
   it('blocks replacing an existing architecture skill', () => {
@@ -195,6 +217,21 @@ describe('handleUseSkill', () => {
     assert.equal(process.exitCode, undefined);
   });
 
+  it('adds AI Prompt Engineer Master in a clean initialized repo', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'ai-prompt-engineer-master' });
+
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
+    assert.ok(state);
+    assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master']);
+    assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/ai-prompt-engineer-master/SKILL.md')), true);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
+    assert.equal(process.exitCode, undefined);
+  });
+
   it('does not change files when TypeScript is already selected', async () => {
     const rootPath = createCleanInitializedRepo();
     process.chdir(rootPath);
@@ -255,14 +292,16 @@ function createCleanInitializedRepo({
   const selectedAgents = [getSupportedAgent('codex')];
   const selectedLanguageSkills: SelectableLanguageSkill[] = [];
   const selectedFrameworkSkills: SelectableFrameworkSkill[] = [];
+  const selectedWorkflowSkills: SelectableWorkflowSkill[] = [];
   const architectureSkill = getArchitectureSkillById(selectedArchitectureSkill);
-  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, architectureSkill);
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, architectureSkill, selectedWorkflowSkills);
   const files = renderMissingWorkflowFiles({
     missingTargets: targets,
     overview: 'Test project.',
     selectedLanguageSkills,
     selectedFrameworkSkills,
     selectedArchitectureSkill: architectureSkill,
+    selectedWorkflowSkills,
   });
 
   for (const file of files) {
@@ -277,6 +316,7 @@ function createCleanInitializedRepo({
     selectedLanguageSkills,
     selectedFrameworkSkills,
     selectedArchitectureSkill: architectureSkill,
+    selectedWorkflowSkills,
     targets,
   });
 

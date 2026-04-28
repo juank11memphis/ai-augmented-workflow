@@ -17,6 +17,7 @@ import {
   getSelectedArchitectureSkillFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
+  getSelectedWorkflowSkillsFromState,
 } from '../../shared/workflow-targets.js';
 import type { StopManagingFileCommand } from './command.js';
 
@@ -145,6 +146,8 @@ function isSkillSelected(state: SibuState, resolved: ResolvedSelectableSkill): b
       return state.selectedFrameworkSkills?.includes(resolved.skill.id) ?? false;
     case 'architecture':
       return state.selectedArchitectureSkill === resolved.skill.id;
+    case 'workflow':
+      return state.selectedWorkflowSkills?.includes(resolved.skill.id) ?? false;
   }
 }
 
@@ -158,6 +161,9 @@ function removeSelectedSkill(state: SibuState, resolved: ResolvedSelectableSkill
       return;
     case 'architecture':
       delete state.selectedArchitectureSkill;
+      return;
+    case 'workflow':
+      state.selectedWorkflowSkills = (state.selectedWorkflowSkills ?? []).filter((skillId) => skillId !== resolved.skill.id);
       return;
   }
 }
@@ -211,6 +217,7 @@ function getAgentsUpdate(rootPath: string, state: SibuState): AgentsUpdateResult
       selectedLanguageSkills: getSelectedLanguageSkillsFromState(state),
       selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(state),
       selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
+      selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(state),
     }),
   };
 }

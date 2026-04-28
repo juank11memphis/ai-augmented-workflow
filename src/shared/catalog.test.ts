@@ -6,6 +6,7 @@ import {
   SELECTABLE_ARCHITECTURE_SKILLS,
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
   resolveSelectableSkillById,
 } from './catalog.js';
@@ -45,6 +46,7 @@ describe('resolveSelectableSkillById', () => {
     assertResolvedSkill('nextjs', 'framework');
     assertResolvedSkill('ddd-hexagonal', 'architecture');
     assertResolvedSkill('command-pattern', 'architecture');
+    assertResolvedSkill('ai-prompt-engineer-master', 'workflow');
   });
 
   it('fails with a skills list suggestion for unknown skill ids', () => {
@@ -63,6 +65,7 @@ describe('skill target paths', () => {
       ...SELECTABLE_LANGUAGE_SKILLS,
       ...SELECTABLE_FRAMEWORK_SKILLS,
       ...SELECTABLE_ARCHITECTURE_SKILLS,
+      ...SELECTABLE_WORKFLOW_SKILLS,
     ];
 
     for (const skillTemplate of skillTemplates) {

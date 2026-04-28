@@ -1,5 +1,5 @@
 {
-  "templateVersion": "45",
+  "templateVersion": "46",
   "templates": {
     "AGENTS.md": {
       "version": "20",
@@ -71,7 +71,7 @@
       "version": "1",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+        "Adds an optional Go skill with concise, Effective Go\u2013style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
@@ -125,6 +125,13 @@
         "Clarifies that missing story implementation plans must be created with the AI implementation planner before execution.",
         "Allows agents to begin the first unapproved implementation step immediately when a valid plan exists, while preserving review approval between steps.",
         "Clarifies that after user approval, agents should mark the step approved, commit it, and continue to the next step without another pre-implementation confirmation."
+      ]
+    },
+    "skills/ai-prompt-engineer-master/SKILL.md": {
+      "version": "1",
+      "description": "Selectable AI prompt engineering skill for prompt creation, optimization, compression, and evaluation.",
+      "changes": [
+        "Adds an optional AI prompt engineering skill for projects that create, improve, evaluate, or maintain reusable prompts for AI models, agents, tools, and coding assistants."
       ]
     }
   }
