@@ -5,6 +5,7 @@ export type ReleaseWorkflowCommand = {
   toRef?: string;
   version?: string;
   date?: string;
+  otp?: string;
   assumeYes?: boolean;
   dryRun?: boolean;
 };
@@ -55,6 +56,8 @@ export type ReleasePlan = {
   tagName: string;
   suggestedBump: SemverBump;
   commitCount: number;
+  otp?: string;
+  hasOtp: boolean;
   metadataAlreadyPrepared: boolean;
   existingTagAtHead: boolean;
   metadata?: ReleaseMetadataPlan;

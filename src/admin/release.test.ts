@@ -9,7 +9,7 @@ import { parseReleaseArgs, runReleaseCli } from './release.js';
 
 describe('parseReleaseArgs', () => {
   it('parses release planning flags', () => {
-    const result = parseReleaseArgs(['--from', 'v1.2.3', '--to', 'HEAD', '--version', 'v1.3.0', '--date', '2026-04-27', '--dry-run', '--yes']);
+    const result = parseReleaseArgs(['--from', 'v1.2.3', '--to', 'HEAD', '--version', 'v1.3.0', '--date', '2026-04-27', '--otp', '123456', '--dry-run', '--yes']);
 
     assert.deepEqual(result, {
       status: 'ok',
@@ -18,6 +18,7 @@ describe('parseReleaseArgs', () => {
         toRef: 'HEAD',
         version: 'v1.3.0',
         date: '2026-04-27',
+        otp: '123456',
         dryRun: true,
         assumeYes: true,
       },
@@ -33,6 +34,7 @@ describe('parseReleaseArgs', () => {
     }
 
     assert.match(result.usage, /Usage: pnpm admin:release/);
+    assert.match(result.usage, /--otp <code>/);
   });
 
   it('blocks unknown flags with usage', () => {

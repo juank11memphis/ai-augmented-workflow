@@ -23,13 +23,14 @@ export type ParseReleaseArgsResult =
       usage: string;
     };
 
-const USAGE = `Usage: pnpm admin:release -- [--from <ref>] [--to <ref>] [--version <version>] [--date <yyyy-mm-dd>] [--yes] [--dry-run]
+const USAGE = `Usage: pnpm admin:release -- [--from <ref>] [--to <ref>] [--version <version>] [--date <yyyy-mm-dd>] [--otp <code>] [--yes] [--dry-run]
 
 Options:
   --from <ref>          Git ref to start from. Defaults to the latest reachable SemVer-like tag.
   --to <ref>            Git ref to end at. Defaults to HEAD.
   --version <version>   Release version override. Accepts MAJOR.MINOR.PATCH with optional leading v.
   --date <yyyy-mm-dd>   Release date for the versioned changelog section.
+  --otp <code>          npm one-time password for accounts that require 2FA for publishing.
   --yes                 Print the preview and continue without prompting.
   --dry-run             Print the release plan and perform no writes or side effects.
   --help                Show this help message.
@@ -86,6 +87,15 @@ export function parseReleaseArgs(args: string[]): ParseReleaseArgsResult {
           return value.result;
         }
         command.date = value.value;
+        index += 1;
+        break;
+      }
+      case '--otp': {
+        const value = readFlagValue(args, index, arg);
+        if (value.status === 'error') {
+          return value.result;
+        }
+        command.otp = value.value;
         index += 1;
         break;
       }

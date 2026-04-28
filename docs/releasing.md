@@ -79,11 +79,13 @@ Useful options:
 ```sh
 pnpm admin:release -- --from v0.1.0 --to HEAD --version 0.2.0 --date 2026-04-26
 pnpm admin:release -- --version 0.2.0 --yes
+pnpm admin:release -- --version 0.2.0 --otp 123456
 ```
 
 - `--from` and `--to` choose the git range. When `--from` is omitted, the latest reachable SemVer-like tag is used.
 - `--version` overrides the commit-derived version. Versions may be entered with a leading `v`, but release metadata is normalized to SemVer without `v`.
 - `--date` sets the release date for the versioned changelog section.
+- `--otp` passes an npm one-time password to `npm publish` for accounts with two-factor auth on writes. The workflow masks the code in preview/log output.
 - `--dry-run` prints the plan and performs no writes, commits, tags, publishes, pushes, or GitHub Release creation.
 - `--yes` skips only the confirmation prompt after printing the preview. It does not skip warnings, metadata safety checks, or release validation.
 

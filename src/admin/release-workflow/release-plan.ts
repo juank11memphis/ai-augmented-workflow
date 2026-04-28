@@ -44,7 +44,7 @@ export function renderReleasePlanPreview(plan: ReleasePlan): string {
     `- Run validation: pnpm run validate:release`,
     `- Create release commit: chore(release): ${plan.targetVersion}`,
     `- Create git tag: ${plan.tagName}`,
-    '- Publish package: npm publish --access public',
+    `- Publish package: npm publish --access public${plan.hasOtp ? ' --otp ******' : ''}`,
     `- Push release commit: git push origin HEAD`,
     `- Push release tag: git push origin ${plan.tagName}`,
     `- Create GitHub Release: gh release create ${plan.tagName}`,

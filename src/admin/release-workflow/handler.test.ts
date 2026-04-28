@@ -68,6 +68,7 @@ describe('buildReleaseMetadataPlan', () => {
       tagName: 'v1.2.4',
       suggestedBump: 'patch',
       commitCount: 1,
+      hasOtp: false,
       metadataAlreadyPrepared: false,
       existingTagAtHead: false,
       metadata,
@@ -158,6 +159,7 @@ describe('renderReleasePlanPreview', () => {
     assert.match(preview, /Create release commit: chore\(release\): 1\.2\.4/);
     assert.match(preview, /Create git tag: v1\.2\.4/);
     assert.match(preview, /Publish package: npm publish --access public/);
+    assert.doesNotMatch(preview, /123456/);
     assert.match(preview, /Push release commit: git push origin HEAD/);
     assert.match(preview, /Push release tag: git push origin v1\.2\.4/);
     assert.match(preview, /Create GitHub Release: gh release create v1\.2\.4/);
@@ -574,6 +576,23 @@ describe('executeConfirmedRelease', () => {
     }
   });
 
+  it('passes npm OTP to publish without printing the code in preview', async () => {
+    const ports = createFakeExecutionPorts();
+    const plan = { ...buildPreviewPlan(), otp: '123456', hasOtp: true };
+
+    const preview = renderReleasePlanPreview(plan);
+    const result = await executeConfirmedRelease(plan, ports);
+
+    assert.equal(result.status, 'executed');
+    assert.match(preview, /npm publish --access public --otp \*\*\*\*\*\*/);
+    assert.doesNotMatch(preview, /123456/);
+    assert.equal(ports.printed.some((message) => /123456/.test(message)), false);
+    assert.equal(
+      ports.commands.some((command) => command.command === 'npm' && command.args.join(' ') === 'publish --access public --otp 123456'),
+      true
+    );
+  });
+
   it('stops before commit, tag, publish, push, or GitHub Release when validation fails', async () => {
     const ports = createFakeExecutionPorts({ failingCommand: 'pnpm run validate:release' });
 
@@ -870,6 +889,7 @@ function buildPreviewPlan(): ReleasePlan {
     tagName: 'v1.2.4',
     suggestedBump: 'patch',
     commitCount: 2,
+    hasOtp: false,
     metadataAlreadyPrepared: false,
     existingTagAtHead: false,
     metadata: {

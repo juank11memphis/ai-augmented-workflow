@@ -103,6 +103,8 @@ export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = pro
       tagName,
       suggestedBump,
       commitCount: gitHistory.commits.length,
+      otp: command.otp,
+      hasOtp: command.otp !== undefined,
       metadataAlreadyPrepared,
       existingTagAtHead: tagAvailability.existingTagAtHead,
       metadata: buildReleaseMetadataPlan({
@@ -268,8 +270,10 @@ export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseE
     printExecutionProgress(ports, `Done: created release tag ${plan.tagName}.`);
   }
 
-  printExecutionProgress(ports, 'Publishing package to npm: npm publish --access public...');
-  const npmPublish = await ports.run('npm', ['publish', '--access', 'public']);
+  const npmPublishArgs = buildNpmPublishArgs(plan);
+  const npmPublishLog = plan.hasOtp ? 'npm publish --access public --otp ******' : 'npm publish --access public';
+  printExecutionProgress(ports, `Publishing package to npm: ${npmPublishLog}...`);
+  const npmPublish = await ports.run('npm', npmPublishArgs);
   if (npmPublish.exitCode !== 0) {
     const failure = failExecution(completedSteps, 'publish-npm', 'Publishing to npm failed.', npmPublish);
     printExecutionFailure(ports, failure);
@@ -333,6 +337,16 @@ function printExecutionProgress(ports: ReleaseExecutionPorts, message: string): 
 function printExecutionFailure(ports: ReleaseExecutionPorts, failure: FailedReleaseExecutionResult): void {
   ports.print?.(`Failed: ${failure.failedStep.message}\n`);
   ports.print?.(`Recovery: ${failure.failedStep.recoveryGuidance}\n`);
+}
+
+function buildNpmPublishArgs(plan: ReleasePlan): string[] {
+  const args = ['publish', '--access', 'public'];
+
+  if (plan.otp) {
+    args.push('--otp', plan.otp);
+  }
+
+  return args;
 }
 
 async function runStep(
