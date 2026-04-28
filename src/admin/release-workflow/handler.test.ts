@@ -6,7 +6,7 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
 import { parseSemverVersion } from '../generate-changelog/semver.js';
-import type { ReleaseMetadataPlan, ReleasePlan } from './command.js';
+import type { ReleaseExecutionPorts, ReleaseMetadataPlan, ReleasePlan } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
 import { planMaintainerRelease, previewAndConfirmMaintainerRelease } from './handler.js';
 import {
@@ -504,6 +504,20 @@ describe('previewAndConfirmMaintainerRelease', () => {
   });
 });
 
+
+describe('release execution ports', () => {
+  it('can fake writes and explicit command argument arrays without shell composition', async () => {
+    const ports = createFakeExecutionPorts();
+
+    ports.writeFile('CHANGELOG.md', 'planned changelog');
+    const result = await ports.run('git', ['commit', '-m', 'chore(release): 1.2.4']);
+
+    assert.equal(result.exitCode, 0);
+    assert.deepEqual(ports.writes, [{ path: 'CHANGELOG.md', contents: 'planned changelog' }]);
+    assert.deepEqual(ports.commands, [{ command: 'git', args: ['commit', '-m', 'chore(release): 1.2.4'] }]);
+  });
+});
+
 function parseVersion(value: string) {
   const result = parseSemverVersion(value);
 
@@ -530,6 +544,25 @@ function createPlannedReleaseRepository(): string {
   tag(rootPath, 'v1.2.3');
   commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
   return rootPath;
+}
+
+type FakeExecutionPorts = ReleaseExecutionPorts & {
+  writes: Array<{ path: string; contents: string }>;
+  commands: Array<{ command: string; args: string[] }>;
+};
+
+function createFakeExecutionPorts(): FakeExecutionPorts {
+  return {
+    writes: [],
+    commands: [],
+    writeFile(path: string, contents: string) {
+      this.writes.push({ path, contents });
+    },
+    run(command: string, args: string[]) {
+      this.commands.push({ command, args });
+      return { exitCode: 0, stdout: '', stderr: '' };
+    },
+  };
 }
 
 type FakeWorkflowPorts = {

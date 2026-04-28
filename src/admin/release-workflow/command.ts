@@ -75,6 +75,50 @@ export type ReleaseWorkflowPorts = {
   confirmRelease(plan: ReleasePlan): boolean | Promise<boolean>;
 };
 
+export type ReleaseCommandResult = {
+  exitCode: number;
+  stdout?: string;
+  stderr?: string;
+};
+
+export type ReleaseCompletedStep = {
+  name: ReleaseExecutionStepName;
+  message: string;
+};
+
+export type ReleaseFailedStep = {
+  name: ReleaseExecutionStepName;
+  message: string;
+  recoveryGuidance: string;
+};
+
+export type ReleaseExecutionStepName =
+  | 'write-changelog'
+  | 'write-package-json'
+  | 'validate-release'
+  | 'create-release-commit'
+  | 'create-release-tag'
+  | 'publish-npm'
+  | 'push-commit'
+  | 'push-tag'
+  | 'create-github-release';
+
+export type ReleaseExecutionPorts = {
+  writeFile(path: string, contents: string): void;
+  run(command: string, args: string[]): ReleaseCommandResult | Promise<ReleaseCommandResult>;
+};
+
+export type ReleaseExecutionResult =
+  | {
+      status: 'executed';
+      completedSteps: ReleaseCompletedStep[];
+    }
+  | {
+      status: 'failed';
+      completedSteps: ReleaseCompletedStep[];
+      failedStep: ReleaseFailedStep;
+    };
+
 export type ReleaseWorkflowResult =
   | {
       status: 'confirmed';
