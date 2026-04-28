@@ -2,7 +2,7 @@
   "sibuVersion": "0.1.0",
   "templateVersion": "46",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-28T19:01:01.602Z",
+  "updatedAt": "2026-04-28T19:02:46.924Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -13,11 +13,14 @@
   ],
   "selectedFrameworkSkills": [],
   "selectedArchitectureSkill": "command-pattern",
+  "selectedWorkflowSkills": [
+    "ai-prompt-engineer-master"
+  ],
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
       "templateVersion": "20",
-      "sha256": "0db50f9d831031fc464fa16a2a637060ad65f1ac58f0949f6428bf31121c678a",
+      "sha256": "9ba2b6558d96da1942e131510d7d76df38f02627d9328cc8720a7c4231c8e646",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -86,17 +89,16 @@
       "sha256": "1d0c05af8482918e0d01dec88b9f0af1f89adcea341339e190bc69bd352081bd",
       "status": "managed"
     },
-    ".agents/skills/nextjs/SKILL.md": {
-      "template": "skills/nextjs/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "ea477121b41ac1b683cfd8c8219a863c7fd7c825cbf236c98d9ec5bf028927d4",
-      "status": "unmanaged",
-      "reason": "Stopped by `sibu skills stop`."
-    },
     ".agents/skills/command-pattern/SKILL.md": {
       "template": "skills/architecture/command-pattern/SKILL.md",
       "templateVersion": "2",
       "sha256": "076440fc00dd9862542672280e8398b793c7fe9e4dff4482462d946ec81d761d",
+      "status": "managed"
+    },
+    ".agents/skills/ai-prompt-engineer-master/SKILL.md": {
+      "template": "skills/ai-prompt-engineer-master/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "31c47b06ab187dc8ff0791701f1a788ed166ac20092ef6bbf41737fa84e3f3c5",
       "status": "managed"
     }
   }

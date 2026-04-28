@@ -37,6 +37,7 @@ This repository is the home for establishing an AI-augmented development workflo
 - For requests to implement, execute, continue, or work through a specific User Story under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md` or an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`; the executor must stop and direct the user to `ai-implementation-planner` when the story plan is missing.
 - For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.
+- For requests to create, rewrite, optimize, compress, evaluate, or systematize prompts for AI models, agents, tools, coding assistants, product workflows, or reusable prompt templates, use `ai-prompt-engineer-master`.
 
 ## Sibu maintenance
 
