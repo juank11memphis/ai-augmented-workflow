@@ -8,7 +8,7 @@ import { afterEach, describe, it } from 'node:test';
 import { parseSemverVersion } from '../generate-changelog/semver.js';
 import type { ReleaseExecutionPorts, ReleaseMetadataPlan, ReleasePlan } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
-import { planMaintainerRelease, previewAndConfirmMaintainerRelease } from './handler.js';
+import { executeConfirmedRelease, planMaintainerRelease, previewAndConfirmMaintainerRelease } from './handler.js';
 import {
   buildReleaseMetadataPlan,
   deriveSuggestedBumpFromChangelogProposal,
@@ -505,6 +505,68 @@ describe('previewAndConfirmMaintainerRelease', () => {
 });
 
 
+
+describe('executeConfirmedRelease', () => {
+  it('writes metadata, validates, commits, tags, and publishes in order', async () => {
+    const ports = createFakeExecutionPorts();
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'executed');
+    assert.deepEqual(ports.writes.map((write) => write.path), ['CHANGELOG.md', 'package.json']);
+    assert.deepEqual(ports.commands, [
+      { command: 'pnpm', args: ['run', 'validate:release'] },
+      { command: 'git', args: ['add', 'CHANGELOG.md', 'package.json'] },
+      { command: 'git', args: ['commit', '-m', 'chore(release): 1.2.4'] },
+      { command: 'git', args: ['tag', 'v1.2.4'] },
+      { command: 'npm', args: ['publish'] },
+    ]);
+    if (result.status === 'executed') {
+      assert.deepEqual(result.completedSteps.map((step) => step.name), [
+        'write-changelog',
+        'write-package-json',
+        'validate-release',
+        'create-release-commit',
+        'create-release-tag',
+        'publish-npm',
+      ]);
+    }
+  });
+
+  it('stops before commit, tag, publish, push, or GitHub Release when validation fails', async () => {
+    const ports = createFakeExecutionPorts({ failingCommand: 'pnpm run validate:release' });
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'failed');
+    assert.deepEqual(ports.commands, [{ command: 'pnpm', args: ['run', 'validate:release'] }]);
+    if (result.status === 'failed') {
+      assert.equal(result.failedStep.name, 'validate-release');
+      assert.deepEqual(result.completedSteps.map((step) => step.name), ['write-changelog', 'write-package-json']);
+    }
+  });
+
+  it('stops before push and GitHub Release when npm publish fails', async () => {
+    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish' });
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'failed');
+    assert.equal(ports.commands.some((command) => command.command === 'git' && command.args[0] === 'push'), false);
+    assert.equal(ports.commands.some((command) => command.command === 'gh'), false);
+    if (result.status === 'failed') {
+      assert.equal(result.failedStep.name, 'publish-npm');
+      assert.deepEqual(result.completedSteps.map((step) => step.name), [
+        'write-changelog',
+        'write-package-json',
+        'validate-release',
+        'create-release-commit',
+        'create-release-tag',
+      ]);
+    }
+  });
+});
+
 describe('release execution ports', () => {
   it('can fake writes and explicit command argument arrays without shell composition', async () => {
     const ports = createFakeExecutionPorts();
@@ -551,7 +613,7 @@ type FakeExecutionPorts = ReleaseExecutionPorts & {
   commands: Array<{ command: string; args: string[] }>;
 };
 
-function createFakeExecutionPorts(): FakeExecutionPorts {
+function createFakeExecutionPorts(input: { failingCommand?: string } = {}): FakeExecutionPorts {
   return {
     writes: [],
     commands: [],
@@ -560,6 +622,9 @@ function createFakeExecutionPorts(): FakeExecutionPorts {
     },
     run(command: string, args: string[]) {
       this.commands.push({ command, args });
+      if (`${command} ${args.join(' ')}` === input.failingCommand) {
+        return { exitCode: 1, stdout: '', stderr: `${input.failingCommand} failed` };
+      }
       return { exitCode: 0, stdout: '', stderr: '' };
     },
   };

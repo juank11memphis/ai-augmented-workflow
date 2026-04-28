@@ -5,7 +5,19 @@ import { buildChangelogProposal, retargetChangelogProposal } from '../generate-c
 import { planChangelogUpdate } from '../generate-changelog/changelog-writer.js';
 import { readGitHistory } from '../generate-changelog/git-history.js';
 import { parseSemverVersion } from '../generate-changelog/semver.js';
-import type { ReleasePlanningResult, ReleaseWarning, ReleaseWorkflowCommand, ReleaseWorkflowPorts, ReleaseWorkflowResult } from './command.js';
+import type {
+  ReleaseCommandResult,
+  ReleaseCompletedStep,
+  ReleaseExecutionPorts,
+  ReleaseExecutionResult,
+  ReleaseExecutionStepName,
+  ReleasePlan,
+  ReleasePlanningResult,
+  ReleaseWarning,
+  ReleaseWorkflowCommand,
+  ReleaseWorkflowPorts,
+  ReleaseWorkflowResult,
+} from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
 import { planPackageJsonVersionUpdate } from './package-json.js';
 import {
@@ -140,6 +152,55 @@ export async function previewAndConfirmMaintainerRelease(
   };
 }
 
+export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseExecutionPorts): Promise<ReleaseExecutionResult> {
+  const completedSteps: ReleaseCompletedStep[] = [];
+
+  if (!plan.metadata) {
+    return failExecution(completedSteps, 'write-changelog', 'Release plan does not include metadata updates.');
+  }
+
+  ports.writeFile(plan.metadata.changelog.path, plan.metadata.changelog.nextContent);
+  completedSteps.push({ name: 'write-changelog', message: `Wrote ${plan.metadata.changelog.path}.` });
+
+  ports.writeFile(plan.metadata.packageJson.path, plan.metadata.packageJson.nextContent);
+  completedSteps.push({ name: 'write-package-json', message: `Wrote ${plan.metadata.packageJson.path}.` });
+
+  const validation = await ports.run('pnpm', ['run', 'validate:release']);
+  if (validation.exitCode !== 0) {
+    return failExecution(completedSteps, 'validate-release', 'Release validation failed.', validation);
+  }
+  completedSteps.push({ name: 'validate-release', message: 'Release validation passed.' });
+
+  const gitAdd = await ports.run('git', ['add', 'CHANGELOG.md', 'package.json']);
+  if (gitAdd.exitCode !== 0) {
+    return failExecution(completedSteps, 'create-release-commit', 'Staging release metadata failed.', gitAdd);
+  }
+
+  const releaseCommitMessage = `chore(release): ${plan.targetVersion}`;
+  const gitCommit = await ports.run('git', ['commit', '-m', releaseCommitMessage]);
+  if (gitCommit.exitCode !== 0) {
+    return failExecution(completedSteps, 'create-release-commit', 'Creating the release commit failed.', gitCommit);
+  }
+  completedSteps.push({ name: 'create-release-commit', message: `Created release commit: ${releaseCommitMessage}.` });
+
+  const gitTag = await ports.run('git', ['tag', plan.tagName]);
+  if (gitTag.exitCode !== 0) {
+    return failExecution(completedSteps, 'create-release-tag', `Creating release tag ${plan.tagName} failed.`, gitTag);
+  }
+  completedSteps.push({ name: 'create-release-tag', message: `Created release tag: ${plan.tagName}.` });
+
+  const npmPublish = await ports.run('npm', ['publish']);
+  if (npmPublish.exitCode !== 0) {
+    return failExecution(completedSteps, 'publish-npm', 'Publishing to npm failed.', npmPublish);
+  }
+  completedSteps.push({ name: 'publish-npm', message: 'Published package to npm.' });
+
+  return {
+    status: 'executed',
+    completedSteps,
+  };
+}
+
 type ResolveTargetVersionResult =
   | {
       status: 'ok';
@@ -195,4 +256,44 @@ function readFileIfExists(filePath: string): string | undefined {
   }
 
   return fs.readFileSync(filePath, 'utf8');
+}
+
+function failExecution(
+  completedSteps: ReleaseCompletedStep[],
+  name: ReleaseExecutionStepName,
+  message: string,
+  commandResult?: ReleaseCommandResult
+): ReleaseExecutionResult {
+  const stderr = commandResult?.stderr?.trim();
+  const commandContext = stderr ? ` ${stderr}` : '';
+
+  return {
+    status: 'failed',
+    completedSteps,
+    failedStep: {
+      name,
+      message: `${message}${commandContext}`,
+      recoveryGuidance: buildRecoveryGuidance(name),
+    },
+  };
+}
+
+function buildRecoveryGuidance(name: ReleaseExecutionStepName): string {
+  switch (name) {
+    case 'validate-release':
+      return 'Fix validation failures, restore or review local release metadata changes, then rerun the release workflow.';
+    case 'create-release-commit':
+      return 'Review local release metadata changes, resolve git commit issues, then rerun or complete the release manually.';
+    case 'create-release-tag':
+      return 'Review the release commit and tag state, then create the tag manually or rerun after cleanup.';
+    case 'publish-npm':
+      return 'Review npm authentication/package state. If the package was not published, rerun after fixing npm publish.';
+    case 'write-changelog':
+    case 'write-package-json':
+      return 'Review local file permissions and release metadata, then rerun the release workflow.';
+    case 'push-commit':
+    case 'push-tag':
+    case 'create-github-release':
+      return 'Review completed release side effects and continue manually from the failed step.';
+  }
 }
