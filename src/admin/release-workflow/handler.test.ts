@@ -9,7 +9,7 @@ import { parseSemverVersion } from '../generate-changelog/semver.js';
 import type { ReleaseMetadataPlan, ReleasePlan } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
 import { planMaintainerRelease } from './handler.js';
-import { buildReleaseMetadataPlan, formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
+import { buildReleaseMetadataPlan, deriveSuggestedBumpFromChangelogProposal, formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
 
 describe('incrementSemverVersion', () => {
   it('increments patch versions', () => {
@@ -90,6 +90,29 @@ describe('buildReleaseMetadataPlan', () => {
     });
 
     assert.equal(metadata.changelog.replacingExistingSection, true);
+  });
+});
+
+describe('deriveSuggestedBumpFromChangelogProposal', () => {
+  it('reads the commit-derived SemVer bump from a changelog proposal', () => {
+    assert.equal(
+      deriveSuggestedBumpFromChangelogProposal({
+        sourceRange: { fromRef: 'v1.2.3', toRef: 'HEAD', usedLatestTag: true, missingTag: false },
+        targetSection: { type: 'unreleased' },
+        semverGuidance: { suggestedBump: 'minor' },
+        commitCount: 1,
+        entriesByCategory: {
+          Added: [],
+          Changed: [],
+          Deprecated: [],
+          Removed: [],
+          Fixed: [],
+          Security: [],
+        },
+        warnings: [],
+      }),
+      'minor'
+    );
   });
 });
 
@@ -213,10 +236,11 @@ describe('planMaintainerRelease', () => {
   it('plans a patch release from fix-only commits', () => {
     const rootPath = createGitRepository();
     commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3');
     tag(rootPath, 'v1.2.3');
     commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
 
-    const result = planMaintainerRelease({}, rootPath);
+    const result = planMaintainerRelease({ date: '2026-04-27' }, rootPath);
 
     assert.equal(result.status, 'planned');
     if (result.status !== 'planned') {
@@ -228,11 +252,18 @@ describe('planMaintainerRelease', () => {
     assert.equal(result.plan.suggestedBump, 'patch');
     assert.equal(result.plan.commitCount, 1);
     assert.deepEqual(result.plan.range, { fromRef: 'v1.2.3', toRef: 'HEAD' });
+    assert.equal(result.plan.metadata?.changelog.targetVersion, '1.2.4');
+    assert.equal(result.plan.metadata.changelog.targetDate, '2026-04-27');
+    assert.equal(result.plan.metadata.changelog.replacingExistingSection, false);
+    assert.match(result.plan.metadata.changelog.nextContent, /## 1\.2\.4 - 2026-04-27/);
+    assert.equal(result.plan.metadata.packageJson.currentVersion, '1.2.3');
+    assert.equal(result.plan.metadata.packageJson.targetVersion, '1.2.4');
   });
 
   it('plans a minor release from feature commits', () => {
     const rootPath = createGitRepository();
     commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3');
     tag(rootPath, 'v1.2.3');
     commitFile(rootPath, 'two.txt', 'two', 'feat: add release planning');
 
@@ -250,6 +281,7 @@ describe('planMaintainerRelease', () => {
   it('plans a major release from breaking-change commits', () => {
     const rootPath = createGitRepository();
     commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3');
     tag(rootPath, 'v1.2.3');
     commitFile(rootPath, 'two.txt', 'two', 'feat!: change release workflow contract');
 
@@ -268,6 +300,7 @@ describe('planMaintainerRelease', () => {
   it('accepts and normalizes an explicit valid version override', () => {
     const rootPath = createGitRepository();
     commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3');
     tag(rootPath, 'v1.2.3');
     commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
 
@@ -285,6 +318,7 @@ describe('planMaintainerRelease', () => {
   it('blocks invalid explicit version overrides', () => {
     const rootPath = createGitRepository();
     commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3');
     tag(rootPath, 'v1.2.3');
     commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
 
@@ -301,6 +335,7 @@ describe('planMaintainerRelease', () => {
   it('blocks when the computed target tag already exists', () => {
     const rootPath = createGitRepository();
     commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3');
     tag(rootPath, 'v1.2.3');
     commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
     const releaseCommit = runGit(rootPath, ['rev-parse', 'HEAD']).trim();
@@ -316,6 +351,75 @@ describe('planMaintainerRelease', () => {
     }
 
     assert.equal(result.warnings.some((warning) => warning.code === 'existing-target-tag'), true);
+  });
+
+  it('plans replacement of an existing changelog target version section', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3', `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## 1.2.4 - 2026-04-27
+
+### Fixed
+- Old entry.
+
+## 1.2.3 - 2026-04-01
+
+### Added
+- Baseline.
+`);
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+
+    const result = planMaintainerRelease({ date: '2026-04-27' }, rootPath);
+
+    assert.equal(result.status, 'planned');
+    if (result.status !== 'planned') {
+      return;
+    }
+
+    assert.equal(result.plan.metadata?.changelog.replacingExistingSection, true);
+    assert.match(result.plan.metadata.changelog.nextContent, /## 1\.2\.4 - 2026-04-27/);
+    assert.doesNotMatch(result.plan.metadata.changelog.nextContent, /Old entry/);
+  });
+
+  it('blocks unsafe changelog content before package metadata planning', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, 'not-a-string', 'Unsafe changelog', '123');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+
+    const result = planMaintainerRelease({ date: '2026-04-27' }, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.message, /CHANGELOG.md/);
+    assert.equal(result.warnings.some((warning) => warning.code === 'unsafe-changelog'), true);
+    assert.equal(result.warnings.some((warning) => warning.code === 'malformed-package-json'), false);
+  });
+
+  it('blocks malformed package metadata with a clear message', () => {
+    const rootPath = createGitRepository();
+    commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+    commitReleaseMetadata(rootPath, '1.2.3', undefined, '{\n  "version": 123\n}\n');
+    tag(rootPath, 'v1.2.3');
+    commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+
+    const result = planMaintainerRelease({ date: '2026-04-27' }, rootPath);
+
+    assert.equal(result.status, 'blocked');
+    if (result.status !== 'blocked') {
+      return;
+    }
+
+    assert.match(result.message, /string version field/);
+    assert.equal(result.warnings.some((warning) => warning.code === 'malformed-package-json'), true);
   });
 });
 
@@ -342,6 +446,25 @@ function commitFile(rootPath: string, fileName: string, contents: string, subjec
   fs.writeFileSync(path.join(rootPath, fileName), contents, 'utf8');
   runGit(rootPath, ['add', fileName]);
   runGit(rootPath, ['commit', '-m', subject]);
+}
+
+function commitReleaseMetadata(rootPath: string, version: string, changelogContent = buildChangelogContent(version), packageJsonContent?: string): void {
+  fs.writeFileSync(path.join(rootPath, 'CHANGELOG.md'), changelogContent, 'utf8');
+  fs.writeFileSync(path.join(rootPath, 'package.json'), packageJsonContent ?? `{\n  "name": "sibu",\n  "version": "${version}"\n}\n`, 'utf8');
+  runGit(rootPath, ['add', 'CHANGELOG.md', 'package.json']);
+  runGit(rootPath, ['commit', '-m', `chore: prepare ${version} metadata`]);
+}
+
+function buildChangelogContent(version: string): string {
+  return `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## ${version} - 2026-04-01
+
+### Added
+- Baseline.
+`;
 }
 
 function tag(rootPath: string, tagName: string): void {

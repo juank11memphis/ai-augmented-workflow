@@ -1,9 +1,14 @@
-import { buildChangelogProposal } from '../generate-changelog/changelog-format.js';
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { buildChangelogProposal, retargetChangelogProposal } from '../generate-changelog/changelog-format.js';
+import { planChangelogUpdate } from '../generate-changelog/changelog-writer.js';
 import { readGitHistory } from '../generate-changelog/git-history.js';
 import { parseSemverVersion } from '../generate-changelog/semver.js';
 import type { ReleasePlanningResult, ReleaseWarning, ReleaseWorkflowCommand } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
-import { formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
+import { planPackageJsonVersionUpdate } from './package-json.js';
+import { buildReleaseMetadataPlan, deriveSuggestedBumpFromChangelogProposal, formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
 
 export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = process.cwd()): ReleasePlanningResult {
   const releaseRange = resolveReleaseRange(command, cwd);
@@ -27,22 +32,43 @@ export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = pro
     };
   }
 
-  const changelogProposal = buildChangelogProposal({
+  const commitDerivedChangelogProposal = buildChangelogProposal({
     commits: gitHistory.commits,
     sourceRange: gitHistory.sourceRange,
     warnings: gitHistory.warnings,
   });
-  const suggestedBump = changelogProposal.semverGuidance.suggestedBump;
+  const suggestedBump = deriveSuggestedBumpFromChangelogProposal(commitDerivedChangelogProposal);
   const targetVersion = resolveTargetVersion({ fromRef: releaseRange.range.fromRef, requestedVersion: command.version, suggestedBump });
 
   if (targetVersion.status === 'blocked') {
     return targetVersion;
   }
 
+  const targetDate = command.date ?? new Date().toISOString().slice(0, 10);
+  const changelogProposal = retargetChangelogProposal(commitDerivedChangelogProposal, {
+    type: 'version',
+    version: targetVersion.version,
+    date: targetDate,
+  });
+
   const tagName = formatReleaseTagName(targetVersion.version);
   const tagAvailability = checkReleaseTagAvailable(tagName, cwd);
   if (tagAvailability.status === 'blocked') {
     return tagAvailability;
+  }
+
+  const changelogUpdatePlan = planChangelogUpdate(readFileIfExists(path.join(cwd, 'CHANGELOG.md')), changelogProposal);
+  if (changelogUpdatePlan.status === 'blocked') {
+    return {
+      status: 'blocked',
+      message: changelogUpdatePlan.message,
+      warnings: changelogUpdatePlan.warnings.map((warning) => ({ code: warning.code as ReleaseWarning['code'], message: warning.message })),
+    };
+  }
+
+  const packageJsonUpdatePlan = planPackageJsonVersionUpdate(readFileIfExists(path.join(cwd, 'package.json')), targetVersion.version);
+  if (packageJsonUpdatePlan.status === 'blocked') {
+    return packageJsonUpdatePlan;
   }
 
   return {
@@ -53,6 +79,16 @@ export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = pro
       tagName,
       suggestedBump,
       commitCount: gitHistory.commits.length,
+      metadata: buildReleaseMetadataPlan({
+        changelog: {
+          path: 'CHANGELOG.md',
+          targetVersion: targetVersion.version,
+          targetDate,
+          replacingExistingSection: changelogUpdatePlan.replacingExistingSection,
+          nextContent: changelogUpdatePlan.content,
+        },
+        packageJson: packageJsonUpdatePlan.plan,
+      }),
       warnings: changelogProposal.warnings.map((warning) => ({ code: warning.code as ReleaseWarning['code'], message: warning.message })),
     },
   };
@@ -105,4 +141,12 @@ function blockedTargetVersion(code: ReleaseWarning['code'], message: string): Re
     message,
     warnings: [{ code, message }],
   };
+}
+
+function readFileIfExists(filePath: string): string | undefined {
+  if (!fs.existsSync(filePath)) {
+    return undefined;
+  }
+
+  return fs.readFileSync(filePath, 'utf8');
 }

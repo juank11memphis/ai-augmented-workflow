@@ -47,6 +47,13 @@ export function buildChangelogProposal(input: {
   };
 }
 
+export function retargetChangelogProposal(proposal: ChangelogProposal, targetSection: ChangelogProposal['targetSection']): ChangelogProposal {
+  return {
+    ...proposal,
+    targetSection,
+  };
+}
+
 export function suggestSemverBump(entriesByCategory: Record<ChangelogCategory, ChangelogEntry[]>): SemverBump {
   const entries = Object.values(entriesByCategory).flat();
 
