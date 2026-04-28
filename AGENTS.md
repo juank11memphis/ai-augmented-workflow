@@ -13,7 +13,8 @@ This repository is the home for establishing an AI-augmented development workflo
 
 ## Agent-specific instructions
 
-- Before any task that requires code changes, propose a brief plan and wait for user confirmation once per requested task.
+- Before any task that writes or modifies code, propose a brief plan and wait for user confirmation once per requested task.
+- For read-only work, research, planning, documentation-only edits, or other non-code changes, do not ask for confirmation unless the action is destructive, risky, ambiguous, or explicitly requires user approval.
 - After confirmation, proceed with all agreed in-scope changes without re-asking.
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
@@ -33,7 +34,7 @@ This repository is the home for establishing an AI-augmented development workflo
 - For requests to create, revise, or clarify a technical design, implementation-oriented design doc, architecture approach, technical tradeoffs, technical risks, or implementation plan for an approved feature, use `technical-design-writer`.
 - For requests to create Epics, User Stories, Scrum planning artifacts, backlog slices, or delivery plans from an approved feature brief and technical design, use `scrum-master-planner`.
 - For requests to turn a specific User Story into an implementation checklist, coding plan, step-by-step execution plan, or baby-step plan, use `ai-implementation-planner`.
-- For requests to implement, execute, continue, or work through an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`.
+- For requests to implement, execute, continue, or work through a specific User Story under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md` or an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`; the executor must stop and direct the user to `ai-implementation-planner` when the story plan is missing.
 - For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.
 

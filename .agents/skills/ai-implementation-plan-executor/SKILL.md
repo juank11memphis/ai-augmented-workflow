@@ -48,11 +48,18 @@ Inspect existing code, tests, scripts, and docs only as needed for the current s
 
 ## Hard start rule
 
-If the `.impl_plan/` folder does not exist, is empty, or has no ordered `.md` step files:
+If the user provides a User Story file and the matching `.impl_plan/` folder does not exist, is empty, or has no ordered `.md` step files:
 
 1. Stop.
 2. Tell the user the implementation plan is missing.
-3. Instruct the user to use `ai-implementation-planner` to create the implementation plan first.
+3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create the implementation plan first.
+4. Do not infer steps from the story or technical design.
+
+If the user provides an `.impl_plan/` folder and it does not exist, is empty, or has no ordered `.md` step files:
+
+1. Stop.
+2. Tell the user the implementation plan is missing or invalid.
+3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create or repair the implementation plan first.
 4. Do not infer steps from the story or technical design.
 
 If required source context is missing:
@@ -66,6 +73,8 @@ If required source context is missing:
 
 Work on exactly one step at a time.
 
+When a valid implementation plan exists, begin implementing the first unapproved step immediately. Do not ask for pre-implementation confirmation before changing code for that step. This is an explicit exception to repository-level instructions that normally require confirmation before code changes: selecting this executor skill and providing a valid plan is the user's confirmation to implement the current step.
+
 A step file is considered approved only when it contains this section:
 
 ```md
@@ -78,7 +87,7 @@ When starting or resuming a plan:
 
 1. Read all step files in filename order.
 2. Identify the first step file that is not approved.
-3. Implement only that step.
+3. Implement only that step immediately, without asking for confirmation first.
 4. Run the validation named in that step when practical.
 5. Report what changed, validation results, and any risks.
 6. Stop and wait for explicit user confirmation before moving to the next step.
@@ -103,9 +112,21 @@ When the user explicitly approves the current step, update that step file by add
 
 Before writing the approval marker, identify the current Git user with `git config user.name`; if it is unavailable, use `git config user.email`. Use that value for `Approved by`. After writing the approval marker, commit all changes for the approved step before continuing. Use a Conventional Commits 1.0.0 message that describes the completed step. If the commit fails, stop and report the failure instead of continuing.
 
-Then continue with the next unapproved step only after the approval marker is written and the approved step changes are committed.
+Then continue with the next unapproved step immediately, without asking for another pre-implementation confirmation, only after the approval marker is written and the approved step changes are committed.
 
 If the user asks to continue without clearly approving the current step, ask for explicit approval before marking it approved, committing, or moving on.
+
+## Epic continuation check
+
+When all step files in the current story implementation plan are approved and committed:
+
+1. Inspect the current Epic's `stories/` folder in filename order.
+2. Identify whether there is a next User Story after the completed story.
+3. If a next User Story exists and its `.impl_plan/` folder exists with ordered step files, ask the user whether they want to implement that next story.
+4. If a next User Story exists but its `.impl_plan/` folder is missing or empty, ask the user whether they want to plan that next story with `ai-implementation-planner`.
+5. If there is no next User Story in the Epic, tell the user the Epic appears ready.
+
+Do not automatically start planning or implementing the next story. This check is a handoff prompt after the current story is complete, not permission to continue without the user's explicit direction.
 
 ## Implementation rules
 
@@ -136,3 +157,9 @@ After implementing one step, briefly report:
 - validation run and result
 - any risks, blockers, or follow-up questions
 - that you are waiting for user approval before marking the step approved, committing it, and continuing to the next step
+
+After approving and committing the final step in a story implementation plan, also briefly report the Epic continuation check result:
+
+- next story ready to implement
+- next story needs an implementation plan
+- or Epic appears ready

@@ -1,11 +1,12 @@
 {
-  "templateVersion": "43",
+  "templateVersion": "45",
   "templates": {
     "AGENTS.md": {
-      "version": "19",
+      "version": "20",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Clarifies that agents should ask for confirmation before code changes, while non-code work can proceed without confirmation unless it is risky or ambiguous."
+        "Routes User Story implementation requests to the AI implementation plan executor, even when the story plan may still be missing.",
+        "Clarifies that the executor should direct users to the AI implementation planner when a User Story has no implementation plan."
       ]
     },
     ".codex/config.toml": {
@@ -118,11 +119,12 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Adds an Epic continuation check after a story plan is fully approved and committed.",
-        "Prompts users to implement the next planned story, plan the next unplanned story, or confirms when the Epic appears ready."
+        "Clarifies that missing story implementation plans must be created with the AI implementation planner before execution.",
+        "Allows agents to begin the first unapproved implementation step immediately when a valid plan exists, while preserving review approval between steps.",
+        "Clarifies that after user approval, agents should mark the step approved, commit it, and continue to the next step without another pre-implementation confirmation."
       ]
     }
   }
