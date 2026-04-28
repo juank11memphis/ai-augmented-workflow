@@ -9,7 +9,13 @@ import { parseSemverVersion } from '../generate-changelog/semver.js';
 import type { ReleaseMetadataPlan, ReleasePlan } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
 import { planMaintainerRelease } from './handler.js';
-import { buildReleaseMetadataPlan, deriveSuggestedBumpFromChangelogProposal, formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
+import {
+  buildReleaseMetadataPlan,
+  deriveSuggestedBumpFromChangelogProposal,
+  formatReleaseTagName,
+  incrementSemverVersion,
+  renderReleasePlanPreview,
+} from './release-plan.js';
 
 describe('incrementSemverVersion', () => {
   it('increments patch versions', () => {
@@ -113,6 +119,40 @@ describe('deriveSuggestedBumpFromChangelogProposal', () => {
       }),
       'minor'
     );
+  });
+});
+
+describe('renderReleasePlanPreview', () => {
+  it('renders the full planned release workflow for review', () => {
+    const preview = renderReleasePlanPreview(buildPreviewPlan());
+
+    assert.match(preview, /Release plan preview/);
+    assert.match(preview, /Git range: v1\.2\.3\.\.HEAD/);
+    assert.match(preview, /Proposed version: 1\.2\.4/);
+    assert.match(preview, /Suggested SemVer bump: patch/);
+    assert.match(preview, /Commits inspected: 2/);
+    assert.match(preview, /Create CHANGELOG\.md section: 1\.2\.4 - 2026-04-27/);
+    assert.match(preview, /Changelog preview:/);
+    assert.match(preview, /## 1\.2\.4 - 2026-04-27/);
+    assert.match(preview, /- Fix release metadata planning\./);
+    assert.match(preview, /Update package\.json version: 1\.2\.3 -> 1\.2\.4/);
+    assert.match(preview, /Run validation: pnpm run validate:release/);
+    assert.match(preview, /Create release commit: chore\(release\): 1\.2\.4/);
+    assert.match(preview, /Create git tag: v1\.2\.4/);
+    assert.match(preview, /Publish package: npm publish/);
+    assert.match(preview, /Push release commit: git push origin HEAD/);
+    assert.match(preview, /Push release tag: git push origin v1\.2\.4/);
+    assert.match(preview, /Create GitHub Release: gh release create v1\.2\.4/);
+  });
+
+  it('renders release warnings when present', () => {
+    const preview = renderReleasePlanPreview({
+      ...buildPreviewPlan(),
+      warnings: [{ code: 'unsafe-changelog', message: 'Review changelog content.' }],
+    });
+
+    assert.match(preview, /Warnings:/);
+    assert.match(preview, /\[unsafe-changelog\] Review changelog content\./);
   });
 });
 
@@ -465,6 +505,45 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Baseline.
 `;
+}
+
+function buildPreviewPlan(): ReleasePlan {
+  return {
+    range: { fromRef: 'v1.2.3', toRef: 'HEAD' },
+    targetVersion: '1.2.4',
+    tagName: 'v1.2.4',
+    suggestedBump: 'patch',
+    commitCount: 2,
+    metadata: {
+      changelog: {
+        path: 'CHANGELOG.md',
+        targetVersion: '1.2.4',
+        targetDate: '2026-04-27',
+        replacingExistingSection: false,
+        nextContent: `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## 1.2.4 - 2026-04-27
+
+### Fixed
+- Fix release metadata planning.
+
+## 1.2.3 - 2026-04-01
+
+### Added
+- Baseline.
+`,
+      },
+      packageJson: {
+        path: 'package.json',
+        currentVersion: '1.2.3',
+        targetVersion: '1.2.4',
+        nextContent: '{\n  "version": "1.2.4"\n}\n',
+      },
+    },
+    warnings: [],
+  };
 }
 
 function tag(rootPath: string, tagName: string): void {
