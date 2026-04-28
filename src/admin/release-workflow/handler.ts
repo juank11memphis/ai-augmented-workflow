@@ -5,10 +5,16 @@ import { buildChangelogProposal, retargetChangelogProposal } from '../generate-c
 import { planChangelogUpdate } from '../generate-changelog/changelog-writer.js';
 import { readGitHistory } from '../generate-changelog/git-history.js';
 import { parseSemverVersion } from '../generate-changelog/semver.js';
-import type { ReleasePlanningResult, ReleaseWarning, ReleaseWorkflowCommand } from './command.js';
+import type { ReleasePlanningResult, ReleaseWarning, ReleaseWorkflowCommand, ReleaseWorkflowPorts, ReleaseWorkflowResult } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
 import { planPackageJsonVersionUpdate } from './package-json.js';
-import { buildReleaseMetadataPlan, deriveSuggestedBumpFromChangelogProposal, formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
+import {
+  buildReleaseMetadataPlan,
+  deriveSuggestedBumpFromChangelogProposal,
+  formatReleaseTagName,
+  incrementSemverVersion,
+  renderReleasePlanPreview,
+} from './release-plan.js';
 
 export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = process.cwd()): ReleasePlanningResult {
   const releaseRange = resolveReleaseRange(command, cwd);
@@ -91,6 +97,46 @@ export function planMaintainerRelease(command: ReleaseWorkflowCommand, cwd = pro
       }),
       warnings: changelogProposal.warnings.map((warning) => ({ code: warning.code as ReleaseWarning['code'], message: warning.message })),
     },
+  };
+}
+
+export async function previewAndConfirmMaintainerRelease(
+  command: ReleaseWorkflowCommand,
+  ports: ReleaseWorkflowPorts,
+  cwd = process.cwd()
+): Promise<ReleaseWorkflowResult> {
+  const planningResult = planMaintainerRelease(command, cwd);
+  if (planningResult.status === 'blocked') {
+    return planningResult;
+  }
+
+  const preview = renderReleasePlanPreview(planningResult.plan);
+  ports.print(preview);
+
+  if (command.dryRun) {
+    return {
+      status: 'dry-run',
+      plan: planningResult.plan,
+      preview,
+    };
+  }
+
+  if (!command.assumeYes) {
+    const confirmed = await ports.confirmRelease(planningResult.plan);
+
+    if (!confirmed) {
+      return {
+        status: 'declined',
+        plan: planningResult.plan,
+        preview,
+      };
+    }
+  }
+
+  return {
+    status: 'confirmed',
+    plan: planningResult.plan,
+    preview,
   };
 }
 

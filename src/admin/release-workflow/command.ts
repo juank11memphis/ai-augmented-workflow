@@ -69,3 +69,30 @@ export type ReleasePlanningResult =
       message: string;
       warnings: ReleaseWarning[];
     };
+
+export type ReleaseWorkflowPorts = {
+  print(message: string): void;
+  confirmRelease(plan: ReleasePlan): boolean | Promise<boolean>;
+};
+
+export type ReleaseWorkflowResult =
+  | {
+      status: 'confirmed';
+      plan: ReleasePlan;
+      preview: string;
+    }
+  | {
+      status: 'dry-run';
+      plan: ReleasePlan;
+      preview: string;
+    }
+  | {
+      status: 'declined';
+      plan: ReleasePlan;
+      preview: string;
+    }
+  | {
+      status: 'blocked';
+      message: string;
+      warnings: ReleaseWarning[];
+    };

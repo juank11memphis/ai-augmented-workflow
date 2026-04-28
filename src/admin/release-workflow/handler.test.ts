@@ -8,7 +8,7 @@ import { afterEach, describe, it } from 'node:test';
 import { parseSemverVersion } from '../generate-changelog/semver.js';
 import type { ReleaseMetadataPlan, ReleasePlan } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
-import { planMaintainerRelease } from './handler.js';
+import { planMaintainerRelease, previewAndConfirmMaintainerRelease } from './handler.js';
 import {
   buildReleaseMetadataPlan,
   deriveSuggestedBumpFromChangelogProposal,
@@ -463,6 +463,47 @@ All notable changes to this project will be documented in this file.
   });
 });
 
+
+describe('previewAndConfirmMaintainerRelease', () => {
+  it('prints the preview and returns dry-run without prompting', async () => {
+    const rootPath = createPlannedReleaseRepository();
+    const ports = createFakeWorkflowPorts({ confirmResult: true });
+
+    const result = await previewAndConfirmMaintainerRelease({ date: '2026-04-27', dryRun: true }, ports, rootPath);
+
+    assert.equal(result.status, 'dry-run');
+    assert.equal(ports.printed.length, 1);
+    assert.match(ports.printed[0] ?? '', /Release plan preview/);
+    assert.match(ports.printed[0] ?? '', /Proposed version: 1\.2\.4/);
+    assert.equal(ports.confirmCalls, 0);
+  });
+
+  it('prints the preview and returns declined without side effects when confirmation is rejected', async () => {
+    const rootPath = createPlannedReleaseRepository();
+    const ports = createFakeWorkflowPorts({ confirmResult: false });
+
+    const result = await previewAndConfirmMaintainerRelease({ date: '2026-04-27' }, ports, rootPath);
+
+    assert.equal(result.status, 'declined');
+    assert.equal(ports.printed.length, 1);
+    assert.match(ports.printed[0] ?? '', /Release plan preview/);
+    assert.equal(ports.confirmCalls, 1);
+    assert.equal(fs.readFileSync(path.join(rootPath, 'package.json'), 'utf8').includes('"version": "1.2.3"'), true);
+  });
+
+  it('prints the preview before returning confirmed when yes is assumed', async () => {
+    const rootPath = createPlannedReleaseRepository();
+    const ports = createFakeWorkflowPorts({ confirmResult: false });
+
+    const result = await previewAndConfirmMaintainerRelease({ date: '2026-04-27', assumeYes: true }, ports, rootPath);
+
+    assert.equal(result.status, 'confirmed');
+    assert.equal(ports.printed.length, 1);
+    assert.match(ports.printed[0] ?? '', /Release plan preview/);
+    assert.equal(ports.confirmCalls, 0);
+  });
+});
+
 function parseVersion(value: string) {
   const result = parseSemverVersion(value);
 
@@ -480,6 +521,36 @@ function createGitRepository(): string {
   runGit(rootPath, ['config', 'user.name', 'Sibu Test']);
   runGit(rootPath, ['config', 'user.email', 'sibu@example.com']);
   return rootPath;
+}
+
+function createPlannedReleaseRepository(): string {
+  const rootPath = createGitRepository();
+  commitFile(rootPath, 'one.txt', 'one', 'feat: first release baseline');
+  commitReleaseMetadata(rootPath, '1.2.3');
+  tag(rootPath, 'v1.2.3');
+  commitFile(rootPath, 'two.txt', 'two', 'fix: handle release planning');
+  return rootPath;
+}
+
+type FakeWorkflowPorts = {
+  printed: string[];
+  confirmCalls: number;
+  print(message: string): void;
+  confirmRelease(): boolean;
+};
+
+function createFakeWorkflowPorts(input: { confirmResult: boolean }): FakeWorkflowPorts {
+  return {
+    printed: [],
+    confirmCalls: 0,
+    print(message: string) {
+      this.printed.push(message);
+    },
+    confirmRelease() {
+      this.confirmCalls += 1;
+      return input.confirmResult;
+    },
+  };
 }
 
 function commitFile(rootPath: string, fileName: string, contents: string, subject: string): void {
