@@ -1,4 +1,5 @@
 import type { ParsedSemverVersion, SemverBump } from '../generate-changelog/semver.js';
+import type { ReleaseMetadataPlan } from './command.js';
 
 export function incrementSemverVersion(version: ParsedSemverVersion, bump: SemverBump): ParsedSemverVersion {
   switch (bump) {
@@ -13,6 +14,10 @@ export function incrementSemverVersion(version: ParsedSemverVersion, bump: Semve
 
 export function formatReleaseTagName(version: string): string {
   return `v${version}`;
+}
+
+export function buildReleaseMetadataPlan(metadata: ReleaseMetadataPlan): ReleaseMetadataPlan {
+  return metadata;
 }
 
 function buildParsedVersion(major: number, minor: number, patch: number): ParsedSemverVersion {

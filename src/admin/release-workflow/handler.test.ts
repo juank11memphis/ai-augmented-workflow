@@ -6,9 +6,10 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
 import { parseSemverVersion } from '../generate-changelog/semver.js';
+import type { ReleaseMetadataPlan, ReleasePlan } from './command.js';
 import { checkReleaseTagAvailable, resolveReleaseRange } from './git-release.js';
 import { planMaintainerRelease } from './handler.js';
-import { formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
+import { buildReleaseMetadataPlan, formatReleaseTagName, incrementSemverVersion } from './release-plan.js';
 
 describe('incrementSemverVersion', () => {
   it('increments patch versions', () => {
@@ -33,6 +34,62 @@ describe('incrementSemverVersion', () => {
 describe('formatReleaseTagName', () => {
   it('formats release tags with a leading v', () => {
     assert.equal(formatReleaseTagName('0.2.0'), 'v0.2.0');
+  });
+});
+
+describe('buildReleaseMetadataPlan', () => {
+  it('models planned changelog and package metadata updates without writing files', () => {
+    const metadata = buildReleaseMetadataPlan({
+      changelog: {
+        path: 'CHANGELOG.md',
+        targetVersion: '1.2.4',
+        targetDate: '2026-04-27',
+        replacingExistingSection: false,
+        nextContent: '# Changelog\n\n## 1.2.4 - 2026-04-27\n',
+      },
+      packageJson: {
+        path: 'package.json',
+        currentVersion: '1.2.3',
+        targetVersion: '1.2.4',
+        nextContent: '{\n  "version": "1.2.4"\n}\n',
+      },
+    } satisfies ReleaseMetadataPlan);
+
+    const plan: ReleasePlan = {
+      range: { fromRef: 'v1.2.3', toRef: 'HEAD' },
+      targetVersion: '1.2.4',
+      tagName: 'v1.2.4',
+      suggestedBump: 'patch',
+      commitCount: 1,
+      metadata,
+      warnings: [],
+    };
+
+    assert.equal(plan.metadata?.changelog.path, 'CHANGELOG.md');
+    assert.equal(plan.metadata.changelog.replacingExistingSection, false);
+    assert.equal(plan.metadata.packageJson.path, 'package.json');
+    assert.equal(plan.metadata.packageJson.currentVersion, '1.2.3');
+    assert.equal(plan.metadata.packageJson.targetVersion, plan.targetVersion);
+  });
+
+  it('models replacement of an existing changelog version section', () => {
+    const metadata = buildReleaseMetadataPlan({
+      changelog: {
+        path: 'CHANGELOG.md',
+        targetVersion: '1.2.4',
+        targetDate: '2026-04-27',
+        replacingExistingSection: true,
+        nextContent: '# Changelog\n\n## 1.2.4 - 2026-04-27\n',
+      },
+      packageJson: {
+        path: 'package.json',
+        currentVersion: '1.2.3',
+        targetVersion: '1.2.4',
+        nextContent: '{\n  "version": "1.2.4"\n}\n',
+      },
+    });
+
+    assert.equal(metadata.changelog.replacingExistingSection, true);
   });
 });
 

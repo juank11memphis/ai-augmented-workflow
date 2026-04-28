@@ -27,12 +27,33 @@ export type ReleaseRange = {
   toRef: string;
 };
 
+export type ReleaseChangelogUpdatePlan = {
+  path: 'CHANGELOG.md';
+  targetVersion: string;
+  targetDate: string;
+  replacingExistingSection: boolean;
+  nextContent: string;
+};
+
+export type ReleasePackageJsonUpdatePlan = {
+  path: 'package.json';
+  currentVersion: string;
+  targetVersion: string;
+  nextContent: string;
+};
+
+export type ReleaseMetadataPlan = {
+  changelog: ReleaseChangelogUpdatePlan;
+  packageJson: ReleasePackageJsonUpdatePlan;
+};
+
 export type ReleasePlan = {
   range: ReleaseRange;
   targetVersion: string;
   tagName: string;
   suggestedBump: SemverBump;
   commitCount: number;
+  metadata?: ReleaseMetadataPlan;
   warnings: ReleaseWarning[];
 };
 
