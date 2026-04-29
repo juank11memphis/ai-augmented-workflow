@@ -64,11 +64,7 @@ Rules:
 
 ## Planning rule
 
-Create the smallest useful planning structure.
-
-If one Epic with one User Story fully captures the work, create one Epic and one User Story. Add more Epics or User Stories only when there are meaningfully distinct outcomes, delivery slices, risks, dependencies, validation paths, or contributor ownership boundaries.
-
-Avoid Agile theater. Do not create multiple Epics or Stories just because Scrum artifacts usually appear in groups.
+Create the smallest useful planning structure. Use one Epic and one User Story when that fully captures the work. Add more only for distinct outcomes, delivery slices, risks, dependencies, validation paths, or contributor ownership boundaries. Avoid Agile theater.
 
 ## Workflow
 
@@ -139,7 +135,7 @@ Adapt headings only when it improves clarity. Keep the Epic brief short.
 
 Within each Epic, decide the order of execution before writing User Story files. Use the lowest practical sequence number for the first story that should be implemented, then increment only when later stories depend on earlier work. If two or more stories can be developed at the same time, give them the same order number.
 
-Each User Story should be independently understandable and should represent a reviewable slice of work.
+Each User Story should be independently understandable and reviewable.
 
 Use this structure:
 

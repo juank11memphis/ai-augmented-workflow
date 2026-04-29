@@ -7,9 +7,7 @@ description: Turn one approved User Story Markdown file into LLM-sized implement
 
 ## Purpose
 
-Turn one approved User Story into a set of concrete Markdown step files an AI coding agent can execute to complete the story safely and completely.
-
-This skill owns implementation planning for one story at a time. It does not own product scope, technical design decisions, Scrum planning, or code implementation.
+Turn one approved User Story into concrete Markdown step files an AI coding agent can execute safely and completely. This skill owns implementation planning for one story at a time, not product scope, technical design decisions, Scrum planning, or code implementation.
 
 ## Required input
 
@@ -93,9 +91,7 @@ File naming rules:
 
 ## Planning rules
 
-Create pragmatic implementation step files, not a second technical design.
-
-Each step file must be a concrete implementation step, not a discovery, scope-confirmation, or generic review step. The skill performs source reading and targeted inspection before writing the step files; each step tells the AI what to change, where to change it, how to implement it at a high level, and how to know that step is done.
+Create pragmatic implementation step files, not a second technical design. Each step must be concrete—not discovery, scope confirmation, or generic review—and tell the AI what to change, where, at what high level, and how to know it is done.
 
 Do:
 
@@ -144,7 +140,7 @@ From the technical design, identify:
 
 ### 3. Inspect the repository narrowly
 
-Inspect only the files and commands needed to make the checklist actionable. Useful targets include:
+Inspect only files and commands needed to make the checklist actionable, such as:
 
 - existing feature folders or handlers related to the story
 - entrypoints or command wiring mentioned by the technical design
