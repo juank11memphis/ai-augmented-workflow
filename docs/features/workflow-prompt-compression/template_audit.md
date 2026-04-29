@@ -291,3 +291,12 @@ Use the following structure for each audited source:
 - **Quality risk if compressed:** Agents may invent UI without product grounding, skip mockups for affected states/breakpoints, include implementation details, or let downstream implementation redesign approved UX.
 - **Prerequisite/context-loading assessment:** `docs/product-vision.md` and an approved product artifact are necessary. The “no UI impact” stop condition is necessary to prevent invented UI work.
 - **Notes:** The binding mockup rule is intentionally repeated because it protects downstream technical design, Scrum planning, implementation planning, and implementation.
+
+## Story Acceptance Validation
+
+- Required prompt-bearing sources represented: yes. The audit covers `templates/AGENTS.md`, `src/shared/catalog.ts`, agent delegation/setup shims, and every current `templates/skills/**/SKILL.md` file.
+- Required audit fields present: yes. Each audit entry includes current role, instruction categories, recommended action, value rationale, quality risk if compressed, and prerequisite/context-loading assessment.
+- Value-based recommendations: yes. Recommendations are based on behavioral, safety, output-quality, maintainability, or placement value rather than token count alone.
+- Uncertain value handling: yes. Uncertain reductions are marked keep or defer instead of remove.
+- Prerequisite/context-loading assessment: yes. Each entry identifies whether fixed source-context rules are necessary, conditional, absent, or intentionally delegated to task-specific repo inspection.
+- Audit-only scope preserved: yes. This story does not edit source templates, `src/shared/catalog.ts`, `templates/manifest.json`, generated managed files, or token accounting automation.
