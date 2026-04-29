@@ -4,6 +4,14 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.5.0 - 2026-04-29
+
+### Added
+- select workflow skills during init
+
+### Changed
+- update pnpm package manager version
+
 ## 0.4.2 - 2026-04-29
 
 ### Fixed
