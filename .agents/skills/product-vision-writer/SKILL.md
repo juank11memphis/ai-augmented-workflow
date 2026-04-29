@@ -15,13 +15,7 @@ Default output path: `docs/product-vision.md`.
 
 ### 1. Start with discovery, not drafting
 
-Ask focused questions before writing the document unless the user has already provided enough source material.
-
-Ask one question at a time. Wait for the user's answer before asking the next discovery question.
-
-Prefer the fewest questions that can produce a useful document. Ask follow-ups only when an answer materially changes the document or when a critical input is missing.
-
-Cover these areas over the course of the interview:
+Ask focused questions before writing unless the user already provided enough source material. Ask one question at a time and use the fewest questions that can produce a useful document. Cover these areas over the interview:
 
 - **Product essence:** What is the product? What should it help people do, feel, or become?
 - **Current context:** Is this a new concept, an active project, or an existing product?
@@ -52,9 +46,7 @@ If the user's answers conflict, resolve the conflict explicitly in the draft by 
 
 ### 3. Draft the product vision document
 
-Write in Markdown. Use clear headings, short paragraphs, and bullets where they improve readability.
-
-Recommended structure:
+Write in Markdown with clear headings, short paragraphs, and useful bullets. Recommended structure:
 
 ```markdown
 # <Product Name> Product Vision
@@ -107,11 +99,7 @@ Use the user's own language when it is vivid or revealing. Improve clarity witho
 
 ### 5. Handle incomplete inputs
 
-If the user has only a rough idea, produce a sharper first-pass vision with clearly stated assumptions.
-
-If the user has an existing product, make the document reflect what the product is today and what it must protect or change.
-
-If there is not enough context to write responsibly, ask the smallest possible follow-up question set instead of inventing details.
+For rough ideas, produce a sharper first-pass vision with clear assumptions. For existing products, reflect what the product is today and what it must protect or change. If context is still insufficient, ask the smallest useful follow-up instead of inventing details.
 
 ### 6. Save the document
 

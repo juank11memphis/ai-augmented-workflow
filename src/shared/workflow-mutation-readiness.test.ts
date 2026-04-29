@@ -71,7 +71,7 @@ describe('getWorkflowMutationReadiness', () => {
     }
 
     assert.equal(result.state.selectedAgents.includes('codex'), true);
-    assert.equal(result.manifest.templateVersion, '48');
+    assert.equal(result.manifest.templateVersion, '49');
     assert.equal(result.previews.every((preview) => preview.status === 'up-to-date'), true);
   });
 

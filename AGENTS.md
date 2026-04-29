@@ -37,7 +37,7 @@ This repository is the home for establishing an AI-augmented development workflo
 - For requests to implement, execute, continue, or work through a specific User Story under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md` or an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`; the executor must stop and direct the user to `ai-implementation-planner` when the story plan is missing.
 - For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.
-- For requests to create, rewrite, optimize, compress, evaluate, or systematize prompts for AI models, agents, tools, coding assistants, product workflows, or reusable prompt templates, use `ai-prompt-engineer-master`.
+- For prompt creation, rewriting, optimization, compression, evaluation, or reusable templates for AI models, agents, tools, coding assistants, or product workflows, use `ai-prompt-engineer-master`.
 
 ## Sibu maintenance
 
@@ -51,13 +51,9 @@ At the start of each session in this repository, run `sibu doctor` once before m
 
 After `sibu doctor` finishes, guide the user based on the outcome:
 
-- If the workflow is healthy, mention that the Sibu check passed and proceed with the requested work.
-- If `.sibu/state.json` is missing because the project has not been initialized, tell the user to run `sibu init` once before continuing.
-- If managed workflow files are missing, unrecorded, modified, or generated from older templates, tell the user to run `sibu sync` to review and repair them.
-- If `sibu doctor` cannot run because Sibu is unavailable, tell the user how to install or run Sibu for this project before relying on template status.
+- Healthy workflow: mention that the Sibu check passed and proceed.
+- Missing `.sibu/state.json`: tell the user to run `sibu init` once before continuing.
+- Missing, unrecorded, modified, or older managed files: tell the user to run `sibu sync` to review and repair them.
+- Sibu unavailable: tell the user how to install or run Sibu before relying on template status.
 
 Sibu records managed workflow file metadata in `.sibu/state.json`, including template versions, file hashes, selected agent support, and whether files are `managed`, `customized`, or `unmanaged`.
-
-If `.sibu/state.json` is missing because Sibu has not been adopted in the project, ask the user to run `sibu init` once.
-If workflow files may be missing, modified, unrecorded, or drifted from the recorded Sibu state, ask the user to run `sibu doctor` first.
-If `sibu doctor` reports missing managed files, unrecorded expected files, local edits, or older templates, ask the user to run `sibu sync`.

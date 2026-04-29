@@ -23,7 +23,7 @@ or:
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/
 ```
 
-Before implementing any step, read:
+Before starting a story implementation plan, read once:
 
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
@@ -36,11 +36,11 @@ docs/features/<feature-slug>/ux.md  # when the story, step, or feature has UI im
 
 Also read `docs/product-vision.md` when product fit, target user, scope boundaries, or success signals are ambiguous.
 
-If the story, current step, or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation.
+If the story, any step, or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation.
 
 When `ux.md` includes mockups, treat them as binding UI goals. Implementation must preserve the mockup structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the UI during execution; implement the approved UX and stop if technical constraints require a UX revision.
 
-Before changing code, read and apply the implementation skills required by the plan and repository routing:
+Before the first implementation step that changes code, read and apply the implementation skills required by the plan and repository routing:
 
 - always read and apply `clean-code`
 - read and apply architecture skills when relevant, such as `command-pattern` or `ddd-hexagonal`
@@ -48,6 +48,19 @@ Before changing code, read and apply the implementation skills required by the p
 - read and apply framework skills when relevant, such as `react` or `nextjs`
 
 Inspect existing code, tests, scripts, and docs only as needed for the current step.
+
+## Context reuse rule
+
+At the start of a story implementation plan, read all required source context, relevant implementation skills, and all ordered step files once. Build a concise execution context summary and rely on it for the rest of the story.
+
+After each approved step, do not reread unchanged broad context before continuing. For the next step, inspect only:
+
+- the next step file if it was not already read
+- files changed by previous steps when needed
+- validation output
+- current `git status` and relevant diffs
+
+Reread broad source context only when scope changes, validation fails in a way that requires it, required context was missing, relevant source files changed outside the plan, or the user asks to reconsider direction.
 
 ## Hard start rule
 

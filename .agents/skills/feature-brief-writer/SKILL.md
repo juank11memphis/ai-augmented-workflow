@@ -7,9 +7,7 @@ description: Use this skill to define business-level feature briefs that stay lo
 
 ## Purpose
 
-Create concise feature briefs that explain what a feature is, why it matters, who it serves, and how it follows the product vision required by this skill.
-
-Every feature shaped with this skill must stay loyal to `docs/product-vision.md`: it should support the product's purpose, fit its intended audience, respect its boundaries, and move in the same direction as its success signals.
+Create concise feature briefs that explain what a feature is, why it matters, who it serves, and how it follows `docs/product-vision.md`: purpose, audience, boundaries, and success signals.
 
 This skill owns the product/business shape of a feature. It does not own UI interaction design, technical architecture, implementation plans, data models, APIs, or task breakdowns.
 
@@ -92,9 +90,7 @@ Do not ask the user to answer a large questionnaire all at once. Keep the interv
 
 ### 3. Gather the minimum required feature context
 
-Ask only for missing information that materially affects the brief. Prefer the fewest questions needed to produce a useful document, but ask as many one-at-a-time questions as needed when the feature is underdefined.
-
-Clarify:
+Ask only for missing information that materially affects the brief. Use as few questions as possible, one at a time when underdefined. Clarify:
 
 - what feature or capability the user wants
 - what the user means by broad labels such as MVP, onboarding, sync, analytics, or automation
@@ -106,7 +102,7 @@ Clarify:
 - what should stay out of scope
 - known constraints, risks, or open decisions
 
-Only move to drafting once the feature intent, target user or scenario, desired outcome, and rough MVP boundary are clear enough to avoid inventing the product direction.
+Draft only once feature intent, target user/scenario, desired outcome, and rough MVP boundary are clear enough to avoid invention.
 
 ### 4. Write a business-level brief
 

@@ -5,9 +5,7 @@ description: Use this skill to turn an approved feature brief into a concise, im
 
 # technical-design-writer
 
-Write the smallest useful technical design doc for an approved feature.
-
-The doc should help a human say, “cool, I understand the implementation direction,” and help a later coding agent say, “nice, I know what to do next.” Avoid filler, generic engineering advice, and restating other skills.
+Write the smallest useful technical design doc for an approved feature: enough for a human to understand the implementation direction and a later coding agent to know what to do next. Avoid filler, generic engineering advice, and restating other skills.
 
 ## Grounding
 
@@ -83,7 +81,7 @@ Use the same kebab-case feature slug as the feature brief.
 
 ## Output format
 
-Use this structure as a starting point, not a contract. Delete sections that do not add value.
+Use this structure as a starting point. Delete sections that do not add value.
 
 ```md
 # Technical Design: <Feature Name>

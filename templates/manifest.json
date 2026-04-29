@@ -1,5 +1,5 @@
 {
-  "templateVersion": "48",
+  "templateVersion": "49",
   "templates": {
     "AGENTS.md": {
       "version": "21",
@@ -115,10 +115,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Compresses executor guidance while preserving missing-plan stops, one-step-at-a-time execution, approval markers, commit gates, and Epic continuation behavior."
+        "Adds context reuse guidance so story implementation plans load broad context once, then continue step-by-step using cached context unless scope, validation, or file changes require rereading."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {

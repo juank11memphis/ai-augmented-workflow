@@ -7,9 +7,7 @@ description: Execute an existing ai-implementation-planner story implementation 
 
 ## Purpose
 
-Execute one existing story implementation plan, one ordered step file at a time, with human review between steps.
-
-This skill owns implementation execution from an existing `.impl_plan/` folder. It does not create implementation plans, change story scope, or skip user review gates.
+Execute one existing story implementation plan, one ordered step file at a time, with human review between steps. This skill owns execution from an existing `.impl_plan/` folder; it does not create plans, change story scope, or skip review gates.
 
 ## Required source context
 
@@ -25,7 +23,7 @@ or:
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/
 ```
 
-Before implementing any step, read:
+Before starting a story implementation plan, read once:
 
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
@@ -38,11 +36,11 @@ docs/features/<feature-slug>/ux.md  # when the story, step, or feature has UI im
 
 Also read `docs/product-vision.md` when product fit, target user, scope boundaries, or success signals are ambiguous.
 
-If the story, current step, or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation.
+If the story, any step, or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation.
 
 When `ux.md` includes mockups, treat them as binding UI goals. Implementation must preserve the mockup structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the UI during execution; implement the approved UX and stop if technical constraints require a UX revision.
 
-Before changing code, read and apply the implementation skills required by the plan and repository routing:
+Before the first implementation step that changes code, read and apply the implementation skills required by the plan and repository routing:
 
 - always read and apply `clean-code`
 - read and apply architecture skills when relevant, such as `command-pattern` or `ddd-hexagonal`
@@ -51,20 +49,26 @@ Before changing code, read and apply the implementation skills required by the p
 
 Inspect existing code, tests, scripts, and docs only as needed for the current step.
 
+## Context reuse rule
+
+At the start of a story implementation plan, read all required source context, relevant implementation skills, and all ordered step files once. Build a concise execution context summary and rely on it for the rest of the story.
+
+After each approved step, do not reread unchanged broad context before continuing. For the next step, inspect only:
+
+- the next step file if it was not already read
+- files changed by previous steps when needed
+- validation output
+- current `git status` and relevant diffs
+
+Reread broad source context only when scope changes, validation fails in a way that requires it, required context was missing, relevant source files changed outside the plan, or the user asks to reconsider direction.
+
 ## Hard start rule
 
-If the user provides a User Story file and the matching `.impl_plan/` folder does not exist, is empty, or has no ordered `.md` step files:
-
-1. Stop.
-2. Tell the user the implementation plan is missing.
-3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create the implementation plan first.
-4. Do not infer steps from the story or technical design.
-
-If the user provides an `.impl_plan/` folder and it does not exist, is empty, or has no ordered `.md` step files:
+If the provided User Story has no matching `.impl_plan/`, or the provided `.impl_plan/` folder is missing, empty, or has no ordered `.md` step files:
 
 1. Stop.
 2. Tell the user the implementation plan is missing or invalid.
-3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create or repair the implementation plan first.
+3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create or repair it first.
 4. Do not infer steps from the story or technical design.
 
 If required source context is missing:
