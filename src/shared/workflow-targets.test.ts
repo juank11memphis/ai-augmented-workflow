@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import type { SibuState, SupportedAgent } from './types.js';
-import { getSelectedAgentsFromState, getWorkflowTargets } from './workflow-targets.js';
+import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';
 
@@ -48,6 +50,59 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assertNoInvalidTargets(targets);
+  });
+
+  it('persists workflow skills selected during initialization', () => {
+    const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-workflow-targets-'));
+    const selectedAgents = [getSupportedAgent('codex')];
+    const selectedLanguageSkills = [SELECTABLE_LANGUAGE_SKILLS[0]];
+    const selectedFrameworkSkills = [SELECTABLE_FRAMEWORK_SKILLS[0]];
+    const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS[0];
+    const selectedWorkflowSkills = SELECTABLE_WORKFLOW_SKILLS;
+    const targets = getWorkflowTargets(
+      rootPath,
+      selectedAgents,
+      selectedLanguageSkills,
+      selectedFrameworkSkills,
+      selectedArchitectureSkill,
+      selectedWorkflowSkills
+    );
+
+    const files = renderMissingWorkflowFiles({
+      missingTargets: targets,
+      overview: 'Test project.',
+      selectedLanguageSkills,
+      selectedFrameworkSkills,
+      selectedArchitectureSkill,
+      selectedWorkflowSkills,
+    });
+
+    for (const file of files) {
+      fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+      fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+    }
+
+    const statePath = path.join(rootPath, '.sibu/state.json');
+    writeSibuState({
+      rootPath,
+      statePath,
+      selectedAgents,
+      selectedLanguageSkills,
+      selectedFrameworkSkills,
+      selectedArchitectureSkill,
+      selectedWorkflowSkills,
+      targets,
+    });
+
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
+
+    assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert']);
+    assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
+    assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
+
+    fs.rmSync(rootPath, { recursive: true, force: true });
   });
 });
 

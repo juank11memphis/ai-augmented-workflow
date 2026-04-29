@@ -6,7 +6,7 @@ import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { askForArchitectureSkill, askForFrameworkSkills, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, renderIntro } from '../../shared/prompts.js';
+import { askForArchitectureSkill, askForFrameworkSkills, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, askForWorkflowSkills, renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor } from '../../shared/state.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import type { InitProjectCommand } from './command.js';
@@ -40,7 +40,8 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
   const selectedLanguageSkills = await askForLanguageSkills();
   const selectedFrameworkSkills = await askForFrameworkSkills();
   const selectedArchitectureSkill = await askForArchitectureSkill();
-  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
+  const selectedWorkflowSkills = await askForWorkflowSkills();
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills);
   const missingTargets = targets.filter((target) => !fs.existsSync(target.targetPath));
 
   log.message('I will create this project’s initial AI workflow files.');
@@ -62,6 +63,7 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
     selectedLanguageSkills,
     selectedFrameworkSkills,
     selectedArchitectureSkill,
+    selectedWorkflowSkills,
   });
 
   for (const file of files) {
@@ -70,7 +72,7 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
     log.success(`Created ${file.label}`);
   }
 
-  writeSibuState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
+  writeSibuState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, targets });
   log.success(`Created ${STATE_RELATIVE_PATH}`);
 
   outro(chalk.green('Setup complete.'));

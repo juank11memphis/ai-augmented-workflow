@@ -3,8 +3,19 @@ import gradient from 'gradient-string';
 import { Box, Text, render, useApp } from 'ink';
 import React, { useEffect } from 'react';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
-import type { ArchitectureSkillId, SibuState, FrameworkSkillId, LanguageSkillId, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import type {
+  ArchitectureSkillId,
+  SibuState,
+  FrameworkSkillId,
+  LanguageSkillId,
+  SelectableArchitectureSkill,
+  SelectableFrameworkSkill,
+  SelectableLanguageSkill,
+  SelectableWorkflowSkill,
+  SupportedAgent,
+  WorkflowSkillId,
+} from './types.js';
 
 const NONE_OPTION_ID = 'none';
 
@@ -133,6 +144,25 @@ export async function askForArchitectureSkill(): Promise<SelectableArchitectureS
   }
 
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === selectedArchitectureSkillId);
+}
+
+export async function askForWorkflowSkills(): Promise<SelectableWorkflowSkill[]> {
+  const selectedWorkflowSkillIds = await multiselect<WorkflowSkillId>({
+    message: 'Select optional workflow skills for this project.',
+    required: false,
+    options: SELECTABLE_WORKFLOW_SKILLS.map((skill) => ({
+      value: skill.id,
+      label: skill.name,
+      hint: skill.description,
+    })),
+  });
+
+  if (isCancel(selectedWorkflowSkillIds)) {
+    cancel('Initialization cancelled.');
+    process.exit(0);
+  }
+
+  return SELECTABLE_WORKFLOW_SKILLS.filter((skill) => selectedWorkflowSkillIds.includes(skill.id));
 }
 
 export function shouldAskForNewLanguageSkills(state: SibuState): boolean {
