@@ -15,9 +15,7 @@ Require a product artifact such as `docs/features/<feature-slug>/feature_brief.m
 
 ## Mockup authority rule
 
-For UI-changing features, the UX artifact must include concrete mockups for affected screens, states, and breakpoints. Mockups are the source of truth for structure, hierarchy, visible content, dominant interactions, and major visual emphasis. Downstream technical design, stories, implementation plans, and implementation must follow them unless this UX spec is explicitly revised.
-
-If a materially affected state/breakpoint lacks a mockup, UX work is incomplete.
+For UI-changing features, the UX artifact must include concrete mockups for affected screens, states, and breakpoints. Mockups are the source of truth for structure, hierarchy, visible content, dominant interactions, and major visual emphasis; downstream technical design, stories, implementation plans, and implementation must follow them unless this UX spec is revised. UX work is incomplete if a materially affected state/breakpoint lacks a mockup.
 
 ## Confirmation behavior
 
@@ -29,7 +27,7 @@ Design for user experience first, component reuse second. Prefer clear task comp
 
 ## Phone-first responsive rule
 
-Design phone first, then re-evaluate tablet and desktop as separate UX problems. Choose different layouts/components across breakpoints when that improves hierarchy, interaction, density, touch/pointer behavior, or content priority. Share components only when they remain the best experience.
+Design phone first, then re-evaluate tablet and desktop separately. Choose different layouts/components across breakpoints when they improve hierarchy, interaction, density, touch/pointer behavior, or content priority. Share components only when they remain the best experience.
 
 ## Workflow
 
@@ -47,7 +45,7 @@ Write to `docs/features/<feature-slug>/ux.md` using the feature artifact slug. K
 
 ## Mockup requirements
 
-Mockups may be low fidelity but must be concrete and unambiguous: layout regions, visible content, hierarchy/emphasis, key controls, major state differences, and breakpoint changes. Use annotated text/box wireframes when enough. Show decisions that downstream implementation must not improvise.
+Mockups may be low fidelity but must be concrete: layout regions, visible content, hierarchy/emphasis, key controls, major state differences, and breakpoint changes. Use annotated text/box wireframes when enough. Show decisions downstream implementation must not improvise.
 
 ## Output format
 

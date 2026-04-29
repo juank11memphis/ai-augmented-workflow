@@ -48,16 +48,7 @@ Do not trade quality away for fewer tokens. First define the quality bar, then f
 
 ## Prompt quality checklist
 
-A strong prompt usually has:
-
-- **Role or perspective** only when it changes behavior.
-- **Task** stated as a concrete outcome.
-- **Context** limited to information the model needs.
-- **Constraints** that prevent real failures.
-- **Output format** specific enough for the consumer.
-- **Missing-context behavior** so the model does not invent facts.
-- **Tone/style** only when user-facing quality depends on it.
-- **Validation criteria** for important workflows.
+A strong prompt usually has: role only when useful, a concrete task, necessary context, failure-preventing constraints, sufficient output format, missing-context behavior, user-facing tone only when needed, and validation criteria for important workflows.
 
 ## Token discipline rules
 

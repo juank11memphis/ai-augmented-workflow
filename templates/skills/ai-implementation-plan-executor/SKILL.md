@@ -7,9 +7,7 @@ description: Execute an existing ai-implementation-planner story implementation 
 
 ## Purpose
 
-Execute one existing story implementation plan, one ordered step file at a time, with human review between steps.
-
-This skill owns implementation execution from an existing `.impl_plan/` folder. It does not create implementation plans, change story scope, or skip user review gates.
+Execute one existing story implementation plan, one ordered step file at a time, with human review between steps. This skill owns execution from an existing `.impl_plan/` folder; it does not create plans, change story scope, or skip review gates.
 
 ## Required source context
 
@@ -53,18 +51,11 @@ Inspect existing code, tests, scripts, and docs only as needed for the current s
 
 ## Hard start rule
 
-If the user provides a User Story file and the matching `.impl_plan/` folder does not exist, is empty, or has no ordered `.md` step files:
-
-1. Stop.
-2. Tell the user the implementation plan is missing.
-3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create the implementation plan first.
-4. Do not infer steps from the story or technical design.
-
-If the user provides an `.impl_plan/` folder and it does not exist, is empty, or has no ordered `.md` step files:
+If the provided User Story has no matching `.impl_plan/`, or the provided `.impl_plan/` folder is missing, empty, or has no ordered `.md` step files:
 
 1. Stop.
 2. Tell the user the implementation plan is missing or invalid.
-3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create or repair the implementation plan first.
+3. Instruct the user to use `templates/skills/ai-implementation-planner/SKILL.md` to create or repair it first.
 4. Do not infer steps from the story or technical design.
 
 If required source context is missing:
