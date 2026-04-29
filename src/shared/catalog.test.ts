@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
@@ -7,12 +9,19 @@ import {
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
   SELECTABLE_WORKFLOW_SKILLS,
+  SIBU_VERSION,
   SUPPORTED_AGENTS,
   resolveSelectableSkillById,
 } from './catalog.js';
 import type { ResolvedSelectableSkill, SkillTemplate, SupportedAgent } from './types.js';
 
 describe('SUPPORTED_AGENTS', () => {
+  it('reports the package.json version as the Sibu version', () => {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')) as { version: string };
+
+    assert.equal(SIBU_VERSION, packageJson.version);
+  });
+
   it('includes Windsurf without an agent-specific support file', () => {
     assert.deepEqual(
       SUPPORTED_AGENTS.map((agent) => agent.id),
