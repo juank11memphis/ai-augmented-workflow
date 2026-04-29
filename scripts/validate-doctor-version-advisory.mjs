@@ -3,9 +3,10 @@
 import { execFileSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 
 const cacheRoot = mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-version-advisory-'));
+const currentVersion = readCurrentPackageVersion();
 
 try {
   const newerVersionOutput = runDoctorWithTty({
@@ -13,7 +14,7 @@ try {
     SIBU_NPM_LATEST_VERSION: '9.9.9',
   });
 
-  assertIncludes(newerVersionOutput, 'A newer Sibu version is available: 9.9.9 (0.1.0 installed).');
+  assertIncludes(newerVersionOutput, `A newer Sibu version is available: 9.9.9 (${currentVersion} installed).`);
   assertIncludes(newerVersionOutput, 'Update with `npm install -g @juancr11/sibu`.');
   assertIncludes(newerVersionOutput, 'Workflow is healthy. No drift detected.');
 
@@ -65,4 +66,14 @@ function assertExcludes(output, unexpected) {
 
 function repoRoot() {
   return path.resolve(new URL('..', import.meta.url).pathname);
+}
+
+function readCurrentPackageVersion() {
+  const packageJson = JSON.parse(readFileSync(path.join(repoRoot(), 'package.json'), 'utf8'));
+
+  if (typeof packageJson.version !== 'string') {
+    throw new Error('Expected package.json to contain a string version.');
+  }
+
+  return packageJson.version;
 }

@@ -112,11 +112,6 @@ function patchOldPackageVersion(packageDir) {
   const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   packageJson.version = '0.0.9';
   writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
-
-  const catalogPath = path.join(packageDir, 'bin', 'shared', 'catalog.js');
-  let catalogContents = readFileSync(catalogPath, 'utf8');
-  catalogContents = catalogContents.replace("export const SIBU_VERSION = '0.1.0';", "export const SIBU_VERSION = '0.0.9';");
-  writeFileSync(catalogPath, catalogContents, 'utf8');
 }
 
 function patchOldTemplateManifest(packageDir) {
