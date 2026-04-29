@@ -1,6 +1,6 @@
 {
   "name": "@juancr11/sibu",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "CLI for setting up a local AI-augmented development workflow.",
   "repository": {
     "type": "git",

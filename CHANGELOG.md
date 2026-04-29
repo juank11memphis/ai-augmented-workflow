@@ -4,6 +4,26 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.4.1 - 2026-04-29
+
+### Changed
+- add executor context reuse guidance
+- review prompt compression quality
+- update workflow template version expectation
+- update prompt compression manifest
+- inventory compressed workflow templates
+- validate skill template compression
+- evaluate architecture skill compression
+- compress execution prompt skills
+- compress planning skill templates
+- validate global guidance compression
+- tighten optional skill routing
+- tighten agent maintenance guidance
+- validate prompt audit coverage
+- audit prompt skill templates
+- audit global prompt routing surfaces
+- add prompt compression audit scaffold
+
 ## 0.4.0 - 2026-04-28
 
 ### Added
