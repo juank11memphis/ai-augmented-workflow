@@ -1,12 +1,11 @@
 {
-  "templateVersion": "47",
+  "templateVersion": "48",
   "templates": {
     "AGENTS.md": {
-      "version": "20",
+      "version": "21",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes User Story implementation requests to the AI implementation plan executor, even when the story plan may still be missing.",
-        "Clarifies that the executor should direct users to the AI implementation planner when a User Story has no implementation plan."
+        "Tightens Sibu maintenance outcome guidance while preserving startup health checks, safety, confirmation, routing, and workflow repair instructions."
       ]
     },
     ".codex/config.toml": {
@@ -39,25 +38,24 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Changes product vision discovery to ask one question at a time so users can shape the vision through a focused interview instead of answering a large batch up front."
+        "Compresses discovery and drafting guidance while preserving one-question-at-a-time discovery, output location, incomplete-input handling, and product-vision quality expectations."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Clarifies that agents must not draft feature briefs from vague feature requests and should ask one focused discovery question at a time until the feature intent is clear.",
-        "Adds minimum context guidance so feature briefs are written only after the feature intent, target user or scenario, desired outcome, and rough MVP boundary are clear."
+        "Compresses feature-brief guidance while preserving product-vision grounding, vague-request stop behavior, minimum context requirements, and feature brief output location."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Requires UI-related technical designs to read ux.md and treat UX mockups as binding implementation goals instead of redesign targets."
+        "Compresses technical-design wording while preserving required grounding, UX binding, delegation boundaries, output location, and smallest-useful-design guidance."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -103,38 +101,38 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Requires UI-related Scrum planning to read ux.md and preserve binding mockups in Epics and User Stories."
+        "Compresses Scrum planning guidance while preserving required inputs, pragmatic story splitting, output paths, sequencing rules, and UX mockup binding."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Requires UI-related implementation plans to read ux.md and turn binding mockups into implementation steps without redesigning them."
+        "Compresses implementation-planning guidance while preserving exact story input requirements, source context, output path conventions, step-file format, and plan-quality checks."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Requires UI-related implementation execution to read ux.md and implement binding mockups without redesigning them."
+        "Compresses executor guidance while preserving missing-plan stops, one-step-at-a-time execution, approval markers, commit gates, and Epic continuation behavior."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable AI prompt engineering skill for prompt creation, optimization, compression, and evaluation.",
       "changes": [
-        "Adds an optional AI prompt engineering skill for projects that create, improve, evaluate, or maintain reusable prompts for AI models, agents, tools, and coding assistants."
+        "Compresses the prompt quality checklist while preserving quality-first token discipline, missing-context behavior, output pattern, and prompt verification guidance."
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Adds an optional UX expert skill for UI-changing features, including implementation-ready UX guidance and binding mockups."
+        "Compresses UX guidance while preserving product grounding, no-code boundary, phone-first design, output location, concrete mockup requirements, and binding downstream mockup authority."
       ]
     }
   }
