@@ -4,6 +4,12 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.4.2 - 2026-04-29
+
+### Fixed
+- align release validation with package version
+- read Sibu version from package metadata
+
 ## 0.4.1 - 2026-04-29
 
 ### Changed
