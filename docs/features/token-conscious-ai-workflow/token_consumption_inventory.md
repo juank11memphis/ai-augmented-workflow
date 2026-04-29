@@ -4,7 +4,7 @@
 
 This inventory ranks common Sibu-guided agent activities by inferred token consumption so maintainers can focus on the biggest likely sources of waste. It is directional planning guidance, not exact token analytics.
 
-Exact consumption varies by model, client, tokenizer, file size, command output, and conversation history. The useful signal is the relative shape: broad raw context usually costs more than targeted snippets and compact summaries.
+Exact consumption varies by model, client, file size, command output, and conversation history. The useful signal is the relative shape: broad raw context usually costs more than targeted snippets and compact summaries.
 
 
 ## Quality Guardrails
@@ -29,6 +29,10 @@ High-consumption activities are allowed when they protect correctness, safety, v
 | 8 | Git inspection with large raw output | Full diffs, broad history, or status across many files can be useful, but raw output is often larger than the decision requires. | Use short status first. Summarize diffs. Ask the user to review full git output directly when that is more efficient or safer. |
 | 9 | Long explanations, repeated status updates, and verbose final answers | Natural-language summaries can restate tool output or obvious facts, consuming context without advancing the work. | Keep responses short by default. Include only decisions, changed files, validation, risks, and the next needed user action. |
 | 10 | Focused snippet reads, targeted searches, concise summaries, and short final responses | These usually keep only task-relevant evidence in context and leave room for reasoning, validation, and future work. | Prefer this mode by default. Expand only when quality requires it. |
+
+## Scope Boundaries
+
+This inventory intentionally does not provide exact token measurement, billing estimates, model-specific tokenizer analysis, or CLI automation for token tracking. Those may be future ideas, but this story is only a concise planning inventory.
 
 ## How to Use This Inventory
 
