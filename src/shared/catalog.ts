@@ -118,7 +118,7 @@ export const SELECTABLE_FRAMEWORK_SKILLS: SelectableFrameworkSkill[] = [
     name: 'React',
     description: 'Install guidance for React components, props, state ownership, and component boundaries',
     routingInstruction:
-      'For tasks that create or change React components, component responsibility, props, state ownership, or presentational vs data-owning boundaries, use `react`.',
+      'For React component changes involving responsibility, props, state ownership, or presentational/data-owning boundaries, use `react`.',
     templateRelativePath: 'skills/react/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/react/SKILL.md',
@@ -132,7 +132,7 @@ export const SELECTABLE_FRAMEWORK_SKILLS: SelectableFrameworkSkill[] = [
     name: 'Next.js',
     description: 'Install guidance for Next.js App Router and framework-specific files',
     routingInstruction:
-      'For tasks that change Next.js App Router or framework-specific files, including `src/app/**`, pages, layouts, route handlers, loading/error/not-found files, metadata, or Server/Client Component boundaries, use `nextjs`.',
+      'For Next.js App Router or framework-specific changes—`src/app/**`, pages, layouts, route handlers, loading/error/not-found files, metadata, or Server/Client boundaries—use `nextjs`.',
     templateRelativePath: 'skills/nextjs/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/nextjs/SKILL.md',
@@ -149,7 +149,7 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
     name: 'DDD + Hexagonal Architecture',
     description: 'Install back-end architecture guidance for DDD, ports/adapters, and inward dependencies',
     routingInstruction:
-      'For any back-end work, use `ddd-hexagonal`. This includes new features, refactors, bug fixes, persistence, external integrations, application/service boundaries, domain modeling, and architectural tradeoffs.',
+      'For backend features, refactors, bug fixes, persistence, external integrations, application/service boundaries, domain modeling, or architectural tradeoffs, use `ddd-hexagonal`.',
     templateRelativePath: 'skills/architecture/ddd-hexagonal/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/ddd-hexagonal/SKILL.md',
@@ -180,7 +180,7 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
     name: 'AI Prompt Engineer Master',
     description: 'Install guidance for creating, rewriting, optimizing, compressing, and evaluating AI prompts',
     routingInstruction:
-      'For requests to create, rewrite, optimize, compress, evaluate, or systematize prompts for AI models, agents, tools, coding assistants, product workflows, or reusable prompt templates, use `ai-prompt-engineer-master`.',
+      'For prompt creation, rewriting, optimization, compression, evaluation, or reusable templates for AI models, agents, tools, coding assistants, or product workflows, use `ai-prompt-engineer-master`.',
     templateRelativePath: 'skills/ai-prompt-engineer-master/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
@@ -194,7 +194,7 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
     name: 'UX Expert',
     description: 'Install senior UX/UI guidance for UI-changing features, responsive layouts, flows, states, accessibility, and binding mockups',
     routingInstruction:
-      'For UX/UI design after product definition when a feature has UI changes, use `ux-expert`; downstream technical design, Scrum planning, implementation planning, and implementation must treat mockups in `docs/features/<feature-slug>/ux.md` as binding UI goals, not redesign targets.',
+      'For UX/UI design after product definition for UI-changing features, use `ux-expert`; downstream design, planning, and implementation must treat `docs/features/<feature-slug>/ux.md` mockups as binding UI goals, not redesign targets.',
     templateRelativePath: 'skills/ux-expert/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/ux-expert/SKILL.md',
