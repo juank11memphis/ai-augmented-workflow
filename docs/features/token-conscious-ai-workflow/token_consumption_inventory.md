@@ -6,6 +6,15 @@ This inventory ranks common Sibu-guided agent activities by inferred token consu
 
 Exact consumption varies by model, client, tokenizer, file size, command output, and conversation history. The useful signal is the relative shape: broad raw context usually costs more than targeted snippets and compact summaries.
 
+
+## Quality Guardrails
+
+WE DO NOT COMPROMISE QUALITY. Token discipline exists to remove accidental waste, not to justify shallow context gathering, skipped validation, weaker safety, or lower-confidence answers.
+
+Large context windows are a safety net, not a license to be careless. Sibu should use large context deliberately for quality-critical work and avoid spending it on preventable noise.
+
+High-consumption activities are allowed when they protect correctness, safety, validation, user control, or the user's ability to trust the result. When an expensive operation is necessary, prefer making it deliberate: narrow it where possible, summarize the useful evidence, and briefly explain why the extra context was worth spending.
+
 ## Inferred Ranking
 
 | Rank | Activity | Why it likely consumes more tokens | Preferred lower-waste behavior |
