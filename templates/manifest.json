@@ -1,5 +1,5 @@
 {
-  "templateVersion": "51",
+  "templateVersion": "52",
   "templates": {
     "AGENTS.md": {
       "version": "22",
@@ -115,10 +115,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Minimizes step-completion reports to the current step path and approval prompt, leaving detailed review to the user's git diff."
+        "Clarifies step-completion reports so agents say the step finished and identify the next step before waiting for approval."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
