@@ -210,6 +210,6 @@ When shaping a feature brief, prefer:
 
 ## Final response behavior
 
-After writing the file, briefly report the path that was created or updated. Include the full feature brief in the response only if the user asks to review it inline.
+After writing the file, final-answer with only the path created or updated. Do not paste the feature brief body, excerpt, outline, or section summaries.
 
-If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/features/<feature-slug>/feature_brief.md`.
+Only include the full feature brief when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/features/<feature-slug>/feature_brief.md`.

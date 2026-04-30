@@ -111,6 +111,6 @@ If the user explicitly requests a different path, use that path instead.
 
 ### 7. Final response behavior
 
-After writing the file, briefly report the path that was created or updated. Include the full document in the response only if the user asks to review it inline.
+After writing the file, final-answer with only the path created or updated. Do not paste the document body, excerpt, outline, or section summaries.
 
-If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/product-vision.md`.
+Only include the full document when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/product-vision.md`.

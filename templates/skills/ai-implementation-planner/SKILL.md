@@ -204,11 +204,11 @@ Before finishing, verify:
 
 ## Final response behavior
 
-After writing the files, briefly report:
+After writing the files, final-answer with only:
 
 - the implementation plan folder path
 - the step file paths created
 - the source User Story path
 - any risks or stop conditions captured in the step files
 
-Do not paste the full step files unless the user asks to review them inline.
+Do not paste step-file bodies, excerpts, outlines, task text, done conditions, or section summaries. Only include generated step files when the user explicitly asks for inline review in the current request.

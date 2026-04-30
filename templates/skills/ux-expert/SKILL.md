@@ -92,4 +92,6 @@ The Binding Mockups section is authoritative for downstream work unless this UX 
 
 ## Final response behavior
 
-After writing the file, report only the path. Do not paste the full UX spec unless the user asks to review it inline.
+After writing the file, final-answer with only the path created or updated. Do not paste the UX spec body, excerpt, outline, mockups, or section summaries.
+
+Only include the full UX spec when the user explicitly asks for inline review in the current request.

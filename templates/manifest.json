@@ -1,5 +1,5 @@
 {
-  "templateVersion": "54",
+  "templateVersion": "55",
   "templates": {
     "AGENTS.md": {
       "version": "22",
@@ -38,24 +38,24 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Compresses discovery and drafting guidance while preserving one-question-at-a-time discovery, output location, incomplete-input handling, and product-vision quality expectations."
+        "Strengthens final response rules so saved product visions report only the path unless inline review is explicitly requested."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Compresses feature-brief guidance while preserving product-vision grounding, vague-request stop behavior, minimum context requirements, and feature brief output location."
+        "Strengthens final response rules so saved feature briefs report only the path unless inline review is explicitly requested."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "11",
+      "version": "12",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Tightens final responses so technical design updates report only the output path unless inline review is requested."
+        "Strengthens final response rules so saved technical designs report only the path and never include excerpts unless inline review is explicitly requested."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -101,17 +101,17 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Compresses Scrum planning guidance while preserving required inputs, pragmatic story splitting, output paths, sequencing rules, and UX mockup binding."
+        "Strengthens final response rules so generated Epics and Stories are summarized by paths and counts, not pasted inline unless explicitly requested."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Compresses implementation-planning guidance while preserving exact story input requirements, source context, output path conventions, step-file format, and plan-quality checks."
+        "Strengthens final response rules so generated implementation step files are listed by path, not pasted inline unless explicitly requested."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
@@ -129,10 +129,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Tightens final responses so UX spec updates report only the output path unless inline review is requested."
+        "Strengthens final response rules so saved UX specs report only the path and never include mockups or excerpts unless inline review is explicitly requested."
       ]
     }
   }
