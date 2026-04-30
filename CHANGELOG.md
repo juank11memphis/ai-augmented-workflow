@@ -4,6 +4,27 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.5.1 - 2026-04-30
+
+### Changed
+- finalize token conscious workflow updates
+- validate targeted skill guidance
+- update skill template metadata
+- minimize executor step reports
+- tighten artifact writer final responses
+- update template metadata for context budget guidance
+- add global context budget guidance
+- validate token inventory scope
+- add token inventory quality guardrails
+- add token consumption inventory
+
+### Removed
+- remove brittle manifest version assertion
+
+### Fixed
+- validate publish readiness in admin flow
+- restore unrelated planning artifacts
+
 ## 0.5.0 - 2026-04-29
 
 ### Added
