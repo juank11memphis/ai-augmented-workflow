@@ -89,3 +89,7 @@ Use only helpful sections from this shape:
 ```
 
 The Binding Mockups section is authoritative for downstream work unless this UX spec is revised.
+
+## Final response behavior
+
+After writing the file, report only the path. Do not paste the full UX spec unless the user asks to review it inline.

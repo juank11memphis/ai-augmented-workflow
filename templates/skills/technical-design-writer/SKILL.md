@@ -110,3 +110,7 @@ Use this structure as a starting point. Delete sections that do not add value.
 ## Quality bar
 
 A good technical design is short, specific, and useful. It should not try to be the product brief, architecture skill, clean-code skill, implementation plan, or ticket backlog.
+
+## Final response behavior
+
+After writing the file, report only the path. Do not paste the full technical design unless the user asks to review it inline.
