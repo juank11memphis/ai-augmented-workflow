@@ -119,7 +119,11 @@ When the user explicitly approves the current step, update that step file by add
 - Approved at: <ISO-8601 timestamp>
 ```
 
-Before writing the approval marker, identify the current Git user with `git config user.name`; if it is unavailable, use `git config user.email`. Use that value for `Approved by`. After writing the approval marker, commit all changes for the approved step before continuing. Use a Conventional Commits 1.0.0 message that describes the completed step. If the commit fails, stop and report the failure instead of continuing.
+Before writing the approval marker, identify the current Git user with `git config user.name`; if it is unavailable, use `git config user.email`. Use that value for `Approved by`.
+
+After writing the approval marker, commit only the changes produced by the approved step before continuing. The commit must include the step file approval marker and files intentionally changed while implementing that step. It must not include unrelated local edits, pre-existing worktree changes, or changes from other steps. Use the files tracked during step execution and a focused `git status --short` check to stage the correct paths. Do not run broad `git diff` investigations or other "what changed?" archaeology unless it is required to avoid committing unrelated changes and the user has approved that extra inspection.
+
+Use a Conventional Commits 1.0.0 message that describes the completed step. If the commit fails, stop and report the failure instead of continuing.
 
 Then continue with the next unapproved step immediately, without asking for another pre-implementation confirmation, only after the approval marker is written and the approved step changes are committed.
 
@@ -162,6 +166,7 @@ Do not:
 After implementing one step, briefly report:
 
 - that the step finished
+- if the step was validation-only and produced no code changes, say that it was just a validation step and all validations passed
 - current step file path
 - the next step file path, or that no next step remains
 - that you are waiting for user approval before marking the step approved, committing it, and continuing to the next step
