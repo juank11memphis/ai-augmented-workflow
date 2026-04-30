@@ -41,7 +41,7 @@ export function renderReleasePlanPreview(plan: ReleasePlan): string {
     '- Check npm authentication: npm whoami',
     '- Check GitHub authentication: gh auth status',
     '- Build release artifacts: pnpm build',
-    `- Run validation: pnpm run validate:release`,
+    `- Run validation: pnpm run validate:release-publish`,
     `- Create release commit: chore(release): ${plan.targetVersion}`,
     `- Create git tag: ${plan.tagName}`,
     `- Publish package: npm publish --access public${plan.hasOtp ? ' --otp ******' : ''}`,

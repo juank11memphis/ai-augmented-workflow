@@ -36,7 +36,8 @@
     "validate:packed-runtime": "node ./scripts/validate-packed-cli-runtime.mjs",
     "validate:doctor-version-advisory": "pnpm build && node ./scripts/validate-doctor-version-advisory.mjs",
     "validate:post-update-doctor-drift": "pnpm build && node ./scripts/validate-post-update-doctor-drift.mjs",
-    "validate:release": "pnpm verify && npm pack && pnpm run validate:packed-runtime && pnpm run validate:doctor-version-advisory && pnpm run validate:post-update-doctor-drift",
+    "validate:release-publish": "pnpm verify && npm pack && pnpm run validate:packed-runtime",
+    "validate:release": "pnpm run validate:release-publish && pnpm run validate:doctor-version-advisory && pnpm run validate:post-update-doctor-drift",
     "admin:release": "node ./bin/admin/release.js"
   },
   "keywords": [

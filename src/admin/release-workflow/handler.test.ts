@@ -155,7 +155,7 @@ describe('renderReleasePlanPreview', () => {
     assert.match(preview, /Check npm authentication: npm whoami/);
     assert.match(preview, /Check GitHub authentication: gh auth status/);
     assert.match(preview, /Build release artifacts: pnpm build/);
-    assert.match(preview, /Run validation: pnpm run validate:release/);
+    assert.match(preview, /Run validation: pnpm run validate:release-publish/);
     assert.match(preview, /Create release commit: chore\(release\): 1\.2\.4/);
     assert.match(preview, /Create git tag: v1\.2\.4/);
     assert.match(preview, /Publish package: npm publish --access public/);
@@ -552,7 +552,7 @@ describe('executeConfirmedRelease', () => {
       { command: 'npm', args: ['whoami'] },
       { command: 'gh', args: ['auth', 'status'] },
       { command: 'pnpm', args: ['build'] },
-      { command: 'pnpm', args: ['run', 'validate:release'] },
+      { command: 'pnpm', args: ['run', 'validate:release-publish'] },
       { command: 'git', args: ['add', 'CHANGELOG.md', 'package.json'] },
       { command: 'git', args: ['commit', '-m', 'chore(release): 1.2.4'] },
       { command: 'git', args: ['tag', 'v1.2.4'] },
@@ -594,7 +594,7 @@ describe('executeConfirmedRelease', () => {
   });
 
   it('stops before commit, tag, publish, push, or GitHub Release when validation fails', async () => {
-    const ports = createFakeExecutionPorts({ failingCommand: 'pnpm run validate:release' });
+    const ports = createFakeExecutionPorts({ failingCommand: 'pnpm run validate:release-publish' });
 
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
@@ -603,7 +603,7 @@ describe('executeConfirmedRelease', () => {
       { command: 'npm', args: ['whoami'] },
       { command: 'gh', args: ['auth', 'status'] },
       { command: 'pnpm', args: ['build'] },
-      { command: 'pnpm', args: ['run', 'validate:release'] },
+      { command: 'pnpm', args: ['run', 'validate:release-publish'] },
     ]);
     if (result.status === 'failed') {
       assert.equal(result.failedStep.name, 'validate-release');

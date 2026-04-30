@@ -72,7 +72,7 @@ When the preview looks right, run the same command without `--dry-run` and confi
 pnpm admin:release
 ```
 
-After confirmation, the workflow writes the planned changelog and package metadata, runs `pnpm run validate:release`, creates the release commit, creates the git tag, publishes to npm, pushes the release commit and tag, and creates the matching GitHub Release from the finalized changelog section.
+After confirmation, the workflow writes the planned changelog and package metadata, runs `pnpm run validate:release-publish`, creates the release commit, creates the git tag, publishes to npm, pushes the release commit and tag, and creates the matching GitHub Release from the finalized changelog section.
 
 Useful options:
 
@@ -142,14 +142,12 @@ Run the full release-readiness validation flow:
 pnpm run validate:release
 ```
 
-This wrapper runs the baseline verification, creates a package tarball, and executes the installed-runtime and doctor advisory checks used by the release workflow.
+This wrapper runs the publish-readiness validation plus the broader doctor advisory and post-update drift checks.
 
 The underlying checks are:
 
 ```sh
-pnpm verify
-npm pack
-pnpm run validate:packed-runtime
+pnpm run validate:release-publish
 pnpm run validate:doctor-version-advisory
 pnpm run validate:post-update-doctor-drift
 ```
@@ -161,6 +159,8 @@ These checks cover:
 - installed CLI runtime behavior from the tarball
 - the non-blocking npm update advisory flow in `sibu doctor`
 - the explicit post-update flow where rerunning `sibu doctor` can surface drift without mutating project files
+
+`pnpm admin:release` intentionally runs only `pnpm run validate:release-publish` before publishing. That keeps publication blocked on build, test, pack, and installed-runtime readiness, without requiring the maintainer's local Sibu-managed workflow files to be in sync.
 
 Do not rely on `pnpm link` or source-checkout execution as the release-readiness signal.
 

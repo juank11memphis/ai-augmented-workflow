@@ -221,8 +221,8 @@ export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseE
     printExecutionProgress(ports, `Done: wrote ${plan.metadata.packageJson.path}.`);
   }
 
-  printExecutionProgress(ports, 'Running release validation: pnpm run validate:release...');
-  const validation = await ports.run('pnpm', ['run', 'validate:release']);
+  printExecutionProgress(ports, 'Running release validation: pnpm run validate:release-publish...');
+  const validation = await ports.run('pnpm', ['run', 'validate:release-publish']);
   if (validation.exitCode !== 0) {
     const failure = failExecution(completedSteps, 'validate-release', 'Release validation failed.', validation);
     printExecutionFailure(ports, failure);

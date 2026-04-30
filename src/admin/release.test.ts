@@ -72,6 +72,14 @@ describe('release script boundaries', () => {
     assert.deepEqual(packageJson.bin, { sibu: './bin/sibu.js' });
   });
 
+  it('keeps admin release validation focused on publish readiness', () => {
+    const packageJson = readRootPackageJson();
+
+    assert.equal(packageJson.scripts['validate:release-publish'], 'pnpm verify && npm pack && pnpm run validate:packed-runtime');
+    assert.match(packageJson.scripts['validate:release'], /validate:doctor-version-advisory/);
+    assert.match(packageJson.scripts['validate:release'], /validate:post-update-doctor-drift/);
+  });
+
   it('does not wire a public release command into the Sibu CLI', () => {
     const createProgramSource = fs.readFileSync('src/entrypoints/cli/create-program.ts', 'utf8');
 
