@@ -4,6 +4,12 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.5.2 - 2026-04-30
+
+### Changed
+- clarify step executor commit behavior
+- syncs with latest sibu version
+
 ## 0.5.1 - 2026-04-30
 
 ### Changed
