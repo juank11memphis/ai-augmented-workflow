@@ -1,5 +1,5 @@
 {
-  "templateVersion": "50",
+  "templateVersion": "51",
   "templates": {
     "AGENTS.md": {
       "version": "22",
@@ -52,10 +52,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Compresses technical-design wording while preserving required grounding, UX binding, delegation boundaries, output location, and smallest-useful-design guidance."
+        "Tightens final responses so technical design updates report only the output path unless inline review is requested."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -115,10 +115,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Adds context reuse guidance so story implementation plans load broad context once, then continue step-by-step using cached context unless scope, validation, or file changes require rereading."
+        "Minimizes step-completion reports to the current step path and approval prompt, leaving detailed review to the user's git diff."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
@@ -129,10 +129,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Compresses UX guidance while preserving product grounding, no-code boundary, phone-first design, output location, concrete mockup requirements, and binding downstream mockup authority."
+        "Tightens final responses so UX spec updates report only the output path unless inline review is requested."
       ]
     }
   }
