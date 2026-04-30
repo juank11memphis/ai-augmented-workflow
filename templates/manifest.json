@@ -1,11 +1,11 @@
 {
-  "templateVersion": "49",
+  "templateVersion": "50",
   "templates": {
     "AGENTS.md": {
-      "version": "21",
+      "version": "22",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Tightens Sibu maintenance outcome guidance while preserving startup health checks, safety, confirmation, routing, and workflow repair instructions."
+        "Adds concise context-budget discipline so agents prefer narrow reads, summarize large outputs, and preserve quality over token savings."
       ]
     },
     ".codex/config.toml": {
