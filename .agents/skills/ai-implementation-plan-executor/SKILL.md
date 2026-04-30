@@ -161,10 +161,9 @@ Do not:
 
 After implementing one step, briefly report:
 
+- that the step finished
 - current step file path
-- summary of changes made
-- validation run and result
-- any risks, blockers, or follow-up questions
+- the next step file path, or that no next step remains
 - that you are waiting for user approval before marking the step approved, committing it, and continuing to the next step
 
 After approving and committing the final step in a story implementation plan, also briefly report the Epic continuation check result:

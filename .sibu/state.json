@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.1.0",
-  "templateVersion": "49",
+  "templateVersion": "52",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-29T04:22:50.465Z",
+  "updatedAt": "2026-04-30T01:08:01.768Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -19,8 +19,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "21",
-      "sha256": "84b6e231970662038473b85c0b25c358ccf175518b15668174d376f832e2a72f",
+      "templateVersion": "22",
+      "sha256": "6e54d30e64a602b18631cdd3b72c7b377a7a10796c899ba6944ffc072d7adbdf",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -61,8 +61,8 @@
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "10",
-      "sha256": "0c661f040cb398ff843d96094820579759491be883819d9612d462cd447d3d7b",
+      "templateVersion": "11",
+      "sha256": "289c3f12cbab124ba75b313cc5da4977f71fe613cb44faf480b0baa2e6c29f47",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
@@ -79,8 +79,8 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "8",
-      "sha256": "67ba9c2336c955bc3ee6381734ef8e1b1b58f617e932ef114f69b28980c9ea82",
+      "templateVersion": "10",
+      "sha256": "46be7ccc06a84531c1ee7e0c2498312055addb4d5ad20e745a2f353faf6485d9",
       "status": "managed"
     },
     ".agents/skills/typescript/SKILL.md": {

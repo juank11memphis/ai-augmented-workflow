@@ -19,6 +19,14 @@ This repository is the home for establishing an AI-augmented development workflo
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
 
+## Context budget discipline
+
+Treat context as a shared budget owned by the user. Prefer narrow, purposeful context before broad reads: search targeted paths, inspect snippets before full files, and avoid dependency, generated, build, cache, and lockfile content unless relevant.
+
+Do not dump full files, full diffs, broad recursive scans, or uncapped command output unless needed for quality or explicitly requested. Summarize large diffs, logs, command output, and generated artifacts by default, with focused excerpts when they support a decision.
+
+Keep responses concise by default, but spend the context needed for correctness, safety, validation, human control, or required context gathering. Warn or ask before optional expensive context operations.
+
 ## Communication style
 
 - Keep responses as short as practical while still being clear and useful.
