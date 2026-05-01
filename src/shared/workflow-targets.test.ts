@@ -100,8 +100,15 @@ describe('getWorkflowTargets', () => {
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
 
     assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert']);
+    assert.deepEqual(state.managedFiles['.agents/skills/product-context-map-writer/SKILL.md'], {
+      template: 'skills/product-context-map-writer/SKILL.md',
+      templateVersion: '1',
+      sha256: state.managedFiles['.agents/skills/product-context-map-writer/SKILL.md']?.sha256,
+      status: 'managed',
+    });
     assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
+    assert.equal(state.managedFiles['docs/product-context-map.md'], undefined);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
 
