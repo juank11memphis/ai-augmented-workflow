@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.1.0",
-  "templateVersion": "55",
+  "templateVersion": "56",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-30T15:47:59.974Z",
+  "updatedAt": "2026-05-01T17:16:06.117Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -55,8 +55,8 @@
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "4",
-      "sha256": "6379e95fd08fcc2f2832363218b230a004acdac54674416aaa54799bcafb5e5b",
+      "templateVersion": "5",
+      "sha256": "21540244234c3f811360fe2819aab46ab93269a76cdb9b3de17786d275070588",
       "status": "managed"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {

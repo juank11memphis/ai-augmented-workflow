@@ -25,6 +25,7 @@ describe('getWorkflowTargets', () => {
       'AGENTS.md',
       '.agents/skills/clean-code/SKILL.md',
       '.agents/skills/product-vision-writer/SKILL.md',
+      '.agents/skills/product-context-map-writer/SKILL.md',
       '.agents/skills/feature-brief-writer/SKILL.md',
       '.agents/skills/technical-design-writer/SKILL.md',
       '.agents/skills/scrum-master-planner/SKILL.md',
@@ -49,6 +50,8 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('CLAUDE.md'), true);
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
+    assert.equal(targetPaths.includes('.agents/skills/product-context-map-writer/SKILL.md'), true);
+    assert.equal(targetPaths.includes('docs/product-context-map.md'), false);
     assertNoInvalidTargets(targets);
   });
 

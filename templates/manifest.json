@@ -1,5 +1,5 @@
 {
-  "templateVersion": "55",
+  "templateVersion": "57",
   "templates": {
     "AGENTS.md": {
       "version": "22",
@@ -44,11 +44,18 @@
         "Strengthens final response rules so saved product visions report only the path unless inline review is explicitly requested."
       ]
     },
+    "skills/product-context-map-writer/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory Product Context Map writer skill installed once at the shared .agents/skills workspace path.",
+      "changes": [
+        "Adds the required product-context-map-writer skill so users can create and maintain docs/product-context-map.md before feature brief work."
+      ]
+    },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Strengthens final response rules so saved feature briefs report only the path unless inline review is explicitly requested."
+        "Makes feature brief discovery more interrogative by requiring one-question-at-a-time clarification until the user confirms feature understanding and alignment."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
@@ -69,7 +76,7 @@
       "version": "1",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Adds an optional Go skill with concise, Effective Go\u2013style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {

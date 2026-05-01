@@ -56,6 +56,18 @@ Use a short kebab-case feature slug that matches the feature name. Keep all arti
 
 Do not write the brief to technical design, UX, user story, implementation plan, or backlog files unless the user explicitly asks for a separate artifact after the feature brief exists.
 
+## Interview posture
+
+Be deliberately interrogative before drafting. The feature brief should reflect the user's intent, not the assistant's assumptions.
+
+- Ask one focused question at a time.
+- Keep asking until you have complete practical understanding and explicit user alignment.
+- Prefer follow-up questions over filling gaps with plausible invention.
+- Treat "100% understanding" as: feature intent, target user, scenario, user problem, business goal, MVP boundary, out-of-scope boundary, success signals, and known constraints are all clear enough to defend in the brief.
+- Treat "100% alignment" as: the user has confirmed the assistant's concise understanding of the feature direction before the brief is written.
+- If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
+- Do not ask a large questionnaire all at once.
+
 ## Workflow
 
 ### 1. Read the product vision
@@ -72,25 +84,28 @@ Read `docs/product-vision.md` first and identify:
 
 Use these as constraints for the feature brief.
 
-### 2. Clarify vague feature intent before drafting
+### 2. Clarify feature intent before drafting
 
-Do not draft a feature brief from a vague request.
+Do not draft a feature brief from a vague or merely plausible request.
 
 A request is too vague when the user gives only a broad area, product milestone, theme, or label such as "define the MVP," "write the onboarding feature," "make a sync feature," or "I want analytics" without enough detail to know what the user actually means.
 
-When feature intent is vague:
+When feature intent is vague, incomplete, or not yet explicitly aligned:
 
 1. Stop before drafting.
 2. Explain briefly that the feature direction needs clarification before a responsible brief can be written.
 3. Ask one focused discovery question.
 4. Wait for the user's answer.
 5. Continue asking one question at a time until there is enough context to write a useful, product-vision-aligned brief.
+6. Summarize the current understanding in a concise confirmation statement.
+7. Ask the user to confirm or correct it.
+8. Draft only after the user confirms alignment or provides corrections that resolve the remaining gaps.
 
 Do not ask the user to answer a large questionnaire all at once. Keep the interview conversational and focused.
 
 ### 3. Gather the minimum required feature context
 
-Ask only for missing information that materially affects the brief. Use as few questions as possible, one at a time when underdefined. Clarify:
+Ask every question needed to remove material ambiguity, but only one at a time. Clarify:
 
 - what feature or capability the user wants
 - what the user means by broad labels such as MVP, onboarding, sync, analytics, or automation
@@ -102,7 +117,9 @@ Ask only for missing information that materially affects the brief. Use as few q
 - what should stay out of scope
 - known constraints, risks, or open decisions
 
-Draft only once feature intent, target user/scenario, desired outcome, and rough MVP boundary are clear enough to avoid invention.
+Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, and constraints are clear enough to avoid invention and the user has confirmed alignment.
+
+If the conversation stalls, offer a concise default assumption for the next unresolved point and ask the user to confirm or correct it before proceeding.
 
 ### 4. Write a business-level brief
 
