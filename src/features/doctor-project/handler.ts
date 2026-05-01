@@ -100,7 +100,7 @@ function logSyncNextStep(): void {
   }
 }
 
-function diagnoseState({ rootPath, state }: { rootPath: string; state: SibuState }): DoctorIssue[] {
+export function diagnoseState({ rootPath, state }: { rootPath: string; state: SibuState }): DoctorIssue[] {
   const issues: DoctorIssue[] = [];
   const manifest = readTemplateManifest();
 

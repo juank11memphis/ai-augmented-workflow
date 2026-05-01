@@ -1,7 +1,23 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, test } from 'node:test';
 
-import { getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
+import { SUPPORTED_AGENTS } from '../../shared/catalog.js';
+import type { SibuState, SupportedAgent } from '../../shared/types.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
+import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
+
+const PRODUCT_CONTEXT_SKILL_PATH = '.agents/skills/product-context-map-writer/SKILL.md';
+const PRODUCT_CONTEXT_MAP_PATH = 'docs/product-context-map.md';
+const temporaryRoots: string[] = [];
+
+afterEach(() => {
+  for (const temporaryRoot of temporaryRoots.splice(0)) {
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+});
 
 test('returns advisory lines when a newer version is available', () => {
   const lines = getNpmVersionAdvisoryLines({
@@ -52,3 +68,87 @@ test('returns explicit sync next-step lines for review-needed doctor output', ()
     'Sibu will not change project files until you explicitly run `sibu sync`.',
   ]);
 });
+
+test('diagnoses missing Product Context Map writer through managed-file drift', () => {
+  const rootPath = createCleanInitializedRepo();
+  fs.rmSync(path.join(rootPath, PRODUCT_CONTEXT_SKILL_PATH));
+
+  const issues = diagnoseState({ rootPath, state: readState(rootPath) });
+
+  assert.equal(
+    issues.some((issue) => issue.severity === 'error' && issue.message === `${PRODUCT_CONTEXT_SKILL_PATH} is missing.`),
+    true
+  );
+  assert.equal(issues.some((issue) => issue.message.includes(PRODUCT_CONTEXT_MAP_PATH)), false);
+});
+
+test('diagnoses modified Product Context Map writer through managed-file drift', () => {
+  const rootPath = createCleanInitializedRepo();
+  fs.appendFileSync(path.join(rootPath, PRODUCT_CONTEXT_SKILL_PATH), '\nLocal edit.\n', 'utf8');
+
+  const issues = diagnoseState({ rootPath, state: readState(rootPath) });
+
+  assert.equal(
+    issues.some((issue) => issue.severity === 'warning' && issue.message === `${PRODUCT_CONTEXT_SKILL_PATH} has changed since Sibu last recorded it.`),
+    true
+  );
+  assert.equal(issues.some((issue) => issue.message.includes(PRODUCT_CONTEXT_MAP_PATH)), false);
+});
+
+test('does not manage the generated Product Context Map artifact', () => {
+  const rootPath = createCleanInitializedRepo();
+  fs.mkdirSync(path.join(rootPath, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(rootPath, PRODUCT_CONTEXT_MAP_PATH), '# Product Context Map\n', 'utf8');
+  const state = readState(rootPath);
+
+  const targets = getWorkflowTargets(rootPath, [getSupportedAgent('codex')]);
+  const targetPaths = targets.map((target) => path.relative(rootPath, target.targetPath));
+  const issues = diagnoseState({ rootPath, state });
+
+  assert.equal(targetPaths.includes(PRODUCT_CONTEXT_MAP_PATH), false);
+  assert.equal(state.managedFiles[PRODUCT_CONTEXT_MAP_PATH], undefined);
+  assert.equal(issues.some((issue) => issue.message.includes(PRODUCT_CONTEXT_MAP_PATH)), false);
+});
+
+function createCleanInitializedRepo(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-product-context-'));
+  temporaryRoots.push(rootPath);
+  const selectedAgents = [getSupportedAgent('codex')];
+  const targets = getWorkflowTargets(rootPath, selectedAgents);
+  const files = renderMissingWorkflowFiles({
+    missingTargets: targets,
+    overview: 'Test project.',
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+  });
+
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+  }
+
+  writeSibuState({
+    rootPath,
+    statePath: path.join(rootPath, '.sibu/state.json'),
+    selectedAgents,
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+    targets,
+  });
+
+  return rootPath;
+}
+
+function readState(rootPath: string): SibuState {
+  return JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8')) as SibuState;
+}
+
+function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
+  const agent = SUPPORTED_AGENTS.find((supportedAgent) => supportedAgent.id === agentId);
+
+  if (!agent) {
+    throw new Error(`Unsupported agent: ${agentId}`);
+  }
+
+  return agent;
+}
