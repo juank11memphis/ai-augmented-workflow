@@ -113,4 +113,6 @@ A good technical design is short, specific, and useful. It should not try to be 
 
 ## Final response behavior
 
-After writing the file, report only the path. Do not paste the full technical design unless the user asks to review it inline.
+After writing the file, final-answer with only the path created or updated. Do not paste the technical design body, excerpt, outline, or section summaries.
+
+Only include the full technical design when the user explicitly asks for inline review in the current request.

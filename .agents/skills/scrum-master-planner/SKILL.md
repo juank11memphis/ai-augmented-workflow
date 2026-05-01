@@ -183,10 +183,10 @@ Before finishing, verify:
 
 ## Final response behavior
 
-After writing files, briefly report:
+After writing files, final-answer with only:
 
 - the Epic directories created or updated
 - the number of Epics and User Stories
 - any source-scope items intentionally left unresolved or captured as risks
 
-Do not paste all generated artifacts unless the user asks to review them inline.
+Do not paste artifact bodies, excerpts, outlines, story text, acceptance criteria, or section summaries. Only include generated artifacts when the user explicitly asks for inline review in the current request.

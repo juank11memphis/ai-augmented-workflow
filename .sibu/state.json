@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.1.0",
-  "templateVersion": "54",
+  "templateVersion": "55",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-04-30T15:44:17.017Z",
+  "updatedAt": "2026-04-30T15:47:59.974Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -49,32 +49,32 @@
     },
     ".agents/skills/product-vision-writer/SKILL.md": {
       "template": "skills/product-vision-writer/SKILL.md",
-      "templateVersion": "4",
-      "sha256": "fb18fa9627ca6599e63167bb8cbd049530e9a1dbaa8093b3d2fdfec28aa39dbf",
+      "templateVersion": "5",
+      "sha256": "470f1762a40006dbb5d80ae1d2e37bd6cfd5cb3c8d4e43c47d95515b0312ef9b",
       "status": "managed"
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "eeb37c2daf44a6b081c85498c3a7f7abe3b3fecb7da8d627c1895c81e69e971b",
+      "templateVersion": "4",
+      "sha256": "6379e95fd08fcc2f2832363218b230a004acdac54674416aaa54799bcafb5e5b",
       "status": "managed"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "11",
-      "sha256": "289c3f12cbab124ba75b313cc5da4977f71fe613cb44faf480b0baa2e6c29f47",
+      "templateVersion": "12",
+      "sha256": "e5d8b1ccf887de8af717b933ba0ed7d96b0c3429506c98172bb8c5fdc0d97df6",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "4",
-      "sha256": "89d6389c3374e7efefe51b83d962d146b3d9f234279e1f6fbf0810fe7d9a8de2",
+      "templateVersion": "5",
+      "sha256": "e93624b0aa5d911c41776f87cdcbe08c5919c039352a4da0ce63ebf94b67ecfd",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "6",
-      "sha256": "e769458fe1e2600146892fb34a80348e5b7721d536acf02d64c8bd126fc029eb",
+      "templateVersion": "7",
+      "sha256": "0e440647465a1de69cbdc365f9a1ddfdcacdf9fdd6c3a784ce2c0741fa753df7",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
