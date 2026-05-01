@@ -23,3 +23,8 @@ Wire `product-context-map-writer` into Sibu’s mandatory skill catalog so it is
 - `getWorkflowTargets()` includes `.agents/skills/product-context-map-writer/SKILL.md` through existing mandatory skill behavior.
 - No source or generated file registers `docs/product-context-map.md` as a managed workflow target.
 - `pnpm build` regenerates `bin/shared/catalog.js` from the TypeScript source.
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-05-01T12:57:14-06:00

@@ -22,3 +22,8 @@ Make the new skill template valid in Sibu’s template manifest so rendering, st
 - The new manifest entry describes the required skill and uses a current-version change note.
 - The global template version is bumped.
 - No `docs/product-context-map.md` template entry exists.
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-05-01T12:57:14-06:00

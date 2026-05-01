@@ -26,3 +26,8 @@ Create the new mandatory skill template that teaches agents how to create and up
 - The skill asks one focused question at a time and waits for user alignment before writing or revising the map.
 - The skill final response reports only `docs/product-context-map.md` after saving, unless inline review is explicitly requested.
 - The skill clearly says `docs/product-context-map.md` is created/updated by the skill and is not a Sibu-managed template.
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-05-01T12:57:14-06:00
