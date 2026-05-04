@@ -1,5 +1,5 @@
 {
-  "templateVersion": "61",
+  "templateVersion": "62",
   "templates": {
     "AGENTS.md": {
       "version": "23",
@@ -45,10 +45,10 @@
       ]
     },
     "skills/product-context-map-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory Product Context Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds the required product-context-map-writer skill so users can create and maintain docs/product-context-map.md before feature brief work."
+        "Clarifies what Product Contexts are and adds stronger interview guidance so agents derive contexts from product responsibilities instead of asking users to name contexts up front."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {

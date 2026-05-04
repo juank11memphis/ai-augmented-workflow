@@ -36,6 +36,8 @@ docs/features/<feature-slug>/ux.md  # when the story, step, or feature has UI im
 
 Also read `docs/product-vision.md` when product fit, target user, scope boundaries, or success signals are ambiguous.
 
+When the story, implementation plan, feature brief, or technical design includes Product Context guidance, treat it as part of the execution contract. Product Contexts answer “where does this work belong?” Approved contexts define where code work should stay.
+
 If the story, any step, or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation.
 
 When `ux.md` includes mockups, treat them as binding UI goals. Implementation must preserve the mockup structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the UI during execution; implement the approved UX and stop if technical constraints require a UX revision.
@@ -146,11 +148,14 @@ Do not automatically start planning or implementing the next story. This check i
 Do:
 
 - preserve the source story scope and acceptance criteria
+- preserve approved Product Context boundaries when present
 - follow the current step file exactly unless it conflicts with source context
 - keep changes focused on the current step's `## Scope` and `## Files`
+- keep work inside the contexts named by the approved step and technical design
 - use existing project patterns and the relevant skills
 - run focused validation for the current step when possible
 - stop and ask if the step is ambiguous, missing required files, or conflicts with the technical design
+- stop and ask before moving work into an unrelated Product Context unless the approved step or technical design explicitly justifies it
 
 Do not:
 
@@ -158,6 +163,7 @@ Do not:
 - implement multiple unapproved steps in one pass
 - mark a step approved before the user explicitly approves it
 - add product scope absent from the story, Epic, feature brief, technical design, or step file
+- silently move work into unrelated or unapproved Product Contexts
 - continue past a failed validation without reporting it and asking how to proceed
 - leave approved step changes uncommitted before moving to the next step
 
