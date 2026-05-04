@@ -1,11 +1,11 @@
 {
-  "templateVersion": "60",
+  "templateVersion": "61",
   "templates": {
     "AGENTS.md": {
-      "version": "22",
+      "version": "23",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds concise context-budget discipline so agents prefer narrow reads, summarize large outputs, and preserve quality over token savings."
+        "Adds Product Context Map routing and clarifies the planned feature-work pipeline without requiring it for narrow code fixes."
       ]
     },
     ".codex/config.toml": {
