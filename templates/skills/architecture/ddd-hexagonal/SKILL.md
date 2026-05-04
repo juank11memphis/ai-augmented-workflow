@@ -27,6 +27,16 @@ This skill is backend-focused. It does not cover frontend component architecture
 
 If a simpler structure preserves clear boundaries, prefer the simpler structure.
 
+## Product Context compatibility
+
+Product Contexts answer “where does this work belong?” DDD + Hexagonal answers “how is that context structured internally?”
+
+When `docs/product-context-map.md`, a feature brief, or a technical design names Product Contexts, treat them as the first ownership boundary to preserve before choosing domain/application/infra placement. Prefer placing domain concepts, use cases, ports, and adapters under the selected context's ownership. If work crosses contexts, name the owning context for each part and keep dependencies explicit.
+
+A Product Context may contain `domain`, `application`, and `infra`/adapter concerns, but the map remains architecture-agnostic: it is not a required DDD Bounded Context, folder structure, service boundary, or layer model.
+
+Do not invent new Product Contexts during design or implementation. If work does not fit the approved contexts, stop and route the decision back to the `product-context-map-writer` workflow.
+
 ## The layers
 
 ### Domain
