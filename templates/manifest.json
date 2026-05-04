@@ -1,5 +1,5 @@
 {
-  "templateVersion": "59",
+  "templateVersion": "60",
   "templates": {
     "AGENTS.md": {
       "version": "22",
@@ -115,17 +115,17 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Strengthens final response rules so generated implementation step files are listed by path, not pasted inline unless explicitly requested."
+        "Requires implementation plans to preserve Product Context boundaries and call out explicit cross-context work when Product Context guidance is present."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "12",
+      "version": "13",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Clarifies focused approved-step commits and validation-only step reporting."
+        "Requires implementation execution to treat Product Context guidance as part of the contract and avoid silent movement into unrelated contexts."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
