@@ -11,6 +11,34 @@ Create concise feature briefs that explain what a feature is, why it matters, wh
 
 This skill owns the product/business shape of a feature. It does not own UI interaction design, technical architecture, implementation plans, data models, APIs, or task breakdowns.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- `docs/product-vision.md`.
+- `docs/product-context-map.md`.
+- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Product Context fit.
+
+### What this skill writes
+
+- `docs/features/<feature-slug>/feature_brief.md`.
+- The containing `docs/features/<feature-slug>/` directory when needed.
+
+### When this skill stops
+
+- `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
+- `docs/product-context-map.md` is missing; tell the user to create it first with `product-context-map-writer`.
+- The feature appears to require a new or changed Product Context; direct the user back to `product-context-map-writer`.
+- The request belongs to another pipeline stage, such as technical design, UX design, Scrum planning, implementation planning, or implementation execution.
+- Current-stage feature intent is unclear; ask one focused question at a time until enough information is available.
+
+### What this skill must not do
+
+- Do not create or update Product Context Maps, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not invent Product Contexts or use contexts that are absent from `docs/product-context-map.md`.
+- Do not require a final confirmation summary before writing once enough feature brief context is available.
+- Do not duplicate or rewrite the product vision; apply only the relevant implications to the feature.
+
 ## Required source of truth
 
 Before doing any feature-brief work, read:
@@ -74,7 +102,7 @@ Be deliberately interrogative before drafting. The feature brief should reflect 
 - Keep asking until you have complete practical understanding and explicit user alignment.
 - Prefer follow-up questions over filling gaps with plausible invention.
 - Treat "100% understanding" as: feature intent, target user, scenario, user problem, business goal, MVP boundary, out-of-scope boundary, success signals, and known constraints are all clear enough to defend in the brief.
-- Treat "100% alignment" as: the user has confirmed the assistant's concise understanding of the feature direction before the brief is written.
+- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Product Context fit are clear enough to defend in the brief.
 - If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
 - Do not ask a large questionnaire all at once.
 
@@ -114,16 +142,14 @@ Do not draft a feature brief from a vague or merely plausible request.
 
 A request is too vague when the user gives only a broad area, product milestone, theme, or label such as "define the MVP," "write the onboarding feature," "make a sync feature," or "I want analytics" without enough detail to know what the user actually means.
 
-When feature intent is vague, incomplete, or not yet explicitly aligned:
+When feature intent is vague or incomplete:
 
 1. Stop before drafting.
 2. Explain briefly that the feature direction needs clarification before a responsible brief can be written.
 3. Ask one focused discovery question.
 4. Wait for the user's answer.
 5. Continue asking one question at a time until there is enough context to write a useful, product-vision-aligned brief.
-6. Summarize the current understanding in a concise confirmation statement.
-7. Ask the user to confirm or correct it.
-8. Draft only after the user confirms alignment or provides corrections that resolve the remaining gaps.
+6. Draft once the missing information is clear enough to produce the feature brief.
 
 Do not ask the user to answer a large questionnaire all at once. Keep the interview conversational and focused.
 
@@ -141,7 +167,7 @@ Ask every question needed to remove material ambiguity, but only one at a time. 
 - what should stay out of scope
 - known constraints, risks, or open decisions
 
-Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, and constraints are clear enough to avoid invention and the user has confirmed alignment.
+Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Product Context fit are clear enough to avoid invention.
 
 If the conversation stalls, offer a concise default assumption for the next unresolved point and ask the user to confirm or correct it before proceeding.
 

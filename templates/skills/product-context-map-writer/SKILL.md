@@ -13,6 +13,31 @@ A Product Context is DDD-inspired but architecture-agnostic. It is not a folder 
 
 This skill owns the Product Context Map only. It does not own feature briefs, technical designs, user stories, implementation plans, code structure, or architecture selection.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- `docs/product-vision.md`.
+- Existing `docs/product-context-map.md` when revising the map.
+- Enough user interview context to identify durable product responsibility boundaries, exclusions, scenarios, relationships, and cross-context rules.
+
+### What this skill writes
+
+- `docs/product-context-map.md`.
+
+### When this skill stops
+
+- `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
+- The request belongs to another pipeline stage, such as feature brief, technical design, UX design, Scrum planning, implementation planning, or implementation execution.
+- User answers are still too vague to defend Product Context boundaries; ask one focused question instead of drafting.
+
+### What this skill must not do
+
+- Do not create feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not choose application architecture, folders, services, packages, database tables, or team ownership.
+- Do not ask for or require a final confirmation summary before writing once enough context map information is available.
+- Do not invent Product Contexts without grounding them in the product vision and user interview.
+
 ## What a Product Context is
 
 A Product Context is a durable area of product responsibility: a named part of the product that owns specific user-facing behaviors, rules, decisions, promises, and language.
@@ -82,7 +107,7 @@ Be deliberately interrogative before writing.
 - Ask one focused question at a time.
 - Keep asking until you understand the product's major responsibility areas, boundaries, key scenarios, relationships, and naming.
 - Treat "100% understanding" as: contexts, responsibilities, exclusions, scenarios, relationships, and deep-module boundaries are clear enough to defend.
-- Treat "100% alignment" as: the user has confirmed your concise understanding before the map is written or revised.
+- Treat "enough context" as: contexts, responsibilities, exclusions, scenarios, relationships, and deep-module boundaries are clear enough to defend in the map.
 - Do not ask the user to name the Product Contexts up front. Most users do not know what the contexts should be yet.
 - Extract contexts by asking about product jobs, decisions, promises, lifecycle moments, and confusing boundaries.
 - Teach briefly as needed. If the user seems unsure, explain Product Contexts in plain language before asking the next question.
@@ -149,8 +174,7 @@ Avoid shallow contexts based on one feature, screen, command, workflow step, dat
 1. Read `docs/product-vision.md`.
 2. Read existing `docs/product-context-map.md` if it exists.
 3. Ask one focused question at a time until the context direction is clear.
-4. Summarize the proposed map or revision and ask the user to confirm or correct it.
-5. Write or update `docs/product-context-map.md` only after alignment.
+4. Write or update `docs/product-context-map.md` once enough context is available.
 
 ## Recommended map structure
 

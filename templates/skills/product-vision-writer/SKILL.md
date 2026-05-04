@@ -11,6 +11,31 @@ Help write product vision documents that make a product feel clear, intentional,
 
 Default output path: `docs/product-vision.md`.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- Enough user-provided product discovery to define or revise a product vision.
+- No upstream pipeline artifact is required.
+- If an existing `docs/product-vision.md` is being revised, read it first.
+
+### What this skill writes
+
+- `docs/product-vision.md` by default.
+- A different path only when the user explicitly requests one.
+
+### When this skill stops
+
+- The user's intent is too unclear to ask a useful discovery question.
+- Writing would overwrite an existing vision when the user appears to want a separate new vision.
+- The request is for a downstream artifact such as a Product Context Map, feature brief, technical design, UX spec, stories, implementation plan, or implementation work.
+
+### What this skill must not do
+
+- Do not create Product Context Maps, feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not require a final confirmation summary before writing once enough product vision context is available.
+- Do not pretend unresolved strategy questions are settled; ask a focused question or document a clear assumption.
+
 ## Workflow
 
 ### 1. Start with discovery, not drafting
