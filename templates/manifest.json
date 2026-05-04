@@ -1,5 +1,5 @@
 {
-  "templateVersion": "57",
+  "templateVersion": "58",
   "templates": {
     "AGENTS.md": {
       "version": "22",
@@ -52,17 +52,17 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes feature brief discovery more interrogative by requiring one-question-at-a-time clarification until the user confirms feature understanding and alignment."
+        "Requires feature briefs to use docs/product-context-map.md, name existing Product Contexts, and stop for a map update instead of inventing new contexts."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "12",
+      "version": "13",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Strengthens final response rules so saved technical designs report only the path and never include excerpts unless inline review is explicitly requested."
+        "Requires technical designs to preserve feature Product Contexts and explain architecture interaction only when it affects implementation direction."
       ]
     },
     "skills/typescript/SKILL.md": {
