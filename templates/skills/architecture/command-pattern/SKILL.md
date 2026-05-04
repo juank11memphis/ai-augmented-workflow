@@ -10,6 +10,16 @@ Use this skill to design and implement software features as independent, end-to-
 
 ---
 
+## Product Context Compatibility
+
+Product Contexts answer “where does this work belong?” Command Pattern guidance answers “how is that work structured as command-oriented vertical slices?”
+
+When `docs/product-context-map.md`, a feature brief, or a technical design names Product Contexts, place each vertical slice within or clearly under the relevant Product Context's ownership. The feature-local Command, Handler, Port, Adapter, and Result guidance still applies inside that context boundary.
+
+Do not invent new Product Contexts during design or implementation. If work does not fit the approved contexts, stop and route the decision back to the `product-context-map-writer` workflow.
+
+---
+
 ## 1. The Component Contract
 Every feature is defined by four distinct roles. This separation ensures that the "Core" logic remains pure and testable.
 
