@@ -33,6 +33,8 @@ docs/features/<feature-slug>/ux.md  # when the story or feature has UI impact
 
 Also read `docs/product-vision.md` when product fit, target user, scope boundaries, or success signals are ambiguous.
 
+When the feature brief or technical design includes Product Context guidance, treat it as required planning context. Product Contexts answer “where does this work belong?” Implementation steps must preserve approved context boundaries.
+
 If the story or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation planning.
 
 When `ux.md` includes mockups, treat them as binding UI goals. Implementation steps must preserve the mockup structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the UI in the implementation plan; plan code steps that implement the approved UX and stop if technical constraints require a UX revision.
@@ -101,6 +103,8 @@ Do:
 - call out dependencies, sequencing constraints, and risk checkpoints
 - include test, build, lint, or manual validation commands when known
 - include a stop-and-ask condition when the implementation would exceed the technical design
+- keep work inside the approved Product Contexts unless cross-context work is explicit in the source artifacts
+- call out cross-context ownership and coordination in the relevant step files
 
 Do not:
 
@@ -110,6 +114,7 @@ Do not:
 - include prerequisite reading, scope confirmation, or repository inspection as step files
 - create task noise such as “review the code” without a specific implementation or validation purpose
 - prescribe architecture that conflicts with the selected architecture skill or technical design
+- move work into unrelated or unapproved Product Contexts; add a stop-and-ask condition instead
 
 ## Workflow
 
@@ -129,11 +134,12 @@ If the story lacks testable acceptance criteria, stop and ask for the User Story
 
 ### 2. Read feature and technical context
 
-From the Epic and feature brief, identify delivery boundaries and user value.
+From the Epic and feature brief, identify delivery boundaries, user value, and approved Product Context ownership when present.
 
 From the technical design, identify:
 
 - intended implementation approach
+- Product Context boundaries, ownership, and any explicit cross-context work
 - affected commands, modules, files, adapters, docs, or tests
 - known risks or unresolved decisions
 - expected validation commands or checks
@@ -184,6 +190,7 @@ Step-file requirements:
 - keep each step small enough for one AI coding pass
 - name every known file, module, command, or artifact to change or validate
 - include explicit out-of-scope boundaries in `Scope` when they prevent scope creep
+- preserve Product Context boundaries in `Scope`; call out cross-context work explicitly when required
 - include validation commands in `Done when` when known
 - ensure the full set of step files covers every acceptance criterion
 
@@ -200,6 +207,7 @@ Before finishing, verify:
 - every step file has clear done conditions
 - validation is explicit enough to prove the story is complete
 - the step files do not add scope beyond the source artifacts
+- the step files preserve approved Product Context boundaries and stop before unrelated context movement
 - architecture and code-quality steps align with the relevant skills
 
 ## Final response behavior
