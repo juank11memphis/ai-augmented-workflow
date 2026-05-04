@@ -9,6 +9,35 @@ description: Turn one approved User Story Markdown file into LLM-sized implement
 
 Turn one approved User Story into concrete Markdown step files an AI coding agent can execute safely and completely. This skill owns implementation planning for one story at a time, not product scope, technical design decisions, Scrum planning, or code implementation.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- Exactly one User Story file at `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`.
+- The story's `epic_brief.md`.
+- The feature's `feature_brief.md`.
+- The feature's `technical_design.md`.
+- `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
+- Relevant repo files, tests, scripts, and implementation skills needed to make concrete step files.
+
+### What this skill writes
+
+- Story-local implementation step files under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/*.md`.
+
+### When this skill stops
+
+- The user does not provide or clearly identify exactly one User Story file.
+- Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
+- The story or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
+- The request is to write production code, execute an implementation plan, create stories, or perform another pipeline stage.
+
+### What this skill must not do
+
+- Do not create or update product visions, Product Context Maps, feature briefs, technical designs, UX specs, Epics, User Stories, or production code.
+- Do not modify prior-stage artifacts.
+- Do not reread `docs/product-context-map.md` by default; trust `technical_design.md` for implementation boundaries.
+- Do not infer implementation scope from an Epic brief, feature brief, or technical design without exactly one User Story.
+
 ## Required input
 
 The user must provide or clearly identify exactly one User Story file:
