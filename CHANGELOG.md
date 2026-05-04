@@ -4,6 +4,47 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.6.0 - 2026-05-04
+
+### Added
+- preserve product contexts during execution
+- preserve product contexts in implementation plans
+- align command pattern with product contexts
+- align ddd hexagonal with product contexts
+- preserve product contexts in technical designs
+- make feature briefs require product contexts
+- add product context map writer workflow
+
+### Changed
+- record reviewed workflow template updates
+- add contract pipeline planning artifacts
+- validate pipeline contract metadata
+- update pipeline contract template metadata
+- approve planning execution contract validation
+- add contract to implementation executor template
+- add contract to implementation planner template
+- add contract to scrum planner template
+- approve product design contract validation
+- add contracts to design pipeline templates
+- add contracts to product pipeline templates
+- update workflow skill templates
+- validate product context routing notes
+- note product context routing update
+- route product context map workflow
+- validate implementation context preservation
+- note implementation context template updates
+- validate architecture context guidance
+- note architecture context template updates
+- validate product context planning skills
+- note product context template updates
+- validate product context lifecycle
+- cover product context doctor drift
+- cover product context skill sync drift
+- cover product context skill state registration
+- validate product context manifest metadata
+- mark product context writer plan approved
+- updates sibu templates
+
 ## 0.5.3 - 2026-04-30
 
 ### Fixed
