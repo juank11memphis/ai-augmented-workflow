@@ -102,7 +102,7 @@ describe('getWorkflowTargets', () => {
     assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert']);
     assert.deepEqual(state.managedFiles['.agents/skills/product-context-map-writer/SKILL.md'], {
       template: 'skills/product-context-map-writer/SKILL.md',
-      templateVersion: '2',
+      templateVersion: '3',
       sha256: state.managedFiles['.agents/skills/product-context-map-writer/SKILL.md']?.sha256,
       status: 'managed',
     });
