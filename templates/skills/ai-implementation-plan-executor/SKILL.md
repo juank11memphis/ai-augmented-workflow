@@ -9,6 +9,38 @@ description: Execute an existing ai-implementation-planner story implementation 
 
 Execute one existing story implementation plan, one ordered step file at a time, with human review between steps. This skill owns execution from an existing `.impl_plan/` folder; it does not create plans, change story scope, or skip review gates.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- Exactly one User Story file or one story-local `.impl_plan/` folder.
+- Ordered implementation step files in that `.impl_plan/` folder.
+- The story, Epic brief, feature brief, and technical design for the selected plan.
+- `docs/features/<feature-slug>/ux.md` only when the story, step, or feature has UI impact.
+- Relevant repo files, validation output, and implementation skills needed for the current step.
+
+### What this skill writes
+
+- Code, docs, tests, or other repo changes required by the current implementation step only.
+- Step approval metadata in the current step file only after explicit user approval.
+- A focused commit for each approved step.
+
+### When this skill stops
+
+- The user does not provide or clearly identify exactly one User Story file or `.impl_plan/` folder.
+- The implementation plan is missing, empty, invalid, or has no ordered step files; direct the user to `ai-implementation-planner`.
+- Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
+- The story, step, or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
+- The request is to create an implementation plan, change story scope, skip review gates, or perform another pipeline stage.
+
+### What this skill must not do
+
+- Do not create product visions, Product Context Maps, feature briefs, technical designs, UX specs, Epics, User Stories, or implementation plans.
+- Do not modify prior-stage artifacts except for approval metadata in the current step file.
+- Do not reread `docs/product-context-map.md` by default; trust `technical_design.md` for implementation boundaries.
+- Do not implement multiple unapproved steps in one pass or mark a step approved before explicit user approval.
+- Do not weaken the one-step-at-a-time execution model, user review gate, or approved-step commit behavior.
+
 ## Required source context
 
 The user must provide or clearly identify exactly one User Story or implementation plan folder:
