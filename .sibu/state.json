@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.1.0",
-  "templateVersion": "62",
+  "templateVersion": "63",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-04T17:19:28.769Z",
+  "updatedAt": "2026-05-04T20:56:18.570Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -50,38 +50,44 @@
     ".agents/skills/product-vision-writer/SKILL.md": {
       "template": "skills/product-vision-writer/SKILL.md",
       "templateVersion": "5",
-      "sha256": "470f1762a40006dbb5d80ae1d2e37bd6cfd5cb3c8d4e43c47d95515b0312ef9b",
-      "status": "managed"
+      "sha256": "65fba14ce7e69c6fc1d4f29e298b16d8b718a200f1392ee905d79dfb721865f4",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "6"
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
       "templateVersion": "6",
-      "sha256": "a919d0c6825c7f2afac7422aa4f28daf753304a60e637b269a9243492aeb0ff9",
-      "status": "managed"
+      "sha256": "763cdaeaa29937e3adb4026ccee8cb6f6eec5fc305af549fa2dafec457c6b91c",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "7"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
       "templateVersion": "13",
-      "sha256": "68d07de365309e185f9a6ffffa039b928b0acca49b0a3824429bcfccabe17e0e",
-      "status": "managed"
+      "sha256": "c231496ce536765753fa5473e7a31e6a98dc401f9a8e27e512b93443a007d535",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "14"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
       "templateVersion": "5",
-      "sha256": "e93624b0aa5d911c41776f87cdcbe08c5919c039352a4da0ce63ebf94b67ecfd",
-      "status": "managed"
+      "sha256": "8687da8f5ba86309d7a17f184edd0e915a3126d8bbe00b762b964de05b718aa9",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "6"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
       "templateVersion": "8",
-      "sha256": "26d0541ce01e757074ba06d91e854a2cbeb49e2b9d6757045b694c4784c5f21b",
-      "status": "managed"
+      "sha256": "692c906000163b67f5ab083194e226dacedd3b2e6bd2741213c3569fd9cac26c",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "9"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
       "templateVersion": "13",
-      "sha256": "ab59ae520ca07fe964e0ec2a3ec074297f52b6741eca5628020364621686f0c1",
-      "status": "managed"
+      "sha256": "eb421c5db9d0a33dea7538e295708114d72786ef7a5d32d1a6e647364c83731d",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "14"
     },
     ".agents/skills/typescript/SKILL.md": {
       "template": "skills/typescript/SKILL.md",
@@ -104,8 +110,9 @@
     ".agents/skills/product-context-map-writer/SKILL.md": {
       "template": "skills/product-context-map-writer/SKILL.md",
       "templateVersion": "2",
-      "sha256": "54135ae64891c3f01220044a682dc20bd95f228bedebae3fa8478c393a606602",
-      "status": "managed"
+      "sha256": "1ec8ceeb92f039b0b5ce6c127d945b3ef79120e45f7f31822ff035ceaf98b2d9",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "3"
     }
   }
 }
