@@ -7,6 +7,34 @@ description: Use this skill for UX/UI design after product definition when a fea
 
 Act as a senior UX/UI designer. Turn an approved product artifact into usable, expressive, phone-first, implementation-ready UI direction. Do not include code, file paths, architecture, or framework-specific guidance.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- `docs/product-vision.md`.
+- A product artifact such as `docs/features/<feature-slug>/feature_brief.md` that defines goals, scope, and acceptance criteria.
+- Confirmation from the request or source artifact that the feature has UI impact.
+- Enough user or product context to design affected surfaces, flows, responsive layouts, states, accessibility requirements, and binding mockups.
+
+### What this skill writes
+
+- `docs/features/<feature-slug>/ux.md`.
+
+### When this skill stops
+
+- The user only has a product idea; direct the user to `feature-brief-writer` first.
+- `docs/product-vision.md` is missing; direct the user to `product-vision-writer` first.
+- The product artifact is missing, unclear, or lacks goals, scope, and acceptance criteria.
+- The feature or request has no UI impact; say so and do not invent UI work.
+- The request belongs to another pipeline stage, such as product definition, technical design, Scrum planning, implementation planning, or implementation execution.
+
+### What this skill must not do
+
+- Do not create or update product visions, Product Context Maps, feature briefs, technical designs, Epics, User Stories, implementation plans, or production code.
+- Do not make architecture, framework, API, data model, or file-path decisions.
+- Do not treat UX work as optional for UI-changing features; concrete mockups are required.
+- Do not require a final confirmation summary before writing once enough UX context is available.
+
 ## Required grounding
 
 Read `docs/product-vision.md` and apply only relevant implications: target user, principles, voice, boundaries, trust expectations, success signal. Do not restate the full vision.

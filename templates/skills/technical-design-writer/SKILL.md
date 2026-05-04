@@ -7,6 +7,37 @@ description: Use this skill to turn an approved feature brief into a concise, im
 
 Write the smallest useful technical design doc for an approved feature: enough for a human to understand the implementation direction and a later coding agent to know what to do next. Avoid filler, generic engineering advice, and restating other skills.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- A Markdown feature brief at `docs/features/<feature-slug>/feature_brief.md`.
+- `docs/product-context-map.md`.
+- The feature brief's `## Product Context` section naming one or more existing Product Contexts.
+- Relevant existing repo files and flows needed to make implementation direction concrete.
+- `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
+- Relevant implementation guidance skills such as `clean-code`, selected architecture skills, language skills, or framework skills.
+
+### What this skill writes
+
+- `docs/features/<feature-slug>/technical_design.md`.
+
+### When this skill stops
+
+- The feature brief is missing or the user only has a vague feature idea; direct the user to `feature-brief-writer`.
+- `docs/product-context-map.md` is missing; direct the user to `product-context-map-writer`.
+- The feature brief does not name existing Product Contexts, or the selected contexts are missing, ambiguous, or inconsistent with the map.
+- The feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing; direct the user to `ux-expert`.
+- The request belongs to another pipeline stage, such as feature definition, UX design, Scrum planning, implementation planning, or implementation execution.
+
+### What this skill must not do
+
+- Do not create or update product visions, Product Context Maps, feature briefs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not invent new Product Contexts or move work into unselected contexts.
+- Do not redesign binding UX mockups.
+- Do not duplicate architecture, language, framework, or clean-code skill guidance.
+- Do not require a final confirmation summary before writing once enough technical design context is available.
+
 ## Grounding
 
 Before writing, read:
@@ -39,7 +70,7 @@ For UI-related features, `ux.md` is source context, not inspiration. If `ux.md` 
 
 Translate product intent into implementation direction.
 
-Product Contexts answer “where does this work belong?” Architecture guidance answers “how is that context structured internally?” Explain their interaction only when it affects implementation direction, such as file/module ownership, boundaries, command placement, dependencies, or cross-context coordination.
+Product Contexts answer “where does this work belong?” Architecture guidance answers “how is that context structured internally?” Translate the feature brief's selected Product Contexts into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Product Context Map by default.
 
 Prefer:
 
@@ -110,7 +141,7 @@ Use this structure as a starting point. Delete sections that do not add value.
 ## Proposed Design
 <Concrete implementation decisions. Include command flows, file/module impact, state changes, and integration boundaries when relevant.>
 
-<When it changes implementation direction, explain how the selected Product Contexts interact with the selected architecture guidance. Otherwise, preserve the contexts without adding a separate generic section.>
+<Explain how the selected Product Contexts translate into architecture, module, command, file, or implementation boundaries when that affects downstream work.>
 
 ## Validation
 <Focused test/build/manual checks.>
