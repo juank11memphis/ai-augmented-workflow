@@ -12,17 +12,22 @@ Write the smallest useful technical design doc for an approved feature: enough f
 Before writing, read:
 
 1. `docs/product-vision.md`
-2. the feature brief
-3. `docs/features/<feature-slug>/ux.md` when the feature has UI impact
-4. `clean-code`
-5. any selected architecture, language, or framework skills that apply
-6. relevant existing repo files and flows
+2. `docs/product-context-map.md`
+3. the feature brief, including its `## Product Context` section
+4. `docs/features/<feature-slug>/ux.md` when the feature has UI impact
+5. `clean-code`
+6. any selected architecture, language, or framework skills that apply
+7. relevant existing repo files and flows
 
 Apply those inputs. Do not summarize them back into the technical design unless a specific implication changes the implementation.
 
 ## Required input
 
 Require a Markdown feature brief. If the user only has a vague idea, route to `feature-brief-writer` first.
+
+Require `docs/product-context-map.md`. If it is missing, stop and ask the user to create it with `product-context-map-writer` first. Do not infer or invent Product Contexts.
+
+Require the feature brief to name one or more existing Product Contexts. Preserve those selected contexts in the technical design; if they appear missing, ambiguous, or inconsistent with the map, stop and ask the user to update the feature brief or Product Context Map first.
 
 If the feature has UI impact, require `docs/features/<feature-slug>/ux.md`. If it is missing, stop and ask the user to create the UX spec with `ux-expert` first.
 
@@ -34,6 +39,8 @@ For UI-related features, `ux.md` is source context, not inspiration. If `ux.md` 
 
 Translate product intent into implementation direction.
 
+Product Contexts answer “where does this work belong?” Architecture guidance answers “how is that context structured internally?” Explain their interaction only when it affects implementation direction, such as file/module ownership, boundaries, command placement, dependencies, or cross-context coordination.
+
 Prefer:
 
 - concise decisions over long explanation
@@ -41,6 +48,7 @@ Prefer:
 - current codebase patterns over speculative redesigns
 - explicit open questions over risky assumptions
 - delegation to the right skills instead of duplicating their guidance
+- preserving the feature brief's selected Product Contexts
 
 Avoid:
 
@@ -48,6 +56,7 @@ Avoid:
 - product scope expansion
 - user stories, tickets, or delivery plans
 - invented CLI/database/API concepts that the feature brief did not ask for
+- inventing new Product Contexts or moving work into unselected contexts
 - large template sections that say “none” without adding value
 
 ## Delegation rule
@@ -88,6 +97,7 @@ Use this structure as a starting point. Delete sections that do not add value.
 
 ## Inputs
 - Product vision: <path>
+- Product Context Map: <path>
 - Feature brief: <path>
 - Delegated skills: <skills later implementation should apply>
 
@@ -99,6 +109,8 @@ Use this structure as a starting point. Delete sections that do not add value.
 
 ## Proposed Design
 <Concrete implementation decisions. Include command flows, file/module impact, state changes, and integration boundaries when relevant.>
+
+<When it changes implementation direction, explain how the selected Product Contexts interact with the selected architecture guidance. Otherwise, preserve the contexts without adding a separate generic section.>
 
 ## Validation
 <Focused test/build/manual checks.>
