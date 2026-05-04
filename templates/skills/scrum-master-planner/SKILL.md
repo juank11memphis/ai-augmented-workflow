@@ -11,6 +11,35 @@ Turn an approved feature brief and technical design into the smallest useful Scr
 
 This skill owns delivery planning artifacts. It does not own product vision, feature definition, technical design, code implementation, or project-management tool automation.
 
+## Pipeline Contract
+
+### What this skill needs
+
+- `docs/features/<feature-slug>/feature_brief.md`.
+- `docs/features/<feature-slug>/technical_design.md`.
+- `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
+- Enough source-artifact detail to create delivery slices without inventing product scope or implementation boundaries.
+
+### What this skill writes
+
+- `docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md`.
+- `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<user-story-slug>.md`.
+- Supporting Epic and Story directories under the same feature tree when needed.
+
+### When this skill stops
+
+- The feature brief or technical design is missing; direct the user to the owning prior stage.
+- The feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
+- A prior artifact is obviously incomplete or invalid in a way its owning stage should repair.
+- The request belongs to another pipeline stage, such as product definition, technical design, UX design, implementation planning, or implementation execution.
+
+### What this skill must not do
+
+- Do not create or update product visions, Product Context Maps, feature briefs, technical designs, UX specs, implementation plans, or production code.
+- Do not modify prior-stage artifacts.
+- Do not reread `docs/product-context-map.md` by default; trust `technical_design.md` for implementation boundaries.
+- Do not add product scope or architecture decisions absent from the feature brief and technical design.
+
 ## Required inputs
 
 Before planning, read:
