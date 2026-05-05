@@ -12,8 +12,8 @@ Write the smallest useful technical design doc for an approved feature: enough f
 ### What this skill needs
 
 - A Markdown feature brief at `docs/features/<feature-slug>/feature_brief.md`.
-- `docs/product-context-map.md`.
-- The feature brief's `## Product Context` section naming one or more existing Product Contexts.
+- `docs/deep-module-map.md`.
+- The feature brief's `## Deep Module` section naming one or more existing Deep Modules.
 - Relevant existing repo files and flows needed to make implementation direction concrete.
 - `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
 - Relevant implementation guidance skills such as `clean-code`, selected architecture skills, language skills, or framework skills.
@@ -25,15 +25,15 @@ Write the smallest useful technical design doc for an approved feature: enough f
 ### When this skill stops
 
 - The feature brief is missing or the user only has a vague feature idea; direct the user to `feature-brief-writer`.
-- `docs/product-context-map.md` is missing; direct the user to `product-context-map-writer`.
-- The feature brief does not name existing Product Contexts, or the selected contexts are missing, ambiguous, or inconsistent with the map.
+- `docs/deep-module-map.md` is missing; direct the user to `deep-module-map-writer`.
+- The feature brief does not name existing Deep Modules, or the selected modules are missing, ambiguous, or inconsistent with the map.
 - The feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing; direct the user to `ux-expert`.
 - The request belongs to another pipeline stage, such as feature definition, UX design, Scrum planning, implementation planning, or implementation execution.
 
 ### What this skill must not do
 
-- Do not create or update product visions, Product Context Maps, feature briefs, UX specs, Epics, User Stories, implementation plans, or production code.
-- Do not invent new Product Contexts or move work into unselected contexts.
+- Do not create or update product visions, Deep Module Maps, feature briefs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not invent new Deep Modules or move work into unselected modules.
 - Do not redesign binding UX mockups.
 - Do not duplicate architecture, language, framework, or clean-code skill guidance.
 - Do not require a final confirmation summary before writing once enough technical design context is available.
@@ -43,8 +43,8 @@ Write the smallest useful technical design doc for an approved feature: enough f
 Before writing, read:
 
 1. `docs/product-vision.md`
-2. `docs/product-context-map.md`
-3. the feature brief, including its `## Product Context` section
+2. `docs/deep-module-map.md`
+3. the feature brief, including its `## Deep Module` section
 4. `docs/features/<feature-slug>/ux.md` when the feature has UI impact
 5. `clean-code`
 6. any selected architecture, language, or framework skills that apply
@@ -56,9 +56,9 @@ Apply those inputs. Do not summarize them back into the technical design unless 
 
 Require a Markdown feature brief. If the user only has a vague idea, route to `feature-brief-writer` first.
 
-Require `docs/product-context-map.md`. If it is missing, stop and ask the user to create it with `product-context-map-writer` first. Do not infer or invent Product Contexts.
+Require `docs/deep-module-map.md`. If it is missing, stop and ask the user to create it with `deep-module-map-writer` first. Do not infer or invent Deep Modules.
 
-Require the feature brief to name one or more existing Product Contexts. Preserve those selected contexts in the technical design; if they appear missing, ambiguous, or inconsistent with the map, stop and ask the user to update the feature brief or Product Context Map first.
+Require the feature brief to name one or more existing Deep Modules. Preserve those selected modules in the technical design; if they appear missing, ambiguous, or inconsistent with the map, stop and ask the user to update the feature brief or Deep Module Map first.
 
 If the feature has UI impact, require `docs/features/<feature-slug>/ux.md`. If it is missing, stop and ask the user to create the UX spec with `ux-expert` first.
 
@@ -70,7 +70,7 @@ For UI-related features, `ux.md` is source context, not inspiration. If `ux.md` 
 
 Translate product intent into implementation direction.
 
-Product Contexts answer “where does this work belong?” Architecture guidance answers “how is that context structured internally?” Translate the feature brief's selected Product Contexts into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Product Context Map by default.
+Deep Modules answer “where does this implementation work belong?” Architecture guidance answers “how is that module structured internally?” Translate the feature brief's selected Deep Modules into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Deep Module Map by default.
 
 Prefer:
 
@@ -79,7 +79,7 @@ Prefer:
 - current codebase patterns over speculative redesigns
 - explicit open questions over risky assumptions
 - delegation to the right skills instead of duplicating their guidance
-- preserving the feature brief's selected Product Contexts
+- preserving the feature brief's selected Deep Modules
 
 Avoid:
 
@@ -87,7 +87,7 @@ Avoid:
 - product scope expansion
 - user stories, tickets, or delivery plans
 - invented CLI/database/API concepts that the feature brief did not ask for
-- inventing new Product Contexts or moving work into unselected contexts
+- inventing new Deep Modules or moving work into unselected modules
 - large template sections that say “none” without adding value
 
 ## Delegation rule
@@ -128,7 +128,7 @@ Use this structure as a starting point. Delete sections that do not add value.
 
 ## Inputs
 - Product vision: <path>
-- Product Context Map: <path>
+- Deep Module Map: <path>
 - Feature brief: <path>
 - Delegated skills: <skills later implementation should apply>
 
@@ -141,7 +141,7 @@ Use this structure as a starting point. Delete sections that do not add value.
 ## Proposed Design
 <Concrete implementation decisions. Include command flows, file/module impact, state changes, and integration boundaries when relevant.>
 
-<Explain how the selected Product Contexts translate into architecture, module, command, file, or implementation boundaries when that affects downstream work.>
+<Explain how the selected Deep Modules translate into architecture, module, command, file, or implementation boundaries when that affects downstream work.>
 
 ## Validation
 <Focused test/build/manual checks.>
