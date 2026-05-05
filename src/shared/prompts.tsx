@@ -3,7 +3,7 @@ import gradient from 'gradient-string';
 import { Box, Text, render, useApp } from 'ink';
 import React, { useEffect } from 'react';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../modules/workflow-target-planning/index.js';
 import type {
   ArchitectureSkillId,
   SibuState,

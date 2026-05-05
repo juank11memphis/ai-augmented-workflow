@@ -4,7 +4,8 @@ import path from 'node:path';
 import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, STATE_RELATIVE_PATH, SUPPORTED_AGENTS } from '../../shared/catalog.js';
+import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
 import { sha256 } from '../../shared/hash.js';
 import { checkForLatestSibuVersion } from '../../shared/npm-version.js';
 import { getProjectContext } from '../../shared/paths.js';

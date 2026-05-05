@@ -1,15 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { SIBU_VERSION } from './catalog.js';
 import {
-  SIBU_VERSION,
   MANDATORY_SKILLS,
   SELECTABLE_ARCHITECTURE_SKILLS,
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
-} from './catalog.js';
+} from '../modules/workflow-target-planning/index.js';
 import { sha256 } from './hash.js';
 import { removeUndefinedFields } from './object.js';
 import { readExistingState } from './state.js';

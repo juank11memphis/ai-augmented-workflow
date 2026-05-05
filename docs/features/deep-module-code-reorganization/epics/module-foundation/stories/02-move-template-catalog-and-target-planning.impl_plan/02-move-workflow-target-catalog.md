@@ -33,3 +33,8 @@ Move supported agent definitions, mandatory/selectable skill catalogs, and selec
 - Existing agent and skill catalog assertions pass from the moved test location.
 - `src/shared/catalog.ts` no longer exports workflow target catalog data or selectable skill resolution.
 - `pnpm build` passes.
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-05-05T16:54:58-06:00

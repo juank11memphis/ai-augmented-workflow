@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SUPPORTED_AGENTS } from './catalog.js';
+import { SUPPORTED_AGENTS } from '../modules/workflow-target-planning/index.js';
 import { readTemplateManifest } from '../modules/template-catalog-rendering/index.js';
 import type { SibuState, SupportedAgent } from './types.js';
 import { getSyncPreviews } from './sync-preview.js';

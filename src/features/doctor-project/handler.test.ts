@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, test } from 'node:test';
 
-import { SUPPORTED_AGENTS } from '../../shared/catalog.js';
+import { SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';

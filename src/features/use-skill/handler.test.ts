@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SUPPORTED_AGENTS } from '../../shared/catalog.js';
+import { SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
 import { readExistingState } from '../../shared/state.js';
 import type { SibuState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';

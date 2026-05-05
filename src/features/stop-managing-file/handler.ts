@@ -4,7 +4,8 @@ import path from 'node:path';
 import { cancel, intro, isCancel, log, outro, select } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { STATE_RELATIVE_PATH, resolveSelectableSkillById } from '../../shared/catalog.js';
+import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import { resolveSelectableSkillById } from '../../modules/workflow-target-planning/index.js';
 import { readFileHashIfPresent, sha256 } from '../../shared/hash.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
