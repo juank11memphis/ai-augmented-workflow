@@ -2,7 +2,7 @@
   "sibuVersion": "0.1.0",
   "templateVersion": "66",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-05T21:09:52.251Z",
+  "updatedAt": "2026-05-05T21:32:58.106Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -108,6 +108,13 @@
       "templateVersion": "2",
       "sha256": "3a8b3a7ad9677511d8e777065c0ab43d846449cebb188f1fdbb765f0ca2dbc21",
       "status": "managed"
+    },
+    ".agents/skills/deep-module-map-writer/SKILL.md": {
+      "template": "skills/deep-module-map-writer/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "7d5e40cca0673b7dcbf2f40058c782ba3b34c9a8c66d44450bb2f33c9bac6c95",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "1"
     }
   }
 }
