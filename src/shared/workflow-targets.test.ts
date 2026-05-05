@@ -6,6 +6,7 @@ import { describe, it } from 'node:test';
 
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import type { SibuState, SupportedAgent } from './types.js';
+import { readTemplateManifest } from './templates.js';
 import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';
@@ -102,7 +103,7 @@ describe('getWorkflowTargets', () => {
     assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert']);
     assert.deepEqual(state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md'], {
       template: 'skills/deep-module-map-writer/SKILL.md',
-      templateVersion: '1',
+      templateVersion: readTemplateManifest().templates['skills/deep-module-map-writer/SKILL.md']?.version,
       sha256: state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md']?.sha256,
       status: 'managed',
     });

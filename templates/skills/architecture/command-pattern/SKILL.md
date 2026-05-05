@@ -18,7 +18,7 @@ When `docs/deep-module-map.md`, a feature brief, or a technical design names Dee
 
 Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `deep-module-map-writer` workflow.
 
-Do not treat shallow technical buckets such as `utils`, `api`, `db`, or `services` as Deep Modules. A Deep Module should be a durable, product-aligned implementation module that can absorb multiple features over time.
+Do not treat shallow technical buckets such as `utils`, `api`, `db`, or `services` as Deep Modules. A Deep Module should expose a small, stable interface while hiding meaningful implementation complexity; product alignment can help explain why work changes together, but product category alone does not make a module deep.
 
 ---
 

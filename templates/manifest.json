@@ -1,11 +1,11 @@
 {
-  "templateVersion": "67",
+  "templateVersion": "68",
   "templates": {
     "AGENTS.md": {
-      "version": "24",
+      "version": "25",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds Deep Module Map routing for product-aligned implementation module planning."
+        "Clarifies Deep Module routing as complexity-hiding implementation module planning."
       ]
     },
     ".codex/config.toml": {
@@ -81,17 +81,17 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Updates DDD + Hexagonal guidance so Deep Modules are the default top-level module boundary before internal domain/application/infra organization."
+        "Clarifies that Deep Modules hide implementation complexity behind small interfaces and are not product categories by themselves."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Updates command-pattern guidance so vertical slices live inside selected Deep Modules using module-first paths."
+        "Clarifies that Deep Modules hide implementation complexity behind small interfaces and are not product categories by themselves."
       ]
     },
     "skills/nextjs/SKILL.md": {

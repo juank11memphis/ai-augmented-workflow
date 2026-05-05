@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.1.0",
-  "templateVersion": "67",
+  "templateVersion": "68",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-05T21:51:47.396Z",
+  "updatedAt": "2026-05-05T22:15:00.000Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -20,9 +20,9 @@
     "AGENTS.md": {
       "template": "AGENTS.md",
       "templateVersion": "23",
-      "sha256": "b078cef6d1736da92fdfeed7e1c22eca000601b1725e183af312ab571a5497a4",
+      "sha256": "bbc49b44b06e3937f0129226a6ce1c2ee1c0fc0167eafcbfd4e5f511ae000673",
       "status": "customized",
-      "lastReviewedTemplateVersion": "24"
+      "lastReviewedTemplateVersion": "25"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -99,9 +99,9 @@
     ".agents/skills/command-pattern/SKILL.md": {
       "template": "skills/architecture/command-pattern/SKILL.md",
       "templateVersion": "3",
-      "sha256": "6b6a4c1794182b1e27ac6f084679fe85b46c6756411b6e9911f10d926865e81e",
+      "sha256": "1123905556fae304db3ed6185b5fc9e9a7806737b774c56adf81e6a28ec58f7e",
       "status": "customized",
-      "lastReviewedTemplateVersion": "4"
+      "lastReviewedTemplateVersion": "5"
     },
     ".agents/skills/ai-prompt-engineer-master/SKILL.md": {
       "template": "skills/ai-prompt-engineer-master/SKILL.md",
