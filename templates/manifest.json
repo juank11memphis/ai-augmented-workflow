@@ -1,5 +1,5 @@
 {
-  "templateVersion": "64",
+  "templateVersion": "65",
   "templates": {
     "AGENTS.md": {
       "version": "24",
@@ -80,17 +80,17 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Adds Product Context compatibility so DDD + Hexagonal guidance preserves approved context ownership while structuring domain, application, and infrastructure concerns."
+        "Updates DDD + Hexagonal guidance so Deep Modules are the default top-level module boundary before internal domain/application/infra organization."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Adds Product Context compatibility so command-oriented vertical slices stay within or clearly under approved context ownership."
+        "Updates command-pattern guidance so vertical slices live inside selected Deep Modules using module-first paths."
       ]
     },
     "skills/nextjs/SKILL.md": {
