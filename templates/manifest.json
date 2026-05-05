@@ -1,5 +1,5 @@
 {
-  "templateVersion": "66",
+  "templateVersion": "67",
   "templates": {
     "AGENTS.md": {
       "version": "24",
@@ -45,10 +45,11 @@
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds the Deep Module Map writer skill for defining product-aligned implementation modules before feature brief work."
+        "Clarifies that Deep Modules are primarily technical design boundaries that hide substantial implementation complexity behind simple interfaces.",
+        "Strengthens the interview flow so agents ask focused one-at-a-time questions until module interfaces, hidden complexity, and boundaries are defensible."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
