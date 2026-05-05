@@ -1,5 +1,5 @@
 {
-  "templateVersion": "65",
+  "templateVersion": "66",
   "templates": {
     "AGENTS.md": {
       "version": "24",
@@ -38,10 +38,10 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, owned output, stop conditions, and stage boundaries for product vision work."
+        "Updates downstream artifact wording from Product Context Map to Deep Module Map."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
@@ -52,17 +52,17 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, owned output, stop conditions, and stage boundaries for feature brief work."
+        "Updates feature brief guidance to require Deep Modules from docs/deep-module-map.md."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "14",
+      "version": "15",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, owned output, stop conditions, and Product Context boundary translation for technical design work."
+        "Updates technical design guidance to translate selected Deep Modules into implementation boundaries."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -108,24 +108,24 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, owned Epic and Story outputs, stop conditions, and stage boundaries for Scrum planning."
+        "Updates Scrum planning guidance to preserve Deep Module implementation boundaries from technical designs."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, owned implementation plan outputs, stop conditions, and stage boundaries for implementation planning."
+        "Updates implementation planning guidance to preserve approved Deep Module boundaries."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "14",
+      "version": "15",
       "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, current-step outputs, stop conditions, and review-gated execution boundaries."
+        "Updates execution guidance to preserve approved Deep Module boundaries."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
@@ -136,10 +136,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, owned output, stop conditions, and UI-impact boundaries for UX design work."
+        "Updates boundary wording from Product Context Maps to Deep Module Maps."
       ]
     }
   }
