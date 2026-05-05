@@ -28,11 +28,11 @@ Default output path: `docs/product-vision.md`.
 
 - The user's intent is too unclear to ask a useful discovery question.
 - Writing would overwrite an existing vision when the user appears to want a separate new vision.
-- The request is for a downstream artifact such as a Product Context Map, feature brief, technical design, UX spec, stories, implementation plan, or implementation work.
+- The request is for a downstream artifact such as a Deep Module Map, feature brief, technical design, UX spec, stories, implementation plan, or implementation work.
 
 ### What this skill must not do
 
-- Do not create Product Context Maps, feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not create Deep Module Maps, feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not require a final confirmation summary before writing once enough product vision context is available.
 - Do not pretend unresolved strategy questions are settled; ask a focused question or document a clear assumption.
 

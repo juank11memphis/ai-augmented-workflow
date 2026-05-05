@@ -30,7 +30,7 @@ Act as a senior UX/UI designer. Turn an approved product artifact into usable, e
 
 ### What this skill must not do
 
-- Do not create or update product visions, Product Context Maps, feature briefs, technical designs, Epics, User Stories, implementation plans, or production code.
+- Do not create or update product visions, Deep Module Maps, feature briefs, technical designs, Epics, User Stories, implementation plans, or production code.
 - Do not make architecture, framework, API, data model, or file-path decisions.
 - Do not treat UX work as optional for UI-changing features; concrete mockups are required.
 - Do not require a final confirmation summary before writing once enough UX context is available.
