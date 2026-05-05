@@ -35,9 +35,9 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 
 ### What this skill must not do
 
-- Do not create or update product visions, Product Context Maps, feature briefs, technical designs, UX specs, implementation plans, or production code.
+- Do not create or update product visions, Deep Module Maps, feature briefs, technical designs, UX specs, implementation plans, or production code.
 - Do not modify prior-stage artifacts.
-- Do not reread `docs/product-context-map.md` by default; trust `technical_design.md` for implementation boundaries.
+- Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
 - Do not add product scope or architecture decisions absent from the feature brief and technical design.
 
 ## Required inputs

@@ -35,9 +35,9 @@ Execute one existing story implementation plan, one ordered step file at a time,
 
 ### What this skill must not do
 
-- Do not create product visions, Product Context Maps, feature briefs, technical designs, UX specs, Epics, User Stories, or implementation plans.
+- Do not create product visions, Deep Module Maps, feature briefs, technical designs, UX specs, Epics, User Stories, or implementation plans.
 - Do not modify prior-stage artifacts except for approval metadata in the current step file.
-- Do not reread `docs/product-context-map.md` by default; trust `technical_design.md` for implementation boundaries.
+- Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
 - Do not implement multiple unapproved steps in one pass or mark a step approved before explicit user approval.
 - Do not weaken the one-step-at-a-time execution model, user review gate, or approved-step commit behavior.
 
@@ -68,7 +68,7 @@ docs/features/<feature-slug>/ux.md  # when the story, step, or feature has UI im
 
 Also read `docs/product-vision.md` when product fit, target user, scope boundaries, or success signals are ambiguous.
 
-When the story, implementation plan, feature brief, or technical design includes Product Context guidance, treat it as part of the execution contract. Product Contexts answer “where does this work belong?” Approved contexts define where code work should stay.
+When the story, implementation plan, feature brief, or technical design includes Deep Module guidance, treat it as part of the execution contract. Deep Modules answer “where does this implementation work belong?” Approved modules define where implementation work should stay.
 
 If the story, any step, or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation.
 
@@ -180,14 +180,14 @@ Do not automatically start planning or implementing the next story. This check i
 Do:
 
 - preserve the source story scope and acceptance criteria
-- preserve approved Product Context boundaries when present
+- preserve approved Deep Module boundaries when present
 - follow the current step file exactly unless it conflicts with source context
 - keep changes focused on the current step's `## Scope` and `## Files`
 - keep work inside the contexts named by the approved step and technical design
 - use existing project patterns and the relevant skills
 - run focused validation for the current step when possible
 - stop and ask if the step is ambiguous, missing required files, or conflicts with the technical design
-- stop and ask before moving work into an unrelated Product Context unless the approved step or technical design explicitly justifies it
+- stop and ask before moving work into an unrelated Deep Module unless the approved step or technical design explicitly justifies it
 
 Do not:
 
@@ -195,7 +195,7 @@ Do not:
 - implement multiple unapproved steps in one pass
 - mark a step approved before the user explicitly approves it
 - add product scope absent from the story, Epic, feature brief, technical design, or step file
-- silently move work into unrelated or unapproved Product Contexts
+- silently move work into unrelated or unapproved Deep Modules
 - continue past a failed validation without reporting it and asking how to proceed
 - leave approved step changes uncommitted before moving to the next step
 
