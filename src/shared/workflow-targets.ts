@@ -13,7 +13,7 @@ import {
 import { sha256 } from './hash.js';
 import { removeUndefinedFields } from './object.js';
 import { readExistingState } from './state.js';
-import { getTemplateVersion, readTemplate, readTemplateManifest, renderSkillRouting } from './templates.js';
+import { getTemplateVersion, readTemplate, readTemplateManifest, renderSkillRouting } from '../modules/template-catalog-rendering/index.js';
 import type {
   SibuState,
   FileToCreate,

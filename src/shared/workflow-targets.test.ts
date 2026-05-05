@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './catalog.js';
 import type { SibuState, SupportedAgent } from './types.js';
-import { readTemplateManifest } from './templates.js';
+import { readTemplateManifest } from '../modules/template-catalog-rendering/index.js';
 import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';

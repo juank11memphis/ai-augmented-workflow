@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { sha256 } from './hash.js';
 import { hasReviewedTemplateVersion } from './state.js';
-import { renderTemplateForSync } from './templates.js';
+import { renderTemplateForSync } from '../modules/template-catalog-rendering/index.js';
 import type { SibuState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from './types.js';
 import {
   getSelectedAgentsFromState,

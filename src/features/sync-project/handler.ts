@@ -5,7 +5,7 @@ import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { askForMissingFrameworkSkills, askForNewArchitectureSkill, askForNewLanguageSkills, renderIntro } from '../../shared/prompts.js';
 import { readStateForDoctor, writeStateFile } from '../../shared/state.js';
-import { readTemplateManifest } from '../../shared/templates.js';
+import { readTemplateManifest } from '../../modules/template-catalog-rendering/index.js';
 import { askForSyncAction } from './action-prompt.js';
 import { applySyncAction } from './apply-action.js';
 import type { SyncProjectCommand } from './command.js';

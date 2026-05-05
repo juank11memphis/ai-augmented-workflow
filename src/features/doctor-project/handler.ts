@@ -10,7 +10,7 @@ import { checkForLatestSibuVersion } from '../../shared/npm-version.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
 import { hasReviewedTemplateVersion, readStateForDoctor } from '../../shared/state.js';
-import { getTemplateVersion, readTemplateManifest } from '../../shared/templates.js';
+import { getTemplateVersion, readTemplateManifest } from '../../modules/template-catalog-rendering/index.js';
 import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,

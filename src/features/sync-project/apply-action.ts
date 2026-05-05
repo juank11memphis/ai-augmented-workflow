@@ -6,7 +6,7 @@ import { log } from '@clack/prompts';
 import { sha256 } from '../../shared/hash.js';
 import { getSideTemplatePath } from '../../shared/paths.js';
 import { cloneState } from '../../shared/state.js';
-import { getTemplateVersion, renderTemplateForSync } from '../../shared/templates.js';
+import { getTemplateVersion, renderTemplateForSync } from '../../modules/template-catalog-rendering/index.js';
 import type { SibuState, TemplateManifest } from '../../shared/types.js';
 import {
   getSelectedArchitectureSkillFromState,

@@ -6,7 +6,7 @@ import { log } from '@clack/prompts';
 import { STATE_RELATIVE_PATH, resolveSelectableSkillById } from '../../shared/catalog.js';
 import { sha256 } from '../../shared/hash.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { renderTemplateForSync } from '../../shared/templates.js';
+import { renderTemplateForSync } from '../../modules/template-catalog-rendering/index.js';
 import type {
   ArchitectureSkillId,
   SibuState,

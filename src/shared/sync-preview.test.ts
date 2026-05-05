@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
 import { SUPPORTED_AGENTS } from './catalog.js';
-import { readTemplateManifest } from './templates.js';
+import { readTemplateManifest } from '../modules/template-catalog-rendering/index.js';
 import type { SibuState, SupportedAgent } from './types.js';
 import { getSyncPreviews } from './sync-preview.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';

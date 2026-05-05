@@ -1,6 +1,6 @@
 import { readStateForDoctor } from './state.js';
 import { getSyncPreviews, isActionableSyncPreview, type SyncPreview } from './sync-preview.js';
-import { readTemplateManifest } from './templates.js';
+import { readTemplateManifest } from '../modules/template-catalog-rendering/index.js';
 import type { SibuState, TemplateManifest } from './types.js';
 
 export type WorkflowMutationReadinessResult =
