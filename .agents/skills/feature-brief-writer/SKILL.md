@@ -16,8 +16,8 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 ### What this skill needs
 
 - `docs/product-vision.md`.
-- `docs/product-context-map.md`.
-- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Product Context fit.
+- `docs/deep-module-map.md`.
+- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit.
 
 ### What this skill writes
 
@@ -27,15 +27,15 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 ### When this skill stops
 
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
-- `docs/product-context-map.md` is missing; tell the user to create it first with `product-context-map-writer`.
-- The feature appears to require a new or changed Product Context; direct the user back to `product-context-map-writer`.
+- `docs/deep-module-map.md` is missing; tell the user to create it first with `deep-module-map-writer`.
+- The feature appears to require a new or changed Deep Module; direct the user back to `deep-module-map-writer`.
 - The request belongs to another pipeline stage, such as technical design, UX design, Scrum planning, implementation planning, or implementation execution.
 - Current-stage feature intent is unclear; ask one focused question at a time until enough information is available.
 
 ### What this skill must not do
 
-- Do not create or update Product Context Maps, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
-- Do not invent Product Contexts or use contexts that are absent from `docs/product-context-map.md`.
+- Do not create or update Deep Module Maps, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not invent Deep Modules or use modules that are absent from `docs/deep-module-map.md`.
 - Do not require a final confirmation summary before writing once enough feature brief context is available.
 - Do not duplicate or rewrite the product vision; apply only the relevant implications to the feature.
 
@@ -45,18 +45,18 @@ Before doing any feature-brief work, read:
 
 ```txt
 docs/product-vision.md
-docs/product-context-map.md
+docs/deep-module-map.md
 ```
 
 Use the product vision as the source of truth for the product's purpose, audience, positioning, principles, voice, boundaries, trust expectations, and success signals.
 
-Use the Product Context Map as the source of truth for where feature work belongs. Product Contexts answer “where does this work belong?” Do not invent Product Contexts in a feature brief.
+Use the Deep Module Map as the source of truth for where feature work belongs. Deep Modules answer “where does this work belong?” Do not invent Deep Modules in a feature brief.
 
 Do not duplicate or rewrite the product vision inside the feature brief. Apply it to the specific feature being defined.
 
 ## Hard start rule
 
-Do not start a feature brief if `docs/product-vision.md` or `docs/product-context-map.md` is missing.
+Do not start a feature brief if `docs/product-vision.md` or `docs/deep-module-map.md` is missing.
 
 If the product vision is missing:
 
@@ -65,11 +65,11 @@ If the product vision is missing:
 3. Instruct the user to create the product vision first with the `product-vision-writer` skill.
 4. Do not draft, infer, or save a feature brief until the product vision exists.
 
-If the Product Context Map is missing:
+If the Deep Module Map is missing:
 
 1. Stop.
-2. Tell the user that a feature brief requires `docs/product-context-map.md`.
-3. Instruct the user to create the map first with the `product-context-map-writer` skill.
+2. Tell the user that a feature brief requires `docs/deep-module-map.md`.
+3. Instruct the user to create the map first with the `deep-module-map-writer` skill.
 4. Do not draft, infer, or save a feature brief until the map exists.
 
 ## Use this skill for
@@ -102,13 +102,13 @@ Be deliberately interrogative before drafting. The feature brief should reflect 
 - Keep asking until you have complete practical understanding and explicit user alignment.
 - Prefer follow-up questions over filling gaps with plausible invention.
 - Treat "100% understanding" as: feature intent, target user, scenario, user problem, business goal, MVP boundary, out-of-scope boundary, success signals, and known constraints are all clear enough to defend in the brief.
-- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Product Context fit are clear enough to defend in the brief.
+- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit are clear enough to defend in the brief.
 - If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
 - Do not ask a large questionnaire all at once.
 
 ## Workflow
 
-### 1. Read the product vision and Product Context Map
+### 1. Read the product vision and Deep Module Map
 
 Read `docs/product-vision.md` first and identify:
 
@@ -122,16 +122,16 @@ Read `docs/product-vision.md` first and identify:
 
 Use these as constraints for the feature brief.
 
-Then read `docs/product-context-map.md` and identify which existing Product Contexts may own the requested feature. A feature brief must name one or more existing Product Contexts.
+Then read `docs/deep-module-map.md` and identify which existing Deep Modules may own the requested feature. A feature brief must name one or more existing Deep Modules.
 
-If no existing Product Context fits:
+If no existing Deep Module fits:
 
 1. Stop before drafting.
-2. Tell the user the feature appears to require a Product Context Map update.
+2. Tell the user the feature appears to require a Deep Module Map update.
 3. Provide this suggested prompt, adapted to the user's feature:
 
 ```txt
-Use product-context-map-writer to update docs/product-context-map.md for this feature: <feature summary>. Decide whether it belongs in an existing Product Context or requires a new/changed context, then update the map only after confirming the responsibility boundary with me.
+Use deep-module-map-writer to update docs/deep-module-map.md for this feature: <feature summary>. Decide whether it belongs in an existing Deep Module or requires a new/changed module, then update the map only after confirming the responsibility boundary with me.
 ```
 
 4. Do not draft, infer, or save a feature brief until the map is updated.
@@ -167,7 +167,7 @@ Ask every question needed to remove material ambiguity, but only one at a time. 
 - what should stay out of scope
 - known constraints, risks, or open decisions
 
-Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Product Context fit are clear enough to avoid invention.
+Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit are clear enough to avoid invention.
 
 If the conversation stalls, offer a concise default assumption for the next unresolved point and ask the user to confirm or correct it before proceeding.
 
@@ -186,8 +186,8 @@ Recommended structure:
 ## Product Vision Fit
 <How this feature supports the product vision, principles, audience, or positioning.>
 
-## Product Context
-<One or more existing Product Contexts from docs/product-context-map.md that own this feature, with a brief fit rationale.>
+## Deep Module
+<One or more existing Deep Modules from docs/deep-module-map.md that own this feature, with a brief fit rationale.>
 
 ## User / Customer Problem
 <The user need, pain, desire, or opportunity this feature addresses.>
@@ -251,7 +251,7 @@ If the file already exists, read it first. Treat the request as a revision when 
 Aim for writing that is:
 
 - loyal to the required product vision
-- explicit about which existing Product Contexts own the feature
+- explicit about which existing Deep Modules own the feature
 - specific to the user's feature
 - grounded in the product vision
 - concise
@@ -265,7 +265,7 @@ Avoid:
 - vague benefits without user or business grounding
 - feature lists without rationale
 - drafting from vague feature labels without discovery
-- inventing new Product Contexts instead of stopping for a map update
+- inventing new Deep Modules instead of stopping for a map update
 - inventing certainty where the product vision or user input is unresolved
 
 ## Decision rule
@@ -273,7 +273,7 @@ Avoid:
 When shaping a feature brief, prefer:
 
 1. alignment with `docs/product-vision.md`
-2. fit with existing Product Contexts from `docs/product-context-map.md`
+2. fit with existing Deep Modules from `docs/deep-module-map.md`
 3. clear user value
 4. clear business or product outcome
 5. simple MVP scope
