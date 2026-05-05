@@ -10,7 +10,7 @@ This feature supports Sibu's promise to help developers move faster with AI with
 
 The change also fits Sibu's philosophy of strong defaults without a cage. Deep Modules should guide top-level code organization, but they should not force DDD, Hexagonal Architecture, services, packages, layers, or a specific framework. They create a durable module map that later architecture choices can structure internally.
 
-## Product Context
+## Deep Module
 
 - **AI Development Pipeline:** Primary context. This feature changes a core pipeline stage and the handoffs from product vision into feature briefs, technical designs, implementation plans, and execution.
 - **Guidance Library:** Supporting context. The refactor is delivered through reusable Sibu skill templates and architecture guidance.

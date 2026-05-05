@@ -2,7 +2,7 @@
 
 ## Summary
 
-Deliver the Deep Module Map refactor across Sibu's planning workflow so agents use product-aligned implementation modules instead of the removed Product Context Map concept. This Epic creates the new map-writer skill, updates downstream handoffs, aligns architecture guidance, removes obsolete Product Context artifacts, and validates the managed template set.
+Deliver the Deep Module Map refactor across Sibu's planning workflow so agents use product-aligned implementation modules instead of the removed Product Context Map concept. This Epic creates the new map-writer skill, updates downstream handoffs, aligns architecture guidance, removes obsolete legacy map artifacts, and validates the managed template set.
 
 ## Source Context
 - Feature brief: ../../feature_brief.md
@@ -25,11 +25,11 @@ Deliver the Deep Module Map refactor across Sibu's planning workflow so agents u
 - [Introduce the Deep Module Map writer and routing](./stories/01-introduce-deep-module-map-writer.md)
 - [Update downstream pipeline skills for Deep Modules](./stories/02-update-pipeline-skills-for-deep-modules.md)
 - [Update architecture guidance for Deep Module boundaries](./stories/02-update-architecture-guidance-for-deep-modules.md)
-- [Remove Product Context remnants and validate templates](./stories/03-remove-product-context-remnants-and-validate.md)
+- [Remove legacy map remnants and validate templates](./stories/03-remove-product-context-remnants-and-validate.md)
 
 ## Acceptance Criteria
 - The Sibu workflow routes module-map work to `deep-module-map-writer` and `docs/deep-module-map.md`.
-- Product Context Map terminology is removed from active templates and local workflow guidance.
+- Legacy map terminology is removed from active templates and local workflow guidance.
 - Feature, technical design, planning, execution, and architecture skills consistently use Deep Module terminology and boundaries.
 - Obsolete Product Context Map docs and skill/template entries are removed rather than kept as compatibility aliases.
 - Template manifest metadata and validation checks reflect the new managed template set.

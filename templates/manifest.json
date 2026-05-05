@@ -5,7 +5,7 @@
       "version": "24",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Replaces Product Context Map routing with Deep Module Map routing for product-aligned implementation module planning."
+        "Adds Deep Module Map routing for product-aligned implementation module planning."
       ]
     },
     ".codex/config.toml": {
@@ -41,7 +41,7 @@
       "version": "7",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Updates downstream artifact wording from Product Context Map to Deep Module Map."
+        "Updates downstream artifact wording to use Deep Module Map."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
@@ -139,7 +139,7 @@
       "version": "6",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Updates boundary wording from Product Context Maps to Deep Module Maps."
+        "Updates boundary wording to use Deep Module Maps."
       ]
     }
   }
