@@ -27,15 +27,17 @@ This skill is backend-focused. It does not cover frontend component architecture
 
 If a simpler structure preserves clear boundaries, prefer the simpler structure.
 
-## Product Context compatibility
+## Deep Module compatibility
 
-Product Contexts answer “where does this work belong?” DDD + Hexagonal answers “how is that context structured internally?”
+Deep Modules answer “where does this implementation work belong?” DDD + Hexagonal answers “how is that module structured internally?”
 
-When `docs/product-context-map.md`, a feature brief, or a technical design names Product Contexts, treat them as the first ownership boundary to preserve before choosing domain/application/infra placement. Prefer placing domain concepts, use cases, ports, and adapters under the selected context's ownership. If work crosses contexts, name the owning context for each part and keep dependencies explicit.
+When `docs/deep-module-map.md`, a feature brief, or a technical design names Deep Modules, treat each selected Deep Module as the default top-level implementation boundary before choosing domain/application/infra placement. Prefer placing domain concepts, use cases, ports, and adapters under the selected module's ownership. If work crosses modules, name the owning module for each part and keep dependencies explicit.
 
-A Product Context may contain `domain`, `application`, and `infra`/adapter concerns, but the map remains architecture-agnostic: it is not a required DDD Bounded Context, folder structure, service boundary, or layer model.
+A Deep Module may contain `domain`, `application`, and `infra`/adapter concerns, but it is not automatically a DDD Bounded Context, service, package, database boundary, or team boundary. Projects that already use DDD Bounded Contexts may align a Bounded Context one-to-one with a Deep Module when that preserves the model and language.
 
-Do not invent new Product Contexts during design or implementation. If work does not fit the approved contexts, stop and route the decision back to the `product-context-map-writer` workflow.
+Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `deep-module-map-writer` workflow.
+
+Do not treat shallow technical buckets such as `utils`, `api`, `db`, or `services` as Deep Modules. A Deep Module should be a durable, product-aligned implementation module that can absorb multiple features over time.
 
 ## The layers
 
@@ -130,10 +132,13 @@ Do not create an entity or value object when:
 
 Use this default mapping when the project does not already have a clearer convention:
 
-- `<feature-or-domain>/domain/**` → domain concepts and rules
-- `<feature-or-domain>/application/**` → use cases and application orchestration
-- `<feature-or-domain>/infra/**` → technical implementations and external integrations
-- entrypoints such as routes, jobs, or handlers → thin driving adapters that call application behavior
+```text
+/src/modules/<module-slug>/domain/**       # Domain concepts and rules
+/src/modules/<module-slug>/application/**  # Use cases and application orchestration
+/src/modules/<module-slug>/infra/**        # Technical implementations and external integrations
+```
+
+Entrypoints such as routes, jobs, or handlers should remain thin driving adapters that call application behavior inside the selected Deep Module.
 
 ## Ports and adapters
 
