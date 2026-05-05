@@ -10,13 +10,15 @@ Use this skill to design and implement software features as independent, end-to-
 
 ---
 
-## Product Context Compatibility
+## Deep Module Compatibility
 
-Product Contexts answer “where does this work belong?” Command Pattern guidance answers “how is that work structured as command-oriented vertical slices?”
+Deep Modules answer “where does this implementation work belong?” Command Pattern guidance answers “how is that work structured as command-oriented vertical slices inside the selected module?”
 
-When `docs/product-context-map.md`, a feature brief, or a technical design names Product Contexts, place each vertical slice within or clearly under the relevant Product Context's ownership. The feature-local Command, Handler, Port, Adapter, and Result guidance still applies inside that context boundary.
+When `docs/deep-module-map.md`, a feature brief, or a technical design names Deep Modules, place each vertical slice inside the relevant Deep Module. The feature-local Command, Handler, Port, Adapter, and Result guidance still applies inside that module boundary.
 
-Do not invent new Product Contexts during design or implementation. If work does not fit the approved contexts, stop and route the decision back to the `product-context-map-writer` workflow.
+Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `deep-module-map-writer` workflow.
+
+Do not treat shallow technical buckets such as `utils`, `api`, `db`, or `services` as Deep Modules. A Deep Module should be a durable, product-aligned implementation module that can absorb multiple features over time.
 
 ---
 
@@ -37,20 +39,30 @@ Organize by Capability (what the system does) rather than Technical Layer (what 
 
 ```text
 /src
-  ├── /entrypoints          # Driving Adapters (The "Edges")
-  │    └── /cli             # Parses flags/args -> creates Command -> calls Handler
-  ├── /features             # THE HEXAGON (Domain & Application Logic)
-  │    └── /feature-name    # e.g., "archive-project"
-  │         ├── command     # The Input DTO
-  │         ├── handler     # The Orchestration logic
-  │         ├── ports       # Interfaces required by the handler
-  │         └── result      # The Output DTO/Contract
-  ├── /shared               # Universal logic only
-  │    ├── /domain          # Global Entities (e.g., "User", "Project")
-  │    └── /errors          # Global error definitions
-  └── /infrastructure       # Driven Adapters (Implementation Details)
-       ├── /persistence     # DB implementations of feature Ports
-       └── /clients         # External API implementations of feature Ports
+  ├── /entrypoints                  # Driving Adapters (The "Edges")
+  │    └── /cli                     # Parses flags/args -> creates Command -> calls Handler
+  ├── /modules                      # Deep Modules from docs/deep-module-map.md
+  │    └── /module-slug             # e.g., "workflow-adoption"
+  │         └── /feature-slice      # e.g., "archive-project"
+  │              ├── command        # The Input DTO
+  │              ├── handler        # The Orchestration logic
+  │              ├── ports          # Interfaces required by the handler
+  │              └── result         # The Output DTO/Contract
+  ├── /shared                       # Universal logic only
+  │    ├── /domain                  # Global Entities (e.g., "User", "Project")
+  │    └── /errors                  # Global error definitions
+  └── /infrastructure               # Driven Adapters (Implementation Details)
+       ├── /persistence             # DB implementations of feature Ports
+       └── /clients                 # External API implementations of feature Ports
+```
+
+Default slice paths:
+
+```text
+/src/modules/<module-slug>/<feature-slice>/command
+/src/modules/<module-slug>/<feature-slice>/handler
+/src/modules/<module-slug>/<feature-slice>/ports
+/src/modules/<module-slug>/<feature-slice>/result
 ```
 
 ---
@@ -58,7 +70,7 @@ Organize by Capability (what the system does) rather than Technical Layer (what 
 ## 3. Operational Rules for Implementation
 
 ### Rule 1: Feature Isolation
-A feature folder must never import from another feature folder. If two features need the same logic, that logic must be promoted to the /shared directory.
+A feature-slice folder must never import from another feature-slice folder. If two slices need the same logic, that logic must be promoted to the owning Deep Module or to /shared when it is truly universal.
 
 ### Rule 2: Dependency Inversion
 The Handler must never instantiate a database, a file system, or a network client. It must receive its dependencies (via Ports) through its constructor or initialization.
@@ -83,5 +95,5 @@ Entrypoints (CLI/API) are responsible for Syntactic Validation (is the input the
 ## 5. Constraint Checklist for Agent Reviews
 - [ ] Zero Leakage: Does the Handler contain CLI-specific code (like fmt.Printf or flags)?
 - [ ] Interface-Driven: Does the Handler depend on a concrete Database class or an Interface (Port)?
-- [ ] Folder Integrity: Does the feature folder contain the Command, Handler, and Ports?
+- [ ] Folder Integrity: Does the Deep Module feature-slice folder contain the Command, Handler, and Ports?
 - [ ] Dependency Direction: Does the infrastructure layer depend on the feature ports, and not the other way around?
