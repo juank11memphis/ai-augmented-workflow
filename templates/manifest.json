@@ -1,11 +1,11 @@
 {
-  "templateVersion": "63",
+  "templateVersion": "64",
   "templates": {
     "AGENTS.md": {
-      "version": "23",
+      "version": "24",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds Product Context Map routing and clarifies the planned feature-work pipeline without requiring it for narrow code fixes."
+        "Replaces Product Context Map routing with Deep Module Map routing for product-aligned implementation module planning."
       ]
     },
     ".codex/config.toml": {
@@ -44,11 +44,11 @@
         "Adds a pipeline contract that clarifies required inputs, owned output, stop conditions, and stage boundaries for product vision work."
       ]
     },
-    "skills/product-context-map-writer/SKILL.md": {
-      "version": "3",
-      "description": "Mandatory Product Context Map writer skill installed once at the shared .agents/skills workspace path.",
+    "skills/deep-module-map-writer/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds a pipeline contract that clarifies required inputs, owned output, stop conditions, and stage boundaries for Product Context Map work."
+        "Adds the Deep Module Map writer skill for defining product-aligned implementation modules before feature brief work."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
@@ -76,7 +76,7 @@
       "version": "1",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+        "Adds an optional Go skill with concise, Effective Go\u2013style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
