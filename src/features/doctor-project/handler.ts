@@ -19,7 +19,7 @@ import {
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getWorkflowTargets,
-} from '../../shared/workflow-targets.js';
+} from '../../modules/workflow-target-planning/index.js';
 import type { DoctorProjectCommand } from './command.js';
 
 export async function handleDoctorProject(_command: DoctorProjectCommand): Promise<void> {

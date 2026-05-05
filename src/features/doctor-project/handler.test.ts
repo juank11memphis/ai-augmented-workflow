@@ -6,7 +6,7 @@ import { afterEach, test } from 'node:test';
 
 import { SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../modules/workflow-target-planning/index.js';
 import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
 
 const DEEP_MODULE_SKILL_PATH = '.agents/skills/deep-module-map-writer/SKILL.md';

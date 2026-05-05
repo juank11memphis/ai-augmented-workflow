@@ -7,7 +7,7 @@ import { afterEach, describe, it } from 'node:test';
 import { SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../modules/workflow-target-planning/index.js';
 import { getWorkflowMutationReadiness } from './workflow-mutation-readiness.js';
 import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from './types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../modules/workflow-target-planning/index.js';
 
 const temporaryRoots: string[] = [];
 

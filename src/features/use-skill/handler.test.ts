@@ -7,7 +7,7 @@ import { afterEach, describe, it } from 'node:test';
 import { SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
 import { readExistingState } from '../../shared/state.js';
 import type { SibuState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../modules/workflow-target-planning/index.js';
 import { getNextSkillSelection, handleUseSkill } from './handler.js';
 
 const BASE_STATE: SibuState = {

@@ -22,7 +22,7 @@ import type {
   WorkflowTarget,
 } from '../../shared/types.js';
 import { getWorkflowMutationReadiness } from '../../shared/workflow-mutation-readiness.js';
-import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
+import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../modules/workflow-target-planning/index.js';
 import type { UseSkillCommand } from './command.js';
 
 type NextSkillSelection = {

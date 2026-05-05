@@ -19,7 +19,7 @@ import {
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
-} from '../../shared/workflow-targets.js';
+} from '../../modules/workflow-target-planning/index.js';
 import type { StopManagingFileCommand } from './command.js';
 
 export type StopSkillResult =

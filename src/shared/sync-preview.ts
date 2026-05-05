@@ -12,7 +12,7 @@ import {
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
-} from './workflow-targets.js';
+} from '../modules/workflow-target-planning/index.js';
 
 export type SyncPreview = {
   relativePath: string;

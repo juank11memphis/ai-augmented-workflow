@@ -13,7 +13,7 @@ import {
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
-} from '../../shared/workflow-targets.js';
+} from '../../modules/workflow-target-planning/index.js';
 import type { SyncAction } from './action-prompt.js';
 import type { SyncPreview } from './preview.js';
 

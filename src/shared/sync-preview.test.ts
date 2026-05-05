@@ -8,7 +8,7 @@ import { SUPPORTED_AGENTS } from '../modules/workflow-target-planning/index.js';
 import { readTemplateManifest } from '../modules/template-catalog-rendering/index.js';
 import type { SibuState, SupportedAgent } from './types.js';
 import { getSyncPreviews } from './sync-preview.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../modules/workflow-target-planning/index.js';
 
 const DEEP_MODULE_SKILL_PATH = '.agents/skills/deep-module-map-writer/SKILL.md';
 const DEEP_MODULE_TEMPLATE_PATH = 'skills/deep-module-map-writer/SKILL.md';

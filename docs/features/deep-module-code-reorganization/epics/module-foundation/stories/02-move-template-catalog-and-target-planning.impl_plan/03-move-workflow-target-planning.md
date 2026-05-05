@@ -32,3 +32,8 @@ Move workflow target resolution, selected-skill-from-state helpers, missing-file
 - Moved workflow target tests pass with equivalent assertions.
 - Generated target paths remain unchanged for existing agent and skill selections.
 - `pnpm build` passes.
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-05-05T17:43:44-06:00
