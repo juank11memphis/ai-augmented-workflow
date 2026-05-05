@@ -25,3 +25,9 @@ Keep this repository's installed workflow files aligned with the new Deep Module
 - Root `AGENTS.md` routes Deep Module Map requests to `deep-module-map-writer`.
 - Root `AGENTS.md` no longer routes active workflow requests to `product-context-map-writer`.
 - No downstream skill files are changed as part of this step unless required to keep local routing coherent.
+
+## Review status
+
+- Status: approved
+- Approved by: juanca
+- Approved at: 2026-05-05T14:30:45-06:00

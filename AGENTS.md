@@ -36,12 +36,12 @@ Keep responses concise by default, but spend the context needed for correctness,
 
 ## Skill routing
 
-For planned product/feature work, use this pipeline: product vision -> product context map -> feature brief -> technical design -> optional UX -> epics/stories -> AI implementation plan -> AI executor. Narrow code fixes and small local changes do not require the full pipeline unless product scope, context ownership, or architecture direction is unclear.
+For planned product/feature work, use this pipeline: product vision -> deep module map -> feature brief -> technical design -> optional UX -> epics/stories -> AI implementation plan -> AI executor. Narrow code fixes and small local changes do not require the full pipeline unless product scope, module ownership, or architecture direction is unclear.
 
 - For any code-writing task, use `clean-code`.
 - For requests to create, revise, or clarify a product vision, product strategy narrative, product north star, positioning, product principles, product voice, target user definition, product boundaries, or success signals, use `product-vision-writer`.
-- For requests to create, revise, or clarify a Product Context Map, product responsibility boundaries, context ownership, or `docs/product-context-map.md`, use `product-context-map-writer`.
-- For requests to create, revise, or clarify a business-level feature brief after Product Context Map work, feature definition, feature scope, MVP feature boundaries, business acceptance criteria, or product-level feature rationale, use `feature-brief-writer`.
+- For requests to create, revise, or clarify a Deep Module Map, product-aligned implementation modules, module boundaries, suggested implementation modules, or `docs/deep-module-map.md`, use `deep-module-map-writer`.
+- For requests to create, revise, or clarify a business-level feature brief after Deep Module Map work, feature definition, feature scope, MVP feature boundaries, business acceptance criteria, or product-level feature rationale, use `feature-brief-writer`.
 - For requests to create, revise, or clarify a technical design, implementation-oriented design doc, architecture approach, technical tradeoffs, technical risks, or implementation plan for an approved feature, use `technical-design-writer`.
 - For requests to create Epics, User Stories, Scrum planning artifacts, backlog slices, or delivery plans from an approved feature brief and technical design, use `scrum-master-planner`.
 - For requests to turn a specific User Story into an implementation checklist, coding plan, step-by-step execution plan, or baby-step plan, use `ai-implementation-planner`.
