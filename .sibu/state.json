@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.1.0",
-  "templateVersion": "63",
+  "templateVersion": "66",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-04T20:56:18.570Z",
+  "updatedAt": "2026-05-05T21:09:52.251Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -20,8 +20,9 @@
     "AGENTS.md": {
       "template": "AGENTS.md",
       "templateVersion": "23",
-      "sha256": "7b704f47e336e20b2220ae3dd15380a428a8ffc60eb72c06e3130dcd3bf14e61",
-      "status": "managed"
+      "sha256": "b078cef6d1736da92fdfeed7e1c22eca000601b1725e183af312ab571a5497a4",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "24"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -50,44 +51,44 @@
     ".agents/skills/product-vision-writer/SKILL.md": {
       "template": "skills/product-vision-writer/SKILL.md",
       "templateVersion": "5",
-      "sha256": "65fba14ce7e69c6fc1d4f29e298b16d8b718a200f1392ee905d79dfb721865f4",
+      "sha256": "810a552479e7cefd4c3b3c1e58c36ab72b288221b9760a5dd9d60561366c1cb0",
       "status": "customized",
-      "lastReviewedTemplateVersion": "6"
+      "lastReviewedTemplateVersion": "7"
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
       "templateVersion": "6",
-      "sha256": "763cdaeaa29937e3adb4026ccee8cb6f6eec5fc305af549fa2dafec457c6b91c",
+      "sha256": "270914a54753428627b09e492ef8f2bb50c554e39e678b8d744c47d97b1f030f",
       "status": "customized",
-      "lastReviewedTemplateVersion": "7"
+      "lastReviewedTemplateVersion": "8"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
       "templateVersion": "13",
-      "sha256": "c231496ce536765753fa5473e7a31e6a98dc401f9a8e27e512b93443a007d535",
+      "sha256": "64546a46c01c7cb9fed73d963d558dffdf518567b4a21e3eee1f55d21054e6e2",
       "status": "customized",
-      "lastReviewedTemplateVersion": "14"
+      "lastReviewedTemplateVersion": "15"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
       "templateVersion": "5",
-      "sha256": "8687da8f5ba86309d7a17f184edd0e915a3126d8bbe00b762b964de05b718aa9",
+      "sha256": "c01105deb59489be87582ba88d89b1fb1d118325c7d7723d8b87673d8a8af40d",
       "status": "customized",
-      "lastReviewedTemplateVersion": "6"
+      "lastReviewedTemplateVersion": "7"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
       "templateVersion": "8",
-      "sha256": "692c906000163b67f5ab083194e226dacedd3b2e6bd2741213c3569fd9cac26c",
+      "sha256": "f6ba6ae5f4754c34649f44598691e634e58ba4ce5c45c10bae5e38428377b3e1",
       "status": "customized",
-      "lastReviewedTemplateVersion": "9"
+      "lastReviewedTemplateVersion": "10"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
       "templateVersion": "13",
-      "sha256": "eb421c5db9d0a33dea7538e295708114d72786ef7a5d32d1a6e647364c83731d",
+      "sha256": "6da9bbc2bb31e11128e290a26c2b8879aa919fd95bed2dfe53249aa273b5cdf0",
       "status": "customized",
-      "lastReviewedTemplateVersion": "14"
+      "lastReviewedTemplateVersion": "15"
     },
     ".agents/skills/typescript/SKILL.md": {
       "template": "skills/typescript/SKILL.md",
@@ -98,8 +99,9 @@
     ".agents/skills/command-pattern/SKILL.md": {
       "template": "skills/architecture/command-pattern/SKILL.md",
       "templateVersion": "3",
-      "sha256": "f96639ad6b7e98ffdd7a111d6c90be42901867fbab7f8da5c1e059e04332cad4",
-      "status": "managed"
+      "sha256": "6b6a4c1794182b1e27ac6f084679fe85b46c6756411b6e9911f10d926865e81e",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "4"
     },
     ".agents/skills/ai-prompt-engineer-master/SKILL.md": {
       "template": "skills/ai-prompt-engineer-master/SKILL.md",
