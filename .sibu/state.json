@@ -108,13 +108,6 @@
       "templateVersion": "2",
       "sha256": "3a8b3a7ad9677511d8e777065c0ab43d846449cebb188f1fdbb765f0ca2dbc21",
       "status": "managed"
-    },
-    ".agents/skills/product-context-map-writer/SKILL.md": {
-      "template": "skills/product-context-map-writer/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "1ec8ceeb92f039b0b5ce6c127d945b3ef79120e45f7f31822ff035ceaf98b2d9",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "3"
     }
   }
 }

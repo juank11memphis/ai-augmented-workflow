@@ -9,8 +9,8 @@ import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../shared/workflow-targets.js';
 import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
 
-const PRODUCT_CONTEXT_SKILL_PATH = '.agents/skills/product-context-map-writer/SKILL.md';
-const PRODUCT_CONTEXT_MAP_PATH = 'docs/product-context-map.md';
+const DEEP_MODULE_SKILL_PATH = '.agents/skills/deep-module-map-writer/SKILL.md';
+const DEEP_MODULE_MAP_PATH = 'docs/deep-module-map.md';
 const temporaryRoots: string[] = [];
 
 afterEach(() => {
@@ -69,49 +69,49 @@ test('returns explicit sync next-step lines for review-needed doctor output', ()
   ]);
 });
 
-test('diagnoses missing Product Context Map writer through managed-file drift', () => {
+test('diagnoses missing Deep Module Map writer through managed-file drift', () => {
   const rootPath = createCleanInitializedRepo();
-  fs.rmSync(path.join(rootPath, PRODUCT_CONTEXT_SKILL_PATH));
+  fs.rmSync(path.join(rootPath, DEEP_MODULE_SKILL_PATH));
 
   const issues = diagnoseState({ rootPath, state: readState(rootPath) });
 
   assert.equal(
-    issues.some((issue) => issue.severity === 'error' && issue.message === `${PRODUCT_CONTEXT_SKILL_PATH} is missing.`),
+    issues.some((issue) => issue.severity === 'error' && issue.message === `${DEEP_MODULE_SKILL_PATH} is missing.`),
     true
   );
-  assert.equal(issues.some((issue) => issue.message.includes(PRODUCT_CONTEXT_MAP_PATH)), false);
+  assert.equal(issues.some((issue) => issue.message.includes(DEEP_MODULE_MAP_PATH)), false);
 });
 
-test('diagnoses modified Product Context Map writer through managed-file drift', () => {
+test('diagnoses modified Deep Module Map writer through managed-file drift', () => {
   const rootPath = createCleanInitializedRepo();
-  fs.appendFileSync(path.join(rootPath, PRODUCT_CONTEXT_SKILL_PATH), '\nLocal edit.\n', 'utf8');
+  fs.appendFileSync(path.join(rootPath, DEEP_MODULE_SKILL_PATH), '\nLocal edit.\n', 'utf8');
 
   const issues = diagnoseState({ rootPath, state: readState(rootPath) });
 
   assert.equal(
-    issues.some((issue) => issue.severity === 'warning' && issue.message === `${PRODUCT_CONTEXT_SKILL_PATH} has changed since Sibu last recorded it.`),
+    issues.some((issue) => issue.severity === 'warning' && issue.message === `${DEEP_MODULE_SKILL_PATH} has changed since Sibu last recorded it.`),
     true
   );
-  assert.equal(issues.some((issue) => issue.message.includes(PRODUCT_CONTEXT_MAP_PATH)), false);
+  assert.equal(issues.some((issue) => issue.message.includes(DEEP_MODULE_MAP_PATH)), false);
 });
 
-test('does not manage the generated Product Context Map artifact', () => {
+test('does not manage the generated Deep Module Map artifact', () => {
   const rootPath = createCleanInitializedRepo();
   fs.mkdirSync(path.join(rootPath, 'docs'), { recursive: true });
-  fs.writeFileSync(path.join(rootPath, PRODUCT_CONTEXT_MAP_PATH), '# Product Context Map\n', 'utf8');
+  fs.writeFileSync(path.join(rootPath, DEEP_MODULE_MAP_PATH), '# Deep Module Map\n', 'utf8');
   const state = readState(rootPath);
 
   const targets = getWorkflowTargets(rootPath, [getSupportedAgent('codex')]);
   const targetPaths = targets.map((target) => path.relative(rootPath, target.targetPath));
   const issues = diagnoseState({ rootPath, state });
 
-  assert.equal(targetPaths.includes(PRODUCT_CONTEXT_MAP_PATH), false);
-  assert.equal(state.managedFiles[PRODUCT_CONTEXT_MAP_PATH], undefined);
-  assert.equal(issues.some((issue) => issue.message.includes(PRODUCT_CONTEXT_MAP_PATH)), false);
+  assert.equal(targetPaths.includes(DEEP_MODULE_MAP_PATH), false);
+  assert.equal(state.managedFiles[DEEP_MODULE_MAP_PATH], undefined);
+  assert.equal(issues.some((issue) => issue.message.includes(DEEP_MODULE_MAP_PATH)), false);
 });
 
 function createCleanInitializedRepo(): string {
-  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-product-context-'));
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-deep-module-'));
   temporaryRoots.push(rootPath);
   const selectedAgents = [getSupportedAgent('codex')];
   const targets = getWorkflowTargets(rootPath, selectedAgents);

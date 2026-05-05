@@ -25,7 +25,7 @@ describe('getWorkflowTargets', () => {
       'AGENTS.md',
       '.agents/skills/clean-code/SKILL.md',
       '.agents/skills/product-vision-writer/SKILL.md',
-      '.agents/skills/product-context-map-writer/SKILL.md',
+      '.agents/skills/deep-module-map-writer/SKILL.md',
       '.agents/skills/feature-brief-writer/SKILL.md',
       '.agents/skills/technical-design-writer/SKILL.md',
       '.agents/skills/scrum-master-planner/SKILL.md',
@@ -50,8 +50,8 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('CLAUDE.md'), true);
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
-    assert.equal(targetPaths.includes('.agents/skills/product-context-map-writer/SKILL.md'), true);
-    assert.equal(targetPaths.includes('docs/product-context-map.md'), false);
+    assert.equal(targetPaths.includes('.agents/skills/deep-module-map-writer/SKILL.md'), true);
+    assert.equal(targetPaths.includes('docs/deep-module-map.md'), false);
     assertNoInvalidTargets(targets);
   });
 
@@ -100,15 +100,15 @@ describe('getWorkflowTargets', () => {
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
 
     assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert']);
-    assert.deepEqual(state.managedFiles['.agents/skills/product-context-map-writer/SKILL.md'], {
-      template: 'skills/product-context-map-writer/SKILL.md',
-      templateVersion: '3',
-      sha256: state.managedFiles['.agents/skills/product-context-map-writer/SKILL.md']?.sha256,
+    assert.deepEqual(state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md'], {
+      template: 'skills/deep-module-map-writer/SKILL.md',
+      templateVersion: '1',
+      sha256: state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md']?.sha256,
       status: 'managed',
     });
     assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
-    assert.equal(state.managedFiles['docs/product-context-map.md'], undefined);
+    assert.equal(state.managedFiles['docs/deep-module-map.md'], undefined);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
 
