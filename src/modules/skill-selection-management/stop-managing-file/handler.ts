@@ -4,22 +4,22 @@ import path from 'node:path';
 import { cancel, intro, isCancel, log, outro, select } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import { resolveSelectableSkillById } from '../../modules/workflow-target-planning/index.js';
-import { readFileHashIfPresent, sha256 } from '../../shared/hash.js';
-import { getProjectContext } from '../../shared/paths.js';
-import { renderIntro } from '../../shared/prompts.js';
-import { cloneState, readStateForDoctor, writeStateFile } from '../../modules/workflow-state-registry/index.js';
-import { getTemplateVersion, readTemplateManifest, renderTemplateForSync } from '../../modules/template-catalog-rendering/index.js';
-import type { SibuState, ManagedFilePath, ManagedFileState, ResolvedSelectableSkill } from '../../shared/types.js';
-import { removeUndefinedFields } from '../../shared/object.js';
+import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
+import { resolveSelectableSkillById } from '../../workflow-target-planning/index.js';
+import { readFileHashIfPresent, sha256 } from '../../../shared/hash.js';
+import { getProjectContext } from '../../../shared/paths.js';
+import { renderIntro } from '../../../shared/prompts.js';
+import { cloneState, readStateForDoctor, writeStateFile } from '../../workflow-state-registry/index.js';
+import { getTemplateVersion, readTemplateManifest, renderTemplateForSync } from '../../template-catalog-rendering/index.js';
+import type { SibuState, ManagedFilePath, ManagedFileState, ResolvedSelectableSkill } from '../../../shared/types.js';
+import { removeUndefinedFields } from '../../../shared/object.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
-} from '../../modules/workflow-target-planning/index.js';
+} from '../../workflow-target-planning/index.js';
 import type { StopManagingFileCommand } from './command.js';
 
 export type StopSkillResult =

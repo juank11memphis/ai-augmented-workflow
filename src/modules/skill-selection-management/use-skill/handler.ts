@@ -3,11 +3,11 @@ import path from 'node:path';
 
 import { log } from '@clack/prompts';
 
-import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import { resolveSelectableSkillById } from '../../modules/workflow-target-planning/index.js';
-import { sha256 } from '../../shared/hash.js';
-import { getProjectContext } from '../../shared/paths.js';
-import { renderTemplateForSync } from '../../modules/template-catalog-rendering/index.js';
+import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
+import { resolveSelectableSkillById } from '../../workflow-target-planning/index.js';
+import { sha256 } from '../../../shared/hash.js';
+import { getProjectContext } from '../../../shared/paths.js';
+import { renderTemplateForSync } from '../../template-catalog-rendering/index.js';
 import type {
   ArchitectureSkillId,
   SibuState,
@@ -20,9 +20,9 @@ import type {
   SupportedAgent,
   WorkflowSkillId,
   WorkflowTarget,
-} from '../../shared/types.js';
-import { getWorkflowMutationReadiness } from '../../shared/workflow-mutation-readiness.js';
-import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../modules/workflow-target-planning/index.js';
+} from '../../../shared/types.js';
+import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
+import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
 import type { UseSkillCommand } from './command.js';
 
 type NextSkillSelection = {

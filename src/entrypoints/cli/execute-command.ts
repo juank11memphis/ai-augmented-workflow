@@ -1,9 +1,9 @@
 import { handleDoctorProject } from '../../modules/workflow-health-diagnosis/index.js';
 import { handleInitProject } from '../../modules/project-adoption/index.js';
-import { handleListSkills } from '../../features/list-skills/handler.js';
-import { handleStopManagingFile } from '../../features/stop-managing-file/handler.js';
+import { handleListSkills } from '../../modules/skill-selection-management/index.js';
+import { handleStopManagingFile } from '../../modules/skill-selection-management/index.js';
 import { handleSyncProject } from '../../features/sync-project/handler.js';
-import { handleUseSkill } from '../../features/use-skill/handler.js';
+import { handleUseSkill } from '../../modules/skill-selection-management/index.js';
 import type { SibuCliCommand } from './command.js';
 
 export async function executeCliCommand(command: SibuCliCommand): Promise<void> {
