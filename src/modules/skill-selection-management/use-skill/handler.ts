@@ -10,10 +10,12 @@ import { getProjectContext } from '../../../shared/paths.js';
 import { renderTemplateForSync } from '../../template-catalog-rendering/index.js';
 import type {
   ArchitectureSkillId,
+  DatabaseSkillId,
   SibuState,
   FrameworkSkillId,
   LanguageSkillId,
   SelectableArchitectureSkill,
+  SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
   SelectableWorkflowSkill,
@@ -30,6 +32,7 @@ type NextSkillSelection = {
   selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills: SelectableWorkflowSkill[];
+  selectedDatabaseSkills: SelectableDatabaseSkill[];
 };
 
 type SkillSelectionResult =
@@ -90,6 +93,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
   const selectedLanguageSkills = [...(state.selectedLanguageSkills ?? [])];
   const selectedFrameworkSkills = [...(state.selectedFrameworkSkills ?? [])];
   const selectedWorkflowSkills = [...(state.selectedWorkflowSkills ?? [])];
+  const selectedDatabaseSkills = [...(state.selectedDatabaseSkills ?? [])];
 
   switch (resolution.resolved.kind) {
     case 'language':
@@ -105,6 +109,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
           selectedFrameworkSkills: selectedFrameworkSkills.map(getFrameworkSkillById),
           selectedArchitectureSkill: getArchitectureSkillById(state.selectedArchitectureSkill),
           selectedWorkflowSkills: selectedWorkflowSkills.map(getWorkflowSkillById),
+          selectedDatabaseSkills: selectedDatabaseSkills.map(getDatabaseSkillById),
         },
       };
 
@@ -121,6 +126,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
           selectedFrameworkSkills: [...selectedFrameworkSkills, resolution.resolved.skill.id].map(getFrameworkSkillById),
           selectedArchitectureSkill: getArchitectureSkillById(state.selectedArchitectureSkill),
           selectedWorkflowSkills: selectedWorkflowSkills.map(getWorkflowSkillById),
+          selectedDatabaseSkills: selectedDatabaseSkills.map(getDatabaseSkillById),
         },
       };
 
@@ -145,14 +151,25 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
           selectedFrameworkSkills: selectedFrameworkSkills.map(getFrameworkSkillById),
           selectedArchitectureSkill: resolution.resolved.skill,
           selectedWorkflowSkills: selectedWorkflowSkills.map(getWorkflowSkillById),
+          selectedDatabaseSkills: selectedDatabaseSkills.map(getDatabaseSkillById),
         },
       };
 
     case 'database':
+      if (selectedDatabaseSkills.includes(resolution.resolved.skill.id)) {
+        return { status: 'noop', message: `${resolution.resolved.skill.name} is already selected.` };
+      }
+
       return {
-        status: 'blocked',
-        message: 'Database skill selection is not wired into `sibu skills use` yet.',
-        hint: 'This skill category is being added in stages. Use the init/list/use command support story to enable it.',
+        status: 'selected',
+        skillName: resolution.resolved.skill.name,
+        selection: {
+          selectedLanguageSkills: selectedLanguageSkills.map(getLanguageSkillById),
+          selectedFrameworkSkills: selectedFrameworkSkills.map(getFrameworkSkillById),
+          selectedArchitectureSkill: getArchitectureSkillById(state.selectedArchitectureSkill),
+          selectedWorkflowSkills: selectedWorkflowSkills.map(getWorkflowSkillById),
+          selectedDatabaseSkills: [...selectedDatabaseSkills, resolution.resolved.skill.id].map(getDatabaseSkillById),
+        },
       };
 
     case 'workflow':
@@ -168,6 +185,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
           selectedFrameworkSkills: selectedFrameworkSkills.map(getFrameworkSkillById),
           selectedArchitectureSkill: getArchitectureSkillById(state.selectedArchitectureSkill),
           selectedWorkflowSkills: [...selectedWorkflowSkills, resolution.resolved.skill.id].map(getWorkflowSkillById),
+          selectedDatabaseSkills: selectedDatabaseSkills.map(getDatabaseSkillById),
         },
       };
   }
@@ -201,12 +219,14 @@ function applySelectedSkill({
     selectedFrameworkSkills: selectionResult.selection.selectedFrameworkSkills,
     selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
     selectedWorkflowSkills: selectionResult.selection.selectedWorkflowSkills,
+    selectedDatabaseSkills: selectionResult.selection.selectedDatabaseSkills,
   });
   const [newSkillFile] = renderMissingWorkflowFiles({
     missingTargets: [plan.newSkillTarget],
     selectedLanguageSkills: selectionResult.selection.selectedLanguageSkills,
     selectedFrameworkSkills: selectionResult.selection.selectedFrameworkSkills,
     selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
+    selectedDatabaseSkills: selectionResult.selection.selectedDatabaseSkills,
   });
 
   fs.mkdirSync(path.dirname(newSkillFile.targetPath), { recursive: true });
@@ -224,6 +244,7 @@ function applySelectedSkill({
     selectedFrameworkSkills: selectionResult.selection.selectedFrameworkSkills,
     selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
     selectedWorkflowSkills: selectionResult.selection.selectedWorkflowSkills,
+    selectedDatabaseSkills: selectionResult.selection.selectedDatabaseSkills,
     targets: plan.targets,
   });
   log.success(`Updated ${STATE_RELATIVE_PATH}`);
@@ -246,7 +267,8 @@ function buildSkillApplicationPlan({
     getSelectedLanguageSkillsFromState(state),
     getSelectedFrameworkSkillsFromState(state),
     getArchitectureSkillById(state.selectedArchitectureSkill),
-    getSelectedWorkflowSkillsFromState(state)
+    getSelectedWorkflowSkillsFromState(state),
+    getSelectedDatabaseSkillsFromState(state)
   );
   const targets = getWorkflowTargets(
     rootPath,
@@ -254,7 +276,8 @@ function buildSkillApplicationPlan({
     selectionResult.selection.selectedLanguageSkills,
     selectionResult.selection.selectedFrameworkSkills,
     selectionResult.selection.selectedArchitectureSkill,
-    selectionResult.selection.selectedWorkflowSkills
+    selectionResult.selection.selectedWorkflowSkills,
+    selectionResult.selection.selectedDatabaseSkills
   );
   const previousTargetPaths = new Set(previousTargets.map((target) => target.targetPath));
   const newSkillTarget = targets.find((target) => !previousTargetPaths.has(target.targetPath));
@@ -307,6 +330,10 @@ function getSelectedWorkflowSkillsFromState(state: SibuState): SelectableWorkflo
   return (state.selectedWorkflowSkills ?? []).map(getWorkflowSkillById);
 }
 
+function getSelectedDatabaseSkillsFromState(state: SibuState): SelectableDatabaseSkill[] {
+  return (state.selectedDatabaseSkills ?? []).map(getDatabaseSkillById);
+}
+
 function getLanguageSkillById(skillId: LanguageSkillId): SelectableLanguageSkill {
   const resolution = resolveSelectableSkillById(skillId);
 
@@ -350,3 +377,14 @@ function getWorkflowSkillById(skillId: WorkflowSkillId): SelectableWorkflowSkill
 
   return resolution.resolved.skill;
 }
+
+function getDatabaseSkillById(skillId: DatabaseSkillId): SelectableDatabaseSkill {
+  const resolution = resolveSelectableSkillById(skillId);
+
+  if (!resolution.ok || resolution.resolved.kind !== 'database') {
+    throw new Error(`Unsupported database skill in state: ${skillId}`);
+  }
+
+  return resolution.resolved.skill;
+}
+

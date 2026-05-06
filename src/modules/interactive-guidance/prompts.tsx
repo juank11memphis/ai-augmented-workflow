@@ -3,13 +3,15 @@ import gradient from 'gradient-string';
 import { Box, Text, render, useApp } from 'ink';
 import React, { useEffect } from 'react';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import type {
   ArchitectureSkillId,
   SibuState,
+  DatabaseSkillId,
   FrameworkSkillId,
   LanguageSkillId,
   SelectableArchitectureSkill,
+  SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
   SelectableWorkflowSkill,
@@ -87,6 +89,25 @@ export async function askForFrameworkSkills(): Promise<SelectableFrameworkSkill[
     message: 'Select the frameworks this project should support.',
     cancelMessage: 'Initialization cancelled.',
   });
+}
+
+export async function askForDatabaseSkills(): Promise<SelectableDatabaseSkill[]> {
+  const selectedDatabaseSkillIds = await multiselect<DatabaseSkillId>({
+    message: 'Select the database skills this project should support.',
+    required: false,
+    options: SELECTABLE_DATABASE_SKILLS.map((skill) => ({
+      value: skill.id,
+      label: skill.name,
+      hint: skill.description,
+    })),
+  });
+
+  if (isCancel(selectedDatabaseSkillIds)) {
+    cancel('Initialization cancelled.');
+    process.exit(0);
+  }
+
+  return SELECTABLE_DATABASE_SKILLS.filter((skill) => selectedDatabaseSkillIds.includes(skill.id));
 }
 
 async function askForFrameworkSkillSelection({

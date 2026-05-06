@@ -5,7 +5,7 @@ import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { sha256 } from '../../shared/hash.js';
 import { checkForLatestSibuVersion } from '../version-advisory/index.js';
 import { getProjectContext } from '../../shared/paths.js';
@@ -16,8 +16,10 @@ import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState }
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
+  getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
+  getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
 } from '../workflow-target-planning/index.js';
 import type { DoctorProjectCommand } from './command.js';
@@ -149,6 +151,12 @@ function addUnsupportedSelectionIssues(state: SibuState, issues: DoctorIssue[]):
     issues.push({ severity: 'warning', message: `State references unsupported architecture skill: ${state.selectedArchitectureSkill}.` });
   }
 
+  for (const selectedDatabaseSkill of state.selectedDatabaseSkills ?? []) {
+    if (!SELECTABLE_DATABASE_SKILLS.some((skill) => skill.id === selectedDatabaseSkill)) {
+      issues.push({ severity: 'warning', message: `State references unsupported database skill: ${selectedDatabaseSkill}.` });
+    }
+  }
+
   for (const reviewedArchitectureSkill of state.reviewedArchitectureSkills ?? []) {
     if (!SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === reviewedArchitectureSkill)) {
       issues.push({ severity: 'warning', message: `State references unsupported reviewed architecture skill: ${reviewedArchitectureSkill}.` });
@@ -163,7 +171,9 @@ function addExpectedTargetIssues(rootPath: string, state: SibuState, issues: Doc
     getSelectedAgentsFromState(state),
     getSelectedLanguageSkillsFromState(state),
     getSelectedFrameworkSkillsFromState(state),
-    getSelectedArchitectureSkillFromState(state)
+    getSelectedArchitectureSkillFromState(state),
+    getSelectedWorkflowSkillsFromState(state),
+    getSelectedDatabaseSkillsFromState(state)
   );
 
   for (const target of expectedTargets) {

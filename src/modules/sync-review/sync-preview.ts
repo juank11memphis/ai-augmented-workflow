@@ -4,10 +4,11 @@ import path from 'node:path';
 import { sha256 } from '../../shared/hash.js';
 import { hasReviewedTemplateVersion } from '../workflow-state-registry/index.js';
 import { renderTemplateForSync } from '../template-catalog-rendering/index.js';
-import type { SibuState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from '../../shared/types.js';
+import type { SibuState, ManagedFileState, SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
+  getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
@@ -56,6 +57,7 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
   const selectedFrameworkSkills = getSelectedFrameworkSkillsFromState(state);
   const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
   const selectedWorkflowSkills = getSelectedWorkflowSkillsFromState(state);
+  const selectedDatabaseSkills = getSelectedDatabaseSkillsFromState(state);
   const previews = Object.entries(state.managedFiles).map(([relativePath, managedFile]) =>
     getManagedFileSyncPreview({
       rootPath,
@@ -66,6 +68,7 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
       selectedFrameworkSkills,
       selectedArchitectureSkill,
       selectedWorkflowSkills,
+      selectedDatabaseSkills,
     })
   );
 
@@ -75,7 +78,8 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
     selectedLanguageSkills,
     selectedFrameworkSkills,
     selectedArchitectureSkill,
-    selectedWorkflowSkills
+    selectedWorkflowSkills,
+    selectedDatabaseSkills
   );
 
   for (const target of expectedTargets) {
@@ -129,6 +133,7 @@ function getManagedFileSyncPreview({
   selectedFrameworkSkills,
   selectedArchitectureSkill,
   selectedWorkflowSkills,
+  selectedDatabaseSkills,
 }: {
   rootPath: string;
   manifest: TemplateManifest;
@@ -138,6 +143,7 @@ function getManagedFileSyncPreview({
   selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills: SelectableWorkflowSkill[];
+  selectedDatabaseSkills: SelectableDatabaseSkill[];
 }): SyncPreview {
   if (managedFile.status === 'unmanaged') {
     return { relativePath, managedFile, status: 'unmanaged', recordedTemplateVersion: managedFile.templateVersion, changes: [] };
@@ -161,6 +167,7 @@ function getManagedFileSyncPreview({
     selectedFrameworkSkills,
     selectedArchitectureSkill,
     selectedWorkflowSkills,
+    selectedDatabaseSkills,
   });
   const hasUpdate = hasTemplateUpdate || hasSelectionUpdate;
   const changes = hasTemplateUpdate ? template.changes : ['Refreshes generated skill routing for the current selected skills.'];
@@ -232,6 +239,7 @@ function hasRenderedSelectionUpdate({
   selectedFrameworkSkills,
   selectedArchitectureSkill,
   selectedWorkflowSkills,
+  selectedDatabaseSkills,
 }: {
   relativePath: string;
   currentPath: string;
@@ -240,6 +248,7 @@ function hasRenderedSelectionUpdate({
   selectedFrameworkSkills: SelectableFrameworkSkill[];
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills: SelectableWorkflowSkill[];
+  selectedDatabaseSkills: SelectableDatabaseSkill[];
 }): boolean {
   if (relativePath !== 'AGENTS.md') {
     return false;
@@ -252,6 +261,7 @@ function hasRenderedSelectionUpdate({
     selectedFrameworkSkills,
     selectedArchitectureSkill,
     selectedWorkflowSkills,
+    selectedDatabaseSkills,
   });
 
   return sha256(renderedContents) !== managedFile.sha256;

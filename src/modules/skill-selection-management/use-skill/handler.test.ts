@@ -6,7 +6,7 @@ import { afterEach, describe, it } from 'node:test';
 
 import { SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
 import { readExistingState } from '../../workflow-state-registry/index.js';
-import type { SibuState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
+import type { SibuState, SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
 import { getNextSkillSelection, handleUseSkill } from './handler.js';
 
@@ -64,6 +64,13 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedWorkflowSkills: ['ai-prompt-engineer-master'] }, 'ai-prompt-engineer-master'), {
       status: 'noop',
       message: 'AI Prompt Engineer Master is already selected.',
+    });
+  });
+
+  it('returns no-op success when a database skill is already selected', () => {
+    assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedDatabaseSkills: ['postgresql-expert'] }, 'postgresql-expert'), {
+      status: 'noop',
+      message: 'PostgreSQL Expert is already selected.',
     });
   });
 
@@ -156,6 +163,21 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(
       result.selection.selectedWorkflowSkills.map((skill) => skill.id),
       ['ai-prompt-engineer-master', 'ux-expert']
+    );
+  });
+
+  it('prepares a next selection for PostgreSQL Expert', () => {
+    const result = getNextSkillSelection(BASE_STATE, 'postgresql-expert');
+
+    assert.equal(result.status, 'selected');
+    if (result.status !== 'selected') {
+      return;
+    }
+
+    assert.equal(result.skillName, 'PostgreSQL Expert');
+    assert.deepEqual(
+      result.selection.selectedDatabaseSkills.map((skill) => skill.id),
+      ['postgresql-expert']
     );
   });
 
@@ -258,6 +280,21 @@ describe('handleUseSkill', () => {
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/ux-expert/SKILL.md')), true);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
+    assert.equal(process.exitCode, undefined);
+  });
+
+  it('adds PostgreSQL Expert in a clean initialized repo', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'postgresql-expert' });
+
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
+    assert.ok(state);
+    assert.deepEqual(state.selectedDatabaseSkills, ['postgresql-expert']);
+    assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/postgresql-expert/SKILL.md')), true);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `postgresql-expert`/);
     assert.equal(process.exitCode, undefined);
   });
 

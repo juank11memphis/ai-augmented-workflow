@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SELECTABLE_FRAMEWORK_SKILLS, SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
-import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../../shared/types.js';
+import { SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
+import type { SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
 import { stopSelectedSkill } from './handler.js';
 
@@ -33,6 +33,23 @@ describe('stopSelectedSkill', () => {
     assert.equal(result.state.managedFiles['.agents/skills/nextjs/SKILL.md']?.status, 'unmanaged');
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/nextjs/SKILL.md')), true);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /nextjs/);
+  });
+
+  it('stops a selected database skill by selectable skill id', () => {
+    const rootPath = createInitializedRepoWithPostgresqlExpert();
+
+    const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'));
+    const result = stopSelectedSkill({ rootPath, state, skillName: 'postgresql-expert' });
+
+    assert.equal(result.status, 'stopped');
+    if (result.status !== 'stopped') {
+      return;
+    }
+
+    assert.deepEqual(result.state.selectedDatabaseSkills, []);
+    assert.equal(result.state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']?.status, 'unmanaged');
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/postgresql-expert/SKILL.md')), true);
+    assert.doesNotMatch(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /postgresql-expert/);
   });
 
   it('rejects raw managed file paths', () => {
@@ -87,6 +104,35 @@ function createInitializedRepoWithNextjs(): string {
   return rootPath;
 }
 
+
+function createInitializedRepoWithPostgresqlExpert(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-stop-skill-test-'));
+  temporaryRoots.push(rootPath);
+  const selectedAgents = [getSupportedAgent('codex')];
+  const selectedLanguageSkills: SelectableLanguageSkill[] = [];
+  const selectedFrameworkSkills: SelectableFrameworkSkill[] = [];
+  const selectedDatabaseSkills: SelectableDatabaseSkill[] = [getDatabaseSkill('postgresql-expert')];
+  const selectedArchitectureSkill: SelectableArchitectureSkill | undefined = undefined;
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, [], selectedDatabaseSkills);
+  const files = renderMissingWorkflowFiles({
+    missingTargets: targets,
+    overview: 'Test project.',
+    selectedLanguageSkills,
+    selectedFrameworkSkills,
+    selectedArchitectureSkill,
+    selectedDatabaseSkills,
+  });
+
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+  }
+
+  writeSibuState({ rootPath, statePath: path.join(rootPath, '.sibu/state.json'), selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedDatabaseSkills, targets });
+
+  return rootPath;
+}
+
 function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   const agent = SUPPORTED_AGENTS.find((supportedAgent) => supportedAgent.id === agentId);
 
@@ -102,6 +148,16 @@ function getFrameworkSkill(skillId: SelectableFrameworkSkill['id']): SelectableF
 
   if (!skill) {
     throw new Error(`Unsupported framework skill: ${skillId}`);
+  }
+
+  return skill;
+}
+
+function getDatabaseSkill(skillId: SelectableDatabaseSkill['id']): SelectableDatabaseSkill {
+  const skill = SELECTABLE_DATABASE_SKILLS.find((databaseSkill) => databaseSkill.id === skillId);
+
+  if (!skill) {
+    throw new Error(`Unsupported database skill: ${skillId}`);
   }
 
   return skill;

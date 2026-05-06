@@ -1,5 +1,6 @@
 export {
   askForArchitectureSkill,
+  askForDatabaseSkills,
   askForFrameworkSkills,
   askForLanguageSkills,
   askForMissingFrameworkSkills,

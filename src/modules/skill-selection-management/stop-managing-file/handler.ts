@@ -16,6 +16,7 @@ import { removeUndefinedFields } from '../../../shared/object.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
+  getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
@@ -148,7 +149,7 @@ function isSkillSelected(state: SibuState, resolved: ResolvedSelectableSkill): b
     case 'architecture':
       return state.selectedArchitectureSkill === resolved.skill.id;
     case 'database':
-      return false;
+      return state.selectedDatabaseSkills?.includes(resolved.skill.id) ?? false;
     case 'workflow':
       return state.selectedWorkflowSkills?.includes(resolved.skill.id) ?? false;
   }
@@ -166,6 +167,7 @@ function removeSelectedSkill(state: SibuState, resolved: ResolvedSelectableSkill
       delete state.selectedArchitectureSkill;
       return;
     case 'database':
+      state.selectedDatabaseSkills = (state.selectedDatabaseSkills ?? []).filter((skillId) => skillId !== resolved.skill.id);
       return;
     case 'workflow':
       state.selectedWorkflowSkills = (state.selectedWorkflowSkills ?? []).filter((skillId) => skillId !== resolved.skill.id);
@@ -223,6 +225,7 @@ function getAgentsUpdate(rootPath: string, state: SibuState): AgentsUpdateResult
       selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(state),
       selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
       selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(state),
+      selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(state),
     }),
   };
 }

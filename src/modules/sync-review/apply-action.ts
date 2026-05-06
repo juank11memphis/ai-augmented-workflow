@@ -10,6 +10,7 @@ import { getTemplateVersion, renderTemplateForSync } from '../template-catalog-r
 import type { SibuState, TemplateManifest } from '../../shared/types.js';
 import {
   getSelectedArchitectureSkillFromState,
+  getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
@@ -44,6 +45,7 @@ export function applySyncAction({
         selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(nextState),
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(nextState),
         selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(nextState),
+        selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(nextState),
       });
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, contents, 'utf8');
@@ -80,6 +82,7 @@ export function applySyncAction({
         selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(state),
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
         selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(state),
+        selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(state),
       });
       fs.mkdirSync(path.dirname(sideTemplatePath), { recursive: true });
       fs.writeFileSync(sideTemplatePath, contents, 'utf8');

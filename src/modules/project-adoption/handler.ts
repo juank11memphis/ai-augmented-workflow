@@ -6,7 +6,7 @@ import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { askForArchitectureSkill, askForFrameworkSkills, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, askForWorkflowSkills, renderIntro } from '../interactive-guidance/index.js';
+import { askForArchitectureSkill, askForDatabaseSkills, askForFrameworkSkills, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, askForWorkflowSkills, renderIntro } from '../interactive-guidance/index.js';
 import { readStateForDoctor } from '../workflow-state-registry/index.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
 import type { InitProjectCommand } from './command.js';
@@ -39,9 +39,10 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
   const selectedAgents = await askForSupportedAgents();
   const selectedLanguageSkills = await askForLanguageSkills();
   const selectedFrameworkSkills = await askForFrameworkSkills();
+  const selectedDatabaseSkills = await askForDatabaseSkills();
   const selectedArchitectureSkill = await askForArchitectureSkill();
   const selectedWorkflowSkills = await askForWorkflowSkills();
-  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills);
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
   const missingTargets = targets.filter((target) => !fs.existsSync(target.targetPath));
 
   log.message('I will create this project’s initial AI workflow files.');
@@ -64,6 +65,7 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
     selectedFrameworkSkills,
     selectedArchitectureSkill,
     selectedWorkflowSkills,
+    selectedDatabaseSkills,
   });
 
   for (const file of files) {
@@ -72,7 +74,7 @@ export async function handleInitProject(_command: InitProjectCommand): Promise<v
     log.success(`Created ${file.label}`);
   }
 
-  writeSibuState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, targets });
+  writeSibuState({ rootPath, statePath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills, targets });
   log.success(`Created ${STATE_RELATIVE_PATH}`);
 
   outro(chalk.green('Setup complete.'));
