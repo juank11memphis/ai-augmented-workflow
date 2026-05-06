@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.1.0",
-  "templateVersion": "68",
+  "templateVersion": "69",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-05T22:15:00.000Z",
+  "updatedAt": "2026-05-06T15:41:33.567Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -78,17 +78,15 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "8",
-      "sha256": "f6ba6ae5f4754c34649f44598691e634e58ba4ce5c45c10bae5e38428377b3e1",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "10"
+      "templateVersion": "11",
+      "sha256": "099eb09ec447875c3ae1e663069ffc4efb56838ddf3c9fc6673f051b086b089b",
+      "status": "managed"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "13",
-      "sha256": "6da9bbc2bb31e11128e290a26c2b8879aa919fd95bed2dfe53249aa273b5cdf0",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "15"
+      "templateVersion": "16",
+      "sha256": "8433755c472ee9d0267351ab804568a3c430c072feb3ad91b4f32ddd22e6f011",
+      "status": "managed"
     },
     ".agents/skills/typescript/SKILL.md": {
       "template": "skills/typescript/SKILL.md",

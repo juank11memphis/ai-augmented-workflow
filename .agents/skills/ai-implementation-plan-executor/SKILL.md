@@ -1,45 +1,49 @@
 ---
 name: ai-implementation-plan-executor
-description: Execute an existing ai-implementation-planner story implementation plan one ordered step at a time. Use when asked to implement, execute, continue, or work through a story implementation plan under docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/.
+description: Execute an existing ai-implementation-planner story implementation plan from start to finish, then request story-level review before marking steps approved and committing.
 ---
 
 # AI Implementation Plan Executor
 
 ## Purpose
 
-Execute one existing story implementation plan, one ordered step file at a time, with human review between steps. This skill owns execution from an existing `.impl_plan/` folder; it does not create plans, change story scope, or skip review gates.
+Execute one existing story implementation plan completely, one ordered step file at a time, with a single human review gate after the full story plan has been implemented. This skill owns execution from an existing `.impl_plan/` folder; it does not change story scope or skip the final story approval gate.
 
 ## Pipeline Contract
 
 ### What this skill needs
 
-- Exactly one User Story file or one story-local `.impl_plan/` folder.
+- Exactly one User Story file or one story-local `.impl_plan/` folder to start.
 - Ordered implementation step files in that `.impl_plan/` folder.
 - The story, Epic brief, feature brief, and technical design for the selected plan.
-- `docs/features/<feature-slug>/ux.md` only when the story, step, or feature has UI impact.
-- Relevant repo files, validation output, and implementation skills needed for the current step.
+- `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
+- Relevant repo files, validation output, and implementation skills needed for the story plan.
 
 ### What this skill writes
 
-- Code, docs, tests, or other repo changes required by the current implementation step only.
-- Step approval metadata in the current step file only after explicit user approval.
-- A focused commit for each approved step.
+- Code, docs, tests, or other repo changes required by all unapproved implementation steps in the story plan.
+- Step approval metadata in every completed step file only after explicit story-level user approval.
+- One focused commit for the approved story implementation.
+- When continuing an Epic and the next story has no plan, story-local implementation step files created by applying `ai-implementation-planner`.
 
 ### When this skill stops
 
 - The user does not provide or clearly identify exactly one User Story file or `.impl_plan/` folder.
-- The implementation plan is missing, empty, invalid, or has no ordered step files; direct the user to `ai-implementation-planner`.
+- The starting implementation plan is missing, empty, invalid, or has no ordered step files; direct the user to `ai-implementation-planner`.
 - Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
-- The story, step, or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
-- The request is to create an implementation plan, change story scope, skip review gates, or perform another pipeline stage.
+- The story, any step, or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
+- Validation fails and the fix is ambiguous, risky, or would exceed the approved plan.
+- A step conflicts with the story, Epic, feature brief, technical design, UX spec, or approved Deep Module boundaries.
+- A newly planned next story is ready for plan review and approval before execution.
 
 ### What this skill must not do
 
-- Do not create product visions, Deep Module Maps, feature briefs, technical designs, UX specs, Epics, User Stories, or implementation plans.
-- Do not modify prior-stage artifacts except for approval metadata in the current step file.
+- Do not create product visions, Deep Module Maps, feature briefs, technical designs, UX specs, Epics, or User Stories.
+- Do not modify prior-stage artifacts except for approval metadata in implementation step files.
 - Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
-- Do not implement multiple unapproved steps in one pass or mark a step approved before explicit user approval.
-- Do not weaken the one-step-at-a-time execution model, user review gate, or approved-step commit behavior.
+- Do not mark any step approved before explicit story-level user approval.
+- Do not commit story implementation changes before explicit story-level user approval.
+- Do not continue past a newly created implementation plan for the next story until the user approves that plan.
 
 ## Required source context
 
@@ -63,7 +67,7 @@ docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
 docs/features/<feature-slug>/feature_brief.md
 docs/features/<feature-slug>/technical_design.md
-docs/features/<feature-slug>/ux.md  # when the story, step, or feature has UI impact
+docs/features/<feature-slug>/ux.md  # when the story, any step, or feature has UI impact
 ```
 
 Also read `docs/product-vision.md` when product fit, target user, scope boundaries, or success signals are ambiguous.
@@ -81,13 +85,13 @@ Before the first implementation step that changes code, read and apply the imple
 - read and apply language skills when relevant, such as `typescript`
 - read and apply framework skills when relevant, such as `react` or `nextjs`
 
-Inspect existing code, tests, scripts, and docs only as needed for the current step.
+Inspect existing code, tests, scripts, and docs only as needed for the story plan and current step.
 
 ## Context reuse rule
 
 At the start of a story implementation plan, read all required source context, relevant implementation skills, and all ordered step files once. Build a concise execution context summary and rely on it for the rest of the story.
 
-After each approved step, do not reread unchanged broad context before continuing. For the next step, inspect only:
+After each completed step, do not reread unchanged broad context before continuing. For the next step, inspect only:
 
 - the next step file if it was not already read
 - files changed by previous steps when needed
@@ -98,7 +102,7 @@ Reread broad source context only when scope changes, validation fails in a way t
 
 ## Hard start rule
 
-If the provided User Story has no matching `.impl_plan/`, or the provided `.impl_plan/` folder is missing, empty, or has no ordered `.md` step files:
+If the initial User Story has no matching `.impl_plan/`, or the initial `.impl_plan/` folder is missing, empty, or has no ordered `.md` step files:
 
 1. Stop.
 2. Tell the user the implementation plan is missing or invalid.
@@ -112,11 +116,11 @@ If required source context is missing:
 3. Ask the user to create or restore the missing artifact first.
 4. Do not invent implementation scope from partial context.
 
-## Step execution model
+## Story execution model
 
-Work on exactly one step at a time.
+Work through the full story plan in filename order, one step at a time, without asking for review or approval between steps.
 
-When a valid implementation plan exists, begin implementing the first unapproved step immediately. Do not ask for pre-implementation confirmation before changing code for that step. This is an explicit exception to repository-level instructions that normally require confirmation before code changes: selecting this executor skill and providing a valid plan is the user's confirmation to implement the current step.
+When a valid implementation plan exists, begin implementing the first unapproved step immediately. Do not ask for pre-implementation confirmation before changing code. This is an explicit exception to repository-level instructions that normally require confirmation before code changes: selecting this executor skill and providing a valid plan is the user's confirmation to implement the full story plan.
 
 A step file is considered approved only when it contains this section:
 
@@ -129,21 +133,22 @@ A step file is considered approved only when it contains this section:
 When starting or resuming a plan:
 
 1. Read all step files in filename order.
-2. Identify the first step file that is not approved.
-3. Implement only that step immediately, without asking for confirmation first.
-4. Run the validation named in that step when practical.
-5. Report what changed, validation results, and any risks.
-6. Stop and wait for explicit user confirmation before moving to the next step.
+2. Identify all step files that are not approved.
+3. Implement the unapproved steps in order, exactly one step at a time.
+4. Run the validation named in each step when practical before moving to the next step.
+5. If a step is validation-only and produces no code changes, record the validation result in the story execution summary and continue.
+6. Stop only for ambiguity, missing required files, conflicting scope, failed validation that cannot be safely fixed within the plan, or material risk.
+7. After the final unapproved step is implemented, report what changed, validation results, and any risks, then wait for explicit story-level approval.
 
-Do not begin the next step in the same response unless the user has already explicitly approved the current step in this turn.
+Do not mark steps approved, commit changes, or move to the next story until the user explicitly approves the completed story implementation.
 
-## User review gate
+## Story review gate
 
-After implementing a step, say that the step is ready for review and that you are waiting for confirmation before continuing.
+After implementing all unapproved steps for a story, say that the full story implementation is ready for review and that you are waiting for story-level approval before marking all completed steps approved, committing, and continuing the Epic.
 
-If the user asks questions or requests changes, stay on the same step until those changes are complete.
+If the user asks questions or requests changes, keep working within the same story until those changes are complete. If requested changes exceed the approved story plan, stop and ask whether the plan should be revised.
 
-When the user explicitly approves the current step, update that step file by adding or updating:
+When the user explicitly approves the completed story, update every step file completed in this story by adding or updating:
 
 ```md
 ## Review status
@@ -153,27 +158,23 @@ When the user explicitly approves the current step, update that step file by add
 - Approved at: <ISO-8601 timestamp>
 ```
 
-Before writing the approval marker, identify the current Git user with `git config user.name`; if it is unavailable, use `git config user.email`. Use that value for `Approved by`.
+Before writing approval markers, identify the current Git user with `git config user.name`; if it is unavailable, use `git config user.email`. Use that value for `Approved by`.
 
-After writing the approval marker, commit only the changes produced by the approved step before continuing. The commit must include the step file approval marker and files intentionally changed while implementing that step. It must not include unrelated local edits, pre-existing worktree changes, or changes from other steps. Use the files tracked during step execution and a focused `git status --short` check to stage the correct paths. Do not run broad `git diff` investigations or other "what changed?" archaeology unless it is required to avoid committing unrelated changes and the user has approved that extra inspection.
+After writing approval markers, commit only the changes produced by the approved story before continuing. The commit must include all step file approval markers and files intentionally changed while implementing the story. It must not include unrelated local edits or pre-existing worktree changes. Use the files tracked during story execution and a focused `git status --short` check to stage the correct paths. Do not run broad `git diff` investigations or other "what changed?" archaeology unless it is required to avoid committing unrelated changes and the user has approved that extra inspection.
 
-Use a Conventional Commits 1.0.0 message that describes the completed step. If the commit fails, stop and report the failure instead of continuing.
-
-Then continue with the next unapproved step immediately, without asking for another pre-implementation confirmation, only after the approval marker is written and the approved step changes are committed.
-
-If the user asks to continue without clearly approving the current step, ask for explicit approval before marking it approved, committing, or moving on.
+Use a Conventional Commits 1.0.0 message that describes the completed story. If the commit fails, stop and report the failure instead of continuing.
 
 ## Epic continuation check
 
-When all step files in the current story implementation plan are approved and committed:
+After the approved story implementation is committed:
 
 1. Inspect the current Epic's `stories/` folder in filename order.
 2. Identify whether there is a next User Story after the completed story.
-3. If a next User Story exists and its `.impl_plan/` folder exists with ordered step files, ask the user whether they want to implement that next story.
-4. If a next User Story exists but its `.impl_plan/` folder is missing or empty, ask the user whether they want to plan that next story with `ai-implementation-planner`.
-5. If there is no next User Story in the Epic, tell the user the Epic appears ready.
+3. If there is no next User Story in the Epic, tell the user the Epic appears ready and stop.
+4. If a next User Story exists and its `.impl_plan/` folder exists with ordered step files, immediately begin implementing that next story plan using this same story execution model.
+5. If a next User Story exists but its `.impl_plan/` folder is missing or empty, immediately create the implementation plan for that story by applying `ai-implementation-planner`, then stop and ask the user to review and approve the new plan before executing it.
 
-Do not automatically start planning or implementing the next story. This check is a handoff prompt after the current story is complete, not permission to continue without the user's explicit direction.
+This continuation behavior is an explicit exception to the normal hard-start rule only after a story has been approved and committed. It lets the executor keep an Epic moving while still preserving the required review gate before executing a newly created plan.
 
 ## Implementation rules
 
@@ -181,36 +182,39 @@ Do:
 
 - preserve the source story scope and acceptance criteria
 - preserve approved Deep Module boundaries when present
-- follow the current step file exactly unless it conflicts with source context
-- keep changes focused on the current step's `## Scope` and `## Files`
-- keep work inside the contexts named by the approved step and technical design
+- follow each step file exactly unless it conflicts with source context
+- keep each step focused on its `## Scope` and `## Files`
+- complete all unapproved steps in order before requesting story review
+- keep work inside the contexts named by the approved steps and technical design
 - use existing project patterns and the relevant skills
-- run focused validation for the current step when possible
-- stop and ask if the step is ambiguous, missing required files, or conflicts with the technical design
+- run focused validation for each step when possible
+- stop and ask if a step is ambiguous, missing required files, or conflicts with the technical design
 - stop and ask before moving work into an unrelated Deep Module unless the approved step or technical design explicitly justifies it
 
 Do not:
 
-- create a missing plan from scratch
-- implement multiple unapproved steps in one pass
-- mark a step approved before the user explicitly approves it
-- add product scope absent from the story, Epic, feature brief, technical design, or step file
+- create a missing initial plan from scratch
+- mark any step approved before the user explicitly approves the completed story
+- commit story implementation changes before story approval
+- add product scope absent from the story, Epic, feature brief, technical design, or step files
 - silently move work into unrelated or unapproved Deep Modules
 - continue past a failed validation without reporting it and asking how to proceed
-- leave approved step changes uncommitted before moving to the next step
+- leave approved story changes uncommitted before moving to the next story
+- execute a newly created next-story plan before the user approves that plan
 
-## Final response behavior after each step
+## Final response behavior
 
-After implementing one step, briefly report:
+After implementing all unapproved steps in one story, briefly report:
 
-- that the step finished
-- if the step was validation-only and produced no code changes, say that it was just a validation step and all validations passed
-- current step file path
-- the next step file path, or that no next step remains
-- that you are waiting for user approval before marking the step approved, committing it, and continuing to the next step
+- that the story implementation finished and is ready for review
+- the story file path and implementation plan folder
+- the steps completed
+- validations run and their results
+- notable risks or follow-up questions, if any
+- that you are waiting for story approval before marking all completed steps approved, committing, and continuing the Epic
 
-After approving and committing the final step in a story implementation plan, also briefly report the Epic continuation check result:
+After approving and committing a story implementation, briefly report the commit and the Epic continuation result:
 
-- next story ready to implement
-- next story needs an implementation plan
-- or Epic appears ready
+- next story is being implemented immediately because it already has a plan
+- next story was planned and is waiting for plan review and approval
+- or the Epic appears ready

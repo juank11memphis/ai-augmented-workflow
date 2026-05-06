@@ -1,13 +1,13 @@
 ---
 name: ai-implementation-planner
-description: Turn one approved User Story Markdown file into LLM-sized implementation step files. Use when asked to create an implementation plan, coding checklist, step-by-step execution plan, or baby-step plan for completing a specific User Story from docs/features/<feature-slug>/epics/<epic-slug>/stories/.
+description: Turn one approved User Story Markdown file into LLM-sized implementation step files, then request plan review before execution. Use when asked to create an implementation plan, coding checklist, step-by-step execution plan, or baby-step plan for completing a specific User Story from docs/features/<feature-slug>/epics/<epic-slug>/stories/.
 ---
 
 # AI Implementation Planner
 
 ## Purpose
 
-Turn one approved User Story into concrete Markdown step files an AI coding agent can execute safely and completely. This skill owns implementation planning for one story at a time, not product scope, technical design decisions, Scrum planning, or code implementation.
+Turn one approved User Story into concrete Markdown step files an AI coding agent can execute safely and completely. This skill owns implementation planning for one story at a time, not product scope, technical design decisions, Scrum planning, or code implementation. After writing the plan, it asks for plan review and approval before any executor begins implementation.
 
 ## Pipeline Contract
 
@@ -30,6 +30,7 @@ Turn one approved User Story into concrete Markdown step files an AI coding agen
 - Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
 - The story or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - The request is to write production code, execute an implementation plan, create stories, or perform another pipeline stage.
+- A newly created implementation plan is ready for user review and approval before execution.
 
 ### What this skill must not do
 
@@ -37,6 +38,7 @@ Turn one approved User Story into concrete Markdown step files an AI coding agen
 - Do not modify prior-stage artifacts.
 - Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
 - Do not infer implementation scope from an Epic brief, feature brief, or technical design without exactly one User Story.
+- Do not execute the plan after creating it, even when invoked as the next-story planning handoff from `ai-implementation-plan-executor`.
 
 ## Required input
 
@@ -239,13 +241,18 @@ Before finishing, verify:
 - the step files preserve approved Deep Module boundaries and stop before unrelated module movement
 - architecture and code-quality steps align with the relevant skills
 
-## Final response behavior
+### 6. Request plan review
 
-After writing the files, final-answer with only:
+After writing and quality-checking the implementation step files, stop and ask the user to review and approve the plan before execution. Do not start implementation in the same turn.
 
-- the implementation plan folder path
-- the step file paths created
+When this skill is invoked as the next-story planning handoff from `ai-implementation-plan-executor`, the same gate applies: create the plan, summarize it, and wait for explicit approval before the executor starts changing code for that story.
+
+The final planning response must briefly include:
+
 - the source User Story path
-- any risks or stop conditions captured in the step files
+- the implementation plan folder path
+- the ordered step files created
+- any assumptions, risks, or validation commands worth reviewing
+- that execution should wait until the user approves the plan
 
 Do not paste step-file bodies, excerpts, outlines, task text, done conditions, or section summaries. Only include generated step files when the user explicitly asks for inline review in the current request.

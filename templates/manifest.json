@@ -1,5 +1,5 @@
 {
-  "templateVersion": "68",
+  "templateVersion": "69",
   "templates": {
     "AGENTS.md": {
       "version": "25",
@@ -116,17 +116,20 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Updates implementation planning guidance to preserve approved Deep Module boundaries."
+        "Adds a plan review gate so newly created implementation plans wait for user approval before execution.",
+        "Clarifies that next-story planning handoffs from the executor must stop after planning and wait for approval."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "15",
-      "description": "Mandatory AI implementation plan executor skill for implementing existing story implementation plans one reviewed step at a time.",
+      "version": "16",
+      "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
       "changes": [
-        "Updates execution guidance to preserve approved Deep Module boundaries."
+        "Changes execution from per-step approval to full-story execution followed by one story-level review gate.",
+        "Marks all completed steps approved and commits once after the completed story is approved.",
+        "Continues Epics automatically by implementing the next planned story or planning the next unplanned story and waiting for plan approval."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
