@@ -1,6 +1,7 @@
 export {
   MANDATORY_SKILLS,
   SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_DATABASE_SKILLS,
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
   SELECTABLE_WORKFLOW_SKILLS,
@@ -10,6 +11,7 @@ export {
 export {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
+  getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedSkillTargetsForAgents,

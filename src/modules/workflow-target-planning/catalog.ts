@@ -1,5 +1,6 @@
 import type {
   SelectableArchitectureSkill,
+  SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
   SelectableSkillResolutionResult,
@@ -108,6 +109,24 @@ export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
       gemini: '.agents/skills/golang/SKILL.md',
       claude: '.agents/skills/golang/SKILL.md',
       windsurf: '.agents/skills/golang/SKILL.md',
+    },
+  },
+];
+
+
+export const SELECTABLE_DATABASE_SKILLS: SelectableDatabaseSkill[] = [
+  {
+    id: 'postgresql-expert',
+    name: 'PostgreSQL Expert',
+    description: 'Install practical guidance for PostgreSQL schema design, migrations, constraints, queries, indexing, and database tradeoffs',
+    routingInstruction:
+      'For PostgreSQL schema design, migrations, constraints, queries, indexing, or database tradeoffs, use `postgresql-expert`.',
+    templateRelativePath: 'skills/postgresql-expert/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/postgresql-expert/SKILL.md',
+      gemini: '.agents/skills/postgresql-expert/SKILL.md',
+      claude: '.agents/skills/postgresql-expert/SKILL.md',
+      windsurf: '.agents/skills/postgresql-expert/SKILL.md',
     },
   },
 ];
@@ -243,6 +262,11 @@ export function resolveSelectableSkillById(skillId: string): SelectableSkillReso
   const frameworkSkill = SELECTABLE_FRAMEWORK_SKILLS.find((skill) => skill.id === skillId);
   if (frameworkSkill) {
     return { ok: true, resolved: { kind: 'framework', skill: frameworkSkill } };
+  }
+
+  const databaseSkill = SELECTABLE_DATABASE_SKILLS.find((skill) => skill.id === skillId);
+  if (databaseSkill) {
+    return { ok: true, resolved: { kind: 'database', skill: databaseSkill } };
   }
 
   const architectureSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === skillId);

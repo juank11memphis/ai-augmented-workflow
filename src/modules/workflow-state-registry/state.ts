@@ -72,6 +72,8 @@ function isSibuState(value: unknown): value is SibuState {
     (state.selectedArchitectureSkill === undefined || typeof state.selectedArchitectureSkill === 'string') &&
     (state.selectedWorkflowSkills === undefined ||
       (Array.isArray(state.selectedWorkflowSkills) && state.selectedWorkflowSkills.every((skill) => typeof skill === 'string'))) &&
+    (state.selectedDatabaseSkills === undefined ||
+      (Array.isArray(state.selectedDatabaseSkills) && state.selectedDatabaseSkills.every((skill) => typeof skill === 'string'))) &&
     (state.reviewedArchitectureSkills === undefined ||
       (Array.isArray(state.reviewedArchitectureSkills) && state.reviewedArchitectureSkills.every((skill) => typeof skill === 'string'))) &&
     !!state.managedFiles &&

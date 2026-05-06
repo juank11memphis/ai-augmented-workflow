@@ -48,6 +48,23 @@ describe('readStateForDoctor', () => {
 
     assert.deepEqual(result, { ok: false, message: '.sibu/state.json is not a valid Sibu state file.' });
   });
+
+  it('accepts selected database skills as an optional state category', () => {
+    const state = { ...buildState(), selectedDatabaseSkills: ['postgresql-expert'] };
+    const statePath = createStateFile(state);
+
+    const result = readStateForDoctor(statePath);
+
+    assert.deepEqual(result, { ok: true, state });
+  });
+
+  it('rejects invalid selected database skill values', () => {
+    const statePath = createStateFile({ ...buildState(), selectedDatabaseSkills: [1] });
+
+    const result = readStateForDoctor(statePath);
+
+    assert.deepEqual(result, { ok: false, message: '.sibu/state.json is not a valid Sibu state file.' });
+  });
 });
 
 describe('readExistingState', () => {

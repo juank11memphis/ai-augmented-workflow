@@ -148,6 +148,13 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
         },
       };
 
+    case 'database':
+      return {
+        status: 'blocked',
+        message: 'Database skill selection is not wired into `sibu skills use` yet.',
+        hint: 'This skill category is being added in stages. Use the init/list/use command support story to enable it.',
+      };
+
     case 'workflow':
       if (selectedWorkflowSkills.includes(resolution.resolved.skill.id)) {
         return { status: 'noop', message: `${resolution.resolved.skill.name} is already selected.` };

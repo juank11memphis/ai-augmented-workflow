@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   MANDATORY_SKILLS,
   SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_DATABASE_SKILLS,
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
   SELECTABLE_WORKFLOW_SKILLS,
@@ -46,6 +47,7 @@ describe('resolveSelectableSkillById', () => {
     assertResolvedSkill('nextjs', 'framework');
     assertResolvedSkill('ddd-hexagonal', 'architecture');
     assertResolvedSkill('command-pattern', 'architecture');
+    assertResolvedSkill('postgresql-expert', 'database');
     assertResolvedSkill('ai-prompt-engineer-master', 'workflow');
     assertResolvedSkill('ux-expert', 'workflow');
   });
@@ -67,6 +69,7 @@ describe('skill target paths', () => {
       ...SELECTABLE_FRAMEWORK_SKILLS,
       ...SELECTABLE_ARCHITECTURE_SKILLS,
       ...SELECTABLE_WORKFLOW_SKILLS,
+      ...SELECTABLE_DATABASE_SKILLS,
     ];
 
     for (const skillTemplate of skillTemplates) {

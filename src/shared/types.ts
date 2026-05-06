@@ -3,6 +3,7 @@ export type LanguageSkillId = 'typescript' | 'golang';
 export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
 export type WorkflowSkillId = 'ai-prompt-engineer-master' | 'ux-expert';
+export type DatabaseSkillId = 'postgresql-expert';
 export type NpmVersionLookupMode = 'live' | 'offline';
 export type NpmVersionResultSource = 'cache' | 'live' | 'override';
 export type NpmVersionUnavailableReason = 'invalid-response' | 'network-error' | 'override';
@@ -48,11 +49,19 @@ export type SelectableWorkflowSkill = SkillTemplate & {
   routingInstruction: string;
 };
 
+export type SelectableDatabaseSkill = SkillTemplate & {
+  id: DatabaseSkillId;
+  name: string;
+  description: string;
+  routingInstruction: string;
+};
+
 export type ResolvedSelectableSkill =
   | { kind: 'language'; skill: SelectableLanguageSkill }
   | { kind: 'framework'; skill: SelectableFrameworkSkill }
   | { kind: 'architecture'; skill: SelectableArchitectureSkill }
-  | { kind: 'workflow'; skill: SelectableWorkflowSkill };
+  | { kind: 'workflow'; skill: SelectableWorkflowSkill }
+  | { kind: 'database'; skill: SelectableDatabaseSkill };
 
 export type SelectableSkillResolutionResult =
   | { ok: true; resolved: ResolvedSelectableSkill }
@@ -82,6 +91,7 @@ export type SibuState = {
   selectedFrameworkSkills?: FrameworkSkillId[];
   selectedArchitectureSkill?: ArchitectureSkillId;
   selectedWorkflowSkills?: WorkflowSkillId[];
+  selectedDatabaseSkills?: DatabaseSkillId[];
   reviewedArchitectureSkills?: ArchitectureSkillId[];
   managedFiles: Record<string, ManagedFileState>;
 };

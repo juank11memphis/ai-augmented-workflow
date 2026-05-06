@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
 import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
@@ -19,7 +19,8 @@ describe('getWorkflowTargets', () => {
       [SELECTABLE_LANGUAGE_SKILLS[0]],
       [SELECTABLE_FRAMEWORK_SKILLS[0]],
       SELECTABLE_ARCHITECTURE_SKILLS[0],
-      [SELECTABLE_WORKFLOW_SKILLS[0]]
+      [SELECTABLE_WORKFLOW_SKILLS[0]],
+      [SELECTABLE_DATABASE_SKILLS[0]]
     );
 
     assert.deepEqual(getRelativeTargetPaths(targets), [
@@ -34,6 +35,7 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/ai-implementation-plan-executor/SKILL.md',
       '.agents/skills/typescript/SKILL.md',
       '.agents/skills/react/SKILL.md',
+      '.agents/skills/postgresql-expert/SKILL.md',
       '.agents/skills/ddd-hexagonal/SKILL.md',
       '.agents/skills/ai-prompt-engineer-master/SKILL.md',
     ]);
@@ -56,20 +58,22 @@ describe('getWorkflowTargets', () => {
     assertNoInvalidTargets(targets);
   });
 
-  it('persists workflow skills selected during initialization', () => {
+  it('persists workflow and database skills selected during initialization', () => {
     const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-workflow-targets-'));
     const selectedAgents = [getSupportedAgent('codex')];
     const selectedLanguageSkills = [SELECTABLE_LANGUAGE_SKILLS[0]];
     const selectedFrameworkSkills = [SELECTABLE_FRAMEWORK_SKILLS[0]];
     const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS[0];
     const selectedWorkflowSkills = SELECTABLE_WORKFLOW_SKILLS;
+    const selectedDatabaseSkills = SELECTABLE_DATABASE_SKILLS;
     const targets = getWorkflowTargets(
       rootPath,
       selectedAgents,
       selectedLanguageSkills,
       selectedFrameworkSkills,
       selectedArchitectureSkill,
-      selectedWorkflowSkills
+      selectedWorkflowSkills,
+      selectedDatabaseSkills
     );
 
     const files = renderMissingWorkflowFiles({
@@ -79,6 +83,7 @@ describe('getWorkflowTargets', () => {
       selectedFrameworkSkills,
       selectedArchitectureSkill,
       selectedWorkflowSkills,
+      selectedDatabaseSkills,
     });
 
     for (const file of files) {
@@ -95,12 +100,14 @@ describe('getWorkflowTargets', () => {
       selectedFrameworkSkills,
       selectedArchitectureSkill,
       selectedWorkflowSkills,
+      selectedDatabaseSkills,
       targets,
     });
 
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
 
     assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert']);
+    assert.deepEqual(state.selectedDatabaseSkills, ['postgresql-expert']);
     assert.deepEqual(state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md'], {
       template: 'skills/deep-module-map-writer/SKILL.md',
       templateVersion: readTemplateManifest().templates['skills/deep-module-map-writer/SKILL.md']?.version,
@@ -109,9 +116,11 @@ describe('getWorkflowTargets', () => {
     });
     assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
+    assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
     assert.equal(state.managedFiles['docs/deep-module-map.md'], undefined);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `postgresql-expert`/);
 
     fs.rmSync(rootPath, { recursive: true, force: true });
   });

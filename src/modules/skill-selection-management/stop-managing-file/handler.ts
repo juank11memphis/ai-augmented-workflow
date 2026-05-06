@@ -147,6 +147,8 @@ function isSkillSelected(state: SibuState, resolved: ResolvedSelectableSkill): b
       return state.selectedFrameworkSkills?.includes(resolved.skill.id) ?? false;
     case 'architecture':
       return state.selectedArchitectureSkill === resolved.skill.id;
+    case 'database':
+      return false;
     case 'workflow':
       return state.selectedWorkflowSkills?.includes(resolved.skill.id) ?? false;
   }
@@ -162,6 +164,8 @@ function removeSelectedSkill(state: SibuState, resolved: ResolvedSelectableSkill
       return;
     case 'architecture':
       delete state.selectedArchitectureSkill;
+      return;
+    case 'database':
       return;
     case 'workflow':
       state.selectedWorkflowSkills = (state.selectedWorkflowSkills ?? []).filter((skillId) => skillId !== resolved.skill.id);
