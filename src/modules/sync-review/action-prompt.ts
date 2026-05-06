@@ -1,6 +1,6 @@
 import { cancel, isCancel, select } from '@clack/prompts';
 
-import type { SyncPreview } from './preview.js';
+import type { SyncPreview } from './sync-preview.js';
 
 export type SyncAction = 'apply-update' | 'mark-reviewed' | 'write-side-template' | 'stop-managing' | 'skip';
 

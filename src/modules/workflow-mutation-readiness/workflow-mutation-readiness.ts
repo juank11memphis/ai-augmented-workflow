@@ -1,7 +1,7 @@
-import { readStateForDoctor } from '../modules/workflow-state-registry/index.js';
-import { getSyncPreviews, isActionableSyncPreview, type SyncPreview } from './sync-preview.js';
-import { readTemplateManifest } from '../modules/template-catalog-rendering/index.js';
-import type { SibuState, TemplateManifest } from './types.js';
+import { readStateForDoctor } from '../workflow-state-registry/index.js';
+import { getSyncPreviews, isActionableSyncPreview, type SyncPreview } from '../sync-review/index.js';
+import { readTemplateManifest } from '../template-catalog-rendering/index.js';
+import type { SibuState, TemplateManifest } from '../../shared/types.js';
 
 export type WorkflowMutationReadinessResult =
   | {

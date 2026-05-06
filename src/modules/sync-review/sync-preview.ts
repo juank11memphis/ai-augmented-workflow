@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { sha256 } from './hash.js';
-import { hasReviewedTemplateVersion } from '../modules/workflow-state-registry/index.js';
-import { renderTemplateForSync } from '../modules/template-catalog-rendering/index.js';
-import type { SibuState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from './types.js';
+import { sha256 } from '../../shared/hash.js';
+import { hasReviewedTemplateVersion } from '../workflow-state-registry/index.js';
+import { renderTemplateForSync } from '../template-catalog-rendering/index.js';
+import type { SibuState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
@@ -12,7 +12,7 @@ import {
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
-} from '../modules/workflow-target-planning/index.js';
+} from '../workflow-target-planning/index.js';
 
 export type SyncPreview = {
   relativePath: string;

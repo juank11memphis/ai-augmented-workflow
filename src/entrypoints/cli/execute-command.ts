@@ -2,7 +2,7 @@ import { handleDoctorProject } from '../../modules/workflow-health-diagnosis/ind
 import { handleInitProject } from '../../modules/project-adoption/index.js';
 import { handleListSkills } from '../../modules/skill-selection-management/index.js';
 import { handleStopManagingFile } from '../../modules/skill-selection-management/index.js';
-import { handleSyncProject } from '../../features/sync-project/handler.js';
+import { handleSyncProject } from '../../modules/sync-review/index.js';
 import { handleUseSkill } from '../../modules/skill-selection-management/index.js';
 import type { SibuCliCommand } from './command.js';
 

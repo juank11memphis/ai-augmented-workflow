@@ -5,17 +5,17 @@ import { log } from '@clack/prompts';
 
 import { sha256 } from '../../shared/hash.js';
 import { getSideTemplatePath } from '../../shared/paths.js';
-import { cloneState } from '../../modules/workflow-state-registry/index.js';
-import { getTemplateVersion, renderTemplateForSync } from '../../modules/template-catalog-rendering/index.js';
+import { cloneState } from '../workflow-state-registry/index.js';
+import { getTemplateVersion, renderTemplateForSync } from '../template-catalog-rendering/index.js';
 import type { SibuState, TemplateManifest } from '../../shared/types.js';
 import {
   getSelectedArchitectureSkillFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
-} from '../../modules/workflow-target-planning/index.js';
+} from '../workflow-target-planning/index.js';
 import type { SyncAction } from './action-prompt.js';
-import type { SyncPreview } from './preview.js';
+import type { SyncPreview } from './sync-preview.js';
 
 export function applySyncAction({
   rootPath,

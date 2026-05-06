@@ -1,7 +1,7 @@
 import { log } from '@clack/prompts';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import type { SyncPreview } from './preview.js';
+import type { SyncPreview } from './sync-preview.js';
 
 export function logSyncPreview(preview: SyncPreview): void {
   switch (preview.status) {

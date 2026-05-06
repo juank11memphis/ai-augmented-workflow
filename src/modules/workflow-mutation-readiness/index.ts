@@ -1,1 +1,2 @@
-export { getWorkflowMutationReadiness } from '../../shared/workflow-mutation-readiness.js';
+export { getWorkflowMutationReadiness } from './workflow-mutation-readiness.js';
+export type { WorkflowMutationReadinessResult } from './workflow-mutation-readiness.js';
