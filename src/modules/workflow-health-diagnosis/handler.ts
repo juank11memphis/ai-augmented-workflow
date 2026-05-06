@@ -9,7 +9,7 @@ import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE
 import { sha256 } from '../../shared/hash.js';
 import { checkForLatestSibuVersion } from '../version-advisory/index.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { renderIntro } from '../../shared/prompts.js';
+import { renderIntro } from '../interactive-guidance/index.js';
 import { hasReviewedTemplateVersion, readStateForDoctor } from '../workflow-state-registry/index.js';
 import { getTemplateVersion, readTemplateManifest } from '../template-catalog-rendering/index.js';
 import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState } from '../../shared/types.js';
