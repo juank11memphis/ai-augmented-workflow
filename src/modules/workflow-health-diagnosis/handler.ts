@@ -5,13 +5,13 @@ import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { sha256 } from '../../shared/hash.js';
-import { checkForLatestSibuVersion } from '../../modules/version-advisory/index.js';
+import { checkForLatestSibuVersion } from '../version-advisory/index.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
-import { hasReviewedTemplateVersion, readStateForDoctor } from '../../modules/workflow-state-registry/index.js';
-import { getTemplateVersion, readTemplateManifest } from '../../modules/template-catalog-rendering/index.js';
+import { hasReviewedTemplateVersion, readStateForDoctor } from '../workflow-state-registry/index.js';
+import { getTemplateVersion, readTemplateManifest } from '../template-catalog-rendering/index.js';
 import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
@@ -19,7 +19,7 @@ import {
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getWorkflowTargets,
-} from '../../modules/workflow-target-planning/index.js';
+} from '../workflow-target-planning/index.js';
 import type { DoctorProjectCommand } from './command.js';
 
 export async function handleDoctorProject(_command: DoctorProjectCommand): Promise<void> {

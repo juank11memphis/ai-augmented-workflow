@@ -1,5 +1,5 @@
-import type { DoctorProjectCommand } from '../../features/doctor-project/command.js';
-import type { InitProjectCommand } from '../../features/init-project/command.js';
+import type { DoctorProjectCommand } from '../../modules/workflow-health-diagnosis/index.js';
+import type { InitProjectCommand } from '../../modules/project-adoption/index.js';
 import type { ListSkillsCommand } from '../../features/list-skills/command.js';
 import type { StopManagingFileCommand } from '../../features/stop-managing-file/command.js';
 import type { SyncProjectCommand } from '../../features/sync-project/command.js';

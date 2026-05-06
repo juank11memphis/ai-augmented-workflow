@@ -7,8 +7,8 @@ import chalk from 'chalk';
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { askForArchitectureSkill, askForFrameworkSkills, askForLanguageSkills, askForProjectOverview, askForSupportedAgents, askForWorkflowSkills, renderIntro } from '../../shared/prompts.js';
-import { readStateForDoctor } from '../../modules/workflow-state-registry/index.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../modules/workflow-target-planning/index.js';
+import { readStateForDoctor } from '../workflow-state-registry/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
 import type { InitProjectCommand } from './command.js';
 
 export async function handleInitProject(_command: InitProjectCommand): Promise<void> {

@@ -4,9 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, test } from 'node:test';
 
-import { SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
+import { SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../modules/workflow-target-planning/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
 import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
 
 const DEEP_MODULE_SKILL_PATH = '.agents/skills/deep-module-map-writer/SKILL.md';

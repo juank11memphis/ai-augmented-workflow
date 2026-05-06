@@ -1,5 +1,5 @@
-import { handleDoctorProject } from '../../features/doctor-project/handler.js';
-import { handleInitProject } from '../../features/init-project/handler.js';
+import { handleDoctorProject } from '../../modules/workflow-health-diagnosis/index.js';
+import { handleInitProject } from '../../modules/project-adoption/index.js';
 import { handleListSkills } from '../../features/list-skills/handler.js';
 import { handleStopManagingFile } from '../../features/stop-managing-file/handler.js';
 import { handleSyncProject } from '../../features/sync-project/handler.js';
