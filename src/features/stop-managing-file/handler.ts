@@ -9,7 +9,7 @@ import { resolveSelectableSkillById } from '../../modules/workflow-target-planni
 import { readFileHashIfPresent, sha256 } from '../../shared/hash.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
-import { cloneState, readStateForDoctor, writeStateFile } from '../../shared/state.js';
+import { cloneState, readStateForDoctor, writeStateFile } from '../../modules/workflow-state-registry/index.js';
 import { getTemplateVersion, readTemplateManifest, renderTemplateForSync } from '../../modules/template-catalog-rendering/index.js';
 import type { SibuState, ManagedFilePath, ManagedFileState, ResolvedSelectableSkill } from '../../shared/types.js';
 import { removeUndefinedFields } from '../../shared/object.js';

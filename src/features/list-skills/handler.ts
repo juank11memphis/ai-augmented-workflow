@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS } from '../../modules/workflow-target-planning/index.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
-import { readStateForDoctor } from '../../shared/state.js';
+import { readStateForDoctor } from '../../modules/workflow-state-registry/index.js';
 import type { SibuState } from '../../shared/types.js';
 import type { ListSkillsCommand } from './command.js';
 

@@ -12,7 +12,7 @@ import {
 } from './index.js';
 import { sha256 } from '../../shared/hash.js';
 import { removeUndefinedFields } from '../../shared/object.js';
-import { readExistingState } from '../../shared/state.js';
+import { readExistingState } from '../workflow-state-registry/index.js';
 import { getTemplateVersion, readTemplate, readTemplateManifest, renderSkillRouting } from '../template-catalog-rendering/index.js';
 import type {
   SibuState,

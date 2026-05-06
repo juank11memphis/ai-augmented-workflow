@@ -10,7 +10,7 @@ import { sha256 } from '../../shared/hash.js';
 import { checkForLatestSibuVersion } from '../../shared/npm-version.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
-import { hasReviewedTemplateVersion, readStateForDoctor } from '../../shared/state.js';
+import { hasReviewedTemplateVersion, readStateForDoctor } from '../../modules/workflow-state-registry/index.js';
 import { getTemplateVersion, readTemplateManifest } from '../../modules/template-catalog-rendering/index.js';
 import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState } from '../../shared/types.js';
 import {

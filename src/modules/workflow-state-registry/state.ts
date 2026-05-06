@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { STATE_RELATIVE_PATH } from './catalog.js';
-import type { SibuState, ManagedFileState, ManagedFileStatus } from './types.js';
+import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import type { SibuState, ManagedFileState, ManagedFileStatus } from '../../shared/types.js';
 
 export type StateReadResult = { ok: true; state: SibuState } | { ok: false; message: string };
 

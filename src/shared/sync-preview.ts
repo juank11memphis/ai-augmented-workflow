@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { sha256 } from './hash.js';
-import { hasReviewedTemplateVersion } from './state.js';
+import { hasReviewedTemplateVersion } from '../modules/workflow-state-registry/index.js';
 import { renderTemplateForSync } from '../modules/template-catalog-rendering/index.js';
 import type { SibuState, ManagedFileState, SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from './types.js';
 import {
