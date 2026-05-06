@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../../modules/workflow-target-planning/index.js';
 import { sha256 } from '../../shared/hash.js';
-import { checkForLatestSibuVersion } from '../../shared/npm-version.js';
+import { checkForLatestSibuVersion } from '../../modules/version-advisory/index.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../shared/prompts.js';
 import { hasReviewedTemplateVersion, readStateForDoctor } from '../../modules/workflow-state-registry/index.js';

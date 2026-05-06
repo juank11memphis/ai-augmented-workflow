@@ -1,6 +1,6 @@
 import { Command as CommanderCommand } from 'commander';
 
-import { SIBU_VERSION } from '../../shared/catalog.js';
+import { SIBU_VERSION } from '../../modules/version-advisory/index.js';
 import { executeCliCommand } from './execute-command.js';
 
 export function createProgram(): CommanderCommand {

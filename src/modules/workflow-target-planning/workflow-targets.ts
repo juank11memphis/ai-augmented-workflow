@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { SIBU_VERSION } from '../../shared/catalog.js';
+import { SIBU_VERSION } from '../version-advisory/index.js';
 import {
   MANDATORY_SKILLS,
   SELECTABLE_ARCHITECTURE_SKILLS,

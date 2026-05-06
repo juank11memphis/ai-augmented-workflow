@@ -1,9 +1,15 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { NpmVersionCacheRecord, NpmVersionCheckResult, NpmVersionLiveStatus, NpmVersionLookupMode, NpmVersionResultSource, NpmVersionUnavailableReason } from '../../shared/types.js';
 
-import { NPM_VERSION_LOOKUP_MODE_ENV, NPM_VERSION_OVERRIDE_ENV, SIBU_PACKAGE_NAME, SIBU_VERSION, SUPPORTED_NPM_LOOKUP_MODES } from './catalog.js';
-import { getNpmVersionCachePath } from './paths.js';
-import type { NpmVersionCacheRecord, NpmVersionCheckResult, NpmVersionLiveStatus, NpmVersionLookupMode, NpmVersionResultSource, NpmVersionUnavailableReason } from './types.js';
+export const SIBU_PACKAGE_NAME = '@juancr11/sibu';
+export const SIBU_VERSION = readPackageVersion();
+export const NPM_VERSION_LOOKUP_MODE_ENV = 'SIBU_NPM_LOOKUP_MODE';
+export const NPM_VERSION_OVERRIDE_ENV = 'SIBU_NPM_LATEST_VERSION';
+export const SIBU_CACHE_HOME_ENV = 'SIBU_CACHE_HOME';
+export const SUPPORTED_NPM_LOOKUP_MODES: NpmVersionLookupMode[] = ['live', 'offline'];
 
 const NPM_VERSION_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const NPM_REGISTRY_URL = 'https://registry.npmjs.org';
@@ -244,4 +250,32 @@ function isNpmVersionCacheRecord(value: unknown): value is NpmVersionCacheRecord
     typeof record.packageName === 'string' &&
     typeof record.source === 'string'
   );
+}
+
+function getNpmVersionCachePath(): string {
+  return path.join(getSibuCacheRoot(), 'cache', 'npm-version.json');
+}
+
+function getSibuCacheRoot(): string {
+  const override = process.env[SIBU_CACHE_HOME_ENV]?.trim();
+  if (override) {
+    return path.resolve(override);
+  }
+
+  return path.join(os.homedir(), '.sibu');
+}
+
+function readPackageVersion(): string {
+  const packageJsonPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'package.json');
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as unknown;
+
+  if (!isPackageJsonWithVersion(packageJson)) {
+    throw new Error(`Could not read Sibu version from ${packageJsonPath}.`);
+  }
+
+  return packageJson.version;
+}
+
+function isPackageJsonWithVersion(value: unknown): value is { version: string } {
+  return Boolean(value && typeof value === 'object' && typeof (value as { version?: unknown }).version === 'string');
 }

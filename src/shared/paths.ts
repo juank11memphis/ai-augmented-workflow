@@ -1,8 +1,7 @@
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SIBU_CACHE_HOME_ENV, STATE_RELATIVE_PATH } from './catalog.js';
+import { STATE_RELATIVE_PATH } from './catalog.js';
 import type { ManagedFilePath } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,17 +42,4 @@ export function resolveManagedFilePath(rootPath: string, file: string): ManagedF
 export function getSideTemplatePath(rootPath: string, relativePath: string, templateVersion: string): string {
   const safeName = relativePath.replace(/[\\/]/g, '__');
   return path.join(rootPath, '.sibu', 'sync', `${safeName}.template-v${templateVersion}`);
-}
-
-export function getSibuCacheRoot(): string {
-  const override = process.env[SIBU_CACHE_HOME_ENV]?.trim();
-  if (override) {
-    return path.resolve(override);
-  }
-
-  return path.join(os.homedir(), '.sibu');
-}
-
-export function getNpmVersionCachePath(): string {
-  return path.join(getSibuCacheRoot(), 'cache', 'npm-version.json');
 }

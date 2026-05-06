@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkForLatestSibuVersion } from './npm-version.js';
+import { checkForLatestSibuVersion } from './index.js';
 
 const originalEnv = { ...process.env };
 
