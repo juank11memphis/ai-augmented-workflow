@@ -1,5 +1,5 @@
 {
-  "templateVersion": "69",
+  "templateVersion": "70",
   "templates": {
     "AGENTS.md": {
       "version": "25",
@@ -78,6 +78,13 @@
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
         "Adds an optional Go skill with concise, Effective Go\u2013style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+      ]
+    },
+    "skills/postgresql-expert/SKILL.md": {
+      "version": "1",
+      "description": "Selectable PostgreSQL Expert skill for practical database schema design and PostgreSQL-specific tradeoff guidance.",
+      "changes": [
+        "Adds an optional PostgreSQL Expert database skill focused on simple schema design, data integrity, migrations, access patterns, and purposeful indexing."
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
