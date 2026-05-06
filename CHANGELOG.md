@@ -4,6 +4,16 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.8.0 - 2026-05-06
+
+### Added
+- expose database skills in commands
+- add database skill planning state
+- add postgresql expert skill template
+
+### Changed
+- update sibu template state
+
 ## 0.7.0 - 2026-05-06
 
 ### Added
