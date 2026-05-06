@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { parseChangelogArgs } from '../changelog.js';
+import { parseChangelogArgs } from '../../../admin/changelog.js';
 import {
   buildChangelogProposal,
   classifyCommit,

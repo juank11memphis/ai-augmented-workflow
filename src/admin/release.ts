@@ -5,8 +5,8 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import type { ReleaseCommandResult, ReleaseExecutionResult, ReleasePlan, ReleaseWorkflowCommand, ReleaseWorkflowPorts } from './release-workflow/command.js';
-import { previewAndConfirmMaintainerRelease } from './release-workflow/handler.js';
+import type { ReleaseCommandResult, ReleaseExecutionResult, ReleasePlan, ReleaseWorkflowCommand, ReleaseWorkflowPorts } from '../modules/maintainer-release-support/release-workflow/command.js';
+import { previewAndConfirmMaintainerRelease } from '../modules/maintainer-release-support/release-workflow/handler.js';
 
 export type ParseReleaseArgsResult =
   | {

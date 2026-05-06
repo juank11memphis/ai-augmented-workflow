@@ -4,8 +4,8 @@ import { createInterface } from 'node:readline/promises';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import type { GenerateChangelogCommand, GenerateChangelogWritePorts } from './generate-changelog/command.js';
-import { handleGenerateChangelogWrite } from './generate-changelog/handler.js';
+import type { GenerateChangelogCommand, GenerateChangelogWritePorts } from '../modules/maintainer-release-support/generate-changelog/command.js';
+import { handleGenerateChangelogWrite } from '../modules/maintainer-release-support/generate-changelog/handler.js';
 
 export type ParseChangelogArgsResult =
   | {
