@@ -4,6 +4,58 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.7.0 - 2026-05-06
+
+### Added
+- update story plan execution workflow
+- route deep module map workflow
+- add deep module map writer template
+
+### Changed
+- validate deep module reorganization
+- move maintainer release support
+- route prompt consumers to interactive guidance
+- move prompt ui behavior
+- wire cli dispatch to modules
+- move sync review workflows
+- move skill selection workflows
+- move adoption and health diagnosis workflows
+- move version advisory module
+- move workflow state registry module
+- approve template target validation step
+- move workflow target planning
+- move workflow target catalog
+- move template catalog rendering
+- approve source boundary validation step
+- plan deep module reorganization
+- add deep module placeholders
+- align deep module template wording
+- add deep module map
+- refresh sibu state
+- update sibu workflow state
+- record final module map validation
+- record product context cleanup validation
+- clean module map wording
+- record pipeline module manifest
+- update adjacent module map wording
+- update planning module boundaries
+- update technical design module guidance
+- update feature brief module guidance
+- record architecture guidance manifest
+- sync local command pattern guidance
+- update ddd hexagonal module guidance
+- update command pattern module guidance
+- record deep module validation review
+- update local deep module workflow
+
+### Removed
+- remove legacy template target files
+- remove obsolete product context artifacts
+
+### Fixed
+- include admin runtime files in package
+- register deep module map workflow skill
+
 ## 0.6.0 - 2026-05-04
 
 ### Added
