@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { SibuState } from './types.js';
-import { shouldAskForNewLanguageSkills } from './prompts.js';
+import type { SibuState } from '../../shared/types.js';
+import { shouldAskForNewLanguageSkills } from './index.js';
 
 const BASE_STATE: SibuState = {
   sibuVersion: '0.1.0',
