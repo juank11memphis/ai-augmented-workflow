@@ -47,6 +47,9 @@ function main() {
     runInstalledSibu(installedExecutable, ['--help'], npmBinPath);
 
     const installedPackageRoot = getInstalledPackageRoot({ npmCache, npmPrefix });
+    runInstalledNodeScript(installedPackageRoot, ['bin/admin/changelog.js', '--help']);
+    runInstalledNodeScript(installedPackageRoot, ['bin/admin/release.js', '--help']);
+
     const fixtureProjectPath = prepareFixtureProject({ workspace, installedPackageRoot });
 
     const doctorOutput = runInstalledSibu(installedExecutable, ['doctor'], npmBinPath, fixtureProjectPath);
@@ -189,6 +192,23 @@ function runInstalledSibu(installedExecutable, args, npmBinPath, cwd = getRepoRo
     cwd,
     encoding: 'utf8',
     env: buildChildEnv({ PATH: buildPath(npmBinPath) }),
+    stdio: ['ignore', 'pipe', 'inherit'],
+  }).trim();
+}
+
+function runInstalledNodeScript(installedPackageRoot, scriptArgs) {
+  const [relativeScriptPath, ...args] = scriptArgs;
+  const scriptPath = path.join(installedPackageRoot, relativeScriptPath);
+
+  if (!existsSync(scriptPath)) {
+    throw new Error(`Expected installed admin entrypoint at ${scriptPath}.`);
+  }
+
+  logStep(`Running node ${scriptArgs.join(' ')} in installed package`);
+  return execFileSync(process.execPath, [scriptPath, ...args], {
+    cwd: installedPackageRoot,
+    encoding: 'utf8',
+    env: buildChildEnv(),
     stdio: ['ignore', 'pipe', 'inherit'],
   }).trim();
 }

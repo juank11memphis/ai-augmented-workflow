@@ -16,6 +16,7 @@
   "files": [
     "bin/sibu.js",
     "bin/entrypoints/",
+    "bin/admin/",
     "bin/modules/",
     "bin/shared/",
     "!bin/shared/state.js",
