@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { SibuState } from '../../shared/types.js';
-import { shouldAskForNewLanguageSkills } from './index.js';
+import { MCP_SERVER_SELECTION_MESSAGE, shouldAskForNewLanguageSkills } from './index.js';
 
 const BASE_STATE: SibuState = {
   sibuVersion: '0.1.0',
@@ -21,5 +21,14 @@ describe('shouldAskForNewLanguageSkills', () => {
   it('returns true when no language has been selected yet', () => {
     assert.equal(shouldAskForNewLanguageSkills(BASE_STATE), true);
     assert.equal(shouldAskForNewLanguageSkills({ ...BASE_STATE, selectedLanguageSkills: [] }), true);
+  });
+});
+
+describe('MCP server selection copy', () => {
+  it('explains Sibu configures files only and users own prerequisites and auth', () => {
+    assert.match(MCP_SERVER_SELECTION_MESSAGE, /config/i);
+    assert.match(MCP_SERVER_SELECTION_MESSAGE, /only/i);
+    assert.match(MCP_SERVER_SELECTION_MESSAGE, /prerequisites/i);
+    assert.match(MCP_SERVER_SELECTION_MESSAGE, /authentication/i);
   });
 });

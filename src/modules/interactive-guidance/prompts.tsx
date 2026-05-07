@@ -3,23 +3,34 @@ import gradient from 'gradient-string';
 import { Box, Text, render, useApp } from 'ink';
 import React, { useEffect } from 'react';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import {
+  SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_DATABASE_SKILLS,
+  SELECTABLE_FRAMEWORK_SKILLS,
+  SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_MCP_SERVERS,
+  SELECTABLE_WORKFLOW_SKILLS,
+  SUPPORTED_AGENTS,
+} from '../workflow-target-planning/index.js';
 import type {
   ArchitectureSkillId,
   SibuState,
   DatabaseSkillId,
   FrameworkSkillId,
   LanguageSkillId,
+  McpServerId,
   SelectableArchitectureSkill,
   SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
+  SelectableMcpServer,
   SelectableWorkflowSkill,
   SupportedAgent,
   WorkflowSkillId,
 } from '../../shared/types.js';
 
 const NONE_OPTION_ID = 'none';
+export const MCP_SERVER_SELECTION_MESSAGE = 'Select optional MCP servers to configure. Sibu writes config files only; you own prerequisites and authentication.';
 
 type FrameworkSkillSelectionId = FrameworkSkillId | typeof NONE_OPTION_ID;
 
@@ -108,6 +119,25 @@ export async function askForDatabaseSkills(): Promise<SelectableDatabaseSkill[]>
   }
 
   return SELECTABLE_DATABASE_SKILLS.filter((skill) => selectedDatabaseSkillIds.includes(skill.id));
+}
+
+export async function askForMcpServers(): Promise<SelectableMcpServer[]> {
+  const selectedMcpServerIds = await multiselect<McpServerId>({
+    message: MCP_SERVER_SELECTION_MESSAGE,
+    required: false,
+    options: SELECTABLE_MCP_SERVERS.map((server) => ({
+      value: server.id,
+      label: server.name,
+      hint: server.description,
+    })),
+  });
+
+  if (isCancel(selectedMcpServerIds)) {
+    cancel('Initialization cancelled.');
+    process.exit(0);
+  }
+
+  return SELECTABLE_MCP_SERVERS.filter((server) => selectedMcpServerIds.includes(server.id));
 }
 
 async function askForFrameworkSkillSelection({
