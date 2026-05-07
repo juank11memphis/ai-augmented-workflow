@@ -4,10 +4,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from './index.js';
+import {
+  SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_DATABASE_SKILLS,
+  SELECTABLE_FRAMEWORK_SKILLS,
+  SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_MCP_SERVERS,
+  SELECTABLE_WORKFLOW_SKILLS,
+  SUPPORTED_AGENTS,
+} from './index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
-import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
+import { getSelectedAgentsFromState, getSelectedMcpServersFromState, getSelectedMcpTargetsForAgents, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';
 
@@ -56,6 +64,38 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.agents/skills/deep-module-map-writer/SKILL.md'), true);
     assert.equal(targetPaths.includes('docs/deep-module-map.md'), false);
     assertNoInvalidTargets(targets);
+  });
+
+  it('includes GitHub MCP config targets for supported MCP agents only', () => {
+    const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS, [], [], undefined, [], [], SELECTABLE_MCP_SERVERS);
+    const targetPaths = getRelativeTargetPaths(targets);
+
+    assert.equal(targetPaths.includes('.codex/config.toml'), true);
+    assert.equal(targetPaths.includes('.mcp.json'), true);
+    assert.equal(targetPaths.includes('.gemini/settings.json'), true);
+    assert.equal(targetPaths.some((relativePath) => relativePath.includes('windsurf')), false);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.codex/config.toml').length, 1);
+    assertNoInvalidTargets(targets);
+  });
+
+  it('resolves MCP targets without adding Windsurf MCP config', () => {
+    assert.deepEqual(getSelectedMcpTargetsForAgents(SUPPORTED_AGENTS, SELECTABLE_MCP_SERVERS), [
+      {
+        targetRelativePath: '.codex/config.toml',
+        templateRelativePath: '.codex/config.toml',
+        agentId: 'codex',
+      },
+      {
+        targetRelativePath: '.gemini/settings.json',
+        templateRelativePath: 'mcp/gemini/settings.json',
+        agentId: 'gemini',
+      },
+      {
+        targetRelativePath: '.mcp.json',
+        templateRelativePath: 'mcp/claude/.mcp.json',
+        agentId: 'claude',
+      },
+    ]);
   });
 
   it('persists workflow and database skills selected during initialization', () => {
@@ -124,6 +164,67 @@ describe('getWorkflowTargets', () => {
 
     fs.rmSync(rootPath, { recursive: true, force: true });
   });
+
+  it('renders and persists selected GitHub MCP config targets', () => {
+    const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-workflow-targets-mcp-'));
+    const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')];
+    const selectedMcpServers = SELECTABLE_MCP_SERVERS;
+    const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], undefined, [], [], selectedMcpServers);
+
+    const firstRender = renderMissingWorkflowFiles({
+      missingTargets: targets,
+      overview: 'Test project.',
+      selectedLanguageSkills: [],
+      selectedFrameworkSkills: [],
+      selectedMcpServers,
+    });
+    const secondRender = renderMissingWorkflowFiles({
+      missingTargets: targets,
+      overview: 'Test project.',
+      selectedLanguageSkills: [],
+      selectedFrameworkSkills: [],
+      selectedMcpServers,
+    });
+
+    assert.deepEqual(
+      firstRender.map((file) => file.contents),
+      secondRender.map((file) => file.contents)
+    );
+
+    const codexConfig = getRenderedFile(firstRender, '.codex/config.toml', rootPath);
+    const claudeConfig = getRenderedFile(firstRender, '.mcp.json', rootPath);
+    const geminiConfig = getRenderedFile(firstRender, '.gemini/settings.json', rootPath);
+
+    assert.match(codexConfig.contents, /model_instructions_file = "\.\.\/AGENTS\.md"/);
+    assert.match(codexConfig.contents, /\[mcp_servers\.github\]/);
+    assert.match(claudeConfig.contents, /ghcr\.io\/github\/github-mcp-server/);
+    assert.match(geminiConfig.contents, /ghcr\.io\/github\/github-mcp-server/);
+
+    for (const file of firstRender) {
+      fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+      fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+    }
+
+    const statePath = path.join(rootPath, '.sibu/state.json');
+    writeSibuState({
+      rootPath,
+      statePath,
+      selectedAgents,
+      selectedLanguageSkills: [],
+      selectedFrameworkSkills: [],
+      selectedMcpServers,
+      targets,
+    });
+
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
+
+    assert.deepEqual(state.selectedMcpServers, ['github']);
+    assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
+    assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
+    assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
+
+    fs.rmSync(rootPath, { recursive: true, force: true });
+  });
 });
 
 describe('getSelectedAgentsFromState', () => {
@@ -138,6 +239,22 @@ describe('getSelectedAgentsFromState', () => {
     };
 
     assert.deepEqual(getSelectedAgentsFromState(state).map((agent) => agent.id), ['windsurf']);
+  });
+});
+
+describe('getSelectedMcpServersFromState', () => {
+  it('resolves selected MCP servers from state', () => {
+    const state: SibuState = {
+      sibuVersion: '0.1.0',
+      templateVersion: '71',
+      generatedAt: '2026-05-07T00:00:00.000Z',
+      updatedAt: '2026-05-07T00:00:00.000Z',
+      selectedAgents: ['codex'],
+      selectedMcpServers: ['github'],
+      managedFiles: {},
+    };
+
+    assert.deepEqual(getSelectedMcpServersFromState(state).map((server) => server.id), ['github']);
   });
 });
 
@@ -162,4 +279,15 @@ function assertNoInvalidTargets(targets: ReturnType<typeof getWorkflowTargets>):
     assert.notEqual(target.templateRelativePath, undefined);
     assert.equal(target.targetPath.includes('undefined'), false);
   }
+}
+
+function getRenderedFile(files: ReturnType<typeof renderMissingWorkflowFiles>, relativePath: string, rootPath: string): ReturnType<typeof renderMissingWorkflowFiles>[number] {
+  const targetPath = path.join(rootPath, relativePath);
+  const file = files.find((renderedFile) => renderedFile.targetPath === targetPath);
+
+  if (!file) {
+    throw new Error(`Missing rendered file: ${relativePath}`);
+  }
+
+  return file;
 }

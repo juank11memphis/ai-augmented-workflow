@@ -16,6 +16,8 @@ export {
   getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
+  getSelectedMcpServersFromState,
+  getSelectedMcpTargetsForAgents,
   getSelectedSkillTargetsForAgents,
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,

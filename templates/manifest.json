@@ -1,5 +1,5 @@
 {
-  "templateVersion": "70",
+  "templateVersion": "71",
   "templates": {
     "AGENTS.md": {
       "version": "25",
@@ -27,6 +27,20 @@
       "description": "Claude instructions delegating to AGENTS.md.",
       "changes": [
         "Delegates Claude project instructions to AGENTS.md as the source of truth."
+      ]
+    },
+    "mcp/claude/.mcp.json": {
+      "version": "1",
+      "description": "Claude MCP configuration template managed when selectable MCP servers are selected.",
+      "changes": [
+        "Adds managed Claude MCP configuration support for selectable MCP servers such as GitHub."
+      ]
+    },
+    "mcp/gemini/settings.json": {
+      "version": "1",
+      "description": "Gemini MCP configuration template managed when selectable MCP servers are selected.",
+      "changes": [
+        "Adds managed Gemini MCP configuration support for selectable MCP servers such as GitHub."
       ]
     },
     "skills/clean-code/SKILL.md": {

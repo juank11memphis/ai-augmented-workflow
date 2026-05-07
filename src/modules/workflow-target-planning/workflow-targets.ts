@@ -8,13 +8,14 @@ import {
   SELECTABLE_DATABASE_SKILLS,
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
 } from './index.js';
 import { sha256 } from '../../shared/hash.js';
 import { removeUndefinedFields } from '../../shared/object.js';
 import { readExistingState } from '../workflow-state-registry/index.js';
-import { getTemplateVersion, readTemplate, readTemplateManifest, renderSkillRouting } from '../template-catalog-rendering/index.js';
+import { getTemplateVersion, readTemplate, readTemplateManifest, renderMcpConfig, renderSkillRouting } from '../template-catalog-rendering/index.js';
 import type {
   SibuState,
   FileToCreate,
@@ -23,6 +24,7 @@ import type {
   SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
+  SelectableMcpServer,
   SelectableWorkflowSkill,
   SkillTemplate,
   SupportedAgent,
@@ -32,6 +34,12 @@ import type {
 type SkillTarget = {
   targetRelativePath: string;
   templateRelativePath: string;
+};
+
+type McpTarget = {
+  targetRelativePath: string;
+  templateRelativePath: string;
+  agentId: 'codex' | 'gemini' | 'claude';
 };
 
 export function getSelectedLanguageSkillsFromState(state: SibuState): SelectableLanguageSkill[] {
@@ -52,6 +60,10 @@ export function getSelectedWorkflowSkillsFromState(state: SibuState): Selectable
 
 export function getSelectedDatabaseSkillsFromState(state: SibuState): SelectableDatabaseSkill[] {
   return SELECTABLE_DATABASE_SKILLS.filter((skill) => state.selectedDatabaseSkills?.includes(skill.id));
+}
+
+export function getSelectedMcpServersFromState(state: SibuState): SelectableMcpServer[] {
+  return SELECTABLE_MCP_SERVERS.filter((server) => state.selectedMcpServers?.includes(server.id));
 }
 
 export function getSelectedSkillTargetsForAgents(
@@ -90,6 +102,46 @@ export function getSelectedSkillTargetsForAgents(
   return [...skillTargets.values()];
 }
 
+export function getSelectedMcpTargetsForAgents(selectedAgents: SupportedAgent[], selectedMcpServers: SelectableMcpServer[]): McpTarget[] {
+  if (!selectedMcpServers.some((server) => server.id === 'github')) {
+    return [];
+  }
+
+  return selectedAgents.flatMap((agent): McpTarget[] => {
+    if (agent.id === 'codex') {
+      return [
+        {
+          targetRelativePath: '.codex/config.toml',
+          templateRelativePath: '.codex/config.toml',
+          agentId: 'codex',
+        },
+      ];
+    }
+
+    if (agent.id === 'claude') {
+      return [
+        {
+          targetRelativePath: '.mcp.json',
+          templateRelativePath: 'mcp/claude/.mcp.json',
+          agentId: 'claude',
+        },
+      ];
+    }
+
+    if (agent.id === 'gemini') {
+      return [
+        {
+          targetRelativePath: '.gemini/settings.json',
+          templateRelativePath: 'mcp/gemini/settings.json',
+          agentId: 'gemini',
+        },
+      ];
+    }
+
+    return [];
+  });
+}
+
 export function getWorkflowTargets(
   rootPath: string,
   selectedAgents: SupportedAgent[],
@@ -97,14 +149,16 @@ export function getWorkflowTargets(
   selectedFrameworkSkills: SelectableFrameworkSkill[] = [],
   selectedArchitectureSkill?: SelectableArchitectureSkill,
   selectedWorkflowSkills: SelectableWorkflowSkill[] = [],
-  selectedDatabaseSkills: SelectableDatabaseSkill[] = []
+  selectedDatabaseSkills: SelectableDatabaseSkill[] = [],
+  selectedMcpServers: SelectableMcpServer[] = []
 ): WorkflowTarget[] {
-  return [
+  const targets: WorkflowTarget[] = [
     {
       label: 'AGENTS.md',
       targetPath: path.join(rootPath, 'AGENTS.md'),
       templateRelativePath: 'AGENTS.md',
       requiresProjectOverview: true,
+      targetKind: 'agent-support',
     },
     ...selectedAgents.flatMap((agent) => {
       if (!agent.targetRelativePath || !agent.templateRelativePath) {
@@ -117,6 +171,7 @@ export function getWorkflowTargets(
           targetPath: path.join(rootPath, agent.targetRelativePath),
           templateRelativePath: agent.templateRelativePath,
           requiresProjectOverview: false,
+          targetKind: 'agent-support' as const,
         },
       ];
     }),
@@ -125,8 +180,32 @@ export function getWorkflowTargets(
       targetPath: path.join(rootPath, skillTarget.targetRelativePath),
       templateRelativePath: skillTarget.templateRelativePath,
       requiresProjectOverview: false,
+      targetKind: 'skill' as const,
     })),
   ];
+
+  for (const mcpTarget of getSelectedMcpTargetsForAgents(selectedAgents, selectedMcpServers)) {
+    const targetPath = path.join(rootPath, mcpTarget.targetRelativePath);
+    const existingTarget = targets.find((target) => target.targetPath === targetPath);
+
+    if (existingTarget) {
+      existingTarget.selectedMcpServers = selectedMcpServers;
+      existingTarget.mcpConfigAgentId = mcpTarget.agentId;
+      continue;
+    }
+
+    targets.push({
+      label: mcpTarget.targetRelativePath,
+      targetPath,
+      templateRelativePath: mcpTarget.templateRelativePath,
+      requiresProjectOverview: false,
+      targetKind: 'mcp-config',
+      mcpConfigAgentId: mcpTarget.agentId,
+      selectedMcpServers,
+    });
+  }
+
+  return targets;
 }
 
 export function renderMissingWorkflowFiles({
@@ -137,6 +216,7 @@ export function renderMissingWorkflowFiles({
   selectedArchitectureSkill,
   selectedWorkflowSkills = [],
   selectedDatabaseSkills = [],
+  selectedMcpServers = [],
 }: {
   missingTargets: WorkflowTarget[];
   overview?: string;
@@ -145,9 +225,18 @@ export function renderMissingWorkflowFiles({
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills?: SelectableWorkflowSkill[];
   selectedDatabaseSkills?: SelectableDatabaseSkill[];
+  selectedMcpServers?: SelectableMcpServer[];
 }): FileToCreate[] {
   return missingTargets.map((target) => {
     let contents = readTemplate(target.templateRelativePath);
+
+    if (target.mcpConfigAgentId && (target.selectedMcpServers?.length || selectedMcpServers.length)) {
+      contents = renderMcpConfig({
+        agentId: target.mcpConfigAgentId,
+        baseContents: contents,
+        selectedMcpServers: target.selectedMcpServers ?? selectedMcpServers,
+      });
+    }
 
     if (target.requiresProjectOverview) {
       if (!overview?.trim()) {
@@ -176,6 +265,7 @@ export function writeSibuState({
   selectedArchitectureSkill,
   selectedWorkflowSkills = [],
   selectedDatabaseSkills = [],
+  selectedMcpServers,
   targets,
 }: {
   rootPath: string;
@@ -186,6 +276,7 @@ export function writeSibuState({
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills?: SelectableWorkflowSkill[];
   selectedDatabaseSkills?: SelectableDatabaseSkill[];
+  selectedMcpServers?: SelectableMcpServer[];
   targets: WorkflowTarget[];
 }): void {
   const previousState = readExistingState(statePath);
@@ -202,6 +293,7 @@ export function writeSibuState({
     selectedArchitectureSkill: selectedArchitectureSkill?.id,
     selectedWorkflowSkills: selectedWorkflowSkills.map((skill) => skill.id),
     selectedDatabaseSkills: selectedDatabaseSkills.map((skill) => skill.id),
+    ...(selectedMcpServers !== undefined ? { selectedMcpServers: selectedMcpServers.map((server) => server.id) } : {}),
     managedFiles: Object.fromEntries(
       targets
         .filter((target) => fs.existsSync(target.targetPath))

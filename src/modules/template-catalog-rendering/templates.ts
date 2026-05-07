@@ -2,7 +2,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { getTemplatesPath } from '../../shared/paths.js';
-import type { SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from '../../shared/types.js';
+import type {
+  AgentId,
+  SelectableArchitectureSkill,
+  SelectableDatabaseSkill,
+  SelectableFrameworkSkill,
+  SelectableLanguageSkill,
+  SelectableMcpServer,
+  SelectableWorkflowSkill,
+  TemplateManifest,
+} from '../../shared/types.js';
 
 export function readTemplate(relativePath: string): string {
   return fs.readFileSync(path.join(getTemplatesPath(), relativePath), 'utf8');
@@ -73,6 +82,30 @@ export function renderSkillRouting(
   return contents.replace('{{OPTIONAL_SKILL_ROUTING}}', optionalRouting);
 }
 
+export function renderMcpConfig({
+  agentId,
+  baseContents,
+  selectedMcpServers,
+}: {
+  agentId: Extract<AgentId, 'codex' | 'gemini' | 'claude'>;
+  baseContents?: string;
+  selectedMcpServers: SelectableMcpServer[];
+}): string {
+  const githubServer = selectedMcpServers.find((server) => server.id === 'github');
+
+  if (!githubServer) {
+    return baseContents ?? renderJsonMcpConfig({});
+  }
+
+  if (agentId === 'codex') {
+    return renderCodexGithubMcpConfig(baseContents ?? '');
+  }
+
+  return renderJsonMcpConfig({
+    github: buildGithubMcpServerConfig(),
+  });
+}
+
 export function extractProjectOverview(filePath: string): string | undefined {
   if (!fs.existsSync(filePath)) {
     return undefined;
@@ -82,6 +115,39 @@ export function extractProjectOverview(filePath: string): string | undefined {
   const match = contents.match(/## Project overview\s+([\s\S]*?)(?=\n## |$)/);
   const overview = match?.[1]?.trim();
   return overview || undefined;
+}
+
+function renderCodexGithubMcpConfig(baseContents: string): string {
+  const trimmedBaseContents = baseContents.trimEnd();
+  const separator = trimmedBaseContents ? '\n\n' : '';
+
+  return `${trimmedBaseContents}${separator}[mcp_servers.github]
+command = "docker"
+args = ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
+
+[mcp_servers.github.env]
+GITHUB_PERSONAL_ACCESS_TOKEN = "\${GITHUB_PERSONAL_ACCESS_TOKEN}"
+`;
+}
+
+type JsonMcpServerConfig = {
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+};
+
+function buildGithubMcpServerConfig(): JsonMcpServerConfig {
+  return {
+    command: 'docker',
+    args: ['run', '-i', '--rm', '-e', 'GITHUB_PERSONAL_ACCESS_TOKEN', 'ghcr.io/github/github-mcp-server'],
+    env: {
+      GITHUB_PERSONAL_ACCESS_TOKEN: '${GITHUB_PERSONAL_ACCESS_TOKEN}',
+    },
+  };
+}
+
+function renderJsonMcpConfig(mcpServers: Record<string, JsonMcpServerConfig>): string {
+  return `${JSON.stringify({ mcpServers }, null, 2)}\n`;
 }
 
 function isTemplateManifest(value: unknown): value is TemplateManifest {

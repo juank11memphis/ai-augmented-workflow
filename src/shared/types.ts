@@ -94,6 +94,9 @@ export type WorkflowTarget = {
   targetPath: string;
   templateRelativePath: string;
   requiresProjectOverview: boolean;
+  targetKind?: 'agent-support' | 'skill' | 'mcp-config';
+  mcpConfigAgentId?: Extract<AgentId, 'codex' | 'gemini' | 'claude'>;
+  selectedMcpServers?: SelectableMcpServer[];
 };
 
 export type SibuState = {
