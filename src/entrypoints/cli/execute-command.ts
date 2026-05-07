@@ -1,6 +1,6 @@
 import { handleDoctorProject } from '../../modules/workflow-health-diagnosis/index.js';
 import { handleInitProject } from '../../modules/project-adoption/index.js';
-import { handleListMcpServers, handleUseMcpServer } from '../../modules/mcp-server-selection-management/index.js';
+import { handleListMcpServers, handleStopMcpServer, handleUseMcpServer } from '../../modules/mcp-server-selection-management/index.js';
 import { handleListSkills } from '../../modules/skill-selection-management/index.js';
 import { handleStopManagingFile } from '../../modules/skill-selection-management/index.js';
 import { handleSyncProject } from '../../modules/sync-review/index.js';
@@ -32,6 +32,9 @@ export async function executeCliCommand(command: SibuCliCommand): Promise<void> 
       return;
     case 'mcp:use':
       await handleUseMcpServer(command);
+      return;
+    case 'mcp:stop':
+      await handleStopMcpServer(command);
       return;
   }
 }
