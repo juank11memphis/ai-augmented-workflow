@@ -5,7 +5,7 @@ import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { sha256 } from '../../shared/hash.js';
 import { checkForLatestSibuVersion } from '../version-advisory/index.js';
 import { getProjectContext } from '../../shared/paths.js';
@@ -19,6 +19,7 @@ import {
   getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
+  getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
 } from '../workflow-target-planning/index.js';
@@ -157,6 +158,12 @@ function addUnsupportedSelectionIssues(state: SibuState, issues: DoctorIssue[]):
     }
   }
 
+  for (const selectedMcpServer of state.selectedMcpServers ?? []) {
+    if (!SELECTABLE_MCP_SERVERS.some((server) => server.id === selectedMcpServer)) {
+      issues.push({ severity: 'warning', message: `State references unsupported MCP server: ${selectedMcpServer}.` });
+    }
+  }
+
   for (const reviewedArchitectureSkill of state.reviewedArchitectureSkills ?? []) {
     if (!SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === reviewedArchitectureSkill)) {
       issues.push({ severity: 'warning', message: `State references unsupported reviewed architecture skill: ${reviewedArchitectureSkill}.` });
@@ -173,7 +180,8 @@ function addExpectedTargetIssues(rootPath: string, state: SibuState, issues: Doc
     getSelectedFrameworkSkillsFromState(state),
     getSelectedArchitectureSkillFromState(state),
     getSelectedWorkflowSkillsFromState(state),
-    getSelectedDatabaseSkillsFromState(state)
+    getSelectedDatabaseSkillsFromState(state),
+    getSelectedMcpServersFromState(state)
   );
 
   for (const target of expectedTargets) {

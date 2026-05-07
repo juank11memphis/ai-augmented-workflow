@@ -13,6 +13,7 @@ import {
   getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
+  getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
 } from '../workflow-target-planning/index.js';
 import type { SyncAction } from './action-prompt.js';
@@ -46,6 +47,7 @@ export function applySyncAction({
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(nextState),
         selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(nextState),
         selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(nextState),
+        selectedMcpServers: getSelectedMcpServersFromState(nextState),
       });
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, contents, 'utf8');
@@ -83,6 +85,7 @@ export function applySyncAction({
         selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
         selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(state),
         selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(state),
+        selectedMcpServers: getSelectedMcpServersFromState(state),
       });
       fs.mkdirSync(path.dirname(sideTemplatePath), { recursive: true });
       fs.writeFileSync(sideTemplatePath, contents, 'utf8');

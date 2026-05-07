@@ -4,13 +4,24 @@ import path from 'node:path';
 import { sha256 } from '../../shared/hash.js';
 import { hasReviewedTemplateVersion } from '../workflow-state-registry/index.js';
 import { renderTemplateForSync } from '../template-catalog-rendering/index.js';
-import type { SibuState, ManagedFileState, SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, TemplateManifest } from '../../shared/types.js';
+import type {
+  SibuState,
+  ManagedFileState,
+  SelectableArchitectureSkill,
+  SelectableDatabaseSkill,
+  SelectableFrameworkSkill,
+  SelectableLanguageSkill,
+  SelectableMcpServer,
+  SelectableWorkflowSkill,
+  TemplateManifest,
+} from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
   getSelectedDatabaseSkillsFromState,
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
+  getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
 } from '../workflow-target-planning/index.js';
@@ -58,6 +69,7 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
   const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
   const selectedWorkflowSkills = getSelectedWorkflowSkillsFromState(state);
   const selectedDatabaseSkills = getSelectedDatabaseSkillsFromState(state);
+  const selectedMcpServers = getSelectedMcpServersFromState(state);
   const previews = Object.entries(state.managedFiles).map(([relativePath, managedFile]) =>
     getManagedFileSyncPreview({
       rootPath,
@@ -69,6 +81,7 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
       selectedArchitectureSkill,
       selectedWorkflowSkills,
       selectedDatabaseSkills,
+      selectedMcpServers,
     })
   );
 
@@ -79,7 +92,8 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
     selectedFrameworkSkills,
     selectedArchitectureSkill,
     selectedWorkflowSkills,
-    selectedDatabaseSkills
+    selectedDatabaseSkills,
+    selectedMcpServers
   );
 
   for (const target of expectedTargets) {
@@ -134,6 +148,7 @@ function getManagedFileSyncPreview({
   selectedArchitectureSkill,
   selectedWorkflowSkills,
   selectedDatabaseSkills,
+  selectedMcpServers,
 }: {
   rootPath: string;
   manifest: TemplateManifest;
@@ -144,6 +159,7 @@ function getManagedFileSyncPreview({
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills: SelectableWorkflowSkill[];
   selectedDatabaseSkills: SelectableDatabaseSkill[];
+  selectedMcpServers: SelectableMcpServer[];
 }): SyncPreview {
   if (managedFile.status === 'unmanaged') {
     return { relativePath, managedFile, status: 'unmanaged', recordedTemplateVersion: managedFile.templateVersion, changes: [] };
@@ -168,9 +184,10 @@ function getManagedFileSyncPreview({
     selectedArchitectureSkill,
     selectedWorkflowSkills,
     selectedDatabaseSkills,
+    selectedMcpServers,
   });
   const hasUpdate = hasTemplateUpdate || hasSelectionUpdate;
-  const changes = hasTemplateUpdate ? template.changes : ['Refreshes generated skill routing for the current selected skills.'];
+  const changes = hasTemplateUpdate ? template.changes : [getSelectionRefreshChange(managedFile.template)];
 
   if (!hasLocalFile) {
     return {
@@ -231,6 +248,14 @@ function getManagedFileSyncPreview({
   };
 }
 
+function getSelectionRefreshChange(templateRelativePath: string): string {
+  if (templateRelativePath === '.codex/config.toml' || templateRelativePath === 'mcp/claude/.mcp.json' || templateRelativePath === 'mcp/gemini/settings.json') {
+    return 'Refreshes generated MCP configuration for the current selected MCP servers.';
+  }
+
+  return 'Refreshes generated skill routing for the current selected skills.';
+}
+
 function hasRenderedSelectionUpdate({
   relativePath,
   currentPath,
@@ -240,6 +265,7 @@ function hasRenderedSelectionUpdate({
   selectedArchitectureSkill,
   selectedWorkflowSkills,
   selectedDatabaseSkills,
+  selectedMcpServers,
 }: {
   relativePath: string;
   currentPath: string;
@@ -249,8 +275,9 @@ function hasRenderedSelectionUpdate({
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills: SelectableWorkflowSkill[];
   selectedDatabaseSkills: SelectableDatabaseSkill[];
+  selectedMcpServers: SelectableMcpServer[];
 }): boolean {
-  if (relativePath !== 'AGENTS.md') {
+  if (relativePath !== 'AGENTS.md' && selectedMcpServers.length === 0) {
     return false;
   }
 
@@ -262,6 +289,7 @@ function hasRenderedSelectionUpdate({
     selectedArchitectureSkill,
     selectedWorkflowSkills,
     selectedDatabaseSkills,
+    selectedMcpServers,
   });
 
   return sha256(renderedContents) !== managedFile.sha256;

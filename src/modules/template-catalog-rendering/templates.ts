@@ -45,6 +45,7 @@ export function renderTemplateForSync({
   selectedArchitectureSkill,
   selectedWorkflowSkills = [],
   selectedDatabaseSkills = [],
+  selectedMcpServers = [],
 }: {
   templateRelativePath: string;
   currentPath: string;
@@ -53,8 +54,14 @@ export function renderTemplateForSync({
   selectedArchitectureSkill?: SelectableArchitectureSkill;
   selectedWorkflowSkills?: SelectableWorkflowSkill[];
   selectedDatabaseSkills?: SelectableDatabaseSkill[];
+  selectedMcpServers?: SelectableMcpServer[];
 }): string {
   let contents = readTemplate(templateRelativePath);
+
+  const mcpConfigAgentId = getMcpConfigAgentId(templateRelativePath);
+  if (mcpConfigAgentId) {
+    return renderMcpConfig({ agentId: mcpConfigAgentId, baseContents: contents, selectedMcpServers });
+  }
 
   if (contents.includes('{{PROJECT_OVERVIEW}}')) {
     contents = contents.replace('{{PROJECT_OVERVIEW}}', extractProjectOverview(currentPath) ?? 'Describe this project.');
@@ -128,6 +135,22 @@ args = ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/gith
 [mcp_servers.github.env]
 GITHUB_PERSONAL_ACCESS_TOKEN = "\${GITHUB_PERSONAL_ACCESS_TOKEN}"
 `;
+}
+
+function getMcpConfigAgentId(templateRelativePath: string): Extract<AgentId, 'codex' | 'gemini' | 'claude'> | undefined {
+  if (templateRelativePath === '.codex/config.toml') {
+    return 'codex';
+  }
+
+  if (templateRelativePath === 'mcp/claude/.mcp.json') {
+    return 'claude';
+  }
+
+  if (templateRelativePath === 'mcp/gemini/settings.json') {
+    return 'gemini';
+  }
+
+  return undefined;
 }
 
 type JsonMcpServerConfig = {

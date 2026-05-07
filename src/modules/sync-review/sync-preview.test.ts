@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { getSyncPreviews } from './sync-preview.js';
@@ -58,6 +58,62 @@ describe('getSyncPreviews', () => {
     assert.equal(preview.managedFile.template, DEEP_MODULE_TEMPLATE_PATH);
     assert.equal(preview.hasLocalFile, true);
   });
+
+  it('reports selected MCP config as a new managed template when older state has no record', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    const state = readState(rootPath);
+    delete state.managedFiles['.mcp.json'];
+
+    const preview = getSyncPreview(rootPath, state, '.mcp.json');
+
+    assert.equal(preview.status, 'new-template');
+    assert.equal(preview.managedFile.template, 'mcp/claude/.mcp.json');
+    assert.equal(preview.hasLocalFile, true);
+  });
+
+  it('reports selected MCP config as missing when the managed file is removed', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    fs.rmSync(path.join(rootPath, '.mcp.json'));
+
+    const preview = getSyncPreview(rootPath, readState(rootPath), '.mcp.json');
+
+    assert.equal(preview.status, 'missing');
+    assert.equal(preview.managedFile.template, 'mcp/claude/.mcp.json');
+    assert.equal(preview.hasLocalFile, false);
+  });
+
+  it('reports selected MCP config as modified when the managed file has local edits', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    fs.appendFileSync(path.join(rootPath, '.mcp.json'), '\nLocal edit.\n', 'utf8');
+
+    const preview = getSyncPreview(rootPath, readState(rootPath), '.mcp.json');
+
+    assert.equal(preview.status, 'modified');
+    assert.equal(preview.managedFile.template, 'mcp/claude/.mcp.json');
+    assert.equal(preview.hasLocalFile, true);
+  });
+
+  it('respects unmanaged status for selected MCP config files', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    fs.rmSync(path.join(rootPath, '.mcp.json'));
+    const state = readState(rootPath);
+    state.managedFiles['.mcp.json'].status = 'unmanaged';
+
+    const preview = getSyncPreview(rootPath, state, '.mcp.json');
+
+    assert.equal(preview.status, 'unmanaged');
+  });
+
+  it('renders selected MCP config content for stale MCP managed files', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    const state = readState(rootPath);
+    state.managedFiles['.mcp.json'].sha256 = 'old-hash';
+
+    const preview = getSyncPreview(rootPath, state, '.mcp.json');
+
+    assert.equal(preview.status, 'modified-with-update');
+    assert.deepEqual(preview.changes, ['Refreshes generated MCP configuration for the current selected MCP servers.']);
+  });
 });
 
 function createCleanInitializedRepo(): string {
@@ -89,12 +145,52 @@ function createCleanInitializedRepo(): string {
   return rootPath;
 }
 
-function getProductContextSkillPreview(rootPath: string, state: SibuState) {
-  const previews = getSyncPreviews({ rootPath, state, manifest: readTemplateManifest() });
-  const preview = previews.find((syncPreview) => syncPreview.relativePath === DEEP_MODULE_SKILL_PATH);
+function createCleanInitializedRepoWithGithubMcp(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-sync-preview-mcp-'));
+  temporaryRoots.push(rootPath);
+  const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')];
+  const selectedMcpServers = SELECTABLE_MCP_SERVERS;
+  const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], undefined, [], [], selectedMcpServers);
+  const files = renderMissingWorkflowFiles({
+    missingTargets: targets,
+    overview: 'Test project.',
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+    selectedMcpServers,
+  });
 
-  assert.ok(preview, `Missing sync preview for ${DEEP_MODULE_SKILL_PATH}`);
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+  }
+
+  writeSibuState({
+    rootPath,
+    statePath: path.join(rootPath, '.sibu/state.json'),
+    selectedAgents,
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+    selectedMcpServers,
+    targets,
+  });
+
+  return rootPath;
+}
+
+function getProductContextSkillPreview(rootPath: string, state: SibuState) {
+  const preview = getSyncPreview(rootPath, state, DEEP_MODULE_SKILL_PATH);
+
+  const previews = getSyncPreviews({ rootPath, state, manifest: readTemplateManifest() });
   assert.equal(previews.some((syncPreview) => syncPreview.relativePath === DEEP_MODULE_MAP_PATH), false);
+
+  return preview;
+}
+
+function getSyncPreview(rootPath: string, state: SibuState, relativePath: string) {
+  const previews = getSyncPreviews({ rootPath, state, manifest: readTemplateManifest() });
+  const preview = previews.find((syncPreview) => syncPreview.relativePath === relativePath);
+
+  assert.ok(preview, `Missing sync preview for ${relativePath}`);
 
   return preview;
 }

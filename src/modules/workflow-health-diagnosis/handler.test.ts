@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, test } from 'node:test';
 
-import { SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
 import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
@@ -110,6 +110,50 @@ test('does not manage the generated Deep Module Map artifact', () => {
   assert.equal(issues.some((issue) => issue.message.includes(DEEP_MODULE_MAP_PATH)), false);
 });
 
+test('diagnoses missing MCP-managed config files through expected targets', () => {
+  const rootPath = createCleanInitializedRepoWithGithubMcp();
+  fs.rmSync(path.join(rootPath, '.mcp.json'));
+
+  const issues = diagnoseState({ rootPath, state: readState(rootPath) });
+
+  assert.equal(
+    issues.some((issue) => issue.severity === 'error' && issue.message === '.mcp.json is missing.'),
+    true
+  );
+});
+
+test('diagnoses modified MCP-managed config files through managed-file drift', () => {
+  const rootPath = createCleanInitializedRepoWithGithubMcp();
+  fs.appendFileSync(path.join(rootPath, '.mcp.json'), '\nLocal edit.\n', 'utf8');
+
+  const issues = diagnoseState({ rootPath, state: readState(rootPath) });
+
+  assert.equal(
+    issues.some((issue) => issue.severity === 'warning' && issue.message === '.mcp.json has changed since Sibu last recorded it.'),
+    true
+  );
+});
+
+test('does not diagnose unmanaged MCP-managed config files as expected target issues', () => {
+  const rootPath = createCleanInitializedRepoWithGithubMcp();
+  fs.rmSync(path.join(rootPath, '.mcp.json'));
+  const state = readState(rootPath);
+  state.managedFiles['.mcp.json'].status = 'unmanaged';
+
+  const issues = diagnoseState({ rootPath, state });
+
+  assert.equal(issues.some((issue) => issue.message === '.mcp.json is missing.'), false);
+});
+
+test('warns when state references an unsupported MCP server', () => {
+  const rootPath = createCleanInitializedRepo();
+  const state = { ...readState(rootPath), selectedMcpServers: ['unknown' as 'github'] };
+
+  const issues = diagnoseState({ rootPath, state });
+
+  assert.equal(issues.some((issue) => issue.message === 'State references unsupported MCP server: unknown.'), true);
+});
+
 function createCleanInitializedRepo(): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-deep-module-'));
   temporaryRoots.push(rootPath);
@@ -133,6 +177,38 @@ function createCleanInitializedRepo(): string {
     selectedAgents,
     selectedLanguageSkills: [],
     selectedFrameworkSkills: [],
+    targets,
+  });
+
+  return rootPath;
+}
+
+function createCleanInitializedRepoWithGithubMcp(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-mcp-'));
+  temporaryRoots.push(rootPath);
+  const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')];
+  const selectedMcpServers = SELECTABLE_MCP_SERVERS;
+  const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], undefined, [], [], selectedMcpServers);
+  const files = renderMissingWorkflowFiles({
+    missingTargets: targets,
+    overview: 'Test project.',
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+    selectedMcpServers,
+  });
+
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+  }
+
+  writeSibuState({
+    rootPath,
+    statePath: path.join(rootPath, '.sibu/state.json'),
+    selectedAgents,
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+    selectedMcpServers,
     targets,
   });
 
