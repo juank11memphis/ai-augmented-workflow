@@ -210,6 +210,28 @@ Before finishing, verify:
 - no Story adds scope that is absent from the feature brief or technical design
 - acceptance criteria are testable enough for a reviewer
 
+### 6. Optionally export planning artifacts to GitHub Issues
+
+After all local Epic and User Story files are written, check whether GitHub MCP tools are available for issue creation, label creation, and native sub-issue mutation.
+
+If any required GitHub MCP capability is unavailable, do not offer GitHub export. Finish with the normal local planning response.
+
+If the required GitHub MCP capabilities are available:
+
+1. Resolve the target repository from the current local repo's GitHub `origin` remote only. Do not ask for or use another repository.
+2. Ask one explicit opt-in question before any GitHub mutation: "GitHub MCP is available. Create GitHub Issues for these Epics and User Stories in the current repo?"
+3. If the user declines, perform no GitHub mutation.
+4. If the user accepts, create a fresh issue set every time. Do not search for duplicates or update existing issues.
+5. Create missing labels before creating issues: `epic`, `user-story`, and `sibu-generated`.
+6. Create one issue per Epic with labels `epic` and `sibu-generated`.
+7. Create one issue per User Story with labels `user-story` and `sibu-generated`.
+8. Attach each User Story issue as a native GitHub sub-issue of its parent Epic issue.
+9. Report created issue numbers or URLs.
+
+Keep issue bodies concise and source-grounded. Include the source local doc path and relevant summary, scope, acceptance criteria, or validation notes. Do not modify local Markdown files with GitHub URLs.
+
+Native sub-issues are required for this export. Preserve each created User Story issue's GitHub issue `id` because native sub-issue APIs need the child issue ID, not only its issue number. If label creation, issue creation, issue ID access, or native sub-issue attachment fails or is unavailable, fail clearly and do not fall back to Markdown checklists, loose links, GitHub Projects, milestones, assignees, or status tracking.
+
 ## Final response behavior
 
 After writing files, final-answer with only:
