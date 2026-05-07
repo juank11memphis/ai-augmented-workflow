@@ -40,5 +40,12 @@ export function createProgram(): CommanderCommand {
     .description('Stop managing one selected Sibu skill')
     .action((skillName: string) => executeCliCommand({ type: 'skills:stop', skillName }));
 
+  const mcp = cli.command('mcp').description('Manage Sibu MCP server configuration');
+
+  mcp
+    .command('list')
+    .description('List available MCP servers')
+    .action(() => executeCliCommand({ type: 'mcp:list' }));
+
   return cli;
 }
