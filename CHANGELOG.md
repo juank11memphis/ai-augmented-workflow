@@ -4,6 +4,25 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.9.0 - 2026-05-07
+
+### Added
+- stop github mcp after init
+- use github mcp after init
+- list selectable mcp servers
+- include mcp files in doctor and sync
+- select mcp servers during init
+- render github mcp config targets
+- add github mcp catalog and state
+
+### Changed
+- record reviewed scrum planner template
+- update scrum planner template metadata
+- add scrum planner GitHub export guidance
+
+### Fixed
+- use hosted GitHub MCP configs
+
 ## 0.8.0 - 2026-05-06
 
 ### Added
