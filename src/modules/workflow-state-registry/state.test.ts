@@ -65,6 +65,23 @@ describe('readStateForDoctor', () => {
 
     assert.deepEqual(result, { ok: false, message: '.sibu/state.json is not a valid Sibu state file.' });
   });
+
+  it('accepts selected MCP servers as an optional state category', () => {
+    const state = { ...buildState(), selectedMcpServers: ['github'] };
+    const statePath = createStateFile(state);
+
+    const result = readStateForDoctor(statePath);
+
+    assert.deepEqual(result, { ok: true, state });
+  });
+
+  it('rejects invalid selected MCP server values', () => {
+    const statePath = createStateFile({ ...buildState(), selectedMcpServers: [1] });
+
+    const result = readStateForDoctor(statePath);
+
+    assert.deepEqual(result, { ok: false, message: '.sibu/state.json is not a valid Sibu state file.' });
+  });
 });
 
 describe('readExistingState', () => {

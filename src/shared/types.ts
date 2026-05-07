@@ -4,6 +4,7 @@ export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
 export type WorkflowSkillId = 'ai-prompt-engineer-master' | 'ux-expert';
 export type DatabaseSkillId = 'postgresql-expert';
+export type McpServerId = 'github';
 export type NpmVersionLookupMode = 'live' | 'offline';
 export type NpmVersionResultSource = 'cache' | 'live' | 'override';
 export type NpmVersionUnavailableReason = 'invalid-response' | 'network-error' | 'override';
@@ -56,6 +57,13 @@ export type SelectableDatabaseSkill = SkillTemplate & {
   routingInstruction: string;
 };
 
+export type SelectableMcpServer = {
+  id: McpServerId;
+  name: string;
+  description: string;
+  source: string;
+};
+
 export type ResolvedSelectableSkill =
   | { kind: 'language'; skill: SelectableLanguageSkill }
   | { kind: 'framework'; skill: SelectableFrameworkSkill }
@@ -63,8 +71,16 @@ export type ResolvedSelectableSkill =
   | { kind: 'workflow'; skill: SelectableWorkflowSkill }
   | { kind: 'database'; skill: SelectableDatabaseSkill };
 
+export type ResolvedSelectableMcpServer = {
+  server: SelectableMcpServer;
+};
+
 export type SelectableSkillResolutionResult =
   | { ok: true; resolved: ResolvedSelectableSkill }
+  | { ok: false; message: string };
+
+export type SelectableMcpServerResolutionResult =
+  | { ok: true; resolved: ResolvedSelectableMcpServer }
   | { ok: false; message: string };
 
 export type FileToCreate = {
@@ -92,6 +108,7 @@ export type SibuState = {
   selectedArchitectureSkill?: ArchitectureSkillId;
   selectedWorkflowSkills?: WorkflowSkillId[];
   selectedDatabaseSkills?: DatabaseSkillId[];
+  selectedMcpServers?: McpServerId[];
   reviewedArchitectureSkills?: ArchitectureSkillId[];
   managedFiles: Record<string, ManagedFileState>;
 };

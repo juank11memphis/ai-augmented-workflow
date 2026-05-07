@@ -3,6 +3,8 @@ import type {
   SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
+  SelectableMcpServer,
+  SelectableMcpServerResolutionResult,
   SelectableSkillResolutionResult,
   SelectableWorkflowSkill,
   SkillTemplate,
@@ -224,6 +226,16 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
   },
 ];
 
+export const SELECTABLE_MCP_SERVERS: SelectableMcpServer[] = [
+  {
+    id: 'github',
+    name: 'GitHub MCP Server',
+    description:
+      "Configure GitHub's official MCP server; Sibu writes config only, while prerequisites, runtime availability, credentials, and authentication remain user-owned",
+    source: 'github/github-mcp-server',
+  },
+];
+
 export const SUPPORTED_AGENTS: SupportedAgent[] = [
   {
     id: 'codex',
@@ -252,6 +264,16 @@ export const SUPPORTED_AGENTS: SupportedAgent[] = [
     description: 'Use root AGENTS.md and shared .agents/skills/ discovery',
   },
 ];
+
+export function resolveSelectableMcpServerById(serverId: string): SelectableMcpServerResolutionResult {
+  const server = SELECTABLE_MCP_SERVERS.find((selectableServer) => selectableServer.id === serverId);
+
+  if (server) {
+    return { ok: true, resolved: { server } };
+  }
+
+  return { ok: false, message: `Unknown MCP server \`${serverId}\`. Run \`sibu mcp list\` to see available MCP servers.` };
+}
 
 export function resolveSelectableSkillById(skillId: string): SelectableSkillResolutionResult {
   const languageSkill = SELECTABLE_LANGUAGE_SKILLS.find((skill) => skill.id === skillId);

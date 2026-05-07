@@ -4,8 +4,10 @@ export {
   SELECTABLE_DATABASE_SKILLS,
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
+  resolveSelectableMcpServerById,
   resolveSelectableSkillById,
 } from './catalog.js';
 export {

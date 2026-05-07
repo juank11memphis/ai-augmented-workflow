@@ -7,8 +7,10 @@ import {
   SELECTABLE_DATABASE_SKILLS,
   SELECTABLE_FRAMEWORK_SKILLS,
   SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
+  resolveSelectableMcpServerById,
   resolveSelectableSkillById,
 } from './catalog.js';
 import type { ResolvedSelectableSkill, SkillTemplate, SupportedAgent } from '../../shared/types.js';
@@ -58,6 +60,41 @@ describe('resolveSelectableSkillById', () => {
 
   it('does not resolve required-only skills as selectable skills', () => {
     assertUnknownSkill('clean-code');
+  });
+});
+
+describe('resolveSelectableMcpServerById', () => {
+  it('resolves the GitHub MCP server', () => {
+    const result = resolveSelectableMcpServerById('github');
+
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+
+    assert.equal(result.resolved.server.id, 'github');
+    assert.equal(result.resolved.server.name, 'GitHub MCP Server');
+    assert.equal(result.resolved.server.source, 'github/github-mcp-server');
+  });
+
+  it('describes GitHub MCP as config-only and user-owned for prerequisites and auth', () => {
+    const githubServer = SELECTABLE_MCP_SERVERS.find((server) => server.id === 'github');
+
+    assert.ok(githubServer);
+    assert.match(githubServer.description, /config only/i);
+    assert.match(githubServer.description, /prerequisites/i);
+    assert.match(githubServer.description, /authentication/i);
+    assert.doesNotMatch(githubServer.description, /install/i);
+    assert.doesNotMatch(githubServer.description, /create(s|d)? token/i);
+    assert.doesNotMatch(githubServer.description, /validates? auth/i);
+    assert.doesNotMatch(githubServer.description, /live connectivity/i);
+  });
+
+  it('fails with an MCP list suggestion for unknown MCP server ids', () => {
+    assert.deepEqual(resolveSelectableMcpServerById('nope'), {
+      ok: false,
+      message: 'Unknown MCP server `nope`. Run `sibu mcp list` to see available MCP servers.',
+    });
   });
 });
 
