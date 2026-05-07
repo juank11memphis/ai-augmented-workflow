@@ -4,6 +4,11 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.9.2 - 2026-05-07
+
+### Removed
+- remove labels from scrum github export
+
 ## 0.9.1 - 2026-05-07
 
 ### Fixed
