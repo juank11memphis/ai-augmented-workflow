@@ -1,5 +1,5 @@
 {
-  "templateVersion": "73",
+  "templateVersion": "74",
   "templates": {
     "AGENTS.md": {
       "version": "25",
@@ -130,10 +130,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Updates Scrum planning guidance to preserve Deep Module implementation boundaries from technical designs."
+        "Adds optional GitHub issue export guidance after Scrum planning when GitHub MCP tools are available."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
