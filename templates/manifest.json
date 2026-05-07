@@ -1,5 +1,5 @@
 {
-  "templateVersion": "76",
+  "templateVersion": "77",
   "templates": {
     "AGENTS.md": {
       "version": "25",
@@ -145,12 +145,11 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "16",
+      "version": "17",
       "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
       "changes": [
-        "Changes execution from per-step approval to full-story execution followed by one story-level review gate.",
-        "Marks all completed steps approved and commits once after the completed story is approved.",
-        "Continues Epics automatically by implementing the next planned story or planning the next unplanned story and waiting for plan approval."
+        "Prevents the executor from staging or committing Git-ignored story artifacts, including docs/features paths when ignored.",
+        "Clarifies that ignored approval marker changes remain local and commits include only eligible non-ignored story changes."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {

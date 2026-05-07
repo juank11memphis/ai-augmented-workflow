@@ -23,7 +23,7 @@ Execute one existing story implementation plan completely, one ordered step file
 
 - Code, docs, tests, or other repo changes required by all unapproved implementation steps in the story plan.
 - Step approval metadata in every completed step file only after explicit story-level user approval.
-- One focused commit for the approved story implementation.
+- One focused commit for the approved story implementation, excluding any paths ignored by Git.
 - When continuing an Epic and the next story has no plan, story-local implementation step files created by applying `ai-implementation-planner`.
 
 ### When this skill stops
@@ -160,7 +160,7 @@ When the user explicitly approves the completed story, update every step file co
 
 Before writing approval markers, identify the current Git user with `git config user.name`; if it is unavailable, use `git config user.email`. Use that value for `Approved by`.
 
-After writing approval markers, commit only the changes produced by the approved story before continuing. The commit must include all step file approval markers and files intentionally changed while implementing the story. It must not include unrelated local edits or pre-existing worktree changes. Use the files tracked during story execution and a focused `git status --short` check to stage the correct paths. Do not run broad `git diff` investigations or other "what changed?" archaeology unless it is required to avoid committing unrelated changes and the user has approved that extra inspection.
+After writing approval markers, commit only the non-ignored changes produced by the approved story before continuing. Do not attempt to stage or commit paths ignored by Git, including `docs/features/**` paths when the repository ignores them. The commit must include files intentionally changed while implementing the story that are eligible to be committed, and it must include step file approval markers only when those step files are not ignored. Ignored approval marker changes remain local and uncommitted; report that clearly. If every story change is ignored and there is nothing eligible to commit, skip the commit, report that no commit was created, and continue only according to the Epic continuation rules that do not depend on a commit hash. The commit must not include unrelated local edits or pre-existing worktree changes. Use the files tracked during story execution, `git check-ignore` when needed, and a focused `git status --short` check to stage the correct paths. Do not run broad `git diff` investigations or other "what changed?" archaeology unless it is required to avoid committing unrelated changes and the user has approved that extra inspection.
 
 Use a Conventional Commits 1.0.0 message that describes the completed story. If the commit fails, stop and report the failure instead of continuing.
 
@@ -199,7 +199,8 @@ Do not:
 - add product scope absent from the story, Epic, feature brief, technical design, or step files
 - silently move work into unrelated or unapproved Deep Modules
 - continue past a failed validation without reporting it and asking how to proceed
-- leave approved story changes uncommitted before moving to the next story
+- leave committable approved story changes uncommitted before moving to the next story
+- attempt to stage or commit story files, approval markers, or other paths that are ignored by Git
 - execute a newly created next-story plan before the user approves that plan
 
 ## Final response behavior
@@ -211,10 +212,11 @@ After implementing all unapproved steps in one story, briefly report:
 - the steps completed
 - validations run and their results
 - notable risks or follow-up questions, if any
-- that you are waiting for story approval before marking all completed steps approved, committing, and continuing the Epic
+- that you are waiting for story approval before marking all completed steps approved, committing eligible non-ignored changes, and continuing the Epic
 
 After approving and committing a story implementation, briefly report the commit and the Epic continuation result:
 
+- commit hash when a commit was created, or a note that only ignored changes existed and no commit was created
 - next story is being implemented immediately because it already has a plan
 - next story was planned and is waiting for plan review and approval
 - or the Epic appears ready
