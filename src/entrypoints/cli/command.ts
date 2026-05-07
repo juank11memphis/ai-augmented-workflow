@@ -1,6 +1,7 @@
 import type { DoctorProjectCommand } from '../../modules/workflow-health-diagnosis/index.js';
 import type { InitProjectCommand } from '../../modules/project-adoption/index.js';
 import type { ListMcpServersCommand } from '../../modules/mcp-server-selection-management/index.js';
+import type { UseMcpServerCommand } from '../../modules/mcp-server-selection-management/index.js';
 import type { ListSkillsCommand } from '../../modules/skill-selection-management/index.js';
 import type { StopManagingFileCommand } from '../../modules/skill-selection-management/index.js';
 import type { SyncProjectCommand } from '../../modules/sync-review/index.js';
@@ -13,4 +14,5 @@ export type SibuCliCommand =
   | ListSkillsCommand
   | StopManagingFileCommand
   | UseSkillCommand
-  | ListMcpServersCommand;
+  | ListMcpServersCommand
+  | UseMcpServerCommand;

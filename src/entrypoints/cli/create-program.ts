@@ -47,5 +47,10 @@ export function createProgram(): CommanderCommand {
     .description('List available MCP servers')
     .action(() => executeCliCommand({ type: 'mcp:list' }));
 
+  mcp
+    .command('use <mcp_server_id>')
+    .description('Add one available MCP server to a clean Sibu workflow')
+    .action((serverId: string) => executeCliCommand({ type: 'mcp:use', serverId }));
+
   return cli;
 }

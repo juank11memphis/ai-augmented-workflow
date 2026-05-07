@@ -11,5 +11,7 @@ describe('createProgram', () => {
     assert.ok(mcpCommand);
     assert.equal(mcpCommand.description(), 'Manage Sibu MCP server configuration');
     assert.equal(mcpCommand.commands.some((command) => command.name() === 'list' && command.description() === 'List available MCP servers'), true);
+    assert.equal(mcpCommand.commands.some((command) => command.name() === 'use' && command.description() === 'Add one available MCP server to a clean Sibu workflow'), true);
+    assert.equal(mcpCommand.commands.some((command) => command.name() === 'stop'), false);
   });
 });
