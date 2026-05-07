@@ -1,8 +1,8 @@
 {
-  "sibuVersion": "0.1.0",
-  "templateVersion": "70",
+  "sibuVersion": "0.8.0",
+  "templateVersion": "73",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-06T20:28:50.575Z",
+  "updatedAt": "2026-05-07T02:55:19.292Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -16,18 +16,22 @@
   "selectedWorkflowSkills": [
     "ai-prompt-engineer-master"
   ],
+  "selectedDatabaseSkills": [],
+  "selectedMcpServers": [
+    "github"
+  ],
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "23",
+      "templateVersion": "25",
       "sha256": "bbc49b44b06e3937f0129226a6ce1c2ee1c0fc0167eafcbfd4e5f511ae000673",
       "status": "customized",
       "lastReviewedTemplateVersion": "25"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
-      "templateVersion": "1",
-      "sha256": "ad6c7dcde6649a2232ee7113ad412ac9dd1df88c0101ec3729fa30833fcde909",
+      "templateVersion": "2",
+      "sha256": "d358b9476e7ace94827a9e83de840b134ec6ab6a9ef7fd1fbadfa85c97a5ae48",
       "status": "managed"
     },
     "GEMINI.md": {
@@ -50,28 +54,34 @@
     },
     ".agents/skills/product-vision-writer/SKILL.md": {
       "template": "skills/product-vision-writer/SKILL.md",
-      "templateVersion": "5",
+      "templateVersion": "7",
       "sha256": "810a552479e7cefd4c3b3c1e58c36ab72b288221b9760a5dd9d60561366c1cb0",
       "status": "customized",
       "lastReviewedTemplateVersion": "7"
     },
+    ".agents/skills/deep-module-map-writer/SKILL.md": {
+      "template": "skills/deep-module-map-writer/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "f2fa34844fbc7cd7febee190461e1a67a653b970101a711043b890810aaea004",
+      "status": "managed"
+    },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "6",
+      "templateVersion": "8",
       "sha256": "270914a54753428627b09e492ef8f2bb50c554e39e678b8d744c47d97b1f030f",
       "status": "customized",
       "lastReviewedTemplateVersion": "8"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "13",
+      "templateVersion": "15",
       "sha256": "64546a46c01c7cb9fed73d963d558dffdf518567b4a21e3eee1f55d21054e6e2",
       "status": "customized",
       "lastReviewedTemplateVersion": "15"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "5",
+      "templateVersion": "7",
       "sha256": "c01105deb59489be87582ba88d89b1fb1d118325c7d7723d8b87673d8a8af40d",
       "status": "customized",
       "lastReviewedTemplateVersion": "7"
@@ -96,7 +106,7 @@
     },
     ".agents/skills/command-pattern/SKILL.md": {
       "template": "skills/architecture/command-pattern/SKILL.md",
-      "templateVersion": "3",
+      "templateVersion": "5",
       "sha256": "1123905556fae304db3ed6185b5fc9e9a7806737b774c56adf81e6a28ec58f7e",
       "status": "customized",
       "lastReviewedTemplateVersion": "5"
@@ -107,10 +117,16 @@
       "sha256": "3a8b3a7ad9677511d8e777065c0ab43d846449cebb188f1fdbb765f0ca2dbc21",
       "status": "managed"
     },
-    ".agents/skills/deep-module-map-writer/SKILL.md": {
-      "template": "skills/deep-module-map-writer/SKILL.md",
+    ".gemini/settings.json": {
+      "template": "mcp/gemini/settings.json",
       "templateVersion": "2",
-      "sha256": "f2fa34844fbc7cd7febee190461e1a67a653b970101a711043b890810aaea004",
+      "sha256": "ac7bc94c398de1ecf80c299513653003defdf01044cdce59f156b1ab755b2141",
+      "status": "managed"
+    },
+    ".mcp.json": {
+      "template": "mcp/claude/.mcp.json",
+      "templateVersion": "2",
+      "sha256": "ef5f7e5aac1cbe00e866ab72e472dcd349535a5d14852e4bbfac0dfa5de78085",
       "status": "managed"
     }
   }

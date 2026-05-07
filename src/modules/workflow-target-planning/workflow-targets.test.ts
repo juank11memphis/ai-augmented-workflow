@@ -197,8 +197,9 @@ describe('getWorkflowTargets', () => {
 
     assert.match(codexConfig.contents, /model_instructions_file = "\.\.\/AGENTS\.md"/);
     assert.match(codexConfig.contents, /\[mcp_servers\.github\]/);
-    assert.match(claudeConfig.contents, /ghcr\.io\/github\/github-mcp-server/);
-    assert.match(geminiConfig.contents, /ghcr\.io\/github\/github-mcp-server/);
+    assert.match(codexConfig.contents, /api\.githubcopilot\.com\/mcp/);
+    assert.match(claudeConfig.contents, /api\.githubcopilot\.com\/mcp/);
+    assert.match(geminiConfig.contents, /api\.githubcopilot\.com\/mcp/);
 
     for (const file of firstRender) {
       fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });

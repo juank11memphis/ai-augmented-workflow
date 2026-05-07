@@ -62,9 +62,9 @@ describe('handleInitProject', () => {
     assert.equal(typeof state.managedFiles['.mcp.json']?.sha256, 'string');
     assert.equal(typeof state.managedFiles['.gemini/settings.json']?.sha256, 'string');
 
-    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /ghcr\.io\/github\/github-mcp-server/);
-    assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /ghcr\.io\/github\/github-mcp-server/);
-    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /ghcr\.io\/github\/github-mcp-server/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });
 });

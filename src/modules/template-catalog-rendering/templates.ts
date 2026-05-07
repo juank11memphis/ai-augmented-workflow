@@ -109,7 +109,7 @@ export function renderMcpConfig({
   }
 
   return renderJsonMcpConfig({
-    github: buildGithubMcpServerConfig(),
+    github: buildGithubMcpServerConfig(agentId),
   });
 }
 
@@ -129,11 +129,8 @@ function renderCodexGithubMcpConfig(baseContents: string): string {
   const separator = trimmedBaseContents ? '\n\n' : '';
 
   return `${trimmedBaseContents}${separator}[mcp_servers.github]
-command = "docker"
-args = ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
-
-[mcp_servers.github.env]
-GITHUB_PERSONAL_ACCESS_TOKEN = "\${GITHUB_PERSONAL_ACCESS_TOKEN}"
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
 `;
 }
 
@@ -153,19 +150,33 @@ function getMcpConfigAgentId(templateRelativePath: string): Extract<AgentId, 'co
   return undefined;
 }
 
-type JsonMcpServerConfig = {
-  command: string;
-  args: string[];
-  env: Record<string, string>;
-};
+type JsonMcpServerConfig =
+  | {
+      type: 'http';
+      url: string;
+      headers: Record<string, string>;
+    }
+  | {
+      httpUrl: string;
+      headers: Record<string, string>;
+    };
 
-function buildGithubMcpServerConfig(): JsonMcpServerConfig {
+function buildGithubMcpServerConfig(agentId: Extract<AgentId, 'gemini' | 'claude'>): JsonMcpServerConfig {
+  const headers = {
+    Authorization: 'Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}',
+  };
+
+  if (agentId === 'gemini') {
+    return {
+      httpUrl: 'https://api.githubcopilot.com/mcp/',
+      headers,
+    };
+  }
+
   return {
-    command: 'docker',
-    args: ['run', '-i', '--rm', '-e', 'GITHUB_PERSONAL_ACCESS_TOKEN', 'ghcr.io/github/github-mcp-server'],
-    env: {
-      GITHUB_PERSONAL_ACCESS_TOKEN: '${GITHUB_PERSONAL_ACCESS_TOKEN}',
-    },
+    type: 'http',
+    url: 'https://api.githubcopilot.com/mcp/',
+    headers,
   };
 }
 

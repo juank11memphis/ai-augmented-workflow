@@ -71,9 +71,9 @@ describe('handleUseMcpServer', () => {
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
     assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
     assert.equal(typeof state.managedFiles['.mcp.json']?.sha256, 'string');
-    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /ghcr\.io\/github\/github-mcp-server/);
-    assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /ghcr\.io\/github\/github-mcp-server/);
-    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /ghcr\.io\/github\/github-mcp-server/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /ghp_[A-Za-z0-9_]+/);
     assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });

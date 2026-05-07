@@ -42,6 +42,95 @@ Use `sibu skills list` to list available workflow skills and see which selectabl
 
 Use `sibu skills stop <file>` to stop managing an Sibu-tracked workflow file. The file is marked as `unmanaged` in `.sibu/state.json`, removed from the selected skill state when applicable, and the CLI asks whether to keep or delete the local file.
 
+## MCP server setup
+
+Sibu can generate MCP server configuration for supported agents. The first supported server is GitHub's official MCP server.
+
+Sibu only writes and tracks MCP config files. Runtime prerequisites, credentials, and provider authentication remain user-owned.
+
+### 1. Confirm available MCP servers
+
+From a Sibu-managed project, run:
+
+```sh
+sibu mcp list
+```
+
+This shows each available MCP server and whether it is already selected for the project.
+
+### 2. Configure the GitHub MCP server
+
+You can select GitHub during `sibu init`, or add it later:
+
+```sh
+sibu mcp use github
+```
+
+Sibu writes the relevant config for the agents selected in the project:
+
+- Codex: `.codex/config.toml`
+- Claude: `.mcp.json`
+- Gemini: `.gemini/settings.json`
+
+All supported agents use GitHub's hosted MCP endpoint instead of requiring Docker. Codex uses Codex's native bearer-token environment variable setting:
+
+```toml
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
+```
+
+Claude uses HTTP MCP config with an authorization header:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Gemini uses streamable HTTP config with an authorization header:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "httpUrl": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+### 3. Provide GitHub credentials
+
+Create a GitHub personal access token with the repository permissions your agent should have, then expose it as an environment variable before launching the agent:
+
+```sh
+export GITHUB_PERSONAL_ACCESS_TOKEN=your_token_here
+```
+
+Do not commit tokens or write them into Sibu-managed config files. The generated configs read `GITHUB_PERSONAL_ACCESS_TOKEN` from the environment so credentials can stay outside the repository.
+
+### 4. Stop managing the GitHub MCP server
+
+To remove GitHub from Sibu's selected MCP server state, run:
+
+```sh
+sibu mcp stop github
+```
+
+Sibu updates generated agent config where possible and asks whether to keep or delete MCP-only config files.
+
 ## Release notes and changelog
 
 For every Sibu release, update both release-note locations:

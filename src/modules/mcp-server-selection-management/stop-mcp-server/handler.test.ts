@@ -89,7 +89,7 @@ describe('stopSelectedMcpServer', () => {
 
     assert.equal(process.exitCode, 1);
     assert.equal(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'), stateBefore);
-    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /github-mcp-server/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
   });
 
   it('does not mutate files or state for a not-selected no-op through the handler', async () => {
