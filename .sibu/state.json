@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.8.0",
-  "templateVersion": "74",
+  "templateVersion": "75",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-07T03:28:23.644Z",
+  "updatedAt": "2026-05-07T17:22:24.227Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -81,10 +81,9 @@
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "d37defe02accfdf35c6c11ecc52068e15716844dc01ea55aa626f193f466b10f",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "8"
+      "templateVersion": "9",
+      "sha256": "74dff58a4d0f9486cb4a41829ebc0ee203faaf1a2e5f7656f34e057bdd48ab55",
+      "status": "managed"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",

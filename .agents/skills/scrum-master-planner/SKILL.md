@@ -210,11 +210,13 @@ Before finishing, verify:
 - no Story adds scope that is absent from the feature brief or technical design
 - acceptance criteria are testable enough for a reviewer
 
-### 6. Optionally export planning artifacts to GitHub Issues
+### 6. Mandatory GitHub export gate
 
-After all local Epic and User Story files are written, check whether GitHub MCP tools are available for issue creation, label creation, and native sub-issue mutation.
+After all local Epic and User Story files are written, you must run the GitHub export gate before the final response. This gate is mandatory whenever Scrum planning creates or updates local Epic or User Story files.
 
-If any required GitHub MCP capability is unavailable, do not offer GitHub export. Finish with the normal local planning response.
+Do not skip the gate because the user did not mention GitHub. Do not assume GitHub MCP is unavailable. Explicitly check whether GitHub MCP tools are available for issue creation, label creation, issue ID access, and native sub-issue mutation.
+
+If any required GitHub MCP capability is unavailable, do not offer GitHub export. In the final response, include a single concise note that GitHub export was skipped because the required GitHub MCP capabilities were unavailable.
 
 If the required GitHub MCP capabilities are available:
 
@@ -232,6 +234,14 @@ Keep issue bodies concise and source-grounded. Include the source local doc path
 
 Native sub-issues are required for this export. Preserve each created User Story issue's GitHub issue `id` because native sub-issue APIs need the child issue ID, not only its issue number. If label creation, issue creation, issue ID access, or native sub-issue attachment fails or is unavailable, fail clearly and do not fall back to Markdown checklists, loose links, GitHub Projects, milestones, assignees, or status tracking.
 
+Passing the gate means exactly one of these outcomes occurred:
+
+- GitHub MCP was unavailable or incomplete, and the final response says export was skipped for that reason.
+- GitHub MCP was available, the user declined export, and no GitHub mutation occurred.
+- GitHub MCP was available, the user accepted export, and the created issue numbers or URLs are reported.
+
+Never finish a Scrum planning run without one of these three GitHub export outcomes.
+
 ## Final response behavior
 
 After writing files, final-answer with only:
@@ -239,5 +249,6 @@ After writing files, final-answer with only:
 - the Epic directories created or updated
 - the number of Epics and User Stories
 - any source-scope items intentionally left unresolved or captured as risks
+- the GitHub export gate outcome
 
 Do not paste artifact bodies, excerpts, outlines, story text, acceptance criteria, or section summaries. Only include generated artifacts when the user explicitly asks for inline review in the current request.
