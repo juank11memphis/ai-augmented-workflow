@@ -214,7 +214,7 @@ Before finishing, verify:
 
 After all local Epic and User Story files are written, you must run the GitHub export gate before the final response. This gate is mandatory whenever Scrum planning creates or updates local Epic or User Story files.
 
-Do not skip the gate because the user did not mention GitHub. Do not assume GitHub MCP is unavailable. Explicitly check whether GitHub MCP tools are available for issue creation, label creation, issue ID access, and native sub-issue mutation.
+Do not skip the gate because the user did not mention GitHub. Do not assume GitHub MCP is unavailable. Explicitly check whether GitHub MCP tools are available for issue creation, issue ID access, and native sub-issue mutation.
 
 If any required GitHub MCP capability is unavailable, do not offer GitHub export. In the final response, include a single concise note that GitHub export was skipped because the required GitHub MCP capabilities were unavailable.
 
@@ -224,15 +224,14 @@ If the required GitHub MCP capabilities are available:
 2. Ask one explicit opt-in question before any GitHub mutation: "GitHub MCP is available. Create GitHub Issues for these Epics and User Stories in the current repo?"
 3. If the user declines, perform no GitHub mutation.
 4. If the user accepts, create a fresh issue set every time. Do not search for duplicates or update existing issues.
-5. Create missing labels before creating issues: `epic`, `user-story`, and `sibu-generated`.
-6. Create one issue per Epic with labels `epic` and `sibu-generated`.
-7. Create one issue per User Story with labels `user-story` and `sibu-generated`.
-8. Attach each User Story issue as a native GitHub sub-issue of its parent Epic issue.
-9. Report created issue numbers or URLs.
+5. Create one issue per Epic with no labels.
+6. Create one issue per User Story with no labels.
+7. Attach each User Story issue as a native GitHub sub-issue of its parent Epic issue.
+8. Report created issue numbers or URLs.
 
 Keep issue bodies concise and source-grounded. Include the source local doc path and relevant summary, scope, acceptance criteria, or validation notes. Do not modify local Markdown files with GitHub URLs.
 
-Native sub-issues are required for this export. Preserve each created User Story issue's GitHub issue `id` because native sub-issue APIs need the child issue ID, not only its issue number. If label creation, issue creation, issue ID access, or native sub-issue attachment fails or is unavailable, fail clearly and do not fall back to Markdown checklists, loose links, GitHub Projects, milestones, assignees, or status tracking.
+Native sub-issues are required for this export. Preserve each created User Story issue's GitHub issue `id` because native sub-issue APIs need the child issue ID, not only its issue number. If issue creation, issue ID access, or native sub-issue attachment fails or is unavailable, fail clearly and do not fall back to labels, Markdown checklists, loose links, GitHub Projects, milestones, assignees, or status tracking.
 
 Passing the gate means exactly one of these outcomes occurred:
 

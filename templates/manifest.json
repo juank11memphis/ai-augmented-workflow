@@ -1,5 +1,5 @@
 {
-  "templateVersion": "75",
+  "templateVersion": "76",
   "templates": {
     "AGENTS.md": {
       "version": "25",
@@ -130,10 +130,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Makes the GitHub export gate mandatory after local Scrum planning, requiring agents to check available GitHub MCP capabilities and either ask for export, report skipped export, or report created issues."
+        "Removes label creation and label assignment from Scrum planning GitHub issue export while keeping the mandatory GitHub export gate and native sub-issue requirements."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
