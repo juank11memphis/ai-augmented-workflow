@@ -246,7 +246,7 @@ After writing and quality-checking the implementation step files, do not ask for
 
 If the user asked only to create a plan and did not ask for implementation, stop after creating the plan and report where it was written. Make clear that no plan approval is required before a later executor run.
 
-When this skill is invoked as the next-story planning handoff from `ai-implementation-plan-executor`, create the plan and immediately return control to the executor so it can implement the next story without a plan-review gate.
+When this skill is invoked as the next-story or next-Epic planning handoff from `ai-implementation-plan-executor`, create the plan and immediately return control to the executor so it can implement that story without a plan-review gate.
 
 The final planning-only response must briefly include:
 

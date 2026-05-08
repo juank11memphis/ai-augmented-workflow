@@ -25,6 +25,7 @@ Execute one existing story implementation plan completely, one ordered step file
 - Step approval metadata in every completed step file only after explicit story-level user approval.
 - One focused commit for the approved story implementation, excluding any paths ignored by Git.
 - When starting or continuing a story that has no plan, story-local implementation step files created by applying `ai-implementation-planner`, followed immediately by implementation.
+- When an Epic is complete, the next Epic in the same feature is selected by inspecting the feature's `epics/` folder, then the first story in that Epic is planned and implemented immediately.
 
 ### When this skill stops
 
@@ -137,7 +138,7 @@ When starting or resuming a plan:
 6. Stop only for ambiguity, missing required files, conflicting scope, failed validation that cannot be safely fixed within the plan, or material risk.
 7. After the final unapproved step is implemented, report what changed, validation results, and any risks, then wait for explicit story-level approval.
 
-Do not mark steps approved, commit changes, or move to the next story until the user explicitly approves the completed story implementation.
+Do not mark steps approved, commit changes, move to the next story, or move to the next Epic until the user explicitly approves the completed story implementation.
 
 ## Story review gate
 
@@ -161,17 +162,19 @@ After writing approval markers, commit only the non-ignored changes produced by 
 
 Use a Conventional Commits 1.0.0 message that describes the completed story. If the commit fails, stop and report the failure instead of continuing.
 
-## Epic continuation check
+## Feature continuation check
 
-After the approved story implementation is committed:
+After the approved story implementation is committed, continue through the current feature unless there is no next story or Epic to implement.
 
 1. Inspect the current Epic's `stories/` folder in filename order.
 2. Identify whether there is a next User Story after the completed story.
-3. If there is no next User Story in the Epic, tell the user the Epic appears ready and stop.
-4. If a next User Story exists and its `.impl_plan/` folder exists with ordered step files, immediately begin implementing that next story plan using this same story execution model.
-5. If a next User Story exists but its `.impl_plan/` folder is missing or empty, immediately create the implementation plan for that story by applying `ai-implementation-planner`, then immediately begin implementing the generated plan.
+3. If a next User Story exists and its `.impl_plan/` folder exists with ordered step files, immediately begin implementing that next story plan using this same story execution model.
+4. If a next User Story exists but its `.impl_plan/` folder is missing or empty, immediately create the implementation plan for that story by applying `ai-implementation-planner`, then immediately begin implementing the generated plan.
+5. If there is no next User Story in the current Epic, inspect the current feature's `epics/` folder and choose the next logical Epic to implement. Do not choose by filename alone. Base the choice on dependencies, prerequisite capabilities, technical sequencing, risk reduction, feature value, story readiness, and whether the Epic can be implemented without violating the feature brief or technical design. Briefly report the selected Epic and why it is the logical next step.
+6. If a next logical Epic exists, inspect its `stories/` folder, select the first logical unapproved User Story to implement, create its implementation plan if needed with `ai-implementation-planner`, and immediately begin implementing it. Prefer story order when it reflects dependencies; otherwise choose based on prerequisites, risk, and value sequence.
+7. If no logical next Epic exists or every Epic in the feature has all stories approved, tell the user the feature appears ready and stop.
 
-This continuation behavior is an explicit exception to the normal hard-start rule only after a story has been approved and committed. It lets the executor keep an Epic moving while preserving only the story-level review gate after implementation.
+This continuation behavior is an explicit exception to the normal hard-start rule only after a story has been approved and committed. It lets the executor keep a feature moving across stories and Epics while preserving only the story-level review gate after each story implementation.
 
 ## Implementation rules
 
@@ -190,13 +193,13 @@ Do:
 
 Do not:
 
-- create a missing initial plan from scratch
+- invent a missing plan manually instead of applying `ai-implementation-planner`
 - mark any step approved before the user explicitly approves the completed story
 - commit story implementation changes before story approval
 - add product scope absent from the story, Epic, feature brief, technical design, or step files
 - silently move work into unrelated or unapproved Deep Modules
 - continue past a failed validation without reporting it and asking how to proceed
-- leave committable approved story changes uncommitted before moving to the next story
+- leave committable approved story changes uncommitted before moving to the next story or Epic
 - attempt to stage or commit story files, approval markers, or other paths that are ignored by Git
 
 ## Final response behavior
@@ -208,11 +211,12 @@ After implementing all unapproved steps in one story, briefly report:
 - the steps completed
 - validations run and their results
 - notable risks or follow-up questions, if any
-- that you are waiting for story approval before marking all completed steps approved, committing eligible non-ignored changes, and continuing the Epic
+- that you are waiting for story approval before marking all completed steps approved, committing eligible non-ignored changes, and continuing the feature
 
-After approving and committing a story implementation, briefly report the commit and the Epic continuation result:
+After approving and committing a story implementation, briefly report the commit and the feature continuation result:
 
 - commit hash when a commit was created, or a note that only ignored changes existed and no commit was created
-- next story is being implemented immediately because it already has a plan
-- next story was planned and implementation started immediately
-- or the Epic appears ready
+- next story in the current Epic is being implemented immediately because it already has a plan
+- next story in the current Epic was planned and implementation started immediately
+- next Epic selected and its first unapproved story is being planned/implemented immediately
+- or the feature appears ready

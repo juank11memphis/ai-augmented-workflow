@@ -1,5 +1,5 @@
 {
-  "templateVersion": "82",
+  "templateVersion": "84",
   "templates": {
     "AGENTS.md": {
       "version": "26",
@@ -136,17 +136,17 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "12",
+      "version": "13",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Removes the implementation-plan approval gate and allows execution to continue immediately when implementation is requested."
+        "Clarifies that executor handoffs can come from the next story or next Epic and still continue without plan approval."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "18",
+      "version": "20",
       "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
       "changes": [
-        "Allows the executor to generate missing story plans and immediately implement them, preserving only the story-level review gate after implementation."
+        "Changes next-Epic continuation to choose the next logical Epic based on dependencies, readiness, risk, and value instead of filename order."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
