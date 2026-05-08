@@ -1,5 +1,5 @@
 {
-  "templateVersion": "79",
+  "templateVersion": "80",
   "templates": {
     "AGENTS.md": {
       "version": "26",
@@ -101,10 +101,10 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Clarifies that Deep Modules hide implementation complexity behind small interfaces and are not product categories by themselves."
+        "Adds the default application use case file structure with input, output, usecase, and ports files."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {

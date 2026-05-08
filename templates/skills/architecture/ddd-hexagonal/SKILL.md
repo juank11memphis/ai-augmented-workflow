@@ -138,6 +138,17 @@ Use this default mapping when the project does not already have a clearer conven
 /src/modules/<module-slug>/infra/**        # Technical implementations and external integrations
 ```
 
+Structure each application use case with files, not nested subfolders:
+
+```text
+/src/modules/<module-slug>/application/<usecase-slug>/input.*    # Input DTO/schema/command shape
+/src/modules/<module-slug>/application/<usecase-slug>/output.*   # Output DTO/result shape
+/src/modules/<module-slug>/application/<usecase-slug>/usecase.*  # Use case orchestration
+/src/modules/<module-slug>/application/<usecase-slug>/ports.*    # Ports required by this use case
+```
+
+Use the project language's normal extension, such as `.ts`, `.go`, or `.py`. Keep ports local to the use case by default. Extract shared application ports only when multiple use cases truly need the same abstraction. Do not create `input/`, `output/`, `usecase/`, or `ports/` folders unless an existing project convention already requires it.
+
 Entrypoints such as routes, jobs, or handlers should remain thin driving adapters that call application behavior inside the selected Deep Module.
 
 ## Ports and adapters
