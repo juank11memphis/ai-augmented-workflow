@@ -4,6 +4,16 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.9.5 - 2026-05-08
+
+### Changed
+- document ddd anti-corruption adapters
+- clarify ddd service placement
+- define ddd application usecase files
+
+### Removed
+- remove implementation plan approval gate
+
 ## 0.9.4 - 2026-05-08
 
 ### Changed
