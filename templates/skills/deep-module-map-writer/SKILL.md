@@ -38,6 +38,7 @@ This skill owns the Deep Module Map only. It does not own feature briefs, techni
 - Do not ask for or require a final confirmation summary before writing once enough Deep Module Map information is available.
 - Do not invent Deep Modules without grounding them in the product vision, current system behavior, and user interview.
 - Do not treat a command, screen, helper, folder, data object, or technical layer as a Deep Module merely because it exists.
+- Do not leave material module-boundary questions unresolved in the final map; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the boundary.
 
 ## What a Deep Module is
 
@@ -125,7 +126,10 @@ This file is user-owned product and implementation-boundary content created or u
 Be deliberately interrogative before writing.
 
 - Ask one focused question at a time.
-- Ask as many one-at-a-time questions as needed to understand the app well enough to defend the map.
+- Ask as many one-at-a-time questions as needed to understand the app well enough to defend the map; do not optimize for a short interview.
+- Walk down each module-boundary decision branch one by one, resolving dependencies between candidate modules before drafting.
+- When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
+- If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
 - Do not rush to draft after a single answer unless the answer already makes interfaces, hidden complexity, boundaries, scenarios, and relationships clear.
 - Treat "enough context" as: candidate modules, suggested slugs, simple external interfaces, hidden implementation complexity, responsibilities, exclusions, scenarios, relationships, and cross-module rules are clear enough to defend.
 - Do not ask the user to name the Deep Modules up front. Most users do not know what the modules should be yet.
@@ -133,6 +137,7 @@ Be deliberately interrogative before writing.
 - Teach briefly as needed. If the user seems unsure, explain that a Deep Module hides a lot of implementation behind a simple interface, then ask the next question.
 - Do not create modules from vague labels without confirming what interface they expose and what complexity they hide.
 - If the conversation stalls, propose one concise assumption for the next unresolved point and ask the user to confirm or correct it.
+- Draft only when there are no material open questions about interfaces, hidden complexity, ownership, exclusions, relationships, or cross-module rules.
 
 ## Interview method
 

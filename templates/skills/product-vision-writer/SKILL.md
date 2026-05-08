@@ -34,13 +34,17 @@ Default output path: `docs/product-vision.md`.
 
 - Do not create Deep Module Maps, feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not require a final confirmation summary before writing once enough product vision context is available.
-- Do not pretend unresolved strategy questions are settled; ask a focused question or document a clear assumption.
+- Do not leave material strategy questions unresolved in the final document; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
 ## Workflow
 
 ### 1. Start with discovery, not drafting
 
-Ask focused questions before writing unless the user already provided enough source material. Ask one question at a time and use the fewest questions that can produce a useful document. Cover these areas over the interview:
+Interview before writing unless the user already provided complete source material. Be deliberately interrogative: ask as many focused questions as needed to extract all material product vision decisions before drafting.
+
+Ask one question at a time. Walk down the product decision tree branch by branch, resolving dependencies between decisions before moving on. When useful, include a recommended answer or concise assumption so the user can confirm, correct, or reject it quickly. If a question can be answered from existing repository artifacts, inspect those artifacts instead of asking.
+
+Do not optimize for the fewest questions. Optimize for ending the interview with no material open product vision questions. Cover these areas over the interview:
 
 - **Product essence:** What is the product? What should it help people do, feel, or become?
 - **Current context:** Is this a new concept, an active project, or an existing product?
@@ -67,7 +71,7 @@ Before drafting, infer the product's through-line:
 - the product's opinion about the world
 - the decision-making principles that should survive future feature debates
 
-If the user's answers conflict, resolve the conflict explicitly in the draft by choosing the clearest product direction. Do not preserve every idea equally.
+If the user's answers conflict, ask follow-up questions until the conflict is resolved or the user confirms which direction should win. Do not preserve every idea equally.
 
 ### 3. Draft the product vision document
 
@@ -118,13 +122,13 @@ Avoid:
 - overexplaining
 - feature lists masquerading as vision
 - excessive frameworks
-- pretending unresolved strategy questions are settled
+- leaving unresolved strategy questions in the document
 
 Use the user's own language when it is vivid or revealing. Improve clarity without sanding off personality.
 
 ### 5. Handle incomplete inputs
 
-For rough ideas, produce a sharper first-pass vision with clear assumptions. For existing products, reflect what the product is today and what it must protect or change. If context is still insufficient, ask the smallest useful follow-up instead of inventing details.
+For rough ideas, keep interviewing until the user has confirmed enough assumptions to support a sharper first-pass vision. For existing products, reflect what the product is today and what it must protect or change. If context is still insufficient, ask the next most important follow-up instead of inventing details.
 
 ### 6. Save the document
 

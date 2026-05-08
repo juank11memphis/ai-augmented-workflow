@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.8.0",
-  "templateVersion": "77",
+  "templateVersion": "78",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-07T22:37:32.762Z",
+  "updatedAt": "2026-05-08T16:08:30.852Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -54,23 +54,21 @@
     },
     ".agents/skills/product-vision-writer/SKILL.md": {
       "template": "skills/product-vision-writer/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "810a552479e7cefd4c3b3c1e58c36ab72b288221b9760a5dd9d60561366c1cb0",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "7"
+      "templateVersion": "8",
+      "sha256": "881e9a951f5e6ede5e27a21ab74bb91cb85bb641c46afb77e329de8a577439c5",
+      "status": "managed"
     },
     ".agents/skills/deep-module-map-writer/SKILL.md": {
       "template": "skills/deep-module-map-writer/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "f2fa34844fbc7cd7febee190461e1a67a653b970101a711043b890810aaea004",
+      "templateVersion": "3",
+      "sha256": "556141714d918b16e8ff1188f3ec62ab911549ea503f3fc9850a2cabe2bebc23",
       "status": "managed"
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "8",
-      "sha256": "270914a54753428627b09e492ef8f2bb50c554e39e678b8d744c47d97b1f030f",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "8"
+      "templateVersion": "9",
+      "sha256": "6ef69cd3fe4c20225251d485c46594c598da150eae829d10c6a7b8d4bb8beb54",
+      "status": "managed"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",

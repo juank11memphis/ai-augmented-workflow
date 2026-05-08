@@ -38,6 +38,7 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 - Do not invent Deep Modules or use modules that are absent from `docs/deep-module-map.md`.
 - Do not require a final confirmation summary before writing once enough feature brief context is available.
 - Do not duplicate or rewrite the product vision; apply only the relevant implications to the feature.
+- Do not leave material product, scope, success, constraint, or Deep Module fit questions unresolved in the final brief; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
 ## Required source of truth
 
@@ -99,7 +100,10 @@ Do not write the brief to technical design, UX, user story, implementation plan,
 Be deliberately interrogative before drafting. The feature brief should reflect the user's intent, not the assistant's assumptions.
 
 - Ask one focused question at a time.
-- Keep asking until you have complete practical understanding and explicit user alignment.
+- Keep asking until you have complete practical understanding and explicit user alignment; do not optimize for a short interview.
+- Walk down each feature decision branch one by one, resolving dependencies between product, scope, success, constraint, and module-fit decisions before drafting.
+- When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
+- If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
 - Prefer follow-up questions over filling gaps with plausible invention.
 - Treat "100% understanding" as: feature intent, target user, scenario, user problem, business goal, MVP boundary, out-of-scope boundary, success signals, and known constraints are all clear enough to defend in the brief.
 - Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit are clear enough to defend in the brief.
@@ -165,9 +169,9 @@ Ask every question needed to remove material ambiguity, but only one at a time. 
 - what outcome should improve
 - what must be included in the first version
 - what should stay out of scope
-- known constraints, risks, or open decisions
+- known constraints and risks
 
-Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit are clear enough to avoid invention.
+Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit are clear enough to avoid invention. Do not draft a brief with an `Open Questions` section.
 
 If the conversation stalls, offer a concise default assumption for the next unresolved point and ask the user to confirm or correct it before proceeding.
 
@@ -215,9 +219,6 @@ Recommended structure:
 
 ## Risks / Tradeoffs
 - <Important product, user, trust, operational, or positioning risks.>
-
-## Open Questions
-- <Decisions that still need user/product input.>
 ```
 
 Adapt the structure to the feature. Add, rename, merge, or omit sections when useful, but keep the result business-level and product-vision-aligned.
@@ -234,7 +235,7 @@ Do not include:
 - engineering task lists
 - UI wireframes or detailed interaction specs
 
-If technical or UX decisions come up, capture them as brief product-level constraints or open questions.
+If technical or UX decisions come up, either capture the resolved product-level implication as a constraint or ask follow-up questions before drafting. Do not add unresolved technical or UX decisions as open questions in the brief.
 
 ### 6. Save the document
 
@@ -267,6 +268,7 @@ Avoid:
 - drafting from vague feature labels without discovery
 - inventing new Deep Modules instead of stopping for a map update
 - inventing certainty where the product vision or user input is unresolved
+- including an Open Questions section instead of resolving the questions during the interview
 
 ## Decision rule
 

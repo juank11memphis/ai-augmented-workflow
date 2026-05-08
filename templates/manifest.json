@@ -1,5 +1,5 @@
 {
-  "templateVersion": "77",
+  "templateVersion": "78",
   "templates": {
     "AGENTS.md": {
       "version": "25",
@@ -52,25 +52,24 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Updates downstream artifact wording to use Deep Module Map."
+        "Strengthens product vision interviews to resolve material strategy questions before drafting instead of leaving uncertainty in the artifact."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Clarifies that Deep Modules are primarily technical design boundaries that hide substantial implementation complexity behind simple interfaces.",
-        "Strengthens the interview flow so agents ask focused one-at-a-time questions until module interfaces, hidden complexity, and boundaries are defensible."
+        "Strengthens Deep Module Map interviews to ask as many one-at-a-time questions as needed and resolve material boundary questions before drafting."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Updates feature brief guidance to require Deep Modules from docs/deep-module-map.md."
+        "Removes Open Questions from the feature brief template and requires the interview to resolve material feature questions before drafting."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
