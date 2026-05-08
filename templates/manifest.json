@@ -1,11 +1,11 @@
 {
-  "templateVersion": "78",
+  "templateVersion": "79",
   "templates": {
     "AGENTS.md": {
-      "version": "25",
+      "version": "26",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Clarifies Deep Module routing as complexity-hiding implementation module planning."
+        "Updates implementation routing so missing story plans are generated and executed immediately without a separate plan approval gate."
       ]
     },
     ".codex/config.toml": {
@@ -136,19 +136,17 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "11",
+      "version": "12",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Adds a plan review gate so newly created implementation plans wait for user approval before execution.",
-        "Clarifies that next-story planning handoffs from the executor must stop after planning and wait for approval."
+        "Removes the implementation-plan approval gate and allows execution to continue immediately when implementation is requested."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "17",
+      "version": "18",
       "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
       "changes": [
-        "Prevents the executor from staging or committing Git-ignored story artifacts, including docs/features paths when ignored.",
-        "Clarifies that ignored approval marker changes remain local and commits include only eligible non-ignored story changes."
+        "Allows the executor to generate missing story plans and immediately implement them, preserving only the story-level review gate after implementation."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
