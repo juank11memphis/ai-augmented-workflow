@@ -1,5 +1,5 @@
 {
-  "templateVersion": "81",
+  "templateVersion": "82",
   "templates": {
     "AGENTS.md": {
       "version": "26",
@@ -101,10 +101,10 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Clarifies use cases, application services, and domain services with their expected module paths."
+        "Adds anti-corruption adapter guidance for translating external models at infrastructure boundaries."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {

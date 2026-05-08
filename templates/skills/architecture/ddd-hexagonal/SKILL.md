@@ -177,6 +177,21 @@ Typical driven adapters:
 
 Adapters should hide technical details rather than leak them inward.
 
+### Anti-corruption adapters
+
+When integrating with an external API, SDK, database shape, file format, or third-party model, treat the infrastructure adapter as the anti-corruption layer. Translate external language and data shapes into application/domain concepts at the boundary.
+
+Place anti-corruption translation in infrastructure adapter files by default:
+
+```text
+/src/modules/<module-slug>/infra/<adapter-slug>.*        # Adapter and translation logic
+/src/modules/<module-slug>/infra/<adapter-slug>.types.*  # External DTOs/types when useful
+```
+
+Do not create a separate `acl/` folder by default. Split translation into extra infrastructure-local files only when the adapter becomes too large.
+
+External DTOs, SDK response types, database rows, and third-party vocabulary must not leak into `domain/**` or use case `input.*` / `output.*` unless the product language truly matches the external language. If changing an external API response would force changes in domain entities, value objects, or use case boundaries, the anti-corruption boundary is leaking.
+
 ## Use cases, application services, and domain services
 
 ### Use case
