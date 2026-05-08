@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.8.0",
-  "templateVersion": "80",
+  "templateVersion": "81",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-08T20:51:12.608Z",
+  "updatedAt": "2026-05-08T20:55:23.830Z",
   "selectedAgents": [
     "codex",
     "gemini",

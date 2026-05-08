@@ -1,5 +1,5 @@
 {
-  "templateVersion": "80",
+  "templateVersion": "81",
   "templates": {
     "AGENTS.md": {
       "version": "26",
@@ -101,10 +101,10 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Adds the default application use case file structure with input, output, usecase, and ports files."
+        "Clarifies use cases, application services, and domain services with their expected module paths."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {

@@ -177,9 +177,25 @@ Typical driven adapters:
 
 Adapters should hide technical details rather than leak them inward.
 
-## Use cases
+## Use cases, application services, and domain services
 
-A use case should represent one meaningful backend capability.
+### Use case
+
+A use case represents one externally meaningful backend capability triggered by a route, CLI command, job, handler, or other driving adapter.
+
+Place each use case at:
+
+```text
+/src/modules/<module-slug>/application/<usecase-slug>/usecase.*
+```
+
+Its sibling files should define its boundary:
+
+```text
+/src/modules/<module-slug>/application/<usecase-slug>/input.*
+/src/modules/<module-slug>/application/<usecase-slug>/output.*
+/src/modules/<module-slug>/application/<usecase-slug>/ports.*
+```
 
 A use case should:
 - orchestrate domain logic and required ports explicitly
@@ -190,6 +206,35 @@ A use case should not:
 - become a dumping ground for unrelated helpers
 - hide infrastructure details inline
 - absorb framework behavior that belongs in adapters
+
+### Application service
+
+An application service is reusable application-layer orchestration shared by multiple use cases. Use it only when multiple use cases truly need the same orchestration, transaction coordination, or port coordination. Do not create application services just to shorten one use case; prefer private helpers first.
+
+Place application services under:
+
+```text
+/src/modules/<module-slug>/application/services/<service-slug>.*
+```
+
+Application services may depend on domain concepts and application ports, but must not depend on infrastructure implementations, SDK clients, database clients, or framework request/response objects.
+
+### Domain service
+
+A domain service contains pure business behavior that does not naturally belong on one entity or value object. Use it when the rule is domain language, needs multiple domain concepts, and has no dependency on ports, databases, SDKs, frameworks, or technical time/randomness unless those are passed in as values.
+
+Place domain services under:
+
+```text
+/src/modules/<module-slug>/domain/services/<service-slug>.*
+```
+
+Domain services must stay pure and should not orchestrate use cases or external capabilities.
+
+Rule of thumb:
+- Use case: “Do this application action.”
+- Application service: “Reuse this application orchestration.”
+- Domain service: “Evaluate or perform this pure domain rule.”
 
 ## Simplicity rule
 
