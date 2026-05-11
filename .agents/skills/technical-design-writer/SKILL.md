@@ -72,6 +72,8 @@ Translate product intent into implementation direction.
 
 Deep Modules answer “where does this implementation work belong?” Architecture guidance answers “how is that module structured internally?” Translate the feature brief's selected Deep Modules into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Deep Module Map by default.
 
+When a feature crosses a framework or delivery boundary, include the allowed orchestration/application entrypoint and the forbidden lower-level dependencies. Keep this framework-agnostic: name roles like framework adapter, application/orchestration boundary, domain, port, and infrastructure, then add concrete project paths only where useful.
+
 Prefer:
 
 - concise decisions over long explanation
@@ -142,6 +144,8 @@ Use this structure as a starting point. Delete sections that do not add value.
 <Concrete implementation decisions. Include command flows, file/module impact, state changes, and integration boundaries when relevant.>
 
 <Explain how the selected Deep Modules translate into architecture, module, command, file, or implementation boundaries when that affects downstream work.>
+
+<For framework/delivery entrypoints, state the application/orchestration API they may call and the lower-level layers, modules, or paths they must not call directly.>
 
 ## Validation
 <Focused test/build/manual checks.>

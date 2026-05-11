@@ -44,9 +44,10 @@ Add `"use client"` only for code that needs client-side capabilities, such as:
 Prefer isolating the smallest interactive subtree into a Client Component rather than turning a whole page or layout into a Client Component.
 
 ### 4. Keep `src/app/**` thin
-- Treat `src/app/**` as a framework boundary.
-- Pages and route handlers should call application/domain code instead of containing business logic.
-- Keep request parsing, response formatting, redirects, and framework concerns in `src/app/**`.
+- Treat `src/app/**` as a framework adapter boundary.
+- When an architecture skill or technical design defines an orchestration/application boundary, App Router files may call only that boundary.
+- Pages, layouts, route handlers, Server Actions, and metadata functions must not bypass the selected architecture's dependency rules.
+- Keep request parsing, response formatting, redirects, rendering decisions, and framework concerns in `src/app/**`.
 - Move reusable business behavior out of App Router files.
 
 ### 5. Route handlers are framework adapters
@@ -54,6 +55,7 @@ Prefer isolating the smallest interactive subtree into a Client Component rather
 - Use the Web `Request` and `Response` APIs.
 - Keep handlers focused on HTTP concerns: parse input, call application behavior, and return a stable response.
 - Do not put backend business rules directly in route handlers.
+- Do not import infrastructure, database clients, repository implementations, SDK wrappers, persistence models, or external API shapes directly from App Router files unless the selected architecture explicitly allows it.
 
 ### 6. Use Next.js error and empty-state conventions
 - Use `notFound()` for route resources that genuinely do not exist.

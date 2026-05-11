@@ -95,6 +95,34 @@ This means:
 
 If business logic needs a DB client, SDK response, HTTP object, or framework context directly, the boundary is probably wrong.
 
+## Framework adapter dependency rule
+
+Framework code is a driving adapter. Examples include HTTP routes, controllers, Next.js App Router files, server actions, CLI commands, queue consumers, jobs, webhooks, RPC handlers, and GraphQL resolvers.
+
+Framework adapters may adapt framework input/output and call the application/orchestration boundary. They must not directly import or call:
+
+- repository implementations or database clients
+- SDK clients or infrastructure adapters
+- persistence models or external API response shapes
+- domain internals that perform a business workflow outside an application use case
+- other delivery/framework adapters
+
+Allowed flow:
+
+```txt
+framework adapter -> application use case / orchestration API -> domain + ports
+infrastructure adapter -> application/domain port contracts
+```
+
+Forbidden flow:
+
+```txt
+framework adapter -> infrastructure / database / SDK / repository implementation
+framework adapter -> domain workflow internals that bypass the application boundary
+```
+
+When planning or implementing a feature, name the application/orchestration API each framework entrypoint is allowed to call. Add an explicit allow/deny import list when the boundary could be ambiguous.
+
 ## Domain modeling: entity, value object, or neither
 
 Do not force DDD labels onto every concept. Use them only when they buy clarity, express real business meaning, or protect invariants.

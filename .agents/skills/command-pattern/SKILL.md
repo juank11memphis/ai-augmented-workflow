@@ -81,6 +81,37 @@ The Handler must be "blind" to the entrypoint. It should not know if it is being
 ### Rule 4: Thin Entrypoints
 Entrypoints (CLI/API) are responsible for Syntactic Validation (is the input the right type?). Handlers are responsible for Semantic Validation (does this operation make sense in the current state of the system?).
 
+### Rule 5: Entrypoints Call Commands, Not Lower Layers
+Entrypoints are driving adapters. Examples include CLI commands, HTTP routes, Next.js App Router files, server actions, queue consumers, jobs, webhooks, RPC handlers, and GraphQL resolvers.
+
+An entrypoint may:
+- adapt framework or transport input into a Command
+- call the feature Handler directly, or call an application-level command dispatcher/orchestration API
+- translate the Result into a framework or transport response
+
+An entrypoint must not directly import or call:
+- infrastructure adapters
+- database clients or repository implementations
+- SDK clients
+- persistence models or external API response shapes
+- another feature-slice's internals
+- domain workflow logic that bypasses the Handler
+
+Allowed flow:
+
+```txt
+entrypoint / framework adapter -> Command -> Handler / dispatcher -> Ports -> infrastructure adapters
+```
+
+Forbidden flow:
+
+```txt
+entrypoint / framework adapter -> infrastructure / database / SDK / repository implementation
+entrypoint / framework adapter -> domain workflow internals that bypass the Handler
+```
+
+If dependency wiring needs infrastructure implementations, prefer a composition/bootstrap module or small factory that constructs the Handler. Keep request handling, command creation, and result translation separate from infrastructure behavior.
+
 ---
 
 ## 4. Implementation Workflow

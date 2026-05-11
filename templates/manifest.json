@@ -1,5 +1,5 @@
 {
-  "templateVersion": "86",
+  "templateVersion": "89",
   "templates": {
     "AGENTS.md": {
       "version": "28",
@@ -73,10 +73,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "15",
+      "version": "16",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Updates technical design guidance to translate selected Deep Modules into implementation boundaries."
+        "Requires technical designs crossing framework boundaries to name the allowed application/orchestration entrypoint and forbidden lower-level dependencies."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -101,24 +101,24 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Adds anti-corruption adapter guidance for translating external models at infrastructure boundaries."
+        "Adds a framework-agnostic adapter dependency rule requiring delivery entrypoints to call application/orchestration boundaries instead of infrastructure or domain workflow internals."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Clarifies that Deep Modules hide implementation complexity behind small interfaces and are not product categories by themselves."
+        "Adds a framework-agnostic entrypoint dependency rule requiring delivery adapters to create commands and call handlers or dispatchers instead of infrastructure, SDKs, repositories, or domain workflow internals."
       ]
     },
     "skills/nextjs/SKILL.md": {
-      "version": "1",
+      "version": "3",
       "description": "Selectable framework skill for Next.js App Router and framework-specific behavior.",
       "changes": [
-        "Adds an optional Next.js skill for projects that use App Router pages, layouts, route handlers, metadata, and Server/Client Component boundaries."
+        "Keeps Next.js boundary guidance architecture-agnostic by referring to the selected orchestration/application boundary instead of naming a specific architecture."
       ]
     },
     "skills/react/SKILL.md": {

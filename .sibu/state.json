@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.8.0",
-  "templateVersion": "86",
+  "templateVersion": "89",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-11T17:56:26.131Z",
+  "updatedAt": "2026-05-11T19:28:54.643Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -72,10 +72,9 @@
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "15",
-      "sha256": "64546a46c01c7cb9fed73d963d558dffdf518567b4a21e3eee1f55d21054e6e2",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "15"
+      "templateVersion": "16",
+      "sha256": "533dbfc1ec0dc6aa4b536558cc90bbf3ebe4f86f5ada67f83bd5db0fb400979b",
+      "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
@@ -105,10 +104,9 @@
     },
     ".agents/skills/command-pattern/SKILL.md": {
       "template": "skills/architecture/command-pattern/SKILL.md",
-      "templateVersion": "5",
-      "sha256": "1123905556fae304db3ed6185b5fc9e9a7806737b774c56adf81e6a28ec58f7e",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "5"
+      "templateVersion": "6",
+      "sha256": "2dd989071ee99e3728b431f71a4ee6b3ba5a77f416fa30eddfcedaad5f4cc334",
+      "status": "managed"
     },
     ".agents/skills/ai-prompt-engineer-master/SKILL.md": {
       "template": "skills/ai-prompt-engineer-master/SKILL.md",
