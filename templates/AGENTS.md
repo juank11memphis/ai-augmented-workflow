@@ -14,6 +14,7 @@
 ## Agent-specific instructions
 
 - Before any task that writes or modifies code, propose a brief plan and wait for user confirmation once per requested task.
+- Exception: when the user asks to plan, implement, execute, continue, or work through a User Story or Epic with `ai-implementation-plan-executor`, that request is confirmation to generate any missing implementation plan and begin execution immediately. Do not require a separate plan approval gate; wait only for the story-level review after implementation finishes.
 - For read-only work, research, planning, documentation-only edits, or other non-code changes, do not ask for confirmation unless the action is destructive, risky, ambiguous, or explicitly requires user approval.
 - After confirmation, proceed with all agreed in-scope changes without re-asking.
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
@@ -36,7 +37,7 @@ Keep responses concise by default, but spend the context needed for correctness,
 
 ## Skill routing
 
-For planned product/feature work, use this pipeline: product vision -> deep module map -> feature brief -> technical design -> optional UX -> epics/stories -> AI implementation plan -> AI executor. Narrow code fixes and small local changes do not require the full pipeline unless product scope, module ownership, or architecture direction is unclear.
+For planned product/feature work, use this pipeline: product vision -> deep module map -> feature brief -> technical design -> optional UX -> epics/stories -> AI executor. The executor creates a missing AI implementation plan and then executes it immediately when a story or Epic is requested for planning, implementation, or continuation. Narrow code fixes and small local changes do not require the full pipeline unless product scope, module ownership, or architecture direction is unclear.
 
 - For any code-writing task, use `clean-code`.
 - For requests to create, revise, or clarify a product vision, product strategy narrative, product north star, positioning, product principles, product voice, target user definition, product boundaries, or success signals, use `product-vision-writer`.
@@ -44,8 +45,8 @@ For planned product/feature work, use this pipeline: product vision -> deep modu
 - For requests to create, revise, or clarify a business-level feature brief after Deep Module Map work, feature definition, feature scope, MVP feature boundaries, business acceptance criteria, or product-level feature rationale, use `feature-brief-writer`.
 - For requests to create, revise, or clarify a technical design, implementation-oriented design doc, architecture approach, technical tradeoffs, technical risks, or implementation plan for an approved feature, use `technical-design-writer`.
 - For requests to create Epics, User Stories, Scrum planning artifacts, backlog slices, or delivery plans from an approved feature brief and technical design, use `scrum-master-planner`.
-- For requests to turn a specific User Story into an implementation checklist, coding plan, step-by-step execution plan, or baby-step plan, use `ai-implementation-planner`.
-- For requests to implement, execute, continue, or work through a specific User Story under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md` or an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`; when the story plan is missing, the executor should create it with `ai-implementation-planner` and immediately continue into implementation without a separate plan approval gate.
+- For explicit planning-only requests to turn a specific User Story into an implementation checklist, coding plan, step-by-step execution plan, or baby-step plan without implementation, use `ai-implementation-planner` and stop after writing the plan. Treat a request as planning-only only when the user explicitly says planning-only, "do not implement," or asks to create the plan without execution.
+- For requests to plan, implement, execute, continue, or work through a specific User Story under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`, an Epic, or an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`; when the story plan is missing, the executor must create it with `ai-implementation-planner` and immediately continue into implementation without a separate plan approval gate.
 {{OPTIONAL_SKILL_ROUTING}}
 
 ## Sibu maintenance

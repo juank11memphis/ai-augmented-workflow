@@ -7,7 +7,7 @@ description: Turn one approved User Story Markdown file into LLM-sized implement
 
 ## Purpose
 
-Turn one approved User Story into concrete Markdown step files an AI coding agent can execute safely and completely. This skill owns implementation planning for one story at a time, not product scope, technical design decisions, Scrum planning, or code implementation. After writing the plan, it does not require a separate plan approval gate; implementation may continue immediately through `ai-implementation-plan-executor` when the user requested execution or Epic continuation.
+Turn one approved User Story into concrete Markdown step files an AI coding agent can execute safely and completely. This skill owns implementation planning for one story at a time, not product scope, technical design decisions, Scrum planning, or code implementation. This planner is normally an internal helper for `ai-implementation-plan-executor`; after writing a valid plan, implementation must continue immediately through the executor unless the user explicitly requested planning-only.
 
 ## Pipeline Contract
 
@@ -29,7 +29,7 @@ Turn one approved User Story into concrete Markdown step files an AI coding agen
 - The user does not provide or clearly identify exactly one User Story file.
 - Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
 - The story or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
-- The request is to write production code, execute an implementation plan, create stories, or perform another pipeline stage.
+- This planner was invoked directly for a request that should route to another pipeline stage, such as writing production code, executing an existing implementation plan, creating stories, or performing another pipeline stage.
 
 ### What this skill must not do
 
@@ -37,7 +37,7 @@ Turn one approved User Story into concrete Markdown step files an AI coding agen
 - Do not modify prior-stage artifacts.
 - Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
 - Do not infer implementation scope from an Epic brief, feature brief, or technical design without exactly one User Story.
-- Do not write production code directly from this planner; hand off to `ai-implementation-plan-executor` for implementation.
+- Do not write production code directly from this planner; hand off to `ai-implementation-plan-executor` for implementation. The executor is the orchestrator for planning, implementation, execution, continuation, and combined plan-and-execute requests.
 
 ## Required input
 
@@ -242,9 +242,9 @@ Before finishing, verify:
 
 ### 6. Continue or report
 
-After writing and quality-checking the implementation step files, do not ask for plan approval before execution. If the user asked to implement, execute, continue, or work through the story or Epic, immediately hand off to `ai-implementation-plan-executor` for the newly created plan in the same turn. The user's execution request plus a valid generated plan is enough pre-implementation confirmation; the only required user approval is the story-level review after execution finishes.
+After writing and quality-checking the implementation step files, do not ask for plan approval before execution. Unless the user explicitly requested planning-only, immediately hand off to `ai-implementation-plan-executor` for the newly created plan in the same turn. The user's story or Epic planning/execution request plus a valid generated plan is enough pre-implementation confirmation; the only required user approval is the story-level review after execution finishes.
 
-If the user asked only to create a plan and did not ask for implementation, stop after creating the plan and report where it was written. Make clear that no plan approval is required before a later executor run.
+If the user explicitly asked for planning-only, said not to implement, or asked to create the plan without execution, stop after creating the plan and report where it was written. Make clear that no plan approval is required before a later executor run.
 
 When this skill is invoked as the next-story or next-Epic planning handoff from `ai-implementation-plan-executor`, create the plan and immediately return control to the executor so it can implement that story without a plan-review gate.
 

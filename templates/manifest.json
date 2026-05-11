@@ -1,11 +1,11 @@
 {
-  "templateVersion": "84",
+  "templateVersion": "86",
   "templates": {
     "AGENTS.md": {
-      "version": "26",
+      "version": "28",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Updates implementation routing so missing story plans are generated and executed immediately without a separate plan approval gate."
+        "Routes story and Epic planning requests to the executor by default so generated plans are implemented immediately unless planning-only is explicit."
       ]
     },
     ".codex/config.toml": {
@@ -136,17 +136,17 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "13",
+      "version": "15",
       "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
       "changes": [
-        "Clarifies that executor handoffs can come from the next story or next Epic and still continue without plan approval."
+        "Clarifies that the planner is normally an executor helper and stops after planning only when planning-only is explicit."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "20",
+      "version": "22",
       "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
       "changes": [
-        "Changes next-Epic continuation to choose the next logical Epic based on dependencies, readiness, risk, and value instead of filename order."
+        "Clarifies that story and Epic planning requests are confirmation for executor implementation."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
