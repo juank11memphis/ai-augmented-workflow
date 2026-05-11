@@ -4,6 +4,11 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.9.7 - 2026-05-11
+
+### Fixed
+- route story planning through executor
+
 ## 0.9.6 - 2026-05-08
 
 ### Changed
