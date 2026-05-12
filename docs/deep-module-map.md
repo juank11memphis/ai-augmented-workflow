@@ -128,6 +128,16 @@ A Deep Module here is not a folder mandate. It is a durable capability with a sm
 - Related modules: Project Adoption, Sync Review, Skill Selection Management, MCP Server Selection Management, Workflow Health Diagnosis.
 - Boundary notes: This module should keep interaction reusable without hiding product rules inside UI code.
 
+### Project Documentation Experience
+- Suggested module slug: `project-documentation-experience`
+- Simple interface / outside promise: Present Sibu clearly to end users and contributors through high-quality repository documentation.
+- Hidden complexity: Audience separation, README narrative structure, product positioning, visual explanation and infographic-style assets, installation and first-use guidance, contributor setup/testing guidance, contribution expectations, documentation freshness, and alignment with Sibu's practical, playful product voice.
+- Owns: Repository-facing documentation experience, especially README quality; end-user explanation of what Sibu is, why it matters, and how to start; contributor-facing guidance for running, testing, and contributing to the project; and documentation conventions that help open-source visitors trust the project quickly.
+- Does not own: CLI command behavior, template rendering behavior, release automation mechanics, implementation architecture, generated workflow files in adopted projects, or deep product strategy documents such as the product vision.
+- Key scenarios: A new visitor lands on the repository and understands Sibu's value; an end user can install or try Sibu from the README; a potential contributor can set up the project locally, run checks, and understand contribution expectations; visual documentation explains the workflow without requiring users to read every implementation detail.
+- Related modules: CLI Command Surface, Project Adoption, Workflow Health Diagnosis, Sync Review, Skill Selection Management, MCP Server Selection Management, Maintainer Release Support, Interactive Guidance.
+- Boundary notes: Documentation should describe and teach the product without becoming the source of truth for runtime behavior. When README content exposes gaps or ambiguity in commands, templates, release flow, or workflow semantics, the owning implementation module should resolve the behavior and this module should reflect it.
+
 ### Maintainer Release Support
 - Suggested module slug: `maintainer-release-support`
 - Simple interface / outside promise: Help maintainers prepare release artifacts without mixing release mechanics into end-user workflow commands.
@@ -149,3 +159,4 @@ A Deep Module here is not a folder mandate. It is a durable capability with a sm
 - Skill and MCP add/remove shortcuts must be blocked when broader workflow drift exists; send users to `sibu sync` instead of resolving drift implicitly.
 - Cross-module behavior should prefer small command handlers that delegate to reusable modules rather than duplicating state, template, hash, or target logic.
 - User-facing output should stay concise, practical, and explicit about what Sibu changed or refused to change.
+- Repository documentation should stay aligned with implemented behavior and product voice; when documentation needs to simplify, it should simplify the explanation, not distort the product promise.
