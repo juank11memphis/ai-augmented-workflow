@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.8.0",
-  "templateVersion": "89",
+  "templateVersion": "90",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-12T00:56:42.761Z",
+  "updatedAt": "2026-05-12T00:59:57.886Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -66,17 +66,15 @@
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "9",
+      "templateVersion": "10",
       "sha256": "fff5d780a050b9b0f30ac11161d5769cade5a7ec6f6a623c3057011ff23b6d6e",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "9"
+      "status": "managed"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "16",
+      "templateVersion": "17",
       "sha256": "e91a53059039d1d5eb3468e9fbc2b2bc707d14d922302e0c3ea913cf72fdee85",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "16"
+      "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
