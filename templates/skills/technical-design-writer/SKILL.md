@@ -158,6 +158,31 @@ Use this structure as a starting point. Delete sections that do not add value.
 
 A good technical design is short, specific, and useful. It should not try to be the product brief, architecture skill, clean-code skill, implementation plan, or ticket backlog.
 
+## Optional Notion export after local write
+
+After the local Markdown file is written successfully, optionally offer Notion export. Local Markdown remains the canonical pipeline artifact and Notion is only a convenience export destination.
+
+1. Do not check Notion export before the local file exists.
+2. After writing the local file, read `.sibu/state.json` if available.
+3. Offer export only when all are true:
+   - `selectedMcpServers` includes `notion`
+   - `mcpServerConfigs.notion.docsParentPage` is present
+   - Notion MCP tools are available in the current agent session
+4. If export is unavailable, do nothing else and finish with the normal local path response.
+5. If export is available, ask for explicit opt-in before creating or modifying any Notion page.
+6. If the user declines, do nothing else.
+7. If the user accepts, create or reuse Notion organization pages under the configured parent page:
+
+```txt
+<docsParentPage>
+└── <repo name>
+    └── Features
+        └── <feature name>
+            └── Technical Design
+```
+
+Create a new document page for the just-written artifact content. Do not write Notion URLs back into local Markdown. Report Notion export success or a clear Notion export failure, while preserving the local file as the completed artifact either way.
+
 ## Final response behavior
 
 After writing the file, final-answer with only the path created or updated. Do not paste the technical design body, excerpt, outline, or section summaries.

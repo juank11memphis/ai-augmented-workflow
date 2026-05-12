@@ -2,7 +2,7 @@
   "sibuVersion": "0.8.0",
   "templateVersion": "89",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-11T19:28:54.643Z",
+  "updatedAt": "2026-05-12T00:56:42.761Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -67,14 +67,16 @@
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
       "templateVersion": "9",
-      "sha256": "6ef69cd3fe4c20225251d485c46594c598da150eae829d10c6a7b8d4bb8beb54",
-      "status": "managed"
+      "sha256": "fff5d780a050b9b0f30ac11161d5769cade5a7ec6f6a623c3057011ff23b6d6e",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "9"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
       "templateVersion": "16",
-      "sha256": "533dbfc1ec0dc6aa4b536558cc90bbf3ebe4f86f5ada67f83bd5db0fb400979b",
-      "status": "managed"
+      "sha256": "e91a53059039d1d5eb3468e9fbc2b2bc707d14d922302e0c3ea913cf72fdee85",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "16"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
