@@ -1,5 +1,5 @@
 {
-  "templateVersion": "90",
+  "templateVersion": "91",
   "templates": {
     "AGENTS.md": {
       "version": "28",
@@ -122,10 +122,10 @@
       ]
     },
     "skills/react/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable React skill for component design, props, state ownership, and presentational boundaries.",
       "changes": [
-        "Adds an optional React skill for projects that create or change React components, props, state ownership, or presentational and data-owning boundaries."
+        "Strengthens React component guidance around Single Responsibility Principle splits, stateless versus stateful boundaries, and one component per file by default."
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {

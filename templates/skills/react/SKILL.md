@@ -21,15 +21,17 @@ This skill covers React componentization, component responsibility, state owners
 
 ### 1. Treat components like focused functions
 - A component should have one clear reason to exist.
-- If a component does too many unrelated things, split it.
-- Prefer small components with clear names and explicit responsibilities.
-- Do not split components just to create more files; split when it improves understanding.
+- Apply the Single Responsibility Principle aggressively: split components whenever rendering, state ownership, event handling, data access, layout, formatting, or low-level UI concerns start to blur together.
+- Create as many components as needed to keep each component easy to name, test, scan, and change independently.
+- Prefer small components with clear names and explicit responsibilities over broad components with internal sections.
+- Do not preserve a large component just to avoid adding files; a few extra focused components are better than one file that hides multiple responsibilities.
 
-### 2. Separate presentational components from data-owning components
-- Presentational components should mostly render UI from props.
-- Data-owning components may fetch, subscribe, mutate, or coordinate data.
-- Keep it obvious which components interact with the server and which are purely presentational.
-- Avoid hiding server interactions deep inside components that look presentational.
+### 2. Separate stateless, stateful, and data-owning components
+- Stateless presentational components should render UI from props and avoid owning state or side effects.
+- Stateful interaction components may own local UI state when that state belongs only to their focused responsibility.
+- Data-owning components may fetch, subscribe, mutate, or coordinate server data.
+- Keep stateless, stateful, and server-interacting responsibilities visibly separate; split components when those roles mix.
+- Avoid hiding state transitions, server interactions, or mutations deep inside components that look presentational.
 
 ### 3. Keep props narrow and explicit
 - Pass only what the child component needs.
@@ -63,13 +65,18 @@ This skill covers React componentization, component responsibility, state owners
 - Name components by what they represent in the UI or product.
 - Keep server-interacting, stateful, and presentational responsibilities easy to identify from the component shape.
 - Avoid mixing data fetching, mutation, layout, formatting, and low-level UI rendering in one component.
+- Each component should live in its own file by default; do not define multiple components in the same file just because they are currently small.
+- If a helper component is only temporary, promote it to its own file as soon as it represents a meaningful UI responsibility.
 
 ## Decision rule
 
 When unsure, prefer:
 1. one clear responsibility per component
-2. presentational components that render from props
-3. data/server interaction in obvious owner components
-4. local state unless coordination requires lifting it
-5. composition over flag-heavy component APIs
-6. no duplicated derived state
+2. more focused components instead of fewer overloaded components
+3. one component per file by default
+4. stateless presentational components that render from props
+5. stateful components only where local interaction state is genuinely owned
+6. data/server interaction in obvious owner components
+7. local state unless coordination requires lifting it
+8. composition over flag-heavy component APIs
+9. no duplicated derived state
