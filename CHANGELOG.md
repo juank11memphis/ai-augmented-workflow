@@ -4,6 +4,11 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.12.1 - 2026-05-12
+
+### Changed
+- add clean-code input validation guidance
+
 ## 0.12.0 - 2026-05-12
 
 ### Added
