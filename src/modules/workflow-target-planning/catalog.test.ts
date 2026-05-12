@@ -77,17 +77,28 @@ describe('resolveSelectableMcpServerById', () => {
     assert.equal(result.resolved.server.source, 'github/github-mcp-server');
   });
 
-  it('describes GitHub MCP as config-only and user-owned for prerequisites and auth', () => {
-    const githubServer = SELECTABLE_MCP_SERVERS.find((server) => server.id === 'github');
+  it('resolves the Notion MCP server', () => {
+    const result = resolveSelectableMcpServerById('notion');
 
-    assert.ok(githubServer);
-    assert.match(githubServer.description, /config only/i);
-    assert.match(githubServer.description, /prerequisites/i);
-    assert.match(githubServer.description, /authentication/i);
-    assert.doesNotMatch(githubServer.description, /install/i);
-    assert.doesNotMatch(githubServer.description, /create(s|d)? token/i);
-    assert.doesNotMatch(githubServer.description, /validates? auth/i);
-    assert.doesNotMatch(githubServer.description, /live connectivity/i);
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+
+    assert.equal(result.resolved.server.id, 'notion');
+    assert.equal(result.resolved.server.name, 'Notion MCP Server');
+    assert.equal(result.resolved.server.source, 'developers.notion.com/guides/mcp');
+  });
+
+  it('describes selectable MCP servers as config-only and user-owned for prerequisites and auth', () => {
+    for (const server of SELECTABLE_MCP_SERVERS) {
+      assert.match(server.description, /config/i);
+      assert.match(server.description, /user-owned/i);
+      assert.match(server.description, /auth|authentication|OAuth/i);
+      assert.doesNotMatch(server.description, /create(s|d)? token/i);
+      assert.doesNotMatch(server.description, /validates? auth/i);
+      assert.doesNotMatch(server.description, /live connectivity/i);
+    }
   });
 
   it('fails with an MCP list suggestion for unknown MCP server ids', () => {

@@ -98,19 +98,15 @@ export function renderMcpConfig({
   baseContents?: string;
   selectedMcpServers: SelectableMcpServer[];
 }): string {
-  const githubServer = selectedMcpServers.find((server) => server.id === 'github');
-
-  if (!githubServer) {
+  if (selectedMcpServers.length === 0) {
     return baseContents ?? renderJsonMcpConfig({});
   }
 
   if (agentId === 'codex') {
-    return renderCodexGithubMcpConfig(baseContents ?? '');
+    return renderCodexMcpConfig(baseContents ?? '', selectedMcpServers);
   }
 
-  return renderJsonMcpConfig({
-    github: buildGithubMcpServerConfig(agentId),
-  });
+  return renderJsonMcpConfig(buildJsonMcpServerConfigs(agentId, selectedMcpServers));
 }
 
 export function extractProjectOverview(filePath: string): string | undefined {
@@ -124,14 +120,32 @@ export function extractProjectOverview(filePath: string): string | undefined {
   return overview || undefined;
 }
 
-function renderCodexGithubMcpConfig(baseContents: string): string {
+function renderCodexMcpConfig(baseContents: string, selectedMcpServers: SelectableMcpServer[]): string {
   const trimmedBaseContents = baseContents.trimEnd();
+  const serverConfigs = selectedMcpServers.map((server) => buildCodexMcpServerConfig(server)).filter((config) => config.length > 0);
+
+  if (serverConfigs.length === 0) {
+    return baseContents;
+  }
+
   const separator = trimmedBaseContents ? '\n\n' : '';
 
-  return `${trimmedBaseContents}${separator}[mcp_servers.github]
+  return `${trimmedBaseContents}${separator}${serverConfigs.join('\n\n')}\n`;
+}
+
+function buildCodexMcpServerConfig(server: SelectableMcpServer): string {
+  if (server.id === 'github') {
+    return `[mcp_servers.github]
 url = "https://api.githubcopilot.com/mcp/"
-bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
-`;
+bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"`;
+  }
+
+  if (server.id === 'notion') {
+    return `[mcp_servers.notion]
+url = "https://mcp.notion.com/mcp"`;
+  }
+
+  return '';
 }
 
 function getMcpConfigAgentId(templateRelativePath: string): Extract<AgentId, 'codex' | 'gemini' | 'claude'> | undefined {
@@ -159,7 +173,26 @@ type JsonMcpServerConfig =
   | {
       httpUrl: string;
       headers: Record<string, string>;
+    }
+  | {
+      url: string;
     };
+
+function buildJsonMcpServerConfigs(agentId: Extract<AgentId, 'gemini' | 'claude'>, selectedMcpServers: SelectableMcpServer[]): Record<string, JsonMcpServerConfig> {
+  const mcpServers: Record<string, JsonMcpServerConfig> = {};
+
+  for (const server of selectedMcpServers) {
+    if (server.id === 'github') {
+      mcpServers.github = buildGithubMcpServerConfig(agentId);
+    }
+
+    if (server.id === 'notion') {
+      mcpServers.notion = buildNotionMcpServerConfig();
+    }
+  }
+
+  return mcpServers;
+}
 
 function buildGithubMcpServerConfig(agentId: Extract<AgentId, 'gemini' | 'claude'>): JsonMcpServerConfig {
   const headers = {
@@ -177,6 +210,12 @@ function buildGithubMcpServerConfig(agentId: Extract<AgentId, 'gemini' | 'claude
     type: 'http',
     url: 'https://api.githubcopilot.com/mcp/',
     headers,
+  };
+}
+
+function buildNotionMcpServerConfig(): JsonMcpServerConfig {
+  return {
+    url: 'https://mcp.notion.com/mcp',
   };
 }
 

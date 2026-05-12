@@ -66,7 +66,7 @@ describe('getWorkflowTargets', () => {
     assertNoInvalidTargets(targets);
   });
 
-  it('includes GitHub MCP config targets for supported MCP agents only', () => {
+  it('includes MCP config targets for supported MCP agents only', () => {
     const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS, [], [], undefined, [], [], SELECTABLE_MCP_SERVERS);
     const targetPaths = getRelativeTargetPaths(targets);
 
@@ -96,6 +96,19 @@ describe('getWorkflowTargets', () => {
         agentId: 'claude',
       },
     ]);
+  });
+
+  it('resolves Notion-only MCP targets without duplicate config paths', () => {
+    const selectedMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'notion');
+    const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS, [], [], undefined, [], [], selectedMcpServers);
+    const targetPaths = getRelativeTargetPaths(targets);
+
+    assert.equal(targetPaths.includes('.codex/config.toml'), true);
+    assert.equal(targetPaths.includes('.mcp.json'), true);
+    assert.equal(targetPaths.includes('.gemini/settings.json'), true);
+    assert.equal(targetPaths.some((relativePath) => relativePath.includes('windsurf')), false);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.codex/config.toml').length, 1);
+    assertNoInvalidTargets(targets);
   });
 
   it('persists workflow and database skills selected during initialization', () => {
@@ -165,7 +178,7 @@ describe('getWorkflowTargets', () => {
     fs.rmSync(rootPath, { recursive: true, force: true });
   });
 
-  it('renders and persists selected GitHub MCP config targets', () => {
+  it('renders and persists selected MCP config targets', () => {
     const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-workflow-targets-mcp-'));
     const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')];
     const selectedMcpServers = SELECTABLE_MCP_SERVERS;
@@ -198,8 +211,11 @@ describe('getWorkflowTargets', () => {
     assert.match(codexConfig.contents, /model_instructions_file = "\.\.\/AGENTS\.md"/);
     assert.match(codexConfig.contents, /\[mcp_servers\.github\]/);
     assert.match(codexConfig.contents, /api\.githubcopilot\.com\/mcp/);
+    assert.match(codexConfig.contents, /mcp\.notion\.com\/mcp/);
     assert.match(claudeConfig.contents, /api\.githubcopilot\.com\/mcp/);
+    assert.match(claudeConfig.contents, /mcp\.notion\.com\/mcp/);
     assert.match(geminiConfig.contents, /api\.githubcopilot\.com\/mcp/);
+    assert.match(geminiConfig.contents, /mcp\.notion\.com\/mcp/);
 
     for (const file of firstRender) {
       fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
@@ -219,7 +235,7 @@ describe('getWorkflowTargets', () => {
 
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
 
-    assert.deepEqual(state.selectedMcpServers, ['github']);
+    assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
     assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
@@ -251,11 +267,11 @@ describe('getSelectedMcpServersFromState', () => {
       generatedAt: '2026-05-07T00:00:00.000Z',
       updatedAt: '2026-05-07T00:00:00.000Z',
       selectedAgents: ['codex'],
-      selectedMcpServers: ['github'],
+      selectedMcpServers: ['github', 'notion'],
       managedFiles: {},
     };
 
-    assert.deepEqual(getSelectedMcpServersFromState(state).map((server) => server.id), ['github']);
+    assert.deepEqual(getSelectedMcpServersFromState(state).map((server) => server.id), ['github', 'notion']);
   });
 });
 

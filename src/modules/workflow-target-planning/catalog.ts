@@ -234,6 +234,13 @@ export const SELECTABLE_MCP_SERVERS: SelectableMcpServer[] = [
       "Configure GitHub's official MCP server; Sibu writes config only, while prerequisites, runtime availability, credentials, and authentication remain user-owned",
     source: 'github/github-mcp-server',
   },
+  {
+    id: 'notion',
+    name: 'Notion MCP Server',
+    description:
+      'Configure Notion MCP server access; Sibu writes config only, while OAuth authentication, workspace access, page permissions, and credentials remain user-owned',
+    source: 'developers.notion.com/guides/mcp',
+  },
 ];
 
 export const SUPPORTED_AGENTS: SupportedAgent[] = [

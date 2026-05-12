@@ -103,7 +103,7 @@ export function getSelectedSkillTargetsForAgents(
 }
 
 export function getSelectedMcpTargetsForAgents(selectedAgents: SupportedAgent[], selectedMcpServers: SelectableMcpServer[]): McpTarget[] {
-  if (!selectedMcpServers.some((server) => server.id === 'github')) {
+  if (selectedMcpServers.length === 0) {
     return [];
   }
 

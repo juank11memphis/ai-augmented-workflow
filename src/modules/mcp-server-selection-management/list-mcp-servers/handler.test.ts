@@ -25,23 +25,22 @@ afterEach(() => {
 
 describe('getMcpServerListItems', () => {
   it('treats missing optional selected MCP server state as unselected', () => {
-    assert.deepEqual(getMcpServerListItems(BASE_STATE), [
-      {
-        name: 'GitHub MCP Server',
-        id: 'github',
-        description:
-          "Configure GitHub's official MCP server; Sibu writes config only, while prerequisites, runtime availability, credentials, and authentication remain user-owned",
-        source: 'github/github-mcp-server',
-        selected: false,
-      },
-    ]);
+    assert.deepEqual(
+      getMcpServerListItems(BASE_STATE).map((server) => ({ id: server.id, selected: server.selected })),
+      [
+        { id: 'github', selected: false },
+        { id: 'notion', selected: false },
+      ]
+    );
   });
 
-  it('marks GitHub as selected when state selects it', () => {
-    const [githubServer] = getMcpServerListItems({ ...BASE_STATE, selectedMcpServers: ['github'] });
+  it('marks selected MCP servers from state', () => {
+    const servers = getMcpServerListItems({ ...BASE_STATE, selectedMcpServers: ['notion'] });
+    const githubServer = servers.find((server) => server.id === 'github');
+    const notionServer = servers.find((server) => server.id === 'notion');
 
-    assert.equal(githubServer?.id, 'github');
-    assert.equal(githubServer?.selected, true);
+    assert.equal(githubServer?.selected, false);
+    assert.equal(notionServer?.selected, true);
   });
 });
 

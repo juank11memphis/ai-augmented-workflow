@@ -42,6 +42,18 @@ describe('getNextMcpSelection', () => {
     assert.deepEqual(result.selectedMcpServers.map((server) => server.id), ['github']);
   });
 
+  it('selects Notion when no MCP servers were previously selected', () => {
+    const result = getNextMcpSelection(BASE_STATE, 'notion');
+
+    assert.equal(result.status, 'selected');
+    if (result.status !== 'selected') {
+      return;
+    }
+
+    assert.equal(result.serverName, 'Notion MCP Server');
+    assert.deepEqual(result.selectedMcpServers.map((server) => server.id), ['notion']);
+  });
+
   it('returns a no-op when GitHub is already selected', () => {
     assert.deepEqual(getNextMcpSelection({ ...BASE_STATE, selectedMcpServers: ['github'] }, 'github'), {
       status: 'noop',
@@ -76,6 +88,46 @@ describe('handleUseMcpServer', () => {
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /ghp_[A-Za-z0-9_]+/);
     assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
+  });
+
+  it('adds Notion MCP config files and records selected MCP state', async () => {
+    const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')]);
+    process.chdir(rootPath);
+
+    await handleUseMcpServer({ type: 'mcp:use', serverId: 'notion' });
+
+    const state = readState(rootPath);
+
+    assert.deepEqual(state.selectedMcpServers, ['notion']);
+    assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
+    assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
+    assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /notion[_-]?token/i);
+    assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
+  });
+
+  it('composes GitHub and Notion MCP config when both are selected', async () => {
+    const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')]);
+    process.chdir(rootPath);
+
+    await handleUseMcpServer({ type: 'mcp:use', serverId: 'github' });
+    await handleUseMcpServer({ type: 'mcp:use', serverId: 'notion' });
+
+    const state = readState(rootPath);
+    const codexConfig = fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8');
+    const claudeConfig = fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8');
+    const geminiConfig = fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8');
+
+    assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
+    assert.match(codexConfig, /api\.githubcopilot\.com\/mcp/);
+    assert.match(codexConfig, /mcp\.notion\.com\/mcp/);
+    assert.match(claudeConfig, /api\.githubcopilot\.com\/mcp/);
+    assert.match(claudeConfig, /mcp\.notion\.com\/mcp/);
+    assert.match(geminiConfig, /api\.githubcopilot\.com\/mcp/);
+    assert.match(geminiConfig, /mcp\.notion\.com\/mcp/);
   });
 
   it('does not rewrite files or state when GitHub is already selected', async () => {

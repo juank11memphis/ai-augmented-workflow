@@ -39,7 +39,7 @@ describe('handleInitProject', () => {
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), false);
   });
 
-  it('initializes managed GitHub MCP config for supported selected agents', async () => {
+  it('initializes managed MCP config for supported selected agents', async () => {
     const rootPath = createTemporaryRoot();
     process.chdir(rootPath);
 
@@ -54,7 +54,7 @@ describe('handleInitProject', () => {
     const state = readState(rootPath);
 
     assert.deepEqual(state.selectedAgents, ['codex', 'claude', 'gemini', 'windsurf']);
-    assert.deepEqual(state.selectedMcpServers, ['github']);
+    assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
     assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
@@ -63,8 +63,11 @@ describe('handleInitProject', () => {
     assert.equal(typeof state.managedFiles['.gemini/settings.json']?.sha256, 'string');
 
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });
 });
