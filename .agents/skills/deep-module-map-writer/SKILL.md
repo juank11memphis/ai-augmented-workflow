@@ -139,6 +139,42 @@ Be deliberately interrogative before writing.
 - If the conversation stalls, propose one concise assumption for the next unresolved point and ask the user to confirm or correct it.
 - Draft only when there are no material open questions about interfaces, hidden complexity, ownership, exclusions, relationships, or cross-module rules.
 
+## Clarify module intent before drafting
+
+Do not draft a Deep Module Map from a vague product idea, feature label, command name, screen, folder, or implementation mechanism alone. The map must reflect the user's actual system responsibilities and the complexity boundaries that should stay stable over time.
+
+A request is too vague when the user gives only a broad area such as "onboarding," "analytics," "sync," "workflow," "AI features," "the CLI," or "the database" without enough detail to know what capability the rest of the system should rely on or what implementation complexity should be hidden.
+
+When module intent is vague or incomplete:
+
+1. Stop before drafting.
+2. Explain briefly that a responsible Deep Module Map requires more boundary context.
+3. Ask one focused discovery question.
+4. Wait for the user's answer.
+5. Continue asking one question at a time until there is enough context to defend the map.
+6. Draft only after the module candidates, interfaces, hidden complexity, ownership, exclusions, scenarios, relationships, and cross-module rules are clear enough to avoid invention.
+
+Do not ask the user to answer a large questionnaire all at once. Keep the interview conversational and focused.
+
+## Gather the minimum required module context
+
+Ask every question needed to remove material ambiguity, but only one at a time. Clarify:
+
+- what product or system capabilities the map must support
+- what the rest of the app should be able to ask each area to do
+- what messy details callers should not need to know
+- which decisions or policies should change together
+- which responsibilities each candidate module owns
+- which responsibilities each candidate module explicitly does not own
+- key scenarios that prove the module boundary is useful
+- relationships and dependencies between candidate modules
+- cross-module rules such as user ownership, safety, validation, local customization, or read-only vs mutating behavior
+- where future implementation work is likely to create boundary confusion
+
+Treat "enough context" as: candidate modules, suggested slugs, simple external interfaces, hidden implementation complexity, responsibilities, exclusions, scenarios, relationships, and cross-module rules are all clear enough to defend. Do not draft a map with an `Open Questions` section. Resolve material questions during the interview, or record only known risks/tradeoffs after decisions are made.
+
+If the conversation stalls, offer one concise default assumption for the next unresolved boundary and ask the user to confirm, correct, or reject it before proceeding.
+
 ## Interview method
 
 Derive candidate modules from answers. Do not make the user design the map from scratch.

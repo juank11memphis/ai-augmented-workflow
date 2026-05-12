@@ -1,5 +1,5 @@
 {
-  "templateVersion": "94",
+  "templateVersion": "95",
   "templates": {
     "AGENTS.md": {
       "version": "28",
@@ -58,10 +58,10 @@
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Strengthens Deep Module Map interviews to ask as many one-at-a-time questions as needed and resolve material boundary questions before drafting."
+        "Adds explicit Deep Module Map discovery guidance so agents keep interviewing one question at a time until module interfaces, hidden complexity, ownership, exclusions, scenarios, relationships, and cross-module rules are clear enough to defend."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
