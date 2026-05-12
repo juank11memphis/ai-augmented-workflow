@@ -1,5 +1,5 @@
 {
-  "templateVersion": "93",
+  "templateVersion": "94",
   "templates": {
     "AGENTS.md": {
       "version": "28",
@@ -72,10 +72,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "17",
+      "version": "18",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds optional Notion export guidance after local technical designs are written while keeping Markdown as the canonical artifact."
+        "Strengthens technical design interviews to resolve material implementation questions before drafting and replaces open questions with risks/tradeoffs."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Adds optional Notion export guidance after local UX specs are written while keeping Markdown as the canonical artifact."
+        "Strengthens UX interviews to resolve material experience questions before drafting and replaces open UX questions with risks/tradeoffs."
       ]
     }
   }

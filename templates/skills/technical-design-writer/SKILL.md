@@ -62,6 +62,20 @@ Require the feature brief to name one or more existing Deep Modules. Preserve th
 
 If the feature has UI impact, require `docs/features/<feature-slug>/ux.md`. If it is missing, stop and ask the user to create the UX spec with `ux-expert` first.
 
+## Interview posture
+
+Be deliberately interrogative before drafting. The technical design should reflect resolved implementation direction, not risky assistant assumptions.
+
+- Ask one focused question at a time when repository artifacts and source docs do not resolve a material technical ambiguity.
+- Ask as many questions as required to reach complete practical understanding; do not optimize for a short interview.
+- If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
+- Prefer follow-up questions over filling gaps with plausible invention.
+- When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
+- Treat "enough context" as: selected Deep Modules, affected code paths, entrypoints, implementation boundaries, important state/data changes, validation approach, and meaningful risks are clear enough to defend in the design.
+- If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
+- Do not ask a large questionnaire all at once.
+- Do not draft a technical design with an `Open Questions` section; resolve material questions during the interview, or record only known risks/tradeoffs after decisions are made.
+
 ## UX binding rule
 
 For UI-related features, `ux.md` is source context, not inspiration. If `ux.md` includes mockups, treat those mockups as binding UI goals for structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the mockups in the technical design. Translate them into implementation direction and call out only technical feasibility issues, missing states, or conflicts that require UX revision.
@@ -79,7 +93,7 @@ Prefer:
 - concise decisions over long explanation
 - concrete file/module impact over abstract architecture language
 - current codebase patterns over speculative redesigns
-- explicit open questions over risky assumptions
+- asking enough focused follow-up questions to resolve material ambiguity before drafting
 - delegation to the right skills instead of duplicating their guidance
 - preserving the feature brief's selected Deep Modules
 
@@ -108,8 +122,9 @@ Examples:
 1. Read the required grounding artifacts.
 2. Inspect the relevant existing code before proposing changes.
 3. Identify only the implementation decisions that matter.
-4. Write the doc at `docs/features/<feature-slug>/technical_design.md`.
-5. Keep it concise. Remove any section that does not help implementation.
+4. Ask one focused follow-up question at a time until material technical ambiguity is resolved.
+5. Write the doc at `docs/features/<feature-slug>/technical_design.md`.
+6. Keep it concise. Remove any section that does not help implementation.
 
 ## Output location
 
@@ -150,8 +165,8 @@ Use this structure as a starting point. Delete sections that do not add value.
 ## Validation
 <Focused test/build/manual checks.>
 
-## Risks / Open Questions
-- <Only unresolved decisions or meaningful risks.>
+## Risks / Tradeoffs
+- <Only meaningful risks or tradeoffs that remain after decisions are resolved.>
 ```
 
 ## Quality bar

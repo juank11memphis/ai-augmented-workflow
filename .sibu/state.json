@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "93",
+  "templateVersion": "94",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-12T17:10:15.162Z",
+  "updatedAt": "2026-05-12T17:52:39.967Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -78,8 +78,8 @@
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "17",
-      "sha256": "e91a53059039d1d5eb3468e9fbc2b2bc707d14d922302e0c3ea913cf72fdee85",
+      "templateVersion": "18",
+      "sha256": "4827dcfdeeac0a273fd668a0e4e4f46231f64e0d167f2b2236cf2cb4b4d5c7f3",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {

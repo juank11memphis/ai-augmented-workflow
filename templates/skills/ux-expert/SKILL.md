@@ -41,6 +41,20 @@ Read `docs/product-vision.md` and apply only relevant implications: target user,
 
 Require a product artifact such as `docs/features/<feature-slug>/feature_brief.md` that defines goal, scope, and acceptance criteria. If the user has only an idea, route to `feature-brief-writer` first. If the artifact says there is no UI impact, say so and do not invent UI work.
 
+## Interview posture
+
+Be deliberately interrogative before drafting. The UX spec should reflect resolved experience direction, not assistant-invented assumptions.
+
+- Ask one focused question at a time when product artifacts do not resolve a material UX ambiguity.
+- Ask as many questions as required to reach complete practical understanding; do not optimize for a short interview.
+- If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
+- Prefer follow-up questions over filling gaps with plausible invention.
+- When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
+- Treat "enough context" as: affected surfaces, target user flow, content priority, primary actions, responsive behavior, critical states, accessibility constraints, visual direction, and meaningful UX risks are clear enough to defend in the spec and mockups.
+- If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
+- Do not ask a large questionnaire all at once.
+- Do not draft a UX spec with an `Open Questions` section; resolve material questions during the interview, or record only known risks/tradeoffs after decisions are made.
+
 ## Mockup authority rule
 
 For UI-changing features, the UX artifact must include concrete mockups for affected screens, states, and breakpoints. Mockups are the source of truth for structure, hierarchy, visible content, dominant interactions, and major visual emphasis; downstream technical design, stories, implementation plans, and implementation must follow them unless this UX spec is revised. UX work is incomplete if a materially affected state/breakpoint lacks a mockup.
@@ -64,8 +78,9 @@ Design phone first, then re-evaluate tablet and desktop separately. Choose diffe
 3. Design phone-first flow, information architecture, and layout.
 4. Re-evaluate tablet and desktop independently.
 5. Define interaction states, failure/recovery behavior, accessibility requirements, and creative direction.
-6. Create concrete mockups for primary screens, affected breakpoints, and critical states.
-7. Write implementation-ready UX guidance only: flows, hierarchy, states, accessibility, visual direction.
+6. Ask one focused follow-up question at a time until material UX ambiguity is resolved.
+7. Create concrete mockups for primary screens, affected breakpoints, and critical states.
+8. Write implementation-ready UX guidance only: flows, hierarchy, states, accessibility, visual direction.
 
 ## Output location
 
@@ -112,8 +127,8 @@ Use only helpful sections from this shape:
 ## Visual Direction
 ## Creative Opportunities
 ## Implementation Notes
+## Risks / Tradeoffs
 ## UI Authority Rule
-## Open UX Questions
 ```
 
 The Binding Mockups section is authoritative for downstream work unless this UX spec is revised.
