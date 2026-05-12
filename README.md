@@ -44,7 +44,7 @@ Use `sibu skills stop <file>` to stop managing an Sibu-tracked workflow file. Th
 
 ## MCP server setup
 
-Sibu can generate MCP server configuration for supported agents. The first supported server is GitHub's official MCP server.
+Sibu can generate MCP server configuration for supported agents. Supported MCP servers include GitHub and Notion.
 
 Sibu only writes and tracks MCP config files. Runtime prerequisites, credentials, and provider authentication remain user-owned.
 
@@ -121,15 +121,36 @@ export GITHUB_PERSONAL_ACCESS_TOKEN=your_token_here
 
 Do not commit tokens or write them into Sibu-managed config files. The generated configs read `GITHUB_PERSONAL_ACCESS_TOKEN` from the environment so credentials can stay outside the repository.
 
-### 4. Stop managing the GitHub MCP server
+### 4. Configure the Notion MCP server
 
-To remove GitHub from Sibu's selected MCP server state, run:
+You can select Notion during `sibu init`, or add it later:
+
+```sh
+sibu mcp use notion
+```
+
+When Notion is selected, Sibu asks for a Notion docs destination parent page URL or page ID. Sibu stores that parent page reference in `.sibu/state.json` so feature-doc export guidance knows where Notion pages should go.
+
+Sibu configures supported agent MCP files for Notion, but it does not manage Notion OAuth login, workspace selection, integration installation, page permissions, credentials, or live connectivity. Your Notion MCP connection must be authenticated separately and must have access to the configured parent page. For provider setup details, use Notion's MCP documentation: <https://developers.notion.com/guides/mcp/get-started-with-mcp>.
+
+Feature briefs, technical designs, and UX docs are still written to local Markdown first. Notion is an optional export destination, not Sibu's source of truth.
+
+For Codex with the hosted Notion MCP server, you may need to run the agent-specific MCP login flow after Sibu writes config, such as:
+
+```sh
+codex mcp login notion
+```
+
+### 5. Stop managing an MCP server
+
+To remove a selected MCP server from Sibu's state, run:
 
 ```sh
 sibu mcp stop github
+sibu mcp stop notion
 ```
 
-Sibu updates generated agent config where possible and asks whether to keep or delete MCP-only config files.
+Sibu updates generated agent config where possible and asks whether to keep or delete MCP-only config files. Stopping Notion only updates local Sibu state and managed MCP config files; it does not delete Notion pages or change Notion permissions.
 
 ## Release notes and changelog
 
