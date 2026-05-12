@@ -117,6 +117,77 @@ sibu mcp stop github
 
 Sibu writes supported agent config files, but runtime prerequisites, credentials, provider login, and permissions remain yours.
 
+## The Sibu Workflow Loop
+
+Sibu works best when AI collaboration stays small, explicit, and reviewable. The loop is the rhythm: orient before building, build in focused slices, validate the result, and keep the workflow healthy over time.
+
+```mermaid
+flowchart LR
+  orient["1. Orient<br/>Product vision + module map"] --> design["2. Design<br/>Feature brief + technical design"]
+  design --> plan["3. Plan<br/>Epics, stories + implementation steps"]
+  plan --> build["4. Build<br/>Small AI-assisted changes"]
+  build --> validate["5. Validate<br/>Tests, checks + human review"]
+  validate --> maintain["6. Maintain<br/>doctor + sync"]
+  maintain --> orient
+```
+
+| Stage | What it means |
+| --- | --- |
+| Orient | Clarify the product promise, boundaries, and deep modules so AI work starts with context instead of vibes. |
+| Design | Turn a feature idea into a brief and technical direction before implementation details sprawl. |
+| Plan | Split work into epics, stories, and implementation steps small enough for reviewable AI collaboration. |
+| Build | Let agents help with focused changes while the engineer keeps scope and judgment. |
+| Validate | Run checks, inspect output, and require human approval before treating work as done. |
+| Maintain | Use `sibu doctor` and `sibu sync` to keep workflow files current without silently overwriting local choices. |
+
+This is not ceremony for ceremony's sake. It is how Sibu keeps velocity from turning into slop.
+
+## Skills Inventory
+
+Skills are reusable instructions that teach an AI agent how to handle a focused kind of work. Sibu uses them to keep prompts smaller, workflows clearer, and responsibilities explicit.
+
+```mermaid
+flowchart TB
+  skills["Sibu skills"]
+
+  skills --> product["Product + planning"]
+  product --> productVision["product-vision-writer"]
+  product --> deepModuleMap["deep-module-map-writer"]
+  product --> featureBrief["feature-brief-writer"]
+  product --> scrumPlanner["scrum-master-planner"]
+
+  skills --> designDelivery["Design + delivery"]
+  designDelivery --> technicalDesign["technical-design-writer"]
+  designDelivery --> implementationPlanner["ai-implementation-planner"]
+  designDelivery --> implementationExecutor["ai-implementation-plan-executor"]
+
+  skills --> engineering["Engineering guidance"]
+  engineering --> cleanCode["clean-code"]
+  engineering --> typescript["typescript"]
+  engineering --> commandPattern["command-pattern"]
+
+  skills --> promptsMaintenance["Prompts + workflow maintenance"]
+  promptsMaintenance --> promptEngineer["ai-prompt-engineer-master"]
+  promptsMaintenance --> templateChange["sibu-template-change"]
+```
+
+| Skill | Helps with | Use when... |
+| --- | --- | --- |
+| `product-vision-writer` | Product vision and positioning | You need to define or revise the product north star, audience, boundaries, voice, or success signals. |
+| `deep-module-map-writer` | Deep implementation boundaries | You need to map durable modules before feature work, or decide where future work belongs. |
+| `feature-brief-writer` | Business-level feature definition | You need a scoped feature brief grounded in the product vision and Deep Module Map. |
+| `technical-design-writer` | Implementation-oriented design | You have an approved feature brief and need a concise technical direction before planning stories. |
+| `scrum-master-planner` | Epics and user stories | You need to split an approved feature brief and technical design into pragmatic delivery slices. |
+| `ai-implementation-planner` | Story implementation steps | You need an approved user story turned into small, executable implementation-plan files. |
+| `ai-implementation-plan-executor` | Plan execution | You want an agent to execute a story implementation plan, stop for review, then commit after approval. |
+| `clean-code` | General code quality | Any task writes or modifies code and should stay clear, simple, focused, and readable. |
+| `typescript` | TypeScript guidance | A task changes `.ts` or `.tsx` files and needs practical TypeScript discipline. |
+| `command-pattern` | Vertical-slice command design | Work involves command handlers, workflows, request processing, or executable tasks. |
+| `ai-prompt-engineer-master` | Prompt and template quality | You are creating, rewriting, compressing, or evaluating prompts or reusable AI instructions. |
+| `sibu-template-change` | Sibu template maintenance | You change files under `templates/` or template manifest metadata and need safe lifecycle validation. |
+
+The point is not to make agents magical. The point is to give them the right job, the right context, and a tight enough boundary that a human can trust the result.
+
 ## MCP server setup
 
 Sibu can generate MCP server configuration for supported agents. Supported MCP servers include GitHub and Notion.
