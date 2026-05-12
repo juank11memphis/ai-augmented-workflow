@@ -1,8 +1,8 @@
 {
-  "sibuVersion": "0.8.0",
+  "sibuVersion": "0.10.0",
   "templateVersion": "90",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-12T00:59:57.886Z",
+  "updatedAt": "2026-05-12T01:05:07.111Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -18,12 +18,18 @@
   ],
   "selectedDatabaseSkills": [],
   "selectedMcpServers": [
-    "github"
+    "github",
+    "notion"
   ],
+  "mcpServerConfigs": {
+    "notion": {
+      "docsParentPage": "https://www.notion.so/Sibu-AI-Companion-35e6bde72ad280c88e56c82c5aae4c79?pvs=10"
+    }
+  },
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "26",
+      "templateVersion": "28",
       "sha256": "d832883c9820b0ecd849ef44d1b2a5233feadf2cc837a044c30a48ef2aa2d2f5",
       "status": "customized",
       "lastReviewedTemplateVersion": "28"
@@ -31,7 +37,7 @@
     ".codex/config.toml": {
       "template": ".codex/config.toml",
       "templateVersion": "2",
-      "sha256": "d358b9476e7ace94827a9e83de840b134ec6ab6a9ef7fd1fbadfa85c97a5ae48",
+      "sha256": "44961d218977af62d0b7e3224346db9ed55e2b25c8f9b48b9e2e8da568121996",
       "status": "managed"
     },
     "GEMINI.md": {
@@ -84,14 +90,14 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "13",
+      "templateVersion": "15",
       "sha256": "ed5e770226a83a87819a1aec85e0c006c8254c599dc9282115ecddcecea1bf5d",
       "status": "customized",
       "lastReviewedTemplateVersion": "15"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "20",
+      "templateVersion": "22",
       "sha256": "2799c206ff0662708b502aa5f480b5a5091f8a00bbc22b138f9a5895b1ab6203",
       "status": "customized",
       "lastReviewedTemplateVersion": "22"
@@ -117,13 +123,13 @@
     ".gemini/settings.json": {
       "template": "mcp/gemini/settings.json",
       "templateVersion": "2",
-      "sha256": "ac7bc94c398de1ecf80c299513653003defdf01044cdce59f156b1ab755b2141",
+      "sha256": "a5836dff0b0053480cdd4763f72045f71da66699b7f0c0cc92c86d9a98a6fc97",
       "status": "managed"
     },
     ".mcp.json": {
       "template": "mcp/claude/.mcp.json",
       "templateVersion": "2",
-      "sha256": "ef5f7e5aac1cbe00e866ab72e472dcd349535a5d14852e4bbfac0dfa5de78085",
+      "sha256": "71a795e6514e5aa495e39fb763cdc2f86e83579d9b8ca772faf7a024e0636f31",
       "status": "managed"
     }
   }
