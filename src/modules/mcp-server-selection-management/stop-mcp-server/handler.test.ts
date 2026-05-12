@@ -44,6 +44,18 @@ describe('getNextStoppedMcpSelection', () => {
     assert.deepEqual(result.remainingMcpServers, []);
   });
 
+  it('computes remaining MCP servers when Notion is selected with GitHub', () => {
+    const result = getNextStoppedMcpSelection({ ...BASE_STATE, selectedMcpServers: ['github', 'notion'] }, 'notion');
+
+    assert.equal(result.status, 'selected');
+    if (result.status !== 'selected') {
+      return;
+    }
+
+    assert.equal(result.serverName, 'Notion MCP Server');
+    assert.deepEqual(result.remainingMcpServers.map((server) => server.id), ['github']);
+  });
+
   it('returns a no-op when GitHub is not selected', () => {
     assert.deepEqual(getNextStoppedMcpSelection(BASE_STATE, 'github'), {
       status: 'noop',
@@ -77,6 +89,63 @@ describe('stopSelectedMcpServer', () => {
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /github-mcp-server/);
     assert.equal(fs.existsSync(path.join(rootPath, '.mcp.json')), true);
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), true);
+  });
+
+  it('removes Notion MCP state and unmanages MCP-only files when no MCP servers remain', async () => {
+    const rootPath = await createInitializedRepoWithNotionMcp();
+    const result = stopSelectedMcpServer({ rootPath, state: readState(rootPath), serverId: 'notion' });
+
+    assert.equal(result.status, 'stopped');
+    if (result.status !== 'stopped') {
+      return;
+    }
+
+    assert.deepEqual(result.state.selectedMcpServers, []);
+    assert.equal(result.state.mcpServerConfigs, undefined);
+    assert.equal(result.state.managedFiles['.codex/config.toml']?.status, 'managed');
+    assert.equal(result.state.managedFiles['.mcp.json']?.status, 'unmanaged');
+    assert.equal(result.state.managedFiles['.gemini/settings.json']?.status, 'unmanaged');
+    assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
+  });
+
+  it('removes Notion MCP state while preserving GitHub MCP config when GitHub remains selected', async () => {
+    const rootPath = await createInitializedRepoWithGithubAndNotionMcp();
+    const result = stopSelectedMcpServer({ rootPath, state: readState(rootPath), serverId: 'notion' });
+
+    assert.equal(result.status, 'stopped');
+    if (result.status !== 'stopped') {
+      return;
+    }
+
+    assert.deepEqual(result.state.selectedMcpServers, ['github']);
+    assert.equal(result.state.mcpServerConfigs, undefined);
+    assert.equal(result.state.managedFiles['.mcp.json']?.status, 'managed');
+    assert.equal(result.state.managedFiles['.gemini/settings.json']?.status, 'managed');
+    assert.equal(result.stoppedPaths.length, 0);
+
+    const codexConfig = fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8');
+    const claudeConfig = fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8');
+    const geminiConfig = fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8');
+
+    assert.match(codexConfig, /api\.githubcopilot\.com\/mcp/);
+    assert.doesNotMatch(codexConfig, /mcp\.notion\.com\/mcp/);
+    assert.match(claudeConfig, /api\.githubcopilot\.com\/mcp/);
+    assert.doesNotMatch(claudeConfig, /mcp\.notion\.com\/mcp/);
+    assert.match(geminiConfig, /api\.githubcopilot\.com\/mcp/);
+    assert.doesNotMatch(geminiConfig, /mcp\.notion\.com\/mcp/);
+  });
+
+  it('does not mutate files or state when stopping Notion that is not selected', async () => {
+    const rootPath = await createInitializedRepoWithGithubMcp();
+    const state = readState(rootPath);
+    const stateBefore = JSON.stringify(state);
+    const codexConfigBefore = fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8');
+
+    const result = stopSelectedMcpServer({ rootPath, state, serverId: 'notion' });
+
+    assert.equal(result.status, 'noop');
+    assert.equal(JSON.stringify(state), stateBefore);
+    assert.equal(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), codexConfigBefore);
   });
 
   it('blocks when workflow readiness reports drift through the handler', async () => {
@@ -154,6 +223,24 @@ async function createInitializedRepoWithGithubMcp(): Promise<string> {
   const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')]);
   process.chdir(rootPath);
   await handleUseMcpServer({ type: 'mcp:use', serverId: 'github' });
+  process.chdir(originalCwd);
+
+  return rootPath;
+}
+
+async function createInitializedRepoWithNotionMcp(): Promise<string> {
+  const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')]);
+  process.chdir(rootPath);
+  await handleUseMcpServer({ type: 'mcp:use', serverId: 'notion' }, { askForNotionDocsParentPage: async () => 'https://notion.so/sibu-docs' });
+  process.chdir(originalCwd);
+
+  return rootPath;
+}
+
+async function createInitializedRepoWithGithubAndNotionMcp(): Promise<string> {
+  const rootPath = await createInitializedRepoWithGithubMcp();
+  process.chdir(rootPath);
+  await handleUseMcpServer({ type: 'mcp:use', serverId: 'notion' }, { askForNotionDocsParentPage: async () => 'https://notion.so/sibu-docs' });
   process.chdir(originalCwd);
 
   return rootPath;

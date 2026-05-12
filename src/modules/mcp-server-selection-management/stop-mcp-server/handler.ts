@@ -136,6 +136,10 @@ export function stopSelectedMcpServer({ rootPath, state, serverId }: { rootPath:
   const stoppedFiles: ManagedFileState[] = [];
 
   nextState.selectedMcpServers = selectionResult.remainingMcpServers.map((server) => server.id);
+  if (serverId === 'notion' && nextState.mcpServerConfigs?.notion) {
+    const { notion: _notion, ...remainingMcpServerConfigs } = nextState.mcpServerConfigs;
+    nextState.mcpServerConfigs = Object.keys(remainingMcpServerConfigs).length > 0 ? remainingMcpServerConfigs : undefined;
+  }
   nextState.templateVersion = manifest.templateVersion;
   nextState.updatedAt = new Date().toISOString();
 
