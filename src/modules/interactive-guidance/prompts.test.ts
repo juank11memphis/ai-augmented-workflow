@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { SibuState } from '../../shared/types.js';
-import { MCP_SERVER_SELECTION_MESSAGE, shouldAskForNewLanguageSkills } from './index.js';
+import { MCP_SERVER_SELECTION_MESSAGE, askForNotionDocsParentPage, shouldAskForNewLanguageSkills } from './index.js';
 
 const BASE_STATE: SibuState = {
   sibuVersion: '0.1.0',
@@ -30,5 +30,12 @@ describe('MCP server selection copy', () => {
     assert.match(MCP_SERVER_SELECTION_MESSAGE, /only/i);
     assert.match(MCP_SERVER_SELECTION_MESSAGE, /prerequisites/i);
     assert.match(MCP_SERVER_SELECTION_MESSAGE, /authentication/i);
+  });
+});
+
+
+describe('askForNotionDocsParentPage', () => {
+  it('is exported for Notion MCP selection flows', () => {
+    assert.equal(typeof askForNotionDocsParentPage, 'function');
   });
 });

@@ -82,6 +82,23 @@ describe('readStateForDoctor', () => {
 
     assert.deepEqual(result, { ok: false, message: '.sibu/state.json is not a valid Sibu state file.' });
   });
+
+  it('accepts Notion MCP server config with a docs parent page', () => {
+    const state = { ...buildState(), selectedMcpServers: ['notion'], mcpServerConfigs: { notion: { docsParentPage: 'https://notion.so/example-page' } } };
+    const statePath = createStateFile(state);
+
+    const result = readStateForDoctor(statePath);
+
+    assert.deepEqual(result, { ok: true, state });
+  });
+
+  it('rejects malformed Notion MCP server config', () => {
+    const statePath = createStateFile({ ...buildState(), selectedMcpServers: ['notion'], mcpServerConfigs: { notion: { docsParentPage: 1 } } });
+
+    const result = readStateForDoctor(statePath);
+
+    assert.deepEqual(result, { ok: false, message: '.sibu/state.json is not a valid Sibu state file.' });
+  });
 });
 
 describe('readExistingState', () => {

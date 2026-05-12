@@ -27,6 +27,7 @@ import type {
   SelectableMcpServer,
   SelectableWorkflowSkill,
   SkillTemplate,
+  McpServerConfigs,
   SupportedAgent,
   WorkflowTarget,
 } from '../../shared/types.js';
@@ -266,6 +267,7 @@ export function writeSibuState({
   selectedWorkflowSkills = [],
   selectedDatabaseSkills = [],
   selectedMcpServers,
+  mcpServerConfigs,
   targets,
 }: {
   rootPath: string;
@@ -277,6 +279,7 @@ export function writeSibuState({
   selectedWorkflowSkills?: SelectableWorkflowSkill[];
   selectedDatabaseSkills?: SelectableDatabaseSkill[];
   selectedMcpServers?: SelectableMcpServer[];
+  mcpServerConfigs?: McpServerConfigs;
   targets: WorkflowTarget[];
 }): void {
   const previousState = readExistingState(statePath);
@@ -294,6 +297,7 @@ export function writeSibuState({
     selectedWorkflowSkills: selectedWorkflowSkills.map((skill) => skill.id),
     selectedDatabaseSkills: selectedDatabaseSkills.map((skill) => skill.id),
     ...(selectedMcpServers !== undefined ? { selectedMcpServers: selectedMcpServers.map((server) => server.id) } : {}),
+    ...(mcpServerConfigs ?? previousState?.mcpServerConfigs ? { mcpServerConfigs: mcpServerConfigs ?? previousState?.mcpServerConfigs } : {}),
     managedFiles: Object.fromEntries(
       targets
         .filter((target) => fs.existsSync(target.targetPath))

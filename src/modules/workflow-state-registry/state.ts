@@ -76,12 +76,35 @@ function isSibuState(value: unknown): value is SibuState {
       (Array.isArray(state.selectedDatabaseSkills) && state.selectedDatabaseSkills.every((skill) => typeof skill === 'string'))) &&
     (state.selectedMcpServers === undefined ||
       (Array.isArray(state.selectedMcpServers) && state.selectedMcpServers.every((server) => typeof server === 'string'))) &&
+    (state.mcpServerConfigs === undefined || isMcpServerConfigs(state.mcpServerConfigs)) &&
     (state.reviewedArchitectureSkills === undefined ||
       (Array.isArray(state.reviewedArchitectureSkills) && state.reviewedArchitectureSkills.every((skill) => typeof skill === 'string'))) &&
     !!state.managedFiles &&
     typeof state.managedFiles === 'object' &&
     Object.values(state.managedFiles).every(isManagedFileState)
   );
+}
+
+
+function isMcpServerConfigs(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const configs = value as { notion?: unknown };
+
+  if (configs.notion !== undefined) {
+    if (!configs.notion || typeof configs.notion !== 'object') {
+      return false;
+    }
+
+    const notionConfig = configs.notion as { docsParentPage?: unknown };
+    if (typeof notionConfig.docsParentPage !== 'string') {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function isManagedFileState(value: unknown): value is ManagedFileState {

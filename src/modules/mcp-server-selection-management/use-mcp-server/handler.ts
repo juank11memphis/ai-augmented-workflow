@@ -5,6 +5,7 @@ import { log } from '@clack/prompts';
 
 import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
 import { getProjectContext } from '../../../shared/paths.js';
+import { askForNotionDocsParentPage } from '../../interactive-guidance/index.js';
 import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
 import {
   getSelectedAgentsFromState,
@@ -19,7 +20,7 @@ import {
   resolveSelectableMcpServerById,
   writeSibuState,
 } from '../../workflow-target-planning/index.js';
-import type { McpServerId, SelectableMcpServer, SibuState, WorkflowTarget } from '../../../shared/types.js';
+import type { McpServerConfigs, McpServerId, SelectableMcpServer, SibuState, WorkflowTarget } from '../../../shared/types.js';
 import type { UseMcpServerCommand } from './command.js';
 
 type McpSelectionResult =
@@ -27,7 +28,15 @@ type McpSelectionResult =
   | { status: 'noop'; message: string }
   | { status: 'blocked'; message: string; hint?: string };
 
-export async function handleUseMcpServer(command: UseMcpServerCommand): Promise<void> {
+type UseMcpServerDependencies = {
+  askForNotionDocsParentPage: () => Promise<string>;
+};
+
+const defaultDependencies: UseMcpServerDependencies = {
+  askForNotionDocsParentPage,
+};
+
+export async function handleUseMcpServer(command: UseMcpServerCommand, dependencies: UseMcpServerDependencies = defaultDependencies): Promise<void> {
   const { rootPath, statePath } = getProjectContext();
   const readiness = getWorkflowMutationReadiness({ rootPath, statePath });
 
@@ -57,9 +66,11 @@ export async function handleUseMcpServer(command: UseMcpServerCommand): Promise<
       }
       process.exitCode = 1;
       return;
-    case 'selected':
-      applySelectedMcpServer({ rootPath, statePath, state: readiness.state, selectionResult });
+    case 'selected': {
+      const mcpServerConfigs = await getNextMcpServerConfigs({ state: readiness.state, selectionResult, dependencies });
+      applySelectedMcpServer({ rootPath, statePath, state: readiness.state, selectionResult, mcpServerConfigs });
       return;
+    }
   }
 }
 
@@ -83,16 +94,39 @@ export function getNextMcpSelection(state: SibuState, serverId: string): McpSele
   };
 }
 
+async function getNextMcpServerConfigs({
+  state,
+  selectionResult,
+  dependencies,
+}: {
+  state: SibuState;
+  selectionResult: Extract<McpSelectionResult, { status: 'selected' }>;
+  dependencies: UseMcpServerDependencies;
+}): Promise<McpServerConfigs | undefined> {
+  if (!selectionResult.selectedMcpServers.some((server) => server.id === 'notion') || state.selectedMcpServers?.includes('notion')) {
+    return state.mcpServerConfigs;
+  }
+
+  const docsParentPage = await dependencies.askForNotionDocsParentPage();
+
+  return {
+    ...state.mcpServerConfigs,
+    notion: { docsParentPage },
+  };
+}
+
 function applySelectedMcpServer({
   rootPath,
   statePath,
   state,
   selectionResult,
+  mcpServerConfigs,
 }: {
   rootPath: string;
   statePath: string;
   state: SibuState;
   selectionResult: Extract<McpSelectionResult, { status: 'selected' }>;
+  mcpServerConfigs?: McpServerConfigs;
 }): void {
   const selectedAgents = getSelectedAgentsFromState(state);
   const selectedLanguageSkills = getSelectedLanguageSkillsFromState(state);
@@ -157,6 +191,7 @@ function applySelectedMcpServer({
     selectedWorkflowSkills,
     selectedDatabaseSkills,
     selectedMcpServers: selectionResult.selectedMcpServers,
+    mcpServerConfigs,
     targets,
   });
 

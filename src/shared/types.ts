@@ -112,8 +112,15 @@ export type SibuState = {
   selectedWorkflowSkills?: WorkflowSkillId[];
   selectedDatabaseSkills?: DatabaseSkillId[];
   selectedMcpServers?: McpServerId[];
+  mcpServerConfigs?: McpServerConfigs;
   reviewedArchitectureSkills?: ArchitectureSkillId[];
   managedFiles: Record<string, ManagedFileState>;
+};
+
+export type McpServerConfigs = {
+  notion?: {
+    docsParentPage: string;
+  };
 };
 
 export type ManagedFileStatus = 'managed' | 'customized' | 'unmanaged';

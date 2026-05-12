@@ -12,6 +12,7 @@ import {
   askForFrameworkSkills,
   askForLanguageSkills,
   askForMcpServers,
+  askForNotionDocsParentPage,
   askForProjectOverview,
   askForSupportedAgents,
   askForWorkflowSkills,
@@ -34,6 +35,7 @@ type InitProjectDependencies = {
   renderIntro: () => Promise<void>;
   askForSupportedAgents: () => Promise<SupportedAgent[]>;
   askForMcpServers: () => Promise<SelectableMcpServer[]>;
+  askForNotionDocsParentPage: () => Promise<string>;
   askForLanguageSkills: () => Promise<SelectableLanguageSkill[]>;
   askForFrameworkSkills: () => Promise<SelectableFrameworkSkill[]>;
   askForDatabaseSkills: () => Promise<SelectableDatabaseSkill[]>;
@@ -46,6 +48,7 @@ const defaultDependencies: InitProjectDependencies = {
   renderIntro,
   askForSupportedAgents,
   askForMcpServers,
+  askForNotionDocsParentPage,
   askForLanguageSkills,
   askForFrameworkSkills,
   askForDatabaseSkills,
@@ -81,6 +84,7 @@ export async function handleInitProject(_command: InitProjectCommand, dependenci
 
   const selectedAgents = await dependencies.askForSupportedAgents();
   const selectedMcpServers = await dependencies.askForMcpServers();
+  const notionDocsParentPage = selectedMcpServers.some((server) => server.id === 'notion') ? await dependencies.askForNotionDocsParentPage() : undefined;
   const selectedLanguageSkills = await dependencies.askForLanguageSkills();
   const selectedFrameworkSkills = await dependencies.askForFrameworkSkills();
   const selectedDatabaseSkills = await dependencies.askForDatabaseSkills();
@@ -138,6 +142,7 @@ export async function handleInitProject(_command: InitProjectCommand, dependenci
     selectedWorkflowSkills,
     selectedDatabaseSkills,
     selectedMcpServers,
+    mcpServerConfigs: notionDocsParentPage ? { notion: { docsParentPage: notionDocsParentPage } } : undefined,
     targets,
   });
   log.success(`Created ${STATE_RELATIVE_PATH}`);

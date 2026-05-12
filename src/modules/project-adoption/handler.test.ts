@@ -39,6 +39,29 @@ describe('handleInitProject', () => {
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), false);
   });
 
+  it('does not ask for a Notion parent page when Notion is not selected', async () => {
+    const rootPath = createTemporaryRoot();
+    process.chdir(rootPath);
+    let askedForNotionParentPage = false;
+
+    await handleInitProject(
+      { type: 'init' },
+      {
+        ...buildDependencies({ selectedAgents: [getSupportedAgent('codex')], selectedMcpServers: SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'github') }),
+        askForNotionDocsParentPage: async () => {
+          askedForNotionParentPage = true;
+          return 'https://notion.so/sibu-docs';
+        },
+      }
+    );
+
+    const state = readState(rootPath);
+
+    assert.equal(askedForNotionParentPage, false);
+    assert.deepEqual(state.selectedMcpServers, ['github']);
+    assert.equal(state.mcpServerConfigs, undefined);
+  });
+
   it('initializes managed MCP config for supported selected agents', async () => {
     const rootPath = createTemporaryRoot();
     process.chdir(rootPath);
@@ -55,6 +78,7 @@ describe('handleInitProject', () => {
 
     assert.deepEqual(state.selectedAgents, ['codex', 'claude', 'gemini', 'windsurf']);
     assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
+    assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
     assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
@@ -78,11 +102,12 @@ function buildDependencies({
 }: {
   selectedAgents: SupportedAgent[];
   selectedMcpServers?: typeof SELECTABLE_MCP_SERVERS;
-}): Parameters<typeof handleInitProject>[1] {
+}): NonNullable<Parameters<typeof handleInitProject>[1]> {
   return {
     renderIntro: async () => undefined,
     askForSupportedAgents: async () => selectedAgents,
     askForMcpServers: async () => selectedMcpServers,
+    askForNotionDocsParentPage: async () => 'https://notion.so/sibu-docs',
     askForLanguageSkills: async () => [],
     askForFrameworkSkills: async () => [],
     askForDatabaseSkills: async () => [],

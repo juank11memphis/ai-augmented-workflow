@@ -4,6 +4,7 @@ export {
   askForFrameworkSkills,
   askForLanguageSkills,
   askForMcpServers,
+  askForNotionDocsParentPage,
   askForMissingFrameworkSkills,
   askForNewArchitectureSkill,
   askForNewLanguageSkills,

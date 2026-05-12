@@ -140,6 +140,25 @@ export async function askForMcpServers(): Promise<SelectableMcpServer[]> {
   return SELECTABLE_MCP_SERVERS.filter((server) => selectedMcpServerIds.includes(server.id));
 }
 
+export async function askForNotionDocsParentPage(): Promise<string> {
+  const parentPage = await text({
+    message: 'Enter the Notion docs destination parent page URL or page ID.',
+    placeholder: 'https://www.notion.so/workspace/Sibu-Docs-...',
+    validate(value) {
+      if (!value?.trim()) {
+        return 'Enter a Notion parent page that your Notion MCP connection can access.';
+      }
+    },
+  });
+
+  if (isCancel(parentPage)) {
+    cancel('Initialization cancelled.');
+    process.exit(0);
+  }
+
+  return parentPage.trim();
+}
+
 async function askForFrameworkSkillSelection({
   message,
   cancelMessage,
