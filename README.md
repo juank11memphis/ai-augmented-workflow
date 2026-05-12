@@ -1,46 +1,121 @@
-# ai-augmented-workflow
+# Sibu
 
-A local workspace for developing and refining an AI-augmented software development workflow.
+Sibu helps developers set up and maintain an AI-augmented development workflow without handing the steering wheel to the machine.
 
-## Install Sibu
+It gives your repo a practical workflow kit: shared agent instructions, focused skills, safety rules, MCP configuration, template health checks, and sync guidance that help you move faster while keeping local control.
 
-The official way to install and update Sibu is with npm:
+If your AI setup is a pile of copied prompts, half-updated agent files, and “I think this is how we do it now” conventions, Sibu is the reset button.
+
+## Why Sibu exists
+
+AI-assisted development is moving fast. The hard part is no longer finding one more model, editor, agent, or prompt. The hard part is turning all of that motion into a workflow your future self and your team can trust.
+
+Sibu is a CLI companion for that job. It helps you:
+
+- bootstrap consistent AI workflow files in a project
+- select the agents, skills, and MCP servers your repo should support
+- check whether managed workflow files are missing, modified, or stale
+- review template updates without silently overwriting local edits
+- keep AI work small, explicit, reviewable, and human-owned
+
+Sibu is not an AI IDE. It is not an autopilot. It is a grounded workflow layer for engineers who want speed without slop.
+
+## Quickstart
+
+Install Sibu globally with npm:
 
 ```sh
 npm install -g @juancr11/sibu
 ```
 
-After installing, the normal user flow is:
+Then run the normal first-use flow from the project you want to equip with an AI workflow:
 
-1. run `sibu init` in your project
-2. run `sibu doctor` to check workflow health
-3. if `sibu doctor` says a newer npm version exists, run `npm install -g @juancr11/sibu`
-4. rerun `sibu doctor`
-5. if drift is reported, decide whether to run `sibu sync`
+```sh
+sibu init
+sibu doctor
+sibu sync
+```
 
-Updating Sibu alone does not change project files. It only changes what `sibu doctor` can detect against the newer installed templates.
+What happens:
 
-## CLI
+1. `sibu init` creates or records the starting workflow files for your selected agents, skills, and MCP servers.
+2. `sibu doctor` runs a read-only health check for missing files, local modifications, template drift, and package update advice.
+3. `sibu sync` lets you review drift and template updates interactively before anything changes.
 
-Sibu helps projects adopt and maintain AI workflow support files safely.
+Updating the Sibu npm package does **not** automatically change project files. It only updates the CLI and bundled templates that `sibu doctor` can compare against. Your repo changes only when you explicitly initialize, sync, add/remove supported workflow pieces, or choose a mutating action.
 
-From a project directory, run:
+## Core commands
+
+### `sibu init`
+
+Run this once in a project to adopt Sibu:
 
 ```sh
 sibu init
 ```
 
-`sibu init` is idempotent: it opens a polished interactive flow, lets you select supported agents with the keyboard, creates missing workflow files for that selection, keeps existing files unchanged, and reports when no changes are needed. When `AGENTS.md` is missing, the CLI asks for a project overview and writes the file based on the template in this repository. It can also create Codex, Gemini, and Claude support files when selected. Sibu records the generated workflow state in `.sibu/state.json` so `sibu doctor` can detect drift safely.
+`init` opens an interactive setup flow, lets you choose supported agents and optional workflow pieces, creates missing support files, preserves existing files, and records managed workflow metadata in `.sibu/state.json`.
 
-Use `sibu doctor` to run a read-only health check. It reports missing managed files, local modifications, malformed state metadata, and template version drift without changing files.
+If `AGENTS.md` is missing, Sibu asks for a project overview and writes one from the bundled template. If files already exist, Sibu keeps them intact instead of pretending it owns your repo.
 
-If `sibu doctor` tells you that a newer npm version exists, update with `npm install -g @juancr11/sibu`, rerun `sibu doctor`, and only then decide whether to run `sibu sync`. Updating Sibu alone changes what doctor can detect; it does not change project files.
+### `sibu doctor`
 
-Use `sibu sync` to review template updates interactively. It explains human-readable template changes, protects local edits from automatic overwrites, and lets you apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later. Sibu records each file as `managed`, `customized`, or `unmanaged` in `.sibu/state.json`.
+Run a read-only health check:
 
-Use `sibu skills list` to list available workflow skills and see which selectable skills are currently enabled for the project.
+```sh
+sibu doctor
+```
 
-Use `sibu skills stop <file>` to stop managing an Sibu-tracked workflow file. The file is marked as `unmanaged` in `.sibu/state.json`, removed from the selected skill state when applicable, and the CLI asks whether to keep or delete the local file.
+`doctor` reports workflow state without changing files. It can identify missing managed files, local modifications, malformed state metadata, template version drift, unsupported selections, and npm update advice.
+
+If `doctor` says a newer Sibu version exists, update the CLI and check again:
+
+```sh
+npm install -g @juancr11/sibu
+sibu doctor
+```
+
+A package update may let `doctor` detect newer templates, but it still will not mutate your project. If drift appears, decide whether to review it with `sibu sync`.
+
+### `sibu sync`
+
+Review and apply workflow maintenance actions:
+
+```sh
+sibu sync
+```
+
+`sync` explains what changed, protects local edits from automatic overwrites, and lets you choose safe actions such as applying an update, recreating a missing managed file, writing a side template for comparison, marking a customized file as reviewed, stopping management, or skipping for later.
+
+Sibu records managed files as `managed`, `customized`, or `unmanaged` in `.sibu/state.json`, so the project remains transparent about what Sibu tracks and what you own directly.
+
+### `sibu skills`
+
+List available workflow skills and see what is selected:
+
+```sh
+sibu skills list
+```
+
+Stop managing a selected skill file when it no longer fits the project:
+
+```sh
+sibu skills stop <file>
+```
+
+Sibu updates state, removes the selected skill when applicable, and asks whether to keep or delete the local file.
+
+### `sibu mcp`
+
+List, add, or stop supported MCP server configuration:
+
+```sh
+sibu mcp list
+sibu mcp use github
+sibu mcp stop github
+```
+
+Sibu writes supported agent config files, but runtime prerequisites, credentials, provider login, and permissions remain yours.
 
 ## MCP server setup
 
