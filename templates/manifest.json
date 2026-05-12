@@ -1,5 +1,5 @@
 {
-  "templateVersion": "91",
+  "templateVersion": "92",
   "templates": {
     "AGENTS.md": {
       "version": "28",
@@ -9,10 +9,10 @@
       ]
     },
     ".codex/config.toml": {
-      "version": "2",
+      "version": "3",
       "description": "Codex configuration pointing to AGENTS.md and rendering selected MCP servers with Codex-compatible settings.",
       "changes": [
-        "Updates Codex GitHub MCP rendering to use the hosted HTTPS endpoint with bearer_token_env_var instead of Docker command arguments."
+        "Adds approval prompts for GitHub MCP issue and sub-issue write tools in Codex configs."
       ]
     },
     "GEMINI.md": {

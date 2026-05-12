@@ -28,6 +28,8 @@ describe('renderMcpConfig', () => {
     assert.match(firstRender, /\[mcp_servers\.github\]/);
     assert.match(firstRender, /url = "https:\/\/api\.githubcopilot\.com\/mcp\/"/);
     assert.match(firstRender, /bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"/);
+    assert.match(firstRender, /\[mcp_servers\.github\.tools\.issue_write\]\napproval_mode = "approve"/);
+    assert.match(firstRender, /\[mcp_servers\.github\.tools\.sub_issue_write\]\napproval_mode = "approve"/);
     assert.doesNotMatch(firstRender, /command = "docker"/);
     assertDoesNotContainRealCredential(firstRender);
   });

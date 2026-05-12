@@ -137,7 +137,13 @@ function buildCodexMcpServerConfig(server: SelectableMcpServer): string {
   if (server.id === 'github') {
     return `[mcp_servers.github]
 url = "https://api.githubcopilot.com/mcp/"
-bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"`;
+bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
+
+[mcp_servers.github.tools.issue_write]
+approval_mode = "approve"
+
+[mcp_servers.github.tools.sub_issue_write]
+approval_mode = "approve"`;
   }
 
   if (server.id === 'notion') {

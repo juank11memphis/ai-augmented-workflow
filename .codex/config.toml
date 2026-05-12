@@ -4,5 +4,11 @@ model_instructions_file = "../AGENTS.md"
 url = "https://api.githubcopilot.com/mcp/"
 bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
+[mcp_servers.github.tools.issue_write]
+approval_mode = "approve"
+
+[mcp_servers.github.tools.sub_issue_write]
+approval_mode = "approve"
+
 [mcp_servers.notion]
 url = "https://mcp.notion.com/mcp"
