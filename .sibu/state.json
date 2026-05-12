@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "92",
+  "templateVersion": "93",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-12T16:29:49.788Z",
+  "updatedAt": "2026-05-12T17:10:15.162Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -54,8 +54,8 @@
     },
     ".agents/skills/clean-code/SKILL.md": {
       "template": "skills/clean-code/SKILL.md",
-      "templateVersion": "4",
-      "sha256": "e3d115728f12557162ed3322a32bcf5d33e64fa65cd05b1eeb7f2877a25860f1",
+      "templateVersion": "5",
+      "sha256": "6b28f182a67d79f19010298b9b8dcffb36089cbbb2b75ce02f4340ab108f802d",
       "status": "managed"
     },
     ".agents/skills/product-vision-writer/SKILL.md": {

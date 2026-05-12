@@ -88,6 +88,7 @@ if (!(playlist = await playlistRepository.findById(playlistId))) {
 
 ### 9. Make error paths understandable
 - Error handling should be explicit and readable.
+- Validate required inputs at function boundaries before doing work. If a missing or invalid input makes the whole operation fail, do not continue with partial defaults or defensive zero-value output unless the function explicitly supports partial results.
 - Add useful context when surfacing errors.
 - Do not hide failure paths in clever expressions.
 

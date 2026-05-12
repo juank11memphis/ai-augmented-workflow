@@ -1,5 +1,5 @@
 {
-  "templateVersion": "92",
+  "templateVersion": "93",
   "templates": {
     "AGENTS.md": {
       "version": "28",
@@ -44,11 +44,10 @@
       ]
     },
     "skills/clean-code/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory clean-code skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Installs the clean-code skill once at .agents/skills/clean-code/SKILL.md for any selected agent instead of duplicating per-agent copies.",
-        "Uses the shared .agents/skills workspace path to test common skill discovery across Codex, Gemini, and Claude."
+        "Adds guidance to validate required function inputs before doing work instead of silently continuing with partial defaults."
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
