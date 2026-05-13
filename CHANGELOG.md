@@ -4,6 +4,16 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.13.0 - 2026-05-13
+
+### Added
+- add layered architecture skill template
+- add layered architecture catalog option
+
+### Changed
+- update sibu workflow state
+- validate layered architecture lifecycle
+
 ## 0.12.4 - 2026-05-12
 
 ### Changed
