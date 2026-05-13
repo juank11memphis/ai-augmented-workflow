@@ -60,6 +60,13 @@ describe('getNextSkillSelection', () => {
     });
   });
 
+  it('returns no-op success when Layered Architecture is already selected', () => {
+    assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'layered-architecture' }, 'layered-architecture'), {
+      status: 'noop',
+      message: 'Layered Architecture is already selected.',
+    });
+  });
+
   it('returns no-op success when a workflow skill is already selected', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedWorkflowSkills: ['ai-prompt-engineer-master'] }, 'ai-prompt-engineer-master'), {
       status: 'noop',
@@ -137,6 +144,18 @@ describe('getNextSkillSelection', () => {
     assert.equal(result.selection.selectedArchitectureSkill?.id, 'command-pattern');
   });
 
+  it('prepares a next selection for Layered Architecture when no architecture skill is selected', () => {
+    const result = getNextSkillSelection(BASE_STATE, 'layered-architecture');
+
+    assert.equal(result.status, 'selected');
+    if (result.status !== 'selected') {
+      return;
+    }
+
+    assert.equal(result.skillName, 'Layered Architecture');
+    assert.equal(result.selection.selectedArchitectureSkill?.id, 'layered-architecture');
+  });
+
   it('prepares a next selection for a new workflow skill', () => {
     const result = getNextSkillSelection(BASE_STATE, 'ai-prompt-engineer-master');
 
@@ -193,6 +212,22 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'command-pattern' }, 'ddd-hexagonal'), {
       status: 'blocked',
       message: 'Cannot select DDD + Hexagonal Architecture because another architecture skill is already selected.',
+      hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+    });
+  });
+
+  it('blocks replacing an existing architecture skill with Layered Architecture', () => {
+    assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'command-pattern' }, 'layered-architecture'), {
+      status: 'blocked',
+      message: 'Cannot select Layered Architecture because another architecture skill is already selected.',
+      hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+    });
+  });
+
+  it('blocks replacing Layered Architecture with another architecture skill', () => {
+    assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'layered-architecture' }, 'command-pattern'), {
+      status: 'blocked',
+      message: 'Cannot select Command Pattern because another architecture skill is already selected.',
       hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
     });
   });
@@ -295,6 +330,21 @@ describe('handleUseSkill', () => {
     assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/postgresql-expert/SKILL.md')), true);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `postgresql-expert`/);
+    assert.equal(process.exitCode, undefined);
+  });
+
+  it('adds Layered Architecture in a clean initialized repo', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'layered-architecture' });
+
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
+    assert.ok(state);
+    assert.equal(state.selectedArchitectureSkill, 'layered-architecture');
+    assert.ok(state.managedFiles['.agents/skills/layered-architecture/SKILL.md']);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/layered-architecture/SKILL.md')), true);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `layered-architecture`/);
     assert.equal(process.exitCode, undefined);
   });
 

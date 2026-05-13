@@ -78,6 +78,17 @@ describe('getWorkflowTargets', () => {
     assertNoInvalidTargets(targets);
   });
 
+  it('includes the Layered Architecture skill target when selected', () => {
+    const layeredArchitecture = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === 'layered-architecture');
+
+    assert.ok(layeredArchitecture);
+
+    const targets = getWorkflowTargets(ROOT_PATH, [getSupportedAgent('codex')], [], [], layeredArchitecture);
+
+    assert.equal(getRelativeTargetPaths(targets).includes('.agents/skills/layered-architecture/SKILL.md'), true);
+    assertNoInvalidTargets(targets);
+  });
+
   it('resolves MCP targets without adding Windsurf MCP config', () => {
     assert.deepEqual(getSelectedMcpTargetsForAgents(SUPPORTED_AGENTS, SELECTABLE_MCP_SERVERS), [
       {
