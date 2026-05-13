@@ -168,7 +168,7 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
   {
     id: 'ddd-hexagonal',
     name: 'DDD + Hexagonal Architecture',
-    description: 'Install back-end architecture guidance for DDD, ports/adapters, and inward dependencies',
+    description: 'Choose for complex back-end domains that need DDD, ports/adapters, and strict inward dependencies',
     routingInstruction:
       'For backend features, refactors, bug fixes, persistence, external integrations, application/service boundaries, domain modeling, or architectural tradeoffs, use `ddd-hexagonal`.',
     templateRelativePath: 'skills/architecture/ddd-hexagonal/SKILL.md',
@@ -182,7 +182,7 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
   {
     id: 'command-pattern',
     name: 'Command Pattern',
-    description: 'Install architecture guidance for structuring executable operations as commands and handlers',
+    description: 'Choose for workflow-heavy apps that need executable operations structured as commands and handlers',
     routingInstruction:
       'For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.',
     templateRelativePath: 'skills/architecture/command-pattern/SKILL.md',
@@ -191,6 +191,20 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
       gemini: '.agents/skills/command-pattern/SKILL.md',
       claude: '.agents/skills/command-pattern/SKILL.md',
       windsurf: '.agents/skills/command-pattern/SKILL.md',
+    },
+  },
+  {
+    id: 'layered-architecture',
+    name: 'Layered Architecture',
+    description: 'Choose for smaller apps that need lightweight separation with controllers, services, models, and repositories',
+    routingInstruction:
+      'For smaller apps that need lightweight separation of concerns with controllers, services, models, and repositories, use `layered-architecture`.',
+    templateRelativePath: 'skills/architecture/layered-architecture/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/layered-architecture/SKILL.md',
+      gemini: '.agents/skills/layered-architecture/SKILL.md',
+      claude: '.agents/skills/layered-architecture/SKILL.md',
+      windsurf: '.agents/skills/layered-architecture/SKILL.md',
     },
   },
 ];

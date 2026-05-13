@@ -1,7 +1,7 @@
 export type AgentId = 'codex' | 'gemini' | 'claude' | 'windsurf';
 export type LanguageSkillId = 'typescript' | 'golang';
 export type FrameworkSkillId = 'nextjs' | 'react';
-export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern';
+export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern' | 'layered-architecture';
 export type WorkflowSkillId = 'ai-prompt-engineer-master' | 'ux-expert';
 export type DatabaseSkillId = 'postgresql-expert';
 export type McpServerId = 'github' | 'notion';

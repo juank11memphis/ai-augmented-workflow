@@ -49,6 +49,7 @@ describe('resolveSelectableSkillById', () => {
     assertResolvedSkill('nextjs', 'framework');
     assertResolvedSkill('ddd-hexagonal', 'architecture');
     assertResolvedSkill('command-pattern', 'architecture');
+    assertResolvedSkill('layered-architecture', 'architecture');
     assertResolvedSkill('postgresql-expert', 'database');
     assertResolvedSkill('ai-prompt-engineer-master', 'workflow');
     assertResolvedSkill('ux-expert', 'workflow');
@@ -126,6 +127,29 @@ describe('skill target paths', () => {
   });
 });
 
+describe('architecture skill descriptions', () => {
+  it('helps users compare architecture choices', () => {
+    const dddHexagonal = getArchitectureSkill('ddd-hexagonal');
+    assert.match(dddHexagonal.description, /complex/i);
+    assert.match(dddHexagonal.description, /DDD/i);
+    assert.match(dddHexagonal.description, /ports\/adapters/i);
+    assert.match(dddHexagonal.description, /inward dependencies/i);
+
+    const commandPattern = getArchitectureSkill('command-pattern');
+    assert.match(commandPattern.description, /workflow-heavy/i);
+    assert.match(commandPattern.description, /commands/i);
+    assert.match(commandPattern.description, /handlers/i);
+
+    const layeredArchitecture = getArchitectureSkill('layered-architecture');
+    assert.match(layeredArchitecture.description, /smaller apps/i);
+    assert.match(layeredArchitecture.description, /lightweight separation/i);
+    assert.match(layeredArchitecture.description, /controllers/i);
+    assert.match(layeredArchitecture.description, /services/i);
+    assert.match(layeredArchitecture.description, /models/i);
+    assert.match(layeredArchitecture.description, /repositories/i);
+  });
+});
+
 function assertResolvedSkill(skillId: string, expectedKind: ResolvedSelectableSkill['kind']): void {
   const result = resolveSelectableSkillById(skillId);
 
@@ -153,6 +177,16 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   }
 
   return agent;
+}
+
+function getArchitectureSkill(skillId: string) {
+  const skill = SELECTABLE_ARCHITECTURE_SKILLS.find((architectureSkill) => architectureSkill.id === skillId);
+
+  if (!skill) {
+    throw new Error(`Missing architecture skill: ${skillId}`);
+  }
+
+  return skill;
 }
 
 function assertWindsurfUsesSharedSkillPath(skillTemplate: SkillTemplate): void {
