@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "95",
+  "templateVersion": "96",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-12T23:50:20.057Z",
+  "updatedAt": "2026-05-13T15:30:50.346Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -23,16 +23,15 @@
   ],
   "mcpServerConfigs": {
     "notion": {
-      "docsParentPage": "https://www.notion.so/Sibu-AI-Companion-35e6bde72ad280c88e56c82c5aae4c79?pvs=10"
+      "docsParentPage": "https://www.notion.so/Projects-35e6bde72ad2807d957ae1baf332a4c4"
     }
   },
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "28",
+      "templateVersion": "29",
       "sha256": "d832883c9820b0ecd849ef44d1b2a5233feadf2cc837a044c30a48ef2aa2d2f5",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "28"
+      "status": "managed"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
