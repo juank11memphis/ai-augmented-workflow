@@ -1,11 +1,11 @@
 {
-  "templateVersion": "95",
+  "templateVersion": "96",
   "templates": {
     "AGENTS.md": {
-      "version": "28",
+      "version": "29",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes story and Epic planning requests to the executor by default so generated plans are implemented immediately unless planning-only is explicit."
+        "Can render Layered Architecture routing when that architecture option is selected."
       ]
     },
     ".codex/config.toml": {
@@ -89,7 +89,7 @@
       "version": "1",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Adds an optional Go skill with concise, Effective Go\u2013style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
       ]
     },
     "skills/postgresql-expert/SKILL.md": {
@@ -160,6 +160,13 @@
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
         "Strengthens UX interviews to resolve material experience questions before drafting and replaces open UX questions with risks/tradeoffs."
+      ]
+    },
+    "skills/architecture/layered-architecture/SKILL.md": {
+      "version": "1",
+      "description": "Selectable lightweight architecture skill for pragmatic controllers, services, models, and repositories guidance.",
+      "changes": [
+        "Adds a Layered Architecture skill for smaller apps that need simple separation of concerns."
       ]
     }
   }

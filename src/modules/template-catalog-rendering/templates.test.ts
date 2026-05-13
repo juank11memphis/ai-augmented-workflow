@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { SELECTABLE_MCP_SERVERS } from '../workflow-target-planning/index.js';
-import { renderMcpConfig } from './templates.js';
+import { readTemplate, readTemplateManifest, renderMcpConfig } from './templates.js';
 
 const selectedGithubMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'github');
 const selectedNotionMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'notion');
@@ -111,6 +111,27 @@ describe('renderMcpConfig', () => {
     assert.equal(parsedGemini.mcpServers.notion.url, NOTION_MCP_URL);
     assertDoesNotContainRealCredential(codexRender);
     assertDoesNotContainNotionCredential(`${codexRender}\n${claudeRender}\n${geminiRender}`);
+  });
+});
+
+describe('layered architecture template', () => {
+  it('is registered in the manifest and readable', () => {
+    const templatePath = 'skills/architecture/layered-architecture/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /Layered Architecture|lightweight architecture/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Layered Architecture/i);
+
+    const contents = readTemplate(templatePath);
+
+    assert.match(contents, /name: layered-architecture/);
+    assert.match(contents, /controllers/i);
+    assert.match(contents, /services/i);
+    assert.match(contents, /models/i);
+    assert.match(contents, /repositories/i);
+    assert.match(contents, /not the only valid meaning/i);
   });
 });
 
