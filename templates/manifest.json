@@ -1,5 +1,5 @@
 {
-  "templateVersion": "96",
+  "templateVersion": "97",
   "templates": {
     "AGENTS.md": {
       "version": "29",
@@ -128,10 +128,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Removes label creation and label assignment from Scrum planning GitHub issue export while keeping the mandatory GitHub export gate and native sub-issue requirements."
+        "Clarifies that User Stories should be deployable increments that can be merged safely on their own, even when gated or incomplete until the parent Epic is done."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {

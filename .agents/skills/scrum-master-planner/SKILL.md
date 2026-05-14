@@ -164,7 +164,9 @@ Adapt headings only when it improves clarity. Keep the Epic brief short.
 
 Within each Epic, decide the order of execution before writing User Story files. Use the lowest practical sequence number for the first story that should be implemented, then increment only when later stories depend on earlier work. If two or more stories can be developed at the same time, give them the same order number.
 
-Each User Story should be independently understandable and reviewable.
+Each User Story should be independently understandable, reviewable, and deployable.
+
+A User Story represents a shippable increment that can move from backlog to Done and be merged safely on its own. It may be hidden behind feature flags, internal-only paths, disabled defaults, or incomplete parent-Epic workflows, but it must leave the product in a valid deployable state without requiring unmerged sibling Stories.
 
 Use this structure:
 
@@ -206,6 +208,7 @@ Before finishing, verify:
 - every Story belongs to exactly one Epic
 - every Story filename includes a two-digit execution order prefix
 - Stories with the same order number are actually parallelizable
+- every Story can be merged and deployed safely on its own, even if its user-facing value is gated or incomplete until the Epic is done
 - Story count is pragmatic, not inflated
 - no Story adds scope that is absent from the feature brief or technical design
 - acceptance criteria are testable enough for a reviewer
