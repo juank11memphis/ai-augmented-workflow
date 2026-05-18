@@ -1,5 +1,5 @@
 {
-  "templateVersion": "97",
+  "templateVersion": "98",
   "templates": {
     "AGENTS.md": {
       "version": "29",
@@ -121,10 +121,10 @@
       ]
     },
     "skills/react/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Selectable React skill for component design, props, state ownership, and presentational boundaries.",
       "changes": [
-        "Strengthens React component guidance around Single Responsibility Principle splits, stateless versus stateful boundaries, and one component per file by default."
+        "Adds broadly applicable React screen componentization guidance so route and feature entry files stay thin while meaningful UI regions move into focused nearby files."
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {

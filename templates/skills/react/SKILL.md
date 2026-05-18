@@ -13,6 +13,8 @@ This skill covers React componentization, component responsibility, state owners
 
 - creating or editing React components
 - splitting large components
+- constructing or refactoring page-level UI from smaller route-local components
+- deciding when a page file should delegate sections, repeated items, panels, overlays, menus, states, and formatting helpers to focused files
 - deciding where state should live
 - separating presentational components from server-interacting or data-owning components
 - reviewing component responsibility and prop design
@@ -68,15 +70,61 @@ This skill covers React componentization, component responsibility, state owners
 - Each component should live in its own file by default; do not define multiple components in the same file just because they are currently small.
 - If a helper component is only temporary, promote it to its own file as soon as it represents a meaningful UI responsibility.
 
+### 9. Build screens as composition roots, not component dumping grounds
+- Treat page-level components, route-level containers, and major feature components as composition roots: they should assemble focused child components, not define every section, repeated item, overlay, menu, state, helper, and interaction inline.
+- A top-level screen component may own data loading, high-level layout, route states, and wiring, but should delegate meaningful UI regions to named components.
+- If a UI region has its own state, interaction, repeated rendering, overlay, menu, empty/error/loading state, or domain formatting concern, strongly prefer extracting it to a focused nearby file.
+- Keep route entry files especially thin: they should fetch or prepare data, handle route-level states, and compose the screen. Avoid placing substantial presentational or interactive subcomponents directly inside them.
+- Route-local or feature-local components are good defaults for UI that belongs to one screen or feature. Shared components should be extracted only when reuse is real, not speculative.
+
+## File splitting triggers
+
+When editing a React page, route container, or major component, extract a separate component or helper file when any of these are true:
+
+- The file defines more than one meaningful UI responsibility, such as a container plus repeated item plus action surface plus state view.
+- A nested component has a product/UI name a user, designer, or teammate would recognize.
+- A UI region owns local state, submission or mutation behavior, pending/optimistic feedback, validation, confirmation, or recovery behavior.
+- A component renders a repeated unit, such as a row, card, list item, tile, timeline entry, tab panel, or menu group.
+- A component represents an empty state, error state, no-results state, loading state, permission state, or other named screen state.
+- A helper formats domain-visible values, such as money, dates, percentages, names, quantities, labels, or statuses, and is used by more than one component.
+- The parent component becomes hard to scan in one pass or requires scrolling through implementation details to understand the screen structure.
+
+Prefer nearby files first, using names from the product or UI. For example:
+
+```txt
+page.tsx
+feature-shell.tsx
+feature-summary.tsx
+feature-list.tsx
+feature-item.tsx
+feature-actions.tsx
+feature-state.tsx
+feature-format.ts
+feature-types.ts
+```
+
 ## Decision rule
 
 When unsure, prefer:
-1. one clear responsibility per component
-2. more focused components instead of fewer overloaded components
-3. one component per file by default
-4. stateless presentational components that render from props
-5. stateful components only where local interaction state is genuinely owned
-6. data/server interaction in obvious owner components
-7. local state unless coordination requires lifting it
-8. composition over flag-heavy component APIs
-9. no duplicated derived state
+1. route entry files as thin composition roots
+2. route-level or feature-level containers that own only the interaction state they coordinate
+3. one clear responsibility per component
+4. more focused components instead of fewer overloaded components
+5. one meaningful component per file by default
+6. nearby component files before shared abstractions
+7. stateless presentational components that render from props
+8. stateful components only where local interaction state is genuinely owned
+9. data/server interaction in obvious owner components
+10. local state unless coordination requires lifting it
+11. composition over flag-heavy component APIs
+12. no duplicated derived state
+
+## Componentization self-review
+
+Before finishing a React change, ask:
+
+- Can I understand the screen structure from the top-level file without reading repeated item, action surface, overlay, state, or formatting internals?
+- Are meaningful UI regions and repeated units in named components?
+- Does each file have one obvious reason to change?
+- Are server/client boundaries still as small as practical?
+- Did I avoid creating shared abstractions before there is real reuse?
