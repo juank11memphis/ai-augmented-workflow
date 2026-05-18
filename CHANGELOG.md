@@ -4,6 +4,11 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.13.2 - 2026-05-18
+
+### Changed
+- strengthen React componentization skill
+
 ## 0.13.1 - 2026-05-14
 
 ### Changed
