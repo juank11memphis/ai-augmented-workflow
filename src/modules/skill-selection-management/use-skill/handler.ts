@@ -4,7 +4,8 @@ import path from 'node:path';
 import { log } from '@clack/prompts';
 
 import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
-import { resolveSelectableSkillById } from '../../workflow-target-planning/index.js';
+import { askForNotionDocsParentPage } from '../../interactive-guidance/index.js';
+import { getMcpServersRequiredByWorkflowSkills, resolveSelectableSkillById } from '../../workflow-target-planning/index.js';
 import { sha256 } from '../../../shared/hash.js';
 import { getProjectContext } from '../../../shared/paths.js';
 import { renderTemplateForSync } from '../../template-catalog-rendering/index.js';
@@ -18,14 +19,16 @@ import type {
   SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
+  SelectableMcpServer,
   SelectableWorkflowSkill,
   SupportedAgent,
   WorkflowSkillId,
   WorkflowTarget,
 } from '../../../shared/types.js';
 import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
-import { getSelectedAgentsFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
+import { getSelectedAgentsFromState, getSelectedMcpServersFromState, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
 import type { UseSkillCommand } from './command.js';
+import type { McpServerConfigs } from '../../../shared/types.js';
 
 type NextSkillSelection = {
   selectedLanguageSkills: SelectableLanguageSkill[];
@@ -42,12 +45,22 @@ type SkillSelectionResult =
 
 type SkillApplicationPlan = {
   agentsTarget: WorkflowTarget;
-  newSkillTarget: WorkflowTarget;
+  newTargets: WorkflowTarget[];
+  affectedTargets: WorkflowTarget[];
   targets: WorkflowTarget[];
   selectedAgents: SupportedAgent[];
+  selectedMcpServers: SelectableMcpServer[];
 };
 
-export async function handleUseSkill(command: UseSkillCommand): Promise<void> {
+type UseSkillDependencies = {
+  askForNotionDocsParentPage: () => Promise<string>;
+};
+
+const defaultDependencies: UseSkillDependencies = {
+  askForNotionDocsParentPage,
+};
+
+export async function handleUseSkill(command: UseSkillCommand, dependencies: UseSkillDependencies = defaultDependencies): Promise<void> {
   const { rootPath, statePath } = getProjectContext();
   const readiness = getWorkflowMutationReadiness({ rootPath, statePath });
 
@@ -78,7 +91,7 @@ export async function handleUseSkill(command: UseSkillCommand): Promise<void> {
       process.exitCode = 1;
       return;
     case 'selected':
-      applySelectedSkill({ rootPath, statePath, state: readiness.state, selectionResult });
+      await applySelectedSkill({ rootPath, statePath, state: readiness.state, selectionResult, dependencies });
       return;
   }
 }
@@ -191,17 +204,19 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
   }
 }
 
-function applySelectedSkill({
+async function applySelectedSkill({
   rootPath,
   statePath,
   state,
   selectionResult,
+  dependencies,
 }: {
   rootPath: string;
   statePath: string;
   state: SibuState;
   selectionResult: Extract<SkillSelectionResult, { status: 'selected' }>;
-}): void {
+  dependencies: UseSkillDependencies;
+}): Promise<void> {
   const plan = buildSkillApplicationPlan({ rootPath, state, selectionResult });
   const preflightError = getSkillApplicationPreflightError({ rootPath, state, plan });
 
@@ -212,6 +227,30 @@ function applySelectedSkill({
     return;
   }
 
+  const mcpServerConfigs = await getNextMcpServerConfigs({ state, selectedMcpServers: plan.selectedMcpServers, dependencies });
+  const dependencyMcpServers = plan.selectedMcpServers.filter((server) => !(state.selectedMcpServers ?? []).includes(server.id));
+  for (const server of dependencyMcpServers) {
+    log.info(`${selectionResult.skillName} requires ${server.name}. I will add them together.`);
+  }
+
+  const nonAgentTargets = plan.affectedTargets.filter((target) => target.label !== 'AGENTS.md');
+  const files = renderMissingWorkflowFiles({
+    missingTargets: nonAgentTargets,
+    selectedLanguageSkills: selectionResult.selection.selectedLanguageSkills,
+    selectedFrameworkSkills: selectionResult.selection.selectedFrameworkSkills,
+    selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
+    selectedWorkflowSkills: selectionResult.selection.selectedWorkflowSkills,
+    selectedDatabaseSkills: selectionResult.selection.selectedDatabaseSkills,
+    selectedMcpServers: plan.selectedMcpServers,
+  });
+
+  for (const file of files) {
+    const fileAlreadyExists = fs.existsSync(file.targetPath);
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, fileAlreadyExists ? 'utf8' : { encoding: 'utf8', flag: 'wx' });
+    log.success(`${fileAlreadyExists ? 'Updated' : 'Created'} ${file.label}`);
+  }
+
   const agentsContents = renderTemplateForSync({
     templateRelativePath: plan.agentsTarget.templateRelativePath,
     currentPath: plan.agentsTarget.targetPath,
@@ -220,19 +259,8 @@ function applySelectedSkill({
     selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
     selectedWorkflowSkills: selectionResult.selection.selectedWorkflowSkills,
     selectedDatabaseSkills: selectionResult.selection.selectedDatabaseSkills,
+    selectedMcpServers: plan.selectedMcpServers,
   });
-  const [newSkillFile] = renderMissingWorkflowFiles({
-    missingTargets: [plan.newSkillTarget],
-    selectedLanguageSkills: selectionResult.selection.selectedLanguageSkills,
-    selectedFrameworkSkills: selectionResult.selection.selectedFrameworkSkills,
-    selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
-    selectedDatabaseSkills: selectionResult.selection.selectedDatabaseSkills,
-  });
-
-  fs.mkdirSync(path.dirname(newSkillFile.targetPath), { recursive: true });
-  fs.writeFileSync(newSkillFile.targetPath, newSkillFile.contents, { encoding: 'utf8', flag: 'wx' });
-  log.success(`Created ${newSkillFile.label}`);
-
   fs.writeFileSync(plan.agentsTarget.targetPath, agentsContents, 'utf8');
   log.success('Updated AGENTS.md skill routing');
 
@@ -245,10 +273,15 @@ function applySelectedSkill({
     selectedArchitectureSkill: selectionResult.selection.selectedArchitectureSkill,
     selectedWorkflowSkills: selectionResult.selection.selectedWorkflowSkills,
     selectedDatabaseSkills: selectionResult.selection.selectedDatabaseSkills,
+    selectedMcpServers: plan.selectedMcpServers,
+    mcpServerConfigs,
     targets: plan.targets,
   });
   log.success(`Updated ${STATE_RELATIVE_PATH}`);
   log.success(`Added ${selectionResult.skillName}.`);
+  for (const server of dependencyMcpServers) {
+    log.success(`Added ${server.name}.`);
+  }
 }
 
 function buildSkillApplicationPlan({
@@ -261,6 +294,9 @@ function buildSkillApplicationPlan({
   selectionResult: Extract<SkillSelectionResult, { status: 'selected' }>;
 }): SkillApplicationPlan {
   const selectedAgents = getSelectedAgentsFromState(state);
+  const currentMcpServers = getSelectedMcpServersFromState(state);
+  const requiredMcpServers = getMcpServersRequiredByWorkflowSkills(selectionResult.selection.selectedWorkflowSkills.map((skill) => skill.id));
+  const selectedMcpServers = mergeMcpServers(currentMcpServers, requiredMcpServers);
   const previousTargets = getWorkflowTargets(
     rootPath,
     selectedAgents,
@@ -268,7 +304,8 @@ function buildSkillApplicationPlan({
     getSelectedFrameworkSkillsFromState(state),
     getArchitectureSkillById(state.selectedArchitectureSkill),
     getSelectedWorkflowSkillsFromState(state),
-    getSelectedDatabaseSkillsFromState(state)
+    getSelectedDatabaseSkillsFromState(state),
+    currentMcpServers
   );
   const targets = getWorkflowTargets(
     rootPath,
@@ -277,13 +314,15 @@ function buildSkillApplicationPlan({
     selectionResult.selection.selectedFrameworkSkills,
     selectionResult.selection.selectedArchitectureSkill,
     selectionResult.selection.selectedWorkflowSkills,
-    selectionResult.selection.selectedDatabaseSkills
+    selectionResult.selection.selectedDatabaseSkills,
+    selectedMcpServers
   );
   const previousTargetPaths = new Set(previousTargets.map((target) => target.targetPath));
-  const newSkillTarget = targets.find((target) => !previousTargetPaths.has(target.targetPath));
+  const newTargets = targets.filter((target) => !previousTargetPaths.has(target.targetPath) && (target.targetKind === 'skill' || target.targetKind === 'mcp-config'));
+  const mcpConfigTargets = targets.filter((target) => target.mcpConfigAgentId && selectedMcpServers.length > currentMcpServers.length);
   const agentsTarget = targets.find((target) => target.label === 'AGENTS.md');
 
-  if (!newSkillTarget) {
+  if (newTargets.length === 0) {
     throw new Error(`No new workflow target found for ${selectionResult.skillName}.`);
   }
 
@@ -291,31 +330,75 @@ function buildSkillApplicationPlan({
     throw new Error('AGENTS.md target is missing from workflow targets.');
   }
 
-  return { agentsTarget, newSkillTarget, targets, selectedAgents };
+  const affectedTargets = dedupeTargets([...newTargets, ...mcpConfigTargets, agentsTarget]);
+
+  return { agentsTarget, newTargets, affectedTargets, targets, selectedAgents, selectedMcpServers };
 }
 
 function getSkillApplicationPreflightError({ rootPath, state, plan }: { rootPath: string; state: SibuState; plan: SkillApplicationPlan }): string | undefined {
-  if (fs.existsSync(plan.newSkillTarget.targetPath)) {
-    return `${path.relative(rootPath, plan.newSkillTarget.targetPath)} already exists but is not recorded for this selection.`;
+  const existingRecordedTargets = plan.affectedTargets.filter((target) => state.managedFiles[path.relative(rootPath, target.targetPath)]);
+  const newTargets = plan.affectedTargets.filter((target) => !state.managedFiles[path.relative(rootPath, target.targetPath)]);
+
+  for (const target of newTargets) {
+    if (fs.existsSync(target.targetPath)) {
+      return `${path.relative(rootPath, target.targetPath)} already exists but is not recorded for this selection.`;
+    }
   }
 
-  const agentsRelativePath = path.relative(rootPath, plan.agentsTarget.targetPath);
-  const agentsManagedFile = state.managedFiles[agentsRelativePath];
+  for (const target of existingRecordedTargets) {
+    const relativePath = path.relative(rootPath, target.targetPath);
+    const managedFile = state.managedFiles[relativePath];
 
-  if (!agentsManagedFile) {
-    return 'AGENTS.md is not recorded in `.sibu/state.json`.';
-  }
+    if (!managedFile) {
+      return `${relativePath} is not recorded in ${STATE_RELATIVE_PATH}.`;
+    }
 
-  if (!fs.existsSync(plan.agentsTarget.targetPath)) {
-    return 'AGENTS.md is missing.';
-  }
+    if (!fs.existsSync(target.targetPath)) {
+      return `${relativePath} is missing.`;
+    }
 
-  const agentsCurrentHash = sha256(fs.readFileSync(plan.agentsTarget.targetPath, 'utf8'));
-  if (agentsCurrentHash !== agentsManagedFile.sha256) {
-    return 'AGENTS.md has changed since Sibu last recorded it.';
+    const currentHash = sha256(fs.readFileSync(target.targetPath, 'utf8'));
+    if (currentHash !== managedFile.sha256) {
+      return `${relativePath} has changed since Sibu last recorded it.`;
+    }
   }
 
   return undefined;
+}
+
+function dedupeTargets(targets: WorkflowTarget[]): WorkflowTarget[] {
+  return [...new Map(targets.map((target) => [target.targetPath, target])).values()];
+}
+
+function mergeMcpServers(...serverGroups: SelectableMcpServer[][]): SelectableMcpServer[] {
+  const serversById = new Map<SelectableMcpServer['id'], SelectableMcpServer>();
+
+  for (const server of serverGroups.flat()) {
+    serversById.set(server.id, server);
+  }
+
+  return [...serversById.values()];
+}
+
+async function getNextMcpServerConfigs({
+  state,
+  selectedMcpServers,
+  dependencies,
+}: {
+  state: SibuState;
+  selectedMcpServers: SelectableMcpServer[];
+  dependencies: UseSkillDependencies;
+}): Promise<McpServerConfigs | undefined> {
+  if (!selectedMcpServers.some((server) => server.id === 'notion') || state.selectedMcpServers?.includes('notion')) {
+    return state.mcpServerConfigs;
+  }
+
+  const docsParentPage = await dependencies.askForNotionDocsParentPage();
+
+  return {
+    ...state.mcpServerConfigs,
+    notion: { docsParentPage },
+  };
 }
 
 function getSelectedLanguageSkillsFromState(state: SibuState): SelectableLanguageSkill[] {

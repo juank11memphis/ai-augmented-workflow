@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, it } from 'node:test';
+import { afterEach, describe, it, mock } from 'node:test';
 
+import { log } from '@clack/prompts';
 import { SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
 import { readExistingState } from '../../workflow-state-registry/index.js';
 import type { SibuState, SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
@@ -25,6 +26,7 @@ const temporaryRoots: string[] = [];
 afterEach(() => {
   process.chdir(originalCwd);
   process.exitCode = undefined;
+  mock.restoreAll();
 
   for (const temporaryRoot of temporaryRoots.splice(0)) {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
@@ -315,6 +317,57 @@ describe('handleUseSkill', () => {
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/ux-expert/SKILL.md')), true);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
+    assert.equal(process.exitCode, undefined);
+  });
+
+  it('adds Export to GitHub with its required GitHub MCP server', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+    const infoLog = mock.method(log, 'info', () => {});
+
+    await handleUseSkill({ type: 'skills:use', skillName: 'export-to-github' });
+
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
+    assert.ok(state);
+    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-github']);
+    assert.deepEqual(state.selectedMcpServers, ['github']);
+    assert.ok(state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
+    assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/export-to-github/SKILL.md')), true);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
+    assert.ok(infoLog.mock.calls.some((call) => call.arguments[0] === 'Export to GitHub requires GitHub MCP Server. I will add them together.'));
+    assert.equal(process.exitCode, undefined);
+  });
+
+  it('adds Export to Notion with its required Notion MCP server and docs parent page', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+    let askedForNotionParentPage = false;
+    const infoLog = mock.method(log, 'info', () => {});
+
+    await handleUseSkill(
+      { type: 'skills:use', skillName: 'export-to-notion' },
+      {
+        askForNotionDocsParentPage: async () => {
+          askedForNotionParentPage = true;
+          return 'https://notion.so/sibu-docs';
+        },
+      }
+    );
+
+    const state = readExistingState(path.join(rootPath, '.sibu/state.json'));
+    assert.ok(state);
+    assert.equal(askedForNotionParentPage, true);
+    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-notion']);
+    assert.deepEqual(state.selectedMcpServers, ['notion']);
+    assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
+    assert.ok(state.managedFiles['.agents/skills/export-to-notion/SKILL.md']);
+    assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/export-to-notion/SKILL.md')), true);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-notion`/);
+    assert.ok(infoLog.mock.calls.some((call) => call.arguments[0] === 'Export to Notion requires Notion MCP Server. I will add them together.'));
     assert.equal(process.exitCode, undefined);
   });
 

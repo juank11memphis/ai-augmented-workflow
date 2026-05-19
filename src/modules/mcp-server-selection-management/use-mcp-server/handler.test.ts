@@ -79,13 +79,16 @@ describe('handleUseMcpServer', () => {
     const state = readState(rootPath);
 
     assert.deepEqual(state.selectedMcpServers, ['github']);
+    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-github']);
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
     assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
+    assert.equal(state.managedFiles['.agents/skills/export-to-github/SKILL.md']?.template, 'skills/export-to-github/SKILL.md');
     assert.equal(typeof state.managedFiles['.mcp.json']?.sha256, 'string');
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /ghp_[A-Za-z0-9_]+/);
     assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });
@@ -121,13 +124,16 @@ describe('handleUseMcpServer', () => {
     const state = readState(rootPath);
 
     assert.deepEqual(state.selectedMcpServers, ['notion']);
+    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-notion']);
     assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
     assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
+    assert.equal(state.managedFiles['.agents/skills/export-to-notion/SKILL.md']?.template, 'skills/export-to-notion/SKILL.md');
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-notion`/);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /notion[_-]?token/i);
     assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });
@@ -145,6 +151,7 @@ describe('handleUseMcpServer', () => {
     const geminiConfig = fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8');
 
     assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
+    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-github', 'export-to-notion']);
     assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
     assert.match(codexConfig, /api\.githubcopilot\.com\/mcp/);
     assert.match(codexConfig, /mcp\.notion\.com\/mcp/);

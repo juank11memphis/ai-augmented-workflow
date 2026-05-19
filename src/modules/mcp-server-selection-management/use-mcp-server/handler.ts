@@ -4,8 +4,10 @@ import path from 'node:path';
 import { log } from '@clack/prompts';
 
 import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
+import { sha256 } from '../../../shared/hash.js';
 import { getProjectContext } from '../../../shared/paths.js';
 import { askForNotionDocsParentPage } from '../../interactive-guidance/index.js';
+import { renderTemplateForSync } from '../../template-catalog-rendering/index.js';
 import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
 import {
   getSelectedAgentsFromState,
@@ -15,12 +17,13 @@ import {
   getSelectedLanguageSkillsFromState,
   getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
+  getWorkflowSkillsImpliedByMcpServers,
   getWorkflowTargets,
   renderMissingWorkflowFiles,
   resolveSelectableMcpServerById,
   writeSibuState,
 } from '../../workflow-target-planning/index.js';
-import type { McpServerConfigs, McpServerId, SelectableMcpServer, SibuState, WorkflowTarget } from '../../../shared/types.js';
+import type { McpServerConfigs, McpServerId, SelectableMcpServer, SelectableWorkflowSkill, SibuState, WorkflowTarget } from '../../../shared/types.js';
 import type { UseMcpServerCommand } from './command.js';
 
 type McpSelectionResult =
@@ -132,7 +135,9 @@ function applySelectedMcpServer({
   const selectedLanguageSkills = getSelectedLanguageSkillsFromState(state);
   const selectedFrameworkSkills = getSelectedFrameworkSkillsFromState(state);
   const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
-  const selectedWorkflowSkills = getSelectedWorkflowSkillsFromState(state);
+  const currentWorkflowSkills = getSelectedWorkflowSkillsFromState(state);
+  const impliedWorkflowSkills = getWorkflowSkillsImpliedByMcpServers(selectionResult.selectedMcpServers.map((server) => server.id));
+  const selectedWorkflowSkills = mergeWorkflowSkills(currentWorkflowSkills, impliedWorkflowSkills);
   const selectedDatabaseSkills = getSelectedDatabaseSkillsFromState(state);
   const previousTargets = getWorkflowTargets(
     rootPath,
@@ -140,7 +145,7 @@ function applySelectedMcpServer({
     selectedLanguageSkills,
     selectedFrameworkSkills,
     selectedArchitectureSkill,
-    selectedWorkflowSkills,
+    currentWorkflowSkills,
     selectedDatabaseSkills,
     getSelectedMcpServersFromState(state)
   );
@@ -154,7 +159,7 @@ function applySelectedMcpServer({
     selectedDatabaseSkills,
     selectionResult.selectedMcpServers
   );
-  const affectedTargets = getAffectedMcpTargets(previousTargets, targets);
+  const affectedTargets = getAffectedTargets(previousTargets, targets);
   const preflightError = getMcpUsePreflightError({ rootPath, state, affectedTargets, previousTargets });
 
   if (preflightError) {
@@ -164,8 +169,14 @@ function applySelectedMcpServer({
     return;
   }
 
+  const agentsTarget = targets.find((target) => target.label === 'AGENTS.md');
+  if (!agentsTarget) {
+    throw new Error('AGENTS.md target is missing from workflow targets.');
+  }
+
+  const nonAgentTargets = affectedTargets.filter((target) => target.label !== 'AGENTS.md');
   const files = renderMissingWorkflowFiles({
-    missingTargets: affectedTargets,
+    missingTargets: nonAgentTargets,
     selectedLanguageSkills,
     selectedFrameworkSkills,
     selectedArchitectureSkill,
@@ -177,8 +188,23 @@ function applySelectedMcpServer({
   for (const file of files) {
     const fileAlreadyExists = fs.existsSync(file.targetPath);
     fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
-    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+    fs.writeFileSync(file.targetPath, file.contents, fileAlreadyExists ? 'utf8' : { encoding: 'utf8', flag: 'wx' });
     log.success(`${fileAlreadyExists ? 'Updated' : 'Created'} ${file.label}`);
+  }
+
+  if (affectedTargets.some((target) => target.label === 'AGENTS.md')) {
+    const agentsContents = renderTemplateForSync({
+      templateRelativePath: agentsTarget.templateRelativePath,
+      currentPath: agentsTarget.targetPath,
+      selectedLanguageSkills,
+      selectedFrameworkSkills,
+      selectedArchitectureSkill,
+      selectedWorkflowSkills,
+      selectedDatabaseSkills,
+      selectedMcpServers: selectionResult.selectedMcpServers,
+    });
+    fs.writeFileSync(agentsTarget.targetPath, agentsContents, 'utf8');
+    log.success('Updated AGENTS.md skill routing');
   }
 
   writeSibuState({
@@ -197,13 +223,34 @@ function applySelectedMcpServer({
 
   log.success(`Updated ${STATE_RELATIVE_PATH}`);
   log.success(`Added ${selectionResult.serverName}.`);
+  for (const skill of impliedWorkflowSkills.filter((skill) => !currentWorkflowSkills.some((currentSkill) => currentSkill.id === skill.id))) {
+    log.success(`Added ${skill.name}.`);
+  }
   log.info('Sibu configured MCP files only; prerequisites, credentials, and provider authentication remain user-owned.');
 }
 
-function getAffectedMcpTargets(previousTargets: WorkflowTarget[], targets: WorkflowTarget[]): WorkflowTarget[] {
+function getAffectedTargets(previousTargets: WorkflowTarget[], targets: WorkflowTarget[]): WorkflowTarget[] {
   const previousTargetPaths = new Set(previousTargets.map((target) => target.targetPath));
+  const newTargets = targets.filter((target) => !previousTargetPaths.has(target.targetPath) && (target.targetKind === 'skill' || target.targetKind === 'mcp-config'));
+  const mcpConfigTargets = targets.filter((target) => target.mcpConfigAgentId);
+  const agentsTarget = targets.find((target) => target.label === 'AGENTS.md');
+  const affectedTargets = new Map<string, WorkflowTarget>();
 
-  return targets.filter((target) => target.mcpConfigAgentId || (!previousTargetPaths.has(target.targetPath) && target.targetKind === 'mcp-config'));
+  for (const target of [...mcpConfigTargets, ...newTargets, ...(newTargets.some((target) => target.targetKind === 'skill') && agentsTarget ? [agentsTarget] : [])]) {
+    affectedTargets.set(target.targetPath, target);
+  }
+
+  return [...affectedTargets.values()];
+}
+
+function mergeWorkflowSkills(...skillGroups: SelectableWorkflowSkill[][]): SelectableWorkflowSkill[] {
+  const skillsById = new Map<SelectableWorkflowSkill['id'], SelectableWorkflowSkill>();
+
+  for (const skill of skillGroups.flat()) {
+    skillsById.set(skill.id, skill);
+  }
+
+  return [...skillsById.values()];
 }
 
 function getMcpUsePreflightError({
@@ -223,8 +270,18 @@ function getMcpUsePreflightError({
     const relativePath = path.relative(rootPath, target.targetPath);
 
     if (previousTargetPaths.has(target.targetPath)) {
-      if (!state.managedFiles[relativePath]) {
+      const managedFile = state.managedFiles[relativePath];
+      if (!managedFile) {
         return `${relativePath} is not recorded in ${STATE_RELATIVE_PATH}.`;
+      }
+
+      if (!fs.existsSync(target.targetPath)) {
+        return `${relativePath} is missing.`;
+      }
+
+      const currentHash = sha256(fs.readFileSync(target.targetPath, 'utf8'));
+      if (currentHash !== managedFile.sha256) {
+        return `${relativePath} has changed since Sibu last recorded it.`;
       }
       continue;
     }
