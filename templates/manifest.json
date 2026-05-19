@@ -1,5 +1,5 @@
 {
-  "templateVersion": "100",
+  "templateVersion": "101",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -65,10 +65,10 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "11",
+      "version": "12",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Clarifies that feature ideas captured in docs/feature-ideas.md are raw input and must still go through the normal feature brief interview."
+        "Removes a promoted idea from docs/feature-ideas.md after its local feature brief is successfully written."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {

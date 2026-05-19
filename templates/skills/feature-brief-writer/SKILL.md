@@ -103,6 +103,8 @@ If the user asks for a feature brief from an idea in `docs/feature-ideas.md`, re
 - Use the idea as a seed for the first discovery question, not as complete feature intent.
 - Keep asking one focused question at a time until the usual required context is resolved: problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit.
 - Preserve the hard-start requirements for `docs/product-vision.md` and `docs/deep-module-map.md`.
+- After the local `docs/features/<feature-slug>/feature_brief.md` file is successfully written, remove the promoted idea from `docs/feature-ideas.md` while preserving the rest of the file.
+- Do not delete the idea before the feature brief file exists, and do not remove unrelated ideas or headings.
 
 ## Interview posture
 

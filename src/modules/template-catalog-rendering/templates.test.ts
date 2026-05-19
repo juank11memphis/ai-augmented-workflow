@@ -143,12 +143,14 @@ describe('feature brief writer raw idea source guidance', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '11');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /docs\/feature-ideas\.md.*normal feature brief interview/i);
+    assert.equal(templateMetadata?.version, '12');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /promoted idea.*docs\/feature-ideas\.md/i);
     assert.match(contents, /docs\/feature-ideas\.md/);
     assert.match(contents, /raw\/vague input/i);
     assert.match(contents, /Do not skip the normal interview flow/i);
     assert.match(contents, /problem, target user\/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit/);
+    assert.match(contents, /After the local `docs\/features\/<feature-slug>\/feature_brief\.md` file is successfully written, remove the promoted idea from `docs\/feature-ideas\.md`/);
+    assert.match(contents, /Do not delete the idea before the feature brief file exists/);
   });
 });
 
