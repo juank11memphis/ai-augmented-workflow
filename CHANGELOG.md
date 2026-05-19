@@ -4,6 +4,25 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.14.0 - 2026-05-19
+
+### Added
+- offer exporter adoption during sync
+- add dependency-aware targeted selection
+- include exporter skills during init
+- move export guidance to exporter skills
+- add exporter skill catalog foundation
+- add required feature idea capture skill
+
+### Changed
+- sync dedicated export workflow artifacts
+
+### Removed
+- remove promoted feature ideas after briefing
+
+### Fixed
+- preserve feature brief interviews for captured ideas
+
 ## 0.13.2 - 2026-05-18
 
 ### Changed
