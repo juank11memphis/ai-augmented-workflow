@@ -14,6 +14,8 @@ import type {
   SelectableMcpServer,
   SelectableWorkflowSkill,
   TemplateManifest,
+  WorkflowSkillId,
+  WorkflowTarget,
 } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
@@ -23,6 +25,7 @@ import {
   getSelectedLanguageSkillsFromState,
   getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
+  getWorkflowSkillsImpliedByMcpServers,
   getWorkflowTargets,
 } from '../workflow-target-planning/index.js';
 
@@ -34,6 +37,7 @@ export type SyncPreview = {
   currentTemplateVersion?: string;
   changes: string[];
   hasLocalFile?: boolean;
+  impliedWorkflowSkillId?: WorkflowSkillId;
 };
 
 type SyncPreviewStatus = SyncPreview['status'];
@@ -70,72 +74,124 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
   const selectedWorkflowSkills = getSelectedWorkflowSkillsFromState(state);
   const selectedDatabaseSkills = getSelectedDatabaseSkillsFromState(state);
   const selectedMcpServers = getSelectedMcpServersFromState(state);
-  const previews = Object.entries(state.managedFiles).map(([relativePath, managedFile]) =>
-    getManagedFileSyncPreview({
-      rootPath,
-      manifest,
-      relativePath,
-      managedFile,
-      selectedLanguageSkills,
-      selectedFrameworkSkills,
-      selectedArchitectureSkill,
-      selectedWorkflowSkills,
-      selectedDatabaseSkills,
-      selectedMcpServers,
-    })
-  );
-
+  const impliedWorkflowSkills = getWorkflowSkillsImpliedByMcpServers(selectedMcpServers.map((server) => server.id));
+  const plannedWorkflowSkills = mergeWorkflowSkills(selectedWorkflowSkills, impliedWorkflowSkills);
+  const missingImpliedWorkflowSkills = impliedWorkflowSkills.filter((skill) => !selectedWorkflowSkills.some((selectedSkill) => selectedSkill.id === skill.id));
+  const previews: SyncPreview[] = [];
   const expectedTargets = getWorkflowTargets(
     rootPath,
     getSelectedAgentsFromState(state),
     selectedLanguageSkills,
     selectedFrameworkSkills,
     selectedArchitectureSkill,
-    selectedWorkflowSkills,
+    plannedWorkflowSkills,
     selectedDatabaseSkills,
     selectedMcpServers
+  );
+  const alreadyPreviewedPaths = new Set<string>();
+
+  for (const skill of missingImpliedWorkflowSkills) {
+    for (const preview of getNewExpectedTargetPreviews({ rootPath, manifest, state, expectedTargets, workflowSkill: skill })) {
+      previews.push(preview);
+      alreadyPreviewedPaths.add(preview.relativePath);
+    }
+  }
+
+  previews.push(
+    ...Object.entries(state.managedFiles).map(([relativePath, managedFile]) =>
+      getManagedFileSyncPreview({
+        rootPath,
+        manifest,
+        relativePath,
+        managedFile,
+        selectedLanguageSkills,
+        selectedFrameworkSkills,
+        selectedArchitectureSkill,
+        selectedWorkflowSkills: plannedWorkflowSkills,
+        selectedDatabaseSkills,
+        selectedMcpServers,
+      })
+    )
   );
 
   for (const target of expectedTargets) {
     const relativePath = path.relative(rootPath, target.targetPath);
 
-    if (state.managedFiles[relativePath]) {
+    if (state.managedFiles[relativePath] || alreadyPreviewedPaths.has(relativePath)) {
       continue;
     }
 
-    const template = manifest.templates[target.templateRelativePath];
-
-    if (!template) {
-      previews.push({
-        relativePath,
-        managedFile: {
-          template: target.templateRelativePath,
-          templateVersion: 'unknown',
-          sha256: '',
-        },
-        status: 'unknown-template',
-        changes: [],
-        hasLocalFile: fs.existsSync(target.targetPath),
-      });
-      continue;
-    }
-
-    previews.push({
-      relativePath,
-      managedFile: {
-        template: target.templateRelativePath,
-        templateVersion: template.version,
-        sha256: '',
-        status: 'managed',
-      },
-      status: 'new-template',
-      currentTemplateVersion: template.version,
-      changes: template.changes,
-      hasLocalFile: fs.existsSync(target.targetPath),
-    });
+    previews.push(getNewExpectedTargetPreview({ rootPath, manifest, target }));
   }
 
   return previews;
+}
+
+function getNewExpectedTargetPreviews({
+  rootPath,
+  manifest,
+  state,
+  expectedTargets,
+  workflowSkill,
+}: {
+  rootPath: string;
+  manifest: TemplateManifest;
+  state: SibuState;
+  expectedTargets: WorkflowTarget[];
+  workflowSkill: SelectableWorkflowSkill;
+}): SyncPreview[] {
+  const workflowSkillTargetPaths = new Set(Object.values(workflowSkill.targetRelativePathsByAgent));
+
+  return expectedTargets
+    .filter((target) => workflowSkillTargetPaths.has(path.relative(rootPath, target.targetPath)))
+    .filter((target) => !state.managedFiles[path.relative(rootPath, target.targetPath)])
+    .map((target) => ({
+      ...getNewExpectedTargetPreview({ rootPath, manifest, target }),
+      impliedWorkflowSkillId: workflowSkill.id,
+    }));
+}
+
+function getNewExpectedTargetPreview({ rootPath, manifest, target }: { rootPath: string; manifest: TemplateManifest; target: WorkflowTarget }): SyncPreview {
+  const relativePath = path.relative(rootPath, target.targetPath);
+  const template = manifest.templates[target.templateRelativePath];
+
+  if (!template) {
+    return {
+      relativePath,
+      managedFile: {
+        template: target.templateRelativePath,
+        templateVersion: 'unknown',
+        sha256: '',
+      },
+      status: 'unknown-template',
+      changes: [],
+      hasLocalFile: fs.existsSync(target.targetPath),
+    };
+  }
+
+  return {
+    relativePath,
+    managedFile: {
+      template: target.templateRelativePath,
+      templateVersion: template.version,
+      sha256: '',
+      status: 'managed',
+    },
+    status: 'new-template',
+    currentTemplateVersion: template.version,
+    changes: template.changes,
+    hasLocalFile: fs.existsSync(target.targetPath),
+  };
+}
+
+function mergeWorkflowSkills(...skillGroups: SelectableWorkflowSkill[][]): SelectableWorkflowSkill[] {
+  const skillsById = new Map<SelectableWorkflowSkill['id'], SelectableWorkflowSkill>();
+
+  for (const skill of skillGroups.flat()) {
+    skillsById.set(skill.id, skill);
+  }
+
+  return [...skillsById.values()];
 }
 
 function getManagedFileSyncPreview({

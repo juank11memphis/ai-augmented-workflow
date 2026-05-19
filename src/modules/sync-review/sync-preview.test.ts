@@ -6,7 +6,8 @@ import { afterEach, describe, it } from 'node:test';
 
 import { SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
-import type { SibuState, SupportedAgent } from '../../shared/types.js';
+import type { McpServerId, SibuState, SupportedAgent } from '../../shared/types.js';
+import { applySyncAction } from './apply-action.js';
 import { getSyncPreviews } from './sync-preview.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
 
@@ -114,6 +115,52 @@ describe('getSyncPreviews', () => {
     assert.equal(preview.status, 'modified-with-update');
     assert.deepEqual(preview.changes, ['Refreshes generated MCP configuration for the current selected MCP servers.']);
   });
+
+  it('offers Export to GitHub adoption when GitHub MCP is already selected', () => {
+    const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
+    const state = readState(rootPath);
+
+    const skillPreview = getSyncPreview(rootPath, state, '.agents/skills/export-to-github/SKILL.md');
+    const agentsPreview = getSyncPreview(rootPath, state, 'AGENTS.md');
+
+    assert.equal(skillPreview.status, 'new-template');
+    assert.equal(skillPreview.managedFile.template, 'skills/export-to-github/SKILL.md');
+    assert.equal(skillPreview.impliedWorkflowSkillId, 'export-to-github');
+    assert.equal(skillPreview.hasLocalFile, false);
+    assert.equal(agentsPreview.status, 'update-available');
+    assert.deepEqual(agentsPreview.changes, ['Refreshes generated skill routing for the current selected skills.']);
+  });
+
+  it('offers Export to Notion adoption when Notion MCP is already selected', () => {
+    const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['notion']);
+    const state = readState(rootPath);
+
+    const skillPreview = getSyncPreview(rootPath, state, '.agents/skills/export-to-notion/SKILL.md');
+    const agentsPreview = getSyncPreview(rootPath, state, 'AGENTS.md');
+
+    assert.equal(skillPreview.status, 'new-template');
+    assert.equal(skillPreview.managedFile.template, 'skills/export-to-notion/SKILL.md');
+    assert.equal(skillPreview.impliedWorkflowSkillId, 'export-to-notion');
+    assert.equal(skillPreview.hasLocalFile, false);
+    assert.equal(agentsPreview.status, 'update-available');
+    assert.deepEqual(agentsPreview.changes, ['Refreshes generated skill routing for the current selected skills.']);
+  });
+
+  it('records the implied exporter skill only when sync adoption is applied', () => {
+    const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
+    const state = readState(rootPath);
+    const manifest = readTemplateManifest();
+    const skillPreview = getSyncPreview(rootPath, state, '.agents/skills/export-to-github/SKILL.md');
+
+    const skipped = applySyncAction({ rootPath, state, manifest, preview: skillPreview, action: 'skip' });
+    const applied = applySyncAction({ rootPath, state, manifest, preview: skillPreview, action: 'apply-update' });
+
+    assert.equal(skipped.changedState, false);
+    assert.deepEqual(skipped.state.selectedWorkflowSkills, []);
+    assert.deepEqual(applied.state.selectedWorkflowSkills, ['export-to-github']);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/export-to-github/SKILL.md')), true);
+    assert.ok(applied.state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
+  });
 });
 
 function createCleanInitializedRepo(): string {
@@ -146,10 +193,14 @@ function createCleanInitializedRepo(): string {
 }
 
 function createCleanInitializedRepoWithGithubMcp(): string {
+  return createCleanInitializedRepoWithSelectedMcpServers(SELECTABLE_MCP_SERVERS.map((server) => server.id));
+}
+
+function createCleanInitializedRepoWithSelectedMcpServers(selectedMcpServerIds: McpServerId[]): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-sync-preview-mcp-'));
   temporaryRoots.push(rootPath);
   const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')];
-  const selectedMcpServers = SELECTABLE_MCP_SERVERS;
+  const selectedMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => selectedMcpServerIds.includes(server.id));
   const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], undefined, [], [], selectedMcpServers);
   const files = renderMissingWorkflowFiles({
     missingTargets: targets,

@@ -39,6 +39,7 @@ export function applySyncAction({
 
   switch (action) {
     case 'apply-update': {
+      recordImpliedWorkflowSkill(nextState, preview);
       const contents = renderTemplateForSync({
         templateRelativePath: managedFile.template,
         currentPath: targetPath,
@@ -63,6 +64,7 @@ export function applySyncAction({
       return { state: nextState, changedFiles: true, changedState: true };
     }
     case 'mark-reviewed': {
+      recordImpliedWorkflowSkill(nextState, preview);
       const contents = fs.readFileSync(targetPath, 'utf8');
       nextState.templateVersion = manifest.templateVersion;
       nextState.updatedAt = new Date().toISOString();
@@ -110,4 +112,16 @@ export function applySyncAction({
     case 'skip':
       return { state, changedFiles: false, changedState: false };
   }
+}
+
+function recordImpliedWorkflowSkill(state: SibuState, preview: SyncPreview): void {
+  if (!preview.impliedWorkflowSkillId) {
+    return;
+  }
+
+  if (state.selectedWorkflowSkills?.includes(preview.impliedWorkflowSkillId)) {
+    return;
+  }
+
+  state.selectedWorkflowSkills = [...(state.selectedWorkflowSkills ?? []), preview.impliedWorkflowSkillId];
 }
