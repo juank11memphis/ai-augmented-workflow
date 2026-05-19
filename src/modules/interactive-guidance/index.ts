@@ -12,6 +12,7 @@ export {
   askForSupportedAgents,
   askForWorkflowSkills,
   MCP_SERVER_SELECTION_MESSAGE,
+  getPromptableWorkflowSkills,
   renderIntro,
   shouldAskForNewLanguageSkills,
 } from './prompts.js';

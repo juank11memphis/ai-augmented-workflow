@@ -19,7 +19,7 @@ import {
   renderIntro,
 } from '../interactive-guidance/index.js';
 import { readStateForDoctor } from '../workflow-state-registry/index.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
+import { getWorkflowSkillsImpliedByMcpServers, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
 import type { InitProjectCommand } from './command.js';
 import type {
   SelectableArchitectureSkill,
@@ -40,9 +40,19 @@ type InitProjectDependencies = {
   askForFrameworkSkills: () => Promise<SelectableFrameworkSkill[]>;
   askForDatabaseSkills: () => Promise<SelectableDatabaseSkill[]>;
   askForArchitectureSkill: () => Promise<SelectableArchitectureSkill | undefined>;
-  askForWorkflowSkills: () => Promise<SelectableWorkflowSkill[]>;
+  askForWorkflowSkills: (excludedWorkflowSkillIds?: SelectableWorkflowSkill['id'][]) => Promise<SelectableWorkflowSkill[]>;
   askForProjectOverview: () => Promise<string>;
 };
+
+function mergeWorkflowSkills(...skillGroups: SelectableWorkflowSkill[][]): SelectableWorkflowSkill[] {
+  const skillsById = new Map<SelectableWorkflowSkill['id'], SelectableWorkflowSkill>();
+
+  for (const skill of skillGroups.flat()) {
+    skillsById.set(skill.id, skill);
+  }
+
+  return [...skillsById.values()];
+}
 
 const defaultDependencies: InitProjectDependencies = {
   renderIntro,
@@ -84,12 +94,21 @@ export async function handleInitProject(_command: InitProjectCommand, dependenci
 
   const selectedAgents = await dependencies.askForSupportedAgents();
   const selectedMcpServers = await dependencies.askForMcpServers();
+  const impliedWorkflowSkills = getWorkflowSkillsImpliedByMcpServers(selectedMcpServers.map((server) => server.id));
+
+  for (const skill of impliedWorkflowSkills) {
+    log.info(`${skill.name} will be included because its matching MCP server was selected.`);
+  }
+
   const notionDocsParentPage = selectedMcpServers.some((server) => server.id === 'notion') ? await dependencies.askForNotionDocsParentPage() : undefined;
   const selectedLanguageSkills = await dependencies.askForLanguageSkills();
   const selectedFrameworkSkills = await dependencies.askForFrameworkSkills();
   const selectedDatabaseSkills = await dependencies.askForDatabaseSkills();
   const selectedArchitectureSkill = await dependencies.askForArchitectureSkill();
-  const selectedWorkflowSkills = await dependencies.askForWorkflowSkills();
+  const selectedWorkflowSkills = mergeWorkflowSkills(
+    impliedWorkflowSkills,
+    await dependencies.askForWorkflowSkills(impliedWorkflowSkills.map((skill) => skill.id))
+  );
   const targets = getWorkflowTargets(
     rootPath,
     selectedAgents,

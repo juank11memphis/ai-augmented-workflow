@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { SibuState } from '../../shared/types.js';
-import { MCP_SERVER_SELECTION_MESSAGE, askForNotionDocsParentPage, shouldAskForNewLanguageSkills } from './index.js';
+import { MCP_SERVER_SELECTION_MESSAGE, askForNotionDocsParentPage, getPromptableWorkflowSkills, shouldAskForNewLanguageSkills } from './index.js';
 
 const BASE_STATE: SibuState = {
   sibuVersion: '0.1.0',
@@ -33,6 +33,16 @@ describe('MCP server selection copy', () => {
   });
 });
 
+describe('getPromptableWorkflowSkills', () => {
+  it('excludes workflow skills that are already implied by MCP selections', () => {
+    const skills = getPromptableWorkflowSkills(['export-to-github', 'export-to-notion']);
+
+    assert.equal(skills.some((skill) => skill.id === 'export-to-github'), false);
+    assert.equal(skills.some((skill) => skill.id === 'export-to-notion'), false);
+    assert.equal(skills.some((skill) => skill.id === 'ai-prompt-engineer-master'), true);
+    assert.equal(skills.some((skill) => skill.id === 'ux-expert'), true);
+  });
+});
 
 describe('askForNotionDocsParentPage', () => {
   it('is exported for Notion MCP selection flows', () => {

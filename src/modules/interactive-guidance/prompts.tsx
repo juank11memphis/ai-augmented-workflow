@@ -216,11 +216,18 @@ export async function askForArchitectureSkill(): Promise<SelectableArchitectureS
   return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === selectedArchitectureSkillId);
 }
 
-export async function askForWorkflowSkills(): Promise<SelectableWorkflowSkill[]> {
+export function getPromptableWorkflowSkills(excludedWorkflowSkillIds: WorkflowSkillId[] = []): SelectableWorkflowSkill[] {
+  const excludedIds = new Set(excludedWorkflowSkillIds);
+
+  return SELECTABLE_WORKFLOW_SKILLS.filter((skill) => !excludedIds.has(skill.id));
+}
+
+export async function askForWorkflowSkills(excludedWorkflowSkillIds: WorkflowSkillId[] = []): Promise<SelectableWorkflowSkill[]> {
+  const promptableWorkflowSkills = getPromptableWorkflowSkills(excludedWorkflowSkillIds);
   const selectedWorkflowSkillIds = await multiselect<WorkflowSkillId>({
     message: 'Select optional workflow skills for this project.',
     required: false,
-    options: SELECTABLE_WORKFLOW_SKILLS.map((skill) => ({
+    options: promptableWorkflowSkills.map((skill) => ({
       value: skill.id,
       label: skill.name,
       hint: skill.description,
@@ -232,7 +239,7 @@ export async function askForWorkflowSkills(): Promise<SelectableWorkflowSkill[]>
     process.exit(0);
   }
 
-  return SELECTABLE_WORKFLOW_SKILLS.filter((skill) => selectedWorkflowSkillIds.includes(skill.id));
+  return promptableWorkflowSkills.filter((skill) => selectedWorkflowSkillIds.includes(skill.id));
 }
 
 export function shouldAskForNewLanguageSkills(state: SibuState): boolean {

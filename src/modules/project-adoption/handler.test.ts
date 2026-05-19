@@ -4,9 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { handleInitProject } from './handler.js';
-import type { SibuState, SupportedAgent } from '../../shared/types.js';
+import type { SibuState, SupportedAgent, WorkflowSkillId } from '../../shared/types.js';
 
 const temporaryRoots: string[] = [];
 const originalCwd = process.cwd();
@@ -60,6 +60,66 @@ describe('handleInitProject', () => {
     assert.equal(askedForNotionParentPage, false);
     assert.deepEqual(state.selectedMcpServers, ['github']);
     assert.equal(state.mcpServerConfigs, undefined);
+  });
+
+
+
+  it('includes the GitHub export skill as a companion when GitHub MCP is selected', async () => {
+    const rootPath = createTemporaryRoot();
+    process.chdir(rootPath);
+    let excludedWorkflowSkillIds: WorkflowSkillId[] | undefined;
+
+    await handleInitProject(
+      { type: 'init' },
+      {
+        ...buildDependencies({ selectedAgents: [getSupportedAgent('codex')], selectedMcpServers: SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'github') }),
+        askForWorkflowSkills: async (excludedIds) => {
+          excludedWorkflowSkillIds = excludedIds;
+          return [];
+        },
+      }
+    );
+
+    const state = readState(rootPath);
+
+    assert.deepEqual(excludedWorkflowSkillIds, ['export-to-github']);
+    assert.deepEqual(state.selectedMcpServers, ['github']);
+    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-github']);
+    assert.ok(state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
+  });
+
+  it('includes the Notion export skill as a companion and still asks for Notion docs parent page', async () => {
+    const rootPath = createTemporaryRoot();
+    process.chdir(rootPath);
+    let askedForNotionParentPage = false;
+    let excludedWorkflowSkillIds: WorkflowSkillId[] | undefined;
+
+    await handleInitProject(
+      { type: 'init' },
+      {
+        ...buildDependencies({ selectedAgents: [getSupportedAgent('codex')], selectedMcpServers: SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'notion') }),
+        askForNotionDocsParentPage: async () => {
+          askedForNotionParentPage = true;
+          return 'https://notion.so/sibu-docs';
+        },
+        askForWorkflowSkills: async (excludedIds) => {
+          excludedWorkflowSkillIds = excludedIds;
+          return [SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'ai-prompt-engineer-master')!];
+        },
+      }
+    );
+
+    const state = readState(rootPath);
+
+    assert.equal(askedForNotionParentPage, true);
+    assert.deepEqual(excludedWorkflowSkillIds, ['export-to-notion']);
+    assert.deepEqual(state.selectedMcpServers, ['notion']);
+    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-notion', 'ai-prompt-engineer-master']);
+    assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
+    assert.ok(state.managedFiles['.agents/skills/export-to-notion/SKILL.md']);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-notion`/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
   });
 
   it('initializes managed MCP config for supported selected agents', async () => {
