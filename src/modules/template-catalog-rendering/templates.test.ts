@@ -135,6 +135,23 @@ describe('layered architecture template', () => {
   });
 });
 
+
+describe('feature brief writer raw idea source guidance', () => {
+  it('keeps docs/feature-ideas.md ideas from bypassing the interview flow', () => {
+    const templatePath = 'skills/feature-brief-writer/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '11');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /docs\/feature-ideas\.md.*normal feature brief interview/i);
+    assert.match(contents, /docs\/feature-ideas\.md/);
+    assert.match(contents, /raw\/vague input/i);
+    assert.match(contents, /Do not skip the normal interview flow/i);
+    assert.match(contents, /problem, target user\/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit/);
+  });
+});
+
 describe('feature idea capture template', () => {
   it('is registered, readable, and routed as mandatory guidance', () => {
     const templatePath = 'skills/feature-idea-capture/SKILL.md';

@@ -95,6 +95,15 @@ Use a short kebab-case feature slug that matches the feature name. Keep all arti
 
 Do not write the brief to technical design, UX, user story, implementation plan, or backlog files unless the user explicitly asks for a separate artifact after the feature brief exists.
 
+## Raw idea sources
+
+If the user asks for a feature brief from an idea in `docs/feature-ideas.md`, read the relevant idea and treat it as raw/vague input only.
+
+- Do not skip the normal interview flow because the idea exists in a file.
+- Use the idea as a seed for the first discovery question, not as complete feature intent.
+- Keep asking one focused question at a time until the usual required context is resolved: problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit.
+- Preserve the hard-start requirements for `docs/product-vision.md` and `docs/deep-module-map.md`.
+
 ## Interview posture
 
 Be deliberately interrogative before drafting. The feature brief should reflect the user's intent, not the assistant's assumptions.

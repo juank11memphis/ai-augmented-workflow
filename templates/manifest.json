@@ -1,5 +1,5 @@
 {
-  "templateVersion": "99",
+  "templateVersion": "100",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -65,10 +65,10 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds optional Notion export guidance after local feature briefs are written while keeping Markdown as the canonical artifact."
+        "Clarifies that feature ideas captured in docs/feature-ideas.md are raw input and must still go through the normal feature brief interview."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
