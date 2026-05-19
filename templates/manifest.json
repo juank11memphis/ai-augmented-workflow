@@ -1,5 +1,5 @@
 {
-  "templateVersion": "102",
+  "templateVersion": "103",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -65,17 +65,17 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "12",
+      "version": "13",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Removes a promoted idea from docs/feature-ideas.md after its local feature brief is successfully written."
+        "Keeps feature brief writing focused on local Markdown artifacts and moves Notion export workflow guidance to dedicated exporter skills."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "18",
+      "version": "19",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Strengthens technical design interviews to resolve material implementation questions before drafting and replaces open questions with risks/tradeoffs."
+        "Keeps technical design writing focused on local Markdown artifacts and moves Notion export workflow guidance to dedicated exporter skills."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -128,10 +128,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "11",
+      "version": "12",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Clarifies that User Stories should be deployable increments that can be merged safely on their own, even when gated or incomplete until the parent Epic is done."
+        "Keeps Scrum planning focused on local Epic and User Story artifacts and moves GitHub export workflow guidance to dedicated exporter skills."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
@@ -163,10 +163,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Strengthens UX interviews to resolve material experience questions before drafting and replaces open UX questions with risks/tradeoffs."
+        "Keeps UX design writing focused on local Markdown artifacts and moves Notion export workflow guidance to dedicated exporter skills."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {

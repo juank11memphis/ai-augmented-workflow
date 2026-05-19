@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "98",
+  "templateVersion": "101",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-18T19:21:18.206Z",
+  "updatedAt": "2026-05-19T17:40:50.711Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -29,8 +29,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "29",
-      "sha256": "d832883c9820b0ecd849ef44d1b2a5233feadf2cc837a044c30a48ef2aa2d2f5",
+      "templateVersion": "30",
+      "sha256": "e5c409ed27d29ce136d2a78b8ef644a3c137b9a1738fcaa5b23835299ce6ab9d",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -71,8 +71,8 @@
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "10",
-      "sha256": "fff5d780a050b9b0f30ac11161d5769cade5a7ec6f6a623c3057011ff23b6d6e",
+      "templateVersion": "12",
+      "sha256": "a85ff22997d43c748cc6d2e878fe97102d94dc2bef186c7499e8b023259f2323",
       "status": "managed"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
@@ -129,6 +129,12 @@
       "template": "mcp/claude/.mcp.json",
       "templateVersion": "2",
       "sha256": "71a795e6514e5aa495e39fb763cdc2f86e83579d9b8ca772faf7a024e0636f31",
+      "status": "managed"
+    },
+    ".agents/skills/feature-idea-capture/SKILL.md": {
+      "template": "skills/feature-idea-capture/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "829f56e517cf2322ea29e7cee3752a1ac04a310c2bcfa7824fd7859d1521dcae",
       "status": "managed"
     }
   }

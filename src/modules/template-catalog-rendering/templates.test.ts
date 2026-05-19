@@ -139,12 +139,7 @@ describe('layered architecture template', () => {
 describe('feature brief writer raw idea source guidance', () => {
   it('keeps docs/feature-ideas.md ideas from bypassing the interview flow', () => {
     const templatePath = 'skills/feature-brief-writer/SKILL.md';
-    const manifest = readTemplateManifest();
-    const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '12');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /promoted idea.*docs\/feature-ideas\.md/i);
     assert.match(contents, /docs\/feature-ideas\.md/);
     assert.match(contents, /raw\/vague input/i);
     assert.match(contents, /Do not skip the normal interview flow/i);
@@ -222,5 +217,41 @@ describe('dedicated exporter skill templates', () => {
     assert.match(contents, /technical_design\.md/);
     assert.match(contents, /Do not export Epics, User Stories, implementation plans, product vision, Deep Module Maps, or arbitrary docs/i);
     assert.match(contents, /Do not write Notion URLs back into local Markdown/i);
+  });
+});
+
+describe('authoring templates delegate export to dedicated exporter skills', () => {
+  it('keeps document authoring templates free of Notion export workflows', () => {
+    const manifest = readTemplateManifest();
+    const authoringTemplatePaths = [
+      'skills/feature-brief-writer/SKILL.md',
+      'skills/technical-design-writer/SKILL.md',
+      'skills/ux-expert/SKILL.md',
+    ];
+
+    for (const templatePath of authoringTemplatePaths) {
+      const contents = readTemplate(templatePath);
+      const templateMetadata = manifest.templates[templatePath];
+
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /dedicated exporter skills/i);
+      assert.doesNotMatch(contents, /Optional Notion export after local write/i);
+      assert.doesNotMatch(contents, /mcpServerConfigs\.notion\.docsParentPage/i);
+      assert.doesNotMatch(contents, /Create a new document page for the just-written artifact content/i);
+    }
+  });
+
+  it('keeps Scrum planning free of the GitHub export gate', () => {
+    const templatePath = 'skills/scrum-master-planner/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /dedicated exporter skills/i);
+    assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
+    assert.doesNotMatch(contents, /GitHub export gate outcome/i);
+    assert.doesNotMatch(contents, /Create GitHub Issues for these Epics and User Stories/i);
+    assert.match(contents, /After writing files, final-answer with only:/i);
+    assert.match(contents, /the Epic directories created or updated/i);
+    assert.match(contents, /the number of Epics and User Stories/i);
   });
 });
