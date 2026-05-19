@@ -84,6 +84,15 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       windsurf: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
     },
   },
+  {
+    templateRelativePath: 'skills/feature-idea-capture/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/feature-idea-capture/SKILL.md',
+      gemini: '.agents/skills/feature-idea-capture/SKILL.md',
+      claude: '.agents/skills/feature-idea-capture/SKILL.md',
+      windsurf: '.agents/skills/feature-idea-capture/SKILL.md',
+    },
+  },
 ];
 
 export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [

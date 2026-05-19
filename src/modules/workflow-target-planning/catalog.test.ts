@@ -61,6 +61,7 @@ describe('resolveSelectableSkillById', () => {
 
   it('does not resolve required-only skills as selectable skills', () => {
     assertUnknownSkill('clean-code');
+    assertUnknownSkill('feature-idea-capture');
   });
 });
 

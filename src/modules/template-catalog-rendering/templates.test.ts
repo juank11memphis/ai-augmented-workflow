@@ -135,6 +135,29 @@ describe('layered architecture template', () => {
   });
 });
 
+describe('feature idea capture template', () => {
+  it('is registered, readable, and routed as mandatory guidance', () => {
+    const templatePath = 'skills/feature-idea-capture/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /Mandatory feature idea capture/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /mandatory feature idea capture/i);
+    assert.equal(manifest.templates['docs/feature-ideas.md'], undefined);
+
+    const contents = readTemplate(templatePath);
+    const agentsContents = readTemplate('AGENTS.md');
+
+    assert.match(contents, /name: feature-idea-capture/);
+    assert.match(contents, /docs\/feature-ideas\.md/);
+    assert.match(contents, /create it on first use/i);
+    assert.match(contents, /Do not interview the user before capture/i);
+    assert.match(contents, /short heading and a few bullets/i);
+    assert.match(agentsContents, /use `feature-idea-capture`/);
+  });
+});
+
 function assertDoesNotContainRealCredential(contents: string): void {
   assert.doesNotMatch(contents, /ghp_[A-Za-z0-9_]+/);
   assert.doesNotMatch(contents, /github_pat_[A-Za-z0-9_]+/);

@@ -1,11 +1,11 @@
 {
-  "templateVersion": "98",
+  "templateVersion": "99",
   "templates": {
     "AGENTS.md": {
-      "version": "29",
+      "version": "30",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Can render Layered Architecture routing when that architecture option is selected."
+        "Routes rough future idea capture requests to the mandatory feature-idea-capture skill."
       ]
     },
     ".codex/config.toml": {
@@ -146,6 +146,13 @@
       "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
       "changes": [
         "Clarifies that story and Epic planning requests are confirmation for executor implementation."
+      ]
+    },
+    "skills/feature-idea-capture/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory feature idea capture skill for storing rough future ideas in docs/feature-ideas.md only when the skill is used.",
+      "changes": [
+        "Adds a mandatory feature idea capture skill for quick, raw idea storage without backlog or planning ceremony."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {

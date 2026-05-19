@@ -47,6 +47,7 @@ For planned product/feature work, use this pipeline: product vision -> deep modu
 - For requests to create Epics, User Stories, Scrum planning artifacts, backlog slices, or delivery plans from an approved feature brief and technical design, use `scrum-master-planner`.
 - For explicit planning-only requests to turn a specific User Story into an implementation checklist, coding plan, step-by-step execution plan, or baby-step plan without implementation, use `ai-implementation-planner` and stop after writing the plan. Treat a request as planning-only only when the user explicitly says planning-only, "do not implement," or asks to create the plan without execution.
 - For requests to plan, implement, execute, continue, or work through a specific User Story under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`, an Epic, or an existing story implementation plan under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/`, use `ai-implementation-plan-executor`; when the story plan is missing, the executor must create it with `ai-implementation-planner` and immediately continue into implementation without a separate plan approval gate.
+- For requests to capture, save, jot down, or add rough future feature ideas, use `feature-idea-capture`.
 {{OPTIONAL_SKILL_ROUTING}}
 
 ## Sibu maintenance

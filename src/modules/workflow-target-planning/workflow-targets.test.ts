@@ -41,6 +41,7 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/scrum-master-planner/SKILL.md',
       '.agents/skills/ai-implementation-planner/SKILL.md',
       '.agents/skills/ai-implementation-plan-executor/SKILL.md',
+      '.agents/skills/feature-idea-capture/SKILL.md',
       '.agents/skills/typescript/SKILL.md',
       '.agents/skills/react/SKILL.md',
       '.agents/skills/postgresql-expert/SKILL.md',
@@ -62,7 +63,9 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assert.equal(targetPaths.includes('.agents/skills/deep-module-map-writer/SKILL.md'), true);
+    assert.equal(targetPaths.includes('.agents/skills/feature-idea-capture/SKILL.md'), true);
     assert.equal(targetPaths.includes('docs/deep-module-map.md'), false);
+    assert.equal(targetPaths.includes('docs/feature-ideas.md'), false);
     assertNoInvalidTargets(targets);
   });
 
@@ -178,10 +181,14 @@ describe('getWorkflowTargets', () => {
       sha256: state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md']?.sha256,
       status: 'managed',
     });
+    assert.ok(state.managedFiles['.agents/skills/feature-idea-capture/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
     assert.equal(state.managedFiles['docs/deep-module-map.md'], undefined);
+    assert.equal(state.managedFiles['docs/feature-ideas.md'], undefined);
+    assert.equal(fs.existsSync(path.join(rootPath, 'docs/feature-ideas.md')), false);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `feature-idea-capture`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `postgresql-expert`/);
