@@ -51,6 +51,8 @@ For planned product/feature work, use this pipeline: product vision -> deep modu
 - For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - For work that structures actions, workflows, command handlers, operation dispatch, request processing, or executable tasks, use `command-pattern`.
 - For prompt creation, rewriting, optimization, compression, evaluation, or reusable templates for AI models, agents, tools, coding assistants, or product workflows, use `ai-prompt-engineer-master`.
+- For exporting a feature's Epics and User Stories to GitHub issues or sub-issues, use `export-to-github`.
+- For exporting a feature's feature brief, UX design, or technical design to Notion, use `export-to-notion`.
 
 ## Sibu maintenance
 
