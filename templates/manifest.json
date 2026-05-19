@@ -1,5 +1,5 @@
 {
-  "templateVersion": "101",
+  "templateVersion": "102",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -174,6 +174,20 @@
       "description": "Selectable lightweight architecture skill for pragmatic controllers, services, models, and repositories guidance.",
       "changes": [
         "Adds a Layered Architecture skill for smaller apps that need simple separation of concerns."
+      ]
+    },
+    "skills/export-to-github/SKILL.md": {
+      "version": "1",
+      "description": "Selectable GitHub export skill for publishing a named feature's Epics and User Stories to GitHub issues and native sub-issues.",
+      "changes": [
+        "Adds a dedicated GitHub exporter skill paired with GitHub MCP selection."
+      ]
+    },
+    "skills/export-to-notion/SKILL.md": {
+      "version": "1",
+      "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
+      "changes": [
+        "Adds a dedicated Notion exporter skill paired with Notion MCP selection."
       ]
     }
   }

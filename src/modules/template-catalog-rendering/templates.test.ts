@@ -187,3 +187,40 @@ function assertDoesNotContainNotionCredential(contents: string): void {
   assert.doesNotMatch(contents, /ntn_[A-Za-z0-9_]+/i);
   assert.doesNotMatch(contents, /notion[_-]?token/i);
 }
+
+describe('dedicated exporter skill templates', () => {
+  it('registers and renders the GitHub exporter skill', () => {
+    const templatePath = 'skills/export-to-github/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /GitHub export skill/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /GitHub exporter skill/i);
+    assert.match(contents, /name: export-to-github/);
+    assert.match(contents, /feature name/i);
+    assert.match(contents, /Epics and User Stories/i);
+    assert.match(contents, /native sub-issues/i);
+    assert.match(contents, /GitHub MCP/i);
+    assert.match(contents, /Do not modify local Markdown files with GitHub URLs/i);
+  });
+
+  it('registers and renders the Notion exporter skill', () => {
+    const templatePath = 'skills/export-to-notion/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Notion exporter skill/i);
+    assert.match(contents, /name: export-to-notion/);
+    assert.match(contents, /feature name/i);
+    assert.match(contents, /feature_brief\.md/);
+    assert.match(contents, /ux\.md/);
+    assert.match(contents, /technical_design\.md/);
+    assert.match(contents, /Do not export Epics, User Stories, implementation plans, product vision, Deep Module Maps, or arbitrary docs/i);
+    assert.match(contents, /Do not write Notion URLs back into local Markdown/i);
+  });
+});

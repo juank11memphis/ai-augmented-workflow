@@ -92,6 +92,20 @@ describe('getWorkflowTargets', () => {
     assertNoInvalidTargets(targets);
   });
 
+
+
+  it('includes exporter skill targets when selected', () => {
+    const selectedWorkflowSkills = SELECTABLE_WORKFLOW_SKILLS.filter((skill) => skill.id === 'export-to-github' || skill.id === 'export-to-notion');
+    const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS, [], [], undefined, selectedWorkflowSkills);
+    const targetPaths = getRelativeTargetPaths(targets);
+
+    assert.equal(targetPaths.includes('.agents/skills/export-to-github/SKILL.md'), true);
+    assert.equal(targetPaths.includes('.agents/skills/export-to-notion/SKILL.md'), true);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-github/SKILL.md').length, 1);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-notion/SKILL.md').length, 1);
+    assertNoInvalidTargets(targets);
+  });
+
   it('resolves MCP targets without adding Windsurf MCP config', () => {
     assert.deepEqual(getSelectedMcpTargetsForAgents(SUPPORTED_AGENTS, SELECTABLE_MCP_SERVERS), [
       {
@@ -173,7 +187,7 @@ describe('getWorkflowTargets', () => {
 
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
 
-    assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert']);
+    assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert', 'export-to-github', 'export-to-notion']);
     assert.deepEqual(state.selectedDatabaseSkills, ['postgresql-expert']);
     assert.deepEqual(state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md'], {
       template: 'skills/deep-module-map-writer/SKILL.md',
@@ -184,6 +198,8 @@ describe('getWorkflowTargets', () => {
     assert.ok(state.managedFiles['.agents/skills/feature-idea-capture/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
+    assert.ok(state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
+    assert.ok(state.managedFiles['.agents/skills/export-to-notion/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
     assert.equal(state.managedFiles['docs/deep-module-map.md'], undefined);
     assert.equal(state.managedFiles['docs/feature-ideas.md'], undefined);
@@ -191,6 +207,8 @@ describe('getWorkflowTargets', () => {
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `feature-idea-capture`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-notion`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `postgresql-expert`/);
 
     fs.rmSync(rootPath, { recursive: true, force: true });

@@ -8,6 +8,8 @@ import type {
   SelectableSkillResolutionResult,
   SelectableWorkflowSkill,
   SkillTemplate,
+  McpServerId,
+  WorkflowSkillId,
   SupportedAgent,
 } from '../../shared/types.js';
 
@@ -247,7 +249,72 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       windsurf: '.agents/skills/ux-expert/SKILL.md',
     },
   },
+  {
+    id: 'export-to-github',
+    name: 'Export to GitHub',
+    description: "Install guidance for exporting a named feature's Epics and User Stories to GitHub using the configured GitHub MCP server",
+    routingInstruction:
+      "For exporting a feature's Epics and User Stories to GitHub issues or sub-issues, use `export-to-github`.",
+    templateRelativePath: 'skills/export-to-github/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/export-to-github/SKILL.md',
+      gemini: '.agents/skills/export-to-github/SKILL.md',
+      claude: '.agents/skills/export-to-github/SKILL.md',
+      windsurf: '.agents/skills/export-to-github/SKILL.md',
+    },
+  },
+  {
+    id: 'export-to-notion',
+    name: 'Export to Notion',
+    description: "Install guidance for exporting a named feature's feature brief, UX design, and technical design to Notion using the configured Notion MCP server",
+    routingInstruction:
+      "For exporting a feature's feature brief, UX design, or technical design to Notion, use `export-to-notion`.",
+    templateRelativePath: 'skills/export-to-notion/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/export-to-notion/SKILL.md',
+      gemini: '.agents/skills/export-to-notion/SKILL.md',
+      claude: '.agents/skills/export-to-notion/SKILL.md',
+      windsurf: '.agents/skills/export-to-notion/SKILL.md',
+    },
+  },
 ];
+
+
+const EXPORT_WORKFLOW_SKILL_MCP_REQUIREMENTS: Record<Extract<WorkflowSkillId, 'export-to-github' | 'export-to-notion'>, McpServerId> = {
+  'export-to-github': 'github',
+  'export-to-notion': 'notion',
+};
+
+export function getMcpServersRequiredByWorkflowSkills(workflowSkillIds: WorkflowSkillId[]): SelectableMcpServer[] {
+  const requiredServerIds = new Set<McpServerId>();
+
+  for (const workflowSkillId of workflowSkillIds) {
+    const requiredServerId = getRequiredMcpServerIdForWorkflowSkill(workflowSkillId);
+
+    if (requiredServerId) {
+      requiredServerIds.add(requiredServerId);
+    }
+  }
+
+  return SELECTABLE_MCP_SERVERS.filter((server) => requiredServerIds.has(server.id));
+}
+
+export function getWorkflowSkillsImpliedByMcpServers(mcpServerIds: McpServerId[]): SelectableWorkflowSkill[] {
+  const selectedServerIds = new Set(mcpServerIds);
+  const impliedSkillIds = Object.entries(EXPORT_WORKFLOW_SKILL_MCP_REQUIREMENTS)
+    .filter(([, requiredServerId]) => selectedServerIds.has(requiredServerId))
+    .map(([workflowSkillId]) => workflowSkillId as WorkflowSkillId);
+
+  return SELECTABLE_WORKFLOW_SKILLS.filter((skill) => impliedSkillIds.includes(skill.id));
+}
+
+function getRequiredMcpServerIdForWorkflowSkill(workflowSkillId: WorkflowSkillId): McpServerId | undefined {
+  if (workflowSkillId === 'export-to-github' || workflowSkillId === 'export-to-notion') {
+    return EXPORT_WORKFLOW_SKILL_MCP_REQUIREMENTS[workflowSkillId];
+  }
+
+  return undefined;
+}
 
 export const SELECTABLE_MCP_SERVERS: SelectableMcpServer[] = [
   {

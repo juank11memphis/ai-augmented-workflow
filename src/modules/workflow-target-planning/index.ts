@@ -7,6 +7,8 @@ export {
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
+  getMcpServersRequiredByWorkflowSkills,
+  getWorkflowSkillsImpliedByMcpServers,
   resolveSelectableMcpServerById,
   resolveSelectableSkillById,
 } from './catalog.js';

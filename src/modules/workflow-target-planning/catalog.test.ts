@@ -10,6 +10,8 @@ import {
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
+  getMcpServersRequiredByWorkflowSkills,
+  getWorkflowSkillsImpliedByMcpServers,
   resolveSelectableMcpServerById,
   resolveSelectableSkillById,
 } from './catalog.js';
@@ -53,6 +55,8 @@ describe('resolveSelectableSkillById', () => {
     assertResolvedSkill('postgresql-expert', 'database');
     assertResolvedSkill('ai-prompt-engineer-master', 'workflow');
     assertResolvedSkill('ux-expert', 'workflow');
+    assertResolvedSkill('export-to-github', 'workflow');
+    assertResolvedSkill('export-to-notion', 'workflow');
   });
 
   it('fails with a skills list suggestion for unknown skill ids', () => {
@@ -108,6 +112,29 @@ describe('resolveSelectableMcpServerById', () => {
       ok: false,
       message: 'Unknown MCP server `nope`. Run `sibu mcp list` to see available MCP servers.',
     });
+  });
+});
+
+describe('export workflow skill MCP pairings', () => {
+  it('identifies MCP servers required by exporter workflow skills', () => {
+    assert.deepEqual(
+      getMcpServersRequiredByWorkflowSkills(['export-to-github', 'export-to-notion']).map((server) => server.id),
+      ['github', 'notion']
+    );
+
+    assert.deepEqual(getMcpServersRequiredByWorkflowSkills(['ai-prompt-engineer-master', 'ux-expert']), []);
+  });
+
+  it('identifies exporter workflow skills implied by selected MCP servers', () => {
+    assert.deepEqual(
+      getWorkflowSkillsImpliedByMcpServers(['github', 'notion']).map((skill) => skill.id),
+      ['export-to-github', 'export-to-notion']
+    );
+
+    assert.deepEqual(
+      getWorkflowSkillsImpliedByMcpServers(['notion']).map((skill) => skill.id),
+      ['export-to-notion']
+    );
   });
 });
 
