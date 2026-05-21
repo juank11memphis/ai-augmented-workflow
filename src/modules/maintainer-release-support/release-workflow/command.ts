@@ -80,6 +80,7 @@ export type ReleaseWorkflowPorts = {
   confirmRelease(plan: ReleasePlan): boolean | Promise<boolean>;
   writeFile(path: string, contents: string): void;
   run(command: string, args: string[]): ReleaseCommandResult | Promise<ReleaseCommandResult>;
+  runInteractive?(command: string, args: string[]): ReleaseCommandResult | Promise<ReleaseCommandResult>;
 };
 
 export type ReleaseCommandResult = {
@@ -117,6 +118,7 @@ export type ReleaseExecutionPorts = {
   print?(message: string): void;
   writeFile(path: string, contents: string): void;
   run(command: string, args: string[]): ReleaseCommandResult | Promise<ReleaseCommandResult>;
+  runInteractive?(command: string, args: string[]): ReleaseCommandResult | Promise<ReleaseCommandResult>;
 };
 
 export type ReleaseExecutionResult =

@@ -272,8 +272,9 @@ export async function executeConfirmedRelease(plan: ReleasePlan, ports: ReleaseE
 
   const npmPublishArgs = buildNpmPublishArgs(plan);
   const npmPublishLog = plan.hasOtp ? 'npm publish --access public --otp ******' : 'npm publish --access public';
-  printExecutionProgress(ports, `Publishing package to npm: ${npmPublishLog}...`);
-  const npmPublish = await ports.run('npm', npmPublishArgs);
+  const npmPublishMode = plan.hasOtp ? 'captured OTP publish' : 'interactive browser/2FA-capable publish';
+  printExecutionProgress(ports, `Publishing package to npm: ${npmPublishLog} (${npmPublishMode})...`);
+  const npmPublish = await runNpmPublish(ports, npmPublishArgs, plan);
   if (npmPublish.exitCode !== 0) {
     const failure = failExecution(completedSteps, 'publish-npm', 'Publishing to npm failed.', npmPublish);
     printExecutionFailure(ports, failure);
@@ -347,6 +348,14 @@ function buildNpmPublishArgs(plan: ReleasePlan): string[] {
   }
 
   return args;
+}
+
+function runNpmPublish(ports: ReleaseExecutionPorts, args: string[], plan: ReleasePlan): ReleaseCommandResult | Promise<ReleaseCommandResult> {
+  if (plan.hasOtp || !ports.runInteractive) {
+    return ports.run('npm', args);
+  }
+
+  return ports.runInteractive('npm', args);
 }
 
 async function runStep(

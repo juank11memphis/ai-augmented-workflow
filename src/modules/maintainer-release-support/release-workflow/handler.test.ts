@@ -548,7 +548,7 @@ describe('executeConfirmedRelease', () => {
 
     assert.equal(result.status, 'executed');
     assert.deepEqual(ports.writes.map((write) => write.path), ['CHANGELOG.md', 'package.json']);
-    assert.deepEqual(ports.commands.slice(0, 8), [
+    assert.deepEqual(ports.commands.slice(0, 7), [
       { command: 'npm', args: ['whoami'] },
       { command: 'gh', args: ['auth', 'status'] },
       { command: 'pnpm', args: ['build'] },
@@ -556,8 +556,8 @@ describe('executeConfirmedRelease', () => {
       { command: 'git', args: ['add', 'CHANGELOG.md', 'package.json'] },
       { command: 'git', args: ['commit', '-m', 'chore(release): 1.2.4'] },
       { command: 'git', args: ['tag', 'v1.2.4'] },
-      { command: 'npm', args: ['publish', '--access', 'public'] },
     ]);
+    assert.deepEqual(ports.interactiveCommands, [{ command: 'npm', args: ['publish', '--access', 'public'] }]);
     if (result.status === 'executed') {
       assert.deepEqual(result.completedSteps.map((step) => step.name), [
         'check-npm-auth',
@@ -591,6 +591,18 @@ describe('executeConfirmedRelease', () => {
       ports.commands.some((command) => command.command === 'npm' && command.args.join(' ') === 'publish --access public --otp 123456'),
       true
     );
+    assert.deepEqual(ports.interactiveCommands, []);
+  });
+
+  it('uses interactive npm publish without OTP so browser-based 2FA can complete', async () => {
+    const ports = createFakeExecutionPorts();
+
+    const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
+
+    assert.equal(result.status, 'executed');
+    assert.equal(ports.commands.some((command) => command.command === 'npm' && command.args.join(' ') === 'publish --access public'), false);
+    assert.deepEqual(ports.interactiveCommands, [{ command: 'npm', args: ['publish', '--access', 'public'] }]);
+    assert.equal(ports.printed.some((message) => /interactive browser\/2FA-capable publish/.test(message)), true);
   });
 
   it('stops before commit, tag, publish, push, or GitHub Release when validation fails', async () => {
@@ -612,7 +624,7 @@ describe('executeConfirmedRelease', () => {
   });
 
   it('stops before push and GitHub Release when npm publish fails', async () => {
-    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish --access public' });
+    const ports = createFakeExecutionPorts({ failingInteractiveCommand: 'npm publish --access public' });
 
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
@@ -711,7 +723,7 @@ describe('executeConfirmedRelease', () => {
   });
 
   it('prints progress and failure guidance during execution', async () => {
-    const ports = createFakeExecutionPorts({ failingCommand: 'npm publish --access public' });
+    const ports = createFakeExecutionPorts({ failingInteractiveCommand: 'npm publish --access public' });
 
     const result = await executeConfirmedRelease(buildPreviewPlan(), ports);
 
@@ -752,7 +764,8 @@ describe('executeConfirmedRelease', () => {
     assert.deepEqual(ports.writes, []);
     assert.equal(ports.commands.some((command) => command.command === 'git' && command.args[0] === 'commit'), false);
     assert.equal(ports.commands.some((command) => command.command === 'git' && command.args[0] === 'tag'), false);
-    assert.equal(ports.commands.some((command) => command.command === 'npm' && command.args.join(' ') === 'publish --access public'), true);
+    assert.equal(ports.commands.some((command) => command.command === 'npm' && command.args.join(' ') === 'publish --access public'), false);
+    assert.deepEqual(ports.interactiveCommands, [{ command: 'npm', args: ['publish', '--access', 'public'] }]);
   });
 
 });
@@ -802,13 +815,15 @@ type FakeExecutionPorts = ReleaseExecutionPorts & {
   printed: string[];
   writes: Array<{ path: string; contents: string }>;
   commands: Array<{ command: string; args: string[] }>;
+  interactiveCommands: Array<{ command: string; args: string[] }>;
 };
 
-function createFakeExecutionPorts(input: { failingCommand?: string } = {}): FakeExecutionPorts {
+function createFakeExecutionPorts(input: { failingCommand?: string; failingInteractiveCommand?: string } = {}): FakeExecutionPorts {
   return {
     printed: [],
     writes: [],
     commands: [],
+    interactiveCommands: [],
     print(message: string) {
       this.printed.push(message);
     },
@@ -819,6 +834,13 @@ function createFakeExecutionPorts(input: { failingCommand?: string } = {}): Fake
       this.commands.push({ command, args });
       if (`${command} ${args.join(' ')}` === input.failingCommand) {
         return { exitCode: 1, stdout: '', stderr: `${input.failingCommand} failed` };
+      }
+      return { exitCode: 0, stdout: '', stderr: '' };
+    },
+    runInteractive(command: string, args: string[]) {
+      this.interactiveCommands.push({ command, args });
+      if (`${command} ${args.join(' ')}` === input.failingInteractiveCommand) {
+        return { exitCode: 1, stdout: '', stderr: `${input.failingInteractiveCommand} failed` };
       }
       return { exitCode: 0, stdout: '', stderr: '' };
     },

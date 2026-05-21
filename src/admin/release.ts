@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createInterface } from 'node:readline/promises';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -209,6 +209,22 @@ function createTerminalPorts(): ReleaseWorkflowPorts {
       } catch (error) {
         return commandFailure(error);
       }
+    },
+    runInteractive(command, args) {
+      const result = spawnSync(command, args, {
+        stdio: 'inherit',
+      });
+
+      if (result.error) {
+        return {
+          exitCode: 1,
+          stderr: result.error.message,
+        };
+      }
+
+      return {
+        exitCode: result.status ?? 1,
+      };
     },
   };
 }

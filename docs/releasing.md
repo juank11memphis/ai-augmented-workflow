@@ -104,6 +104,8 @@ pnpm admin:release
 
 After confirmation, the workflow writes the planned changelog and package metadata, runs `pnpm run validate:release-publish`, creates the release commit, creates the git tag, publishes to npm, pushes the release commit and tag, and creates the matching GitHub Release from the finalized changelog section.
 
+When `--otp` is omitted, the npm publish step runs interactively so npm can print and wait on its browser-based 2FA/security-key flow. If npm prints a `https://www.npmjs.com/auth/cli/...` URL, open it, complete the browser challenge, then return to the terminal and let the release workflow continue.
+
 Useful options:
 
 ```sh
@@ -115,7 +117,7 @@ pnpm admin:release -- --version 0.2.0 --otp 123456
 - `--from` and `--to` choose the git range. When `--from` is omitted, the latest reachable SemVer-like tag is used.
 - `--version` overrides the commit-derived version. Versions may be entered with a leading `v`, but release metadata is normalized to SemVer without `v`.
 - `--date` sets the release date for the versioned changelog section.
-- `--otp` passes an npm one-time password to `npm publish` for accounts with two-factor auth on writes. The workflow masks the code in preview/log output.
+- `--otp` passes a numeric npm one-time password to `npm publish` for accounts with authenticator-app 2FA on writes. The workflow masks the code in preview/log output. Omit `--otp` when you want npm's browser-based 2FA/security-key challenge to run interactively.
 - `--dry-run` prints the plan and performs no writes, commits, tags, publishes, pushes, or GitHub Release creation.
 - `--yes` skips only the confirmation prompt after printing the preview. It does not skip warnings, metadata safety checks, or release validation.
 
