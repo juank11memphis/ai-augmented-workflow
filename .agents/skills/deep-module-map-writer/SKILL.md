@@ -35,7 +35,7 @@ This skill owns the Deep Module Map only. It does not own feature briefs, techni
 
 - Do not create feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not choose a specific internal architecture, service split, database model, framework, or team ownership structure.
-- Do not ask for or require a final confirmation summary before writing once enough Deep Module Map information is available.
+- Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not invent Deep Modules without grounding them in the product vision, current system behavior, and user interview.
 - Do not treat a command, screen, helper, folder, data object, or technical layer as a Deep Module merely because it exists.
 - Do not leave material module-boundary questions unresolved in the final map; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the boundary.
@@ -124,6 +124,8 @@ This file is user-owned product and implementation-boundary content created or u
 ## Interview posture
 
 Be deliberately interrogative before writing.
+
+This interview is mandatory and non-skippable. Even when the repository has substantial code, existing docs, an existing map, or extensive initial context, ask at least one explicit user-facing discovery question before drafting or writing the Deep Module Map. Treat code, repository artifacts, prior conversation, and initial context as useful but provisional: they can shape better questions, but they must not replace the interview or become the full source of truth for module boundaries, interfaces, hidden complexity, or ownership. Keep asking focused follow-up questions until the module decisions are clear enough to defend. Before drafting, always perform one final check-in in the spirit of: “I am clear on my end. Are you good, or is there anything else you want to cover before I proceed?” If the user adds context, incorporate or clarify it before writing.
 
 - Ask one focused question at a time.
 - Ask as many one-at-a-time questions as needed to understand the app well enough to defend the map; do not optimize for a short interview.

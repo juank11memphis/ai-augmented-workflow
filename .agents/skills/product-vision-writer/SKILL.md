@@ -33,14 +33,16 @@ Default output path: `docs/product-vision.md`.
 ### What this skill must not do
 
 - Do not create Deep Module Maps, feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
-- Do not require a final confirmation summary before writing once enough product vision context is available.
+- Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not leave material strategy questions unresolved in the final document; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
 ## Workflow
 
 ### 1. Start with discovery, not drafting
 
-Interview before writing unless the user already provided complete source material. Be deliberately interrogative: ask as many focused questions as needed to extract all material product vision decisions before drafting.
+Interview before writing. Be deliberately interrogative: ask as many focused questions as needed to extract all material product vision decisions before drafting.
+
+This interview is mandatory and non-skippable. Even when the user provides extensive initial context, existing documents, or a mature codebase, ask at least one explicit user-facing discovery question before drafting or writing the product vision. Treat repository artifacts, prior conversation, and initial context as useful but provisional: they can shape better questions, but they must not replace the interview or become the full source of truth for the user's product intent. Keep asking focused follow-up questions until the material product vision decisions are clear enough to defend. Before drafting, always perform one final check-in in the spirit of: “I am clear on my end. Are you good, or is there anything else you want to cover before I proceed?” If the user adds context, incorporate or clarify it before writing.
 
 Ask one question at a time. Walk down the product decision tree branch by branch, resolving dependencies between decisions before moving on. When useful, include a recommended answer or concise assumption so the user can confirm, correct, or reject it quickly. If a question can be answered from existing repository artifacts, inspect those artifacts instead of asking.
 
