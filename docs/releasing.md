@@ -38,6 +38,36 @@ npm view @juancr11/sibu version
 
 Use `npm whoami` to confirm the active npm account. Use `npm view <package-name> version` to see whether a package already exists on the registry.
 
+If `npm whoami` returns `ENEEDAUTH`, `E401`, `Unauthorized`, or otherwise says you are not logged in, re-authenticate before continuing:
+
+```sh
+npm login --registry=https://registry.npmjs.org/
+npm whoami --registry=https://registry.npmjs.org/
+```
+
+Current npm CLI versions default `npm login` to browser-based `web` authentication. Follow the browser prompt, complete any required npm 2FA/security-key challenge, then return to the terminal and re-run `npm whoami`.
+
+If browser-based login is not working in the current shell or environment, try npm's legacy prompt flow:
+
+```sh
+npm login --auth-type=legacy --registry=https://registry.npmjs.org/
+npm whoami --registry=https://registry.npmjs.org/
+```
+
+If authentication still fails:
+
+1. check that npm is using the public registry:
+   ```sh
+   npm config get registry
+   ```
+2. log out and log back in:
+   ```sh
+   npm logout --registry=https://registry.npmjs.org/
+   npm login --registry=https://registry.npmjs.org/
+   ```
+3. confirm in the npm website that the account can access and publish `@juancr11/sibu`.
+4. if your account requires 2FA for writes, keep a fresh one-time password ready for release publishing with `pnpm admin:release --otp <code>`.
+
 If the final package uses a scope, make sure the scope owner and publish access are already configured before attempting the first release. If the intended unscoped package name is unavailable, resolve the naming decision before continuing with the release workflow.
 
 After the first successful `npm publish`, verify that the package page exists on npm and that the published metadata matches the version you intended to release.
