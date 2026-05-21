@@ -36,7 +36,7 @@ Write the smallest useful technical design doc for an approved feature: enough f
 - Do not invent new Deep Modules or move work into unselected modules.
 - Do not redesign binding UX mockups.
 - Do not duplicate architecture, language, framework, or clean-code skill guidance.
-- Do not require a final confirmation summary before writing once enough technical design context is available.
+- Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 
 ## Grounding
 
@@ -65,6 +65,8 @@ If the feature has UI impact, require `docs/features/<feature-slug>/ux.md`. If i
 ## Interview posture
 
 Be deliberately interrogative before drafting. The technical design should reflect resolved implementation direction, not risky assistant assumptions.
+
+This interview is mandatory and non-skippable. Even when the approved artifacts, repo files, codebase, or prior conversation seem complete, ask at least one explicit user-facing technical clarification question before drafting or writing the technical design. Treat repository artifacts, source docs, prior conversation, and initial context as useful but provisional for current implementation intent: they can shape better questions, but they must not replace the interview or become the full source of truth for implementation direction, boundaries, risks, or validation choices. Keep asking focused follow-up questions until the technical decisions are clear enough to defend. Before drafting, always perform one final check-in in the spirit of: “I am clear on my end. Are you good, or is there anything else you want to cover before I proceed?” If the user adds context, incorporate or clarify it before writing.
 
 - Ask one focused question at a time when repository artifacts and source docs do not resolve a material technical ambiguity.
 - Ask as many questions as required to reach complete practical understanding; do not optimize for a short interview.

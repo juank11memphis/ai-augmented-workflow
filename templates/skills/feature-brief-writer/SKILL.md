@@ -36,7 +36,7 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 
 - Do not create or update Deep Module Maps, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not invent Deep Modules or use modules that are absent from `docs/deep-module-map.md`.
-- Do not require a final confirmation summary before writing once enough feature brief context is available.
+- Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not duplicate or rewrite the product vision; apply only the relevant implications to the feature.
 - Do not leave material product, scope, success, constraint, or Deep Module fit questions unresolved in the final brief; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
@@ -109,6 +109,8 @@ If the user asks for a feature brief from an idea in `docs/feature-ideas.md`, re
 ## Interview posture
 
 Be deliberately interrogative before drafting. The feature brief should reflect the user's intent, not the assistant's assumptions.
+
+This interview is mandatory and non-skippable. Even when the user provides extensive initial context, existing docs, repo code, or a raw idea file, ask at least one explicit user-facing discovery question before drafting or writing the feature brief. Treat repository artifacts, prior conversation, existing product docs, and initial context as useful but provisional: they can shape better questions, but they must not replace the interview or become the full source of truth for feature intent, scope, success, constraints, or user value. Keep asking focused follow-up questions until the feature decisions are clear enough to defend. Before drafting, always perform one final check-in in the spirit of: “I am clear on my end. Are you good, or is there anything else you want to cover before I proceed?” If the user adds context, incorporate or clarify it before writing.
 
 - Ask one focused question at a time.
 - Keep asking until you have complete practical understanding and explicit user alignment; do not optimize for a short interview.

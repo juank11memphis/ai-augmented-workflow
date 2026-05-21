@@ -1,5 +1,5 @@
 {
-  "templateVersion": "103",
+  "templateVersion": "104",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -51,31 +51,31 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Strengthens product vision interviews to resolve material strategy questions before drafting instead of leaving uncertainty in the artifact."
+        "Makes product vision discovery mandatory before drafting, even when existing context looks complete."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds explicit Deep Module Map discovery guidance so agents keep interviewing one question at a time until module interfaces, hidden complexity, ownership, exclusions, scenarios, relationships, and cross-module rules are clear enough to defend."
+        "Makes Deep Module Map interviews mandatory before drafting, even when repo code or existing docs look complete."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "13",
+      "version": "14",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Keeps feature brief writing focused on local Markdown artifacts and moves Notion export workflow guidance to dedicated exporter skills."
+        "Makes feature brief interviews mandatory before drafting while keeping export workflows delegated to dedicated exporter skills."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "19",
+      "version": "20",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Keeps technical design writing focused on local Markdown artifacts and moves Notion export workflow guidance to dedicated exporter skills."
+        "Makes technical design clarification mandatory before drafting while keeping export workflows delegated to dedicated exporter skills."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -163,10 +163,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Keeps UX design writing focused on local Markdown artifacts and moves Notion export workflow guidance to dedicated exporter skills."
+        "Makes UX clarification mandatory before drafting while keeping export workflows delegated to dedicated exporter skills."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
