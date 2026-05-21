@@ -20,6 +20,12 @@ export type SupportedAgent = {
 export type SkillTemplate = {
   templateRelativePath: string;
   targetRelativePathsByAgent: Partial<Record<AgentId, string>>;
+  supplementalTargetsByAgent?: Partial<Record<AgentId, SupplementalSkillTarget[]>>;
+};
+
+export type SupplementalSkillTarget = {
+  templateRelativePath: string;
+  targetRelativePath: string;
 };
 
 export type SelectableLanguageSkill = SkillTemplate & {

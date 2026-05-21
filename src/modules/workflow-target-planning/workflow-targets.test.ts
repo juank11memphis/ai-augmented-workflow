@@ -15,7 +15,8 @@ import {
 } from './index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
-import { getSelectedAgentsFromState, getSelectedMcpServersFromState, getSelectedMcpTargetsForAgents, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
+import type { SelectableWorkflowSkill } from '../../shared/types.js';
+import { getSelectedAgentsFromState, getSelectedMcpServersFromState, getSelectedMcpTargetsForAgents, getSelectedSkillTargetsForAgents, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';
 
@@ -104,6 +105,65 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-github/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-notion/SKILL.md').length, 1);
     assertNoInvalidTargets(targets);
+  });
+
+  it('includes supplemental skill targets without dropping primary skill targets', () => {
+    const skillWithSupplementalTargets: SelectableWorkflowSkill = {
+      ...getWorkflowSkill('export-to-notion'),
+      targetRelativePathsByAgent: {
+        codex: '.agents/skills/export-to-notion/SKILL.md',
+        claude: '.agents/skills/export-to-notion/SKILL.md',
+      },
+      supplementalTargetsByAgent: {
+        codex: [
+          {
+            templateRelativePath: 'skills/export-to-notion/SKILL.md',
+            targetRelativePath: '.codex/agents/notion-exporter.toml',
+          },
+        ],
+        claude: [
+          {
+            templateRelativePath: 'skills/export-to-notion/SKILL.md',
+            targetRelativePath: '.claude/agents/notion-exporter.md',
+          },
+        ],
+      },
+    };
+
+    const targets = getSelectedSkillTargetsForAgents([getSupportedAgent('codex'), getSupportedAgent('claude')], [], [], undefined, [skillWithSupplementalTargets]);
+
+    const targetPaths = targets.map((target) => target.targetRelativePath);
+
+    assert.deepEqual(targetPaths, [
+      '.agents/skills/clean-code/SKILL.md',
+      '.agents/skills/product-vision-writer/SKILL.md',
+      '.agents/skills/deep-module-map-writer/SKILL.md',
+      '.agents/skills/feature-brief-writer/SKILL.md',
+        '.agents/skills/technical-design-writer/SKILL.md',
+        '.agents/skills/scrum-master-planner/SKILL.md',
+        '.agents/skills/ai-implementation-planner/SKILL.md',
+        '.agents/skills/ai-implementation-plan-executor/SKILL.md',
+        '.agents/skills/feature-idea-capture/SKILL.md',
+      '.agents/skills/export-to-notion/SKILL.md',
+      '.codex/agents/notion-exporter.toml',
+      '.claude/agents/notion-exporter.md',
+    ]);
+
+    const workflowTargets = getWorkflowTargets(ROOT_PATH, [getSupportedAgent('codex'), getSupportedAgent('claude')], [], [], undefined, [skillWithSupplementalTargets]);
+    const renderedFiles = renderMissingWorkflowFiles({
+      missingTargets: workflowTargets,
+      overview: 'Test project.',
+      selectedLanguageSkills: [],
+      selectedFrameworkSkills: [],
+      selectedWorkflowSkills: [skillWithSupplementalTargets],
+    });
+
+    assert.equal(renderedFiles.some((file) => file.targetPath === path.join(ROOT_PATH, '.codex/agents/notion-exporter.toml')), true);
+    assert.equal(renderedFiles.some((file) => file.targetPath === path.join(ROOT_PATH, '.claude/agents/notion-exporter.md')), true);
+    assert.equal(
+      renderedFiles.filter((file) => file.targetPath === path.join(ROOT_PATH, '.agents/skills/export-to-notion/SKILL.md')).length,
+      1
+    );
   });
 
   it('resolves MCP targets without adding Windsurf MCP config', () => {
@@ -319,6 +379,16 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   }
 
   return agent;
+}
+
+function getWorkflowSkill(skillId: SelectableWorkflowSkill['id']): SelectableWorkflowSkill {
+  const skill = SELECTABLE_WORKFLOW_SKILLS.find((workflowSkill) => workflowSkill.id === skillId);
+
+  if (!skill) {
+    throw new Error(`Missing workflow skill: ${skillId}`);
+  }
+
+  return skill;
 }
 
 function getRelativeTargetPaths(targets: ReturnType<typeof getWorkflowTargets>): string[] {

@@ -87,20 +87,43 @@ export function getSelectedSkillTargetsForAgents(
 
   for (const agent of selectedAgents) {
     for (const skill of selectedSkills) {
-      const targetRelativePath = skill.targetRelativePathsByAgent[agent.id];
-
-      if (!targetRelativePath) {
-        continue;
+      for (const skillTarget of getSkillTargetsForAgent(skill, agent.id)) {
+        skillTargets.set(skillTarget.targetRelativePath, skillTarget);
       }
-
-      skillTargets.set(targetRelativePath, {
-        targetRelativePath,
-        templateRelativePath: skill.templateRelativePath,
-      });
     }
   }
 
   return [...skillTargets.values()];
+}
+
+export function getSkillTargetsForAgents(skill: SkillTemplate, selectedAgents: SupportedAgent[]): SkillTarget[] {
+  const skillTargets = new Map<string, SkillTarget>();
+
+  for (const agent of selectedAgents) {
+    for (const skillTarget of getSkillTargetsForAgent(skill, agent.id)) {
+      skillTargets.set(skillTarget.targetRelativePath, skillTarget);
+    }
+  }
+
+  return [...skillTargets.values()];
+}
+
+function getSkillTargetsForAgent(skill: SkillTemplate, agentId: SupportedAgent['id']): SkillTarget[] {
+  const targets: SkillTarget[] = [];
+  const targetRelativePath = skill.targetRelativePathsByAgent[agentId];
+
+  if (targetRelativePath) {
+    targets.push({
+      targetRelativePath,
+      templateRelativePath: skill.templateRelativePath,
+    });
+  }
+
+  for (const supplementalTarget of skill.supplementalTargetsByAgent?.[agentId] ?? []) {
+    targets.push(supplementalTarget);
+  }
+
+  return targets;
 }
 
 export function getSelectedMcpTargetsForAgents(selectedAgents: SupportedAgent[], selectedMcpServers: SelectableMcpServer[]): McpTarget[] {

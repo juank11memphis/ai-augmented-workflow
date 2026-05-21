@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
-import type { SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../../shared/types.js';
+import { SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
+import type { SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
 import { stopSelectedSkill } from './handler.js';
 
@@ -50,6 +50,44 @@ describe('stopSelectedSkill', () => {
     assert.equal(result.state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']?.status, 'unmanaged');
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/postgresql-expert/SKILL.md')), true);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /postgresql-expert/);
+  });
+
+  it('stops supplemental managed files owned by a selected skill', () => {
+    const exportToGithub = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-github');
+
+    assert.ok(exportToGithub);
+
+    const originalSupplementalTargets = exportToGithub.supplementalTargetsByAgent;
+    exportToGithub.supplementalTargetsByAgent = {
+      codex: [
+        {
+          templateRelativePath: 'skills/export-to-github/SKILL.md',
+          targetRelativePath: '.codex/agents/github-exporter.toml',
+        },
+      ],
+    };
+
+    try {
+      const rootPath = createInitializedRepoWithExportToGithub();
+
+      const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'));
+      const result = stopSelectedSkill({ rootPath, state, skillName: 'export-to-github' });
+
+      assert.equal(result.status, 'stopped');
+      if (result.status !== 'stopped') {
+        return;
+      }
+
+      assert.deepEqual(result.state.selectedWorkflowSkills, []);
+      assert.equal(result.state.managedFiles['.agents/skills/export-to-github/SKILL.md']?.status, 'unmanaged');
+      assert.equal(result.state.managedFiles['.codex/agents/github-exporter.toml']?.status, 'unmanaged');
+      assert.deepEqual(
+        result.stoppedPaths.map((stoppedPath) => stoppedPath.relativePath),
+        ['.agents/skills/export-to-github/SKILL.md', '.codex/agents/github-exporter.toml']
+      );
+    } finally {
+      exportToGithub.supplementalTargetsByAgent = originalSupplementalTargets;
+    }
   });
 
   it('rejects raw managed file paths', () => {
@@ -133,6 +171,34 @@ function createInitializedRepoWithPostgresqlExpert(): string {
   return rootPath;
 }
 
+function createInitializedRepoWithExportToGithub(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-stop-skill-test-'));
+  temporaryRoots.push(rootPath);
+  const selectedAgents = [getSupportedAgent('codex')];
+  const selectedLanguageSkills: SelectableLanguageSkill[] = [];
+  const selectedFrameworkSkills: SelectableFrameworkSkill[] = [];
+  const selectedWorkflowSkills: SelectableWorkflowSkill[] = [getWorkflowSkill('export-to-github')];
+  const selectedArchitectureSkill: SelectableArchitectureSkill | undefined = undefined;
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills);
+  const files = renderMissingWorkflowFiles({
+    missingTargets: targets,
+    overview: 'Test project.',
+    selectedLanguageSkills,
+    selectedFrameworkSkills,
+    selectedArchitectureSkill,
+    selectedWorkflowSkills,
+  });
+
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+  }
+
+  writeSibuState({ rootPath, statePath: path.join(rootPath, '.sibu/state.json'), selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, targets });
+
+  return rootPath;
+}
+
 function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   const agent = SUPPORTED_AGENTS.find((supportedAgent) => supportedAgent.id === agentId);
 
@@ -158,6 +224,16 @@ function getDatabaseSkill(skillId: SelectableDatabaseSkill['id']): SelectableDat
 
   if (!skill) {
     throw new Error(`Unsupported database skill: ${skillId}`);
+  }
+
+  return skill;
+}
+
+function getWorkflowSkill(skillId: SelectableWorkflowSkill['id']): SelectableWorkflowSkill {
+  const skill = SELECTABLE_WORKFLOW_SKILLS.find((workflowSkill) => workflowSkill.id === skillId);
+
+  if (!skill) {
+    throw new Error(`Unsupported workflow skill: ${skillId}`);
   }
 
   return skill;

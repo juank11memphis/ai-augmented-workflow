@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
 import type { McpServerId, SibuState, SupportedAgent } from '../../shared/types.js';
 import { applySyncAction } from './apply-action.js';
@@ -146,6 +146,42 @@ describe('getSyncPreviews', () => {
     assert.deepEqual(agentsPreview.changes, ['Refreshes generated skill routing for the current selected skills.']);
   });
 
+  it('offers supplemental targets when adopting an implied exporter workflow skill', () => {
+    const exportToNotion = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion');
+
+    assert.ok(exportToNotion);
+
+    const originalSupplementalTargets = exportToNotion.supplementalTargetsByAgent;
+    exportToNotion.supplementalTargetsByAgent = {
+      codex: [
+        {
+          templateRelativePath: 'skills/export-to-notion/SKILL.md',
+          targetRelativePath: '.codex/agents/notion-exporter.toml',
+        },
+      ],
+    };
+
+    try {
+      const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['notion']);
+      const state = readState(rootPath);
+      const manifest = readTemplateManifest();
+      manifest.templates['skills/export-to-notion/SKILL.md'] = {
+        version: 'test',
+        description: 'Test supplemental target.',
+        changes: ['Adds a test supplemental target.'],
+      };
+
+      const supplementalPreview = getSyncPreview(rootPath, state, '.codex/agents/notion-exporter.toml', manifest);
+
+      assert.equal(supplementalPreview.status, 'new-template');
+      assert.equal(supplementalPreview.managedFile.template, 'skills/export-to-notion/SKILL.md');
+      assert.equal(supplementalPreview.impliedWorkflowSkillId, 'export-to-notion');
+      assert.equal(supplementalPreview.hasLocalFile, false);
+    } finally {
+      exportToNotion.supplementalTargetsByAgent = originalSupplementalTargets;
+    }
+  });
+
   it('records the implied exporter skill only when sync adoption is applied', () => {
     const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
     const state = readState(rootPath);
@@ -237,8 +273,8 @@ function getProductContextSkillPreview(rootPath: string, state: SibuState) {
   return preview;
 }
 
-function getSyncPreview(rootPath: string, state: SibuState, relativePath: string) {
-  const previews = getSyncPreviews({ rootPath, state, manifest: readTemplateManifest() });
+function getSyncPreview(rootPath: string, state: SibuState, relativePath: string, manifest = readTemplateManifest()) {
+  const previews = getSyncPreviews({ rootPath, state, manifest });
   const preview = previews.find((syncPreview) => syncPreview.relativePath === relativePath);
 
   assert.ok(preview, `Missing sync preview for ${relativePath}`);

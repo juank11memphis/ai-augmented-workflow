@@ -25,6 +25,7 @@ import {
   getSelectedLanguageSkillsFromState,
   getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
+  getSkillTargetsForAgents,
   getWorkflowSkillsImpliedByMcpServers,
   getWorkflowTargets,
 } from '../workflow-target-planning/index.js';
@@ -91,7 +92,7 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
   const alreadyPreviewedPaths = new Set<string>();
 
   for (const skill of missingImpliedWorkflowSkills) {
-    for (const preview of getNewExpectedTargetPreviews({ rootPath, manifest, state, expectedTargets, workflowSkill: skill })) {
+    for (const preview of getNewExpectedTargetPreviews({ rootPath, manifest, state, expectedTargets, selectedAgents: getSelectedAgentsFromState(state), workflowSkill: skill })) {
       previews.push(preview);
       alreadyPreviewedPaths.add(preview.relativePath);
     }
@@ -132,15 +133,17 @@ function getNewExpectedTargetPreviews({
   manifest,
   state,
   expectedTargets,
+  selectedAgents,
   workflowSkill,
 }: {
   rootPath: string;
   manifest: TemplateManifest;
   state: SibuState;
   expectedTargets: WorkflowTarget[];
+  selectedAgents: ReturnType<typeof getSelectedAgentsFromState>;
   workflowSkill: SelectableWorkflowSkill;
 }): SyncPreview[] {
-  const workflowSkillTargetPaths = new Set(Object.values(workflowSkill.targetRelativePathsByAgent));
+  const workflowSkillTargetPaths = new Set(getSkillTargetsForAgents(workflowSkill, selectedAgents).map((target) => target.targetRelativePath));
 
   return expectedTargets
     .filter((target) => workflowSkillTargetPaths.has(path.relative(rootPath, target.targetPath)))

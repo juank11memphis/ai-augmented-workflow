@@ -20,6 +20,7 @@ import {
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedWorkflowSkillsFromState,
+  getSkillTargetsForAgents,
 } from '../../workflow-target-planning/index.js';
 import type { StopManagingFileCommand } from './command.js';
 
@@ -176,15 +177,7 @@ function removeSelectedSkill(state: SibuState, resolved: ResolvedSelectableSkill
 }
 
 function getSkillManagedPaths(rootPath: string, state: SibuState, resolved: ResolvedSelectableSkill): ManagedFilePath[] {
-  const relativePaths = new Set<string>();
-
-  for (const agent of getSelectedAgentsFromState(state)) {
-    const relativePath = resolved.skill.targetRelativePathsByAgent[agent.id];
-
-    if (relativePath) {
-      relativePaths.add(relativePath);
-    }
-  }
+  const relativePaths = new Set(getSkillTargetsForAgents(resolved.skill, getSelectedAgentsFromState(state)).map((target) => target.targetRelativePath));
 
   return [...relativePaths].map((relativePath) => ({
     relativePath,

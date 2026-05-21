@@ -22,6 +22,7 @@ export {
   getSelectedMcpTargetsForAgents,
   getSelectedSkillTargetsForAgents,
   getSelectedWorkflowSkillsFromState,
+  getSkillTargetsForAgents,
   getWorkflowTargets,
   renderMissingWorkflowFiles,
   writeSibuState,
