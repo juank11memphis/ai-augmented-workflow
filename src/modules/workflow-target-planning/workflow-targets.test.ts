@@ -102,6 +102,13 @@ describe('getWorkflowTargets', () => {
 
     assert.equal(targetPaths.includes('.agents/skills/export-to-github/SKILL.md'), true);
     assert.equal(targetPaths.includes('.agents/skills/export-to-notion/SKILL.md'), true);
+    assert.equal(targetPaths.includes('.codex/agents/github-exporter.toml'), true);
+    assert.equal(targetPaths.includes('.codex/agents/notion-exporter.toml'), true);
+    assert.equal(targetPaths.includes('.claude/agents/github-exporter.md'), true);
+    assert.equal(targetPaths.includes('.claude/agents/notion-exporter.md'), true);
+    assert.equal(targetPaths.includes('.gemini/agents/github-exporter.md'), true);
+    assert.equal(targetPaths.includes('.gemini/agents/notion-exporter.md'), true);
+    assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/agents/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-github/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-notion/SKILL.md').length, 1);
     assertNoInvalidTargets(targets);

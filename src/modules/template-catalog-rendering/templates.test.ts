@@ -190,10 +190,12 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /GitHub export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /GitHub exporter skill/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /github-exporter sub-agent/i);
     assert.match(contents, /name: export-to-github/);
+    assert.match(contents, /github-exporter/);
+    assert.match(contents, /clean, narrow export packet/);
     assert.match(contents, /feature name/i);
     assert.match(contents, /Epics and User Stories/i);
     assert.match(contents, /native sub-issues/i);
@@ -207,16 +209,43 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Notion exporter skill/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /notion-exporter sub-agent/i);
     assert.match(contents, /name: export-to-notion/);
+    assert.match(contents, /notion-exporter/);
+    assert.match(contents, /clean, narrow export packet/);
     assert.match(contents, /feature name/i);
     assert.match(contents, /feature_brief\.md/);
     assert.match(contents, /ux\.md/);
     assert.match(contents, /technical_design\.md/);
     assert.match(contents, /Do not export Epics, User Stories, implementation plans, product vision, Deep Module Maps, or arbitrary docs/i);
     assert.match(contents, /Do not write Notion URLs back into local Markdown/i);
+  });
+
+  it('registers target-native exporter sub-agent templates', () => {
+    const manifest = readTemplateManifest();
+    const templatePaths = [
+      '.codex/agents/github-exporter.toml',
+      '.codex/agents/notion-exporter.toml',
+      '.claude/agents/github-exporter.md',
+      '.claude/agents/notion-exporter.md',
+      '.gemini/agents/github-exporter.md',
+      '.gemini/agents/notion-exporter.md',
+    ];
+
+    for (const templatePath of templatePaths) {
+      const templateMetadata = manifest.templates[templatePath];
+      const contents = readTemplate(templatePath);
+
+      assert.equal(templateMetadata?.version, '1');
+      assert.match(templateMetadata?.description ?? '', /exporter sub-agent/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /clean-context|no-local-write/i);
+      assert.match(contents, /sub-agent/i);
+      assert.match(contents, /full conversation context/i);
+      assert.match(contents, /Do not modify local repository files/i);
+      assert.match(contents, /explicit opt-in/i);
+    }
   });
 });
 

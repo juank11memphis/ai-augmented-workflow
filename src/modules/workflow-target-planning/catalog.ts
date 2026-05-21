@@ -262,6 +262,26 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       claude: '.agents/skills/export-to-github/SKILL.md',
       windsurf: '.agents/skills/export-to-github/SKILL.md',
     },
+    supplementalTargetsByAgent: {
+      codex: [
+        {
+          templateRelativePath: '.codex/agents/github-exporter.toml',
+          targetRelativePath: '.codex/agents/github-exporter.toml',
+        },
+      ],
+      gemini: [
+        {
+          templateRelativePath: '.gemini/agents/github-exporter.md',
+          targetRelativePath: '.gemini/agents/github-exporter.md',
+        },
+      ],
+      claude: [
+        {
+          templateRelativePath: '.claude/agents/github-exporter.md',
+          targetRelativePath: '.claude/agents/github-exporter.md',
+        },
+      ],
+    },
   },
   {
     id: 'export-to-notion',
@@ -275,6 +295,26 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       gemini: '.agents/skills/export-to-notion/SKILL.md',
       claude: '.agents/skills/export-to-notion/SKILL.md',
       windsurf: '.agents/skills/export-to-notion/SKILL.md',
+    },
+    supplementalTargetsByAgent: {
+      codex: [
+        {
+          templateRelativePath: '.codex/agents/notion-exporter.toml',
+          targetRelativePath: '.codex/agents/notion-exporter.toml',
+        },
+      ],
+      gemini: [
+        {
+          templateRelativePath: '.gemini/agents/notion-exporter.md',
+          targetRelativePath: '.gemini/agents/notion-exporter.md',
+        },
+      ],
+      claude: [
+        {
+          templateRelativePath: '.claude/agents/notion-exporter.md',
+          targetRelativePath: '.claude/agents/notion-exporter.md',
+        },
+      ],
     },
   },
 ];

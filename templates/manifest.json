@@ -1,5 +1,5 @@
 {
-  "templateVersion": "104",
+  "templateVersion": "105",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -177,17 +177,59 @@
       ]
     },
     "skills/export-to-github/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable GitHub export skill for publishing a named feature's Epics and User Stories to GitHub issues and native sub-issues.",
       "changes": [
-        "Adds a dedicated GitHub exporter skill paired with GitHub MCP selection."
+        "Routes GitHub exports through the configured github-exporter sub-agent by default when available."
       ]
     },
     "skills/export-to-notion/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
-        "Adds a dedicated Notion exporter skill paired with Notion MCP selection."
+        "Routes Notion exports through the configured notion-exporter sub-agent by default when available."
+      ]
+    },
+    ".codex/agents/github-exporter.toml": {
+      "version": "1",
+      "description": "Codex GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
+      "changes": [
+        "Adds a Codex github-exporter sub-agent with clean-context and no-local-write export guidance."
+      ]
+    },
+    ".codex/agents/notion-exporter.toml": {
+      "version": "1",
+      "description": "Codex Notion exporter sub-agent for Sibu feature documentation exports.",
+      "changes": [
+        "Adds a Codex notion-exporter sub-agent with clean-context and no-local-write export guidance."
+      ]
+    },
+    ".claude/agents/github-exporter.md": {
+      "version": "1",
+      "description": "Claude GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
+      "changes": [
+        "Adds a Claude github-exporter sub-agent with clean-context and no-local-write export guidance."
+      ]
+    },
+    ".claude/agents/notion-exporter.md": {
+      "version": "1",
+      "description": "Claude Notion exporter sub-agent for Sibu feature documentation exports.",
+      "changes": [
+        "Adds a Claude notion-exporter sub-agent with clean-context and no-local-write export guidance."
+      ]
+    },
+    ".gemini/agents/github-exporter.md": {
+      "version": "1",
+      "description": "Gemini GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
+      "changes": [
+        "Adds a Gemini github-exporter sub-agent with clean-context and no-local-write export guidance."
+      ]
+    },
+    ".gemini/agents/notion-exporter.md": {
+      "version": "1",
+      "description": "Gemini Notion exporter sub-agent for Sibu feature documentation exports.",
+      "changes": [
+        "Adds a Gemini notion-exporter sub-agent with clean-context and no-local-write export guidance."
       ]
     }
   }
