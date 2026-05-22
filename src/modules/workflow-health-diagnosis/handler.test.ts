@@ -145,6 +145,29 @@ test('does not diagnose unmanaged MCP-managed config files as expected target is
   assert.equal(issues.some((issue) => issue.message === '.mcp.json is missing.'), false);
 });
 
+test('diagnoses missing managed session-start hook files through expected targets', () => {
+  const rootPath = createCleanInitializedRepo();
+  fs.rmSync(path.join(rootPath, '.codex/hooks.json'));
+
+  const issues = diagnoseState({ rootPath, state: readState(rootPath) });
+
+  assert.equal(
+    issues.some((issue) => issue.severity === 'error' && issue.message === '.codex/hooks.json is missing.'),
+    true
+  );
+});
+
+test('does not diagnose unmanaged session-start hook files as expected target issues', () => {
+  const rootPath = createCleanInitializedRepo();
+  fs.rmSync(path.join(rootPath, '.codex/hooks.json'));
+  const state = readState(rootPath);
+  state.managedFiles['.codex/hooks.json'].status = 'unmanaged';
+
+  const issues = diagnoseState({ rootPath, state });
+
+  assert.equal(issues.some((issue) => issue.message === '.codex/hooks.json is missing.'), false);
+});
+
 test('warns when state references an unsupported MCP server', () => {
   const rootPath = createCleanInitializedRepo();
   const state = { ...readState(rootPath), selectedMcpServers: ['unknown' as 'github'] };

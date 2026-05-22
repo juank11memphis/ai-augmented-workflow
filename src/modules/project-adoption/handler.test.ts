@@ -33,8 +33,10 @@ describe('handleInitProject', () => {
     assert.deepEqual(state.selectedMcpServers, []);
     assert.ok(state.managedFiles['AGENTS.md']);
     assert.ok(state.managedFiles['.codex/config.toml']);
+    assert.equal(state.managedFiles['.codex/hooks.json']?.template, '.codex/hooks.json');
     assert.equal(state.managedFiles['.mcp.json'], undefined);
     assert.equal(state.managedFiles['.gemini/settings.json'], undefined);
+    assert.equal(fs.existsSync(path.join(rootPath, '.codex/hooks.json')), true);
     assert.equal(fs.existsSync(path.join(rootPath, '.mcp.json')), false);
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), false);
   });
@@ -140,16 +142,23 @@ describe('handleInitProject', () => {
     assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
     assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
+    assert.equal(state.managedFiles['.codex/hooks.json']?.template, '.codex/hooks.json');
+    assert.equal(state.managedFiles['.claude/settings.json']?.template, '.claude/settings.json');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
     assert.equal(state.managedFiles['.gemini/settings.json']?.template, '.gemini/settings.json');
     assert.equal(typeof state.managedFiles['.codex/config.toml']?.sha256, 'string');
+    assert.equal(typeof state.managedFiles['.codex/hooks.json']?.sha256, 'string');
+    assert.equal(typeof state.managedFiles['.claude/settings.json']?.sha256, 'string');
     assert.equal(typeof state.managedFiles['.mcp.json']?.sha256, 'string');
     assert.equal(typeof state.managedFiles['.gemini/settings.json']?.sha256, 'string');
 
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/hooks.json'), 'utf8'), /SessionStart/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.claude/settings.json'), 'utf8'), /SessionStart/);
     assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /SessionStart/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);

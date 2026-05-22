@@ -116,6 +116,34 @@ describe('getSyncPreviews', () => {
     assert.deepEqual(preview.changes, ['Refreshes generated MCP configuration for the current selected MCP servers.']);
   });
 
+  it('reports managed session-start hooks as missing when removed', () => {
+    const rootPath = createCleanInitializedRepo();
+    fs.rmSync(path.join(rootPath, '.codex/hooks.json'));
+
+    const preview = getSyncPreview(rootPath, readState(rootPath), '.codex/hooks.json');
+
+    assert.equal(preview.status, 'missing');
+    assert.equal(preview.managedFile.template, '.codex/hooks.json');
+    assert.equal(preview.hasLocalFile, false);
+  });
+
+  it('reports managed session-start hook template updates with manifest change notes', () => {
+    const rootPath = createCleanInitializedRepo();
+    const state = readState(rootPath);
+    const manifest = readTemplateManifest();
+    manifest.templates['.codex/hooks.json'] = {
+      version: '999',
+      description: 'Updated Codex SessionStart hook configuration.',
+      changes: ['Refreshes the managed Codex SessionStart hook.'],
+    };
+
+    const preview = getSyncPreview(rootPath, state, '.codex/hooks.json', manifest);
+
+    assert.equal(preview.status, 'update-available');
+    assert.equal(preview.managedFile.template, '.codex/hooks.json');
+    assert.deepEqual(preview.changes, ['Refreshes the managed Codex SessionStart hook.']);
+  });
+
   it('offers Export to GitHub adoption when GitHub MCP is already selected', () => {
     const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
     const state = readState(rootPath);
