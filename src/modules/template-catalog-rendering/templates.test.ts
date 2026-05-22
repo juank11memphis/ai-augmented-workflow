@@ -275,7 +275,12 @@ describe('session-start hook templates', () => {
       assert.match(templateMetadata?.changes.join('\n') ?? '', /managed .*SessionStart hook/i);
       assert.match(contents, /SessionStart/);
       assert.match(contents, /npm view @juancr11\/sibu version/);
+      assert.match(contents, /Sibu latest version:/);
+      assert.match(contents, /Sibu version check unavailable; continuing to sibu doctor\./);
       assert.match(contents, /sibu doctor/);
+      assert.match(contents, /sibu doctor(?: >&2)? \|\| true/);
+      assert.doesNotMatch(contents, /sibu hook session-start/);
+      assert.doesNotMatch(contents, /NPM_TOKEN|NODE_AUTH_TOKEN|npmrc/);
     }
   });
 
