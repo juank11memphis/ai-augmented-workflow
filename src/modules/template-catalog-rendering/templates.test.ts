@@ -172,6 +172,21 @@ describe('feature idea capture template', () => {
   });
 });
 
+describe('AGENTS.md template', () => {
+  it('keeps Sibu maintenance guidance without a manual session-start doctor requirement', () => {
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates['AGENTS.md'];
+    const contents = readTemplate('AGENTS.md');
+
+    assert.equal(templateMetadata?.version, '31');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /session-start preflight/i);
+    assert.match(contents, /`sibu doctor` is the read-only health check/i);
+    assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
+    assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
+    assert.doesNotMatch(contents, /At the start of each session.*run `sibu doctor` once/i);
+  });
+});
+
 function assertDoesNotContainRealCredential(contents: string): void {
   assert.doesNotMatch(contents, /ghp_[A-Za-z0-9_]+/);
   assert.doesNotMatch(contents, /github_pat_[A-Za-z0-9_]+/);

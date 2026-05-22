@@ -58,9 +58,7 @@ This repository uses Sibu to manage AI workflow setup.
 - `sibu doctor` is the read-only health check for this workflow. It inspects whether Sibu-managed files are missing, modified, unrecorded, or generated from older templates.
 - `sibu sync` is the post-init workflow maintenance command. It reviews template updates interactively, repairs missing managed files, adopts newly added managed templates, protects local edits from automatic overwrites, and lets the user apply safe updates, mark customized files as reviewed, write side templates, stop managing a file, or skip for later.
 
-At the start of each session in this repository, run `sibu doctor` once before making changes or giving workflow guidance. Treat it as a read-only preflight check. Do not rerun it before every follow-up in the same session unless workflow-managed files changed, the user asks, or you need to verify Sibu state after applying updates.
-
-After `sibu doctor` finishes, guide the user based on the outcome:
+Use `sibu doctor` as a read-only workflow health check when you need to verify Sibu-managed file state. After `sibu doctor` finishes, guide the user based on the outcome:
 
 - Healthy workflow: mention that the Sibu check passed and proceed.
 - Missing `.sibu/state.json`: tell the user to run `sibu init` once before continuing.

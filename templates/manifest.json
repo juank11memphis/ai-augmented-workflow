@@ -1,11 +1,11 @@
 {
-  "templateVersion": "109",
+  "templateVersion": "110",
   "templates": {
     "AGENTS.md": {
-      "version": "30",
+      "version": "31",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes rough future idea capture requests to the mandatory feature-idea-capture skill."
+        "Removes the manual session-start preflight instruction now that native hook files own automatic Sibu health checks."
       ]
     },
     ".codex/config.toml": {
