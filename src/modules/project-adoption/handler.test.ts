@@ -141,7 +141,7 @@ describe('handleInitProject', () => {
     assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
-    assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
+    assert.equal(state.managedFiles['.gemini/settings.json']?.template, '.gemini/settings.json');
     assert.equal(typeof state.managedFiles['.codex/config.toml']?.sha256, 'string');
     assert.equal(typeof state.managedFiles['.mcp.json']?.sha256, 'string');
     assert.equal(typeof state.managedFiles['.gemini/settings.json']?.sha256, 'string');

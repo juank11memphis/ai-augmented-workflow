@@ -84,8 +84,8 @@ describe('stopSelectedMcpServer', () => {
     assert.deepEqual(result.state.selectedMcpServers, []);
     assert.equal(result.state.managedFiles['.codex/config.toml']?.status, 'managed');
     assert.equal(result.state.managedFiles['.mcp.json']?.status, 'unmanaged');
-    assert.equal(result.state.managedFiles['.gemini/settings.json']?.status, 'unmanaged');
-    assert.equal(result.stoppedPaths.map((stoppedPath) => stoppedPath.relativePath).sort().join(','), '.gemini/settings.json,.mcp.json');
+    assert.equal(result.state.managedFiles['.gemini/settings.json']?.status, 'managed');
+    assert.equal(result.stoppedPaths.map((stoppedPath) => stoppedPath.relativePath).sort().join(','), '.mcp.json');
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /github-mcp-server/);
     assert.equal(fs.existsSync(path.join(rootPath, '.mcp.json')), true);
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), true);
@@ -104,7 +104,7 @@ describe('stopSelectedMcpServer', () => {
     assert.equal(result.state.mcpServerConfigs, undefined);
     assert.equal(result.state.managedFiles['.codex/config.toml']?.status, 'managed');
     assert.equal(result.state.managedFiles['.mcp.json']?.status, 'unmanaged');
-    assert.equal(result.state.managedFiles['.gemini/settings.json']?.status, 'unmanaged');
+    assert.equal(result.state.managedFiles['.gemini/settings.json']?.status, 'managed');
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
   });
 

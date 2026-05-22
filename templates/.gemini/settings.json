@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -lc 'if latest=$(npm view @juancr11/sibu version 2>/dev/null); then echo \"Sibu latest version: $latest\" >&2; else echo \"Sibu version check unavailable; continuing to sibu doctor.\" >&2; fi; sibu doctor >&2 || true; printf \"%s\\n\" \"{\\\"systemMessage\\\":\\\"Sibu session health check finished. Review hook output for details.\\\"}\"'",
+            "name": "Sibu session health check",
+            "timeout": 60000
+          }
+        ]
+      }
+    ]
+  }
+}

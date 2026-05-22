@@ -106,7 +106,7 @@ export function renderMcpConfig({
     return renderCodexMcpConfig(baseContents ?? '', selectedMcpServers);
   }
 
-  return renderJsonMcpConfig(buildJsonMcpServerConfigs(agentId, selectedMcpServers));
+  return renderJsonMcpConfig(buildJsonMcpServerConfigs(agentId, selectedMcpServers), baseContents);
 }
 
 export function extractProjectOverview(filePath: string): string | undefined {
@@ -164,6 +164,10 @@ function getMcpConfigAgentId(templateRelativePath: string): Extract<AgentId, 'co
   }
 
   if (templateRelativePath === 'mcp/gemini/settings.json') {
+    return 'gemini';
+  }
+
+  if (templateRelativePath === '.gemini/settings.json') {
     return 'gemini';
   }
 
@@ -225,8 +229,25 @@ function buildNotionMcpServerConfig(): JsonMcpServerConfig {
   };
 }
 
-function renderJsonMcpConfig(mcpServers: Record<string, JsonMcpServerConfig>): string {
-  return `${JSON.stringify({ mcpServers }, null, 2)}\n`;
+function renderJsonMcpConfig(mcpServers: Record<string, JsonMcpServerConfig>, baseContents?: string): string {
+  const baseConfig = parseJsonObject(baseContents);
+  baseConfig.mcpServers = mcpServers;
+
+  return `${JSON.stringify(baseConfig, null, 2)}\n`;
+}
+
+function parseJsonObject(contents?: string): Record<string, unknown> {
+  if (!contents?.trim()) {
+    return {};
+  }
+
+  const parsed = JSON.parse(contents) as unknown;
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Expected JSON template to contain an object.');
+  }
+
+  return parsed as Record<string, unknown>;
 }
 
 function isTemplateManifest(value: unknown): value is TemplateManifest {

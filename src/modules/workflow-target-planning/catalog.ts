@@ -11,6 +11,7 @@ import type {
   McpServerId,
   WorkflowSkillId,
   SupportedAgent,
+  SessionStartHookTemplate,
 } from '../../shared/types.js';
 
 export const MANDATORY_SKILLS: SkillTemplate[] = [
@@ -96,6 +97,25 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
 ];
+
+export const SESSION_START_HOOKS: SessionStartHookTemplate[] = [
+  {
+    agentId: 'codex',
+    templateRelativePath: '.codex/hooks.json',
+    targetRelativePath: '.codex/hooks.json',
+  },
+  {
+    agentId: 'gemini',
+    templateRelativePath: '.gemini/settings.json',
+    targetRelativePath: '.gemini/settings.json',
+  },
+  {
+    agentId: 'claude',
+    templateRelativePath: '.claude/settings.json',
+    targetRelativePath: '.claude/settings.json',
+  },
+];
+
 
 export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
   {

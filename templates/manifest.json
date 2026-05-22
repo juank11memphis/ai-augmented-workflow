@@ -1,5 +1,5 @@
 {
-  "templateVersion": "108",
+  "templateVersion": "109",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -89,7 +89,7 @@
       "version": "1",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+        "Adds an optional Go skill with concise, Effective Go\u2013style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
       ]
     },
     "skills/postgresql-expert/SKILL.md": {
@@ -230,6 +230,27 @@
       "description": "Gemini Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
         "Adds a Gemini notion-exporter sub-agent with clean-context and no-local-write export guidance."
+      ]
+    },
+    ".codex/hooks.json": {
+      "version": "1",
+      "description": "Codex SessionStart hook configuration for running Sibu session health checks.",
+      "changes": [
+        "Adds a managed Codex SessionStart hook that checks the latest Sibu version and runs sibu doctor automatically."
+      ]
+    },
+    ".claude/settings.json": {
+      "version": "1",
+      "description": "Claude Code SessionStart hook configuration for running Sibu session health checks.",
+      "changes": [
+        "Adds a managed Claude SessionStart hook that checks the latest Sibu version and runs sibu doctor automatically."
+      ]
+    },
+    ".gemini/settings.json": {
+      "version": "1",
+      "description": "Gemini CLI SessionStart hook configuration for running Sibu session health checks.",
+      "changes": [
+        "Adds a managed Gemini SessionStart hook that checks the latest Sibu version and runs sibu doctor automatically."
       ]
     }
   }

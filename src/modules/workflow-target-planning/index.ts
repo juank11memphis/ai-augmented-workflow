@@ -6,6 +6,7 @@ export {
   SELECTABLE_LANGUAGE_SKILLS,
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
+  SESSION_START_HOOKS,
   SUPPORTED_AGENTS,
   getMcpServersRequiredByWorkflowSkills,
   getWorkflowSkillsImpliedByMcpServers,

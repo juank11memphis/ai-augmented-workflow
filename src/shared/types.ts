@@ -23,6 +23,12 @@ export type SkillTemplate = {
   supplementalTargetsByAgent?: Partial<Record<AgentId, SupplementalSkillTarget[]>>;
 };
 
+export type SessionStartHookTemplate = {
+  agentId: AgentId;
+  templateRelativePath: string;
+  targetRelativePath: string;
+};
+
 export type SupplementalSkillTarget = {
   templateRelativePath: string;
   targetRelativePath: string;

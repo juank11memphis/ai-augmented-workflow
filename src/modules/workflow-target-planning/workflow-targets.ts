@@ -10,6 +10,7 @@ import {
   SELECTABLE_LANGUAGE_SKILLS,
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
+  SESSION_START_HOOKS,
   SUPPORTED_AGENTS,
 } from './index.js';
 import { sha256 } from '../../shared/hash.js';
@@ -166,6 +167,15 @@ export function getSelectedMcpTargetsForAgents(selectedAgents: SupportedAgent[],
   });
 }
 
+function getSessionStartHookTargetsForAgents(selectedAgents: SupportedAgent[]): SkillTarget[] {
+  const selectedAgentIds = new Set(selectedAgents.map((agent) => agent.id));
+
+  return SESSION_START_HOOKS.filter((hookTemplate) => selectedAgentIds.has(hookTemplate.agentId)).map((hookTemplate) => ({
+    targetRelativePath: hookTemplate.targetRelativePath,
+    templateRelativePath: hookTemplate.templateRelativePath,
+  }));
+}
+
 export function getWorkflowTargets(
   rootPath: string,
   selectedAgents: SupportedAgent[],
@@ -205,6 +215,13 @@ export function getWorkflowTargets(
       templateRelativePath: skillTarget.templateRelativePath,
       requiresProjectOverview: false,
       targetKind: 'skill' as const,
+    })),
+    ...getSessionStartHookTargetsForAgents(selectedAgents).map((hookTarget) => ({
+      label: hookTarget.targetRelativePath,
+      targetPath: path.join(rootPath, hookTarget.targetRelativePath),
+      templateRelativePath: hookTarget.templateRelativePath,
+      requiresProjectOverview: false,
+      targetKind: 'agent-support' as const,
     })),
   ];
 

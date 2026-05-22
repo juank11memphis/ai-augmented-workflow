@@ -59,14 +59,29 @@ describe('getWorkflowTargets', () => {
 
     assert.equal(targetPaths.includes('AGENTS.md'), true);
     assert.equal(targetPaths.includes('.codex/config.toml'), true);
+    assert.equal(targetPaths.includes('.codex/hooks.json'), true);
     assert.equal(targetPaths.includes('GEMINI.md'), true);
+    assert.equal(targetPaths.includes('.gemini/settings.json'), true);
     assert.equal(targetPaths.includes('CLAUDE.md'), true);
+    assert.equal(targetPaths.includes('.claude/settings.json'), true);
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assert.equal(targetPaths.includes('.agents/skills/deep-module-map-writer/SKILL.md'), true);
     assert.equal(targetPaths.includes('.agents/skills/feature-idea-capture/SKILL.md'), true);
     assert.equal(targetPaths.includes('docs/deep-module-map.md'), false);
     assert.equal(targetPaths.includes('docs/feature-ideas.md'), false);
+    assertNoInvalidTargets(targets);
+  });
+
+  it('adds mandatory session-start hook targets only for agents with confirmed native support', () => {
+    const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS);
+    const targetPaths = getRelativeTargetPaths(targets);
+
+    assert.equal(targetPaths.includes('.codex/hooks.json'), true);
+    assert.equal(targetPaths.includes('.gemini/settings.json'), true);
+    assert.equal(targetPaths.includes('.claude/settings.json'), true);
+    assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.gemini/settings.json').length, 1);
     assertNoInvalidTargets(targets);
   });
 
@@ -341,7 +356,7 @@ describe('getWorkflowTargets', () => {
     assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
     assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
-    assert.equal(state.managedFiles['.gemini/settings.json']?.template, 'mcp/gemini/settings.json');
+    assert.equal(state.managedFiles['.gemini/settings.json']?.template, '.gemini/settings.json');
 
     fs.rmSync(rootPath, { recursive: true, force: true });
   });

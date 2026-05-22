@@ -261,6 +261,46 @@ describe('dedicated exporter skill templates', () => {
   });
 });
 
+describe('session-start hook templates', () => {
+  it('registers and renders managed session-start hook templates', () => {
+    const manifest = readTemplateManifest();
+    const templatePaths = ['.codex/hooks.json', '.claude/settings.json', '.gemini/settings.json'];
+
+    for (const templatePath of templatePaths) {
+      const templateMetadata = manifest.templates[templatePath];
+      const contents = readTemplate(templatePath);
+
+      assert.equal(templateMetadata?.version, '1');
+      assert.match(templateMetadata?.description ?? '', /SessionStart hook/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /managed .*SessionStart hook/i);
+      assert.match(contents, /SessionStart/);
+      assert.match(contents, /npm view @juancr11\/sibu version/);
+      assert.match(contents, /sibu doctor/);
+    }
+  });
+
+  it('preserves Gemini hooks when rendering MCP settings', () => {
+    const rendered = renderMcpConfig({
+      agentId: 'gemini',
+      baseContents: readTemplate('.gemini/settings.json'),
+      selectedMcpServers: selectedGithubAndNotionMcpServers,
+    });
+    const parsed = JSON.parse(rendered) as {
+      hooks?: unknown;
+      mcpServers?: {
+        github?: unknown;
+        notion?: unknown;
+      };
+    };
+
+    assert.ok(parsed.hooks);
+    assert.ok(parsed.mcpServers?.github);
+    assert.ok(parsed.mcpServers?.notion);
+    assert.match(rendered, /SessionStart/);
+    assert.match(rendered, /npm view @juancr11\/sibu version/);
+  });
+});
+
 describe('authoring templates delegate export to dedicated exporter skills', () => {
   it('keeps document authoring templates free of Notion export workflows', () => {
     const manifest = readTemplateManifest();
