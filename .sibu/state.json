@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "104",
+  "templateVersion": "106",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-21T01:29:02.467Z",
+  "updatedAt": "2026-05-22T17:26:54.620Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -141,14 +141,52 @@
     },
     ".agents/skills/export-to-github/SKILL.md": {
       "template": "skills/export-to-github/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "cf848521c5234fd90141d3201fc8cc736bac0906aa29eedb0d804e5ed56a5b6f",
+      "templateVersion": "2",
+      "sha256": "e31081e90939bae02e9afb1d56671cb589cba41e3bf0d1c8e2499561d5ba1ca4",
       "status": "managed"
     },
     ".agents/skills/export-to-notion/SKILL.md": {
       "template": "skills/export-to-notion/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "c33b2a98a4e2587502d6f4ecb16c3786ac0b67acaae8e90b2ecc32e56d551be8",
+      "status": "managed"
+    },
+    ".codex/agents/github-exporter.toml": {
+      "template": ".codex/agents/github-exporter.toml",
       "templateVersion": "1",
-      "sha256": "8ee0b8cf2c93213a547753dc4e4361502fdb1498ce7c96e4e5ff010736bb5feb",
+      "sha256": "dcb49ec9a1ba96c68f58f985a81f02e124d610d3d116f38b4dc17b18868edf19",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "2"
+    },
+    ".codex/agents/notion-exporter.toml": {
+      "template": ".codex/agents/notion-exporter.toml",
+      "templateVersion": "1",
+      "sha256": "d6f9bea468e150a29618be0c65aaafd5377c59c4e10a2e72cc4cf445f8b7d56d",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "2"
+    },
+    ".gemini/agents/github-exporter.md": {
+      "template": ".gemini/agents/github-exporter.md",
+      "templateVersion": "1",
+      "sha256": "1eff8f04b8411e4695bb637d4b47e7500e1ee51110b0d6ee86fdfc502547da8c",
+      "status": "managed"
+    },
+    ".gemini/agents/notion-exporter.md": {
+      "template": ".gemini/agents/notion-exporter.md",
+      "templateVersion": "1",
+      "sha256": "be2104afd1b6dd7174ee48121a25ae373ee01fe24bcf350174b5f554436c9794",
+      "status": "managed"
+    },
+    ".claude/agents/github-exporter.md": {
+      "template": ".claude/agents/github-exporter.md",
+      "templateVersion": "1",
+      "sha256": "1eff8f04b8411e4695bb637d4b47e7500e1ee51110b0d6ee86fdfc502547da8c",
+      "status": "managed"
+    },
+    ".claude/agents/notion-exporter.md": {
+      "template": ".claude/agents/notion-exporter.md",
+      "templateVersion": "1",
+      "sha256": "be2104afd1b6dd7174ee48121a25ae373ee01fe24bcf350174b5f554436c9794",
       "status": "managed"
     }
   }

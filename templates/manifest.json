@@ -1,5 +1,5 @@
 {
-  "templateVersion": "105",
+  "templateVersion": "106",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -191,17 +191,17 @@
       ]
     },
     ".codex/agents/github-exporter.toml": {
-      "version": "1",
+      "version": "2",
       "description": "Codex GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
       "changes": [
-        "Adds a Codex github-exporter sub-agent with clean-context and no-local-write export guidance."
+        "Fixes the Codex github-exporter sub-agent role definition to use developer_instructions."
       ]
     },
     ".codex/agents/notion-exporter.toml": {
-      "version": "1",
+      "version": "2",
       "description": "Codex Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Adds a Codex notion-exporter sub-agent with clean-context and no-local-write export guidance."
+        "Fixes the Codex notion-exporter sub-agent role definition to use developer_instructions."
       ]
     },
     ".claude/agents/github-exporter.md": {
