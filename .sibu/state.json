@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "106",
+  "templateVersion": "108",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-22T17:26:54.620Z",
+  "updatedAt": "2026-05-22T20:30:54.704Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -141,29 +141,29 @@
     },
     ".agents/skills/export-to-github/SKILL.md": {
       "template": "skills/export-to-github/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "e31081e90939bae02e9afb1d56671cb589cba41e3bf0d1c8e2499561d5ba1ca4",
-      "status": "managed"
+      "templateVersion": "3",
+      "sha256": "fd00f76ca6c928bb4575e6c496e833ca9cc6dfcb4efba683b8d5abced4666eff",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "4"
     },
     ".agents/skills/export-to-notion/SKILL.md": {
       "template": "skills/export-to-notion/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "c33b2a98a4e2587502d6f4ecb16c3786ac0b67acaae8e90b2ecc32e56d551be8",
-      "status": "managed"
+      "templateVersion": "3",
+      "sha256": "c2d99aaafb4c4cfc1de4115034722e462777296b8357715d1e23447fae6b6d55",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "4"
     },
     ".codex/agents/github-exporter.toml": {
       "template": ".codex/agents/github-exporter.toml",
-      "templateVersion": "1",
-      "sha256": "dcb49ec9a1ba96c68f58f985a81f02e124d610d3d116f38b4dc17b18868edf19",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "2"
+      "templateVersion": "3",
+      "sha256": "2ef954f7c50c80e64f3dc4567f5a0c7a5de8894b446775ddc235f1250fab6c4f",
+      "status": "managed"
     },
     ".codex/agents/notion-exporter.toml": {
       "template": ".codex/agents/notion-exporter.toml",
-      "templateVersion": "1",
-      "sha256": "d6f9bea468e150a29618be0c65aaafd5377c59c4e10a2e72cc4cf445f8b7d56d",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "2"
+      "templateVersion": "3",
+      "sha256": "07d10639b6724c6d83310f352d7ee4d191589f3984057a19bc8ba8487dbcd337",
+      "status": "managed"
     },
     ".gemini/agents/github-exporter.md": {
       "template": ".gemini/agents/github-exporter.md",

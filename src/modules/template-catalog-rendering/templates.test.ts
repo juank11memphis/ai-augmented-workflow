@@ -190,12 +190,14 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(templateMetadata?.version, '4');
     assert.match(templateMetadata?.description ?? '', /GitHub export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /github-exporter sub-agent/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /non-blocking background sub-agent/i);
     assert.match(contents, /name: export-to-github/);
     assert.match(contents, /github-exporter/);
     assert.match(contents, /clean, narrow export packet/);
+    assert.match(contents, /Do not call `wait_agent`/);
+    assert.match(contents, /completion will arrive via sub-agent notification/);
     assert.match(contents, /feature name/i);
     assert.match(contents, /Epics and User Stories/i);
     assert.match(contents, /native sub-issues/i);
@@ -209,12 +211,14 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(templateMetadata?.version, '4');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /notion-exporter sub-agent/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /non-blocking background sub-agent/i);
     assert.match(contents, /name: export-to-notion/);
     assert.match(contents, /notion-exporter/);
     assert.match(contents, /clean, narrow export packet/);
+    assert.match(contents, /Do not call `wait_agent`/);
+    assert.match(contents, /completion will arrive via sub-agent notification/);
     assert.match(contents, /feature name/i);
     assert.match(contents, /feature_brief\.md/);
     assert.match(contents, /ux\.md/);
@@ -239,11 +243,11 @@ describe('dedicated exporter skill templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, isCodexAgentTemplate ? '2' : '1');
+      assert.equal(templateMetadata?.version, isCodexAgentTemplate ? '3' : '1');
       assert.match(templateMetadata?.description ?? '', /exporter sub-agent/i);
       assert.match(
         templateMetadata?.changes.join('\n') ?? '',
-        isCodexAgentTemplate ? /developer_instructions/i : /clean-context|no-local-write/i,
+        isCodexAgentTemplate ? /missing export packet/i : /clean-context|no-local-write/i,
       );
       assert.match(contents, /sub-agent/i);
       assert.match(contents, /full conversation context/i);

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "106",
+  "templateVersion": "108",
   "templates": {
     "AGENTS.md": {
       "version": "30",
@@ -177,31 +177,31 @@
       ]
     },
     "skills/export-to-github/SKILL.md": {
-      "version": "2",
+      "version": "4",
       "description": "Selectable GitHub export skill for publishing a named feature's Epics and User Stories to GitHub issues and native sub-issues.",
       "changes": [
-        "Routes GitHub exports through the configured github-exporter sub-agent by default when available."
+        "Requires GitHub exports to run as non-blocking background sub-agent jobs and prevents the main agent from waiting or polling for completion."
       ]
     },
     "skills/export-to-notion/SKILL.md": {
-      "version": "2",
+      "version": "4",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
-        "Routes Notion exports through the configured notion-exporter sub-agent by default when available."
+        "Requires Notion exports to run as non-blocking background sub-agent jobs and prevents the main agent from waiting or polling for completion."
       ]
     },
     ".codex/agents/github-exporter.toml": {
-      "version": "2",
+      "version": "3",
       "description": "Codex GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
       "changes": [
-        "Fixes the Codex github-exporter sub-agent role definition to use developer_instructions."
+        "Requires the Codex github-exporter sub-agent to stop and request missing export packet details instead of inferring from broad conversation context."
       ]
     },
     ".codex/agents/notion-exporter.toml": {
-      "version": "2",
+      "version": "3",
       "description": "Codex Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Fixes the Codex notion-exporter sub-agent role definition to use developer_instructions."
+        "Requires the Codex notion-exporter sub-agent to stop and request missing export packet details instead of inferring from broad conversation context."
       ]
     },
     ".claude/agents/github-exporter.md": {

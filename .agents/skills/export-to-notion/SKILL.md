@@ -7,20 +7,31 @@ description: Export a named feature's local feature brief, UX design, and techni
 
 Use this skill when the user asks to export a feature's core documentation to Notion.
 
-## Delegation default
+## Non-blocking delegation requirement
 
-Use the configured `notion-exporter` sub-agent by default when it is installed for the current AI target. Start it in the background when the runtime supports background sub-agent execution.
+Before reading source docs or calling Notion mutation tools, check whether the configured `notion-exporter` sub-agent is available for the current AI target.
 
-Pass only a clean, narrow export packet to the sub-agent:
+If available, you must delegate the export to `notion-exporter`. Do not perform the export inline and do not call Notion mutation tools from the main agent.
+
+The delegation is fire-and-notify:
+
+- Start the `notion-exporter` sub-agent in the background.
+- Do not call `wait_agent`, poll for completion, spawn a status-checking agent, or otherwise block the main thread.
+- Immediately return control to the user after spawning the exporter.
+- Tell the user the export is running in the background and that completion will arrive via sub-agent notification.
+- Only inspect the final result if the user explicitly asks for status/results later, or after a sub-agent completion notification is received.
+
+Pass only a clean, narrow export packet:
 
 - feature slug or explicit source paths
 - Notion destination details
 - the no-local-write rule
+- whether user opt-in for Notion mutation has already been granted
 - expected final output format: created or updated Notion URLs and errors
 
 Do not fork or pass the main agent's full conversation context. The exporter does not need implementation, planning, or unrelated discussion context.
 
-If a configured Notion exporter sub-agent or background execution is unavailable, run the export inline and clearly tell the user why.
+Inline export is allowed only when sub-agent execution is unavailable, the configured `notion-exporter` is not installed, or the user explicitly asks for inline fallback after the background exporter is unavailable or failed. Before any inline mutation, clearly tell the user why delegation cannot be used.
 
 ## Required input
 
@@ -64,7 +75,16 @@ Use this organization under the configured Notion docs parent page:
 4. Ask one explicit opt-in question before creating or modifying Notion pages.
 5. Create or reuse the repo, Features, and feature organization pages under the configured parent.
 6. Export each existing allowed artifact to its matching Notion page.
-7. Report export success or failure per artifact.
+7. After spawning the background exporter, immediately report that the export is running in the background. Do not wait for final URLs in the same turn.
+
+## Delegation self-check
+
+Before finalizing, verify:
+
+- Did I use `notion-exporter` when it was available?
+- Did I avoid `wait_agent`, status polling, and duplicate status-checking agents?
+- If not, did I explicitly report why before any inline Notion mutation?
+- Did I avoid local file writes and keep local Markdown canonical?
 
 ## Export rules
 

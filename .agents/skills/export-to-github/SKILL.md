@@ -7,20 +7,31 @@ description: Export a named feature's Epics and User Stories from local Markdown
 
 Use this skill when the user asks to export a feature's Epics and User Stories to GitHub.
 
-## Delegation default
+## Non-blocking delegation requirement
 
-Use the configured `github-exporter` sub-agent by default when it is installed for the current AI target. Start it in the background when the runtime supports background sub-agent execution.
+Before reading planning artifacts or calling GitHub mutation tools, check whether the configured `github-exporter` sub-agent is available for the current AI target.
 
-Pass only a clean, narrow export packet to the sub-agent:
+If available, you must delegate the export to `github-exporter`. Do not perform the export inline and do not call GitHub issue or sub-issue mutation tools from the main agent.
+
+The delegation is fire-and-notify:
+
+- Start the `github-exporter` sub-agent in the background.
+- Do not call `wait_agent`, poll for completion, spawn a status-checking agent, or otherwise block the main thread.
+- Immediately return control to the user after spawning the exporter.
+- Tell the user the export is running in the background and that completion will arrive via sub-agent notification.
+- Only inspect the final result if the user explicitly asks for status/results later, or after a sub-agent completion notification is received.
+
+Pass only a clean, narrow export packet:
 
 - feature slug or explicit planning artifact paths
 - target repository resolved from the current local repo's GitHub `origin` remote
 - the no-local-write rule
+- whether user opt-in for GitHub mutation has already been granted
 - expected final output format: created issue URLs or numbers, sub-issue relationship results, and errors
 
 Do not fork or pass the main agent's full conversation context. The exporter does not need implementation, planning, or unrelated discussion context.
 
-If a configured GitHub exporter sub-agent or background execution is unavailable, run the export inline and clearly tell the user why.
+Inline export is allowed only when sub-agent execution is unavailable, the configured `github-exporter` is not installed, or the user explicitly asks for inline fallback after the background exporter is unavailable or failed. Before any inline mutation, clearly tell the user why delegation cannot be used.
 
 ## Required input
 
@@ -41,7 +52,16 @@ If the feature name is ambiguous, inspect `docs/features/` and ask one focused c
    - one issue per Epic, with no labels
    - one issue per User Story, with no labels
    - each User Story issue attached as a native sub-issue of its parent Epic issue
-7. Report created issue numbers or URLs.
+7. After spawning the background exporter, immediately report that the export is running in the background. Do not wait for created issue numbers or URLs in the same turn.
+
+## Delegation self-check
+
+Before finalizing, verify:
+
+- Did I use `github-exporter` when it was available?
+- Did I avoid `wait_agent`, status polling, and duplicate status-checking agents?
+- If not, did I explicitly report why before any inline GitHub mutation?
+- Did I avoid local file writes and preserve native sub-issue requirements?
 
 ## Export rules
 
