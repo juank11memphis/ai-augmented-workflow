@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -lc 'if latest=$(npm view @juancr11/sibu version 2>/dev/null); then echo \"Sibu latest version: $latest\"; else echo \"Sibu version check unavailable; continuing to sibu doctor.\"; fi; sibu doctor || true'",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

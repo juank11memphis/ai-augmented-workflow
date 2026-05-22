@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "108",
+  "templateVersion": "110",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-22T20:30:54.704Z",
+  "updatedAt": "2026-05-22T22:07:08.995Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -31,8 +31,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "30",
-      "sha256": "2fd1f842c9b66a582880146d50b606db7668b8439c2c0241c09285ae8aa5e17c",
+      "templateVersion": "31",
+      "sha256": "f453e52f87693812d65f8ff820fcad1c06eb5ff89a772f3a7a9d5dcfd44f2022",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -187,6 +187,18 @@
       "template": ".claude/agents/notion-exporter.md",
       "templateVersion": "1",
       "sha256": "be2104afd1b6dd7174ee48121a25ae373ee01fe24bcf350174b5f554436c9794",
+      "status": "managed"
+    },
+    ".codex/hooks.json": {
+      "template": ".codex/hooks.json",
+      "templateVersion": "1",
+      "sha256": "a5ca5ad5d2432ee01509ac8bcbc3a39674617e08d737889088a62d6673263f01",
+      "status": "managed"
+    },
+    ".claude/settings.json": {
+      "template": ".claude/settings.json",
+      "templateVersion": "1",
+      "sha256": "59dd7b757dce9017d2237786002a0a0e97ef6d36075156d69b1ea18e9257bdef",
       "status": "managed"
     }
   }
