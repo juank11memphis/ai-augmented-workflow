@@ -1,5 +1,5 @@
 {
-  "templateVersion": "115",
+  "templateVersion": "116",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "22",
-      "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
+      "version": "23",
+      "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Clarifies that story and Epic planning requests are confirmation for executor implementation."
+        "Turns the executor skill into a gatekeeper that delegates bounded execution to fresh-context workers when supported while keeping approval metadata and commits under main-agent control."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

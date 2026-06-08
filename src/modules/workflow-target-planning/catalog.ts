@@ -77,6 +77,44 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       claude: '.agents/skills/ai-implementation-planner/SKILL.md',
       windsurf: '.agents/skills/ai-implementation-planner/SKILL.md',
     },
+    supplementalTargetsByAgent: {
+      codex: [
+        {
+          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
+        },
+        {
+          templateRelativePath: '.codex/agents/sibu-implementation-planner.toml',
+          targetRelativePath: '.codex/agents/sibu-implementation-planner.toml',
+        },
+      ],
+      gemini: [
+        {
+          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
+        },
+        {
+          templateRelativePath: '.gemini/agents/sibu-implementation-planner.md',
+          targetRelativePath: '.gemini/agents/sibu-implementation-planner.md',
+        },
+      ],
+      claude: [
+        {
+          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
+        },
+        {
+          templateRelativePath: '.claude/agents/sibu-implementation-planner.md',
+          targetRelativePath: '.claude/agents/sibu-implementation-planner.md',
+        },
+      ],
+      windsurf: [
+        {
+          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
+        },
+      ],
+    },
   },
   {
     templateRelativePath: 'skills/ai-implementation-plan-executor/SKILL.md',
@@ -85,6 +123,44 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       gemini: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
       claude: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
       windsurf: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
+    },
+    supplementalTargetsByAgent: {
+      codex: [
+        {
+          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
+        },
+        {
+          templateRelativePath: '.codex/agents/sibu-implementation-executor.toml',
+          targetRelativePath: '.codex/agents/sibu-implementation-executor.toml',
+        },
+      ],
+      gemini: [
+        {
+          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
+        },
+        {
+          templateRelativePath: '.gemini/agents/sibu-implementation-executor.md',
+          targetRelativePath: '.gemini/agents/sibu-implementation-executor.md',
+        },
+      ],
+      claude: [
+        {
+          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
+        },
+        {
+          templateRelativePath: '.claude/agents/sibu-implementation-executor.md',
+          targetRelativePath: '.claude/agents/sibu-implementation-executor.md',
+        },
+      ],
+      windsurf: [
+        {
+          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
+        },
+      ],
     },
   },
   {
@@ -400,6 +476,7 @@ export const SUPPORTED_AGENTS: SupportedAgent[] = [
     description: 'Create .codex/config.toml pointing Codex to AGENTS.md',
     targetRelativePath: '.codex/config.toml',
     templateRelativePath: '.codex/config.toml',
+    supportsForegroundWorkers: true,
   },
   {
     id: 'gemini',
@@ -407,6 +484,7 @@ export const SUPPORTED_AGENTS: SupportedAgent[] = [
     description: 'Create GEMINI.md that delegates to AGENTS.md',
     targetRelativePath: 'GEMINI.md',
     templateRelativePath: 'GEMINI.md',
+    supportsForegroundWorkers: true,
   },
   {
     id: 'claude',
@@ -414,11 +492,13 @@ export const SUPPORTED_AGENTS: SupportedAgent[] = [
     description: 'Create CLAUDE.md that delegates to AGENTS.md',
     targetRelativePath: 'CLAUDE.md',
     templateRelativePath: 'CLAUDE.md',
+    supportsForegroundWorkers: true,
   },
   {
     id: 'windsurf',
     name: 'Windsurf',
     description: 'Use root AGENTS.md and shared .agents/skills/ discovery',
+    supportsForegroundWorkers: false,
   },
 ];
 

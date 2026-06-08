@@ -41,7 +41,9 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/technical-design-writer/SKILL.md',
       '.agents/skills/scrum-master-planner/SKILL.md',
       '.agents/skills/ai-implementation-planner/SKILL.md',
+      '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
       '.agents/skills/ai-implementation-plan-executor/SKILL.md',
+      '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
       '.agents/skills/feature-idea-capture/SKILL.md',
       '.agents/skills/typescript/SKILL.md',
       '.agents/skills/react/SKILL.md',
@@ -66,6 +68,8 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.claude/settings.json'), true);
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.includes('.agents/skills/deep-module-map-writer/SKILL.md'), true);
     assert.equal(targetPaths.includes('.agents/skills/feature-idea-capture/SKILL.md'), true);
     assert.equal(targetPaths.includes('docs/deep-module-map.md'), false);
@@ -82,6 +86,31 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.claude/settings.json'), true);
     assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.gemini/settings.json').length, 1);
+    assertNoInvalidTargets(targets);
+  });
+
+  it('exposes foreground worker capability metadata per supported agent', () => {
+    assert.equal(getSupportedAgent('codex').supportsForegroundWorkers, true);
+    assert.equal(getSupportedAgent('claude').supportsForegroundWorkers, true);
+    assert.equal(getSupportedAgent('gemini').supportsForegroundWorkers, true);
+    assert.equal(getSupportedAgent('windsurf').supportsForegroundWorkers, false);
+  });
+
+  it('installs Sibu implementation worker targets only for foreground-worker-capable hosts', () => {
+    const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS);
+    const targetPaths = getRelativeTargetPaths(targets);
+
+    assert.equal(targetPaths.includes('.agents/skills/ai-implementation-planner-toolbox/SKILL.md'), true);
+    assert.equal(targetPaths.includes('.agents/skills/ai-implementation-executor-toolbox/SKILL.md'), true);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
+    assert.equal(targetPaths.includes('.codex/agents/sibu-implementation-planner.toml'), true);
+    assert.equal(targetPaths.includes('.codex/agents/sibu-implementation-executor.toml'), true);
+    assert.equal(targetPaths.includes('.claude/agents/sibu-implementation-planner.md'), true);
+    assert.equal(targetPaths.includes('.claude/agents/sibu-implementation-executor.md'), true);
+    assert.equal(targetPaths.includes('.gemini/agents/sibu-implementation-planner.md'), true);
+    assert.equal(targetPaths.includes('.gemini/agents/sibu-implementation-executor.md'), true);
+    assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/agents/')), false);
     assertNoInvalidTargets(targets);
   });
 
@@ -161,13 +190,19 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/product-vision-writer/SKILL.md',
       '.agents/skills/deep-module-map-writer/SKILL.md',
       '.agents/skills/feature-brief-writer/SKILL.md',
-        '.agents/skills/technical-design-writer/SKILL.md',
-        '.agents/skills/scrum-master-planner/SKILL.md',
-        '.agents/skills/ai-implementation-planner/SKILL.md',
-        '.agents/skills/ai-implementation-plan-executor/SKILL.md',
-        '.agents/skills/feature-idea-capture/SKILL.md',
+      '.agents/skills/technical-design-writer/SKILL.md',
+      '.agents/skills/scrum-master-planner/SKILL.md',
+      '.agents/skills/ai-implementation-planner/SKILL.md',
+      '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
+      '.codex/agents/sibu-implementation-planner.toml',
+      '.agents/skills/ai-implementation-plan-executor/SKILL.md',
+      '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
+      '.codex/agents/sibu-implementation-executor.toml',
+      '.agents/skills/feature-idea-capture/SKILL.md',
       '.agents/skills/export-to-notion/SKILL.md',
       '.codex/agents/notion-exporter.toml',
+      '.claude/agents/sibu-implementation-planner.md',
+      '.claude/agents/sibu-implementation-executor.md',
       '.claude/agents/notion-exporter.md',
     ]);
 

@@ -142,7 +142,7 @@ export function renderWorkerToolboxRouting({
 ${selectedSkillsSection}`;
 }
 
-function renderWorkerToolboxRoutingPlaceholders(
+export function renderWorkerToolboxRoutingPlaceholders(
   contents: string,
   selectedLanguageSkills: SelectableLanguageSkill[],
   selectedFrameworkSkills: SelectableFrameworkSkill[],

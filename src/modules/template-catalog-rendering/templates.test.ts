@@ -365,6 +365,33 @@ describe('Sibu planner worker templates', () => {
 });
 
 describe('Sibu executor worker templates', () => {
+  it('registers the executor skill as a main-agent gatekeeper', () => {
+    const templatePath = 'skills/ai-implementation-plan-executor/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '23');
+    assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /main-agent control/i);
+    assert.match(contents, /main-agent gatekeeper/i);
+    assert.match(contents, /ai-implementation-planner/);
+    assert.match(contents, /sibu-implementation-executor/);
+    assert.match(contents, /\.agents\/skills\/ai-implementation-executor-toolbox\/SKILL\.md/);
+    assert.match(contents, /required skill paths/);
+    assert.match(contents, /relevant optional installed skill paths/);
+    assert.match(contents, /distilled skill constraints/);
+    assert.match(contents, /export-to-github/);
+    assert.match(contents, /export-to-notion/);
+    assert.match(contents, /Fallback matrix/);
+    assert.match(contents, /Inline compressed-context fallback/);
+    assert.match(contents, /approval metadata and commit execution remain with the main agent/);
+    assert.match(contents, /git commit/);
+    assert.match(contents, /git stash/);
+    assert.match(contents, /git reset/);
+    assert.match(contents, /Feature continuation check/);
+  });
+
   it('registers and renders the executor toolbox skill', () => {
     const templatePath = 'skills/ai-implementation-executor-toolbox/SKILL.md';
     const manifest = readTemplateManifest();

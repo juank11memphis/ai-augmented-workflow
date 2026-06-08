@@ -15,6 +15,7 @@ export type SupportedAgent = {
   description: string;
   targetRelativePath?: string;
   templateRelativePath?: string;
+  supportsForegroundWorkers: boolean;
 };
 
 export type SkillTemplate = {
