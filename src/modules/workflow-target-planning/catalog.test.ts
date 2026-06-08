@@ -58,6 +58,7 @@ describe('resolveSelectableSkillById', () => {
 
   it('does not resolve required-only skills as selectable skills', () => {
     assertUnknownSkill('clean-code');
+    assertUnknownSkill('business-domain-model-writer');
     assertUnknownSkill('feature-idea-capture');
   });
 });
@@ -132,6 +133,24 @@ describe('export workflow skill MCP pairings', () => {
 });
 
 describe('skill target paths', () => {
+  it('registers the Business Domain Model writer as one required workflow skill for all supported agents', () => {
+    const businessDomainModelWriters = MANDATORY_SKILLS.filter(
+      (skill) => skill.templateRelativePath === 'skills/business-domain-model-writer/SKILL.md'
+    );
+
+    assert.equal(businessDomainModelWriters.length, 1);
+    assert.deepEqual(businessDomainModelWriters[0]?.targetRelativePathsByAgent, {
+      codex: '.agents/skills/business-domain-model-writer/SKILL.md',
+      gemini: '.agents/skills/business-domain-model-writer/SKILL.md',
+      claude: '.agents/skills/business-domain-model-writer/SKILL.md',
+    });
+    assert.equal(businessDomainModelWriters[0]?.supplementalTargetsByAgent, undefined);
+    assert.equal(
+      SELECTABLE_WORKFLOW_SKILLS.some((skill) => skill.templateRelativePath === 'skills/business-domain-model-writer/SKILL.md'),
+      false
+    );
+  });
+
   it('does not include unsupported agent keys in skill target maps', () => {
     const skillTemplates = [
       ...MANDATORY_SKILLS,

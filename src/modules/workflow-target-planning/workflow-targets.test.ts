@@ -51,11 +51,13 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.gemini/settings.json'), true);
     assert.equal(targetPaths.includes('CLAUDE.md'), true);
     assert.equal(targetPaths.includes('.claude/settings.json'), true);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/business-domain-model-writer/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.includes('.agents/skills/deep-module-map-writer/SKILL.md'), true);
     assert.equal(targetPaths.includes('.agents/skills/feature-idea-capture/SKILL.md'), true);
+    assert.equal(targetPaths.includes('docs/business-domain-model.md'), false);
     assert.equal(targetPaths.includes('docs/deep-module-map.md'), false);
     assert.equal(targetPaths.includes('docs/feature-ideas.md'), false);
     assertNoInvalidTargets(targets);
@@ -167,6 +169,7 @@ describe('getWorkflowTargets', () => {
     assert.deepEqual(targetPaths, [
       '.agents/skills/clean-code/SKILL.md',
       '.agents/skills/product-vision-writer/SKILL.md',
+      '.agents/skills/business-domain-model-writer/SKILL.md',
       '.agents/skills/deep-module-map-writer/SKILL.md',
       '.agents/skills/feature-brief-writer/SKILL.md',
       '.agents/skills/technical-design-writer/SKILL.md',
@@ -284,6 +287,12 @@ describe('getWorkflowTargets', () => {
 
     assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert', 'export-to-github', 'export-to-notion']);
     assert.deepEqual(state.selectedDatabaseSkills, ['postgresql-expert']);
+    assert.deepEqual(state.managedFiles['.agents/skills/business-domain-model-writer/SKILL.md'], {
+      template: 'skills/business-domain-model-writer/SKILL.md',
+      templateVersion: readTemplateManifest().templates['skills/business-domain-model-writer/SKILL.md']?.version,
+      sha256: state.managedFiles['.agents/skills/business-domain-model-writer/SKILL.md']?.sha256,
+      status: 'managed',
+    });
     assert.deepEqual(state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md'], {
       template: 'skills/deep-module-map-writer/SKILL.md',
       templateVersion: readTemplateManifest().templates['skills/deep-module-map-writer/SKILL.md']?.version,
@@ -296,8 +305,10 @@ describe('getWorkflowTargets', () => {
     assert.ok(state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/export-to-notion/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
+    assert.equal(state.managedFiles['docs/business-domain-model.md'], undefined);
     assert.equal(state.managedFiles['docs/deep-module-map.md'], undefined);
     assert.equal(state.managedFiles['docs/feature-ideas.md'], undefined);
+    assert.equal(fs.existsSync(path.join(rootPath, 'docs/business-domain-model.md')), false);
     assert.equal(fs.existsSync(path.join(rootPath, 'docs/feature-ideas.md')), false);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `feature-idea-capture`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
