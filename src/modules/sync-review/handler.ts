@@ -13,8 +13,28 @@ import { logSyncPreview } from './log-preview.js';
 import { getSyncPreviews, isActionableSyncPreview, shouldAskForSyncAction } from './sync-preview.js';
 import { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
 
-export async function handleSyncProject(_command: SyncProjectCommand): Promise<void> {
-  await renderIntro();
+type SyncProjectDependencies = {
+  renderIntro: typeof renderIntro;
+  askForUnsupportedAgentCleanup: typeof askForUnsupportedAgentCleanup;
+  askForNewLanguageSkills: typeof askForNewLanguageSkills;
+  askForMissingFrameworkSkills: typeof askForMissingFrameworkSkills;
+  askForNewArchitectureSkill: typeof askForNewArchitectureSkill;
+  askForSyncAction: typeof askForSyncAction;
+};
+
+const defaultSyncProjectDependencies: SyncProjectDependencies = {
+  renderIntro,
+  askForUnsupportedAgentCleanup,
+  askForNewLanguageSkills,
+  askForMissingFrameworkSkills,
+  askForNewArchitectureSkill,
+  askForSyncAction,
+};
+
+export async function handleSyncProject(_command: SyncProjectCommand, dependencies: Partial<SyncProjectDependencies> = {}): Promise<void> {
+  const syncDependencies = { ...defaultSyncProjectDependencies, ...dependencies };
+
+  await syncDependencies.renderIntro();
   intro(chalk.cyan('Reviewing workflow updates'));
 
   const { rootPath, statePath } = getProjectContext();
@@ -47,7 +67,7 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
       log.warn(`No supported agents will remain, so ${STATE_RELATIVE_PATH} will be removed after cleanup.`);
     }
 
-    const shouldCleanUp = await askForUnsupportedAgentCleanup(cleanupPlan);
+    const shouldCleanUp = await syncDependencies.askForUnsupportedAgentCleanup(cleanupPlan);
 
     if (!shouldCleanUp) {
       log.warn('Unsupported agent cleanup was skipped.');
@@ -74,9 +94,9 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
     stateResult.state = cleanupResult.state;
   }
 
-  const languageSkillSelection = await askForNewLanguageSkills(stateResult.state);
-  const frameworkSkillSelection = await askForMissingFrameworkSkills(languageSkillSelection.state);
-  const architectureSkillSelection = await askForNewArchitectureSkill(frameworkSkillSelection.state);
+  const languageSkillSelection = await syncDependencies.askForNewLanguageSkills(stateResult.state);
+  const frameworkSkillSelection = await syncDependencies.askForMissingFrameworkSkills(languageSkillSelection.state);
+  const architectureSkillSelection = await syncDependencies.askForNewArchitectureSkill(frameworkSkillSelection.state);
   let state = architectureSkillSelection.state;
   const manifest = readTemplateManifest();
   const previews = getSyncPreviews({ rootPath, state, manifest });
@@ -116,7 +136,7 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
       continue;
     }
 
-    const action = await askForSyncAction(preview);
+    const action = await syncDependencies.askForSyncAction(preview);
 
     if (action === 'skip') {
       log.info(`Skipped ${preview.relativePath}.`);

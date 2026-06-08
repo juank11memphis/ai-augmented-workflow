@@ -117,7 +117,7 @@ export type SibuState = {
   templateVersion: string;
   generatedAt: string;
   updatedAt: string;
-  selectedAgents: AgentId[];
+  selectedAgents: string[];
   selectedLanguageSkills?: LanguageSkillId[];
   reviewedLanguageSkills?: LanguageSkillId[];
   selectedFrameworkSkills?: FrameworkSkillId[];

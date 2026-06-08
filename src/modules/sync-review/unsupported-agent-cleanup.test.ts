@@ -4,21 +4,21 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import type { AgentId, SibuState, SupportedAgent } from '../../shared/types.js';
+import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { SUPPORTED_AGENTS, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
 import { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
 
 const temporaryRoots: string[] = [];
 
-const LEGACY_AGENT_ID = 'legacy-agent' as AgentId;
+const LEGACY_AGENT_ID = 'legacy-agent';
 
 const LEGACY_ONLY_FILE = '.legacy-agent/settings.json';
 
 function buildLegacyOnlyManagedFile() {
   return {
-  template: 'legacy-agent/settings.json',
-  templateVersion: '1',
-  sha256: 'legacy-hash',
+    template: 'legacy-agent/settings.json',
+    templateVersion: '1',
+    sha256: 'legacy-hash',
   };
 }
 

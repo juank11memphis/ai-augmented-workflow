@@ -6,3 +6,5 @@ export type { SyncProjectCommand } from './command.js';
 export { logSyncPreview } from './log-preview.js';
 export { getSyncPreviews, isActionableSyncPreview, shouldAskForSyncAction } from './sync-preview.js';
 export type { SyncPreview } from './sync-preview.js';
+export { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
+export type { UnsupportedAgentCleanupPlan, UnsupportedAgentCleanupResult } from './unsupported-agent-cleanup.js';

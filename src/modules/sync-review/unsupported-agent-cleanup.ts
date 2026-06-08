@@ -35,7 +35,7 @@ export type UnsupportedAgentCleanupResult =
     };
 
 export function getUnsupportedAgentCleanupPlan({ rootPath, state }: { rootPath: string; state: SibuState }): UnsupportedAgentCleanupPlan | undefined {
-  const supportedAgentIds = new Set(SUPPORTED_AGENTS.map((agent) => agent.id));
+  const supportedAgentIds = new Set<string>(SUPPORTED_AGENTS.map((agent) => agent.id));
   const unsupportedAgentIds = state.selectedAgents.filter((agentId) => !supportedAgentIds.has(agentId));
 
   if (unsupportedAgentIds.length === 0) {
@@ -75,7 +75,7 @@ export function applyUnsupportedAgentCleanup({
       continue;
     }
 
-    fs.rmSync(targetPath, { force: true });
+    fs.rmSync(targetPath, { recursive: true, force: true });
     removedFiles.push(relativePath);
   }
 
