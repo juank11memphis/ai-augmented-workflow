@@ -168,6 +168,16 @@ test('does not diagnose unmanaged session-start hook files as expected target is
   assert.equal(issues.some((issue) => issue.message === '.codex/hooks.json is missing.'), false);
 });
 
+test('warns when legacy state references removed Windsurf agent', () => {
+  const rootPath = createCleanInitializedRepo();
+  const state = { ...readState(rootPath), selectedAgents: ['windsurf'] };
+
+  const issues = diagnoseState({ rootPath, state });
+
+  assert.equal(issues.some((issue) => issue.message === 'State references unsupported agent: windsurf.'), true);
+  assert.notEqual(issues.length, 0);
+});
+
 test('warns when state references an unsupported MCP server', () => {
   const rootPath = createCleanInitializedRepo();
   const state = { ...readState(rootPath), selectedMcpServers: ['unknown' as 'github'] };
@@ -209,7 +219,7 @@ function createCleanInitializedRepo(): string {
 function createCleanInitializedRepoWithGithubMcp(): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-mcp-'));
   temporaryRoots.push(rootPath);
-  const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')];
+  const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')];
   const selectedMcpServers = SELECTABLE_MCP_SERVERS;
   const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], undefined, [], [], selectedMcpServers);
   const files = renderMissingWorkflowFiles({

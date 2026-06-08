@@ -21,38 +21,23 @@ import { getSelectedAgentsFromState, getSelectedMcpServersFromState, getSelected
 const ROOT_PATH = '/test-project';
 
 describe('getWorkflowTargets', () => {
-  it('keeps Windsurf-only targets on AGENTS.md and shared skill files', () => {
-    const targets = getWorkflowTargets(
-      ROOT_PATH,
-      [getSupportedAgent('windsurf')],
-      [SELECTABLE_LANGUAGE_SKILLS[0]],
-      [SELECTABLE_FRAMEWORK_SKILLS[0]],
-      SELECTABLE_ARCHITECTURE_SKILLS[0],
-      [SELECTABLE_WORKFLOW_SKILLS[0]],
-      [SELECTABLE_DATABASE_SKILLS[0]]
-    );
+  it('does not generate targets for unsupported legacy selected agent ids', () => {
+    const state: SibuState = {
+      sibuVersion: '0.1.0',
+      templateVersion: '40',
+      generatedAt: '2026-04-20T00:00:00.000Z',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      selectedAgents: ['windsurf'],
+      selectedLanguageSkills: ['typescript'],
+      managedFiles: {},
+    };
 
-    assert.deepEqual(getRelativeTargetPaths(targets), [
-      'AGENTS.md',
-      '.agents/skills/clean-code/SKILL.md',
-      '.agents/skills/product-vision-writer/SKILL.md',
-      '.agents/skills/deep-module-map-writer/SKILL.md',
-      '.agents/skills/feature-brief-writer/SKILL.md',
-      '.agents/skills/technical-design-writer/SKILL.md',
-      '.agents/skills/scrum-master-planner/SKILL.md',
-      '.agents/skills/ai-implementation-planner/SKILL.md',
-      '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
-      '.agents/skills/ai-implementation-plan-executor/SKILL.md',
-      '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
-      '.agents/skills/feature-idea-capture/SKILL.md',
-      '.agents/skills/typescript/SKILL.md',
-      '.agents/skills/react/SKILL.md',
-      '.agents/skills/postgresql-expert/SKILL.md',
-      '.agents/skills/ddd-hexagonal/SKILL.md',
-      '.agents/skills/ai-prompt-engineer-master/SKILL.md',
-    ]);
+    const selectedAgents = getSelectedAgentsFromState(state);
+    const targets = getWorkflowTargets(ROOT_PATH, selectedAgents, [SELECTABLE_LANGUAGE_SKILLS[0]]);
+
+    assert.deepEqual(selectedAgents, []);
+    assert.deepEqual(getRelativeTargetPaths(targets), ['AGENTS.md']);
     assertNoInvalidTargets(targets);
-    assert.equal(getRelativeTargetPaths(targets).some((relativePath) => relativePath.startsWith('.windsurf/')), false);
   });
 
   it('includes only existing agent support files when every agent is selected', () => {
@@ -93,7 +78,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(getSupportedAgent('codex').supportsForegroundWorkers, true);
     assert.equal(getSupportedAgent('claude').supportsForegroundWorkers, true);
     assert.equal(getSupportedAgent('gemini').supportsForegroundWorkers, true);
-    assert.equal(getSupportedAgent('windsurf').supportsForegroundWorkers, false);
   });
 
   it('installs Sibu implementation worker targets only for foreground-worker-capable hosts', () => {
@@ -398,7 +382,7 @@ describe('getWorkflowTargets', () => {
 });
 
 describe('getSelectedAgentsFromState', () => {
-  it('resolves Windsurf from selected agent state', () => {
+  it('ignores unsupported legacy selected agent ids', () => {
     const state: SibuState = {
       sibuVersion: '0.1.0',
       templateVersion: '40',
@@ -408,7 +392,7 @@ describe('getSelectedAgentsFromState', () => {
       managedFiles: {},
     };
 
-    assert.deepEqual(getSelectedAgentsFromState(state).map((agent) => agent.id), ['windsurf']);
+    assert.deepEqual(getSelectedAgentsFromState(state).map((agent) => agent.id), []);
   });
 });
 

@@ -37,6 +37,19 @@ describe('getUnsupportedAgentCleanupPlan', () => {
     assert.equal(plan, undefined);
   });
 
+
+  it('plans cleanup for a legacy Windsurf selected id after catalog removal', () => {
+    const rootPath = createCleanInitializedRepo([getSupportedAgent('codex')]);
+    const state = addLegacyAgentState(rootPath, readState(rootPath), 'windsurf');
+
+    const plan = getUnsupportedAgentCleanupPlan({ rootPath, state });
+
+    assert.ok(plan);
+    assert.deepEqual(plan.unsupportedAgentIds, ['windsurf']);
+    assert.deepEqual(plan.remainingSupportedAgents.map((agent) => agent.id), ['codex']);
+    assert.equal(plan.removesSibuState, false);
+  });
+
   it('keeps shared managed files still required by remaining supported agents', () => {
     const rootPath = createCleanInitializedRepo([getSupportedAgent('codex')]);
     const state = addLegacyAgentState(rootPath, readState(rootPath));
@@ -192,14 +205,14 @@ function createLegacyOnlyRepo(): string {
   return rootPath;
 }
 
-function addLegacyAgentState(rootPath: string, state: SibuState): SibuState {
+function addLegacyAgentState(rootPath: string, state: SibuState, legacyAgentId = LEGACY_AGENT_ID): SibuState {
   const legacyFilePath = path.join(rootPath, LEGACY_ONLY_FILE);
   fs.mkdirSync(path.dirname(legacyFilePath), { recursive: true });
   fs.writeFileSync(legacyFilePath, '{}\n', 'utf8');
 
   return {
     ...state,
-    selectedAgents: [...state.selectedAgents, LEGACY_AGENT_ID],
+    selectedAgents: [...state.selectedAgents, legacyAgentId],
     managedFiles: {
       ...state.managedFiles,
       [LEGACY_ONLY_FILE]: buildLegacyOnlyManagedFile(),

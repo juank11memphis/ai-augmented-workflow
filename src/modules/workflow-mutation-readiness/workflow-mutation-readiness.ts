@@ -1,5 +1,6 @@
 import { readStateForDoctor } from '../workflow-state-registry/index.js';
 import { getSyncPreviews, isActionableSyncPreview, type SyncPreview } from '../sync-review/index.js';
+import { getUnsupportedAgentCleanupPlan } from '../sync-review/unsupported-agent-cleanup.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
 import type { SibuState, TemplateManifest } from '../../shared/types.js';
 
@@ -29,6 +30,16 @@ export function getWorkflowMutationReadiness({ rootPath, statePath }: { rootPath
   }
 
   const manifest = readTemplateManifest();
+  const unsupportedAgentCleanupPlan = getUnsupportedAgentCleanupPlan({ rootPath, state: stateResult.state });
+
+  if (unsupportedAgentCleanupPlan) {
+    return {
+      ok: false,
+      message: 'Workflow state is not clean enough to select a skill safely.',
+      hint: 'Run `sibu sync` to review workflow state before selecting a skill.',
+    };
+  }
+
   const previews = getSyncPreviews({ rootPath, state: stateResult.state, manifest });
   const actionablePreviews = previews.filter(isActionableSyncPreview);
 

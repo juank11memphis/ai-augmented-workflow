@@ -71,7 +71,7 @@ describe('getNextMcpSelection', () => {
 
 describe('handleUseMcpServer', () => {
   it('adds GitHub MCP config files and records selected MCP state', async () => {
-    const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')]);
+    const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')]);
     process.chdir(rootPath);
 
     await handleUseMcpServer({ type: 'mcp:use', serverId: 'github' });
@@ -116,7 +116,7 @@ describe('handleUseMcpServer', () => {
   });
 
   it('adds Notion MCP config files and records selected MCP state', async () => {
-    const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')]);
+    const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')]);
     process.chdir(rootPath);
 
     await handleUseMcpServer({ type: 'mcp:use', serverId: 'notion' }, { askForNotionDocsParentPage: async () => 'https://notion.so/sibu-docs' });

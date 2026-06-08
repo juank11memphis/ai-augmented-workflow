@@ -74,21 +74,18 @@ describe('getWorkflowMutationReadiness', () => {
     assert.equal(result.previews.every((preview) => preview.status === 'up-to-date'), true);
   });
 
-  it('is ready for a clean Windsurf-selected repo with shared skill files', () => {
-    const rootPath = createCleanInitializedRepo({
-      selectedAgents: [getSupportedAgent('windsurf')],
-      selectedLanguageSkills: [SELECTABLE_LANGUAGE_SKILLS[0]],
-    });
+  it('is not ready for a legacy unsupported-agent-only state', () => {
+    const rootPath = createLegacyUnsupportedAgentRepo();
     const result = getWorkflowMutationReadiness({ rootPath, statePath: path.join(rootPath, '.sibu/state.json') });
 
-    assert.equal(result.ok, true);
-    if (!result.ok) {
+    assert.equal(result.ok, false);
+    if (result.ok) {
       return;
     }
 
-    assert.deepEqual(result.state.selectedAgents, ['windsurf']);
-    assert.equal(result.previews.every((preview) => preview.status === 'up-to-date'), true);
-    assert.equal(result.previews.some((preview) => preview.relativePath.startsWith('.windsurf/')), false);
+    assert.equal(result.message, 'Workflow state is not clean enough to select a skill safely.');
+    assert.equal(result.hint, 'Run `sibu sync` to review workflow state before selecting a skill.');
+    assert.equal(result.actionablePreviews, undefined);
   });
 
   it('is not ready when a managed file has local edits', () => {
@@ -138,6 +135,36 @@ function createCleanInitializedRepo({
   }
 
   writeSibuState({ rootPath, statePath: path.join(rootPath, '.sibu/state.json'), selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
+
+  return rootPath;
+}
+
+function createLegacyUnsupportedAgentRepo(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-readiness-legacy-'));
+  temporaryRoots.push(rootPath);
+  const statePath = path.join(rootPath, '.sibu/state.json');
+  fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  fs.writeFileSync(path.join(rootPath, 'AGENTS.md'), 'legacy agents\n', 'utf8');
+  fs.writeFileSync(
+    statePath,
+    `${JSON.stringify(
+      {
+        sibuVersion: '0.1.0',
+        templateVersion: '40',
+        generatedAt: '2026-04-20T00:00:00.000Z',
+        updatedAt: '2026-04-20T00:00:00.000Z',
+        selectedAgents: ['windsurf'],
+        selectedLanguageSkills: [],
+        selectedFrameworkSkills: [],
+        managedFiles: {
+          'AGENTS.md': { template: 'AGENTS.md', templateVersion: '1', sha256: 'legacy-hash' },
+        },
+      },
+      null,
+      2
+    )}\n`,
+    'utf8'
+  );
 
   return rootPath;
 }

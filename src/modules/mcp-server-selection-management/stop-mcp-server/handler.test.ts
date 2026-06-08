@@ -220,7 +220,7 @@ describe('applyStoppedMcpFileDeleteDecision', () => {
 });
 
 async function createInitializedRepoWithGithubMcp(): Promise<string> {
-  const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')]);
+  const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')]);
   process.chdir(rootPath);
   await handleUseMcpServer({ type: 'mcp:use', serverId: 'github' });
   process.chdir(originalCwd);
@@ -229,7 +229,7 @@ async function createInitializedRepoWithGithubMcp(): Promise<string> {
 }
 
 async function createInitializedRepoWithNotionMcp(): Promise<string> {
-  const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')]);
+  const rootPath = createCleanInitializedRepo([getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')]);
   process.chdir(rootPath);
   await handleUseMcpServer({ type: 'mcp:use', serverId: 'notion' }, { askForNotionDocsParentPage: async () => 'https://notion.so/sibu-docs' });
   process.chdir(originalCwd);

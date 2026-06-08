@@ -21,7 +21,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/clean-code/SKILL.md',
       gemini: '.agents/skills/clean-code/SKILL.md',
       claude: '.agents/skills/clean-code/SKILL.md',
-      windsurf: '.agents/skills/clean-code/SKILL.md',
     },
   },
   {
@@ -30,7 +29,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/product-vision-writer/SKILL.md',
       gemini: '.agents/skills/product-vision-writer/SKILL.md',
       claude: '.agents/skills/product-vision-writer/SKILL.md',
-      windsurf: '.agents/skills/product-vision-writer/SKILL.md',
     },
   },
   {
@@ -39,7 +37,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/deep-module-map-writer/SKILL.md',
       gemini: '.agents/skills/deep-module-map-writer/SKILL.md',
       claude: '.agents/skills/deep-module-map-writer/SKILL.md',
-      windsurf: '.agents/skills/deep-module-map-writer/SKILL.md',
     },
   },
   {
@@ -48,7 +45,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/feature-brief-writer/SKILL.md',
       gemini: '.agents/skills/feature-brief-writer/SKILL.md',
       claude: '.agents/skills/feature-brief-writer/SKILL.md',
-      windsurf: '.agents/skills/feature-brief-writer/SKILL.md',
     },
   },
   {
@@ -57,7 +53,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/technical-design-writer/SKILL.md',
       gemini: '.agents/skills/technical-design-writer/SKILL.md',
       claude: '.agents/skills/technical-design-writer/SKILL.md',
-      windsurf: '.agents/skills/technical-design-writer/SKILL.md',
     },
   },
   {
@@ -66,7 +61,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/scrum-master-planner/SKILL.md',
       gemini: '.agents/skills/scrum-master-planner/SKILL.md',
       claude: '.agents/skills/scrum-master-planner/SKILL.md',
-      windsurf: '.agents/skills/scrum-master-planner/SKILL.md',
     },
   },
   {
@@ -75,7 +69,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/ai-implementation-planner/SKILL.md',
       gemini: '.agents/skills/ai-implementation-planner/SKILL.md',
       claude: '.agents/skills/ai-implementation-planner/SKILL.md',
-      windsurf: '.agents/skills/ai-implementation-planner/SKILL.md',
     },
     supplementalTargetsByAgent: {
       codex: [
@@ -108,12 +101,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
           targetRelativePath: '.claude/agents/sibu-implementation-planner.md',
         },
       ],
-      windsurf: [
-        {
-          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
-        },
-      ],
     },
   },
   {
@@ -122,7 +109,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
       gemini: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
       claude: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
-      windsurf: '.agents/skills/ai-implementation-plan-executor/SKILL.md',
     },
     supplementalTargetsByAgent: {
       codex: [
@@ -155,12 +141,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
           targetRelativePath: '.claude/agents/sibu-implementation-executor.md',
         },
       ],
-      windsurf: [
-        {
-          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
-        },
-      ],
     },
   },
   {
@@ -169,7 +149,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       codex: '.agents/skills/feature-idea-capture/SKILL.md',
       gemini: '.agents/skills/feature-idea-capture/SKILL.md',
       claude: '.agents/skills/feature-idea-capture/SKILL.md',
-      windsurf: '.agents/skills/feature-idea-capture/SKILL.md',
     },
   },
 ];
@@ -204,7 +183,6 @@ export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
       codex: '.agents/skills/typescript/SKILL.md',
       gemini: '.agents/skills/typescript/SKILL.md',
       claude: '.agents/skills/typescript/SKILL.md',
-      windsurf: '.agents/skills/typescript/SKILL.md',
     },
   },
   {
@@ -217,7 +195,6 @@ export const SELECTABLE_LANGUAGE_SKILLS: SelectableLanguageSkill[] = [
       codex: '.agents/skills/golang/SKILL.md',
       gemini: '.agents/skills/golang/SKILL.md',
       claude: '.agents/skills/golang/SKILL.md',
-      windsurf: '.agents/skills/golang/SKILL.md',
     },
   },
 ];
@@ -235,7 +212,6 @@ export const SELECTABLE_DATABASE_SKILLS: SelectableDatabaseSkill[] = [
       codex: '.agents/skills/postgresql-expert/SKILL.md',
       gemini: '.agents/skills/postgresql-expert/SKILL.md',
       claude: '.agents/skills/postgresql-expert/SKILL.md',
-      windsurf: '.agents/skills/postgresql-expert/SKILL.md',
     },
   },
 ];
@@ -252,7 +228,6 @@ export const SELECTABLE_FRAMEWORK_SKILLS: SelectableFrameworkSkill[] = [
       codex: '.agents/skills/react/SKILL.md',
       gemini: '.agents/skills/react/SKILL.md',
       claude: '.agents/skills/react/SKILL.md',
-      windsurf: '.agents/skills/react/SKILL.md',
     },
   },
   {
@@ -266,7 +241,6 @@ export const SELECTABLE_FRAMEWORK_SKILLS: SelectableFrameworkSkill[] = [
       codex: '.agents/skills/nextjs/SKILL.md',
       gemini: '.agents/skills/nextjs/SKILL.md',
       claude: '.agents/skills/nextjs/SKILL.md',
-      windsurf: '.agents/skills/nextjs/SKILL.md',
     },
   },
 ];
@@ -283,7 +257,6 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
       codex: '.agents/skills/ddd-hexagonal/SKILL.md',
       gemini: '.agents/skills/ddd-hexagonal/SKILL.md',
       claude: '.agents/skills/ddd-hexagonal/SKILL.md',
-      windsurf: '.agents/skills/ddd-hexagonal/SKILL.md',
     },
   },
   {
@@ -297,7 +270,6 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
       codex: '.agents/skills/command-pattern/SKILL.md',
       gemini: '.agents/skills/command-pattern/SKILL.md',
       claude: '.agents/skills/command-pattern/SKILL.md',
-      windsurf: '.agents/skills/command-pattern/SKILL.md',
     },
   },
   {
@@ -311,7 +283,6 @@ export const SELECTABLE_ARCHITECTURE_SKILLS: SelectableArchitectureSkill[] = [
       codex: '.agents/skills/layered-architecture/SKILL.md',
       gemini: '.agents/skills/layered-architecture/SKILL.md',
       claude: '.agents/skills/layered-architecture/SKILL.md',
-      windsurf: '.agents/skills/layered-architecture/SKILL.md',
     },
   },
 ];
@@ -328,7 +299,6 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       codex: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
       gemini: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
       claude: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
-      windsurf: '.agents/skills/ai-prompt-engineer-master/SKILL.md',
     },
   },
   {
@@ -342,7 +312,6 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       codex: '.agents/skills/ux-expert/SKILL.md',
       gemini: '.agents/skills/ux-expert/SKILL.md',
       claude: '.agents/skills/ux-expert/SKILL.md',
-      windsurf: '.agents/skills/ux-expert/SKILL.md',
     },
   },
   {
@@ -356,7 +325,6 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       codex: '.agents/skills/export-to-github/SKILL.md',
       gemini: '.agents/skills/export-to-github/SKILL.md',
       claude: '.agents/skills/export-to-github/SKILL.md',
-      windsurf: '.agents/skills/export-to-github/SKILL.md',
     },
     supplementalTargetsByAgent: {
       codex: [
@@ -390,7 +358,6 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
       codex: '.agents/skills/export-to-notion/SKILL.md',
       gemini: '.agents/skills/export-to-notion/SKILL.md',
       claude: '.agents/skills/export-to-notion/SKILL.md',
-      windsurf: '.agents/skills/export-to-notion/SKILL.md',
     },
     supplementalTargetsByAgent: {
       codex: [
@@ -493,12 +460,6 @@ export const SUPPORTED_AGENTS: SupportedAgent[] = [
     targetRelativePath: 'CLAUDE.md',
     templateRelativePath: 'CLAUDE.md',
     supportsForegroundWorkers: true,
-  },
-  {
-    id: 'windsurf',
-    name: 'Windsurf',
-    description: 'Use root AGENTS.md and shared .agents/skills/ discovery',
-    supportsForegroundWorkers: false,
   },
 ];
 

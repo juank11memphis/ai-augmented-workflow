@@ -18,18 +18,11 @@ import {
 import type { ResolvedSelectableSkill, SkillTemplate, SupportedAgent } from '../../shared/types.js';
 
 describe('SUPPORTED_AGENTS', () => {
-  it('includes Windsurf without an agent-specific support file', () => {
+  it('includes only currently supported agents', () => {
     assert.deepEqual(
       SUPPORTED_AGENTS.map((agent) => agent.id),
-      ['codex', 'gemini', 'claude', 'windsurf']
+      ['codex', 'gemini', 'claude']
     );
-
-    const windsurf = getSupportedAgent('windsurf');
-    assert.equal(windsurf.name, 'Windsurf');
-    assert.match(windsurf.description, /AGENTS\.md/);
-    assert.match(windsurf.description, /[.]agents[/]skills/);
-    assert.equal(windsurf.targetRelativePath, undefined);
-    assert.equal(windsurf.templateRelativePath, undefined);
   });
 
   it('keeps existing agents mapped to agent-specific support files', () => {
@@ -139,7 +132,7 @@ describe('export workflow skill MCP pairings', () => {
 });
 
 describe('skill target paths', () => {
-  it('targets Windsurf through shared .agents skills for mandatory and selectable skills', () => {
+  it('does not include unsupported agent keys in skill target maps', () => {
     const skillTemplates = [
       ...MANDATORY_SKILLS,
       ...SELECTABLE_LANGUAGE_SKILLS,
@@ -150,7 +143,7 @@ describe('skill target paths', () => {
     ];
 
     for (const skillTemplate of skillTemplates) {
-      assertWindsurfUsesSharedSkillPath(skillTemplate);
+      assertSupportedAgentKeysOnly(skillTemplate);
     }
   });
 });
@@ -217,14 +210,7 @@ function getArchitectureSkill(skillId: string) {
   return skill;
 }
 
-function assertWindsurfUsesSharedSkillPath(skillTemplate: SkillTemplate): void {
-  const windsurfPath = skillTemplate.targetRelativePathsByAgent.windsurf;
-
-  assert.equal(typeof windsurfPath, 'string');
-  assert.ok(windsurfPath?.startsWith('.agents/skills/'));
-  assert.ok(windsurfPath?.endsWith('/SKILL.md'));
-  assert.equal(windsurfPath?.startsWith('.windsurf/skills/'), false);
-  assert.equal(windsurfPath, skillTemplate.targetRelativePathsByAgent.codex);
-  assert.equal(windsurfPath, skillTemplate.targetRelativePathsByAgent.gemini);
-  assert.equal(windsurfPath, skillTemplate.targetRelativePathsByAgent.claude);
+function assertSupportedAgentKeysOnly(skillTemplate: SkillTemplate): void {
+  assert.deepEqual(Object.keys(skillTemplate.targetRelativePathsByAgent).sort(), ['claude', 'codex', 'gemini']);
+  assert.equal(Object.keys(skillTemplate.supplementalTargetsByAgent ?? {}).includes('windsurf'), false);
 }

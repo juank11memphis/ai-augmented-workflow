@@ -263,7 +263,7 @@ function createCleanInitializedRepoWithGithubMcp(): string {
 function createCleanInitializedRepoWithSelectedMcpServers(selectedMcpServerIds: McpServerId[]): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-sync-preview-mcp-'));
   temporaryRoots.push(rootPath);
-  const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')];
+  const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')];
   const selectedMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => selectedMcpServerIds.includes(server.id));
   const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], undefined, [], [], selectedMcpServers);
   const files = renderMissingWorkflowFiles({

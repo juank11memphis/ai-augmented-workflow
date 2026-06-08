@@ -131,14 +131,14 @@ describe('handleInitProject', () => {
     await handleInitProject(
       { type: 'init' },
       buildDependencies({
-        selectedAgents: [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini'), getSupportedAgent('windsurf')],
+        selectedAgents: [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')],
         selectedMcpServers: SELECTABLE_MCP_SERVERS,
       })
     );
 
     const state = readState(rootPath);
 
-    assert.deepEqual(state.selectedAgents, ['codex', 'claude', 'gemini', 'windsurf']);
+    assert.deepEqual(state.selectedAgents, ['codex', 'claude', 'gemini']);
     assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
     assert.deepEqual(state.mcpServerConfigs, { notion: { docsParentPage: 'https://notion.so/sibu-docs' } });
     assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
