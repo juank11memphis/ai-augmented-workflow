@@ -1,5 +1,5 @@
 {
-  "templateVersion": "110",
+  "templateVersion": "112",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -163,10 +163,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "10",
+      "version": "12",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Makes UX clarification mandatory before drafting while keeping export workflows delegated to dedicated exporter skills."
+        "Strengthens UX guidance so all visible wording targets the end user from the product vision and feature brief, using the fewest plain words possible while keeping export workflows delegated to dedicated exporter skills."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {

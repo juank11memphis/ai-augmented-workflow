@@ -1,11 +1,11 @@
 ---
 name: ux-expert
-description: Use this skill for UX/UI design after product definition when a feature has UI changes. Requires an approved Markdown product artifact (feature brief) that defines goals, scope, and acceptance criteria; if none exists, route to feature-brief-writer (and product-vision-writer if missing). Use for senior UX/UI direction, phone-first responsive design, breakpoint-specific layouts/components, user flows, information architecture, wireframes, concrete mockups, interaction states, accessibility, visual direction, creative UI concepts, and implementation-ready UI guidance.
+description: Use this skill for UX/UI design after product definition when a feature has UI changes. Requires an approved Markdown product artifact (feature brief) that defines goals, scope, and acceptance criteria; if none exists, route to feature-brief-writer (and product-vision-writer if missing). Use for senior UX/UI direction, phone-first responsive design, user flows, information architecture, wireframes, concrete mockups, interaction states, accessibility, visual direction, creative UI concepts, and implementation-ready UI guidance.
 ---
 
 # ux-expert
 
-Act as a senior UX/UI designer. Turn an approved product artifact into usable, expressive, phone-first, implementation-ready UI direction. Do not include code, file paths, architecture, or framework-specific guidance.
+Act as a senior UX/UI designer. Turn an approved product artifact into usable, simple, smooth, phone-first, implementation-ready UI direction. Design the experience before the visuals. Do not include code, file paths, architecture, data model, API, or framework-specific guidance.
 
 ## Pipeline Contract
 
@@ -33,13 +33,44 @@ Act as a senior UX/UI designer. Turn an approved product artifact into usable, e
 - Do not create or update product visions, Deep Module Maps, feature briefs, technical designs, Epics, User Stories, implementation plans, or production code.
 - Do not make architecture, framework, API, data model, or file-path decisions.
 - Do not treat UX work as optional for UI-changing features; concrete mockups are required.
-- Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
+- Do not skip the interview or final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 
 ## Required grounding
 
 Read `docs/product-vision.md` and apply only relevant implications: target user, principles, voice, boundaries, trust expectations, success signal. Do not restate the full vision.
 
 Require a product artifact such as `docs/features/<feature-slug>/feature_brief.md` that defines goal, scope, and acceptance criteria. If the user has only an idea, route to `feature-brief-writer` first. If the artifact says there is no UI impact, say so and do not invent UI work.
+
+## UX quality bar
+
+Optimize for a clear, low-friction experience rather than a visually impressive page. Strong UX should feel obvious, calm, and task-oriented.
+
+Apply these principles:
+
+- **User intent first:** every visible element must help the target user understand, decide, or act in the current scenario.
+- **Hierarchy before density:** make the primary task, current state, next action, and most important content unmistakable at a glance.
+- **Progressive disclosure:** hide secondary details until they are useful; avoid dashboards, cards, stats, helper text, banners, or settings that do not serve the immediate task.
+- **Predictable structure:** use consistent regions for navigation, app bars/context, body content, and primary actions; do not rearrange meaningfully similar screens without a user benefit.
+- **Direct manipulation and feedback:** interactions should respond immediately, show available actions, confirm state changes, and provide recovery paths for errors or destructive actions.
+- **Adaptive, not stretched:** design for compact, medium, and expanded spaces as different experiences when useful; do not merely scale a desktop layout down or stretch a phone layout wide.
+- **Accessible by default:** preserve readable text, sufficient contrast, visible focus, keyboard/screen-reader paths, clear labels, large enough touch targets, and reduced-motion alternatives.
+- **End-user wording:** every word visible in mockups or UX guidance for on-screen copy must be aimed at the target end user described in the product vision and feature brief. If wording is for developers, agents, stakeholders, or internal process, remove it from the user-facing experience.
+- **Plain, minimal copy:** keep labels, headings, helper text, empty states, and errors as short and simple as possible. Prefer familiar words over clever phrasing.
+- **Motion with purpose:** use motion only to preserve continuity, orient the user, acknowledge input, or make state change legible; never rely on motion as the only cue.
+- **Distinctive but quiet:** add personality through spacing, shape, color, illustration, or tone only after the flow is simple and understandable.
+
+## UX anti-bloat rules
+
+When designing or reviewing a screen, actively remove:
+
+- wording not meant for the target end user, including implementation details, model reasoning, system status, raw IDs, internal labels, stakeholder notes, or process notes
+- decorative cards, metrics, charts, or panels that are not needed for the current user decision
+- repeated actions, duplicate explanations, competing CTAs, and “just in case” affordances
+- wordy headings, helper text, empty states, errors, or button labels when fewer simpler words are enough
+- premature advanced settings, filters, sorting, customization, or onboarding steps
+- components added because a design system has them rather than because the user needs them
+
+If removing an element would not reduce the user's ability to complete the task, omit it from the mockup.
 
 ## Interview posture
 
@@ -65,24 +96,29 @@ For UI-changing features, the UX artifact must include concrete mockups for affe
 
 Creating/updating the Markdown UX artifact is not a code change. Write it without pre-change confirmation when the target is clear and requested. Ask only when context is missing, the target is ambiguous, overwrite/destruction is possible, or code changes are required.
 
-## UX principles
-
-Design for user experience first, component reuse second. Prefer clear task completion, strong hierarchy, obvious affordances/feedback/recovery, progressive disclosure, accessibility, resilient states, and distinctive but shippable UI. Avoid generic SaaS/page-builder layouts, decorative clarity loss, desktop-first thinking, product scope changes, and technical architecture decisions.
-
 ## Phone-first responsive rule
 
 Design phone first, then re-evaluate tablet and desktop separately. Choose different layouts/components across breakpoints when they improve hierarchy, interaction, density, touch/pointer behavior, or content priority. Share components only when they remain the best experience.
+
+Responsive guidance:
+
+- Compact: one main task at a time; prioritize the primary action, essential state, and short content.
+- Medium: add supporting context only when it reduces navigation or improves comparison.
+- Expanded: use panes, rails, or persistent context only when they improve orientation; avoid filling space with low-value content.
+- Keep readable line lengths, clear grouping, consistent spacing, and touch/pointer targets large enough for imprecise input.
 
 ## Workflow
 
 1. Read product vision and feature brief.
 2. Identify affected UI surfaces and whether UI work is valid.
-3. Design phone-first flow, information architecture, and layout.
-4. Re-evaluate tablet and desktop independently.
-5. Define interaction states, failure/recovery behavior, accessibility requirements, and creative direction.
-6. Ask one focused follow-up question at a time until material UX ambiguity is resolved.
-7. Create concrete mockups for primary screens, affected breakpoints, and critical states.
-8. Write implementation-ready UX guidance only: flows, hierarchy, states, accessibility, visual direction.
+3. Reduce the experience to the target end user's job: current state, primary decision, primary action, feedback, and recovery.
+4. Design the phone-first flow, information architecture, and layout.
+5. Re-evaluate tablet and desktop independently.
+6. Define interaction states, failure/recovery behavior, accessibility requirements, and visual direction.
+7. Ask one focused follow-up question at a time until material UX ambiguity is resolved.
+8. Create concrete mockups for primary screens, affected breakpoints, and critical states.
+9. Run the anti-bloat and copy check: remove anything not needed for target-user understanding, decision, action, feedback, or recovery; simplify every visible phrase.
+10. Write implementation-ready UX guidance only: flows, hierarchy, states, accessibility, visual direction, and binding mockups.
 
 ## Output location
 
@@ -90,7 +126,7 @@ Write to `docs/features/<feature-slug>/ux.md` using the feature artifact slug. K
 
 ## Mockup requirements
 
-Mockups may be low fidelity but must be concrete: layout regions, visible content, hierarchy/emphasis, key controls, major state differences, and breakpoint changes. Use annotated text/box wireframes when enough. Show decisions downstream implementation must not improvise.
+Mockups may be low fidelity but must be concrete: layout regions, visible final-user-facing content, hierarchy/emphasis, key controls, major state differences, and breakpoint changes. Use annotated text/box wireframes when enough. Show decisions downstream implementation must not improvise.
 
 ## Output format
 
@@ -105,6 +141,11 @@ Use only helpful sections from this shape:
 ## Affected Surfaces
 ## Phone-First User Flow
 ## Information Architecture
+## Content Rules
+- All visible copy is for the target end user from the product vision and feature brief.
+- Use the fewest plain words that preserve clarity, confidence, and actionability.
+- Exclude internal, technical, process, stakeholder, or AI-agent wording from user-facing surfaces.
+
 ## Phone Layout
 ## Tablet Layout
 ## Desktop Layout
@@ -127,8 +168,7 @@ Use only helpful sections from this shape:
 ## Interaction States
 ## Accessibility Requirements
 ## Visual Direction
-## Creative Opportunities
-## Implementation Notes
+## Anti-Bloat Review
 ## Risks / Tradeoffs
 ## UI Authority Rule
 ```
