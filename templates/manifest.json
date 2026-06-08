@@ -1,5 +1,5 @@
 {
-  "templateVersion": "122",
+  "templateVersion": "123",
   "templates": {
     "AGENTS.md": {
       "version": "32",
@@ -59,10 +59,10 @@
       ]
     },
     "skills/business-domain-model-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory Business Domain Model writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds a Business Domain Model writer that creates project-owned docs/business-domain-model.md from Product Vision and user interview before downstream planning."
+        "Makes Business Domain Model discovery assistant-led: the agent now mines Product Vision first, proposes plain-language domain hypotheses, and asks users to review or correct them instead of expecting users to invent domain-modeling concepts."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {

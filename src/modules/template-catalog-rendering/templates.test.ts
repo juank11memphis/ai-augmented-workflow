@@ -174,7 +174,7 @@ describe('feature brief writer Business Domain Model grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '122');
+    assert.equal(manifest.templateVersion, '123');
     assert.equal(templateMetadata?.version, '15');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/business-domain-model\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Deep Module Map as the work-ownership source/i);
@@ -246,9 +246,10 @@ describe('business domain model writer template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Business Domain Model writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /project-owned docs\/business-domain-model\.md/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /assistant-led/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /mines Product Vision first/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     const contents = readTemplate(templatePath);
@@ -256,8 +257,11 @@ describe('business domain model writer template', () => {
     assert.match(contents, /name: business-domain-model-writer/);
     assert.match(contents, /docs\/product-vision\.md/);
     assert.match(contents, /docs\/business-domain-model\.md/);
-    assert.match(contents, /one focused question at a time/i);
-    assert.match(contents, /example-first and scenario-first/i);
+    assert.match(contents, /assistant-led/i);
+    assert.match(contents, /user's job is reviewer, not author/i);
+    assert.match(contents, /mine Product Vision/i);
+    assert.match(contents, /plain product language/i);
+    assert.match(contents, /Does this direction feel right/i);
     assert.match(contents, /final check-in/i);
     assert.match(contents, /do not inspect implementation code by default/i);
     assert.match(contents, /Do not use existing implementation code as the source of truth/i);
