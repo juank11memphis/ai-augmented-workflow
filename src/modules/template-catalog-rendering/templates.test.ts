@@ -273,6 +273,32 @@ describe('worker toolbox routing profiles', () => {
 });
 
 describe('Sibu planner worker templates', () => {
+  it('registers the planner skill as a main-agent gatekeeper', () => {
+    const templatePath = 'skills/ai-implementation-planner/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '16');
+    assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /narrow planner worker packet/i);
+    assert.match(contents, /main-agent gatekeeper/i);
+    assert.match(contents, /exactly one User Story/i);
+    assert.match(contents, /technical-design-writer/);
+    assert.match(contents, /ux-expert/);
+    assert.match(contents, /sibu-implementation-planner/);
+    assert.match(contents, /\.agents\/skills\/ai-implementation-planner-toolbox\/SKILL\.md/);
+    assert.match(contents, /required skill paths/);
+    assert.match(contents, /relevant optional installed skill paths/);
+    assert.match(contents, /distilled skill constraints/);
+    assert.match(contents, /export-to-github/);
+    assert.match(contents, /export-to-notion/);
+    assert.match(contents, /Inline fallback planning path/);
+    assert.match(contents, /valid story-local `\.impl_plan\/` exists/);
+    assert.match(contents, /planning-only/);
+    assert.match(contents, /Do not pass the full main conversation context/);
+  });
+
   it('registers and renders the planner toolbox skill', () => {
     const templatePath = 'skills/ai-implementation-planner-toolbox/SKILL.md';
     const manifest = readTemplateManifest();

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "113",
+  "templateVersion": "114",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -135,10 +135,10 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "15",
-      "description": "Mandatory AI implementation planner skill for turning one approved User Story into small, story-local implementation step files.",
+      "version": "16",
+      "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Clarifies that the planner is normally an executor helper and stops after planning only when planning-only is explicit."
+        "Turns the planner skill into a gatekeeper that validates required artifacts, builds a narrow planner worker packet, and falls back inline when foreground workers are unavailable."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
