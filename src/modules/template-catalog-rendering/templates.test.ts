@@ -221,6 +221,45 @@ describe('business domain model writer template', () => {
   });
 });
 
+describe('deep module map writer template', () => {
+  it('requires Business Domain Model source context and keeps code alignment explicit', () => {
+    const templatePath = 'skills/deep-module-map-writer/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+    const domainDiscoveryTerms = [
+      'domain concepts',
+      'relationships',
+      'lifecycles',
+      'business rules',
+      'workflows',
+      'domain events',
+      'boundaries',
+      'hard parts',
+    ];
+
+    assert.equal(templateMetadata?.version, '6');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /docs\/business-domain-model\.md/);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /implementation code is not inspected by default/i);
+    assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
+    assert.equal(manifest.templates['docs/deep-module-map.md'], undefined);
+
+    assert.match(contents, /docs\/product-vision\.md/);
+    assert.match(contents, /docs\/business-domain-model\.md/);
+    assert.match(contents, /business-domain-model-writer/);
+    assert.match(contents, /Deep Module Map requires `docs\/business-domain-model\.md`/);
+    assert.match(contents, /Do not inspect implementation code by default/i);
+    assert.match(contents, /existing code, folders, commands, screens, services, data objects, and technical layers are not the default source of truth/i);
+    assert.match(contents, /explicitly asks for a code-alignment check/i);
+    assert.match(contents, /only after domain-driven module boundaries are drafted/i);
+    assert.match(contents, /alignment gaps, migration implications/i);
+
+    for (const domainDiscoveryTerm of domainDiscoveryTerms) {
+      assert.match(contents, new RegExp(domainDiscoveryTerm, 'i'));
+    }
+  });
+});
+
 describe('AGENTS.md template', () => {
   it('keeps Sibu maintenance guidance without a manual session-start doctor requirement', () => {
     const manifest = readTemplateManifest();

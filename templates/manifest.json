@@ -1,5 +1,5 @@
 {
-  "templateVersion": "120",
+  "templateVersion": "121",
   "templates": {
     "AGENTS.md": {
       "version": "32",
@@ -66,10 +66,11 @@
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes Deep Module Map interviews mandatory before drafting, even when repo code or existing docs look complete."
+        "Requires docs/business-domain-model.md before Deep Module Map work and routes missing domain model creation to business-domain-model-writer.",
+        "Clarifies that Deep Module Map boundaries are domain-first and implementation code is not inspected by default."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
