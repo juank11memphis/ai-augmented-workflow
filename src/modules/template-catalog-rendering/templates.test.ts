@@ -272,6 +272,72 @@ describe('worker toolbox routing profiles', () => {
   });
 });
 
+describe('Sibu planner worker templates', () => {
+  it('registers and renders the planner toolbox skill', () => {
+    const templatePath = 'skills/ai-implementation-planner-toolbox/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const rawContents = readTemplate(templatePath);
+    const renderedContents = renderTemplateForSync({
+      templateRelativePath: templatePath,
+      currentPath: 'missing-agents.md',
+      selectedLanguageSkills: [selectedTypescriptSkill],
+      selectedFrameworkSkills: [selectedReactSkill],
+      selectedArchitectureSkill: selectedCommandPatternSkill,
+      selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
+    });
+
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /focused worker routing/i);
+    assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
+    assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
+    assert.match(renderedContents, /Focused planner worker routing/);
+    assert.match(renderedContents, /\.agents\/skills\/clean-code\/SKILL\.md/);
+    assert.match(renderedContents, /\.agents\/skills\/typescript\/SKILL\.md/);
+    assert.match(renderedContents, /\.agents\/skills\/ux-expert\/SKILL\.md/);
+    assert.doesNotMatch(renderedContents, /export-to-github/);
+    assert.doesNotMatch(renderedContents, /export-to-notion/);
+    assert.match(renderedContents, /exactly one User Story path/);
+    assert.match(renderedContents, /<story-slug>\.impl_plan\/\*\.md/);
+    assert.match(renderedContents, /# Step: <Imperative step title>/);
+    assert.match(renderedContents, /Never write production code/);
+    assert.match(renderedContents, /unmapped language, framework, database, or architecture pattern/);
+  });
+
+  it('registers thin target-native planner worker templates', () => {
+    const manifest = readTemplateManifest();
+    const templatePaths = [
+      '.codex/agents/sibu-implementation-planner.toml',
+      '.claude/agents/sibu-implementation-planner.md',
+      '.gemini/agents/sibu-implementation-planner.md',
+    ];
+
+    for (const templatePath of templatePaths) {
+      const templateMetadata = manifest.templates[templatePath];
+      const contents = readTemplate(templatePath);
+      const isCodexAgentTemplate = templatePath.startsWith('.codex/');
+
+      assert.equal(templateMetadata?.version, '1');
+      assert.match(templateMetadata?.description ?? '', /Sibu implementation planner worker/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /narrow packet and the planner toolbox/i);
+      assert.match(contents, /sibu-implementation-planner/);
+      assert.match(contents, /narrow planner packet/);
+      assert.match(contents, /planner toolbox skill/);
+      assert.match(contents, /required and optional skill paths/);
+      assert.match(contents, /distilled constraints/);
+      assert.match(contents, /full conversation context/);
+      assert.match(contents, /Plan exactly one story/);
+      assert.match(contents, /Never write production code/);
+
+      if (isCodexAgentTemplate) {
+        assert.match(contents, /developer_instructions =/);
+        assert.doesNotMatch(contents, /^instructions =/m);
+      }
+    }
+  });
+});
+
 function assertDoesNotContainRealCredential(contents: string): void {
   assert.doesNotMatch(contents, /ghp_[A-Za-z0-9_]+/);
   assert.doesNotMatch(contents, /github_pat_[A-Za-z0-9_]+/);

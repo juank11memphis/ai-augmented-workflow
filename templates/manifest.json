@@ -1,5 +1,5 @@
 {
-  "templateVersion": "112",
+  "templateVersion": "113",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -141,6 +141,13 @@
         "Clarifies that the planner is normally an executor helper and stops after planning only when planning-only is explicit."
       ]
     },
+    "skills/ai-implementation-planner-toolbox/SKILL.md": {
+      "version": "1",
+      "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
+      "changes": [
+        "Adds a planner toolbox skill with focused worker routing, skill-loading rules, and story-local implementation plan format guidance."
+      ]
+    },
     "skills/ai-implementation-plan-executor/SKILL.md": {
       "version": "22",
       "description": "Mandatory AI implementation plan executor skill for implementing full story plans before story-level review and commit.",
@@ -230,6 +237,27 @@
       "description": "Gemini Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
         "Adds a Gemini notion-exporter sub-agent with clean-context and no-local-write export guidance."
+      ]
+    },
+    ".codex/agents/sibu-implementation-planner.toml": {
+      "version": "1",
+      "description": "Codex Sibu implementation planner worker for fresh-context story planning.",
+      "changes": [
+        "Adds a thin Codex planner worker that uses a narrow packet and the planner toolbox skill."
+      ]
+    },
+    ".claude/agents/sibu-implementation-planner.md": {
+      "version": "1",
+      "description": "Claude Sibu implementation planner worker for fresh-context story planning.",
+      "changes": [
+        "Adds a thin Claude planner worker that uses a narrow packet and the planner toolbox skill."
+      ]
+    },
+    ".gemini/agents/sibu-implementation-planner.md": {
+      "version": "1",
+      "description": "Gemini Sibu implementation planner worker for fresh-context story planning.",
+      "changes": [
+        "Adds a thin Gemini planner worker that uses a narrow packet and the planner toolbox skill."
       ]
     },
     ".codex/hooks.json": {
