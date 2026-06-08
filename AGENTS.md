@@ -37,10 +37,11 @@ Keep responses concise by default, but spend the context needed for correctness,
 
 ## Skill routing
 
-For planned product/feature work, use this pipeline: product vision -> deep module map -> feature brief -> technical design -> optional UX -> epics/stories -> AI executor. The executor creates a missing AI implementation plan and then executes it immediately when a story or Epic is requested for planning, implementation, or continuation. Narrow code fixes and small local changes do not require the full pipeline unless product scope, module ownership, or architecture direction is unclear.
+For planned product/feature work, use this pipeline: product vision -> business domain model -> deep module map / feature brief -> technical design -> optional UX -> epics/stories -> AI executor. Business Domain Model work sits after Product Vision and before Deep Module Map or Feature Brief work. Technical Design remains downstream of both Feature Brief and Deep Module Map, with Scrum planning and AI executor flows after Technical Design. Narrow code fixes and small local changes do not require the full pipeline unless product scope, module ownership, or architecture direction is unclear.
 
 - For any code-writing task, use `clean-code`.
 - For requests to create, revise, or clarify a product vision, product strategy narrative, product north star, positioning, product principles, product voice, target user definition, product boundaries, or success signals, use `product-vision-writer`.
+- For requests to create, revise, or clarify a Business Domain Model, `docs/business-domain-model.md`, business/domain vocabulary, ubiquitous language, domain concepts, relationships, rules, lifecycles, workflows, domain events, boundaries, or hard parts, use `business-domain-model-writer`.
 - For requests to create, revise, or clarify a Deep Module Map, deep, complexity-hiding implementation modules, module boundaries, suggested implementation modules, or `docs/deep-module-map.md`, use `deep-module-map-writer`.
 - For requests to create, revise, or clarify a business-level feature brief after Deep Module Map work, feature definition, feature scope, MVP feature boundaries, business acceptance criteria, or product-level feature rationale, use `feature-brief-writer`.
 - For requests to create, revise, or clarify a technical design, implementation-oriented design doc, architecture approach, technical tradeoffs, technical risks, or implementation plan for an approved feature, use `technical-design-writer`.

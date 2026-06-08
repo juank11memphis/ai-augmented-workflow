@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "118",
+  "templateVersion": "122",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-06-08T20:27:31.419Z",
+  "updatedAt": "2026-06-08T22:18:12.986Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -31,8 +31,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "31",
-      "sha256": "f453e52f87693812d65f8ff820fcad1c06eb5ff89a772f3a7a9d5dcfd44f2022",
+      "templateVersion": "32",
+      "sha256": "776725f3af240d026a38450d9290d85e4c7a7410bb10c10a00b9f1e2374aa444",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -67,14 +67,14 @@
     },
     ".agents/skills/deep-module-map-writer/SKILL.md": {
       "template": "skills/deep-module-map-writer/SKILL.md",
-      "templateVersion": "5",
-      "sha256": "2460a0d6b526a15f65b8bacc6d2dd7fee95ff545b77113ddabb19b9515996a54",
+      "templateVersion": "6",
+      "sha256": "598e3aa37a8b70f6a093f653efb3242950dda62ed10fef0ea69fbc2eb6dbac31",
       "status": "managed"
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "14",
-      "sha256": "580e525968a6e20f56adbead60d0765abe43a5c9bde372ba8e7c829ddff67440",
+      "templateVersion": "15",
+      "sha256": "4da0e14ec23a3a0128f52ae8c98b3a1ac31097819eb123abdf0a95169ef54323",
       "status": "managed"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
@@ -247,6 +247,12 @@
       "template": ".claude/agents/sibu-implementation-executor.md",
       "templateVersion": "2",
       "sha256": "6b2abe644caed66093f760428a0055c3f4c3193e21cbad0d553ab3e2eb6077e3",
+      "status": "managed"
+    },
+    ".agents/skills/business-domain-model-writer/SKILL.md": {
+      "template": "skills/business-domain-model-writer/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "c04bcd89fbe0790143de3f3e527e1ca2a2c88c8292e823ff7224ddf8947324bc",
       "status": "managed"
     }
   }
