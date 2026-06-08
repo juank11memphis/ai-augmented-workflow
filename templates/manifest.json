@@ -1,5 +1,5 @@
 {
-  "templateVersion": "118",
+  "templateVersion": "119",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -55,6 +55,13 @@
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
         "Makes product vision discovery mandatory before drafting, even when existing context looks complete."
+      ]
+    },
+    "skills/business-domain-model-writer/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory Business Domain Model writer skill installed once at the shared .agents/skills workspace path.",
+      "changes": [
+        "Adds a Business Domain Model writer that creates project-owned docs/business-domain-model.md from Product Vision and user interview before downstream planning."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {

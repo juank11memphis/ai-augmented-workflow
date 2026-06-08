@@ -187,6 +187,40 @@ describe('feature idea capture template', () => {
   });
 });
 
+describe('business domain model writer template', () => {
+  it('is registered, readable, and keeps the generated model project-owned', () => {
+    const templatePath = 'skills/business-domain-model-writer/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /Mandatory Business Domain Model writer/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /project-owned docs\/business-domain-model\.md/i);
+    assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
+
+    const contents = readTemplate(templatePath);
+
+    assert.match(contents, /name: business-domain-model-writer/);
+    assert.match(contents, /docs\/product-vision\.md/);
+    assert.match(contents, /docs\/business-domain-model\.md/);
+    assert.match(contents, /one focused question at a time/i);
+    assert.match(contents, /example-first and scenario-first/i);
+    assert.match(contents, /final check-in/i);
+    assert.match(contents, /do not inspect implementation code by default/i);
+    assert.match(contents, /Do not use existing implementation code as the source of truth/i);
+    assert.match(contents, /Domain Purpose/);
+    assert.match(contents, /Ubiquitous Language/);
+    assert.match(contents, /Core Domain Concepts/);
+    assert.match(contents, /Concept Relationships/);
+    assert.match(contents, /States and Lifecycles/);
+    assert.match(contents, /Business Rules and Invariants/);
+    assert.match(contents, /User \/ Business Workflows/);
+    assert.match(contents, /Domain Events/);
+    assert.match(contents, /Boundaries and External Concepts/);
+    assert.match(contents, /Open Tensions \/ Hard Parts/);
+  });
+});
+
 describe('AGENTS.md template', () => {
   it('keeps Sibu maintenance guidance without a manual session-start doctor requirement', () => {
     const manifest = readTemplateManifest();
