@@ -7,3 +7,4 @@ npm-debug.log*
 *.tgz
 .npmrc
 docs/features
+notes.md
