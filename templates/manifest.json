@@ -1,5 +1,5 @@
 {
-  "templateVersion": "117",
+  "templateVersion": "118",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -247,45 +247,45 @@
       ]
     },
     ".codex/agents/sibu-implementation-planner.toml": {
-      "version": "1",
+      "version": "2",
       "description": "Codex Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds a thin Codex planner worker that uses a narrow packet and the planner toolbox skill."
+        "Adds light verbose mode guidance to keep planner worker progress concise."
       ]
     },
     ".claude/agents/sibu-implementation-planner.md": {
-      "version": "1",
+      "version": "2",
       "description": "Claude Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds a thin Claude planner worker that uses a narrow packet and the planner toolbox skill."
+        "Adds light verbose mode guidance to keep planner worker progress concise."
       ]
     },
     ".gemini/agents/sibu-implementation-planner.md": {
-      "version": "1",
+      "version": "2",
       "description": "Gemini Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds a thin Gemini planner worker that uses a narrow packet and the planner toolbox skill."
+        "Adds light verbose mode guidance to keep planner worker progress concise."
       ]
     },
     ".codex/agents/sibu-implementation-executor.toml": {
-      "version": "1",
+      "version": "2",
       "description": "Codex Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Adds a thin Codex executor worker that uses a narrow packet and the executor toolbox skill."
+        "Adds light verbose mode guidance to keep executor worker progress concise."
       ]
     },
     ".claude/agents/sibu-implementation-executor.md": {
-      "version": "1",
+      "version": "2",
       "description": "Claude Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Adds a thin Claude executor worker that uses a narrow packet and the executor toolbox skill."
+        "Adds light verbose mode guidance to keep executor worker progress concise."
       ]
     },
     ".gemini/agents/sibu-implementation-executor.md": {
-      "version": "1",
+      "version": "2",
       "description": "Gemini Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Adds a thin Gemini executor worker that uses a narrow packet and the executor toolbox skill."
+        "Adds light verbose mode guidance to keep executor worker progress concise."
       ]
     },
     ".codex/hooks.json": {

@@ -344,9 +344,9 @@ describe('Sibu planner worker templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, '1');
+      assert.equal(templateMetadata?.version, '2');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation planner worker/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /narrow packet and the planner toolbox/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /light verbose mode guidance/i);
       assert.match(contents, /sibu-implementation-planner/);
       assert.match(contents, /narrow planner packet/);
       assert.match(contents, /planner toolbox skill/);
@@ -354,6 +354,9 @@ describe('Sibu planner worker templates', () => {
       assert.match(contents, /distilled constraints/);
       assert.match(contents, /full conversation context/);
       assert.match(contents, /Plan exactly one story/);
+      assert.match(contents, /Light verbose mode/);
+      assert.match(contents, /Show the plan once at the beginning/);
+      assert.match(contents, /Show only test failures and final test results/);
       assert.match(contents, /Never write production code/);
 
       if (isCodexAgentTemplate) {
@@ -440,9 +443,9 @@ describe('Sibu executor worker templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, '1');
+      assert.equal(templateMetadata?.version, '2');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation executor worker/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /narrow packet and the executor toolbox/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /light verbose mode guidance/i);
       assert.match(contents, /sibu-implementation-executor/);
       assert.match(contents, /narrow executor packet/);
       assert.match(contents, /executor toolbox skill/);
@@ -450,6 +453,9 @@ describe('Sibu executor worker templates', () => {
       assert.match(contents, /distilled constraints/);
       assert.match(contents, /full conversation context/);
       assert.match(contents, /Execute exactly one story plan/);
+      assert.match(contents, /Light verbose mode/);
+      assert.match(contents, /Show the plan once at the beginning/);
+      assert.match(contents, /Show only test failures and final test results/);
       assert.match(contents, /run validation/);
       assert.match(contents, /Never approve your own work/);
       assert.match(contents, /run git commit/);

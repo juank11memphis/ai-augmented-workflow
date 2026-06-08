@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "117",
+  "templateVersion": "118",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-06-08T19:24:01.712Z",
+  "updatedAt": "2026-06-08T20:27:31.419Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -209,8 +209,8 @@
     },
     ".codex/agents/sibu-implementation-planner.toml": {
       "template": ".codex/agents/sibu-implementation-planner.toml",
-      "templateVersion": "1",
-      "sha256": "3a44cd2d905977ba52dd6a7a382bf8de2c41c23d8dc226ce5210ebc5cd64b293",
+      "templateVersion": "2",
+      "sha256": "04abd21a0b21ed84442e66ab7b587e7cd4ee8861858c1242b226f040b406de85",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -221,32 +221,32 @@
     },
     ".codex/agents/sibu-implementation-executor.toml": {
       "template": ".codex/agents/sibu-implementation-executor.toml",
-      "templateVersion": "1",
-      "sha256": "776f59f8b3b32177c7e81bdb150f8977eb3030117b989d49a01f4f16e9cd6648",
+      "templateVersion": "2",
+      "sha256": "92005a09200c3306bf48702faf9d73d0236a4c7ad11b61ffe08cbd00ca85aff0",
       "status": "managed"
     },
     ".gemini/agents/sibu-implementation-planner.md": {
       "template": ".gemini/agents/sibu-implementation-planner.md",
-      "templateVersion": "1",
-      "sha256": "21c978cecdeb937466e4eaa8c97262bdda46de844220f9e2a45528a08fab869e",
+      "templateVersion": "2",
+      "sha256": "ef5e12866aeb5df995957086dfa5601358e0e4794e497f6c7fbe34ad420c130f",
       "status": "managed"
     },
     ".gemini/agents/sibu-implementation-executor.md": {
       "template": ".gemini/agents/sibu-implementation-executor.md",
-      "templateVersion": "1",
-      "sha256": "f445fc72d943eb06857f65af3014e9bef9c8ec928a55bb9130e9b42da8d5ab9f",
+      "templateVersion": "2",
+      "sha256": "6b2abe644caed66093f760428a0055c3f4c3193e21cbad0d553ab3e2eb6077e3",
       "status": "managed"
     },
     ".claude/agents/sibu-implementation-planner.md": {
       "template": ".claude/agents/sibu-implementation-planner.md",
-      "templateVersion": "1",
-      "sha256": "21c978cecdeb937466e4eaa8c97262bdda46de844220f9e2a45528a08fab869e",
+      "templateVersion": "2",
+      "sha256": "ef5e12866aeb5df995957086dfa5601358e0e4794e497f6c7fbe34ad420c130f",
       "status": "managed"
     },
     ".claude/agents/sibu-implementation-executor.md": {
       "template": ".claude/agents/sibu-implementation-executor.md",
-      "templateVersion": "1",
-      "sha256": "f445fc72d943eb06857f65af3014e9bef9c8ec928a55bb9130e9b42da8d5ab9f",
+      "templateVersion": "2",
+      "sha256": "6b2abe644caed66093f760428a0055c3f4c3193e21cbad0d553ab3e2eb6077e3",
       "status": "managed"
     }
   }
