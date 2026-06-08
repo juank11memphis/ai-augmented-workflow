@@ -1,5 +1,5 @@
 {
-  "templateVersion": "114",
+  "templateVersion": "115",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -155,6 +155,13 @@
         "Clarifies that story and Epic planning requests are confirmation for executor implementation."
       ]
     },
+    "skills/ai-implementation-executor-toolbox/SKILL.md": {
+      "version": "1",
+      "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
+      "changes": [
+        "Adds an executor toolbox skill with focused worker routing, ordered step execution, validation, Interactive Review Gate, and git-safety rules."
+      ]
+    },
     "skills/feature-idea-capture/SKILL.md": {
       "version": "1",
       "description": "Mandatory feature idea capture skill for storing rough future ideas in docs/feature-ideas.md only when the skill is used.",
@@ -258,6 +265,27 @@
       "description": "Gemini Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
         "Adds a thin Gemini planner worker that uses a narrow packet and the planner toolbox skill."
+      ]
+    },
+    ".codex/agents/sibu-implementation-executor.toml": {
+      "version": "1",
+      "description": "Codex Sibu implementation executor worker for fresh-context story execution.",
+      "changes": [
+        "Adds a thin Codex executor worker that uses a narrow packet and the executor toolbox skill."
+      ]
+    },
+    ".claude/agents/sibu-implementation-executor.md": {
+      "version": "1",
+      "description": "Claude Sibu implementation executor worker for fresh-context story execution.",
+      "changes": [
+        "Adds a thin Claude executor worker that uses a narrow packet and the executor toolbox skill."
+      ]
+    },
+    ".gemini/agents/sibu-implementation-executor.md": {
+      "version": "1",
+      "description": "Gemini Sibu implementation executor worker for fresh-context story execution.",
+      "changes": [
+        "Adds a thin Gemini executor worker that uses a narrow packet and the executor toolbox skill."
       ]
     },
     ".codex/hooks.json": {

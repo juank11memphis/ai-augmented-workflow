@@ -364,6 +364,79 @@ describe('Sibu planner worker templates', () => {
   });
 });
 
+describe('Sibu executor worker templates', () => {
+  it('registers and renders the executor toolbox skill', () => {
+    const templatePath = 'skills/ai-implementation-executor-toolbox/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const rawContents = readTemplate(templatePath);
+    const renderedContents = renderTemplateForSync({
+      templateRelativePath: templatePath,
+      currentPath: 'missing-agents.md',
+      selectedLanguageSkills: [selectedTypescriptSkill],
+      selectedFrameworkSkills: [selectedReactSkill],
+      selectedArchitectureSkill: selectedCommandPatternSkill,
+      selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
+    });
+
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Interactive Review Gate/i);
+    assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
+    assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
+    assert.match(renderedContents, /Focused executor worker routing/);
+    assert.match(renderedContents, /\.agents\/skills\/clean-code\/SKILL\.md/);
+    assert.match(renderedContents, /\.agents\/skills\/typescript\/SKILL\.md/);
+    assert.match(renderedContents, /\.agents\/skills\/ux-expert\/SKILL\.md/);
+    assert.doesNotMatch(renderedContents, /export-to-github/);
+    assert.doesNotMatch(renderedContents, /export-to-notion/);
+    assert.match(renderedContents, /unapproved step files in filename order/i);
+    assert.match(renderedContents, /Interactive Review Gate/);
+    assert.match(renderedContents, /Review Gate risk/);
+    assert.match(renderedContents, /git commit/);
+    assert.match(renderedContents, /git stash/);
+    assert.match(renderedContents, /git reset/);
+    assert.match(renderedContents, /Never approve your own work/);
+    assert.match(renderedContents, /Never write approval metadata/);
+  });
+
+  it('registers thin target-native executor worker templates', () => {
+    const manifest = readTemplateManifest();
+    const templatePaths = [
+      '.codex/agents/sibu-implementation-executor.toml',
+      '.claude/agents/sibu-implementation-executor.md',
+      '.gemini/agents/sibu-implementation-executor.md',
+    ];
+
+    for (const templatePath of templatePaths) {
+      const templateMetadata = manifest.templates[templatePath];
+      const contents = readTemplate(templatePath);
+      const isCodexAgentTemplate = templatePath.startsWith('.codex/');
+
+      assert.equal(templateMetadata?.version, '1');
+      assert.match(templateMetadata?.description ?? '', /Sibu implementation executor worker/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /narrow packet and the executor toolbox/i);
+      assert.match(contents, /sibu-implementation-executor/);
+      assert.match(contents, /narrow executor packet/);
+      assert.match(contents, /executor toolbox skill/);
+      assert.match(contents, /required and optional skill paths/);
+      assert.match(contents, /distilled constraints/);
+      assert.match(contents, /full conversation context/);
+      assert.match(contents, /Execute exactly one story plan/);
+      assert.match(contents, /run validation/);
+      assert.match(contents, /Never approve your own work/);
+      assert.match(contents, /run git commit/);
+      assert.match(contents, /run git stash/);
+      assert.match(contents, /run git reset/);
+
+      if (isCodexAgentTemplate) {
+        assert.match(contents, /developer_instructions =/);
+        assert.doesNotMatch(contents, /^instructions =/m);
+      }
+    }
+  });
+});
+
 function assertDoesNotContainRealCredential(contents: string): void {
   assert.doesNotMatch(contents, /ghp_[A-Za-z0-9_]+/);
   assert.doesNotMatch(contents, /github_pat_[A-Za-z0-9_]+/);
