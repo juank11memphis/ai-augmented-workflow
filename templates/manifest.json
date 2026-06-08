@@ -1,5 +1,5 @@
 {
-  "templateVersion": "121",
+  "templateVersion": "122",
   "templates": {
     "AGENTS.md": {
       "version": "32",
@@ -74,10 +74,11 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "14",
+      "version": "15",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes feature brief interviews mandatory before drafting while keeping export workflows delegated to dedicated exporter skills."
+        "Requires docs/business-domain-model.md before Feature Brief work and routes missing domain model creation to business-domain-model-writer.",
+        "Grounds Feature Brief scope and wording in Business Domain Model language, concepts, rules, and workflows while keeping Deep Module Map as the work-ownership source."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
@@ -186,10 +187,11 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "12",
+      "version": "13",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Strengthens UX guidance so all visible wording targets the end user from the product vision and feature brief, using the fewest plain words possible while keeping export workflows delegated to dedicated exporter skills."
+        "Requires docs/business-domain-model.md before UX work when UX guidance is installed.",
+        "Grounds UX language, user-facing concepts, rules, states, workflows, and boundaries in the Business Domain Model."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {

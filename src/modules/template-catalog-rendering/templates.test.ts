@@ -158,9 +158,62 @@ describe('feature brief writer raw idea source guidance', () => {
     assert.match(contents, /docs\/feature-ideas\.md/);
     assert.match(contents, /raw\/vague input/i);
     assert.match(contents, /Do not skip the normal interview flow/i);
-    assert.match(contents, /problem, target user\/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit/);
+    assert.match(
+      contents,
+      /problem, target user\/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit/,
+    );
     assert.match(contents, /After the local `docs\/features\/<feature-slug>\/feature_brief\.md` file is successfully written, remove the promoted idea from `docs\/feature-ideas\.md`/);
     assert.match(contents, /Do not delete the idea before the feature brief file exists/);
+  });
+});
+
+describe('feature brief writer Business Domain Model grounding', () => {
+  it('requires Business Domain Model context before feature brief work', () => {
+    const templatePath = 'skills/feature-brief-writer/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(manifest.templateVersion, '122');
+    assert.equal(templateMetadata?.version, '15');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/business-domain-model\.md before Feature Brief work/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Deep Module Map as the work-ownership source/i);
+    assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
+
+    assert.match(contents, /docs\/product-vision\.md/);
+    assert.match(contents, /docs\/business-domain-model\.md/);
+    assert.match(contents, /docs\/deep-module-map\.md/);
+    assert.match(contents, /business-domain-model-writer/);
+    assert.match(contents, /feature brief requires `docs\/business-domain-model\.md`/);
+    assert.match(contents, /business language, domain concepts, relationships, rules, states, workflows, events, and boundaries/i);
+    assert.match(contents, /Deep Module Map as the source of truth for where feature work belongs/i);
+  });
+});
+
+describe('UX expert Business Domain Model grounding', () => {
+  it('uses Business Domain Model source context for user-facing UX decisions', () => {
+    const templatePath = 'skills/ux-expert/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+    const groundingTerms = ['domain language', 'user-facing concepts', 'rules', 'states', 'workflows', 'boundaries'];
+
+    assert.equal(templateMetadata?.version, '13');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/business-domain-model\.md before UX work/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /language, user-facing concepts, rules, states, workflows, and boundaries/i);
+    assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
+
+    assert.match(contents, /docs\/product-vision\.md/);
+    assert.match(contents, /docs\/business-domain-model\.md/);
+    assert.match(contents, /docs\/features\/<feature-slug>\/feature_brief\.md/);
+    assert.match(contents, /business-domain-model-writer/);
+    assert.match(contents, /Read product vision, Business Domain Model, and feature brief/i);
+    assert.match(contents, /product artifact such as `docs\/features\/<feature-slug>\/feature_brief\.md` that defines goals, scope, and acceptance criteria/i);
+    assert.doesNotMatch(contents, /implementation code/i);
+
+    for (const groundingTerm of groundingTerms) {
+      assert.match(contents, new RegExp(groundingTerm, 'i'));
+    }
   });
 });
 
@@ -716,13 +769,20 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
 
     for (const templatePath of authoringTemplatePaths) {
       const contents = readTemplate(templatePath);
-      const templateMetadata = manifest.templates[templatePath];
 
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /dedicated exporter skills/i);
       assert.doesNotMatch(contents, /Optional Notion export after local write/i);
       assert.doesNotMatch(contents, /mcpServerConfigs\.notion\.docsParentPage/i);
       assert.doesNotMatch(contents, /Create a new document page for the just-written artifact content/i);
     }
+
+    assert.match(manifest.templates['skills/technical-design-writer/SKILL.md']?.changes.join('\n') ?? '', /dedicated exporter skills/i);
+  });
+
+  it('keeps technical design from directly requiring the Business Domain Model', () => {
+    const contents = readTemplate('skills/technical-design-writer/SKILL.md');
+
+    assert.doesNotMatch(contents, /docs\/business-domain-model\.md/);
+    assert.doesNotMatch(contents, /business-domain-model-writer/);
   });
 
   it('keeps Scrum planning free of the GitHub export gate', () => {

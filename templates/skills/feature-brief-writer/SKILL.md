@@ -1,13 +1,13 @@
 ---
 name: feature-brief-writer
-description: Use this skill to define business-level feature briefs that stay loyal to docs/product-vision.md before UX, technical design, or implementation work.
+description: Use this skill to define business-level feature briefs that stay loyal to docs/product-vision.md and docs/business-domain-model.md before UX, technical design, or implementation work.
 ---
 
 # Feature Brief Writer
 
 ## Purpose
 
-Create concise feature briefs that explain what a feature is, why it matters, who it serves, and how it follows `docs/product-vision.md`: purpose, audience, boundaries, and success signals.
+Create concise feature briefs that explain what a feature is, why it matters, who it serves, and how it follows `docs/product-vision.md` plus `docs/business-domain-model.md`: purpose, audience, business language, domain concepts, rules, workflows, boundaries, and success signals.
 
 This skill owns the product/business shape of a feature. It does not own UI interaction design, technical architecture, implementation plans, data models, APIs, or task breakdowns.
 
@@ -16,8 +16,9 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 ### What this skill needs
 
 - `docs/product-vision.md`.
+- `docs/business-domain-model.md`.
 - `docs/deep-module-map.md`.
-- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit.
+- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit.
 
 ### What this skill writes
 
@@ -27,6 +28,7 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 ### When this skill stops
 
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
+- `docs/business-domain-model.md` is missing; tell the user to create it first with `business-domain-model-writer`.
 - `docs/deep-module-map.md` is missing; tell the user to create it first with `deep-module-map-writer`.
 - The feature appears to require a new or changed Deep Module; direct the user back to `deep-module-map-writer`.
 - The request belongs to another pipeline stage, such as technical design, UX design, Scrum planning, implementation planning, or implementation execution.
@@ -46,10 +48,13 @@ Before doing any feature-brief work, read:
 
 ```txt
 docs/product-vision.md
+docs/business-domain-model.md
 docs/deep-module-map.md
 ```
 
 Use the product vision as the source of truth for the product's purpose, audience, positioning, principles, voice, boundaries, trust expectations, and success signals.
+
+Use the Business Domain Model as the source of truth for business language, domain concepts, relationships, rules, states, workflows, events, and boundaries that shape business-level feature scope.
 
 Use the Deep Module Map as the source of truth for where feature work belongs. Deep Modules answer “where does this work belong?” Do not invent Deep Modules in a feature brief.
 
@@ -57,7 +62,7 @@ Do not duplicate or rewrite the product vision inside the feature brief. Apply i
 
 ## Hard start rule
 
-Do not start a feature brief if `docs/product-vision.md` or `docs/deep-module-map.md` is missing.
+Do not start a feature brief if `docs/product-vision.md`, `docs/business-domain-model.md`, or `docs/deep-module-map.md` is missing.
 
 If the product vision is missing:
 
@@ -65,6 +70,13 @@ If the product vision is missing:
 2. Tell the user that a feature brief requires `docs/product-vision.md`.
 3. Instruct the user to create the product vision first with the `product-vision-writer` skill.
 4. Do not draft, infer, or save a feature brief until the product vision exists.
+
+If the Business Domain Model is missing:
+
+1. Stop.
+2. Tell the user that a feature brief requires `docs/business-domain-model.md`.
+3. Instruct the user to create the domain model first with the `business-domain-model-writer` skill.
+4. Do not draft, infer, or save a feature brief until the domain model exists.
 
 If the Deep Module Map is missing:
 
@@ -101,8 +113,8 @@ If the user asks for a feature brief from an idea in `docs/feature-ideas.md`, re
 
 - Do not skip the normal interview flow because the idea exists in a file.
 - Use the idea as a seed for the first discovery question, not as complete feature intent.
-- Keep asking one focused question at a time until the usual required context is resolved: problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit.
-- Preserve the hard-start requirements for `docs/product-vision.md` and `docs/deep-module-map.md`.
+- Keep asking one focused question at a time until the usual required context is resolved: problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit.
+- Preserve the hard-start requirements for `docs/product-vision.md`, `docs/business-domain-model.md`, and `docs/deep-module-map.md`.
 - After the local `docs/features/<feature-slug>/feature_brief.md` file is successfully written, remove the promoted idea from `docs/feature-ideas.md` while preserving the rest of the file.
 - Do not delete the idea before the feature brief file exists, and do not remove unrelated ideas or headings.
 
@@ -119,13 +131,13 @@ This interview is mandatory and non-skippable. Even when the user provides exten
 - If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
 - Prefer follow-up questions over filling gaps with plausible invention.
 - Treat "100% understanding" as: feature intent, target user, scenario, user problem, business goal, MVP boundary, out-of-scope boundary, success signals, and known constraints are all clear enough to defend in the brief.
-- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit are clear enough to defend in the brief.
+- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit are clear enough to defend in the brief.
 - If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
 - Do not ask a large questionnaire all at once.
 
 ## Workflow
 
-### 1. Read the product vision and Deep Module Map
+### 1. Read the product vision, Business Domain Model, and Deep Module Map
 
 Read `docs/product-vision.md` first and identify:
 
@@ -138,6 +150,8 @@ Read `docs/product-vision.md` first and identify:
 - success signals
 
 Use these as constraints for the feature brief.
+
+Then read `docs/business-domain-model.md` and identify relevant business language, domain concepts, relationships, rules, states, workflows, events, and boundaries that should shape feature scope and wording.
 
 Then read `docs/deep-module-map.md` and identify which existing Deep Modules may own the requested feature. A feature brief must name one or more existing Deep Modules.
 
@@ -181,10 +195,11 @@ Ask every question needed to remove material ambiguity, but only one at a time. 
 - when and why the target user would use it
 - what outcome should improve
 - what must be included in the first version
+- which Business Domain Model concepts, rules, states, workflows, or boundaries materially shape the scope
 - what should stay out of scope
 - known constraints and risks
 
-Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, and Deep Module fit are clear enough to avoid invention. Do not draft a brief with an `Open Questions` section.
+Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit are clear enough to avoid invention. Do not draft a brief with an `Open Questions` section.
 
 If the conversation stalls, offer a concise default assumption for the next unresolved point and ask the user to confirm or correct it before proceeding.
 
@@ -202,6 +217,9 @@ Recommended structure:
 
 ## Product Vision Fit
 <How this feature supports the product vision, principles, audience, or positioning.>
+
+## Business Domain Model Fit
+<Relevant domain language, concepts, rules, states, workflows, or boundaries from docs/business-domain-model.md that shape this feature.>
 
 ## Deep Module
 <One or more existing Deep Modules from docs/deep-module-map.md that own this feature, with a brief fit rationale.>

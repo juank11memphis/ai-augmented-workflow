@@ -1,6 +1,6 @@
 ---
 name: ux-expert
-description: Use this skill for UX/UI design after product definition when a feature has UI changes. Requires an approved Markdown product artifact (feature brief) that defines goals, scope, and acceptance criteria; if none exists, route to feature-brief-writer (and product-vision-writer if missing). Use for senior UX/UI direction, phone-first responsive design, user flows, information architecture, wireframes, concrete mockups, interaction states, accessibility, visual direction, creative UI concepts, and implementation-ready UI guidance.
+description: Use this skill for UX/UI design after product definition when a feature has UI changes. Requires Product Vision, Business Domain Model, and an approved Markdown product artifact (feature brief) that defines goals, scope, and acceptance criteria; if none exists, route to feature-brief-writer (and product-vision-writer or business-domain-model-writer if missing). Use for senior UX/UI direction, phone-first responsive design, user flows, information architecture, wireframes, concrete mockups, interaction states, accessibility, visual direction, creative UI concepts, and implementation-ready UI guidance.
 ---
 
 # ux-expert
@@ -12,6 +12,7 @@ Act as a senior UX/UI designer. Turn an approved product artifact into usable, s
 ### What this skill needs
 
 - `docs/product-vision.md`.
+- `docs/business-domain-model.md`.
 - A product artifact such as `docs/features/<feature-slug>/feature_brief.md` that defines goals, scope, and acceptance criteria.
 - Confirmation from the request or source artifact that the feature has UI impact.
 - Enough user or product context to design affected surfaces, flows, responsive layouts, states, accessibility requirements, and binding mockups.
@@ -24,6 +25,7 @@ Act as a senior UX/UI designer. Turn an approved product artifact into usable, s
 
 - The user only has a product idea; direct the user to `feature-brief-writer` first.
 - `docs/product-vision.md` is missing; direct the user to `product-vision-writer` first.
+- `docs/business-domain-model.md` is missing; direct the user to `business-domain-model-writer` first.
 - The product artifact is missing, unclear, or lacks goals, scope, and acceptance criteria.
 - The feature or request has no UI impact; say so and do not invent UI work.
 - The request belongs to another pipeline stage, such as product definition, technical design, Scrum planning, implementation planning, or implementation execution.
@@ -38,6 +40,8 @@ Act as a senior UX/UI designer. Turn an approved product artifact into usable, s
 ## Required grounding
 
 Read `docs/product-vision.md` and apply only relevant implications: target user, principles, voice, boundaries, trust expectations, success signal. Do not restate the full vision.
+
+Read `docs/business-domain-model.md` and apply only relevant domain language, user-facing concepts, business rules, states, workflows, and boundaries. Use this grounding to keep labels, flows, interaction states, errors, recovery paths, and boundaries aligned with reviewed business meaning.
 
 Require a product artifact such as `docs/features/<feature-slug>/feature_brief.md` that defines goal, scope, and acceptance criteria. If the user has only an idea, route to `feature-brief-writer` first. If the artifact says there is no UI impact, say so and do not invent UI work.
 
@@ -54,7 +58,7 @@ Apply these principles:
 - **Direct manipulation and feedback:** interactions should respond immediately, show available actions, confirm state changes, and provide recovery paths for errors or destructive actions.
 - **Adaptive, not stretched:** design for compact, medium, and expanded spaces as different experiences when useful; do not merely scale a desktop layout down or stretch a phone layout wide.
 - **Accessible by default:** preserve readable text, sufficient contrast, visible focus, keyboard/screen-reader paths, clear labels, large enough touch targets, and reduced-motion alternatives.
-- **End-user wording:** every word visible in mockups or UX guidance for on-screen copy must be aimed at the target end user described in the product vision and feature brief. If wording is for developers, agents, stakeholders, or internal process, remove it from the user-facing experience.
+- **End-user wording:** every word visible in mockups or UX guidance for on-screen copy must be aimed at the target end user described in the product vision, Business Domain Model, and feature brief. If wording is for developers, agents, stakeholders, or internal process, remove it from the user-facing experience.
 - **Plain, minimal copy:** keep labels, headings, helper text, empty states, and errors as short and simple as possible. Prefer familiar words over clever phrasing.
 - **Motion with purpose:** use motion only to preserve continuity, orient the user, acknowledge input, or make state change legible; never rely on motion as the only cue.
 - **Distinctive but quiet:** add personality through spacing, shape, color, illustration, or tone only after the flow is simple and understandable.
@@ -109,9 +113,9 @@ Responsive guidance:
 
 ## Workflow
 
-1. Read product vision and feature brief.
+1. Read product vision, Business Domain Model, and feature brief.
 2. Identify affected UI surfaces and whether UI work is valid.
-3. Reduce the experience to the target end user's job: current state, primary decision, primary action, feedback, and recovery.
+3. Apply Business Domain Model language, user-facing concepts, rules, states, workflows, and boundaries to the target end user's job: current state, primary decision, primary action, feedback, and recovery.
 4. Design the phone-first flow, information architecture, and layout.
 5. Re-evaluate tablet and desktop independently.
 6. Define interaction states, failure/recovery behavior, accessibility requirements, and visual direction.
@@ -137,12 +141,13 @@ Use only helpful sections from this shape:
 
 ## Input Product Artifact
 ## Product Vision Implications
+## Business Domain Model Grounding
 ## UX Intent
 ## Affected Surfaces
 ## Phone-First User Flow
 ## Information Architecture
 ## Content Rules
-- All visible copy is for the target end user from the product vision and feature brief.
+- All visible copy is for the target end user from the product vision, Business Domain Model, and feature brief.
 - Use the fewest plain words that preserve clarity, confidence, and actionability.
 - Exclude internal, technical, process, stakeholder, or AI-agent wording from user-facing surfaces.
 
