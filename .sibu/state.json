@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "110",
+  "templateVersion": "117",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-05-22T22:07:08.995Z",
+  "updatedAt": "2026-06-08T19:24:01.712Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -91,17 +91,17 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "15",
-      "sha256": "ed5e770226a83a87819a1aec85e0c006c8254c599dc9282115ecddcecea1bf5d",
+      "templateVersion": "16",
+      "sha256": "a7e2c24e5688318200ccf5efae5153f7cb5ad8b5c9ad0fa76505cea1f2d4cf27",
       "status": "customized",
-      "lastReviewedTemplateVersion": "15"
+      "lastReviewedTemplateVersion": "17"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "22",
-      "sha256": "2799c206ff0662708b502aa5f480b5a5091f8a00bbc22b138f9a5895b1ab6203",
+      "templateVersion": "23",
+      "sha256": "4d9fcf9e8f7684343d79808b17baf538674bbc0f9e06fa5b4cc0003b4686aa38",
       "status": "customized",
-      "lastReviewedTemplateVersion": "22"
+      "lastReviewedTemplateVersion": "24"
     },
     ".agents/skills/typescript/SKILL.md": {
       "template": "skills/typescript/SKILL.md",
@@ -199,6 +199,54 @@
       "template": ".claude/settings.json",
       "templateVersion": "1",
       "sha256": "59dd7b757dce9017d2237786002a0a0e97ef6d36075156d69b1ea18e9257bdef",
+      "status": "managed"
+    },
+    ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
+      "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "4fb6559a7c87234cd463d2039e421387e085aad604708fb38d045d2d5af45c35",
+      "status": "managed"
+    },
+    ".codex/agents/sibu-implementation-planner.toml": {
+      "template": ".codex/agents/sibu-implementation-planner.toml",
+      "templateVersion": "1",
+      "sha256": "3a44cd2d905977ba52dd6a7a382bf8de2c41c23d8dc226ce5210ebc5cd64b293",
+      "status": "managed"
+    },
+    ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
+      "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "1d75b24b94f9e66f11280d7fdaf038ecb4d007efb49089e1d7642174ba573ca8",
+      "status": "managed"
+    },
+    ".codex/agents/sibu-implementation-executor.toml": {
+      "template": ".codex/agents/sibu-implementation-executor.toml",
+      "templateVersion": "1",
+      "sha256": "776f59f8b3b32177c7e81bdb150f8977eb3030117b989d49a01f4f16e9cd6648",
+      "status": "managed"
+    },
+    ".gemini/agents/sibu-implementation-planner.md": {
+      "template": ".gemini/agents/sibu-implementation-planner.md",
+      "templateVersion": "1",
+      "sha256": "21c978cecdeb937466e4eaa8c97262bdda46de844220f9e2a45528a08fab869e",
+      "status": "managed"
+    },
+    ".gemini/agents/sibu-implementation-executor.md": {
+      "template": ".gemini/agents/sibu-implementation-executor.md",
+      "templateVersion": "1",
+      "sha256": "f445fc72d943eb06857f65af3014e9bef9c8ec928a55bb9130e9b42da8d5ab9f",
+      "status": "managed"
+    },
+    ".claude/agents/sibu-implementation-planner.md": {
+      "template": ".claude/agents/sibu-implementation-planner.md",
+      "templateVersion": "1",
+      "sha256": "21c978cecdeb937466e4eaa8c97262bdda46de844220f9e2a45528a08fab869e",
+      "status": "managed"
+    },
+    ".claude/agents/sibu-implementation-executor.md": {
+      "template": ".claude/agents/sibu-implementation-executor.md",
+      "templateVersion": "1",
+      "sha256": "f445fc72d943eb06857f65af3014e9bef9c8ec928a55bb9130e9b42da8d5ab9f",
       "status": "managed"
     }
   }

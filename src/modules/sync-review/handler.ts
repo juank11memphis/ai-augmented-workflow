@@ -6,11 +6,12 @@ import { getProjectContext } from '../../shared/paths.js';
 import { askForMissingFrameworkSkills, askForNewArchitectureSkill, askForNewLanguageSkills, renderIntro } from '../interactive-guidance/index.js';
 import { readStateForDoctor, writeStateFile } from '../workflow-state-registry/index.js';
 import { readTemplateManifest } from '../template-catalog-rendering/index.js';
-import { askForSyncAction } from './action-prompt.js';
+import { askForSyncAction, askForUnsupportedAgentCleanup } from './action-prompt.js';
 import { applySyncAction } from './apply-action.js';
 import type { SyncProjectCommand } from './command.js';
 import { logSyncPreview } from './log-preview.js';
 import { getSyncPreviews, isActionableSyncPreview, shouldAskForSyncAction } from './sync-preview.js';
+import { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
 
 export async function handleSyncProject(_command: SyncProjectCommand): Promise<void> {
   await renderIntro();
@@ -25,6 +26,52 @@ export async function handleSyncProject(_command: SyncProjectCommand): Promise<v
     outro(chalk.yellow('Sync unavailable.'));
     process.exitCode = 1;
     return;
+  }
+
+  const cleanupPlan = getUnsupportedAgentCleanupPlan({ rootPath, state: stateResult.state });
+
+  if (cleanupPlan) {
+    log.warn('This project has agent selections that are no longer supported by Sibu.');
+    log.info(`Unsupported selections: ${cleanupPlan.unsupportedAgentIds.join(', ')}`);
+
+    if (cleanupPlan.filePathsToDelete.length > 0) {
+      log.info('Sibu-managed files to remove:');
+      for (const relativePath of cleanupPlan.filePathsToDelete) {
+        log.info(`- ${relativePath}`);
+      }
+    } else {
+      log.info('No Sibu-managed files need to be deleted for this cleanup.');
+    }
+
+    if (cleanupPlan.removesSibuState) {
+      log.warn(`No supported agents will remain, so ${STATE_RELATIVE_PATH} will be removed after cleanup.`);
+    }
+
+    const shouldCleanUp = await askForUnsupportedAgentCleanup(cleanupPlan);
+
+    if (!shouldCleanUp) {
+      log.warn('Unsupported agent cleanup was skipped.');
+      log.info('Run `sibu sync` again and accept cleanup before reviewing other workflow updates.');
+      outro(chalk.yellow('Sync stopped.'));
+      process.exitCode = 1;
+      return;
+    }
+
+    const cleanupResult = applyUnsupportedAgentCleanup({ rootPath, statePath, state: stateResult.state, plan: cleanupPlan });
+
+    for (const relativePath of cleanupResult.removedFiles) {
+      log.success(`Removed ${relativePath}`);
+    }
+
+    if (cleanupResult.removedStateFile) {
+      log.success(`Removed ${STATE_RELATIVE_PATH}`);
+      outro(chalk.green('Unsupported agent cleanup complete.'));
+      return;
+    }
+
+    writeStateFile(statePath, cleanupResult.state);
+    log.success(`Updated ${STATE_RELATIVE_PATH}`);
+    stateResult.state = cleanupResult.state;
   }
 
   const languageSkillSelection = await askForNewLanguageSkills(stateResult.state);

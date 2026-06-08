@@ -1,13 +1,13 @@
 ---
 name: ai-implementation-planner
-description: Gatekeep and route one approved User Story into story-local implementation step files, preferring a fresh-context Sibu planner worker when supported.
+description: Gatekeep and route one approved User Story into story-local implementation step files, requiring a fresh-context Sibu planner sub-agent whenever spawning is available.
 ---
 
 # AI Implementation Planner
 
 ## Purpose
 
-Route exactly one approved User Story into a valid story-local implementation plan. This skill is the main-agent gatekeeper for planning: it verifies the story, required source artifacts, UX requirements when relevant, and skill context before planning work begins. When the host supports foreground workers, delegate detailed plan creation to the `sibu-implementation-planner` worker using a narrow packet and the planner toolbox. When no compatible worker is available, use the inline fallback rules in this skill.
+Route exactly one approved User Story into a valid story-local implementation plan. This skill is the main-agent gatekeeper for planning: it verifies the story, required source artifacts, UX requirements when relevant, and skill context before planning work begins. When a sub-agent spawn capability is available and permitted by the host, always spawn `sibu-implementation-planner` using a narrow packet and the planner toolbox. Use the inline fallback rules only when sub-agent spawning is unavailable or blocked by host capability limits.
 
 This planner is normally an internal helper for `ai-implementation-plan-executor`; after a valid plan exists, implementation must continue immediately through the executor unless the user explicitly requested planning-only.
 
@@ -20,7 +20,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - The feature's `feature_brief.md`.
 - The feature's `technical_design.md`.
 - `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
-- The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when worker delegation is available.
+- The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when sub-agent spawning is available.
 - Required and relevant installed skill paths for the planner packet, including `clean-code`.
 
 ### What this skill writes
@@ -73,9 +73,9 @@ If the technical design is missing, stop and ask the user to create it with `tec
 
 When the feature brief or technical design includes Deep Module guidance, treat it as required planning context. Deep Modules answer “where does this implementation work belong?” Implementation steps must preserve approved module boundaries.
 
-## Worker-first planning path
+## Required sub-agent planning path
 
-When the host supports foreground Sibu workers and `sibu-implementation-planner` is available, prefer worker delegation.
+When the host exposes any usable sub-agent spawn capability and `sibu-implementation-planner` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu planner worker, subject to host tool policy. Do not choose inline planning merely because it is simpler or faster.
 
 Build a narrow planner packet for the worker. The packet must include:
 
@@ -91,11 +91,11 @@ Do not include exporter skills such as `export-to-github` or `export-to-notion` 
 
 The worker must use only the packet, the toolbox, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 
-After the worker returns, verify that a valid story-local `.impl_plan/` exists with ordered `.md` step files for exactly that story. If it does not, repair through the worker when possible or use inline fallback.
+After the worker returns, verify that a valid story-local `.impl_plan/` exists with ordered `.md` step files for exactly that story. If it does not, repair through the same worker when possible. Use inline fallback only when spawning or resuming the worker is unavailable or failed because the host cannot support it.
 
 ## Inline fallback planning path
 
-Use inline fallback only when a compatible foreground planner worker is unavailable or fails in a way that can be safely handled without changing story scope.
+Use inline fallback only when no compatible sub-agent spawn/resume capability is available, the host/tool policy blocks spawning, or the planner worker cannot be reached for capability reasons. If spawning is available but the worker reports a task blocker, do not inline around it; surface the blocker or ask for the missing input.
 
 Before writing step files inline, read and apply:
 

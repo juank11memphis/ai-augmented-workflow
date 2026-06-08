@@ -1,15 +1,15 @@
 ---
 name: ai-implementation-plan-executor
-description: Gatekeep and route one Sibu story implementation plan through execution, review, approval metadata, commit, and feature continuation.
+description: Gatekeep and route one Sibu story implementation plan through sub-agent execution, review, approval metadata, commit, and feature continuation.
 ---
 
 # AI Implementation Plan Executor
 
 ## Purpose
 
-Execute one story implementation plan completely while preserving Sibu's human review and workflow-control guarantees. This skill is the main-agent gatekeeper for execution: it verifies the story or plan, creates a missing plan through `ai-implementation-planner`, checks required source artifacts, chooses foreground worker delegation when supported, and keeps final approval metadata, commit, and feature continuation under main-agent control.
+Execute one story implementation plan completely while preserving Sibu's human review and workflow-control guarantees. This skill is the main-agent gatekeeper for execution: it verifies the story or plan, creates a missing plan through `ai-implementation-planner`, checks required source artifacts, requires sub-agent execution whenever spawning is available, and keeps final approval metadata, commit, and feature continuation under main-agent control.
 
-When a compatible foreground worker is available, delegate bounded file editing and validation to `sibu-implementation-executor` using a narrow packet and the executor toolbox. When worker support is unavailable, execute inline with compressed context and the same packet/toolbox constraints. Do not skip the final story-level review gate.
+When a compatible sub-agent spawn capability is available and permitted by the host, always delegate bounded file editing and validation to `sibu-implementation-executor` using a narrow packet and the executor toolbox. Execute inline only when sub-agent spawning is unavailable or blocked by host capability limits. Do not skip the final story-level review gate.
 
 ## Pipeline Contract
 
@@ -19,7 +19,7 @@ When a compatible foreground worker is available, delegate bounded file editing 
 - Ordered implementation step files in that `.impl_plan/` folder, creating them through the planner route when missing.
 - The story, Epic brief, feature brief, and technical design for the selected plan.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
-- The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when worker delegation is available.
+- The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when sub-agent spawning is available.
 - Required and relevant installed skill paths for the executor packet, including `clean-code`.
 
 ### What this skill writes
@@ -75,9 +75,9 @@ If the initial User Story has no matching `.impl_plan/`, or the initial `.impl_p
 
 If required source context is missing, stop and ask the user to create or restore the missing artifact first. Do not delegate incomplete execution work to the worker.
 
-## Worker-first execution path
+## Required sub-agent execution path
 
-When the host supports foreground Sibu workers and `sibu-implementation-executor` is available, prefer worker delegation.
+When the host exposes any usable sub-agent spawn capability and `sibu-implementation-executor` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu executor worker, subject to host tool policy. Do not choose inline execution merely because it is simpler or faster.
 
 Build a narrow executor packet for the worker. The packet must include:
 
@@ -96,13 +96,13 @@ The worker must use only the packet, the toolbox, listed skill files, source art
 
 ## Fallback matrix
 
-Use host capability metadata from workflow target planning guidance to choose the safest execution path:
+Use host capability metadata from workflow target planning guidance to choose the safest execution path. This order is mandatory:
 
-1. **Foreground worker:** use `sibu-implementation-executor` when foreground/resumable worker interaction is supported.
-2. **Mediated feedback:** if direct foreground review is unavailable but the worker is resumable, the main agent mediates user feedback back to the same worker.
-3. **Inline compressed-context fallback:** if worker support is unavailable, the main agent executes the story inline using compressed context, the same source gates, and the same toolbox/packet constraints.
+1. **Sub-agent worker:** spawn `sibu-implementation-executor` when any compatible sub-agent capability is available.
+2. **Mediated feedback:** if direct foreground review is unavailable but the spawned worker is resumable, the main agent mediates user feedback back to the same worker.
+3. **Inline compressed-context fallback:** only if spawning/resuming the worker is unavailable or host/tool policy blocks it, the main agent executes the story inline using compressed context, the same source gates, and the same toolbox/packet constraints.
 
-Fallback must be graceful. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
+Fallback must be graceful. If spawning is available but the worker reports a task blocker, do not inline around it; surface the blocker or ask for the missing input. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
 
 ## Story execution model
 

@@ -1,6 +1,7 @@
-import { cancel, isCancel, select } from '@clack/prompts';
+import { cancel, confirm, isCancel, select } from '@clack/prompts';
 
 import type { SyncPreview } from './sync-preview.js';
+import type { UnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
 
 export type SyncAction = 'apply-update' | 'mark-reviewed' | 'write-side-template' | 'stop-managing' | 'skip';
 
@@ -70,6 +71,22 @@ export async function askForSyncAction(preview: SyncPreview): Promise<SyncAction
   });
 
   return handleSyncActionCancel(action);
+}
+
+export async function askForUnsupportedAgentCleanup(plan: UnsupportedAgentCleanupPlan): Promise<boolean> {
+  const shouldCleanUp = await confirm({
+    message: plan.removesSibuState
+      ? 'Remove unsupported agent state and all Sibu-managed workflow files?'
+      : 'Remove unsupported agent selections and obsolete Sibu-managed files?',
+    initialValue: true,
+  });
+
+  if (isCancel(shouldCleanUp)) {
+    cancel('Sync cancelled.');
+    process.exit(0);
+  }
+
+  return shouldCleanUp;
 }
 
 function handleSyncActionCancel(action: SyncAction | symbol): SyncAction {

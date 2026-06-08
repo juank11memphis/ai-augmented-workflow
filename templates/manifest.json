@@ -1,5 +1,5 @@
 {
-  "templateVersion": "116",
+  "templateVersion": "117",
   "templates": {
     "AGENTS.md": {
       "version": "31",
@@ -135,10 +135,10 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "16",
+      "version": "17",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Turns the planner skill into a gatekeeper that validates required artifacts, builds a narrow planner worker packet, and falls back inline when foreground workers are unavailable."
+        "Requires the planner to spawn the Sibu implementation planner sub-agent whenever spawning is available and limits inline fallback to host capability blockers."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "23",
+      "version": "24",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Turns the executor skill into a gatekeeper that delegates bounded execution to fresh-context workers when supported while keeping approval metadata and commits under main-agent control."
+        "Requires the executor to spawn the Sibu implementation executor sub-agent whenever spawning is available and limits inline fallback to host capability blockers."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
