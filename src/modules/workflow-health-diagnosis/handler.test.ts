@@ -168,13 +168,13 @@ test('does not diagnose unmanaged session-start hook files as expected target is
   assert.equal(issues.some((issue) => issue.message === '.codex/hooks.json is missing.'), false);
 });
 
-test('warns when legacy state references removed Windsurf agent', () => {
+test('warns when legacy state references an unsupported agent', () => {
   const rootPath = createCleanInitializedRepo();
-  const state = { ...readState(rootPath), selectedAgents: ['windsurf'] };
+  const state = { ...readState(rootPath), selectedAgents: ['legacy-agent'] };
 
   const issues = diagnoseState({ rootPath, state });
 
-  assert.equal(issues.some((issue) => issue.message === 'State references unsupported agent: windsurf.'), true);
+  assert.equal(issues.some((issue) => issue.message === 'State references unsupported agent: legacy-agent.'), true);
   assert.notEqual(issues.length, 0);
 });
 

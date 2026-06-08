@@ -90,7 +90,6 @@ describe('handleUseMcpServer', () => {
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /ghp_[A-Za-z0-9_]+/);
-    assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });
 
   it('does not ask for a Notion parent page when adding GitHub', async () => {
@@ -135,7 +134,6 @@ describe('handleUseMcpServer', () => {
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-notion`/);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, '.mcp.json'), 'utf8'), /notion[_-]?token/i);
-    assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });
 
   it('composes GitHub and Notion MCP config when both are selected', async () => {
@@ -257,8 +255,3 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   return agent;
 }
 
-function hasPathIncluding(rootPath: string, text: string): boolean {
-  const entries = fs.readdirSync(rootPath, { recursive: true, withFileTypes: true });
-
-  return entries.some((entry) => path.join(entry.parentPath, entry.name).includes(text));
-}

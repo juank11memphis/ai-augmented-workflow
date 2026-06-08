@@ -161,7 +161,6 @@ describe('handleInitProject', () => {
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /SessionStart/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
-    assert.equal(hasPathIncluding(rootPath, 'windsurf'), false);
   });
 });
 
@@ -207,8 +206,3 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   return agent;
 }
 
-function hasPathIncluding(rootPath: string, text: string): boolean {
-  const entries = fs.readdirSync(rootPath, { recursive: true, withFileTypes: true });
-
-  return entries.some((entry) => path.join(entry.parentPath, entry.name).includes(text));
-}

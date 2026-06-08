@@ -171,7 +171,7 @@ Sibu should make developers feel momentum, not bureaucracy.
 
 Sibu should not become an AI IDE.
 
-It should not try to become Windsurf, Cursor, Copilot, or any other full development environment. Sibu's job is not to own the editor, the model, the agent, or the entire development surface.
+It should not try to become an AI code editor, coding copilot, or any other full development environment. Sibu's job is not to own the editor, the model, the agent, or the entire development surface.
 
 Sibu should also reject the fantasy that high-quality software comes from telling AI, “go build this big thing while I get coffee.”
 

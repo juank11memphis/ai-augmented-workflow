@@ -27,7 +27,7 @@ describe('getWorkflowTargets', () => {
       templateVersion: '40',
       generatedAt: '2026-04-20T00:00:00.000Z',
       updatedAt: '2026-04-20T00:00:00.000Z',
-      selectedAgents: ['windsurf'],
+      selectedAgents: ['legacy-agent'],
       selectedLanguageSkills: ['typescript'],
       managedFiles: {},
     };
@@ -51,7 +51,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.gemini/settings.json'), true);
     assert.equal(targetPaths.includes('CLAUDE.md'), true);
     assert.equal(targetPaths.includes('.claude/settings.json'), true);
-    assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
@@ -69,7 +68,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.codex/hooks.json'), true);
     assert.equal(targetPaths.includes('.gemini/settings.json'), true);
     assert.equal(targetPaths.includes('.claude/settings.json'), true);
-    assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.gemini/settings.json').length, 1);
     assertNoInvalidTargets(targets);
   });
@@ -94,7 +92,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.claude/agents/sibu-implementation-executor.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/sibu-implementation-planner.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/sibu-implementation-executor.md'), true);
-    assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/agents/')), false);
     assertNoInvalidTargets(targets);
   });
 
@@ -105,7 +102,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.codex/config.toml'), true);
     assert.equal(targetPaths.includes('.mcp.json'), true);
     assert.equal(targetPaths.includes('.gemini/settings.json'), true);
-    assert.equal(targetPaths.some((relativePath) => relativePath.includes('windsurf')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.codex/config.toml').length, 1);
     assertNoInvalidTargets(targets);
   });
@@ -136,7 +132,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.claude/agents/notion-exporter.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/github-exporter.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/notion-exporter.md'), true);
-    assert.equal(targetPaths.some((relativePath) => relativePath.startsWith('.windsurf/agents/')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-github/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-notion/SKILL.md').length, 1);
     assertNoInvalidTargets(targets);
@@ -207,7 +202,7 @@ describe('getWorkflowTargets', () => {
     );
   });
 
-  it('resolves MCP targets without adding Windsurf MCP config', () => {
+  it('resolves MCP targets for supported MCP agents', () => {
     assert.deepEqual(getSelectedMcpTargetsForAgents(SUPPORTED_AGENTS, SELECTABLE_MCP_SERVERS), [
       {
         targetRelativePath: '.codex/config.toml',
@@ -235,7 +230,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.codex/config.toml'), true);
     assert.equal(targetPaths.includes('.mcp.json'), true);
     assert.equal(targetPaths.includes('.gemini/settings.json'), true);
-    assert.equal(targetPaths.some((relativePath) => relativePath.includes('windsurf')), false);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.codex/config.toml').length, 1);
     assertNoInvalidTargets(targets);
   });
@@ -388,7 +382,7 @@ describe('getSelectedAgentsFromState', () => {
       templateVersion: '40',
       generatedAt: '2026-04-20T00:00:00.000Z',
       updatedAt: '2026-04-20T00:00:00.000Z',
-      selectedAgents: ['windsurf'],
+      selectedAgents: ['legacy-agent'],
       managedFiles: {},
     };
 

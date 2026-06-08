@@ -38,14 +38,14 @@ describe('getUnsupportedAgentCleanupPlan', () => {
   });
 
 
-  it('plans cleanup for a legacy Windsurf selected id after catalog removal', () => {
+  it('plans cleanup for a legacy selected id after catalog removal', () => {
     const rootPath = createCleanInitializedRepo([getSupportedAgent('codex')]);
-    const state = addLegacyAgentState(rootPath, readState(rootPath), 'windsurf');
+    const state = addLegacyAgentState(rootPath, readState(rootPath), LEGACY_AGENT_ID);
 
     const plan = getUnsupportedAgentCleanupPlan({ rootPath, state });
 
     assert.ok(plan);
-    assert.deepEqual(plan.unsupportedAgentIds, ['windsurf']);
+    assert.deepEqual(plan.unsupportedAgentIds, [LEGACY_AGENT_ID]);
     assert.deepEqual(plan.remainingSupportedAgents.map((agent) => agent.id), ['codex']);
     assert.equal(plan.removesSibuState, false);
   });

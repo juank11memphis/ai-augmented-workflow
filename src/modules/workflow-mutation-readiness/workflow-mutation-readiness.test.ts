@@ -153,7 +153,7 @@ function createLegacyUnsupportedAgentRepo(): string {
         templateVersion: '40',
         generatedAt: '2026-04-20T00:00:00.000Z',
         updatedAt: '2026-04-20T00:00:00.000Z',
-        selectedAgents: ['windsurf'],
+        selectedAgents: ['legacy-agent'],
         selectedLanguageSkills: [],
         selectedFrameworkSkills: [],
         managedFiles: {

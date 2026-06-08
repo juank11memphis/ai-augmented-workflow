@@ -212,5 +212,4 @@ function getArchitectureSkill(skillId: string) {
 
 function assertSupportedAgentKeysOnly(skillTemplate: SkillTemplate): void {
   assert.deepEqual(Object.keys(skillTemplate.targetRelativePathsByAgent).sort(), ['claude', 'codex', 'gemini']);
-  assert.equal(Object.keys(skillTemplate.supplementalTargetsByAgent ?? {}).includes('windsurf'), false);
 }
