@@ -1,12 +1,27 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { SELECTABLE_MCP_SERVERS } from '../workflow-target-planning/index.js';
-import { readTemplate, readTemplateManifest, renderMcpConfig } from './templates.js';
+import {
+  SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_DATABASE_SKILLS,
+  SELECTABLE_FRAMEWORK_SKILLS,
+  SELECTABLE_LANGUAGE_SKILLS,
+  SELECTABLE_MCP_SERVERS,
+  SELECTABLE_WORKFLOW_SKILLS,
+} from '../workflow-target-planning/index.js';
+import { readTemplate, readTemplateManifest, renderMcpConfig, renderTemplateForSync, renderWorkerToolboxRouting } from './templates.js';
 
 const selectedGithubMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'github');
 const selectedNotionMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'notion');
 const selectedGithubAndNotionMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'github' || server.id === 'notion');
+const selectedTypescriptSkill = SELECTABLE_LANGUAGE_SKILLS.find((skill) => skill.id === 'typescript')!;
+const selectedReactSkill = SELECTABLE_FRAMEWORK_SKILLS.find((skill) => skill.id === 'react')!;
+const selectedCommandPatternSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === 'command-pattern')!;
+const selectedPostgresqlSkill = SELECTABLE_DATABASE_SKILLS.find((skill) => skill.id === 'postgresql-expert')!;
+const selectedPromptEngineeringSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'ai-prompt-engineer-master')!;
+const selectedUxSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'ux-expert')!;
+const selectedGithubExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-github')!;
+const selectedNotionExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion')!;
 
 const NOTION_MCP_URL = 'https://mcp.notion.com/mcp';
 
@@ -184,6 +199,76 @@ describe('AGENTS.md template', () => {
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
     assert.doesNotMatch(contents, /At the start of each session.*run `sibu doctor` once/i);
+  });
+});
+
+describe('worker toolbox routing profiles', () => {
+  it('renders focused planner routing from selected implementation-relevant skills', () => {
+    const contents = renderWorkerToolboxRouting({
+      profile: 'planner',
+      selectedLanguageSkills: [selectedTypescriptSkill],
+      selectedFrameworkSkills: [selectedReactSkill],
+      selectedArchitectureSkill: selectedCommandPatternSkill,
+      selectedDatabaseSkills: [selectedPostgresqlSkill],
+      selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
+    });
+
+    assert.match(contents, /Focused planner worker routing/);
+    assert.match(contents, /\.agents\/skills\/clean-code\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/typescript\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/react\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/command-pattern\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/postgresql-expert\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/ai-prompt-engineer-master\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/ux-expert\/SKILL\.md/);
+    assert.match(contents, /distilled skill constraints/);
+    assert.match(contents, /required skill path is missing/);
+    assert.match(contents, /unmapped language, framework, database, or architecture pattern/);
+    assert.match(contents, /plan risk/);
+    assert.doesNotMatch(contents, /product vision/i);
+    assert.doesNotMatch(contents, /feature brief writer/i);
+    assert.doesNotMatch(contents, /export-to-github/);
+    assert.doesNotMatch(contents, /export-to-notion/);
+    assert.doesNotMatch(contents, /GitHub\/Notion/);
+  });
+
+  it('renders focused executor routing with Review Gate risk guidance', () => {
+    const contents = renderWorkerToolboxRouting({
+      profile: 'executor',
+      selectedLanguageSkills: [selectedTypescriptSkill],
+      selectedFrameworkSkills: [],
+      selectedArchitectureSkill: undefined,
+    });
+
+    assert.match(contents, /Focused executor worker routing/);
+    assert.match(contents, /editing code or running story execution/);
+    assert.match(contents, /\.agents\/skills\/clean-code\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/typescript\/SKILL\.md/);
+    assert.match(contents, /Review Gate risk/);
+    assert.doesNotMatch(contents, /scrum-master-planner/);
+    assert.doesNotMatch(contents, /export-to-notion/);
+  });
+
+  it('preserves full AGENTS routing while focused worker routing stays narrower', () => {
+    const rendered = renderTemplateForSync({
+      templateRelativePath: 'AGENTS.md',
+      currentPath: 'missing-agents.md',
+      selectedLanguageSkills: [selectedTypescriptSkill],
+      selectedFrameworkSkills: [selectedReactSkill],
+      selectedArchitectureSkill: selectedCommandPatternSkill,
+    });
+    const plannerRouting = renderWorkerToolboxRouting({
+      profile: 'planner',
+      selectedLanguageSkills: [selectedTypescriptSkill],
+      selectedFrameworkSkills: [selectedReactSkill],
+      selectedArchitectureSkill: selectedCommandPatternSkill,
+    });
+
+    assert.match(rendered, /For any task that changes `.ts` or `.tsx` files, also use `typescript`/);
+    assert.match(rendered, /product-vision-writer/);
+    assert.match(plannerRouting, /Focused planner worker routing/);
+    assert.match(plannerRouting, /\.agents\/skills\/react\/SKILL\.md/);
+    assert.doesNotMatch(plannerRouting, /product-vision-writer/);
   });
 });
 

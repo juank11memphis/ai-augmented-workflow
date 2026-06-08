@@ -6,4 +6,5 @@ export {
   renderMcpConfig,
   renderSkillRouting,
   renderTemplateForSync,
+  renderWorkerToolboxRouting,
 } from './templates.js';
