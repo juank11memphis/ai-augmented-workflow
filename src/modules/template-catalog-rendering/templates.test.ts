@@ -227,12 +227,40 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '31');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /session-start preflight/i);
+    assert.equal(templateMetadata?.version, '32');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Business Domain Model routing/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
     assert.doesNotMatch(contents, /At the start of each session.*run `sibu doctor` once/i);
+  });
+
+  it('routes Business Domain Model requests and preserves downstream pipeline sequencing', () => {
+    const manifest = readTemplateManifest();
+    const contents = readTemplate('AGENTS.md');
+    const routingTerms = [
+      'docs/business-domain-model.md',
+      'ubiquitous language',
+      'domain concepts',
+      'relationships',
+      'rules',
+      'lifecycles',
+      'workflows',
+      'domain events',
+      'boundaries',
+      'hard parts',
+    ];
+
+    assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
+    assert.match(contents, /product vision -> business domain model -> deep module map \/ feature brief -> technical design -> optional UX -> epics\/stories -> AI executor/);
+    assert.match(contents, /Business Domain Model work sits after Product Vision and before Deep Module Map or Feature Brief work/);
+    assert.match(contents, /Technical Design remains downstream of both Feature Brief and Deep Module Map/);
+    assert.match(contents, /Scrum planning and AI executor flows after Technical Design/);
+    assert.match(contents, /Business Domain Model, `docs\/business-domain-model\.md`.*use `business-domain-model-writer`/);
+
+    for (const routingTerm of routingTerms) {
+      assert.match(contents, new RegExp(routingTerm.replaceAll('/', '\\/'), 'i'));
+    }
   });
 });
 

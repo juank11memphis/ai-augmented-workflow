@@ -1,11 +1,12 @@
 {
-  "templateVersion": "119",
+  "templateVersion": "120",
   "templates": {
     "AGENTS.md": {
-      "version": "31",
+      "version": "32",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Removes the manual session-start preflight instruction now that native hook files own automatic Sibu health checks."
+        "Adds Business Domain Model routing to the managed agent instructions.",
+        "Updates planning pipeline guidance so Business Domain Model sits after Product Vision and before Deep Module Map or Feature Brief work."
       ]
     },
     ".codex/config.toml": {
