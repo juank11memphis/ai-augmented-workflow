@@ -3,12 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it, mock } from 'node:test';
+import { writeSibuState } from '../../workflow-state-ledger/index.js';
 
 import { log } from '@clack/prompts';
 import { SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
-import { readExistingState } from '../../workflow-state-registry/index.js';
+import { readExistingState } from '../../workflow-state-ledger/index.js';
 import type { SibuState, SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../workflow-target-planning/index.js';
 import { getNextSkillSelection, handleUseSkill } from './handler.js';
 
 const BASE_STATE: SibuState = {

@@ -1,2 +1,2 @@
-// Temporary destination shell for later Deep Module Map behavior movement.
-export {};
+export { cloneState, hasReviewedTemplateVersion, readExistingState, readStateForDoctor, writeSibuState, writeStateFile } from './state.js';
+export type { StateReadResult } from './state.js';

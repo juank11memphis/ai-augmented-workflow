@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeSibuState } from '../../workflow-state-ledger/index.js';
 
 import { log } from '@clack/prompts';
 
@@ -21,7 +22,6 @@ import {
   getWorkflowTargets,
   renderMissingWorkflowFiles,
   resolveSelectableMcpServerById,
-  writeSibuState,
 } from '../../workflow-target-planning/index.js';
 import type { McpServerConfigs, McpServerId, SelectableMcpServer, SelectableWorkflowSkill, SibuState, WorkflowTarget } from '../../../shared/types.js';
 import type { UseMcpServerCommand } from './command.js';

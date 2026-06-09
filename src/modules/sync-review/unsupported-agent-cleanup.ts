@@ -13,7 +13,7 @@ import {
   getWorkflowTargets,
   SUPPORTED_AGENTS,
 } from '../workflow-target-planning/index.js';
-import { cloneState } from '../workflow-state-registry/index.js';
+import { cloneState } from '../workflow-state-ledger/index.js';
 
 export type UnsupportedAgentCleanupPlan = {
   unsupportedAgentIds: string[];

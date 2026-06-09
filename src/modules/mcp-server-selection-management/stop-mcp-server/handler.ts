@@ -11,7 +11,7 @@ import type { ManagedFilePath, ManagedFileState, McpServerId, SelectableMcpServe
 import { renderMissingWorkflowFiles, resolveSelectableMcpServerById } from '../../workflow-target-planning/index.js';
 import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
 import { getTemplateVersion, readTemplateManifest } from '../../template-catalog/index.js';
-import { cloneState, writeStateFile } from '../../workflow-state-registry/index.js';
+import { cloneState, writeStateFile } from '../../workflow-state-ledger/index.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,

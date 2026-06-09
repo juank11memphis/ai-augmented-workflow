@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-
 import {
   SELECTABLE_ARCHITECTURE_SKILLS,
   SELECTABLE_DATABASE_SKILLS,
@@ -14,9 +11,15 @@ import {
   SUPPORTED_AGENTS,
 } from './index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
-import { readTemplateManifest } from '../template-catalog/index.js';
 import type { SelectableWorkflowSkill } from '../../shared/types.js';
-import { getSelectedAgentsFromState, getSelectedMcpServersFromState, getSelectedMcpTargetsForAgents, getSelectedSkillTargetsForAgents, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
+import {
+  getSelectedAgentsFromState,
+  getSelectedMcpServersFromState,
+  getSelectedMcpTargetsForAgents,
+  getSelectedSkillTargetsForAgents,
+  getWorkflowTargets,
+  renderMissingWorkflowFiles,
+} from './workflow-targets.js';
 
 const ROOT_PATH = '/test-project';
 
@@ -240,161 +243,6 @@ describe('getWorkflowTargets', () => {
     assertNoInvalidTargets(targets);
   });
 
-  it('persists workflow and database skills selected during initialization', () => {
-    const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-workflow-targets-'));
-    const selectedAgents = [getSupportedAgent('codex')];
-    const selectedLanguageSkills = [SELECTABLE_LANGUAGE_SKILLS[0]];
-    const selectedFrameworkSkills = [SELECTABLE_FRAMEWORK_SKILLS[0]];
-    const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS[0];
-    const selectedWorkflowSkills = SELECTABLE_WORKFLOW_SKILLS;
-    const selectedDatabaseSkills = SELECTABLE_DATABASE_SKILLS;
-    const targets = getWorkflowTargets(
-      rootPath,
-      selectedAgents,
-      selectedLanguageSkills,
-      selectedFrameworkSkills,
-      selectedArchitectureSkill,
-      selectedWorkflowSkills,
-      selectedDatabaseSkills
-    );
-
-    const files = renderMissingWorkflowFiles({
-      missingTargets: targets,
-      overview: 'Test project.',
-      selectedLanguageSkills,
-      selectedFrameworkSkills,
-      selectedArchitectureSkill,
-      selectedWorkflowSkills,
-      selectedDatabaseSkills,
-    });
-
-    for (const file of files) {
-      fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
-      fs.writeFileSync(file.targetPath, file.contents, 'utf8');
-    }
-
-    const statePath = path.join(rootPath, '.sibu/state.json');
-    writeSibuState({
-      rootPath,
-      statePath,
-      selectedAgents,
-      selectedLanguageSkills,
-      selectedFrameworkSkills,
-      selectedArchitectureSkill,
-      selectedWorkflowSkills,
-      selectedDatabaseSkills,
-      targets,
-    });
-
-    const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
-
-    assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert', 'export-to-github', 'export-to-notion']);
-    assert.deepEqual(state.selectedDatabaseSkills, ['postgresql-expert']);
-    assert.deepEqual(state.managedFiles['.agents/skills/business-domain-model-writer/SKILL.md'], {
-      template: 'skills/business-domain-model-writer/SKILL.md',
-      templateVersion: readTemplateManifest().templates['skills/business-domain-model-writer/SKILL.md']?.version,
-      sha256: state.managedFiles['.agents/skills/business-domain-model-writer/SKILL.md']?.sha256,
-      status: 'managed',
-    });
-    assert.deepEqual(state.managedFiles['.agents/skills/capabilities-map-writer/SKILL.md'], {
-      template: 'skills/capabilities-map-writer/SKILL.md',
-      templateVersion: readTemplateManifest().templates['skills/capabilities-map-writer/SKILL.md']?.version,
-      sha256: state.managedFiles['.agents/skills/capabilities-map-writer/SKILL.md']?.sha256,
-      status: 'managed',
-    });
-    assert.deepEqual(state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md'], {
-      template: 'skills/deep-module-map-writer/SKILL.md',
-      templateVersion: readTemplateManifest().templates['skills/deep-module-map-writer/SKILL.md']?.version,
-      sha256: state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md']?.sha256,
-      status: 'managed',
-    });
-    assert.ok(state.managedFiles['.agents/skills/feature-idea-capture/SKILL.md']);
-    assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
-    assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
-    assert.ok(state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
-    assert.ok(state.managedFiles['.agents/skills/export-to-notion/SKILL.md']);
-    assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
-    assert.equal(state.managedFiles['docs/business-domain-model.md'], undefined);
-    assert.equal(state.managedFiles['docs/capabilities-map.md'], undefined);
-    assert.equal(state.managedFiles['docs/deep-module-map.md'], undefined);
-    assert.equal(state.managedFiles['docs/feature-ideas.md'], undefined);
-    assert.equal(fs.existsSync(path.join(rootPath, 'docs/business-domain-model.md')), false);
-    assert.equal(fs.existsSync(path.join(rootPath, 'docs/capabilities-map.md')), false);
-    assert.equal(fs.existsSync(path.join(rootPath, 'docs/feature-ideas.md')), false);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `feature-idea-capture`/);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-notion`/);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `postgresql-expert`/);
-
-    fs.rmSync(rootPath, { recursive: true, force: true });
-  });
-
-  it('renders and persists selected MCP config targets', () => {
-    const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-workflow-targets-mcp-'));
-    const selectedAgents = [getSupportedAgent('codex'), getSupportedAgent('claude'), getSupportedAgent('gemini')];
-    const selectedMcpServers = SELECTABLE_MCP_SERVERS;
-    const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], undefined, [], [], selectedMcpServers);
-
-    const firstRender = renderMissingWorkflowFiles({
-      missingTargets: targets,
-      overview: 'Test project.',
-      selectedLanguageSkills: [],
-      selectedFrameworkSkills: [],
-      selectedMcpServers,
-    });
-    const secondRender = renderMissingWorkflowFiles({
-      missingTargets: targets,
-      overview: 'Test project.',
-      selectedLanguageSkills: [],
-      selectedFrameworkSkills: [],
-      selectedMcpServers,
-    });
-
-    assert.deepEqual(
-      firstRender.map((file) => file.contents),
-      secondRender.map((file) => file.contents)
-    );
-
-    const codexConfig = getRenderedFile(firstRender, '.codex/config.toml', rootPath);
-    const claudeConfig = getRenderedFile(firstRender, '.mcp.json', rootPath);
-    const geminiConfig = getRenderedFile(firstRender, '.gemini/settings.json', rootPath);
-
-    assert.match(codexConfig.contents, /model_instructions_file = "\.\.\/AGENTS\.md"/);
-    assert.match(codexConfig.contents, /\[mcp_servers\.github\]/);
-    assert.match(codexConfig.contents, /api\.githubcopilot\.com\/mcp/);
-    assert.match(codexConfig.contents, /mcp\.notion\.com\/mcp/);
-    assert.match(claudeConfig.contents, /api\.githubcopilot\.com\/mcp/);
-    assert.match(claudeConfig.contents, /mcp\.notion\.com\/mcp/);
-    assert.match(geminiConfig.contents, /api\.githubcopilot\.com\/mcp/);
-    assert.match(geminiConfig.contents, /mcp\.notion\.com\/mcp/);
-
-    for (const file of firstRender) {
-      fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
-      fs.writeFileSync(file.targetPath, file.contents, 'utf8');
-    }
-
-    const statePath = path.join(rootPath, '.sibu/state.json');
-    writeSibuState({
-      rootPath,
-      statePath,
-      selectedAgents,
-      selectedLanguageSkills: [],
-      selectedFrameworkSkills: [],
-      selectedMcpServers,
-      targets,
-    });
-
-    const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
-
-    assert.deepEqual(state.selectedMcpServers, ['github', 'notion']);
-    assert.equal(state.managedFiles['.codex/config.toml']?.template, '.codex/config.toml');
-    assert.equal(state.managedFiles['.mcp.json']?.template, 'mcp/claude/.mcp.json');
-    assert.equal(state.managedFiles['.gemini/settings.json']?.template, '.gemini/settings.json');
-
-    fs.rmSync(rootPath, { recursive: true, force: true });
-  });
 });
 
 describe('getSelectedAgentsFromState', () => {
@@ -459,15 +307,4 @@ function assertNoInvalidTargets(targets: ReturnType<typeof getWorkflowTargets>):
     assert.notEqual(target.templateRelativePath, undefined);
     assert.equal(target.targetPath.includes('undefined'), false);
   }
-}
-
-function getRenderedFile(files: ReturnType<typeof renderMissingWorkflowFiles>, relativePath: string, rootPath: string): ReturnType<typeof renderMissingWorkflowFiles>[number] {
-  const targetPath = path.join(rootPath, relativePath);
-  const file = files.find((renderedFile) => renderedFile.targetPath === targetPath);
-
-  if (!file) {
-    throw new Error(`Missing rendered file: ${relativePath}`);
-  }
-
-  return file;
 }

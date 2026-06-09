@@ -1,7 +1,5 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
-import { SIBU_VERSION } from '../version-advisory/index.js';
 import {
   MANDATORY_SKILLS,
   SELECTABLE_ARCHITECTURE_SKILLS,
@@ -13,16 +11,12 @@ import {
   SESSION_START_HOOKS,
   SUPPORTED_AGENTS,
 } from './index.js';
-import { sha256 } from '../../shared/hash.js';
-import { removeUndefinedFields } from '../../shared/object.js';
-import { readExistingState } from '../workflow-state-registry/index.js';
-import { getTemplateVersion, readTemplate, readTemplateManifest } from '../template-catalog/index.js';
+import { readTemplate } from '../template-catalog/index.js';
 import { renderMcpConfig } from '../agent-tool-configuration/index.js';
 import { renderSkillRouting, renderWorkerToolboxRoutingPlaceholders } from '../template-catalog-rendering/index.js';
 import type {
   SibuState,
   FileToCreate,
-  ManagedFileState,
   SelectableArchitectureSkill,
   SelectableDatabaseSkill,
   SelectableFrameworkSkill,
@@ -30,7 +24,6 @@ import type {
   SelectableMcpServer,
   SelectableWorkflowSkill,
   SkillTemplate,
-  McpServerConfigs,
   SupportedAgent,
   WorkflowTarget,
 } from '../../shared/types.js';
@@ -298,71 +291,6 @@ export function renderMissingWorkflowFiles({
       contents,
     };
   });
-}
-
-export function writeSibuState({
-  rootPath,
-  statePath,
-  selectedAgents,
-  selectedLanguageSkills,
-  selectedFrameworkSkills,
-  selectedArchitectureSkill,
-  selectedWorkflowSkills = [],
-  selectedDatabaseSkills = [],
-  selectedMcpServers,
-  mcpServerConfigs,
-  targets,
-}: {
-  rootPath: string;
-  statePath: string;
-  selectedAgents: SupportedAgent[];
-  selectedLanguageSkills: SelectableLanguageSkill[];
-  selectedFrameworkSkills: SelectableFrameworkSkill[];
-  selectedArchitectureSkill?: SelectableArchitectureSkill;
-  selectedWorkflowSkills?: SelectableWorkflowSkill[];
-  selectedDatabaseSkills?: SelectableDatabaseSkill[];
-  selectedMcpServers?: SelectableMcpServer[];
-  mcpServerConfigs?: McpServerConfigs;
-  targets: WorkflowTarget[];
-}): void {
-  const previousState = readExistingState(statePath);
-  const now = new Date().toISOString();
-  const manifest = readTemplateManifest();
-  const state: SibuState = {
-    sibuVersion: SIBU_VERSION,
-    templateVersion: manifest.templateVersion,
-    generatedAt: previousState?.generatedAt ?? now,
-    updatedAt: now,
-    selectedAgents: selectedAgents.map((agent) => agent.id),
-    selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
-    selectedFrameworkSkills: selectedFrameworkSkills.map((skill) => skill.id),
-    selectedArchitectureSkill: selectedArchitectureSkill?.id,
-    selectedWorkflowSkills: selectedWorkflowSkills.map((skill) => skill.id),
-    selectedDatabaseSkills: selectedDatabaseSkills.map((skill) => skill.id),
-    ...(selectedMcpServers !== undefined ? { selectedMcpServers: selectedMcpServers.map((server) => server.id) } : {}),
-    ...(mcpServerConfigs ?? previousState?.mcpServerConfigs ? { mcpServerConfigs: mcpServerConfigs ?? previousState?.mcpServerConfigs } : {}),
-    managedFiles: Object.fromEntries(
-      targets
-        .filter((target) => fs.existsSync(target.targetPath))
-        .map((target) => {
-          const relativePath = path.relative(rootPath, target.targetPath);
-          const previousManagedFile = previousState?.managedFiles[relativePath];
-          const nextManagedFile: ManagedFileState = {
-            template: target.templateRelativePath,
-            templateVersion: getTemplateVersion(manifest, target.templateRelativePath),
-            sha256: sha256(fs.readFileSync(target.targetPath, 'utf8')),
-            status: previousManagedFile?.status ?? 'managed',
-            lastReviewedTemplateVersion: previousManagedFile?.lastReviewedTemplateVersion,
-            reason: previousManagedFile?.reason,
-          };
-
-          return [relativePath, removeUndefinedFields(nextManagedFile)];
-        })
-    ),
-  };
-
-  fs.mkdirSync(path.dirname(statePath), { recursive: true });
-  fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 }
 
 export function getSelectedAgentsFromState(state: SibuState): SupportedAgent[] {

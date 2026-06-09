@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { writeSibuState } from '../workflow-state-ledger/index.js';
 
 import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
@@ -18,8 +19,8 @@ import {
   askForWorkflowSkills,
   renderIntro,
 } from '../interactive-guidance/index.js';
-import { readStateForDoctor } from '../workflow-state-registry/index.js';
-import { getWorkflowSkillsImpliedByMcpServers, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
+import { readStateForDoctor } from '../workflow-state-ledger/index.js';
+import { getWorkflowSkillsImpliedByMcpServers, getWorkflowTargets, renderMissingWorkflowFiles } from '../workflow-target-planning/index.js';
 import type { InitProjectCommand } from './command.js';
 import type {
   SelectableArchitectureSkill,

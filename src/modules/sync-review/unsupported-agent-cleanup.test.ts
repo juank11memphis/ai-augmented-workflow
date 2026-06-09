@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
+import { writeSibuState } from '../workflow-state-ledger/index.js';
 
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
-import { SUPPORTED_AGENTS, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
+import { SUPPORTED_AGENTS, getWorkflowTargets, renderMissingWorkflowFiles } from '../workflow-target-planning/index.js';
 import { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
 
 const temporaryRoots: string[] = [];

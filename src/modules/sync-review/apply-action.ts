@@ -5,7 +5,7 @@ import { log } from '@clack/prompts';
 
 import { sha256 } from '../../shared/hash.js';
 import { getSideTemplatePath } from '../../shared/paths.js';
-import { cloneState } from '../workflow-state-registry/index.js';
+import { cloneState } from '../workflow-state-ledger/index.js';
 import { getTemplateVersion } from '../template-catalog/index.js';
 import { renderTemplateForSync } from '../template-catalog-rendering/index.js';
 import type { SibuState, TemplateManifest } from '../../shared/types.js';

@@ -3,13 +3,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
+import { writeSibuState } from '../workflow-state-ledger/index.js';
 
 import { SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
 import { readTemplateManifest } from '../template-catalog/index.js';
 import type { McpServerId, SibuState, SupportedAgent } from '../../shared/types.js';
 import { applySyncAction } from './apply-action.js';
 import { getSyncPreviews } from './sync-preview.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../workflow-target-planning/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles } from '../workflow-target-planning/index.js';
 
 const DEEP_MODULE_SKILL_PATH = '.agents/skills/deep-module-map-writer/SKILL.md';
 const DEEP_MODULE_TEMPLATE_PATH = 'skills/deep-module-map-writer/SKILL.md';

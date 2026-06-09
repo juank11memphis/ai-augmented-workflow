@@ -1,4 +1,4 @@
-import { readStateForDoctor } from '../workflow-state-registry/index.js';
+import { readStateForDoctor } from '../workflow-state-ledger/index.js';
 import { getSyncPreviews, isActionableSyncPreview, type SyncPreview } from '../sync-review/index.js';
 import { getUnsupportedAgentCleanupPlan } from '../sync-review/unsupported-agent-cleanup.js';
 import { readTemplateManifest } from '../template-catalog/index.js';

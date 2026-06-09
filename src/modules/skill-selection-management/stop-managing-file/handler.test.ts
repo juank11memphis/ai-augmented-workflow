@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
+import { writeSibuState } from '../../workflow-state-ledger/index.js';
 
 import { SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
 import type { SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from '../../workflow-target-planning/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../workflow-target-planning/index.js';
 import { stopSelectedSkill } from './handler.js';
 
 const temporaryRoots: string[] = [];
