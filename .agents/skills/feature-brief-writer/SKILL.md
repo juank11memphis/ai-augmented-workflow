@@ -1,13 +1,13 @@
 ---
 name: feature-brief-writer
-description: Use this skill to define business-level feature briefs that stay loyal to docs/product-vision.md and docs/business-domain-model.md before UX, technical design, or implementation work.
+description: Use this skill to define business-level feature briefs that stay loyal to docs/product-vision.md, docs/business-domain-model.md, and docs/capabilities-map.md before UX, technical design, or implementation work.
 ---
 
 # Feature Brief Writer
 
 ## Purpose
 
-Create concise feature briefs that explain what a feature is, why it matters, who it serves, and how it follows `docs/product-vision.md` plus `docs/business-domain-model.md`: purpose, audience, business language, domain concepts, rules, workflows, boundaries, and success signals.
+Create concise feature briefs that explain what a feature is, why it matters, who it serves, and how it follows `docs/product-vision.md`, `docs/business-domain-model.md`, and `docs/capabilities-map.md`: purpose, audience, business language, domain concepts, rules, workflows, boundaries, capability coverage, and success signals.
 
 This skill owns the product/business shape of a feature. It does not own UI interaction design, technical architecture, implementation plans, data models, APIs, or task breakdowns.
 
@@ -17,8 +17,8 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 
 - `docs/product-vision.md`.
 - `docs/business-domain-model.md`.
-- `docs/deep-module-map.md`.
-- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit.
+- `docs/capabilities-map.md`.
+- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Product Vision fit, Business Domain Model fit, and Capability Coverage.
 
 ### What this skill writes
 
@@ -29,18 +29,20 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
 - `docs/business-domain-model.md` is missing; tell the user to create it first with `business-domain-model-writer`.
-- `docs/deep-module-map.md` is missing; tell the user to create it first with `deep-module-map-writer`.
-- The feature appears to require a new or changed Deep Module; direct the user back to `deep-module-map-writer`.
+- `docs/capabilities-map.md` is missing; tell the user to create it first with `capabilities-map-writer`.
+- The feature appears to stretch or change the Product Vision; hard-stop with a ready prompt for `product-vision-writer`.
+- The feature introduces missing or changed domain concepts, rules, workflows, lifecycles, events, boundaries, or core/supporting subdomains; hard-stop with a ready prompt for `business-domain-model-writer`.
+- The feature fits an existing subdomain but needs missing capability coverage; hard-stop with a ready prompt for `capabilities-map-writer`.
 - The request belongs to another pipeline stage, such as technical design, UX design, Scrum planning, implementation planning, or implementation execution.
 - Current-stage feature intent is unclear; ask one focused question at a time until enough information is available.
 
 ### What this skill must not do
 
-- Do not create or update Deep Module Maps, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
-- Do not invent Deep Modules or use modules that are absent from `docs/deep-module-map.md`.
+- Do not create or update Product Vision, Business Domain Model, Capabilities Map, Deep Module Maps, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not invent missing product direction, domain model coverage, subdomains, or capabilities in the final brief.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not duplicate or rewrite the product vision; apply only the relevant implications to the feature.
-- Do not leave material product, scope, success, constraint, or Deep Module fit questions unresolved in the final brief; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
+- Do not leave material product, scope, success, constraint, domain fit, or capability coverage questions unresolved in the final brief; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
 ## Required source of truth
 
@@ -49,20 +51,20 @@ Before doing any feature-brief work, read:
 ```txt
 docs/product-vision.md
 docs/business-domain-model.md
-docs/deep-module-map.md
+docs/capabilities-map.md
 ```
 
 Use the product vision as the source of truth for the product's purpose, audience, positioning, principles, voice, boundaries, trust expectations, and success signals.
 
 Use the Business Domain Model as the source of truth for business language, domain concepts, relationships, rules, states, workflows, events, and boundaries that shape business-level feature scope.
 
-Use the Deep Module Map as the source of truth for where feature work belongs. Deep Modules answer “where does this work belong?” Do not invent Deep Modules in a feature brief.
+Use the Capabilities Map as the source of truth for business/product capability coverage by subdomain. Capabilities answer “what existing business/product ability supports this feature?” Do not invent capabilities in a feature brief.
 
 Do not duplicate or rewrite the product vision inside the feature brief. Apply it to the specific feature being defined.
 
 ## Hard start rule
 
-Do not start a feature brief if `docs/product-vision.md`, `docs/business-domain-model.md`, or `docs/deep-module-map.md` is missing.
+Do not start a feature brief if `docs/product-vision.md`, `docs/business-domain-model.md`, or `docs/capabilities-map.md` is missing.
 
 If the product vision is missing:
 
@@ -78,11 +80,11 @@ If the Business Domain Model is missing:
 3. Instruct the user to create the domain model first with the `business-domain-model-writer` skill.
 4. Do not draft, infer, or save a feature brief until the domain model exists.
 
-If the Deep Module Map is missing:
+If the Capabilities Map is missing:
 
 1. Stop.
-2. Tell the user that a feature brief requires `docs/deep-module-map.md`.
-3. Instruct the user to create the map first with the `deep-module-map-writer` skill.
+2. Tell the user that a feature brief requires `docs/capabilities-map.md`.
+3. Instruct the user to create the map first with the `capabilities-map-writer` skill.
 4. Do not draft, infer, or save a feature brief until the map exists.
 
 ## Use this skill for
@@ -113,8 +115,8 @@ If the user asks for a feature brief from an idea in `docs/feature-ideas.md`, re
 
 - Do not skip the normal interview flow because the idea exists in a file.
 - Use the idea as a seed for the first discovery question, not as complete feature intent.
-- Keep asking one focused question at a time until the usual required context is resolved: problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit.
-- Preserve the hard-start requirements for `docs/product-vision.md`, `docs/business-domain-model.md`, and `docs/deep-module-map.md`.
+- Keep asking one focused question at a time until the usual required context is resolved: problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Capability Coverage.
+- Preserve the hard-start requirements for `docs/product-vision.md`, `docs/business-domain-model.md`, and `docs/capabilities-map.md`.
 - After the local `docs/features/<feature-slug>/feature_brief.md` file is successfully written, remove the promoted idea from `docs/feature-ideas.md` while preserving the rest of the file.
 - Do not delete the idea before the feature brief file exists, and do not remove unrelated ideas or headings.
 
@@ -126,18 +128,18 @@ This interview is mandatory and non-skippable. Even when the user provides exten
 
 - Ask one focused question at a time.
 - Keep asking until you have complete practical understanding and explicit user alignment; do not optimize for a short interview.
-- Walk down each feature decision branch one by one, resolving dependencies between product, scope, success, constraint, and module-fit decisions before drafting.
+- Walk down each feature decision branch one by one, resolving dependencies between product, scope, success, constraint, domain-fit, and capability-coverage decisions before drafting.
 - When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
 - If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
 - Prefer follow-up questions over filling gaps with plausible invention.
 - Treat "100% understanding" as: feature intent, target user, scenario, user problem, business goal, MVP boundary, out-of-scope boundary, success signals, and known constraints are all clear enough to defend in the brief.
-- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit are clear enough to defend in the brief.
+- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Capability Coverage are clear enough to defend in the brief.
 - If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
 - Do not ask a large questionnaire all at once.
 
 ## Workflow
 
-### 1. Read the product vision, Business Domain Model, and Deep Module Map
+### 1. Read the product vision, Business Domain Model, and Capabilities Map
 
 Read `docs/product-vision.md` first and identify:
 
@@ -153,19 +155,39 @@ Use these as constraints for the feature brief.
 
 Then read `docs/business-domain-model.md` and identify relevant business language, domain concepts, relationships, rules, states, workflows, events, and boundaries that should shape feature scope and wording.
 
-Then read `docs/deep-module-map.md` and identify which existing Deep Modules may own the requested feature. A feature brief must name one or more existing Deep Modules.
+Then read `docs/capabilities-map.md` and identify which existing subdomain capabilities support the requested feature. A feature brief must explain the feature's Capability Coverage using existing Business Domain Model subdomains and existing capabilities.
 
-If no existing Deep Module fits:
+Before drafting, check for upstream gaps. Do not silently invent missing upstream foundations in the final brief.
+
+If the feature appears to stretch or change the Product Vision's direction, target users, boundaries, principles, trust expectations, or success signals:
 
 1. Stop before drafting.
-2. Tell the user the feature appears to require a Deep Module Map update.
-3. Provide this suggested prompt, adapted to the user's feature:
+2. Tell the user the feature needs Product Vision clarification first.
+3. Provide this prompt, adapted to the user's feature:
 
 ```txt
-Use deep-module-map-writer to update docs/deep-module-map.md for this feature: <feature summary>. Decide whether it belongs in an existing Deep Module or requires a new/changed module, then update the map only after confirming the responsibility boundary with me.
+Use product-vision-writer to revise docs/product-vision.md for this feature request: <feature summary>. Clarify whether the feature fits or changes the product direction, target users, boundaries, principles, trust expectations, and success signals. Include this context: <known user/scenario/problem/outcome/scope notes>. Do not write the feature brief until I confirm the Product Vision update.
 ```
 
-4. Do not draft, infer, or save a feature brief until the map is updated.
+If the feature introduces missing or changed domain concepts, rules, workflows, lifecycles, events, boundaries, or core/supporting subdomains:
+
+1. Stop before drafting.
+2. Tell the user the Business Domain Model needs coverage first.
+3. Provide this prompt, adapted to the user's feature:
+
+```txt
+Use business-domain-model-writer to revise docs/business-domain-model.md for this feature request: <feature summary>. Check whether it introduces or changes domain concepts, rules, workflows, lifecycles, events, boundaries, or core/supporting subdomains. Include this context: <known user/scenario/problem/outcome/scope notes>. Do not write the feature brief until I confirm the Business Domain Model update.
+```
+
+If the feature fits an existing Business Domain Model subdomain but depends on a missing capability:
+
+1. Stop before drafting.
+2. Tell the user the Capabilities Map needs coverage first.
+3. Provide this prompt, adapted to the user's feature:
+
+```txt
+Use capabilities-map-writer to revise docs/capabilities-map.md for this feature request: <feature summary>. Map it to the existing subdomain <subdomain name> and add or adjust only the business/product capability coverage needed to support it. Include this context: <known user/scenario/problem/outcome/scope notes>. Do not write the feature brief until I confirm the Capabilities Map update.
+```
 
 ### 2. Clarify feature intent before drafting
 
@@ -199,7 +221,7 @@ Ask every question needed to remove material ambiguity, but only one at a time. 
 - what should stay out of scope
 - known constraints and risks
 
-Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit are clear enough to avoid invention. Do not draft a brief with an `Open Questions` section.
+Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Capability Coverage are clear enough to avoid invention. Do not draft a brief with an `Open Questions` section.
 
 If the conversation stalls, offer a concise default assumption for the next unresolved point and ask the user to confirm or correct it before proceeding.
 
@@ -221,8 +243,8 @@ Recommended structure:
 ## Business Domain Model Fit
 <Relevant domain language, concepts, rules, states, workflows, or boundaries from docs/business-domain-model.md that shape this feature.>
 
-## Deep Module
-<One or more existing Deep Modules from docs/deep-module-map.md that own this feature, with a brief fit rationale.>
+## Capability Coverage
+<Existing subdomain capabilities from docs/capabilities-map.md that support this feature, with a business/product fit rationale.>
 
 ## User / Customer Problem
 <The user need, pain, desire, or opportunity this feature addresses.>
@@ -283,7 +305,7 @@ If the file already exists, read it first. Treat the request as a revision when 
 Aim for writing that is:
 
 - loyal to the required product vision
-- explicit about which existing Deep Modules own the feature
+- explicit about which existing subdomain capabilities support the feature
 - specific to the user's feature
 - grounded in the product vision
 - concise
@@ -297,7 +319,7 @@ Avoid:
 - vague benefits without user or business grounding
 - feature lists without rationale
 - drafting from vague feature labels without discovery
-- inventing new Deep Modules instead of stopping for a map update
+- inventing new capabilities or subdomains instead of stopping for the right upstream update
 - inventing certainty where the product vision or user input is unresolved
 - including an Open Questions section instead of resolving the questions during the interview
 
@@ -306,7 +328,7 @@ Avoid:
 When shaping a feature brief, prefer:
 
 1. alignment with `docs/product-vision.md`
-2. fit with existing Deep Modules from `docs/deep-module-map.md`
+2. fit with existing capabilities from `docs/capabilities-map.md`
 3. clear user value
 4. clear business or product outcome
 5. simple MVP scope

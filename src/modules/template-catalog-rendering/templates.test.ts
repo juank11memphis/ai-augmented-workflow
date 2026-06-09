@@ -160,33 +160,50 @@ describe('feature brief writer raw idea source guidance', () => {
     assert.match(contents, /Do not skip the normal interview flow/i);
     assert.match(
       contents,
-      /problem, target user\/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Deep Module fit/,
+      /problem, target user\/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Capability Coverage/,
     );
     assert.match(contents, /After the local `docs\/features\/<feature-slug>\/feature_brief\.md` file is successfully written, remove the promoted idea from `docs\/feature-ideas\.md`/);
     assert.match(contents, /Do not delete the idea before the feature brief file exists/);
   });
 });
 
-describe('feature brief writer Business Domain Model grounding', () => {
-  it('requires Business Domain Model context before feature brief work', () => {
+describe('feature brief writer upstream coverage grounding', () => {
+  it('requires Capabilities Map context and routes upstream gaps before feature brief work', () => {
     const templatePath = 'skills/feature-brief-writer/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '129');
-    assert.equal(templateMetadata?.version, '15');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/business-domain-model\.md before Feature Brief work/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Deep Module Map as the work-ownership source/i);
+    assert.equal(manifest.templateVersion, '131');
+    assert.equal(templateMetadata?.version, '16');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Capability Coverage/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
+    assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 
     assert.match(contents, /docs\/product-vision\.md/);
     assert.match(contents, /docs\/business-domain-model\.md/);
-    assert.match(contents, /docs\/deep-module-map\.md/);
+    assert.match(contents, /docs\/capabilities-map\.md/);
+    assert.doesNotMatch(contents, /feature brief requires `docs\/deep-module-map\.md`/);
+    assert.doesNotMatch(contents, /Do not start a feature brief if .*docs\/deep-module-map\.md/s);
+
+    assert.match(contents, /product-vision-writer/);
     assert.match(contents, /business-domain-model-writer/);
+    assert.match(contents, /capabilities-map-writer/);
     assert.match(contents, /feature brief requires `docs\/business-domain-model\.md`/);
+    assert.match(contents, /feature brief requires `docs\/capabilities-map\.md`/);
     assert.match(contents, /business language, domain concepts, relationships, rules, states, workflows, events, and boundaries/i);
-    assert.match(contents, /Deep Module Map as the source of truth for where feature work belongs/i);
+    assert.match(contents, /Capabilities Map as the source of truth for business\/product capability coverage by subdomain/i);
+    assert.match(contents, /stretch or change the Product Vision's direction, target users, boundaries, principles, trust expectations, or success signals/i);
+    assert.match(contents, /missing or changed domain concepts, rules, workflows, lifecycles, events, boundaries, or core\/supporting subdomains/i);
+    assert.match(contents, /fits an existing Business Domain Model subdomain but depends on a missing capability/i);
+    assert.match(contents, /Use product-vision-writer to revise docs\/product-vision\.md for this feature request: <feature summary>/);
+    assert.match(contents, /Use business-domain-model-writer to revise docs\/business-domain-model\.md for this feature request: <feature summary>/);
+    assert.match(contents, /Use capabilities-map-writer to revise docs\/capabilities-map\.md for this feature request: <feature summary>/);
+    assert.match(contents, /## Capability Coverage/);
+    assert.match(contents, /Existing subdomain capabilities from docs\/capabilities-map\.md that support this feature/i);
+    assert.match(contents, /Do not silently invent missing upstream foundations in the final brief/i);
   });
 });
 
@@ -247,10 +264,10 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '129');
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(manifest.templateVersion, '131');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /business\/product capabilities/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 
     assert.match(contents, /name: capabilities-map-writer/);
@@ -266,6 +283,12 @@ describe('capabilities map writer template', () => {
     assert.match(contents, /modules, commands, services, APIs, database tables, files, classes/i);
     assert.match(contents, /user review\/correction pass/i);
     assert.match(contents, /I am clear on my end\. Are you good/i);
+    assert.match(contents, /Product Vision gaps include missing or changed product purpose, target user, positioning, product boundaries, product principles, voice, trust expectations, or success signals/i);
+    assert.match(contents, /Business Domain Model gaps include missing or changed core\/supporting subdomains, ubiquitous language, domain concepts, relationships, business rules, workflows, lifecycles, events, boundaries, or hard parts/i);
+    assert.match(contents, /Use product-vision-writer to revise docs\/product-vision\.md before Capabilities Map work continues/);
+    assert.match(contents, /Use business-domain-model-writer to revise docs\/business-domain-model\.md before Capabilities Map work continues/);
+    assert.match(contents, /After docs\/product-vision\.md is updated, return to capabilities-map-writer to create or revise docs\/capabilities-map\.md/);
+    assert.match(contents, /After docs\/business-domain-model\.md is updated, return to capabilities-map-writer to create or revise docs\/capabilities-map\.md/);
   });
 });
 

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "129",
+  "templateVersion": "131",
   "templates": {
     "AGENTS.md": {
       "version": "32",
@@ -67,10 +67,10 @@
       ]
     },
     "skills/capabilities-map-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory Capabilities Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds a mandatory Capabilities Map writer skill for defining business/product capabilities from Product Vision and Business Domain Model context."
+        "Adds ready-to-paste repair prompts when Capabilities Map work reveals Product Vision or Business Domain Model gaps."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
@@ -82,11 +82,12 @@
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "15",
+      "version": "16",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Requires docs/business-domain-model.md before Feature Brief work and routes missing domain model creation to business-domain-model-writer.",
-        "Grounds Feature Brief scope and wording in Business Domain Model language, concepts, rules, and workflows while keeping Deep Module Map as the work-ownership source."
+        "Requires docs/capabilities-map.md before Feature Brief work and removes Deep Module Map as a feature-brief prerequisite.",
+        "Adds hard-stop routing prompts for Product Vision, Business Domain Model, and Capabilities Map gaps before drafting.",
+        "Adds Capability Coverage guidance so feature briefs map requested work to existing subdomain capabilities."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {

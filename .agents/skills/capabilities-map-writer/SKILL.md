@@ -31,6 +31,8 @@ This is generated project-owned content. It is not a Sibu-managed workflow templ
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
 - `docs/business-domain-model.md` is missing; tell the user to create it first with `business-domain-model-writer`.
 - The request belongs to another pipeline stage, such as Product Vision, Business Domain Model, Deep Module Map, feature brief, UX design, technical design, Scrum planning, implementation planning, or implementation execution.
+- Product Vision appears to need new or changed product direction, target user, boundaries, principles, trust expectations, or success signals; stop with a ready-to-paste `product-vision-writer` repair prompt.
+- Business Domain Model appears to need new or changed subdomains, concepts, relationships, rules, workflows, lifecycles, events, boundaries, or hard parts; stop with a ready-to-paste `business-domain-model-writer` repair prompt.
 - Product Vision, Business Domain Model, and user review still leave material ambiguity about core, supporting, generic, or external capabilities; ask one focused review question instead of drafting.
 
 ### What this skill must not do
@@ -73,6 +75,42 @@ If Business Domain Model is missing:
 2. Tell the user that a Capabilities Map requires `docs/business-domain-model.md`.
 3. Instruct the user to create the Business Domain Model first with `business-domain-model-writer`.
 4. Do not draft, infer, or save a Capabilities Map until the Business Domain Model exists.
+
+## Upstream gap detection and repair prompts
+
+Do not use the Capabilities Map to patch over missing upstream foundations. While reading Product Vision and Business Domain Model, actively check whether the requested capability work exposes an upstream gap.
+
+Hard-stop and provide a ready-to-paste repair prompt when either upstream artifact needs revision before capabilities can be mapped safely. The prompt must include the user's capability-map request, the suspected gap, and the specific decision needed so the upstream skill can repair the source artifact.
+
+Product Vision gaps include missing or changed product purpose, target user, positioning, product boundaries, product principles, voice, trust expectations, or success signals. When found, stop and give a prompt shaped like:
+
+```markdown
+Use product-vision-writer to revise docs/product-vision.md before Capabilities Map work continues.
+
+Capability-map request: <user request or concise summary>
+
+Suspected Product Vision gap: <what direction, target user, boundary, principle, trust expectation, or success signal is missing or changing>
+
+Decision needed: <the product-level decision needed before capabilities can be mapped>
+
+After docs/product-vision.md is updated, return to capabilities-map-writer to create or revise docs/capabilities-map.md.
+```
+
+Business Domain Model gaps include missing or changed core/supporting subdomains, ubiquitous language, domain concepts, relationships, business rules, workflows, lifecycles, events, boundaries, or hard parts. When found, stop and give a prompt shaped like:
+
+```markdown
+Use business-domain-model-writer to revise docs/business-domain-model.md before Capabilities Map work continues.
+
+Capability-map request: <user request or concise summary>
+
+Suspected Business Domain Model gap: <what subdomain, concept, relationship, rule, workflow, lifecycle, event, boundary, or hard part is missing or changing>
+
+Decision needed: <the domain-level decision needed before capabilities can be mapped>
+
+After docs/business-domain-model.md is updated, return to capabilities-map-writer to create or revise docs/capabilities-map.md.
+```
+
+If the upstream artifacts are present and only the capability wording is unclear, do not route away. Continue the normal assistant-led review with one focused question.
 
 ## Business/product-level boundary
 
