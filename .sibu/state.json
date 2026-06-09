@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "128",
+  "templateVersion": "132",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-06-09T01:34:46.364Z",
+  "updatedAt": "2026-06-09T17:28:03.320Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -32,8 +32,9 @@
     "AGENTS.md": {
       "template": "AGENTS.md",
       "templateVersion": "32",
-      "sha256": "776725f3af240d026a38450d9290d85e4c7a7410bb10c10a00b9f1e2374aa444",
-      "status": "managed"
+      "sha256": "51c08fa428f07d116a1cfce773d986514007e396de79746fd89e27f060d5aa9c",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "33"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -68,20 +69,23 @@
     ".agents/skills/deep-module-map-writer/SKILL.md": {
       "template": "skills/deep-module-map-writer/SKILL.md",
       "templateVersion": "6",
-      "sha256": "598e3aa37a8b70f6a093f653efb3242950dda62ed10fef0ea69fbc2eb6dbac31",
-      "status": "managed"
+      "sha256": "852c658dbd95752f15622d68134f97251069048bfdbb3a83224e751020cd3152",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "7"
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
       "templateVersion": "15",
-      "sha256": "4da0e14ec23a3a0128f52ae8c98b3a1ac31097819eb123abdf0a95169ef54323",
-      "status": "managed"
+      "sha256": "cddb6acea2bd280352ee4e33612bf8323d7ba7980e901e1aee55debef4339d02",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "16"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
       "templateVersion": "20",
-      "sha256": "1aa25b7f0c1c76f6d12f4d99d3c2593e9a64aaa59086f8a0a71ef56b2a083a2c",
-      "status": "managed"
+      "sha256": "212024c3277c862e3e88ef425436b3cdfc2dd3e412aa79c610dce132d9795257",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "21"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
@@ -254,6 +258,13 @@
       "templateVersion": "7",
       "sha256": "db094c55ebf72bed6d54080840a04bc6d70e45250c964b9d411fd4cb332b6c52",
       "status": "managed"
+    },
+    ".agents/skills/capabilities-map-writer/SKILL.md": {
+      "template": "skills/capabilities-map-writer/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "00ec7f5245f773b7f2da4d6be9f8e684722f07173b3aa66b45b0c0eb72ddff31",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "2"
     }
   }
 }
