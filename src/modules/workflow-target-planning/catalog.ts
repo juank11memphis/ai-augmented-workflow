@@ -40,6 +40,14 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
+    templateRelativePath: 'skills/capabilities-map-writer/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/capabilities-map-writer/SKILL.md',
+      gemini: '.agents/skills/capabilities-map-writer/SKILL.md',
+      claude: '.agents/skills/capabilities-map-writer/SKILL.md',
+    },
+  },
+  {
     templateRelativePath: 'skills/deep-module-map-writer/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/deep-module-map-writer/SKILL.md',

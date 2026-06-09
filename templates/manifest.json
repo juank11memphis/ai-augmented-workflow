@@ -1,5 +1,5 @@
 {
-  "templateVersion": "128",
+  "templateVersion": "129",
   "templates": {
     "AGENTS.md": {
       "version": "32",
@@ -64,6 +64,13 @@
       "changes": [
         "Changes the Business Domain Model context map guidance to prefer a sparse, subdomain-focused Mermaid diagram.",
         "Clarifies that the diagram should group core subdomains, supporting subdomains, project-owned outputs, and external or generic domains instead of drawing every operational relationship."
+      ]
+    },
+    "skills/capabilities-map-writer/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory Capabilities Map writer skill installed once at the shared .agents/skills workspace path.",
+      "changes": [
+        "Adds a mandatory Capabilities Map writer skill for defining business/product capabilities from Product Vision and Business Domain Model context."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {

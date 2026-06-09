@@ -174,7 +174,7 @@ describe('feature brief writer Business Domain Model grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '128');
+    assert.equal(manifest.templateVersion, '129');
     assert.equal(templateMetadata?.version, '15');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/business-domain-model\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Deep Module Map as the work-ownership source/i);
@@ -237,6 +237,35 @@ describe('feature idea capture template', () => {
     assert.match(contents, /Do not interview the user before capture/i);
     assert.match(contents, /short heading and a few bullets/i);
     assert.match(agentsContents, /use `feature-idea-capture`/);
+  });
+});
+
+describe('capabilities map writer template', () => {
+  it('is registered, readable, and keeps the generated map project-owned', () => {
+    const templatePath = 'skills/capabilities-map-writer/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(manifest.templateVersion, '129');
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /business\/product capabilities/i);
+    assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
+
+    assert.match(contents, /name: capabilities-map-writer/);
+    assert.match(contents, /docs\/product-vision\.md/);
+    assert.match(contents, /docs\/business-domain-model\.md/);
+    assert.match(contents, /docs\/capabilities-map\.md/);
+    assert.match(contents, /product-vision-writer/);
+    assert.match(contents, /business-domain-model-writer/);
+    assert.match(contents, /core subdomain capabilities/i);
+    assert.match(contents, /supporting subdomain capabilities/i);
+    assert.match(contents, /Generic \/ External Capabilities/);
+    assert.match(contents, /business\/product-level/i);
+    assert.match(contents, /modules, commands, services, APIs, database tables, files, classes/i);
+    assert.match(contents, /user review\/correction pass/i);
+    assert.match(contents, /I am clear on my end\. Are you good/i);
   });
 });
 

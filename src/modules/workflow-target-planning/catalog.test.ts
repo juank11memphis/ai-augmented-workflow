@@ -151,6 +151,24 @@ describe('skill target paths', () => {
     );
   });
 
+  it('registers the Capabilities Map writer as one required workflow skill for all supported agents', () => {
+    const capabilitiesMapWriters = MANDATORY_SKILLS.filter(
+      (skill) => skill.templateRelativePath === 'skills/capabilities-map-writer/SKILL.md'
+    );
+
+    assert.equal(capabilitiesMapWriters.length, 1);
+    assert.deepEqual(capabilitiesMapWriters[0]?.targetRelativePathsByAgent, {
+      codex: '.agents/skills/capabilities-map-writer/SKILL.md',
+      gemini: '.agents/skills/capabilities-map-writer/SKILL.md',
+      claude: '.agents/skills/capabilities-map-writer/SKILL.md',
+    });
+    assert.equal(capabilitiesMapWriters[0]?.supplementalTargetsByAgent, undefined);
+    assert.equal(
+      SELECTABLE_WORKFLOW_SKILLS.some((skill) => skill.templateRelativePath === 'skills/capabilities-map-writer/SKILL.md'),
+      false
+    );
+  });
+
   it('does not include unsupported agent keys in skill target maps', () => {
     const skillTemplates = [
       ...MANDATORY_SKILLS,
