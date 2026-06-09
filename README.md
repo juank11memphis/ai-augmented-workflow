@@ -146,49 +146,82 @@ This is not ceremony for ceremony's sake. It is how Sibu keeps velocity from tur
 
 Skills are reusable instructions that teach an AI agent how to handle a focused kind of work. Sibu uses them to keep prompts smaller, workflows clearer, and responsibilities explicit.
 
+The diagrams below show Sibu's bundled skill inventory, including optional selectable skills. Some skills may not be installed in this repository's `.agents/skills/` directory unless this project selected them.
+
 ```mermaid
 flowchart TB
-  skills["Sibu skills"]
-
-  skills --> product["Product + planning"]
+  product["Product + planning"]
   product --> productVision["product-vision-writer"]
   product --> businessDomainModel["business-domain-model-writer"]
   product --> capabilitiesMap["capabilities-map-writer"]
   product --> deepModuleMap["deep-module-map-writer"]
   product --> featureBrief["feature-brief-writer"]
+  product --> featureIdea["feature-idea-capture"]
   product --> scrumPlanner["scrum-master-planner"]
-
-  skills --> designDelivery["Design + delivery"]
-  designDelivery --> technicalDesign["technical-design-writer"]
-  designDelivery --> implementationPlanner["ai-implementation-planner"]
-  designDelivery --> implementationExecutor["ai-implementation-plan-executor"]
-
-  skills --> engineering["Engineering guidance"]
-  engineering --> cleanCode["clean-code"]
-  engineering --> typescript["typescript"]
-  engineering --> commandPattern["command-pattern"]
-
-  skills --> promptsMaintenance["Prompts + workflow maintenance"]
-  promptsMaintenance --> promptEngineer["ai-prompt-engineer-master"]
-  promptsMaintenance --> templateChange["sibu-template-change"]
 ```
 
-| Skill | Helps with | Use when... |
-| --- | --- | --- |
-| `product-vision-writer` | Product vision and positioning | You need to define or revise the product north star, audience, boundaries, voice, or success signals. |
-| `business-domain-model-writer` | Domain language and rules | You need to clarify business concepts, subdomains, workflows, lifecycle rules, domain events, or boundaries. |
-| `capabilities-map-writer` | Business/product capability map | You need to map the product abilities each subdomain must provide before module or feature planning. |
-| `deep-module-map-writer` | Deep implementation boundaries | You need to map durable modules from the product vision, domain model, and capabilities map before feature work. |
-| `feature-brief-writer` | Business-level feature definition | You need a scoped feature brief grounded in the product vision, Business Domain Model, and Capabilities Map. |
-| `technical-design-writer` | Implementation-oriented design | You have an approved feature brief and need a concise technical direction before planning stories. |
-| `scrum-master-planner` | Epics and user stories | You need to split an approved feature brief and technical design into pragmatic delivery slices. |
-| `ai-implementation-planner` | Story implementation steps | You need an approved user story turned into small, executable implementation-plan files. |
-| `ai-implementation-plan-executor` | Plan execution | You want an agent to execute a story implementation plan, stop for review, then commit after approval. |
-| `clean-code` | General code quality | Any task writes or modifies code and should stay clear, simple, focused, and readable. |
-| `typescript` | TypeScript guidance | A task changes `.ts` or `.tsx` files and needs practical TypeScript discipline. |
-| `command-pattern` | Vertical-slice command design | Work involves command handlers, workflows, request processing, or executable tasks. |
-| `ai-prompt-engineer-master` | Prompt and template quality | You are creating, rewriting, compressing, or evaluating prompts or reusable AI instructions. |
-| `sibu-template-change` | Sibu template maintenance | You change files under `templates/` or template manifest metadata and need safe lifecycle validation. |
+```mermaid
+flowchart TB
+  delivery["Design + delivery"]
+  delivery --> uxExpert["ux-expert"]
+  delivery --> technicalDesign["technical-design-writer"]
+  delivery --> implementationPlanner["ai-implementation-planner"]
+  delivery --> implementationPlannerToolbox["ai-implementation-planner-toolbox"]
+  delivery --> implementationExecutor["ai-implementation-plan-executor"]
+  delivery --> implementationExecutorToolbox["ai-implementation-executor-toolbox"]
+```
+
+```mermaid
+flowchart TB
+  engineering["Engineering guidance"]
+  engineering --> cleanCode["clean-code"]
+  engineering --> typescript["typescript"]
+  engineering --> react["react"]
+  engineering --> nextjs["nextjs"]
+  engineering --> golang["golang"]
+  engineering --> postgres["postgresql-expert"]
+  engineering --> commandPattern["command-pattern"]
+  engineering --> dddHexagonal["ddd-hexagonal"]
+  engineering --> layeredArchitecture["layered-architecture"]
+```
+
+```mermaid
+flowchart TB
+  maintenance["Prompts, exports + workflow maintenance"]
+  maintenance --> promptEngineer["ai-prompt-engineer-master"]
+  maintenance --> exportGithub["export-to-github"]
+  maintenance --> exportNotion["export-to-notion"]
+  maintenance --> templateChange["sibu-template-change"]
+```
+
+| Skill | Helps with | Availability | Use when... |
+| --- | --- | --- | --- |
+| `product-vision-writer` | Product vision and positioning | Installed here | You need to define or revise the product north star, audience, boundaries, voice, or success signals. |
+| `business-domain-model-writer` | Domain language and rules | Installed here | You need to clarify business concepts, subdomains, workflows, lifecycle rules, domain events, or boundaries. |
+| `capabilities-map-writer` | Business/product capability map | Installed here | You need to map the product abilities each subdomain must provide before module or feature planning. |
+| `deep-module-map-writer` | Deep implementation boundaries | Installed here | You need to map durable modules from the product vision, domain model, and capabilities map before feature work. |
+| `feature-brief-writer` | Business-level feature definition | Installed here | You need a scoped feature brief grounded in the product vision, Business Domain Model, and Capabilities Map. |
+| `feature-idea-capture` | Rough future ideas | Installed here | You want to save a feature, product, workflow, or improvement idea without turning it into planned work yet. |
+| `scrum-master-planner` | Epics and user stories | Installed here | You need to split an approved feature brief and technical design into pragmatic delivery slices. |
+| `ux-expert` | UX design guidance | Bundled optional | You need UX design, interaction, flow, layout, or experience guidance. |
+| `technical-design-writer` | Implementation-oriented design | Installed here | You have an approved feature brief and need a concise technical direction before planning stories. |
+| `ai-implementation-planner` | Story implementation steps | Installed here | You need an approved user story turned into small, executable implementation-plan files. |
+| `ai-implementation-planner-toolbox` | Planner sub-agent rules | Installed here | A Sibu implementation planner worker needs worker-only rules for creating a story-local implementation plan. |
+| `ai-implementation-plan-executor` | Plan execution | Installed here | You want an agent to execute a story implementation plan, stop for review, then commit after approval. |
+| `ai-implementation-executor-toolbox` | Executor sub-agent rules | Installed here | A Sibu implementation executor worker needs worker-only rules for executing one story plan with validation. |
+| `clean-code` | General code quality | Installed here | Any task writes or modifies code and should stay clear, simple, focused, and readable. |
+| `typescript` | TypeScript guidance | Installed here | A task changes `.ts` or `.tsx` files and needs practical TypeScript discipline. |
+| `react` | React component design | Bundled optional | Work creates or edits React components, props, state ownership, or presentation boundaries. |
+| `nextjs` | Next.js App Router guidance | Bundled optional | Work touches Next.js App Router files, rendering choices, data fetching placement, or framework-specific behavior. |
+| `golang` | Go implementation guidance | Bundled optional | Work changes Go code and needs idiomatic Go structure, errors, tests, or interfaces. |
+| `postgresql-expert` | PostgreSQL guidance | Bundled optional | Work changes PostgreSQL schema, queries, migrations, indexes, constraints, or transaction behavior. |
+| `command-pattern` | Vertical-slice command design | Installed here | Work involves command handlers, workflows, request processing, or executable tasks. |
+| `ddd-hexagonal` | DDD/hexagonal architecture | Bundled optional | Work needs domain/application/infrastructure boundaries, ports, adapters, or dependency-direction guidance. |
+| `layered-architecture` | Layered architecture | Bundled optional | Work needs presentation, application, domain, and infrastructure layering guidance. |
+| `ai-prompt-engineer-master` | Prompt and template quality | Installed here | You are creating, rewriting, compressing, or evaluating prompts or reusable AI instructions. |
+| `export-to-github` | GitHub issue export | Installed here | You need to export a feature's Epics and User Stories to GitHub issues and sub-issues. |
+| `export-to-notion` | Notion documentation export | Installed here | You need to export local feature briefs, UX designs, or technical designs to Notion. |
+| `sibu-template-change` | Sibu template maintenance | Installed here | You change files under `templates/` or template manifest metadata and need safe lifecycle validation. |
 
 The point is not to make agents magical. The point is to give them the right job, the right context, and a tight enough boundary that a human can trust the result.
 
