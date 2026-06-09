@@ -1,6 +1,5 @@
 export {
   extractProjectOverview,
-  renderMcpConfig,
   renderSkillRouting,
   renderTemplateForSync,
   renderWorkerToolboxRoutingPlaceholders,

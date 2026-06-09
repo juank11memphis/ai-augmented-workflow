@@ -1,2 +1,1 @@
-// Temporary destination shell for later Deep Module Map behavior movement.
-export {};
+export { renderMcpConfig, resolveMcpConfigAgentId } from './mcp-config.js';
