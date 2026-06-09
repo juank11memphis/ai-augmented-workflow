@@ -4,6 +4,42 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.17.0 - 2026-06-09
+
+### Added
+- route planning through capability coverage
+- detect upstream feature brief gaps
+- add capabilities map writer skill
+- add business domain model workflow
+- require domain model for feature and ux planning
+- require domain model for module mapping
+- route business domain model planning
+- register business domain model writer target
+- add business domain model writer template
+- clean up unsupported agent selections
+- add unsupported agent cleanup and sub-agent workflow templates
+- route executor through worker gatekeeper
+- add executor worker toolbox templates
+- route planner through worker gatekeeper
+- add planner worker toolbox templates
+- render worker toolbox routing profiles
+- strengthen ux expert guidance
+
+### Changed
+- define deep module map
+- add capabilities map
+- update sibu workflow state
+- update business domain model workflow
+- add light verbose worker guidance
+- purge stale windsurf references
+- ignore local notes
+
+### Removed
+- remove windsurf support surface
+
+### Fixed
+- make domain model discovery assistant-led
+
 ## 0.16.0 - 2026-05-22
 
 ### Added
