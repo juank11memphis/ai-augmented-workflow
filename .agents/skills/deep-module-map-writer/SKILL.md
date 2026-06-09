@@ -1,15 +1,15 @@
 ---
 name: deep-module-map-writer
-description: Create or update docs/deep-module-map.md as a map of deep, complexity-hiding implementation modules before feature brief work.
+description: Create or update docs/deep-module-map.md as a map of deep, complexity-hiding implementation modules after Product Vision, Business Domain Model, and Capabilities Map work.
 ---
 
 # Deep Module Map Writer
 
 ## Purpose
 
-Create or update `docs/deep-module-map.md`, a technical design map of deep implementation modules that downstream technical designs, feature briefs, and implementation plans use to decide where code work belongs.
+Create or update `docs/deep-module-map.md`, a technical design map of deep implementation modules that downstream technical designs and implementation plans use to decide where code work belongs.
 
-A Deep Module is primarily a technical design concept from software architecture: a module with a small, simple interface and a larger, more complex implementation hidden behind it. In this artifact, Deep Modules are derived from product purpose plus reviewed domain understanding: domain concepts, relationships, lifecycles, business rules, workflows, domain events, boundaries, and hard parts. Their depth comes from technical abstraction and complexity hiding, not from being a product category, command, folder, service, or team boundary.
+A Deep Module is primarily a technical design concept from software architecture: a module with a small, simple interface and a larger, more complex implementation hidden behind it. In this artifact, Deep Modules are derived from product purpose, reviewed domain understanding, and capability coverage: domain concepts, relationships, lifecycles, business rules, workflows, domain events, boundaries, hard parts, and business/product abilities that need durable implementation boundaries. Their depth comes from technical abstraction and complexity hiding, not from being a product category, command, folder, service, or team boundary.
 
 This skill owns the Deep Module Map only. It does not own feature briefs, technical designs, user stories, implementation plans, production code, or the internal architecture used inside each module.
 
@@ -19,8 +19,9 @@ This skill owns the Deep Module Map only. It does not own feature briefs, techni
 
 - `docs/product-vision.md`.
 - `docs/business-domain-model.md`.
+- `docs/capabilities-map.md`.
 - Existing `docs/deep-module-map.md` when revising the map.
-- Enough user interview context to identify candidate technical modules, the simple interface each module should expose to the rest of the app, the complexity each module should hide, boundaries, scenarios, relationships, and cross-module rules from the Product Vision and Business Domain Model.
+- Enough user interview context to identify candidate technical modules, the simple interface each module should expose to the rest of the app, the complexity each module should hide, boundaries, scenarios, relationships, and cross-module rules from the Product Vision, Business Domain Model, and Capabilities Map.
 
 ### What this skill writes
 
@@ -30,6 +31,7 @@ This skill owns the Deep Module Map only. It does not own feature briefs, techni
 
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
 - `docs/business-domain-model.md` is missing; tell the user to create it first with `business-domain-model-writer`.
+- `docs/capabilities-map.md` is missing; tell the user to create it first with `capabilities-map-writer`.
 - The request belongs to another pipeline stage, such as feature brief, technical design, UX design, Scrum planning, implementation planning, or implementation execution.
 - User answers are still too vague to defend module depth, interfaces, hidden complexity, or boundaries; ask one focused question instead of drafting.
 
@@ -38,7 +40,7 @@ This skill owns the Deep Module Map only. It does not own feature briefs, techni
 - Do not create feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not choose a specific internal architecture, service split, database model, framework, or team ownership structure.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
-- Do not invent Deep Modules without grounding them in the product vision, Business Domain Model, and user interview.
+- Do not invent Deep Modules without grounding them in the product vision, Business Domain Model, Capabilities Map, and user interview.
 - Do not inspect implementation code by default when creating or substantially revising the map.
 - Do not use existing code, folders, commands, screens, services, data objects, or technical layers as the source of truth for module boundaries.
 - Do not treat a command, screen, helper, folder, data object, or technical layer as a Deep Module merely because it exists.
@@ -101,11 +103,14 @@ Before doing any Deep Module Map work, read:
 ```txt
 docs/product-vision.md
 docs/business-domain-model.md
+docs/capabilities-map.md
 ```
 
 Use the product vision as the source of truth for purpose, audience, positioning, principles, boundaries, trust expectations, and success signals.
 
 Use the Business Domain Model as the source of truth for business language, domain concepts, relationships, lifecycles, business rules, workflows, domain events, boundaries, and hard parts.
+
+Use the Capabilities Map as the source of truth for business/product abilities by subdomain. Capabilities inform which abilities need deep, complexity-hiding implementation boundaries; they are not modules, commands, services, files, APIs, database tables, or classes.
 
 Read existing `docs/deep-module-map.md` only when revising the map. An existing map can provide continuity and change context, but it never replaces the required Product Vision and Business Domain Model.
 
@@ -113,7 +118,7 @@ Do not inspect implementation code by default. Existing code, folders, commands,
 
 ## Hard start rule
 
-Do not create or update a Deep Module Map if `docs/product-vision.md` or `docs/business-domain-model.md` is missing.
+Do not create or update a Deep Module Map if `docs/product-vision.md`, `docs/business-domain-model.md`, or `docs/capabilities-map.md` is missing.
 
 If the product vision is missing:
 
@@ -129,6 +134,13 @@ If the Business Domain Model is missing:
 3. Instruct the user to create the Business Domain Model first with `business-domain-model-writer`.
 4. Do not draft, infer, or save a module map until the Business Domain Model exists.
 
+If the Capabilities Map is missing:
+
+1. Stop.
+2. Tell the user that a Deep Module Map requires `docs/capabilities-map.md`.
+3. Instruct the user to create the Capabilities Map first with `capabilities-map-writer`.
+4. Do not draft, infer, or save a module map until the Capabilities Map exists.
+
 ## Output location
 
 Write the map to:
@@ -143,13 +155,13 @@ This file is user-owned product and implementation-boundary content created or u
 
 Be deliberately interrogative before writing.
 
-This interview is mandatory and non-skippable. Even when the repository has substantial code, existing docs, an existing map, or extensive initial context, ask at least one explicit user-facing discovery question before drafting or writing the Deep Module Map. Treat the Product Vision and Business Domain Model as the primary source context; prior conversation and initial context can shape better questions, but they must not replace the interview. Implementation code is not inspected by default and must not become the source of truth for module boundaries, interfaces, hidden complexity, or ownership. Keep asking focused follow-up questions until the module decisions are clear enough to defend. Before drafting, always perform one final check-in in the spirit of: “I am clear on my end. Are you good, or is there anything else you want to cover before I proceed?” If the user adds context, incorporate or clarify it before writing.
+This interview is mandatory and non-skippable. Even when the repository has substantial code, existing docs, an existing map, or extensive initial context, ask at least one explicit user-facing discovery question before drafting or writing the Deep Module Map. Treat the Product Vision, Business Domain Model, and Capabilities Map as the primary source context; prior conversation and initial context can shape better questions, but they must not replace the interview. Implementation code is not inspected by default and must not become the source of truth for module boundaries, interfaces, hidden complexity, or ownership. Keep asking focused follow-up questions until the module decisions are clear enough to defend. Before drafting, always perform one final check-in in the spirit of: “I am clear on my end. Are you good, or is there anything else you want to cover before I proceed?” If the user adds context, incorporate or clarify it before writing.
 
 - Ask one focused question at a time.
 - Ask as many one-at-a-time questions as needed to understand the app well enough to defend the map; do not optimize for a short interview.
 - Walk down each module-boundary decision branch one by one, resolving dependencies between candidate modules before drafting.
 - When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
-- If a question can be answered by reading the Product Vision, Business Domain Model, or existing Deep Module Map during revision, inspect those artifacts instead of asking. Do not inspect implementation code unless the user explicitly requested a later code-alignment check after domain-driven boundaries are drafted.
+- If a question can be answered by reading the Product Vision, Business Domain Model, Capabilities Map, or existing Deep Module Map during revision, inspect those artifacts instead of asking. Do not inspect implementation code unless the user explicitly requested a later code-alignment check after domain-driven boundaries are drafted.
 - Do not rush to draft after a single answer unless the answer already makes interfaces, hidden complexity, boundaries, scenarios, and relationships clear.
 - Treat "enough context" as: candidate modules, suggested slugs, simple external interfaces, hidden implementation complexity, responsibilities, exclusions, scenarios, relationships, and cross-module rules are clear enough to defend.
 - Do not ask the user to name the Deep Modules up front. Most users do not know what the modules should be yet.
@@ -182,6 +194,7 @@ Ask every question needed to remove material ambiguity, but only one at a time. 
 
 - what product or system capabilities the map must support
 - which Business Domain Model concepts, relationships, lifecycles, business rules, workflows, domain events, boundaries, or hard parts should drive module discovery
+- which Capabilities Map business/product abilities need deep implementation boundaries
 - what the rest of the app should be able to ask each area to do
 - what messy details callers should not need to know
 - which decisions or policies should change together

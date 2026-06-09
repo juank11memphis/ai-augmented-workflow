@@ -174,7 +174,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '131');
+    assert.equal(manifest.templateVersion, '132');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -264,7 +264,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '131');
+    assert.equal(manifest.templateVersion, '132');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
@@ -352,12 +352,12 @@ describe('business domain model writer template', () => {
 });
 
 describe('deep module map writer template', () => {
-  it('requires Business Domain Model source context and keeps code alignment explicit', () => {
+  it('requires Capabilities Map source context and keeps code alignment explicit', () => {
     const templatePath = 'skills/deep-module-map-writer/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-    const domainDiscoveryTerms = [
+    const discoveryTerms = [
       'domain concepts',
       'relationships',
       'lifecycles',
@@ -366,26 +366,33 @@ describe('deep module map writer template', () => {
       'domain events',
       'boundaries',
       'hard parts',
+      'business/product abilities',
     ];
 
-    assert.equal(templateMetadata?.version, '6');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /docs\/business-domain-model\.md/);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /implementation code is not inspected by default/i);
+    assert.equal(templateMetadata?.version, '7');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /docs\/capabilities-map\.md/);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /business\/product capabilities by subdomain/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
+    assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
     assert.equal(manifest.templates['docs/deep-module-map.md'], undefined);
 
     assert.match(contents, /docs\/product-vision\.md/);
     assert.match(contents, /docs\/business-domain-model\.md/);
+    assert.match(contents, /docs\/capabilities-map\.md/);
     assert.match(contents, /business-domain-model-writer/);
+    assert.match(contents, /capabilities-map-writer/);
     assert.match(contents, /Deep Module Map requires `docs\/business-domain-model\.md`/);
+    assert.match(contents, /Deep Module Map requires `docs\/capabilities-map\.md`/);
+    assert.match(contents, /Capabilities Map as the source of truth for business\/product abilities by subdomain/i);
+    assert.match(contents, /which Capabilities Map business\/product abilities need deep implementation boundaries/i);
     assert.match(contents, /Do not inspect implementation code by default/i);
     assert.match(contents, /existing code, folders, commands, screens, services, data objects, and technical layers are not the default source of truth/i);
     assert.match(contents, /explicitly asks for a code-alignment check/i);
     assert.match(contents, /only after domain-driven module boundaries are drafted/i);
     assert.match(contents, /alignment gaps, migration implications/i);
 
-    for (const domainDiscoveryTerm of domainDiscoveryTerms) {
-      assert.match(contents, new RegExp(domainDiscoveryTerm, 'i'));
+    for (const discoveryTerm of discoveryTerms) {
+      assert.match(contents, new RegExp(discoveryTerm, 'i'));
     }
   });
 });
@@ -396,8 +403,8 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '32');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Business Domain Model routing/i);
+    assert.equal(templateMetadata?.version, '33');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Capabilities Map as a formal pipeline stage/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -421,11 +428,16 @@ describe('AGENTS.md template', () => {
     ];
 
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
-    assert.match(contents, /product vision -> business domain model -> deep module map \/ feature brief -> technical design -> optional UX -> epics\/stories -> AI executor/);
-    assert.match(contents, /Business Domain Model work sits after Product Vision and before Deep Module Map or Feature Brief work/);
+    assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
+    assert.match(contents, /product vision -> business domain model -> capabilities map -> deep module map \/ feature brief -> technical design -> optional UX -> epics\/stories -> AI executor/);
+    assert.match(contents, /Business Domain Model work sits after Product Vision and before the Capabilities Map/);
+    assert.match(contents, /Deep Module Map and Feature Brief work are sibling downstream artifacts from Product Vision, Business Domain Model, and Capabilities Map/);
     assert.match(contents, /Technical Design remains downstream of both Feature Brief and Deep Module Map/);
     assert.match(contents, /Scrum planning and AI executor flows after Technical Design/);
     assert.match(contents, /Business Domain Model, `docs\/business-domain-model\.md`.*use `business-domain-model-writer`/);
+    assert.match(contents, /Capabilities Map, product\/business capabilities, capability coverage by subdomain, `docs\/capabilities-map\.md`, missing capability checks, or capability gaps, use `capabilities-map-writer`/);
+    assert.match(contents, /business-level feature brief, feature definition, feature scope, MVP feature boundaries, business acceptance criteria, capability coverage, or product-level feature rationale, use `feature-brief-writer`/);
+    assert.doesNotMatch(contents, /feature brief after Deep Module Map work/);
 
     for (const routingTerm of routingTerms) {
       assert.match(contents, new RegExp(routingTerm.replaceAll('/', '\\/'), 'i'));
@@ -852,7 +864,6 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
       assert.doesNotMatch(contents, /Create a new document page for the just-written artifact content/i);
     }
 
-    assert.match(manifest.templates['skills/technical-design-writer/SKILL.md']?.changes.join('\n') ?? '', /dedicated exporter skills/i);
   });
 
   it('keeps technical design from directly requiring the Business Domain Model', () => {
@@ -860,6 +871,25 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
 
     assert.doesNotMatch(contents, /docs\/business-domain-model\.md/);
     assert.doesNotMatch(contents, /business-domain-model-writer/);
+  });
+
+
+  it('joins Feature Brief and Deep Module Map as sibling technical design inputs', () => {
+    const templatePath = 'skills/technical-design-writer/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '21');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Feature Brief and Deep Module Map as sibling upstream inputs/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /newer feature briefs to omit a Deep Module section/i);
+    assert.match(contents, /A Markdown feature brief at `docs\/features\/<feature-slug>\/feature_brief\.md`/);
+    assert.match(contents, /`docs\/deep-module-map\.md`/);
+    assert.match(contents, /Treat the Feature Brief and Deep Module Map as sibling upstream inputs/);
+    assert.match(contents, /newer feature briefs may omit that section/);
+    assert.match(contents, /use the approved feature scope plus `docs\/deep-module-map\.md` to identify the existing modules during technical clarification/);
+    assert.doesNotMatch(contents, /Require the feature brief to name one or more existing Deep Modules/);
+    assert.doesNotMatch(contents, /the feature brief, including its `## Deep Module` section/);
   });
 
   it('keeps Scrum planning free of the GitHub export gate', () => {

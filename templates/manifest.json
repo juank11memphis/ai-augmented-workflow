@@ -1,12 +1,12 @@
 {
-  "templateVersion": "131",
+  "templateVersion": "132",
   "templates": {
     "AGENTS.md": {
-      "version": "32",
+      "version": "33",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds Business Domain Model routing to the managed agent instructions.",
-        "Updates planning pipeline guidance so Business Domain Model sits after Product Vision and before Deep Module Map or Feature Brief work."
+        "Adds the Capabilities Map as a formal pipeline stage before sibling Deep Module Map and Feature Brief work.",
+        "Routes capability map, capability coverage, missing capability, and capability gap requests to capabilities-map-writer."
       ]
     },
     ".codex/config.toml": {
@@ -74,11 +74,11 @@
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Requires docs/business-domain-model.md before Deep Module Map work and routes missing domain model creation to business-domain-model-writer.",
-        "Clarifies that Deep Module Map boundaries are domain-first and implementation code is not inspected by default."
+        "Requires docs/capabilities-map.md before Deep Module Map work and routes missing maps to capabilities-map-writer.",
+        "Uses business/product capabilities by subdomain as input for deep implementation boundary discovery."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
@@ -91,10 +91,11 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "20",
+      "version": "21",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes technical design clarification mandatory before drafting while keeping export workflows delegated to dedicated exporter skills."
+        "Treats Feature Brief and Deep Module Map as sibling upstream inputs for technical design.",
+        "Allows newer feature briefs to omit a Deep Module section while still requiring technical design to map the feature to existing Deep Modules."
       ]
     },
     "skills/typescript/SKILL.md": {

@@ -13,7 +13,7 @@ Write the smallest useful technical design doc for an approved feature: enough f
 
 - A Markdown feature brief at `docs/features/<feature-slug>/feature_brief.md`.
 - `docs/deep-module-map.md`.
-- The feature brief's `## Deep Module` section naming one or more existing Deep Modules.
+- Enough feature and module context to map the feature brief to one or more existing Deep Modules during technical design.
 - Relevant existing repo files and flows needed to make implementation direction concrete.
 - `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
 - Relevant implementation guidance skills such as `clean-code`, selected architecture skills, language skills, or framework skills.
@@ -26,14 +26,14 @@ Write the smallest useful technical design doc for an approved feature: enough f
 
 - The feature brief is missing or the user only has a vague feature idea; direct the user to `feature-brief-writer`.
 - `docs/deep-module-map.md` is missing; direct the user to `deep-module-map-writer`.
-- The feature brief does not name existing Deep Modules, or the selected modules are missing, ambiguous, or inconsistent with the map.
+- The feature brief and Deep Module Map cannot be reconciled to existing Deep Modules after focused clarification, or the selected modules are missing, ambiguous, or inconsistent with the map.
 - The feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing; direct the user to `ux-expert`.
 - The request belongs to another pipeline stage, such as feature definition, UX design, Scrum planning, implementation planning, or implementation execution.
 
 ### What this skill must not do
 
 - Do not create or update product visions, Deep Module Maps, feature briefs, UX specs, Epics, User Stories, implementation plans, or production code.
-- Do not invent new Deep Modules or move work into unselected modules.
+- Do not invent new Deep Modules or move work into modules that cannot be justified from the Feature Brief and Deep Module Map.
 - Do not redesign binding UX mockups.
 - Do not duplicate architecture, language, framework, or clean-code skill guidance.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
@@ -44,7 +44,7 @@ Before writing, read:
 
 1. `docs/product-vision.md`
 2. `docs/deep-module-map.md`
-3. the feature brief, including its `## Deep Module` section
+3. the feature brief
 4. `docs/features/<feature-slug>/ux.md` when the feature has UI impact
 5. `clean-code`
 6. any selected architecture, language, or framework skills that apply
@@ -58,7 +58,7 @@ Require a Markdown feature brief. If the user only has a vague idea, route to `f
 
 Require `docs/deep-module-map.md`. If it is missing, stop and ask the user to create it with `deep-module-map-writer` first. Do not infer or invent Deep Modules.
 
-Require the feature brief to name one or more existing Deep Modules. Preserve those selected modules in the technical design; if they appear missing, ambiguous, or inconsistent with the map, stop and ask the user to update the feature brief or Deep Module Map first.
+Treat the Feature Brief and Deep Module Map as sibling upstream inputs. Older feature briefs may name selected Deep Modules directly; newer feature briefs may omit that section. If the brief names modules, preserve them when they match the map. If it does not, use the approved feature scope plus `docs/deep-module-map.md` to identify the existing modules during technical clarification. If the feature cannot be mapped to existing modules, or the selected modules are missing, ambiguous, or inconsistent with the map, stop and ask the user to update the Feature Brief or Deep Module Map first.
 
 If the feature has UI impact, require `docs/features/<feature-slug>/ux.md`. If it is missing, stop and ask the user to create the UX spec with `ux-expert` first.
 
@@ -73,7 +73,7 @@ This interview is mandatory and non-skippable. Even when the approved artifacts,
 - If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
 - Prefer follow-up questions over filling gaps with plausible invention.
 - When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
-- Treat "enough context" as: selected Deep Modules, affected code paths, entrypoints, implementation boundaries, important state/data changes, validation approach, and meaningful risks are clear enough to defend in the design.
+- Treat "enough context" as: existing Deep Modules selected or mapped during technical design, affected code paths, entrypoints, implementation boundaries, important state/data changes, validation approach, and meaningful risks are clear enough to defend in the design.
 - If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
 - Do not ask a large questionnaire all at once.
 - Do not draft a technical design with an `Open Questions` section; resolve material questions during the interview, or record only known risks/tradeoffs after decisions are made.
@@ -86,7 +86,7 @@ For UI-related features, `ux.md` is source context, not inspiration. If `ux.md` 
 
 Translate product intent into implementation direction.
 
-Deep Modules answer “where does this implementation work belong?” Architecture guidance answers “how is that module structured internally?” Translate the feature brief's selected Deep Modules into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Deep Module Map by default.
+Deep Modules answer “where does this implementation work belong?” Architecture guidance answers “how is that module structured internally?” Translate the existing Deep Modules selected or mapped from the Feature Brief plus Deep Module Map into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Deep Module Map by default.
 
 When a feature crosses a framework or delivery boundary, include the allowed orchestration/application entrypoint and the forbidden lower-level dependencies. Keep this framework-agnostic: name roles like framework adapter, application/orchestration boundary, domain, port, and infrastructure, then add concrete project paths only where useful.
 
@@ -97,7 +97,7 @@ Prefer:
 - current codebase patterns over speculative redesigns
 - asking enough focused follow-up questions to resolve material ambiguity before drafting
 - delegation to the right skills instead of duplicating their guidance
-- preserving the feature brief's selected Deep Modules
+- preserving named Deep Modules when present and otherwise mapping the Feature Brief to existing Deep Modules during technical design
 
 Avoid:
 
@@ -105,7 +105,7 @@ Avoid:
 - product scope expansion
 - user stories, tickets, or delivery plans
 - invented CLI/database/API concepts that the feature brief did not ask for
-- inventing new Deep Modules or moving work into unselected modules
+- inventing new Deep Modules or moving work into modules that cannot be justified from the Feature Brief and Deep Module Map
 - large template sections that say “none” without adding value
 
 ## Delegation rule
@@ -160,7 +160,7 @@ Use this structure as a starting point. Delete sections that do not add value.
 ## Proposed Design
 <Concrete implementation decisions. Include command flows, file/module impact, state changes, and integration boundaries when relevant.>
 
-<Explain how the selected Deep Modules translate into architecture, module, command, file, or implementation boundaries when that affects downstream work.>
+<Explain how the existing Deep Modules selected or mapped during technical design translate into architecture, module, command, file, or implementation boundaries when that affects downstream work.>
 
 <For framework/delivery entrypoints, state the application/orchestration API they may call and the lower-level layers, modules, or paths they must not call directly.>
 
