@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
 import { SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
-import { readTemplateManifest } from '../template-catalog-rendering/index.js';
+import { readTemplateManifest } from '../template-catalog/index.js';
 import type { McpServerId, SibuState, SupportedAgent } from '../../shared/types.js';
 import { applySyncAction } from './apply-action.js';
 import { getSyncPreviews } from './sync-preview.js';

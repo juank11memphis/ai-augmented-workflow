@@ -9,7 +9,8 @@ import {
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
 } from '../workflow-target-planning/index.js';
-import { readTemplate, readTemplateManifest, renderMcpConfig, renderTemplateForSync, renderWorkerToolboxRouting } from './templates.js';
+import { readTemplate, readTemplateManifest } from '../template-catalog/index.js';
+import { renderMcpConfig, renderTemplateForSync, renderWorkerToolboxRouting } from './templates.js';
 
 const selectedGithubMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'github');
 const selectedNotionMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'notion');

@@ -1,2 +1,1 @@
-// Temporary destination shell for later Deep Module Map behavior movement.
-export {};
+export { getTemplateVersion, readTemplate, readTemplateManifest } from './templates.js';

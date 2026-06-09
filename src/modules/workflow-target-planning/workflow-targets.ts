@@ -16,7 +16,8 @@ import {
 import { sha256 } from '../../shared/hash.js';
 import { removeUndefinedFields } from '../../shared/object.js';
 import { readExistingState } from '../workflow-state-registry/index.js';
-import { getTemplateVersion, readTemplate, readTemplateManifest, renderMcpConfig, renderSkillRouting, renderWorkerToolboxRoutingPlaceholders } from '../template-catalog-rendering/index.js';
+import { getTemplateVersion, readTemplate, readTemplateManifest } from '../template-catalog/index.js';
+import { renderMcpConfig, renderSkillRouting, renderWorkerToolboxRoutingPlaceholders } from '../template-catalog-rendering/index.js';
 import type {
   SibuState,
   FileToCreate,

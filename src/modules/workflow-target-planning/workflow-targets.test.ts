@@ -14,7 +14,7 @@ import {
   SUPPORTED_AGENTS,
 } from './index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
-import { readTemplateManifest } from '../template-catalog-rendering/index.js';
+import { readTemplateManifest } from '../template-catalog/index.js';
 import type { SelectableWorkflowSkill } from '../../shared/types.js';
 import { getSelectedAgentsFromState, getSelectedMcpServersFromState, getSelectedMcpTargetsForAgents, getSelectedSkillTargetsForAgents, getWorkflowTargets, renderMissingWorkflowFiles, writeSibuState } from './workflow-targets.js';
 

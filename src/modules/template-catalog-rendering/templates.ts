@@ -1,7 +1,5 @@
 import fs from 'node:fs';
-import path from 'node:path';
-
-import { getTemplatesPath } from '../../shared/paths.js';
+import { readTemplate } from '../template-catalog/index.js';
 import type {
   AgentId,
   SelectableArchitectureSkill,
@@ -10,7 +8,6 @@ import type {
   SelectableLanguageSkill,
   SelectableMcpServer,
   SelectableWorkflowSkill,
-  TemplateManifest,
 } from '../../shared/types.js';
 
 export type WorkerToolboxRoutingProfile = 'planner' | 'executor';
@@ -21,30 +18,6 @@ type OptionalRoutingSkill =
   | SelectableArchitectureSkill
   | SelectableDatabaseSkill
   | SelectableWorkflowSkill;
-
-export function readTemplate(relativePath: string): string {
-  return fs.readFileSync(path.join(getTemplatesPath(), relativePath), 'utf8');
-}
-
-export function readTemplateManifest(): TemplateManifest {
-  const manifest = JSON.parse(fs.readFileSync(path.join(getTemplatesPath(), 'manifest.json'), 'utf8')) as unknown;
-
-  if (!isTemplateManifest(manifest)) {
-    throw new Error('templates/manifest.json is not a valid template manifest.');
-  }
-
-  return manifest;
-}
-
-export function getTemplateVersion(manifest: TemplateManifest, templateRelativePath: string): string {
-  const template = manifest.templates[templateRelativePath];
-
-  if (!template) {
-    throw new Error(`Template ${templateRelativePath} is missing from templates/manifest.json.`);
-  }
-
-  return template.version;
-}
 
 export function renderTemplateForSync({
   templateRelativePath,
@@ -372,27 +345,4 @@ function parseJsonObject(contents?: string): Record<string, unknown> {
   }
 
   return parsed as Record<string, unknown>;
-}
-
-function isTemplateManifest(value: unknown): value is TemplateManifest {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const manifest = value as Partial<TemplateManifest>;
-
-  return (
-    typeof manifest.templateVersion === 'string' &&
-    !!manifest.templates &&
-    typeof manifest.templates === 'object' &&
-    Object.values(manifest.templates).every(
-      (template) =>
-        !!template &&
-        typeof template === 'object' &&
-        typeof template.version === 'string' &&
-        typeof template.description === 'string' &&
-        Array.isArray(template.changes) &&
-        template.changes.every((change) => typeof change === 'string')
-    )
-  );
 }

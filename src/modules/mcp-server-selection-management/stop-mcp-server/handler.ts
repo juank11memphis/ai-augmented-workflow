@@ -10,7 +10,7 @@ import { getProjectContext } from '../../../shared/paths.js';
 import type { ManagedFilePath, ManagedFileState, McpServerId, SelectableMcpServer, SibuState, WorkflowTarget } from '../../../shared/types.js';
 import { renderMissingWorkflowFiles, resolveSelectableMcpServerById } from '../../workflow-target-planning/index.js';
 import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
-import { getTemplateVersion, readTemplateManifest } from '../../template-catalog-rendering/index.js';
+import { getTemplateVersion, readTemplateManifest } from '../../template-catalog/index.js';
 import { cloneState, writeStateFile } from '../../workflow-state-registry/index.js';
 import {
   getSelectedAgentsFromState,

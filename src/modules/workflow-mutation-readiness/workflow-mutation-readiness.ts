@@ -1,7 +1,7 @@
 import { readStateForDoctor } from '../workflow-state-registry/index.js';
 import { getSyncPreviews, isActionableSyncPreview, type SyncPreview } from '../sync-review/index.js';
 import { getUnsupportedAgentCleanupPlan } from '../sync-review/unsupported-agent-cleanup.js';
-import { readTemplateManifest } from '../template-catalog-rendering/index.js';
+import { readTemplateManifest } from '../template-catalog/index.js';
 import type { SibuState, TemplateManifest } from '../../shared/types.js';
 
 export type WorkflowMutationReadinessResult =
