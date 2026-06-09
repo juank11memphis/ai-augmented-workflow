@@ -1,2 +1,2 @@
-// Temporary destination shell for later Deep Module Map behavior movement.
-export {};
+export { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines, handleDoctorProject } from './handler.js';
+export type { DoctorProjectCommand } from './command.js';

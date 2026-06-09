@@ -1,4 +1,4 @@
-import type { DoctorProjectCommand } from '../../modules/workflow-health-diagnosis/index.js';
+import type { DoctorProjectCommand } from '../../modules/workflow-health-inspector/index.js';
 import type { InitProjectCommand } from '../../modules/workflow-installer/index.js';
 import type { ListMcpServersCommand } from '../../modules/mcp-server-selection-management/index.js';
 import type { StopMcpServerCommand } from '../../modules/mcp-server-selection-management/index.js';
