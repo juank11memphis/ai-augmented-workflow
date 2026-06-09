@@ -64,8 +64,6 @@ describe('handleInitProject', () => {
     assert.equal(state.mcpServerConfigs, undefined);
   });
 
-
-
   it('includes the GitHub export skill as a companion when GitHub MCP is selected', async () => {
     const rootPath = createTemporaryRoot();
     process.chdir(rootPath);
@@ -162,6 +160,46 @@ describe('handleInitProject', () => {
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
   });
+
+
+  it('reports an already initialized project without asking setup questions', async () => {
+    const rootPath = createTemporaryRoot();
+    process.chdir(rootPath);
+
+    await handleInitProject({ type: 'init' }, buildDependencies({ selectedAgents: [getSupportedAgent('codex')] }));
+
+    await handleInitProject({ type: 'init' }, buildDependenciesThatFailIfPrompted());
+
+    assert.equal(process.exitCode, undefined);
+    assert.deepEqual(readState(rootPath).selectedAgents, ['codex']);
+  });
+
+  it('refuses to overwrite an invalid existing state file', async () => {
+    const rootPath = createTemporaryRoot();
+    process.chdir(rootPath);
+    fs.mkdirSync(path.join(rootPath, '.sibu'), { recursive: true });
+    fs.writeFileSync(path.join(rootPath, '.sibu/state.json'), '{ invalid json', 'utf8');
+
+    await handleInitProject({ type: 'init' }, buildDependenciesThatFailIfPrompted());
+
+    assert.equal(process.exitCode, 1);
+    assert.equal(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'), '{ invalid json');
+  });
+
+  it('preserves existing workflow files while recording them in state', async () => {
+    const rootPath = createTemporaryRoot();
+    process.chdir(rootPath);
+    const agentsContents = '# Existing project instructions\n';
+    fs.writeFileSync(path.join(rootPath, 'AGENTS.md'), agentsContents, 'utf8');
+
+    await handleInitProject({ type: 'init' }, buildDependencies({ selectedAgents: [getSupportedAgent('codex')] }));
+
+    const state = readState(rootPath);
+
+    assert.equal(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), agentsContents);
+    assert.equal(state.managedFiles['AGENTS.md']?.template, 'AGENTS.md');
+    assert.equal(state.managedFiles['AGENTS.md']?.status, 'managed');
+  });
 });
 
 function buildDependencies({
@@ -185,8 +223,28 @@ function buildDependencies({
   };
 }
 
+
+function buildDependenciesThatFailIfPrompted(): NonNullable<Parameters<typeof handleInitProject>[1]> {
+  const fail = async (): Promise<never> => {
+    throw new Error('Init should not ask setup questions for this scenario.');
+  };
+
+  return {
+    renderIntro: async () => undefined,
+    askForSupportedAgents: fail,
+    askForMcpServers: fail,
+    askForNotionDocsParentPage: fail,
+    askForLanguageSkills: fail,
+    askForFrameworkSkills: fail,
+    askForDatabaseSkills: fail,
+    askForArchitectureSkill: fail,
+    askForWorkflowSkills: fail,
+    askForProjectOverview: fail,
+  };
+}
+
 function createTemporaryRoot(): string {
-  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-project-adoption-test-'));
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-workflow-installer-test-'));
   temporaryRoots.push(rootPath);
 
   return rootPath;

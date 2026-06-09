@@ -1,5 +1,5 @@
 import { handleDoctorProject } from '../../modules/workflow-health-diagnosis/index.js';
-import { handleInitProject } from '../../modules/project-adoption/index.js';
+import { handleInitProject } from '../../modules/workflow-installer/index.js';
 import { handleListMcpServers, handleStopMcpServer, handleUseMcpServer } from '../../modules/mcp-server-selection-management/index.js';
 import { handleListSkills } from '../../modules/skill-selection-management/index.js';
 import { handleStopManagingFile } from '../../modules/skill-selection-management/index.js';

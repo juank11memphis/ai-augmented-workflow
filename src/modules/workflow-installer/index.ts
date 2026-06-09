@@ -1,2 +1,2 @@
-// Temporary destination shell for later Deep Module Map behavior movement.
-export {};
+export { handleInitProject } from './handler.js';
+export type { InitProjectCommand } from './command.js';

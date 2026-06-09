@@ -1,5 +1,5 @@
 import type { DoctorProjectCommand } from '../../modules/workflow-health-diagnosis/index.js';
-import type { InitProjectCommand } from '../../modules/project-adoption/index.js';
+import type { InitProjectCommand } from '../../modules/workflow-installer/index.js';
 import type { ListMcpServersCommand } from '../../modules/mcp-server-selection-management/index.js';
 import type { StopMcpServerCommand } from '../../modules/mcp-server-selection-management/index.js';
 import type { UseMcpServerCommand } from '../../modules/mcp-server-selection-management/index.js';
