@@ -85,7 +85,6 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages.
 - **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
 - **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions.
-- **Human Control & Trust**: protects local edits, requires explicit review for risky changes, and keeps the engineer responsible for direction and judgment.
 
 #### Supporting Subdomains
 
@@ -102,6 +101,10 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **AI Models and Coding Agents**: external providers and tools that execute or assist with AI work.
 - **Editors / IDEs**: external development surfaces where engineers work.
 
+#### Cross-Cutting Principle
+
+- **User Control & Trust**: not a standalone subdomain, but a governing product principle expressed through concrete capabilities in each subdomain. Adoption must make project ownership clear. Maintenance must protect local edits and require sync review decisions. The pipeline must preserve artifact review gates and hard-stop on missing context. Tool configuration must avoid storing secrets. Across the domain, Sibu keeps the engineer responsible for direction and judgment.
+
 ### Context Map
 
 ```mermaid
@@ -116,8 +119,6 @@ flowchart TB
 & Sync Review"]
       Pipeline["AI-Augmented
 Development Pipeline"]
-      Trust["Human Control
-& Trust"]
     end
 
     subgraph Supporting["Supporting Subdomains"]
@@ -152,9 +153,9 @@ Other Tools"]
   Maintenance --> State
   Maintenance --> LocalChoices
   Pipeline --> Artifacts
-  Trust -. governs .-> Adoption
-  Trust -. governs .-> Maintenance
-  Trust -. governs .-> Pipeline
+  Adoption -. governed by user control & trust .-> WorkflowFiles
+  Maintenance -. governed by user control & trust .-> LocalChoices
+  Pipeline -. governed by user control & trust .-> Artifacts
 
   Templates --> WorkflowFiles
   Skills --> Artifacts
@@ -166,7 +167,7 @@ Other Tools"]
   ProjectOwned -. owned by developer / team .-> SibuDomain
 ```
 
-This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
+This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
 
 ## Domain Concepts & Conceptual Diagram
 
