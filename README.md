@@ -123,7 +123,7 @@ Sibu works best when AI collaboration stays small, explicit, and reviewable. The
 
 ```mermaid
 flowchart LR
-  orient["1. Orient<br/>Product vision + module map"] --> design["2. Design<br/>Feature brief + technical design"]
+  orient["1. Orient<br/>Product vision + domain model + capabilities + module map"] --> design["2. Design<br/>Feature brief + technical design"]
   design --> plan["3. Plan<br/>Epics, stories + implementation steps"]
   plan --> build["4. Build<br/>Small AI-assisted changes"]
   build --> validate["5. Validate<br/>Tests, checks + human review"]
@@ -133,7 +133,7 @@ flowchart LR
 
 | Stage | What it means |
 | --- | --- |
-| Orient | Clarify the product promise, boundaries, and deep modules so AI work starts with context instead of vibes. |
+| Orient | Clarify the product promise, business domain, capabilities, and deep modules so AI work starts with context instead of vibes. |
 | Design | Turn a feature idea into a brief and technical direction before implementation details sprawl. |
 | Plan | Split work into epics, stories, and implementation steps small enough for reviewable AI collaboration. |
 | Build | Let agents help with focused changes while the engineer keeps scope and judgment. |
@@ -152,6 +152,8 @@ flowchart TB
 
   skills --> product["Product + planning"]
   product --> productVision["product-vision-writer"]
+  product --> businessDomainModel["business-domain-model-writer"]
+  product --> capabilitiesMap["capabilities-map-writer"]
   product --> deepModuleMap["deep-module-map-writer"]
   product --> featureBrief["feature-brief-writer"]
   product --> scrumPlanner["scrum-master-planner"]
@@ -174,8 +176,10 @@ flowchart TB
 | Skill | Helps with | Use when... |
 | --- | --- | --- |
 | `product-vision-writer` | Product vision and positioning | You need to define or revise the product north star, audience, boundaries, voice, or success signals. |
-| `deep-module-map-writer` | Deep implementation boundaries | You need to map durable modules before feature work, or decide where future work belongs. |
-| `feature-brief-writer` | Business-level feature definition | You need a scoped feature brief grounded in the product vision and Deep Module Map. |
+| `business-domain-model-writer` | Domain language and rules | You need to clarify business concepts, subdomains, workflows, lifecycle rules, domain events, or boundaries. |
+| `capabilities-map-writer` | Business/product capability map | You need to map the product abilities each subdomain must provide before module or feature planning. |
+| `deep-module-map-writer` | Deep implementation boundaries | You need to map durable modules from the product vision, domain model, and capabilities map before feature work. |
+| `feature-brief-writer` | Business-level feature definition | You need a scoped feature brief grounded in the product vision, Business Domain Model, and Capabilities Map. |
 | `technical-design-writer` | Implementation-oriented design | You have an approved feature brief and need a concise technical direction before planning stories. |
 | `scrum-master-planner` | Epics and user stories | You need to split an approved feature brief and technical design into pragmatic delivery slices. |
 | `ai-implementation-planner` | Story implementation steps | You need an approved user story turned into small, executable implementation-plan files. |
