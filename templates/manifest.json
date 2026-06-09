@@ -1,5 +1,5 @@
 {
-  "templateVersion": "123",
+  "templateVersion": "128",
   "templates": {
     "AGENTS.md": {
       "version": "32",
@@ -59,10 +59,11 @@
       ]
     },
     "skills/business-domain-model-writer/SKILL.md": {
-      "version": "2",
+      "version": "7",
       "description": "Mandatory Business Domain Model writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes Business Domain Model discovery assistant-led: the agent now mines Product Vision first, proposes plain-language domain hypotheses, and asks users to review or correct them instead of expecting users to invent domain-modeling concepts."
+        "Changes the Business Domain Model context map guidance to prefer a sparse, subdomain-focused Mermaid diagram.",
+        "Clarifies that the diagram should group core subdomains, supporting subdomains, project-owned outputs, and external or generic domains instead of drawing every operational relationship."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {

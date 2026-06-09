@@ -174,7 +174,7 @@ describe('feature brief writer Business Domain Model grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '123');
+    assert.equal(manifest.templateVersion, '128');
     assert.equal(templateMetadata?.version, '15');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/business-domain-model\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Deep Module Map as the work-ownership source/i);
@@ -246,10 +246,11 @@ describe('business domain model writer template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(templateMetadata?.version, '7');
     assert.match(templateMetadata?.description ?? '', /Mandatory Business Domain Model writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /assistant-led/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /mines Product Vision first/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /subdomain-focused Mermaid diagram/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /core subdomains, supporting subdomains/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /external or generic domains/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     const contents = readTemplate(templatePath);
@@ -260,21 +261,41 @@ describe('business domain model writer template', () => {
     assert.match(contents, /assistant-led/i);
     assert.match(contents, /user's job is reviewer, not author/i);
     assert.match(contents, /mine Product Vision/i);
+    assert.match(contents, /Ask one focused question at a time/i);
+    assert.match(contents, /Never ask the user to answer a list of questions/i);
     assert.match(contents, /plain product language/i);
-    assert.match(contents, /Does this direction feel right/i);
+    assert.match(contents, /First question/i);
     assert.match(contents, /final check-in/i);
     assert.match(contents, /do not inspect implementation code by default/i);
     assert.match(contents, /Do not use existing implementation code as the source of truth/i);
-    assert.match(contents, /Domain Purpose/);
+    assert.match(contents, /Document Control & Context/);
+    assert.match(contents, /Executive Summary \/ Purpose/);
+    assert.match(contents, /Domain Scope & Boundaries/);
     assert.match(contents, /Ubiquitous Language/);
-    assert.match(contents, /Core Domain Concepts/);
-    assert.match(contents, /Concept Relationships/);
-    assert.match(contents, /States and Lifecycles/);
-    assert.match(contents, /Business Rules and Invariants/);
-    assert.match(contents, /User \/ Business Workflows/);
-    assert.match(contents, /Domain Events/);
-    assert.match(contents, /Boundaries and External Concepts/);
-    assert.match(contents, /Open Tensions \/ Hard Parts/);
+    assert.match(contents, /Terms and Definitions/);
+    assert.match(contents, /Synonym Clarification/);
+    assert.match(contents, /Bounded Contexts & Subdomains/);
+    assert.match(contents, /Subdomains/);
+    assert.match(contents, /Context Map/);
+    assert.match(contents, /subdomain-focused Mermaid diagram/);
+    assert.match(contents, /flowchart TB/);
+    assert.match(contents, /Core Subdomains/);
+    assert.match(contents, /Supporting Subdomains/);
+    assert.match(contents, /Project-Owned Outputs/);
+    assert.match(contents, /External \/ Generic Domains/);
+    assert.match(contents, /Avoid drawing every operational relationship/);
+    assert.match(contents, /Avoid database tables, class names, deployment nodes, or low-level service architecture/);
+    assert.match(contents, /Domain Concepts & Conceptual Diagram/);
+    assert.match(contents, /Conceptual Entities \/ Objects/);
+    assert.match(contents, /Relationships & Cardinality/);
+    assert.match(contents, /Domain Invariants & Business Rules/);
+    assert.match(contents, /Invariants/);
+    assert.match(contents, /Policies/);
+    assert.match(contents, /Domain Events & Behaviors/);
+    assert.match(contents, /Key Lifecycle Triggers/);
+    assert.match(contents, /Out of Scope & Future Evolution/);
+    assert.match(contents, /Assumptions/);
+    assert.match(contents, /Known Variations \/ Debt/);
   });
 });
 

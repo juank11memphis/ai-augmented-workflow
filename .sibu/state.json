@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "122",
+  "templateVersion": "128",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-06-08T22:18:12.986Z",
+  "updatedAt": "2026-06-09T01:34:46.364Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -251,8 +251,8 @@
     },
     ".agents/skills/business-domain-model-writer/SKILL.md": {
       "template": "skills/business-domain-model-writer/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "c04bcd89fbe0790143de3f3e527e1ca2a2c88c8292e823ff7224ddf8947324bc",
+      "templateVersion": "7",
+      "sha256": "db094c55ebf72bed6d54080840a04bc6d70e45250c964b9d411fd4cb332b6c52",
       "status": "managed"
     }
   }
