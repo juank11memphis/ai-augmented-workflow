@@ -10,8 +10,8 @@ import {
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
 } from '../modules/template-catalog/catalog.js';
-import type { SibuState, SupportedAgent } from './types.js';
-import type { SelectableWorkflowSkill } from './types.js';
+import type { SibuState, SupportedAgent } from '../shared/types.js';
+import type { SelectableWorkflowSkill } from '../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedMcpServersFromState,

@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { cancel, isCancel, log, select } from '@clack/prompts';
 
-import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
+import { STATE_RELATIVE_PATH } from '../../workflow-state-ledger/state-path.js';
 import { readFileHashIfPresent, sha256 } from '../../../shared/hash.js';
 import { removeUndefinedFields } from '../../../shared/object.js';
 import { getProjectContext } from '../../../shared/paths.js';

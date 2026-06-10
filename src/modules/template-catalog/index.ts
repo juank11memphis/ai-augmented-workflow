@@ -36,4 +36,4 @@ export {
   getSelectedWorkflowSkillsFromState,
   getSkillTargetsForAgents,
   getWorkflowTargets,
-} from '../../shared/expected-workflow-targets.js';
+} from '../../support/expected-workflow-targets.js';

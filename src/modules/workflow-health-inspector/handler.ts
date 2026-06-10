@@ -4,7 +4,7 @@ import path from 'node:path';
 import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import { STATE_RELATIVE_PATH } from '../workflow-state-ledger/state-path.js';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import { sha256 } from '../../shared/hash.js';
 import { checkForLatestSibuVersion } from '../../support/version-advisory/index.js';

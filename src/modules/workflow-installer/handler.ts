@@ -5,7 +5,7 @@ import { writeSibuState } from '../workflow-state-ledger/index.js';
 import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import { STATE_RELATIVE_PATH } from '../workflow-state-ledger/state-path.js';
 import { getProjectContext } from '../../shared/paths.js';
 import {
   askForArchitectureSkill,

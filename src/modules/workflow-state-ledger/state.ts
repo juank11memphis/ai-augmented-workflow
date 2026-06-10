@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import { STATE_RELATIVE_PATH } from './state-path.js';
 import { sha256 } from '../../shared/hash.js';
 import { removeUndefinedFields } from '../../shared/object.js';
 import type {

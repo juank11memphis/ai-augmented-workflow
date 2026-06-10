@@ -1,6 +1,6 @@
 import { log } from '@clack/prompts';
 
-import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
+import { STATE_RELATIVE_PATH } from '../workflow-state-ledger/state-path.js';
 import type { SyncPreview } from './sync-preview.js';
 
 export function logSyncPreview(preview: SyncPreview): void {

@@ -23,7 +23,7 @@ import type {
   SkillTemplate,
   SupportedAgent,
   WorkflowTarget,
-} from './types.js';
+} from '../shared/types.js';
 
 type SkillTarget = {
   targetRelativePath: string;

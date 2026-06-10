@@ -1,8 +1,9 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { STATE_RELATIVE_PATH } from './catalog.js';
 import type { ManagedFilePath } from './types.js';
+
+const STATE_RELATIVE_PATH = '.sibu/state.json';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
