@@ -22,7 +22,7 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
   - Sibu needs to compare a recorded template version with the current template version.
   - Sibu needs user-facing notes explaining what changed in a template update.
   - A skill file is distributed as a managed template.
-- Related modules: Agent Tool Configuration, Workflow Installer, Workflow Health Inspector, Sync Review Orchestrator.
+- Related modules: Agent Tool Configuration, Workflow Installer, Workflow Configuration Manager, Workflow Health Inspector, Sync Review Orchestrator.
 - Boundary notes: the catalog exposes available templates and metadata; it does not own the adoption or sync workflow that decides what to do with them.
 
 ### Agent Tool Configuration
@@ -36,7 +36,7 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
   - Sibu configures the Notion MCP differently for Codex, Gemini, and Claude.
   - Sibu adds tool configuration for selected agents without embedding secrets.
   - Sibu explains that a selected tool is unsupported for a selected agent.
-- Related modules: Template Catalog, Workflow Installer, Workflow Health Inspector.
+- Related modules: Template Catalog, Workflow Installer, Workflow Configuration Manager, Workflow Health Inspector.
 - Boundary notes: this module may consume template content from Template Catalog, but it owns the semantic rules for translating selected tools into safe agent-specific configuration.
 
 ### Workflow State Ledger
@@ -51,7 +51,7 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
   - Sibu loads recorded file hashes and template versions before a health check.
   - Sibu updates a file's status to customized or unmanaged after a user-approved sync decision.
   - Sibu needs to preserve what the user has already reviewed.
-- Related modules: Workflow Installer, Workflow Health Inspector, Sync Review Orchestrator.
+- Related modules: Workflow Installer, Workflow Configuration Manager, Workflow Health Inspector, Sync Review Orchestrator.
 - Boundary notes: the ledger represents recorded truth; it does not decide whether that truth is healthy compared with current files and templates.
 
 ### Workflow Installer
@@ -69,6 +69,22 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
   - Sibu explains what was created and what the user controls.
 - Related modules: Template Catalog, Agent Tool Configuration, Workflow State Ledger.
 - Boundary notes: installation owns setup orchestration, but reusable template lookup, tool rendering, and state persistence stay behind their own module interfaces.
+
+### Workflow Configuration Manager
+
+- Suggested module slug: `workflow-configuration-manager`
+- Simple interface / outside promise: given an initialized repo and an intentional configuration request, safely change selected workflow guidance or tool integrations.
+- Hidden complexity: post-init readiness checks, selectable option resolution, skill and MCP selection state transitions, affected workflow file derivation, safe file creation/removal/update, MCP configuration coordination, hash/version recording, and user-facing explanations for intentional changes.
+- Owns: post-initialization workflow configuration changes, including adding/stopping/listing optional skills and MCP/tool integrations, coordinating affected workflow files, and asking the Workflow State Ledger to record approved selection changes.
+- Does not own: first-time workflow installation, template catalog metadata, MCP rendering semantics, read-only health diagnosis, drift repair/update review, raw state persistence, or generic prompt/UI mechanics.
+- Key scenarios:
+  - A user adds a TypeScript skill after the repo is already initialized.
+  - A user stops managing an optional workflow skill while preserving unrelated workflow files.
+  - A user enables or disables an MCP server and Sibu updates the affected agent tool configuration safely.
+  - A requested configuration change is blocked because unresolved workflow drift makes mutation unsafe.
+  - Sibu lists available and selected skills or MCP servers without changing files.
+- Related modules: Template Catalog, Agent Tool Configuration, Workflow State Ledger, Workflow Health Inspector, Sync Review Orchestrator.
+- Boundary notes: configuration management owns intentional post-init selection changes. It is not initial adoption and it is not maintenance of drift or template updates; it may reuse readiness findings so it does not mutate an unsafe workflow.
 
 ### Workflow Health Inspector
 
@@ -99,16 +115,16 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
   - Sibu protects a customized file and asks the user how to proceed.
   - Sibu records that a user wants to keep a file customized or unmanage it entirely.
   - Sibu skips a finding for later without pretending it was resolved.
-- Related modules: Workflow Health Inspector, Template Catalog, Workflow State Ledger, Agent Tool Configuration.
+- Related modules: Workflow Health Inspector, Template Catalog, Workflow State Ledger, Agent Tool Configuration, Workflow Configuration Manager.
 - Boundary notes: sync review is where read-only findings become user-approved maintenance actions. It must never silently overwrite project-owned work.
 
 ## Cross-Module Rules
 
 - **Project ownership stays visible**: workflow files and artifacts belong to the project even when Sibu tracks or helps maintain them.
 - **No silent destructive changes**: modules that write files or state must do so only as part of initialization or user-approved maintenance behavior.
-- **Read-only and mutating behavior stay separate**: health inspection diagnoses; sync review mutates only after approval.
+- **Read-only and mutating behavior stay separate**: health inspection diagnoses; configuration management handles intentional post-init changes; sync review mutates only after maintenance approval.
 - **Templates are source, workflow files are local copies**: modules must preserve the distinction between Sibu-provided templates and repo-owned files.
 - **Local customization is first-class**: customized and unmanaged files are valid user choices, not errors to erase.
 - **Secrets are never stored by Sibu-managed configuration**: tool configuration must reference credentials safely instead of embedding secret values.
-- **Skill routing remains prompt-owned unless product behavior changes**: because routing and prerequisite policy currently live in skill instructions, it is not modeled as an app-level deep module.
+- **Skill routing remains prompt-owned unless product behavior changes**: because routing and prerequisite policy currently live in skill instructions, it is not modeled as an app-level deep module. Selecting which optional skill files are installed after initialization belongs to Workflow Configuration Manager.
 - **New modules require hidden complexity**: add a module only when callers need a simpler promise that hides meaningful implementation detail; do not add modules for one command, one helper, one file, or one workflow step.

@@ -83,6 +83,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 #### Core Subdomains
 
 - **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages.
+- **Workflow Configuration Management**: lets users intentionally change selected workflow guidance and tool integrations after initialization while preserving safety and state consistency.
 - **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
 - **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions.
 
@@ -115,6 +116,8 @@ flowchart TB
     subgraph Core["Core Subdomains"]
       Adoption["Workflow Adoption
 & State Tracking"]
+      Configuration["Workflow Configuration
+Management"]
       Maintenance["Workflow Maintenance
 & Sync Review"]
       Pipeline["AI-Augmented
@@ -149,11 +152,14 @@ Other Tools"]
 
   Adoption --> State
   Adoption --> WorkflowFiles
+  Configuration --> WorkflowFiles
+  Configuration --> State
   Maintenance --> WorkflowFiles
   Maintenance --> State
   Maintenance --> LocalChoices
   Pipeline --> Artifacts
   Adoption -. governed by user control & trust .-> WorkflowFiles
+  Configuration -. governed by user control & trust .-> WorkflowFiles
   Maintenance -. governed by user control & trust .-> LocalChoices
   Pipeline -. governed by user control & trust .-> Artifacts
 
@@ -167,7 +173,7 @@ Other Tools"]
   ProjectOwned -. owned by developer / team .-> SibuDomain
 ```
 
-This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
+This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
 
 ## Domain Concepts & Conceptual Diagram
 
@@ -208,6 +214,10 @@ A detected mismatch between current repo state and Sibu's recorded or expected w
 #### Sync Review
 
 The decision process where the user chooses what to do about drift, missing files, local edits, and template updates.
+
+#### Workflow Configuration Change
+
+An intentional post-initialization change to selected workflow guidance or tool integrations, such as adding or stopping an optional skill or MCP server. It is not drift repair and not first-time installation.
 
 #### Skill
 
@@ -260,6 +270,7 @@ define focused task
 - A **Workflow File** has a repo path, source template, current content, recorded hash, template version, and ownership state.
 - **Sibu State Metadata** records managed paths, template versions, file hashes, selected agent support, and whether files are managed, customized, or unmanaged.
 - A **Skill** has a purpose, trigger scope, required inputs, hard-stop conditions, owned output artifact, and boundaries.
+- A **Workflow Configuration Change** has a user intent, selected option, affected workflow files, readiness checks, and resulting state updates.
 - An **MCP Configuration** has a selected server, target agent, connection metadata, and references to credential environment variables when needed.
 - An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
 - A **Sync Review** has detected conditions, user choices, applied actions, skipped actions, and updated state.
@@ -275,6 +286,8 @@ define focused task
 - **Sibu State Metadata** tracks many managed or customized **Workflow Files**.
 - A **Drift** finding refers to one workflow file or one workflow-level state mismatch.
 - A **Sync Review** can resolve, defer, or record many drift findings.
+- A **Workflow Configuration Change** can add, stop, or list selected skills and MCP/tool integrations after initialization.
+- A **Workflow Configuration Change** may create, update, remove, or record workflow files, but only as an intentional user-requested configuration change.
 - A **Skill** produces or updates one primary **Artifact** type.
 - A **Skill** may guide use of an MCP-provided tool, but the MCP server remains an external integration.
 - An **Artifact** can be required by one or more downstream **Skills**.
@@ -291,12 +304,13 @@ define focused task
 - A template is Sibu-provided source; an installed workflow file is project-owned.
 - Managed does not mean Sibu owns the file more than the user does.
 - `sibu init` is for one-time adoption, not routine updates.
+- Intentional post-init configuration changes are distinct from both first-time installation and sync maintenance.
 - `sibu doctor` is read-only and must not change workflow files.
 - `sibu sync` is the maintenance path for reviewing and applying workflow changes after initialization.
 - Sibu must protect customized files from automatic overwrite.
 - Sibu should make drift understandable rather than hide it.
 - Users can customize or unmanage workflow files when Sibu defaults no longer fit.
-- MCP integrations are optional and user-selected.
+- Optional skills and MCP integrations are user-selected and may be changed after initialization.
 - Sibu must not commit, store, or embed secrets in generated MCP configuration.
 - Feature/product planning work must follow the enforced artifact pipeline when it triggers the relevant skills.
 - Each pipeline skill owns a specific artifact and should not write unrelated downstream artifacts.
@@ -309,6 +323,7 @@ define focused task
 
 - When a repo has no Sibu workflow, `sibu init` may bootstrap the initial workflow and record state metadata.
 - When workflow health is uncertain, `sibu doctor` should inspect state and report whether the workflow is healthy or needs review.
+- When a user intentionally changes selected skills or MCP/tool integrations after initialization, Sibu should verify the workflow is safe to mutate before changing files or state.
 - When drift, missing files, local edits, or template updates are detected, Sibu should direct the user to `sibu sync`.
 - When local edits exist, Sibu should present review options instead of overwriting automatically.
 - When a managed file is missing, Sibu may offer to repair it during sync.
@@ -327,11 +342,12 @@ define focused task
 
 1. **Uninitialized Repo**: the repo has no Sibu workflow metadata.
 2. **Initialized Workflow**: `sibu init` has created initial workflow files and state metadata.
-3. **Healthy Workflow**: managed files match known state and no drift is detected.
-4. **Drifted Workflow**: files are missing, modified, unrecorded, customized, or generated from older templates.
-5. **Sync Review Needed**: the user must decide how to handle detected drift or updates.
-6. **Maintained Workflow**: sync decisions have been applied, skipped, or recorded.
-7. **Partially User-Owned Workflow**: some files may become customized or unmanaged while the rest remain managed.
+3. **Configured Workflow**: the user may intentionally add or stop optional workflow guidance or tool integrations after initialization.
+4. **Healthy Workflow**: managed files match known state and no drift is detected.
+5. **Drifted Workflow**: files are missing, modified, unrecorded, customized, or generated from older templates.
+6. **Sync Review Needed**: the user must decide how to handle detected drift or updates.
+7. **Maintained Workflow**: sync decisions have been applied, skipped, or recorded.
+8. **Partially User-Owned Workflow**: some files may become customized or unmanaged while the rest remain managed.
 
 #### Workflow File Lifecycle
 
@@ -356,6 +372,7 @@ define focused task
 
 - **Workflow Initialized**: a repo adopts Sibu and records initial workflow metadata.
 - **Workflow Health Checked**: Sibu inspects workflow state without changing files.
+- **Workflow Configuration Changed**: the user intentionally changes selected skills or MCP/tool integrations after initialization.
 - **Drift Detected**: Sibu finds missing, modified, unrecorded, customized, or outdated workflow files.
 - **Template Update Available**: a newer Sibu template exists for a tracked workflow file.
 - **Local Customization Detected**: a workflow file has user edits that must be protected.

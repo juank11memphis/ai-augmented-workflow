@@ -21,6 +21,15 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Explain project ownership**: make clear that installed workflow files are project-owned even when Sibu tracks them as managed files.
 - **Explain installed workflow structure**: help users understand what was created, what is managed, what can be customized, and what remains under their control.
 
+#### Workflow Configuration Management
+
+- **List configurable workflow options**: show which optional skills and MCP/tool integrations are available and which are already selected.
+- **Apply intentional selection changes**: let users add or stop optional workflow guidance and tool integrations after initialization.
+- **Check mutation readiness**: prevent post-init configuration changes when unresolved workflow drift or unsafe local state would make mutation ambiguous.
+- **Update selected workflow files**: create, update, or remove affected workflow files for selected skills and MCP/tool integrations without changing unrelated files.
+- **Record configuration state changes**: update selected skills, selected MCP servers, file metadata, hashes, and ownership state after approved configuration changes.
+- **Preserve configuration boundaries**: keep intentional configuration changes distinct from first-time adoption and sync maintenance.
+
 #### Workflow Maintenance & Sync Review
 
 - **Check workflow health**: inspect Sibu-managed workflow state without changing files so users know whether the workflow is healthy or needs attention.
@@ -83,7 +92,8 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 ## Capability Dependencies / Sequencing
 
 - **Template Catalog**, **Skill Guidance**, **Agent Support Selection**, and **MCP / Tool Configuration Support** enable **Workflow Adoption & State Tracking**.
-- **Workflow Adoption & State Tracking** must precede **Workflow Maintenance & Sync Review**, because maintenance depends on recorded workflow state.
+- **Workflow Adoption & State Tracking** must precede **Workflow Configuration Management** and **Workflow Maintenance & Sync Review**, because both depend on recorded workflow state.
+- **Workflow Configuration Management** depends on **Template Catalog** for selectable skills and workflow templates, **MCP / Tool Configuration Support** for safe tool configuration rendering, and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
 - **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
 - **User Control & Trust** is not sequenced as a separate stage; it constrains every capability where Sibu creates, changes, exports, or asks AI to act on project-owned work.
@@ -91,6 +101,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 ## Known Gaps / Evolution Notes
 
 - **Initial setup breadth**: Sibu may need to decide how much `init` should configure up front versus defer to later `sync` or setup flows.
+- **Workflow configuration breadth**: post-init configuration now has a first-class capability boundary; future work should decide which options beyond skills and MCP servers belong there.
 - **Skill selection depth**: optional skills may start as template choices, but could evolve into richer recommendations based on project type.
 - **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.

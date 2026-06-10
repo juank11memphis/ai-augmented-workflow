@@ -1,12 +1,14 @@
 import type { DoctorProjectCommand } from '../../modules/workflow-health-inspector/index.js';
 import type { InitProjectCommand } from '../../modules/workflow-installer/index.js';
-import type { ListMcpServersCommand } from '../../modules/mcp-server-selection-management/index.js';
-import type { StopMcpServerCommand } from '../../modules/mcp-server-selection-management/index.js';
-import type { UseMcpServerCommand } from '../../modules/mcp-server-selection-management/index.js';
-import type { ListSkillsCommand } from '../../modules/skill-selection-management/index.js';
-import type { StopManagingFileCommand } from '../../modules/skill-selection-management/index.js';
+import type {
+  ListMcpServersCommand,
+  ListSkillsCommand,
+  StopManagingFileCommand,
+  StopMcpServerCommand,
+  UseMcpServerCommand,
+  UseSkillCommand,
+} from '../../modules/workflow-configuration-manager/index.js';
 import type { SyncProjectCommand } from '../../modules/sync-review-orchestrator/index.js';
-import type { UseSkillCommand } from '../../modules/skill-selection-management/index.js';
 
 export type SibuCliCommand =
   | InitProjectCommand
