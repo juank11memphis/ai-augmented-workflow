@@ -4,6 +4,27 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.17.1 - 2026-06-10
+
+### Changed
+- narrow shared source boundary
+- separate support from deep modules
+- add workflow configuration manager
+- retire workflow target planning module
+- align selection flows to module boundaries
+- move sync maintenance to orchestrator
+- move doctor diagnosis to health inspector
+- move init orchestration to workflow installer
+- move workflow state into ledger
+- move mcp rendering to agent tool configuration
+- move template source APIs to catalog
+- add deep module boundary shells
+- expand skills inventory coverage
+- update workflow docs for domain and capabilities maps
+
+### Removed
+- remove obsolete workflow modules
+
 ## 0.17.0 - 2026-06-09
 
 ### Added
