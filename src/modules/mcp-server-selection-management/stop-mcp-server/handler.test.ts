@@ -7,8 +7,8 @@ import { writeSibuState } from '../../workflow-state-ledger/index.js';
 
 import { sha256 } from '../../../shared/hash.js';
 import type { ManagedFilePath, ManagedFileState, SibuState, SupportedAgent } from '../../../shared/types.js';
-import { SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../workflow-target-planning/index.js';
+import { SUPPORTED_AGENTS } from '../../template-catalog/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../template-catalog/index.js';
 import { handleUseMcpServer } from '../use-mcp-server/handler.js';
 import { applyStoppedMcpFileDeleteDecision, getNextStoppedMcpSelection, handleStopMcpServer, stopSelectedMcpServer } from './handler.js';
 

@@ -6,10 +6,10 @@ import { log } from '@clack/prompts';
 
 import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
 import { askForNotionDocsParentPage } from '../../interactive-guidance/index.js';
-import { getMcpServersRequiredByWorkflowSkills, resolveSelectableSkillById } from '../../workflow-target-planning/index.js';
+import { getMcpServersRequiredByWorkflowSkills, resolveSelectableSkillById } from '../../template-catalog/index.js';
 import { sha256 } from '../../../shared/hash.js';
 import { getProjectContext } from '../../../shared/paths.js';
-import { renderTemplateForSync } from '../../template-catalog-rendering/index.js';
+import { renderTemplateForSync } from '../../template-catalog/index.js';
 import type {
   ArchitectureSkillId,
   DatabaseSkillId,
@@ -26,13 +26,13 @@ import type {
   WorkflowSkillId,
   WorkflowTarget,
 } from '../../../shared/types.js';
-import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
+import { getWorkflowMutationReadiness } from '../../sync-review-orchestrator/index.js';
 import {
   getSelectedAgentsFromState,
   getSelectedMcpServersFromState,
   getWorkflowTargets,
   renderMissingWorkflowFiles,
-} from '../../workflow-target-planning/index.js';
+} from '../../template-catalog/index.js';
 import type { UseSkillCommand } from './command.js';
 import type { McpServerConfigs } from '../../../shared/types.js';
 

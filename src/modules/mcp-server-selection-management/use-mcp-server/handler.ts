@@ -8,8 +8,8 @@ import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
 import { sha256 } from '../../../shared/hash.js';
 import { getProjectContext } from '../../../shared/paths.js';
 import { askForNotionDocsParentPage } from '../../interactive-guidance/index.js';
-import { renderTemplateForSync } from '../../template-catalog-rendering/index.js';
-import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
+import { renderTemplateForSync } from '../../template-catalog/index.js';
+import { getWorkflowMutationReadiness } from '../../sync-review-orchestrator/index.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
@@ -22,7 +22,7 @@ import {
   getWorkflowTargets,
   renderMissingWorkflowFiles,
   resolveSelectableMcpServerById,
-} from '../../workflow-target-planning/index.js';
+} from '../../template-catalog/index.js';
 import type { McpServerConfigs, McpServerId, SelectableMcpServer, SelectableWorkflowSkill, SibuState, WorkflowTarget } from '../../../shared/types.js';
 import type { UseMcpServerCommand } from './command.js';
 

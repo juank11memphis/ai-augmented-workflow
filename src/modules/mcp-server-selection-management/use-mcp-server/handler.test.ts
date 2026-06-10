@@ -5,9 +5,9 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 import { writeSibuState } from '../../workflow-state-ledger/index.js';
 
-import { SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
+import { SUPPORTED_AGENTS } from '../../template-catalog/index.js';
 import type { SibuState, SupportedAgent } from '../../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../workflow-target-planning/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../template-catalog/index.js';
 import { getNextMcpSelection, handleUseMcpServer } from './handler.js';
 
 const temporaryRoots: string[] = [];

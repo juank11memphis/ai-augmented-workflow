@@ -8,8 +8,8 @@ import { readFileHashIfPresent, sha256 } from '../../../shared/hash.js';
 import { removeUndefinedFields } from '../../../shared/object.js';
 import { getProjectContext } from '../../../shared/paths.js';
 import type { ManagedFilePath, ManagedFileState, McpServerId, SelectableMcpServer, SibuState, WorkflowTarget } from '../../../shared/types.js';
-import { renderMissingWorkflowFiles, resolveSelectableMcpServerById } from '../../workflow-target-planning/index.js';
-import { getWorkflowMutationReadiness } from '../../workflow-mutation-readiness/index.js';
+import { renderMissingWorkflowFiles, resolveSelectableMcpServerById } from '../../template-catalog/index.js';
+import { getWorkflowMutationReadiness } from '../../sync-review-orchestrator/index.js';
 import { getTemplateVersion, readTemplateManifest } from '../../template-catalog/index.js';
 import { cloneState, writeStateFile } from '../../workflow-state-ledger/index.js';
 import {
@@ -21,7 +21,7 @@ import {
   getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
-} from '../../workflow-target-planning/index.js';
+} from '../../template-catalog/index.js';
 import type { StopMcpServerCommand } from './command.js';
 
 type StoppedMcpSelectionResult =

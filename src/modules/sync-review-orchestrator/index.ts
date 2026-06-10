@@ -8,3 +8,5 @@ export { getSyncPreviews, isActionableSyncPreview, shouldAskForSyncAction } from
 export type { SyncPreview } from './sync-preview.js';
 export { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
 export type { UnsupportedAgentCleanupPlan, UnsupportedAgentCleanupResult } from './unsupported-agent-cleanup.js';
+export { getWorkflowMutationReadiness } from './workflow-mutation-readiness.js';
+export type { WorkflowMutationReadinessResult } from './workflow-mutation-readiness.js';

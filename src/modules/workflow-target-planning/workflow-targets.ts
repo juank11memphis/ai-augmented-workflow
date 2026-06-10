@@ -10,10 +10,9 @@ import {
   SELECTABLE_WORKFLOW_SKILLS,
   SESSION_START_HOOKS,
   SUPPORTED_AGENTS,
-} from './index.js';
-import { readTemplate } from '../template-catalog/index.js';
+} from './catalog.js';
 import { renderMcpConfig } from '../agent-tool-configuration/index.js';
-import { renderSkillRouting, renderWorkerToolboxRoutingPlaceholders } from '../template-catalog-rendering/index.js';
+import { readTemplate, renderSkillRouting, renderWorkerToolboxRoutingPlaceholders } from '../template-catalog/templates.js';
 import type {
   SibuState,
   FileToCreate,

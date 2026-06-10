@@ -6,7 +6,7 @@ import { afterEach, describe, it } from 'node:test';
 import { writeSibuState } from '../workflow-state-ledger/index.js';
 
 import { SELECTABLE_LANGUAGE_SKILLS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
-import { getWorkflowMutationReadiness } from '../sync-review-orchestrator/index.js';
+import { getWorkflowMutationReadiness } from './workflow-mutation-readiness.js';
 import type { SelectableArchitectureSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SupportedAgent } from '../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 

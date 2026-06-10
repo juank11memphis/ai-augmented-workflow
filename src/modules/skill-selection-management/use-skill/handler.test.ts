@@ -6,10 +6,10 @@ import { afterEach, describe, it, mock } from 'node:test';
 import { writeSibuState } from '../../workflow-state-ledger/index.js';
 
 import { log } from '@clack/prompts';
-import { SUPPORTED_AGENTS } from '../../workflow-target-planning/index.js';
+import { SUPPORTED_AGENTS } from '../../template-catalog/index.js';
 import { readExistingState } from '../../workflow-state-ledger/index.js';
 import type { SibuState, SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../workflow-target-planning/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../template-catalog/index.js';
 import { getNextSkillSelection, handleUseSkill } from './handler.js';
 
 const BASE_STATE: SibuState = {

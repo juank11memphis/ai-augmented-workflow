@@ -1,7 +1,7 @@
 import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
-import { SELECTABLE_MCP_SERVERS } from '../../workflow-target-planning/index.js';
+import { SELECTABLE_MCP_SERVERS } from '../../template-catalog/index.js';
 import { getProjectContext } from '../../../shared/paths.js';
 import { renderIntro } from '../../interactive-guidance/index.js';
 import { readStateForDoctor } from '../../workflow-state-ledger/index.js';

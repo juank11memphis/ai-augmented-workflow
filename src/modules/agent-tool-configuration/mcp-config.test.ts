@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { readTemplate } from '../template-catalog/index.js';
-import { SELECTABLE_MCP_SERVERS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_MCP_SERVERS } from '../template-catalog/index.js';
 import { renderMcpConfig, resolveMcpConfigAgentId } from './index.js';
 
 const selectedGithubMcpServers = SELECTABLE_MCP_SERVERS.filter((server) => server.id === 'github');
