@@ -118,13 +118,31 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
 - Related modules: Workflow Health Inspector, Template Catalog, Workflow State Ledger, Agent Tool Configuration, Workflow Configuration Manager.
 - Boundary notes: sync review is where read-only findings become user-approved maintenance actions. It must never silently overwrite project-owned work.
 
+
+### Maintainer Release Support
+
+- Suggested module slug: `maintainer-release-support`
+- Simple interface / outside promise: given maintainer release intent and local repository context, plan, validate, and coordinate a safe Sibu release.
+- Hidden complexity: git history inspection, conventional commit classification, changelog proposal formatting, SemVer guidance, package metadata planning, dirty-worktree and tag checks, validation command sequencing, npm publish behavior including OTP/interactive flows, git commit/tag/push ordering, GitHub Release creation, and recovery reporting after partial failure.
+- Owns: maintainer-facing changelog generation, release planning, release metadata updates, release-readiness validation coordination, publication step orchestration, and release recovery guidance.
+- Does not own: end-user workflow adoption/configuration/sync behavior, general source-control hosting behavior, npm as an external registry, GitHub as an external release surface, or public `sibu` workflow commands.
+- Key scenarios:
+  - A maintainer previews release notes and SemVer guidance from local git history.
+  - A maintainer accepts a planned changelog and package metadata update.
+  - Sibu validates release readiness before publishing.
+  - Sibu publishes a release through commit, tag, npm publish, push, and GitHub Release creation.
+  - A public release step fails and Sibu reports what completed plus manual recovery guidance.
+- Related modules: Version Advisory.
+- Boundary notes: this module is product-owned because Sibu maintainers need a safe, repeatable release workflow for Sibu itself. It remains maintainer-facing support, not a consumer-project workflow capability.
+
 ## Cross-Module Rules
 
 - **Project ownership stays visible**: workflow files and artifacts belong to the project even when Sibu tracks or helps maintain them.
-- **No silent destructive changes**: modules that write files or state must do so only as part of initialization or user-approved maintenance behavior.
+- **No silent destructive changes**: modules that write files, state, release metadata, tags, or public release surfaces must do so only as part of explicit initialization, intentional configuration, user-approved maintenance, or maintainer-approved release behavior.
 - **Read-only and mutating behavior stay separate**: health inspection diagnoses; configuration management handles intentional post-init changes; sync review mutates only after maintenance approval.
 - **Templates are source, workflow files are local copies**: modules must preserve the distinction between Sibu-provided templates and repo-owned files.
 - **Local customization is first-class**: customized and unmanaged files are valid user choices, not errors to erase.
 - **Secrets are never stored by Sibu-managed configuration**: tool configuration must reference credentials safely instead of embedding secret values.
 - **Skill routing remains prompt-owned unless product behavior changes**: because routing and prerequisite policy currently live in skill instructions, it is not modeled as an app-level deep module. Selecting which optional skill files are installed after initialization belongs to Workflow Configuration Manager.
+- **Maintainer-facing is still product-owned when it protects Sibu's own lifecycle**: release support may be a Deep Module even though it is not a public `sibu` command, because it hides release complexity and safety rules for Sibu maintainers.
 - **New modules require hidden complexity**: add a module only when callers need a simpler promise that hides meaningful implementation detail; do not add modules for one command, one helper, one file, or one workflow step.

@@ -86,6 +86,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Workflow Configuration Management**: lets users intentionally change selected workflow guidance and tool integrations after initialization while preserving safety and state consistency.
 - **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
 - **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions.
+- **Maintainer Release Support**: helps Sibu maintainers prepare, validate, publish, and recover Sibu releases without turning release automation into an end-user workflow.
 
 #### Supporting Subdomains
 
@@ -122,6 +123,8 @@ Management"]
 & Sync Review"]
       Pipeline["AI-Augmented
 Development Pipeline"]
+      ReleaseSupport["Maintainer Release
+Support"]
     end
 
     subgraph Supporting["Supporting Subdomains"]
@@ -140,6 +143,8 @@ Configuration Support"]
     State["Sibu State Metadata"]
     LocalChoices["Customizations /
 Unmanaged Files"]
+    ReleaseArtifacts["Release Notes /
+Package Metadata"]
   end
 
   subgraph External["External / Generic Domains"]
@@ -158,10 +163,12 @@ Other Tools"]
   Maintenance --> State
   Maintenance --> LocalChoices
   Pipeline --> Artifacts
+  ReleaseSupport --> ReleaseArtifacts
   Adoption -. governed by user control & trust .-> WorkflowFiles
   Configuration -. governed by user control & trust .-> WorkflowFiles
   Maintenance -. governed by user control & trust .-> LocalChoices
   Pipeline -. governed by user control & trust .-> Artifacts
+  ReleaseSupport -. governed by maintainer control & trust .-> ReleaseArtifacts
 
   Templates --> WorkflowFiles
   Skills --> Artifacts
@@ -173,7 +180,7 @@ Other Tools"]
   ProjectOwned -. owned by developer / team .-> SibuDomain
 ```
 
-This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
+This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. Maintainer Release Support is also core, but maintainer-facing: it protects Sibu's own release process rather than a consumer project's installed workflow. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
 
 ## Domain Concepts & Conceptual Diagram
 
@@ -231,6 +238,10 @@ An external tool-access endpoint selected by the user and configured for support
 
 A project-owned output created or updated by a skill. Examples include Product Vision, Business Domain Model, Deep Module Map, Feature Brief, Technical Design, Epics, User Stories, and implementation plans.
 
+#### Maintainer Release
+
+A Sibu publication event prepared by a maintainer. It includes release notes, SemVer/version decisions, package metadata, validation, git tagging, npm publishing, GitHub Release creation, and recovery guidance when a release step fails.
+
 #### AI-Augmented Development Pipeline
 
 The ordered artifact chain used for planned feature/product work:
@@ -273,6 +284,7 @@ define focused task
 - A **Workflow Configuration Change** has a user intent, selected option, affected workflow files, readiness checks, and resulting state updates.
 - An **MCP Configuration** has a selected server, target agent, connection metadata, and references to credential environment variables when needed.
 - An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
+- A **Maintainer Release** has a git range, proposed version, changelog section, package metadata update, validation result, tag, publish result, and recovery state.
 - A **Sync Review** has detected conditions, user choices, applied actions, skipped actions, and updated state.
 
 ### Relationships & Cardinality
@@ -291,6 +303,7 @@ define focused task
 - A **Skill** produces or updates one primary **Artifact** type.
 - A **Skill** may guide use of an MCP-provided tool, but the MCP server remains an external integration.
 - An **Artifact** can be required by one or more downstream **Skills**.
+- A **Maintainer Release** produces or updates release notes, package metadata, git tags, npm publication state, and GitHub Release notes.
 - The **AI-Augmented Development Pipeline** orders many artifacts so each layer of decision-making supports the next.
 - A **Hard Stop** belongs to a skill and protects one or more prerequisite requirements.
 
@@ -317,6 +330,8 @@ define focused task
 - Each pipeline skill must hard-stop when required upstream artifacts are missing or insufficient.
 - Narrow fixes and normal repo work do not require the full product pipeline unless the work creates product, domain, feature, architecture, planning, or implementation-plan ambiguity.
 - AI-assisted work should be small, explicit, validated where possible, and reviewable by the engineer.
+- Maintainer release automation must preview and validate planned public side effects before performing them.
+- Maintainers remain responsible for release decisions, changelog wording, package publication, and recovery after partial failures.
 - Sibu should amplify engineering judgment, not replace it.
 
 ### Policies
@@ -333,6 +348,8 @@ define focused task
 - When planned feature work triggers a downstream skill without prerequisites, that skill should hard-stop and identify the missing upstream artifact.
 - When a skill produces an artifact, that artifact should clarify one layer of decision-making before downstream work starts.
 - When a user requests a narrow fix, Sibu guidance should avoid unnecessary pipeline ceremony unless scope or ownership is unclear.
+- When a maintainer prepares a release, Sibu should derive helpful changelog and SemVer guidance from git history, but the maintainer owns the final decision.
+- When release automation performs public side effects, it should validate first, execute in a predictable order, and report recovery guidance if a step fails.
 
 ## Domain Events & Behaviors
 
@@ -387,6 +404,8 @@ define focused task
 - **Artifact Updated**: a skill revises its owned artifact.
 - **Artifact Accepted for Downstream Work**: an artifact is clear enough to serve as input for the next pipeline stage.
 - **Implementation Plan Ready**: a user story has enough planning detail for AI-assisted execution.
+- **Release Planned**: a maintainer has a preview of changelog, version, validation, and publication steps before side effects occur.
+- **Release Published**: a validated Sibu package version has been tagged, published, pushed, and represented in the GitHub Release surface.
 
 ## Out of Scope & Future Evolution
 

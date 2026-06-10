@@ -5,7 +5,7 @@ import { writeSibuState } from '../../workflow-state-ledger/index.js';
 import { log } from '@clack/prompts';
 
 import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
-import { askForNotionDocsParentPage } from '../../interactive-guidance/index.js';
+import { askForNotionDocsParentPage } from '../../../support/interactive-guidance/index.js';
 import { getMcpServersRequiredByWorkflowSkills, resolveSelectableSkillById } from '../../template-catalog/index.js';
 import { sha256 } from '../../../shared/hash.js';
 import { getProjectContext } from '../../../shared/paths.js';

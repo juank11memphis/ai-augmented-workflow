@@ -50,6 +50,16 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Keep narrow fixes lightweight**: avoid forcing the full product pipeline for small code, documentation, or maintenance tasks when direction and ownership are already clear.
 - **Keep AI work reviewable**: guide work into small, explicit, validated chunks that preserve engineer judgment and accountability.
 
+#### Maintainer Release Support
+
+- **Generate release notes guidance**: inspect git history and propose changelog entries that maintainers can review and edit.
+- **Suggest SemVer direction**: derive version bump guidance from conventional commits and breaking-change markers without replacing maintainer judgment.
+- **Plan release metadata updates**: preview package metadata and changelog changes before writing files.
+- **Validate release readiness**: run the build, test, packaging, and runtime checks required before publication.
+- **Coordinate publication steps**: execute release commit, tag, npm publish, push, and GitHub Release creation in a predictable maintainer-approved order.
+- **Support release recovery**: report completed steps and manual recovery guidance when a public release step fails.
+- **Keep release tooling maintainer-facing**: support publishing Sibu itself without exposing release automation as an end-user workflow command.
+
 ### Supporting Subdomains
 
 #### Template Catalog
@@ -96,7 +106,8 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Workflow Configuration Management** depends on **Template Catalog** for selectable skills and workflow templates, **MCP / Tool Configuration Support** for safe tool configuration rendering, and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
 - **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
-- **User Control & Trust** is not sequenced as a separate stage; it constrains every capability where Sibu creates, changes, exports, or asks AI to act on project-owned work.
+- **Maintainer Release Support** depends on source control history, package metadata, npm publishing, GitHub Releases, and validation scripts, but those external systems remain outside Sibu's owned domain.
+- **User Control & Trust** is not sequenced as a separate stage; it constrains every capability where Sibu creates, changes, exports, publishes, or asks AI to act on project-owned work.
 
 ## Known Gaps / Evolution Notes
 
@@ -106,3 +117,4 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.
 - **Pipeline strictness**: Sibu must balance enforcing artifact prerequisites with staying lightweight for narrow fixes.
+- **Release workflow scope**: maintainer release support should stay focused on Sibu's own publication process unless the product explicitly expands into release management for consumer projects.

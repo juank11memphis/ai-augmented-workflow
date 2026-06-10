@@ -19,7 +19,7 @@ import type {
   WorkflowTarget,
 } from '../../shared/types.js';
 import { getTemplateVersion, readTemplateManifest } from '../template-catalog/index.js';
-import { SIBU_VERSION } from '../version-advisory/index.js';
+import { SIBU_VERSION } from '../../support/version-advisory/index.js';
 
 export type StateReadResult = { ok: true; state: SibuState } | { ok: false; message: string };
 

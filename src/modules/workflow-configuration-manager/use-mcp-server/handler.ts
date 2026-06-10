@@ -7,7 +7,7 @@ import { log } from '@clack/prompts';
 import { STATE_RELATIVE_PATH } from '../../../shared/catalog.js';
 import { sha256 } from '../../../shared/hash.js';
 import { getProjectContext } from '../../../shared/paths.js';
-import { askForNotionDocsParentPage } from '../../interactive-guidance/index.js';
+import { askForNotionDocsParentPage } from '../../../support/interactive-guidance/index.js';
 import { renderTemplateForSync } from '../../template-catalog/index.js';
 import { getWorkflowMutationReadiness } from '../../sync-review-orchestrator/index.js';
 import {

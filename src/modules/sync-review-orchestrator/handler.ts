@@ -3,7 +3,7 @@ import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
 import { getProjectContext } from '../../shared/paths.js';
-import { askForMissingFrameworkSkills, askForNewArchitectureSkill, askForNewLanguageSkills, renderIntro } from '../interactive-guidance/index.js';
+import { askForMissingFrameworkSkills, askForNewArchitectureSkill, askForNewLanguageSkills, renderIntro } from '../../support/interactive-guidance/index.js';
 import { readStateForDoctor, writeStateFile } from '../workflow-state-ledger/index.js';
 import { readTemplateManifest } from '../template-catalog/index.js';
 import { askForSyncAction, askForUnsupportedAgentCleanup } from './action-prompt.js';

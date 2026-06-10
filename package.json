@@ -19,6 +19,7 @@
     "bin/admin/",
     "bin/modules/",
     "bin/shared/",
+    "bin/support/",
     "!bin/shared/state.js",
     "!bin/**/*.test.js",
     "!bin/echo.js",
