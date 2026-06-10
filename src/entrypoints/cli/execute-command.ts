@@ -3,7 +3,7 @@ import { handleInitProject } from '../../modules/workflow-installer/index.js';
 import { handleListMcpServers, handleStopMcpServer, handleUseMcpServer } from '../../modules/mcp-server-selection-management/index.js';
 import { handleListSkills } from '../../modules/skill-selection-management/index.js';
 import { handleStopManagingFile } from '../../modules/skill-selection-management/index.js';
-import { handleSyncProject } from '../../modules/sync-review/index.js';
+import { handleSyncProject } from '../../modules/sync-review-orchestrator/index.js';
 import { handleUseSkill } from '../../modules/skill-selection-management/index.js';
 import type { SibuCliCommand } from './command.js';
 

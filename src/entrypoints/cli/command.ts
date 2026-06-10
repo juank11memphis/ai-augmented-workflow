@@ -5,7 +5,7 @@ import type { StopMcpServerCommand } from '../../modules/mcp-server-selection-ma
 import type { UseMcpServerCommand } from '../../modules/mcp-server-selection-management/index.js';
 import type { ListSkillsCommand } from '../../modules/skill-selection-management/index.js';
 import type { StopManagingFileCommand } from '../../modules/skill-selection-management/index.js';
-import type { SyncProjectCommand } from '../../modules/sync-review/index.js';
+import type { SyncProjectCommand } from '../../modules/sync-review-orchestrator/index.js';
 import type { UseSkillCommand } from '../../modules/skill-selection-management/index.js';
 
 export type SibuCliCommand =
