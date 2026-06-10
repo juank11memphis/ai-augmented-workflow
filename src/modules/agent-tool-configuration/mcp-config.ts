@@ -1,7 +1,53 @@
-import type { AgentId, SelectableMcpServer } from '../../shared/types.js';
+import type { AgentId, SelectableMcpServer, SupportedAgent } from '../../shared/types.js';
 
 type McpConfigAgentId = Extract<AgentId, 'codex' | 'gemini' | 'claude'>;
 type JsonMcpConfigAgentId = Extract<AgentId, 'gemini' | 'claude'>;
+
+export type McpConfigTarget = {
+  targetRelativePath: string;
+  templateRelativePath: string;
+  agentId: McpConfigAgentId;
+};
+
+export function getMcpConfigTargetsForAgents(selectedAgents: SupportedAgent[], selectedMcpServers: SelectableMcpServer[]): McpConfigTarget[] {
+  if (selectedMcpServers.length === 0) {
+    return [];
+  }
+
+  return selectedAgents.flatMap((agent): McpConfigTarget[] => {
+    if (agent.id === 'codex') {
+      return [
+        {
+          targetRelativePath: '.codex/config.toml',
+          templateRelativePath: '.codex/config.toml',
+          agentId: 'codex',
+        },
+      ];
+    }
+
+    if (agent.id === 'claude') {
+      return [
+        {
+          targetRelativePath: '.mcp.json',
+          templateRelativePath: 'mcp/claude/.mcp.json',
+          agentId: 'claude',
+        },
+      ];
+    }
+
+    if (agent.id === 'gemini') {
+      return [
+        {
+          targetRelativePath: '.gemini/settings.json',
+          templateRelativePath: 'mcp/gemini/settings.json',
+          agentId: 'gemini',
+        },
+      ];
+    }
+
+    return [];
+  });
+}
 
 export function renderMcpConfig({
   agentId,

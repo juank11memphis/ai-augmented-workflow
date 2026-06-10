@@ -9,17 +9,17 @@ import {
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
-} from './index.js';
-import type { SibuState, SupportedAgent } from '../../shared/types.js';
-import type { SelectableWorkflowSkill } from '../../shared/types.js';
+} from '../modules/template-catalog/catalog.js';
+import type { SibuState, SupportedAgent } from './types.js';
+import type { SelectableWorkflowSkill } from './types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedMcpServersFromState,
-  getSelectedMcpTargetsForAgents,
   getSelectedSkillTargetsForAgents,
   getWorkflowTargets,
-  renderMissingWorkflowFiles,
-} from './workflow-targets.js';
+} from './expected-workflow-targets.js';
+import { getMcpConfigTargetsForAgents } from '../modules/agent-tool-configuration/index.js';
+import { renderMissingWorkflowFiles } from '../modules/template-catalog/index.js';
 
 const ROOT_PATH = '/test-project';
 
@@ -212,7 +212,7 @@ describe('getWorkflowTargets', () => {
   });
 
   it('resolves MCP targets for supported MCP agents', () => {
-    assert.deepEqual(getSelectedMcpTargetsForAgents(SUPPORTED_AGENTS, SELECTABLE_MCP_SERVERS), [
+    assert.deepEqual(getMcpConfigTargetsForAgents(SUPPORTED_AGENTS, SELECTABLE_MCP_SERVERS), [
       {
         targetRelativePath: '.codex/config.toml',
         templateRelativePath: '.codex/config.toml',

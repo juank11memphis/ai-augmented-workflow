@@ -12,7 +12,7 @@ import {
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
   SUPPORTED_AGENTS,
-} from '../workflow-target-planning/index.js';
+} from '../template-catalog/index.js';
 import { cloneState } from '../workflow-state-ledger/index.js';
 
 export type UnsupportedAgentCleanupPlan = {

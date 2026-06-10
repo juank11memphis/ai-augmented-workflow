@@ -5,7 +5,7 @@ import { intro, log, outro } from '@clack/prompts';
 import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../../shared/catalog.js';
-import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../workflow-target-planning/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import { sha256 } from '../../shared/hash.js';
 import { checkForLatestSibuVersion } from '../version-advisory/index.js';
 import { getProjectContext } from '../../shared/paths.js';
@@ -22,7 +22,7 @@ import {
   getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
-} from '../workflow-target-planning/index.js';
+} from '../template-catalog/index.js';
 import type { DoctorProjectCommand } from './command.js';
 
 export async function handleDoctorProject(_command: DoctorProjectCommand): Promise<void> {

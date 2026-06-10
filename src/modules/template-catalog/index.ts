@@ -3,6 +3,7 @@ export {
   getTemplateVersion,
   readTemplate,
   readTemplateManifest,
+  renderMissingWorkflowFiles,
   renderSkillRouting,
   renderTemplateForSync,
   renderWorkerToolboxRouting,
@@ -23,7 +24,7 @@ export {
   getWorkflowSkillsImpliedByMcpServers,
   resolveSelectableMcpServerById,
   resolveSelectableSkillById,
-} from '../workflow-target-planning/catalog.js';
+} from './catalog.js';
 export {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
@@ -31,10 +32,8 @@ export {
   getSelectedFrameworkSkillsFromState,
   getSelectedLanguageSkillsFromState,
   getSelectedMcpServersFromState,
-  getSelectedMcpTargetsForAgents,
   getSelectedSkillTargetsForAgents,
   getSelectedWorkflowSkillsFromState,
   getSkillTargetsForAgents,
   getWorkflowTargets,
-  renderMissingWorkflowFiles,
-} from '../workflow-target-planning/workflow-targets.js';
+} from '../../shared/expected-workflow-targets.js';

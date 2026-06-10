@@ -8,7 +8,7 @@ import {
   SELECTABLE_LANGUAGE_SKILLS,
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
-} from '../workflow-target-planning/index.js';
+} from '../template-catalog/index.js';
 import { readTemplate, readTemplateManifest } from '../template-catalog/index.js';
 import { renderTemplateForSync, renderWorkerToolboxRouting } from './templates.js';
 

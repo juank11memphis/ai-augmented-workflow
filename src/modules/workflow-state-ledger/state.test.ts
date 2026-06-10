@@ -13,8 +13,8 @@ import {
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
-} from '../workflow-target-planning/index.js';
-import { getWorkflowTargets, renderMissingWorkflowFiles } from '../workflow-target-planning/workflow-targets.js';
+} from '../template-catalog/index.js';
+import { getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 import { readTemplateManifest } from '../template-catalog/index.js';
 import { cloneState, hasReviewedTemplateVersion, readExistingState, readStateForDoctor, writeSibuState, writeStateFile } from './index.js';
 

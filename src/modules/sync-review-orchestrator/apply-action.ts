@@ -7,7 +7,7 @@ import { sha256 } from '../../shared/hash.js';
 import { getSideTemplatePath } from '../../shared/paths.js';
 import { cloneState } from '../workflow-state-ledger/index.js';
 import { getTemplateVersion } from '../template-catalog/index.js';
-import { renderTemplateForSync } from '../template-catalog-rendering/index.js';
+import { renderTemplateForSync } from '../template-catalog/index.js';
 import type { SibuState, TemplateManifest } from '../../shared/types.js';
 import {
   getSelectedArchitectureSkillFromState,
@@ -16,7 +16,7 @@ import {
   getSelectedLanguageSkillsFromState,
   getSelectedMcpServersFromState,
   getSelectedWorkflowSkillsFromState,
-} from '../workflow-target-planning/index.js';
+} from '../template-catalog/index.js';
 import type { SyncAction } from './action-prompt.js';
 import type { SyncPreview } from './sync-preview.js';
 

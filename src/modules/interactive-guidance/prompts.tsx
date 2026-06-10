@@ -11,7 +11,7 @@ import {
   SELECTABLE_MCP_SERVERS,
   SELECTABLE_WORKFLOW_SKILLS,
   SUPPORTED_AGENTS,
-} from '../workflow-target-planning/index.js';
+} from '../template-catalog/index.js';
 import type {
   ArchitectureSkillId,
   SibuState,

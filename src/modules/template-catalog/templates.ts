@@ -5,12 +5,14 @@ import { getTemplatesPath } from '../../shared/paths.js';
 import type { TemplateManifest } from '../../shared/types.js';
 import { renderMcpConfig, resolveMcpConfigAgentId } from '../agent-tool-configuration/index.js';
 import type {
+  FileToCreate,
   SelectableArchitectureSkill,
   SelectableDatabaseSkill,
   SelectableFrameworkSkill,
   SelectableLanguageSkill,
   SelectableMcpServer,
   SelectableWorkflowSkill,
+  WorkflowTarget,
 } from '../../shared/types.js';
 
 export function readTemplate(relativePath: string): string {
@@ -103,6 +105,55 @@ export function renderTemplateForSync({
   contents = renderWorkerToolboxRoutingPlaceholders(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
 
   return contents;
+}
+
+export function renderMissingWorkflowFiles({
+  missingTargets,
+  overview,
+  selectedLanguageSkills,
+  selectedFrameworkSkills,
+  selectedArchitectureSkill,
+  selectedWorkflowSkills = [],
+  selectedDatabaseSkills = [],
+  selectedMcpServers = [],
+}: {
+  missingTargets: WorkflowTarget[];
+  overview?: string;
+  selectedLanguageSkills: SelectableLanguageSkill[];
+  selectedFrameworkSkills: SelectableFrameworkSkill[];
+  selectedArchitectureSkill?: SelectableArchitectureSkill;
+  selectedWorkflowSkills?: SelectableWorkflowSkill[];
+  selectedDatabaseSkills?: SelectableDatabaseSkill[];
+  selectedMcpServers?: SelectableMcpServer[];
+}): FileToCreate[] {
+  return missingTargets.map((target) => {
+    let contents = readTemplate(target.templateRelativePath);
+
+    if (target.mcpConfigAgentId && (target.selectedMcpServers?.length || selectedMcpServers.length)) {
+      contents = renderMcpConfig({
+        agentId: target.mcpConfigAgentId,
+        baseContents: contents,
+        selectedMcpServers: target.selectedMcpServers ?? selectedMcpServers,
+      });
+    }
+
+    if (target.requiresProjectOverview) {
+      if (!overview?.trim()) {
+        throw new Error('Project overview is required to create AGENTS.md.');
+      }
+
+      contents = contents.replace('{{PROJECT_OVERVIEW}}', overview.trim());
+    }
+
+    contents = renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
+    contents = renderWorkerToolboxRoutingPlaceholders(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
+
+    return {
+      label: target.label,
+      targetPath: target.targetPath,
+      contents,
+    };
+  });
 }
 
 export function renderSkillRouting(

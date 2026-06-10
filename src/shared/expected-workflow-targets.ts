@@ -10,12 +10,10 @@ import {
   SELECTABLE_WORKFLOW_SKILLS,
   SESSION_START_HOOKS,
   SUPPORTED_AGENTS,
-} from './catalog.js';
-import { renderMcpConfig } from '../agent-tool-configuration/index.js';
-import { readTemplate, renderSkillRouting, renderWorkerToolboxRoutingPlaceholders } from '../template-catalog/templates.js';
+} from '../modules/template-catalog/catalog.js';
+import { getMcpConfigTargetsForAgents } from '../modules/agent-tool-configuration/index.js';
 import type {
   SibuState,
-  FileToCreate,
   SelectableArchitectureSkill,
   SelectableDatabaseSkill,
   SelectableFrameworkSkill,
@@ -25,17 +23,11 @@ import type {
   SkillTemplate,
   SupportedAgent,
   WorkflowTarget,
-} from '../../shared/types.js';
+} from './types.js';
 
 type SkillTarget = {
   targetRelativePath: string;
   templateRelativePath: string;
-};
-
-type McpTarget = {
-  targetRelativePath: string;
-  templateRelativePath: string;
-  agentId: 'codex' | 'gemini' | 'claude';
 };
 
 export function getSelectedLanguageSkillsFromState(state: SibuState): SelectableLanguageSkill[] {
@@ -121,46 +113,6 @@ function getSkillTargetsForAgent(skill: SkillTemplate, agentId: SupportedAgent['
   return targets;
 }
 
-export function getSelectedMcpTargetsForAgents(selectedAgents: SupportedAgent[], selectedMcpServers: SelectableMcpServer[]): McpTarget[] {
-  if (selectedMcpServers.length === 0) {
-    return [];
-  }
-
-  return selectedAgents.flatMap((agent): McpTarget[] => {
-    if (agent.id === 'codex') {
-      return [
-        {
-          targetRelativePath: '.codex/config.toml',
-          templateRelativePath: '.codex/config.toml',
-          agentId: 'codex',
-        },
-      ];
-    }
-
-    if (agent.id === 'claude') {
-      return [
-        {
-          targetRelativePath: '.mcp.json',
-          templateRelativePath: 'mcp/claude/.mcp.json',
-          agentId: 'claude',
-        },
-      ];
-    }
-
-    if (agent.id === 'gemini') {
-      return [
-        {
-          targetRelativePath: '.gemini/settings.json',
-          templateRelativePath: 'mcp/gemini/settings.json',
-          agentId: 'gemini',
-        },
-      ];
-    }
-
-    return [];
-  });
-}
-
 function getSessionStartHookTargetsForAgents(selectedAgents: SupportedAgent[]): SkillTarget[] {
   const selectedAgentIds = new Set(selectedAgents.map((agent) => agent.id));
 
@@ -219,7 +171,7 @@ export function getWorkflowTargets(
     })),
   ];
 
-  for (const mcpTarget of getSelectedMcpTargetsForAgents(selectedAgents, selectedMcpServers)) {
+  for (const mcpTarget of getMcpConfigTargetsForAgents(selectedAgents, selectedMcpServers)) {
     const targetPath = path.join(rootPath, mcpTarget.targetRelativePath);
     const existingTarget = targets.find((target) => target.targetPath === targetPath);
 
@@ -241,55 +193,6 @@ export function getWorkflowTargets(
   }
 
   return targets;
-}
-
-export function renderMissingWorkflowFiles({
-  missingTargets,
-  overview,
-  selectedLanguageSkills,
-  selectedFrameworkSkills,
-  selectedArchitectureSkill,
-  selectedWorkflowSkills = [],
-  selectedDatabaseSkills = [],
-  selectedMcpServers = [],
-}: {
-  missingTargets: WorkflowTarget[];
-  overview?: string;
-  selectedLanguageSkills: SelectableLanguageSkill[];
-  selectedFrameworkSkills: SelectableFrameworkSkill[];
-  selectedArchitectureSkill?: SelectableArchitectureSkill;
-  selectedWorkflowSkills?: SelectableWorkflowSkill[];
-  selectedDatabaseSkills?: SelectableDatabaseSkill[];
-  selectedMcpServers?: SelectableMcpServer[];
-}): FileToCreate[] {
-  return missingTargets.map((target) => {
-    let contents = readTemplate(target.templateRelativePath);
-
-    if (target.mcpConfigAgentId && (target.selectedMcpServers?.length || selectedMcpServers.length)) {
-      contents = renderMcpConfig({
-        agentId: target.mcpConfigAgentId,
-        baseContents: contents,
-        selectedMcpServers: target.selectedMcpServers ?? selectedMcpServers,
-      });
-    }
-
-    if (target.requiresProjectOverview) {
-      if (!overview?.trim()) {
-        throw new Error('Project overview is required to create AGENTS.md.');
-      }
-
-      contents = contents.replace('{{PROJECT_OVERVIEW}}', overview.trim());
-    }
-
-    contents = renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
-    contents = renderWorkerToolboxRoutingPlaceholders(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
-
-    return {
-      label: target.label,
-      targetPath: target.targetPath,
-      contents,
-    };
-  });
 }
 
 export function getSelectedAgentsFromState(state: SibuState): SupportedAgent[] {

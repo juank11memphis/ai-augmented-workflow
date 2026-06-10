@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { sha256 } from '../../shared/hash.js';
 import { hasReviewedTemplateVersion } from '../workflow-state-ledger/index.js';
-import { renderTemplateForSync } from '../template-catalog-rendering/index.js';
+import { renderTemplateForSync } from '../template-catalog/index.js';
 import type {
   SibuState,
   ManagedFileState,
@@ -28,7 +28,7 @@ import {
   getSkillTargetsForAgents,
   getWorkflowSkillsImpliedByMcpServers,
   getWorkflowTargets,
-} from '../workflow-target-planning/index.js';
+} from '../template-catalog/index.js';
 
 export type SyncPreview = {
   relativePath: string;

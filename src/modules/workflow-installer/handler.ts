@@ -20,7 +20,7 @@ import {
   renderIntro,
 } from '../interactive-guidance/index.js';
 import { readStateForDoctor } from '../workflow-state-ledger/index.js';
-import { getWorkflowSkillsImpliedByMcpServers, getWorkflowTargets, renderMissingWorkflowFiles } from '../workflow-target-planning/index.js';
+import { getWorkflowSkillsImpliedByMcpServers, getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 import type { InitProjectCommand } from './command.js';
 import type {
   SelectableArchitectureSkill,
