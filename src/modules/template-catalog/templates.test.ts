@@ -69,7 +69,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '132');
+    assert.equal(manifest.templateVersion, '133');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -159,7 +159,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '132');
+    assert.equal(manifest.templateVersion, '133');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
@@ -298,12 +298,28 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '33');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Capabilities Map as a formal pipeline stage/i);
+    assert.equal(templateMetadata?.version, '34');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /judgment and honesty guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /state uncertainty, ask focused questions, or verify/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /challenge users for clear factual, safety, quality, instruction, product, or context-reliability reasons/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
     assert.doesNotMatch(contents, /At the start of each session.*run `sibu doctor` once/i);
+  });
+
+  it('includes judgment and honesty guidance for uncertainty and appropriate challenge', () => {
+    const contents = readTemplate('AGENTS.md');
+
+    assert.match(contents, /## Judgment and honesty/);
+    assert.match(contents, /patronizing praise, performative agreement, and over-reassurance/i);
+    assert.match(contents, /Do not invent certainty/i);
+    assert.match(contents, /important context is missing/i);
+    assert.match(contents, /state uncertainty, ask one focused question, or verify/i);
+    assert.match(contents, /low-risk assumptions/i);
+    assert.match(contents, /Challenge the user when there is a clear factual, safety\/security, engineering-quality, repo-instruction, product-goal, or context-reliability reason/i);
+    assert.match(contents, /give a short reason and a better alternative/i);
+    assert.match(contents, /preserve user control/i);
   });
 
   it('routes Business Domain Model requests and preserves downstream pipeline sequencing', () => {

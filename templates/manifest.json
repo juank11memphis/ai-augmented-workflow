@@ -1,12 +1,13 @@
 {
-  "templateVersion": "132",
+  "templateVersion": "133",
   "templates": {
     "AGENTS.md": {
-      "version": "33",
+      "version": "34",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds the Capabilities Map as a formal pipeline stage before sibling Deep Module Map and Feature Brief work.",
-        "Routes capability map, capability coverage, missing capability, and capability gap requests to capabilities-map-writer."
+        "Adds judgment and honesty guidance for direct, non-condescending collaboration.",
+        "Clarifies that agents should state uncertainty, ask focused questions, or verify instead of inventing certainty.",
+        "Defines when agents should challenge users for clear factual, safety, quality, instruction, product, or context-reliability reasons."
       ]
     },
     ".codex/config.toml": {
