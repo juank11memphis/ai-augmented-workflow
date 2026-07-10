@@ -4,6 +4,11 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.18.0 - 2026-07-10
+
+### Added
+- add agent judgment guidance
+
 ## 0.17.1 - 2026-06-10
 
 ### Changed
