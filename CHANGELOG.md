@@ -4,6 +4,15 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.19.0 - 2026-07-13
+
+### Added
+- route code writing to structured logging
+- add structured logging guidance
+
+### Changed
+- record structured logging workflow state
+
 ## 0.18.0 - 2026-07-10
 
 ### Added
