@@ -4,6 +4,14 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.20.0 - 2026-07-13
+
+### Added
+- strengthen react component file boundaries
+
+### Removed
+- remove promoted react boundary idea
+
 ## 0.19.0 - 2026-07-13
 
 ### Added
