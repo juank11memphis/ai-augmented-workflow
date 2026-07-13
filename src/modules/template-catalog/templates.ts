@@ -213,7 +213,7 @@ export function renderWorkerToolboxRouting({
 - If an optional relevant skill is not installed and you encounter an unmapped language, framework, database, or architecture pattern, do not guess silently; continue only when safe and flag the gap as a ${profile === 'planner' ? 'plan risk' : 'Review Gate risk'}.
 
 ### Optional installed skills relevant to ${profile} work
-${selectedSkillsSection}`;
+${profile === 'executor' ? '- Structured Logging: read `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior.\n' : ''}${selectedSkillsSection}`;
 }
 
 export function renderWorkerToolboxRoutingPlaceholders(

@@ -112,6 +112,9 @@ entrypoint / framework adapter -> domain workflow internals that bypass the Hand
 
 If dependency wiring needs infrastructure implementations, prefer a composition/bootstrap module or small factory that constructs the Handler. Keep request handling, command creation, and result translation separate from infrastructure behavior.
 
+### Rule 6: Operational Behavior Uses Structured Logging
+When workflows, command handlers, entrypoints, jobs, external calls, retries, state changes, or operational outcomes need logging, also use `structured-logging`. Keep this architecture guidance focused on boundaries and delegate logging policy to that skill.
+
 ---
 
 ## 4. Implementation Workflow

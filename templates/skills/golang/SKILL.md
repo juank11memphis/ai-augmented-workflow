@@ -72,6 +72,9 @@ Apply this skill together with `clean-code`. Keep this skill focused on Go-speci
 - Keep test cases named so failures explain themselves.
 - Test exported behavior and important package contracts, not private implementation trivia.
 
+### 10. Use structured logging for operational behavior
+- When Go changes affect logs, workflows, handlers, jobs, external calls, errors, retries, state changes, or important outcomes, also use `structured-logging`.
+
 ## Decision rule
 
 When unsure, prefer:

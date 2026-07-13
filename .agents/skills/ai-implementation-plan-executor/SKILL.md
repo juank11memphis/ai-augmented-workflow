@@ -20,7 +20,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - The story, Epic brief, feature brief, and technical design for the selected plan.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
 - The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when sub-agent spawning is available.
-- Required and relevant installed skill paths for the executor packet, including `clean-code`.
+- Required and relevant installed skill paths for the executor packet, including `clean-code` and `structured-logging` when the story touches observability-relevant code.
 
 ### What this skill writes
 
@@ -84,13 +84,13 @@ Build a narrow executor packet for the worker. The packet must include:
 - exactly one User Story path or story-local `.impl_plan/` folder
 - story, Epic brief, feature brief, technical design, and UX path when relevant
 - executor toolbox path: `.agents/skills/ai-implementation-executor-toolbox/SKILL.md`
-- required skill paths, always including `.agents/skills/clean-code/SKILL.md`
+- required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, Command Pattern, DDD/Hexagonal, Layered Architecture, PostgreSQL Expert, or AI Prompt Engineer Master
 - distilled skill constraints, including story scope, validation expectations, Deep Module boundaries, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
 - approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
 - expected output format: changed files, completed steps, validation commands/results, risks, follow-up questions, and approval state
 
-Do not include exporter skills such as `export-to-github` or `export-to-notion` in the executor packet.
+Do not include exporter skills such as `export-to-github` or `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
 
 The worker must use only the packet, the toolbox, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 

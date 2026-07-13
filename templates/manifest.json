@@ -1,13 +1,11 @@
 {
-  "templateVersion": "134",
+  "templateVersion": "135",
   "templates": {
     "AGENTS.md": {
-      "version": "34",
+      "version": "35",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds judgment and honesty guidance for direct, non-condescending collaboration.",
-        "Clarifies that agents should state uncertainty, ask focused questions, or verify instead of inventing certainty.",
-        "Defines when agents should challenge users for clear factual, safety, quality, instruction, product, or context-reliability reasons."
+        "Routes observability-relevant code-writing tasks to the structured logging skill."
       ]
     },
     ".codex/config.toml": {
@@ -46,10 +44,10 @@
       ]
     },
     "skills/clean-code/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory clean-code skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds guidance to validate required function inputs before doing work instead of silently continuing with partial defaults."
+        "Adds concise observability guidance that delegates detailed logging policy to structured-logging."
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
@@ -100,17 +98,17 @@
       ]
     },
     "skills/typescript/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable TypeScript skill installed when TypeScript language support is selected.",
       "changes": [
-        "Adds an optional TypeScript skill for projects that use .ts or .tsx files."
+        "Routes observability-relevant TypeScript changes to the structured logging skill."
       ]
     },
     "skills/golang/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+        "Routes observability-relevant Go changes to the structured logging skill."
       ]
     },
     "skills/postgresql-expert/SKILL.md": {
@@ -128,10 +126,10 @@
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Adds a framework-agnostic entrypoint dependency rule requiring delivery adapters to create commands and call handlers or dispatchers instead of infrastructure, SDKs, repositories, or domain workflow internals."
+        "Routes workflow, handler, entrypoint, job, and operational outcome logging concerns to the structured logging skill."
       ]
     },
     "skills/nextjs/SKILL.md": {
@@ -170,17 +168,17 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Requires the executor to spawn the Sibu implementation executor sub-agent whenever spawning is available and limits inline fallback to host capability blockers."
+        "Updates executor packet guidance to include structured logging when implementation stories touch observability-relevant code."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Adds an executor toolbox skill with focused worker routing, ordered step execution, validation, Interactive Review Gate, and git-safety rules."
+        "Guides executor workers to load structured logging for observability-relevant implementation stories."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

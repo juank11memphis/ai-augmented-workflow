@@ -101,6 +101,9 @@ type LoadState = {
 - Do not try to force every runtime guarantee into the type system.
 - Balance safety with readability and development speed.
 
+### 10. Use structured logging for operational behavior
+- When TypeScript changes affect logs, workflows, handlers, jobs, external calls, errors, retries, state changes, or important outcomes, also use `structured-logging`.
+
 ## Decision rule
 
 When unsure, prefer:

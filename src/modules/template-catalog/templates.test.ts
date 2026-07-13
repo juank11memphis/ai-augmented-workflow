@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '134');
+    assert.equal(manifest.templateVersion, '135');
     assert.equal(templateMetadata?.version, '1');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
@@ -50,6 +50,53 @@ describe('structured logging template', () => {
     assert.match(contents, /helper or wrapper/i);
     assert.match(contents, /trivial pure logic/i);
     assert.match(contents, /noisy implementation details/i);
+  });
+});
+
+
+describe('structured logging routing hooks', () => {
+  it('routes AGENTS code-writing tasks to structured logging without duplicating policy', () => {
+    const contents = readTemplate('AGENTS.md');
+
+    const routingLine = contents.split('\n').find((line) => line.includes('structured-logging')) ?? '';
+
+    assert.match(contents, /For any code-writing task, use `clean-code`/);
+    assert.match(routingLine, /also use `structured-logging`/);
+    assert.match(routingLine, /logging, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes/);
+    assert.doesNotMatch(routingLine, /secrets, credentials, tokens/);
+  });
+
+  it('delegates clean-code logging details to the canonical skill', () => {
+    const templatePath = 'skills/clean-code/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '6');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /delegates detailed logging policy to structured-logging/i);
+    assert.match(contents, /Keep operational behavior observable/);
+    assert.match(contents, /Use `structured-logging` for detailed logging guidance/);
+    assert.doesNotMatch(contents, /full prompts or model responses/);
+  });
+
+  it('keeps language and architecture skills as concise structured logging handoffs', () => {
+    const manifest = readTemplateManifest();
+    const expectations = [
+      { path: 'skills/typescript/SKILL.md', version: '2', hook: /When TypeScript changes affect logs/ },
+      { path: 'skills/golang/SKILL.md', version: '2', hook: /When Go changes affect logs/ },
+      { path: 'skills/architecture/command-pattern/SKILL.md', version: '7', hook: /Operational Behavior Uses Structured Logging/ },
+    ];
+
+    for (const expectation of expectations) {
+      const contents = readTemplate(expectation.path);
+      const templateMetadata = manifest.templates[expectation.path];
+
+      assert.equal(templateMetadata?.version, expectation.version);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging/i);
+      assert.match(contents, /`structured-logging`/);
+      assert.match(contents, expectation.hook);
+      assert.doesNotMatch(contents, /secrets, credentials, tokens/);
+    }
   });
 });
 
@@ -98,7 +145,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '134');
+    assert.equal(manifest.templateVersion, '135');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -188,7 +235,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '134');
+    assert.equal(manifest.templateVersion, '135');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
@@ -327,10 +374,8 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '34');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /judgment and honesty guidance/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /state uncertainty, ask focused questions, or verify/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /challenge users for clear factual, safety, quality, instruction, product, or context-reliability reasons/i);
+    assert.equal(templateMetadata?.version, '35');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /observability-relevant code-writing tasks/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -426,6 +471,8 @@ describe('worker toolbox routing profiles', () => {
     assert.match(contents, /Focused executor worker routing/);
     assert.match(contents, /editing code or running story execution/);
     assert.match(contents, /\.agents\/skills\/clean-code\/SKILL\.md/);
+    assert.match(contents, /\.agents\/skills\/structured-logging\/SKILL\.md/);
+    assert.match(contents, /observability-relevant behavior/);
     assert.match(contents, /\.agents\/skills\/typescript\/SKILL\.md/);
     assert.match(contents, /Review Gate risk/);
     assert.doesNotMatch(contents, /scrum-master-planner/);
@@ -571,14 +618,17 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '24');
+    assert.equal(templateMetadata?.version, '25');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /spawn the Sibu implementation executor sub-agent/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
     assert.match(contents, /\.agents\/skills\/ai-implementation-executor-toolbox\/SKILL\.md/);
     assert.match(contents, /required skill paths/);
+    assert.match(contents, /structured-logging/);
+    assert.match(contents, /observability-relevant behavior/);
+    assert.match(contents, /trivial pure logic/);
     assert.match(contents, /relevant optional installed skill paths/);
     assert.match(contents, /distilled skill constraints/);
     assert.match(contents, /export-to-github/);
@@ -606,13 +656,15 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Interactive Review Gate/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
     assert.match(renderedContents, /\.agents\/skills\/clean-code\/SKILL\.md/);
+    assert.match(renderedContents, /\.agents\/skills\/structured-logging\/SKILL\.md/);
+    assert.match(renderedContents, /observability-relevant behavior/);
     assert.match(renderedContents, /\.agents\/skills\/typescript\/SKILL\.md/);
     assert.match(renderedContents, /\.agents\/skills\/ux-expert\/SKILL\.md/);
     assert.doesNotMatch(renderedContents, /export-to-github/);

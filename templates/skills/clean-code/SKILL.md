@@ -100,6 +100,10 @@ if (!(playlist = await playlistRepository.findById(playlistId))) {
 - Match the surrounding style when it is already reasonable.
 - Use existing project conventions unless there is a strong reason not to.
 
+### 12. Keep operational behavior observable
+- When code changes affect logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or important outcomes, keep logging useful, concise, and safe.
+- Use `structured-logging` for detailed logging guidance instead of duplicating that policy here.
+
 ## Decision rule
 
 When unsure, prefer:
