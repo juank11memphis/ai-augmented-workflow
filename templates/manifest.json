@@ -1,5 +1,5 @@
 {
-  "templateVersion": "133",
+  "templateVersion": "134",
   "templates": {
     "AGENTS.md": {
       "version": "34",
@@ -110,7 +110,7 @@
       "version": "1",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Adds an optional Go skill with concise, Effective Go\u2013style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
+        "Adds an optional Go skill with concise, Effective Go–style guidance for .go files, package APIs, interfaces, errors, receivers, concurrency, and tests."
       ]
     },
     "skills/postgresql-expert/SKILL.md": {
@@ -329,6 +329,15 @@
       "description": "Gemini CLI SessionStart hook configuration for running Sibu session health checks.",
       "changes": [
         "Adds a managed Gemini SessionStart hook that checks the latest Sibu version and runs sibu doctor automatically."
+      ]
+    },
+    "skills/structured-logging/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory structured logging skill for safe, useful, storytelling logs in code-writing workflows.",
+      "changes": [
+        "Adds required structured logging guidance for code-writing workflows.",
+        "Defines safe, structured, storytelling log expectations while avoiding noisy logs in trivial code.",
+        "Guides agents to follow project logging conventions and use concise local logging helpers when useful."
       ]
     }
   }

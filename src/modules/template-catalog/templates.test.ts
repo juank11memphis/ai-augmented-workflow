@@ -24,6 +24,35 @@ const selectedGithubExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => ski
 const selectedNotionExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion')!;
 
 
+describe('structured logging template', () => {
+  it('is registered, readable, and captures safe storytelling logging guidance', () => {
+    const templatePath = 'skills/structured-logging/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+
+    assert.equal(manifest.templateVersion, '134');
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
+
+    const contents = readTemplate(templatePath);
+
+    assert.match(contents, /name: structured-logging/);
+    assert.match(contents, /existing logging conventions first/i);
+    assert.match(contents, /widely accepted logger/i);
+    assert.match(contents, /structured, machine-readable logs/i);
+    assert.match(contents, /operational story/i);
+    assert.match(contents, /request or correlation id/i);
+    assert.match(contents, /secrets, credentials, tokens/i);
+    assert.match(contents, /raw personal data/i);
+    assert.match(contents, /full prompts or model responses/i);
+    assert.match(contents, /large user payloads/i);
+    assert.match(contents, /helper or wrapper/i);
+    assert.match(contents, /trivial pure logic/i);
+    assert.match(contents, /noisy implementation details/i);
+  });
+});
+
 describe('layered architecture template', () => {
   it('is registered in the manifest and readable', () => {
     const templatePath = 'skills/architecture/layered-architecture/SKILL.md';
@@ -69,7 +98,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '133');
+    assert.equal(manifest.templateVersion, '134');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -159,7 +188,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '133');
+    assert.equal(manifest.templateVersion, '134');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);

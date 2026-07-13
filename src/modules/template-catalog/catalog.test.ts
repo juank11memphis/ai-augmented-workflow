@@ -58,6 +58,7 @@ describe('resolveSelectableSkillById', () => {
 
   it('does not resolve required-only skills as selectable skills', () => {
     assertUnknownSkill('clean-code');
+    assertUnknownSkill('structured-logging');
     assertUnknownSkill('business-domain-model-writer');
     assertUnknownSkill('feature-idea-capture');
   });
@@ -133,6 +134,24 @@ describe('export workflow skill MCP pairings', () => {
 });
 
 describe('skill target paths', () => {
+  it('registers structured logging as one required workflow skill for all supported agents', () => {
+    const structuredLoggingSkills = MANDATORY_SKILLS.filter(
+      (skill) => skill.templateRelativePath === 'skills/structured-logging/SKILL.md'
+    );
+
+    assert.equal(structuredLoggingSkills.length, 1);
+    assert.deepEqual(structuredLoggingSkills[0]?.targetRelativePathsByAgent, {
+      codex: '.agents/skills/structured-logging/SKILL.md',
+      gemini: '.agents/skills/structured-logging/SKILL.md',
+      claude: '.agents/skills/structured-logging/SKILL.md',
+    });
+    assert.equal(structuredLoggingSkills[0]?.supplementalTargetsByAgent, undefined);
+    assert.equal(
+      SELECTABLE_WORKFLOW_SKILLS.some((skill) => skill.templateRelativePath === 'skills/structured-logging/SKILL.md'),
+      false
+    );
+  });
+
   it('registers the Business Domain Model writer as one required workflow skill for all supported agents', () => {
     const businessDomainModelWriters = MANDATORY_SKILLS.filter(
       (skill) => skill.templateRelativePath === 'skills/business-domain-model-writer/SKILL.md'

@@ -24,6 +24,14 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
+    templateRelativePath: 'skills/structured-logging/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/structured-logging/SKILL.md',
+      gemini: '.agents/skills/structured-logging/SKILL.md',
+      claude: '.agents/skills/structured-logging/SKILL.md',
+    },
+  },
+  {
     templateRelativePath: 'skills/product-vision-writer/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/product-vision-writer/SKILL.md',
