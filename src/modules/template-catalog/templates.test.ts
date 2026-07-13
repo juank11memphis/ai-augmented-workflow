@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '135');
+    assert.equal(manifest.templateVersion, '136');
     assert.equal(templateMetadata?.version, '1');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
@@ -145,7 +145,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '135');
+    assert.equal(manifest.templateVersion, '136');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -235,7 +235,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '135');
+    assert.equal(manifest.templateVersion, '136');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
@@ -884,6 +884,24 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
 
 
 describe('template catalog source templates', () => {
+  it('registers stricter React component file-boundary guidance', () => {
+    const templatePath = 'skills/react/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '4');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /one component per nearby file/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /before-finish component-boundary self-check/i);
+    assert.match(contents, /Each React component belongs in its own nearby file by default/i);
+    assert.match(contents, /Do not define helper subcomponents in a parent component file/i);
+    assert.match(contents, /small, file-local, currently unreused/i);
+    assert.match(contents, /not React components, do not return JSX, and do not represent a UI responsibility/i);
+    assert.match(contents, /Prefer separated component files/i);
+    assert.match(contents, /Avoid multiple component implementations in one parent file/i);
+    assert.match(contents, /inspect every changed React file/i);
+  });
+
   it('returns manifest-backed template versions', () => {
     const manifest = readTemplateManifest();
 

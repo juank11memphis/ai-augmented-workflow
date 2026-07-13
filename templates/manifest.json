@@ -1,5 +1,5 @@
 {
-  "templateVersion": "135",
+  "templateVersion": "136",
   "templates": {
     "AGENTS.md": {
       "version": "35",
@@ -140,10 +140,10 @@
       ]
     },
     "skills/react/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Selectable React skill for component design, props, state ownership, and presentational boundaries.",
       "changes": [
-        "Adds broadly applicable React screen componentization guidance so route and feature entry files stay thin while meaningful UI regions move into focused nearby files."
+        "Strengthens React guidance to require one component per nearby file by default, disallow same-file helper subcomponents, and add a before-finish component-boundary self-check."
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
