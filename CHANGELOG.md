@@ -4,6 +4,22 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.21.0 - 2026-07-16
+
+### Added
+- apply architecture guidance downstream
+- define architecture guidance handoffs
+- repair missing architecture selection
+- require architecture selection during init
+
+### Changed
+- include architecture in packed runtime fixture
+- sync selected architecture guidance
+- define architecture skill workflow guidance
+
+### Removed
+- prevent removing architecture selection
+
 ## 0.20.0 - 2026-07-13
 
 ### Added
