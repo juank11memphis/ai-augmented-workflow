@@ -197,6 +197,15 @@ export function renderWorkerToolboxRouting({
     selectedWorkflowSkills,
     selectedDatabaseSkills,
   });
+  const selectedArchitectureSection = selectedArchitectureSkill
+    ? `### Selected architecture guidance
+- Required: read \`${getSharedSkillTargetPath(selectedArchitectureSkill)}\` before ${profile === 'planner' ? 'writing implementation plan steps' : 'executing or reviewing implementation steps'}.
+- Treat this selected architecture guidance as binding for boundaries, dependency direction, sequencing, and reviewable constraints.
+- If the selected architecture skill path is missing or unavailable, stop and tell the main agent to direct the user to run \`sibu sync\`; do not choose, infer, or substitute architecture guidance.`
+    : `### Selected architecture guidance
+- No selected architecture skill was provided to this worker routing profile.
+- Hard-stop architecture-dependent ${profile} work and tell the main agent to direct the user to run \`sibu sync\` to repair workflow configuration.
+- Do not choose, infer, or substitute architecture guidance from repository structure.`;
   const selectedSkillLines = selectedSkills.map((skill) => `- ${skill.name}: read \`${getSharedSkillTargetPath(skill)}\` when relevant. ${skill.routingInstruction}`);
   const selectedSkillsSection =
     selectedSkillLines.length > 0
@@ -211,6 +220,8 @@ export function renderWorkerToolboxRouting({
 - Read optional installed skill paths only when they are relevant to the story, touched files, source artifacts, or validation work.
 - Treat distilled skill constraints from the packet as binding task constraints.
 - If an optional relevant skill is not installed and you encounter an unmapped language, framework, database, or architecture pattern, do not guess silently; continue only when safe and flag the gap as a ${profile === 'planner' ? 'plan risk' : 'Review Gate risk'}.
+
+${selectedArchitectureSection}
 
 ### Optional installed skills relevant to ${profile} work
 ${profile === 'executor' ? '- Structured Logging: read `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior.\n' : ''}${selectedSkillsSection}`;
@@ -272,7 +283,6 @@ function collectWorkerRelevantSkills({
     ...selectedLanguageSkills,
     ...selectedFrameworkSkills,
     ...selectedDatabaseSkills,
-    ...(selectedArchitectureSkill ? [selectedArchitectureSkill] : []),
     ...implementationRelevantWorkflowSkills,
   ];
 }

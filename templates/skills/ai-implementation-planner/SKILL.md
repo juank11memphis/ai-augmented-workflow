@@ -21,6 +21,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - The feature's `technical_design.md`.
 - `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
 - The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when sub-agent spawning is available.
+- Selected architecture guidance for the workflow.
 - Required and relevant installed skill paths for the planner packet, including `clean-code`.
 
 ### What this skill writes
@@ -33,6 +34,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
 - The story or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - The request belongs to another pipeline stage, such as writing production code, executing an existing implementation plan, creating stories, or performing another pipeline stage.
+- Selected architecture guidance is missing, unavailable, or ambiguous; stop and tell the user to run `sibu sync` to repair workflow configuration before implementation planning. Do not choose, infer, or substitute architecture guidance yourself.
 - Worker delegation is requested but required worker packet context cannot be assembled.
 
 ### What this skill must not do
@@ -42,6 +44,14 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
 - Do not infer implementation scope from an Epic brief, feature brief, or technical design without exactly one User Story.
 - Do not ask for a plan-approval gate before executor handoff unless the user explicitly requested planning-only.
+- Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
+
+
+## Selected architecture guidance gate
+
+Before delegating or planning inline, identify and read the workflow's selected architecture skill. If selected architecture guidance is missing, unavailable, or ambiguous, hard-stop and tell the user to run `sibu sync` to repair Sibu workflow configuration. Do not choose architecture guidance, infer it from repository structure, or continue with generic architecture assumptions.
+
+When selected architecture guidance is present, treat it as binding planning context. Apply it to story-local implementation step sequencing, boundaries, dependency direction, and reviewable constraints while still trusting `technical_design.md` for feature-specific Deep Module boundaries.
 
 ## Required input
 
@@ -83,8 +93,9 @@ Build a narrow planner packet for the worker. The packet must include:
 - Epic brief, feature brief, technical design, and UX path when relevant
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
-- relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, Command Pattern, DDD/Hexagonal, Layered Architecture, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “do not write production code,” “inspect narrowly,” and any story-specific architecture or UX constraints
+- selected architecture skill path as required architecture context
+- relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
+- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
 - expected output format: plan folder, ordered step files created or updated, source artifacts and skills used, and risks/blockers
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the planner packet.
@@ -102,7 +113,7 @@ Before writing step files inline, read and apply:
 - `clean-code` always
 - relevant installed language skills such as `typescript` for `.ts` or `.tsx` work
 - relevant installed framework skills such as `react` or `nextjs`
-- relevant installed architecture skills such as `command-pattern`, `ddd-hexagonal`, or `layered-architecture`
+- the selected installed architecture skill such as `command-pattern`, `ddd-hexagonal`, or `layered-architecture`; if it is missing, stop and direct repair to `sibu sync`
 - relevant installed database skills such as `postgresql-expert`
 - `ux-expert` only when UI/UX implementation planning is in scope and the skill is installed
 - `ai-prompt-engineer-master` when prompt, agent, or reusable AI instruction templates are in scope

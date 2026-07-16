@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '137');
+    assert.equal(manifest.templateVersion, '138');
     assert.equal(templateMetadata?.version, '1');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
@@ -205,7 +205,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '137');
+    assert.equal(manifest.templateVersion, '138');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -295,7 +295,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '137');
+    assert.equal(manifest.templateVersion, '138');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
@@ -509,6 +509,11 @@ describe('worker toolbox routing profiles', () => {
     assert.match(contents, /\.agents\/skills\/postgresql-expert\/SKILL\.md/);
     assert.match(contents, /\.agents\/skills\/ai-prompt-engineer-master\/SKILL\.md/);
     assert.match(contents, /\.agents\/skills\/ux-expert\/SKILL\.md/);
+    assert.match(contents, /Selected architecture guidance/);
+    assert.match(contents, /Required: read `.agents\/skills\/command-pattern\/SKILL\.md`/);
+    assert.match(contents, /binding for boundaries, dependency direction, sequencing, and reviewable constraints/);
+    assert.match(contents, /run `sibu sync`/);
+    assert.match(contents, /do not choose, infer, or substitute architecture guidance/i);
     assert.match(contents, /distilled skill constraints/);
     assert.match(contents, /required skill path is missing/);
     assert.match(contents, /unmapped language, framework, database, or architecture pattern/);
@@ -534,6 +539,10 @@ describe('worker toolbox routing profiles', () => {
     assert.match(contents, /\.agents\/skills\/structured-logging\/SKILL\.md/);
     assert.match(contents, /observability-relevant behavior/);
     assert.match(contents, /\.agents\/skills\/typescript\/SKILL\.md/);
+    assert.match(contents, /No selected architecture skill was provided/);
+    assert.match(contents, /Hard-stop architecture-dependent executor work/);
+    assert.match(contents, /run `sibu sync`/);
+    assert.match(contents, /Do not choose, infer, or substitute architecture guidance/);
     assert.match(contents, /Review Gate risk/);
     assert.doesNotMatch(contents, /scrum-master-planner/);
     assert.doesNotMatch(contents, /export-to-notion/);
@@ -583,9 +592,9 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '17');
+    assert.equal(templateMetadata?.version, '18');
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /spawn the Sibu implementation planner sub-agent/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /technical-design-writer/);
@@ -617,15 +626,18 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /focused worker routing/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
     assert.match(renderedContents, /\.agents\/skills\/clean-code\/SKILL\.md/);
     assert.match(renderedContents, /\.agents\/skills\/typescript\/SKILL\.md/);
     assert.match(renderedContents, /\.agents\/skills\/ux-expert\/SKILL\.md/);
+    assert.match(renderedContents, /selected architecture skill path and distilled architecture constraints/i);
+    assert.match(renderedContents, /Apply selected architecture guidance to story-local implementation step ordering/i);
+    assert.match(renderedContents, /run `sibu sync`/);
     assert.doesNotMatch(renderedContents, /export-to-github/);
     assert.doesNotMatch(renderedContents, /export-to-notion/);
     assert.match(renderedContents, /exactly one User Story path/);
@@ -678,9 +690,9 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '25');
+    assert.equal(templateMetadata?.version, '26');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -716,9 +728,9 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
@@ -727,6 +739,9 @@ describe('Sibu executor worker templates', () => {
     assert.match(renderedContents, /observability-relevant behavior/);
     assert.match(renderedContents, /\.agents\/skills\/typescript\/SKILL\.md/);
     assert.match(renderedContents, /\.agents\/skills\/ux-expert\/SKILL\.md/);
+    assert.match(renderedContents, /selected architecture skill path and distilled architecture constraints/i);
+    assert.match(renderedContents, /Apply selected architecture guidance during implementation and review/i);
+    assert.match(renderedContents, /run `sibu sync`/);
     assert.doesNotMatch(renderedContents, /export-to-github/);
     assert.doesNotMatch(renderedContents, /export-to-notion/);
     assert.match(renderedContents, /unapproved step files in filename order/i);
@@ -881,6 +896,60 @@ describe('session-start hook templates', () => {
   });
 });
 
+describe('downstream selected architecture guidance gates', () => {
+  it('requires downstream skill templates to hard-stop and route missing architecture repair to sibu sync', () => {
+    const templatePaths = [
+      'skills/technical-design-writer/SKILL.md',
+      'skills/ai-implementation-planner/SKILL.md',
+      'skills/ai-implementation-plan-executor/SKILL.md',
+      'skills/ai-implementation-planner-toolbox/SKILL.md',
+      'skills/ai-implementation-executor-toolbox/SKILL.md',
+    ];
+
+    for (const templatePath of templatePaths) {
+      const contents = readTemplate(templatePath);
+
+      assert.match(contents, /selected architecture guidance/i);
+      assert.match(contents, /run `sibu sync`/);
+      assert.match(contents, /Do not choose|do not choose/i);
+      assert.match(contents, /infer/i);
+    }
+  });
+
+  it('requires downstream templates to read and apply selected architecture guidance when present', () => {
+    const expectations = [
+      {
+        path: 'skills/technical-design-writer/SKILL.md',
+        patterns: [/read its installed guidance/i, /design order, module\/layer boundaries, dependency direction, and concrete implementation boundaries/i],
+      },
+      {
+        path: 'skills/ai-implementation-planner/SKILL.md',
+        patterns: [/identify and read the workflow's selected architecture skill/i, /story-local implementation step sequencing/i],
+      },
+      {
+        path: 'skills/ai-implementation-plan-executor/SKILL.md',
+        patterns: [/Pass the selected architecture skill path/i, /binding execution and review context/i],
+      },
+      {
+        path: 'skills/ai-implementation-planner-toolbox/SKILL.md',
+        patterns: [/Read required skills, the selected architecture skill/i, /Apply selected architecture guidance to story-local implementation step ordering/i],
+      },
+      {
+        path: 'skills/ai-implementation-executor-toolbox/SKILL.md',
+        patterns: [/Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill/i, /Apply selected architecture guidance during implementation and review/i],
+      },
+    ];
+
+    for (const expectation of expectations) {
+      const contents = readTemplate(expectation.path);
+
+      for (const pattern of expectation.patterns) {
+        assert.match(contents, pattern);
+      }
+    }
+  });
+});
+
 describe('authoring templates delegate export to dedicated exporter skills', () => {
   it('keeps document authoring templates free of Notion export workflows', () => {
     const manifest = readTemplateManifest();
@@ -914,9 +983,8 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '21');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Feature Brief and Deep Module Map as sibling upstream inputs/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /newer feature briefs to omit a Deep Module section/i);
+    assert.equal(templateMetadata?.version, '22');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
     assert.match(contents, /A Markdown feature brief at `docs\/features\/<feature-slug>\/feature_brief\.md`/);
     assert.match(contents, /`docs\/deep-module-map\.md`/);
     assert.match(contents, /Treat the Feature Brief and Deep Module Map as sibling upstream inputs/);

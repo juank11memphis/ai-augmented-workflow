@@ -1,5 +1,5 @@
 {
-  "templateVersion": "137",
+  "templateVersion": "138",
   "templates": {
     "AGENTS.md": {
       "version": "35",
@@ -90,11 +90,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "21",
+      "version": "22",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Treats Feature Brief and Deep Module Map as sibling upstream inputs for technical design.",
-        "Allows newer feature briefs to omit a Deep Module section while still requiring technical design to map the feature to existing Deep Modules."
+        "Requires selected architecture guidance before technical design, applies it to implementation boundaries, and directs missing guidance repair to `sibu sync`."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -154,31 +153,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "17",
+      "version": "18",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Requires the planner to spawn the Sibu implementation planner sub-agent whenever spawning is available and limits inline fallback to host capability blockers."
+        "Requires selected architecture guidance before implementation planning and passes architecture constraints into story-local planning context."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Adds a planner toolbox skill with focused worker routing, skill-loading rules, and story-local implementation plan format guidance."
+        "Requires planner worker packets to include selected architecture guidance and stops missing guidance work for `sibu sync` repair."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "25",
+      "version": "26",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Updates executor packet guidance to include structured logging when implementation stories touch observability-relevant code."
+        "Requires selected architecture guidance before execution and passes architecture constraints into executor review context."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Guides executor workers to load structured logging for observability-relevant implementation stories."
+        "Requires executor worker packets to include selected architecture guidance and apply it during implementation and review."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

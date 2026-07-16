@@ -18,6 +18,7 @@ Use only the narrow packet from the main agent. The packet must include:
 - exactly one User Story path or one story-local `.impl_plan/` folder
 - required source artifact paths: story, Epic brief, feature brief, technical design, and UX spec when the story, plan, or feature has UI impact
 - this toolbox skill path
+- selected architecture skill path and distilled architecture constraints
 - required skill paths, including `clean-code` and `structured-logging` when the story touches observability-relevant code
 - optional installed skill paths relevant to the story
 - distilled skill constraints that are binding for this execution task
@@ -26,14 +27,17 @@ Use only the narrow packet from the main agent. The packet must include:
 
 If the packet names multiple stories, multiple plans, an Epic without one selected story, or no executable target, stop and ask the main agent for exactly one story or `.impl_plan/` path.
 
+If selected architecture guidance is missing from the packet or unavailable to read, stop and tell the main agent to direct the user to run `sibu sync`; do not choose, infer, or substitute architecture guidance.
+
 If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context.
 
 ## Execution rules
 
-- Read the story, ordered step files, required source artifacts, required skills, and relevant optional installed skills before execution.
+- Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill, and relevant optional installed skills before execution.
 - If `structured-logging` is provided in the packet, apply it only to observability-relevant code paths and do not duplicate its policy in other skill guidance.
+- Apply selected architecture guidance during implementation and review, including boundaries, dependency direction, sequencing, and architecture-specific risks.
 - Execute all unapproved step files in filename order.
-- Keep changes inside the story scope, step scope, source artifacts, and distilled constraints.
+- Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, and distilled constraints.
 - Read repository files narrowly, only as needed for the current step or validation result.
 - Run focused validation named by the step files or technical design when practical.
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.

@@ -16,7 +16,8 @@ Write the smallest useful technical design doc for an approved feature: enough f
 - Enough feature and module context to map the feature brief to one or more existing Deep Modules during technical design.
 - Relevant existing repo files and flows needed to make implementation direction concrete.
 - `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
-- Relevant implementation guidance skills such as `clean-code`, selected architecture skills, language skills, or framework skills.
+- Selected architecture guidance installed under `.agents/skills/architecture/` or rendered as the selected architecture skill path for this workflow.
+- Relevant implementation guidance skills such as `clean-code`, language skills, or framework skills.
 
 ### What this skill writes
 
@@ -28,6 +29,7 @@ Write the smallest useful technical design doc for an approved feature: enough f
 - `docs/deep-module-map.md` is missing; direct the user to `deep-module-map-writer`.
 - The feature brief and Deep Module Map cannot be reconciled to existing Deep Modules after focused clarification, or the selected modules are missing, ambiguous, or inconsistent with the map.
 - The feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing; direct the user to `ux-expert`.
+- Selected architecture guidance is missing or cannot be identified; stop and tell the user to run `sibu sync` to repair workflow configuration before technical design. Do not choose, infer, or substitute architecture guidance yourself.
 - The request belongs to another pipeline stage, such as feature definition, UX design, Scrum planning, implementation planning, or implementation execution.
 
 ### What this skill must not do
@@ -36,6 +38,7 @@ Write the smallest useful technical design doc for an approved feature: enough f
 - Do not invent new Deep Modules or move work into modules that cannot be justified from the Feature Brief and Deep Module Map.
 - Do not redesign binding UX mockups.
 - Do not duplicate architecture, language, framework, or clean-code skill guidance.
+- Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 
 ## Grounding
@@ -47,10 +50,18 @@ Before writing, read:
 3. the feature brief
 4. `docs/features/<feature-slug>/ux.md` when the feature has UI impact
 5. `clean-code`
-6. any selected architecture, language, or framework skills that apply
-7. relevant existing repo files and flows
+6. the selected architecture skill for this workflow
+7. any selected language or framework skills that apply
+8. relevant existing repo files and flows
 
 Apply those inputs. Do not summarize them back into the technical design unless a specific implication changes the implementation.
+
+
+## Selected architecture guidance gate
+
+Before interviewing or writing, identify the workflow's selected architecture skill and read its installed guidance. If selected architecture guidance is missing, unavailable, or ambiguous, hard-stop and tell the user to run `sibu sync` to repair Sibu workflow configuration. Do not choose an architecture, infer one from the codebase, or proceed with generic architecture advice.
+
+When selected architecture guidance is present, treat it as binding for design order, module/layer boundaries, dependency direction, and concrete implementation boundaries. Apply it through the technical design by naming project-specific boundaries and sequencing decisions; do not paste or restate the architecture skill itself.
 
 ## Required input
 
@@ -86,7 +97,7 @@ For UI-related features, `ux.md` is source context, not inspiration. If `ux.md` 
 
 Translate product intent into implementation direction.
 
-Deep Modules answer “where does this implementation work belong?” Architecture guidance answers “how is that module structured internally?” Translate the existing Deep Modules selected or mapped from the Feature Brief plus Deep Module Map into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Deep Module Map by default.
+Deep Modules answer “where does this implementation work belong?” Selected architecture guidance answers “how is that module structured internally?” Translate the existing Deep Modules selected or mapped from the Feature Brief plus Deep Module Map into implementation boundaries appropriate for the selected architecture. Capture those boundaries in the technical design so downstream Scrum planning, implementation planning, and execution can trust the technical design instead of rereading the Deep Module Map by default.
 
 When a feature crosses a framework or delivery boundary, include the allowed orchestration/application entrypoint and the forbidden lower-level dependencies. Keep this framework-agnostic: name roles like framework adapter, application/orchestration boundary, domain, port, and infrastructure, then add concrete project paths only where useful.
 
