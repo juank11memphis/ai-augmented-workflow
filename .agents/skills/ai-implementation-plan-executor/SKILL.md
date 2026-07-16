@@ -20,6 +20,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - The story, Epic brief, feature brief, and technical design for the selected plan.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
 - The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when sub-agent spawning is available.
+- Selected architecture guidance for the workflow.
 - Required and relevant installed skill paths for the executor packet, including `clean-code` and `structured-logging` when the story touches observability-relevant code.
 
 ### What this skill writes
@@ -34,6 +35,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - The user does not provide or clearly identify exactly one User Story file or `.impl_plan/` folder.
 - Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
 - The story, any step, or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
+- Selected architecture guidance is missing, unavailable, or ambiguous; stop and tell the user to run `sibu sync` to repair workflow configuration before implementation execution. Do not choose, infer, or substitute architecture guidance yourself.
 - Validation fails and the fix is ambiguous, risky, or would exceed the approved plan.
 - A step conflicts with the story, Epic, feature brief, technical design, UX spec, or approved Deep Module boundaries.
 
@@ -45,6 +47,14 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - Do not mark any step approved before explicit story-level user approval.
 - Do not commit story implementation changes before explicit story-level user approval.
 - Do not let the executor worker write approval metadata or run `git commit`, `git stash`, or `git reset`.
+- Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
+
+
+## Selected architecture guidance gate
+
+Before execution, identify and read the workflow's selected architecture skill. If selected architecture guidance is missing, unavailable, or ambiguous, hard-stop and tell the user to run `sibu sync` to repair Sibu workflow configuration. Do not choose architecture guidance, infer it from repository structure, or continue with generic architecture assumptions.
+
+When selected architecture guidance is present, treat it as binding execution and review context. Pass the selected architecture skill path and distilled architecture constraints to the executor worker, and apply them when evaluating step order, implementation boundaries, dependency direction, and review risks.
 
 ## Required source context gate
 
@@ -85,14 +95,15 @@ Build a narrow executor packet for the worker. The packet must include:
 - story, Epic brief, feature brief, technical design, and UX path when relevant
 - executor toolbox path: `.agents/skills/ai-implementation-executor-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
-- relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, Command Pattern, DDD/Hexagonal, Layered Architecture, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, including story scope, validation expectations, Deep Module boundaries, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
+- selected architecture skill path as required architecture context
+- relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
+- distilled skill constraints, including story scope, validation expectations, Deep Module boundaries, selected architecture constraints, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
 - approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
 - expected output format: changed files, completed steps, validation commands/results, risks, follow-up questions, and approval state
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
 
-The worker must use only the packet, the toolbox, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
+The worker must use only the packet, the toolbox, listed skill files including the selected architecture skill, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 
 ## Fallback matrix
 

@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "136",
+  "templateVersion": "138",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-07-16T17:48:55.530Z",
+  "updatedAt": "2026-07-16T22:37:17.883Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -83,10 +83,9 @@
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "20",
-      "sha256": "212024c3277c862e3e88ef425436b3cdfc2dd3e412aa79c610dce132d9795257",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "21"
+      "templateVersion": "22",
+      "sha256": "6773156f809f9aa6cca4a9a613243d285586f7eb3180d2dd3dacfb43ba74b55d",
+      "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
@@ -96,17 +95,15 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "16",
-      "sha256": "a7e2c24e5688318200ccf5efae5153f7cb5ad8b5c9ad0fa76505cea1f2d4cf27",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "17"
+      "templateVersion": "18",
+      "sha256": "607b201ce645039df686559e867e346dd7c8c4abfccf19185664676bd3cd3f8e",
+      "status": "managed"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "23",
-      "sha256": "1b7467a1552652e116f5521c6797556e79f2be182c963c649488ca4160f46498",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "25"
+      "templateVersion": "26",
+      "sha256": "50c7233b92f81c7669640be3fd10b898430b6ec0b8d8b4a9ae8e57ca13e369da",
+      "status": "managed"
     },
     ".agents/skills/typescript/SKILL.md": {
       "template": "skills/typescript/SKILL.md",
@@ -117,10 +114,9 @@
     },
     ".agents/skills/command-pattern/SKILL.md": {
       "template": "skills/architecture/command-pattern/SKILL.md",
-      "templateVersion": "6",
-      "sha256": "4a0ffac3d167de1c7eb842376a2cd3439a734a4e6bf4b1875e21c758d76bdc49",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "7"
+      "templateVersion": "8",
+      "sha256": "681b623db7ac8a59c186e87594cd7e401b4c14a4e1fbfa5e2b5fcb209d0c1a46",
+      "status": "managed"
     },
     ".agents/skills/ai-prompt-engineer-master/SKILL.md": {
       "template": "skills/ai-prompt-engineer-master/SKILL.md",
@@ -210,8 +206,8 @@
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "4fb6559a7c87234cd463d2039e421387e085aad604708fb38d045d2d5af45c35",
+      "templateVersion": "2",
+      "sha256": "7421f4b119e84f9a802f8da835d2ab62a4e01874256c2a65f8a3e65ee82a0db8",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
@@ -222,10 +218,9 @@
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "7728cdb423bd8b2872a743e09e42a55560b0718031dffa924e359f4080fbfe40",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "2"
+      "templateVersion": "3",
+      "sha256": "95e6021c72f6a4a52c69b80e433bb49f8709d8f4ca223310b8471c8dd9a042cc",
+      "status": "managed"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
       "template": ".codex/agents/sibu-implementation-executor.toml",
