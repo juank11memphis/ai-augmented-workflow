@@ -5,7 +5,13 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 import { writeSibuState } from '../../workflow-state-ledger/index.js';
 
-import { SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../../template-catalog/index.js';
+import {
+  SELECTABLE_ARCHITECTURE_SKILLS,
+  SELECTABLE_DATABASE_SKILLS,
+  SELECTABLE_FRAMEWORK_SKILLS,
+  SELECTABLE_WORKFLOW_SKILLS,
+  SUPPORTED_AGENTS,
+} from '../../template-catalog/index.js';
 import type { SelectableArchitectureSkill, SelectableDatabaseSkill, SelectableFrameworkSkill, SelectableLanguageSkill, SelectableWorkflowSkill, SupportedAgent } from '../../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles } from '../../template-catalog/index.js';
 import { stopSelectedSkill } from './handler.js';
@@ -51,6 +57,32 @@ describe('stopSelectedSkill', () => {
     assert.equal(result.state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']?.status, 'unmanaged');
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/postgresql-expert/SKILL.md')), true);
     assert.doesNotMatch(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /postgresql-expert/);
+  });
+
+  it('blocks stopping the selected architecture skill without changing state or files', () => {
+    const rootPath = createInitializedRepoWithCommandPattern();
+    const statePath = path.join(rootPath, '.sibu/state.json');
+    const agentsPath = path.join(rootPath, 'AGENTS.md');
+    const architectureSkillPath = path.join(rootPath, '.agents/skills/command-pattern/SKILL.md');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    const beforeState = structuredClone(state);
+    const beforeStateFile = fs.readFileSync(statePath, 'utf8');
+    const beforeAgents = fs.readFileSync(agentsPath, 'utf8');
+    const beforeArchitectureSkill = fs.readFileSync(architectureSkillPath, 'utf8');
+
+    const result = stopSelectedSkill({ rootPath, state, skillName: 'command-pattern' });
+
+    assert.deepEqual(result, {
+      status: 'blocked',
+      message: 'Cannot stop Command Pattern because every healthy Sibu workflow requires one selected architecture skill.',
+      hint: 'Architecture skill replacement is not supported yet; keep the existing architecture skill.',
+    });
+    assert.deepEqual(state, beforeState);
+    assert.equal(fs.readFileSync(statePath, 'utf8'), beforeStateFile);
+    assert.equal(fs.readFileSync(agentsPath, 'utf8'), beforeAgents);
+    assert.equal(fs.readFileSync(architectureSkillPath, 'utf8'), beforeArchitectureSkill);
+    assert.equal(state.selectedArchitectureSkill, 'command-pattern');
+    assert.equal(state.managedFiles['.agents/skills/command-pattern/SKILL.md']?.status, 'managed');
   });
 
   it('stops supplemental managed files owned by a selected skill', () => {
@@ -200,6 +232,32 @@ function createInitializedRepoWithExportToGithub(): string {
   return rootPath;
 }
 
+function createInitializedRepoWithCommandPattern(): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-stop-skill-test-'));
+  temporaryRoots.push(rootPath);
+  const selectedAgents = [getSupportedAgent('codex')];
+  const selectedLanguageSkills: SelectableLanguageSkill[] = [];
+  const selectedFrameworkSkills: SelectableFrameworkSkill[] = [];
+  const selectedArchitectureSkill = getArchitectureSkill('command-pattern');
+  const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill);
+  const files = renderMissingWorkflowFiles({
+    missingTargets: targets,
+    overview: 'Test project.',
+    selectedLanguageSkills,
+    selectedFrameworkSkills,
+    selectedArchitectureSkill,
+  });
+
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+  }
+
+  writeSibuState({ rootPath, statePath: path.join(rootPath, '.sibu/state.json'), selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, targets });
+
+  return rootPath;
+}
+
 function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   const agent = SUPPORTED_AGENTS.find((supportedAgent) => supportedAgent.id === agentId);
 
@@ -215,6 +273,16 @@ function getFrameworkSkill(skillId: SelectableFrameworkSkill['id']): SelectableF
 
   if (!skill) {
     throw new Error(`Unsupported framework skill: ${skillId}`);
+  }
+
+  return skill;
+}
+
+function getArchitectureSkill(skillId: SelectableArchitectureSkill['id']): SelectableArchitectureSkill {
+  const skill = SELECTABLE_ARCHITECTURE_SKILLS.find((architectureSkill) => architectureSkill.id === skillId);
+
+  if (!skill) {
+    throw new Error(`Unsupported architecture skill: ${skillId}`);
   }
 
   return skill;

@@ -89,6 +89,14 @@ export function stopSelectedSkill({ rootPath, state, skillName }: { rootPath: st
     return { status: 'noop', message: `${resolution.resolved.skill.name} is not selected.` };
   }
 
+  if (resolution.resolved.kind === 'architecture') {
+    return {
+      status: 'blocked',
+      message: `Cannot stop ${resolution.resolved.skill.name} because every healthy Sibu workflow requires one selected architecture skill.`,
+      hint: 'Architecture skill replacement is not supported yet; keep the existing architecture skill.',
+    };
+  }
+
   const stoppedPaths = getSkillManagedPaths(rootPath, state, resolution.resolved);
 
   if (stoppedPaths.length === 0) {

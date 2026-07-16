@@ -207,7 +207,7 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'ddd-hexagonal' }, 'command-pattern'), {
       status: 'blocked',
       message: 'Cannot select Command Pattern because another architecture skill is already selected.',
-      hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+      hint: 'Every healthy Sibu workflow requires one selected architecture skill. Architecture skill replacement is not supported yet; keep the existing architecture skill.',
     });
   });
 
@@ -215,7 +215,7 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'command-pattern' }, 'ddd-hexagonal'), {
       status: 'blocked',
       message: 'Cannot select DDD + Hexagonal Architecture because another architecture skill is already selected.',
-      hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+      hint: 'Every healthy Sibu workflow requires one selected architecture skill. Architecture skill replacement is not supported yet; keep the existing architecture skill.',
     });
   });
 
@@ -223,7 +223,7 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'command-pattern' }, 'layered-architecture'), {
       status: 'blocked',
       message: 'Cannot select Layered Architecture because another architecture skill is already selected.',
-      hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+      hint: 'Every healthy Sibu workflow requires one selected architecture skill. Architecture skill replacement is not supported yet; keep the existing architecture skill.',
     });
   });
 
@@ -231,7 +231,7 @@ describe('getNextSkillSelection', () => {
     assert.deepEqual(getNextSkillSelection({ ...BASE_STATE, selectedArchitectureSkill: 'layered-architecture' }, 'command-pattern'), {
       status: 'blocked',
       message: 'Cannot select Command Pattern because another architecture skill is already selected.',
-      hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+      hint: 'Every healthy Sibu workflow requires one selected architecture skill. Architecture skill replacement is not supported yet; keep the existing architecture skill.',
     });
   });
 });

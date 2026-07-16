@@ -158,7 +158,7 @@ export function getNextSkillSelection(state: SibuState, skillName: string): Skil
         return {
           status: 'blocked',
           message: `Cannot select ${resolution.resolved.skill.name} because another architecture skill is already selected.`,
-          hint: 'Architecture skill replacement is not supported yet. Keep the existing architecture skill or stop managing it first.',
+          hint: 'Every healthy Sibu workflow requires one selected architecture skill. Architecture skill replacement is not supported yet; keep the existing architecture skill.',
         };
       }
 
@@ -476,4 +476,3 @@ function getDatabaseSkillById(skillId: DatabaseSkillId): SelectableDatabaseSkill
 
   return resolution.resolved.skill;
 }
-
