@@ -4,9 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
-import { SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import { handleInitProject } from './handler.js';
-import type { SibuState, SupportedAgent, WorkflowSkillId } from '../../shared/types.js';
+import type { SelectableArchitectureSkill, SibuState, SupportedAgent, WorkflowSkillId } from '../../shared/types.js';
 
 const temporaryRoots: string[] = [];
 const originalCwd = process.cwd();
@@ -30,15 +30,19 @@ describe('handleInitProject', () => {
     const state = readState(rootPath);
 
     assert.deepEqual(state.selectedAgents, ['codex']);
+    assert.equal(state.selectedArchitectureSkill, getArchitectureSkill('ddd-hexagonal').id);
     assert.deepEqual(state.selectedMcpServers, []);
     assert.ok(state.managedFiles['AGENTS.md']);
     assert.ok(state.managedFiles['.codex/config.toml']);
+    assert.equal(state.managedFiles['.agents/skills/ddd-hexagonal/SKILL.md']?.template, 'skills/architecture/ddd-hexagonal/SKILL.md');
     assert.equal(state.managedFiles['.codex/hooks.json']?.template, '.codex/hooks.json');
     assert.equal(state.managedFiles['.mcp.json'], undefined);
     assert.equal(state.managedFiles['.gemini/settings.json'], undefined);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/ddd-hexagonal/SKILL.md')), true);
     assert.equal(fs.existsSync(path.join(rootPath, '.codex/hooks.json')), true);
     assert.equal(fs.existsSync(path.join(rootPath, '.mcp.json')), false);
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), false);
+    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ddd-hexagonal`/);
   });
 
   it('does not ask for a Notion parent page when Notion is not selected', async () => {
@@ -205,9 +209,11 @@ describe('handleInitProject', () => {
 function buildDependencies({
   selectedAgents,
   selectedMcpServers = [],
+  selectedArchitectureSkill = getArchitectureSkill('ddd-hexagonal'),
 }: {
   selectedAgents: SupportedAgent[];
   selectedMcpServers?: typeof SELECTABLE_MCP_SERVERS;
+  selectedArchitectureSkill?: SelectableArchitectureSkill;
 }): NonNullable<Parameters<typeof handleInitProject>[1]> {
   return {
     renderIntro: async () => undefined,
@@ -217,7 +223,7 @@ function buildDependencies({
     askForLanguageSkills: async () => [],
     askForFrameworkSkills: async () => [],
     askForDatabaseSkills: async () => [],
-    askForArchitectureSkill: async () => undefined,
+    askForArchitectureSkill: async () => selectedArchitectureSkill,
     askForWorkflowSkills: async () => [],
     askForProjectOverview: async () => 'Test project.',
   };
@@ -264,3 +270,12 @@ function getSupportedAgent(agentId: SupportedAgent['id']): SupportedAgent {
   return agent;
 }
 
+function getArchitectureSkill(skillId: SelectableArchitectureSkill['id']): SelectableArchitectureSkill {
+  const skill = SELECTABLE_ARCHITECTURE_SKILLS.find((architectureSkill) => architectureSkill.id === skillId);
+
+  if (!skill) {
+    throw new Error(`Missing architecture skill: ${skillId}`);
+  }
+
+  return skill;
+}

@@ -40,7 +40,7 @@ type InitProjectDependencies = {
   askForLanguageSkills: () => Promise<SelectableLanguageSkill[]>;
   askForFrameworkSkills: () => Promise<SelectableFrameworkSkill[]>;
   askForDatabaseSkills: () => Promise<SelectableDatabaseSkill[]>;
-  askForArchitectureSkill: () => Promise<SelectableArchitectureSkill | undefined>;
+  askForArchitectureSkill: () => Promise<SelectableArchitectureSkill>;
   askForWorkflowSkills: (excludedWorkflowSkillIds?: SelectableWorkflowSkill['id'][]) => Promise<SelectableWorkflowSkill[]>;
   askForProjectOverview: () => Promise<string>;
 };

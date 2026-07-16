@@ -33,6 +33,11 @@ const NONE_OPTION_ID = 'none';
 export const MCP_SERVER_SELECTION_MESSAGE = 'Select optional MCP servers to configure. Sibu writes config files only; you own prerequisites and authentication.';
 
 type FrameworkSkillSelectionId = FrameworkSkillId | typeof NONE_OPTION_ID;
+type ArchitecturePromptOption = {
+  value: ArchitectureSkillId;
+  label: string;
+  hint: string;
+};
 
 export async function renderIntro(): Promise<void> {
   console.log(gradient(['#39ff14', '#00e5ff', '#9b5de5']).multiline('⧖  S I B U  ⧖'));
@@ -191,17 +196,18 @@ async function askForFrameworkSkillSelection({
   return SELECTABLE_FRAMEWORK_SKILLS.filter((skill) => selectedFrameworkSkillIds.includes(skill.id));
 }
 
-export async function askForArchitectureSkill(): Promise<SelectableArchitectureSkill | undefined> {
-  const selectedArchitectureSkillId = await select<ArchitectureSkillId | 'none'>({
+export function getInitArchitectureSkillOptions(): ArchitecturePromptOption[] {
+  return SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => ({
+    value: skill.id,
+    label: skill.name,
+    hint: skill.description,
+  }));
+}
+
+export async function askForArchitectureSkill(): Promise<SelectableArchitectureSkill> {
+  const selectedArchitectureSkillId = await select<ArchitectureSkillId>({
     message: 'Select an architecture style for this project.',
-    options: [
-      { value: 'none', label: 'None', hint: 'Do not install opinionated architecture guidance.' },
-      ...SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => ({
-        value: skill.id,
-        label: skill.name,
-        hint: skill.description,
-      })),
-    ],
+    options: getInitArchitectureSkillOptions(),
   });
 
   if (isCancel(selectedArchitectureSkillId)) {
@@ -209,11 +215,17 @@ export async function askForArchitectureSkill(): Promise<SelectableArchitectureS
     process.exit(0);
   }
 
-  if (selectedArchitectureSkillId === 'none') {
-    return undefined;
+  return getSelectableArchitectureSkill(selectedArchitectureSkillId);
+}
+
+function getSelectableArchitectureSkill(selectedArchitectureSkillId: ArchitectureSkillId): SelectableArchitectureSkill {
+  const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === selectedArchitectureSkillId);
+
+  if (!selectedArchitectureSkill) {
+    throw new Error(`Unknown architecture skill selected: ${selectedArchitectureSkillId}`);
   }
 
-  return SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === selectedArchitectureSkillId);
+  return selectedArchitectureSkill;
 }
 
 export function getPromptableWorkflowSkills(excludedWorkflowSkillIds: WorkflowSkillId[] = []): SelectableWorkflowSkill[] {

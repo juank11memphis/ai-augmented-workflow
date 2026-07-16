@@ -14,6 +14,7 @@ import type { SibuState, SupportedAgent } from '../shared/types.js';
 import type { SelectableWorkflowSkill } from '../shared/types.js';
 import {
   getSelectedAgentsFromState,
+  getSelectedArchitectureSkillFromState,
   getSelectedMcpServersFromState,
   getSelectedSkillTargetsForAgents,
   getWorkflowTargets,
@@ -259,6 +260,35 @@ describe('getSelectedAgentsFromState', () => {
     };
 
     assert.deepEqual(getSelectedAgentsFromState(state).map((agent) => agent.id), []);
+  });
+});
+
+describe('getSelectedArchitectureSkillFromState', () => {
+  it('keeps legacy states without a selected architecture skill optional', () => {
+    const state: SibuState = {
+      sibuVersion: '0.1.0',
+      templateVersion: '40',
+      generatedAt: '2026-04-20T00:00:00.000Z',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      selectedAgents: ['codex'],
+      managedFiles: {},
+    };
+
+    assert.equal(getSelectedArchitectureSkillFromState(state), undefined);
+  });
+
+  it('resolves a selected architecture skill from state', () => {
+    const state: SibuState = {
+      sibuVersion: '0.1.0',
+      templateVersion: '40',
+      generatedAt: '2026-04-20T00:00:00.000Z',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      selectedAgents: ['codex'],
+      selectedArchitectureSkill: 'ddd-hexagonal',
+      managedFiles: {},
+    };
+
+    assert.equal(getSelectedArchitectureSkillFromState(state)?.id, 'ddd-hexagonal');
   });
 });
 

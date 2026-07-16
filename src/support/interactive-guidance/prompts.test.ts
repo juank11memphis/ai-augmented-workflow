@@ -1,8 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { SELECTABLE_ARCHITECTURE_SKILLS } from '../../modules/template-catalog/index.js';
 import type { SibuState } from '../../shared/types.js';
-import { MCP_SERVER_SELECTION_MESSAGE, askForNotionDocsParentPage, getPromptableWorkflowSkills, shouldAskForNewLanguageSkills } from './index.js';
+import {
+  MCP_SERVER_SELECTION_MESSAGE,
+  askForNotionDocsParentPage,
+  getInitArchitectureSkillOptions,
+  getPromptableWorkflowSkills,
+  shouldAskForNewLanguageSkills,
+} from './index.js';
 
 const BASE_STATE: SibuState = {
   sibuVersion: '0.1.0',
@@ -30,6 +37,18 @@ describe('MCP server selection copy', () => {
     assert.match(MCP_SERVER_SELECTION_MESSAGE, /only/i);
     assert.match(MCP_SERVER_SELECTION_MESSAGE, /prerequisites/i);
     assert.match(MCP_SERVER_SELECTION_MESSAGE, /authentication/i);
+  });
+});
+
+describe('getInitArchitectureSkillOptions', () => {
+  it('offers only selectable architecture skills and no none option', () => {
+    const options = getInitArchitectureSkillOptions();
+
+    assert.deepEqual(
+      options.map((option) => option.value),
+      SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => skill.id)
+    );
+    assert.equal(options.some((option) => String(option.value) === 'none'), false);
   });
 });
 
