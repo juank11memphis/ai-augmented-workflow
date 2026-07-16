@@ -148,7 +148,13 @@ function addUnsupportedSelectionIssues(state: SibuState, issues: DoctorIssue[]):
     }
   }
 
-  if (state.selectedArchitectureSkill && !SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === state.selectedArchitectureSkill)) {
+  if (!state.selectedArchitectureSkill) {
+    issues.push({
+      severity: 'error',
+      message: 'State is missing a selected architecture skill.',
+      hint: 'Run `sibu sync` to choose required architecture guidance for this workflow.',
+    });
+  } else if (!SELECTABLE_ARCHITECTURE_SKILLS.some((skill) => skill.id === state.selectedArchitectureSkill)) {
     issues.push({ severity: 'warning', message: `State references unsupported architecture skill: ${state.selectedArchitectureSkill}.` });
   }
 

@@ -5,9 +5,11 @@ import { SELECTABLE_ARCHITECTURE_SKILLS } from '../../modules/template-catalog/i
 import type { SibuState } from '../../shared/types.js';
 import {
   MCP_SERVER_SELECTION_MESSAGE,
+  askForNewArchitectureSkill,
   askForNotionDocsParentPage,
   getInitArchitectureSkillOptions,
   getPromptableWorkflowSkills,
+  getSyncArchitectureSkillOptions,
   shouldAskForNewLanguageSkills,
 } from './index.js';
 
@@ -49,6 +51,27 @@ describe('getInitArchitectureSkillOptions', () => {
       SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => skill.id)
     );
     assert.equal(options.some((option) => String(option.value) === 'none'), false);
+  });
+});
+
+describe('getSyncArchitectureSkillOptions', () => {
+  it('offers only selectable architecture skills and no none option for missing-architecture repair', () => {
+    const options = getSyncArchitectureSkillOptions();
+
+    assert.deepEqual(
+      options.map((option) => option.value),
+      SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => skill.id)
+    );
+    assert.equal(options.some((option) => String(option.value) === 'none'), false);
+  });
+});
+
+describe('askForNewArchitectureSkill', () => {
+  it('does not prompt or change state when architecture is already selected', async () => {
+    const result = await askForNewArchitectureSkill({ ...BASE_STATE, selectedArchitectureSkill: SELECTABLE_ARCHITECTURE_SKILLS[0].id });
+
+    assert.equal(result.changedState, false);
+    assert.equal(result.state.selectedArchitectureSkill, SELECTABLE_ARCHITECTURE_SKILLS[0].id);
   });
 });
 

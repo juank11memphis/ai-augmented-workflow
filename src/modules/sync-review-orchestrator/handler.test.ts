@@ -5,6 +5,8 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
 import type { SibuState } from '../../shared/types.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SUPPORTED_AGENTS, getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
+import { writeSibuState } from '../workflow-state-ledger/index.js';
 import { handleSyncProject } from './handler.js';
 
 const temporaryRoots: string[] = [];
@@ -80,6 +82,68 @@ describe('handleSyncProject unsupported-agent cleanup', () => {
   });
 });
 
+describe('handleSyncProject missing architecture repair', () => {
+  it('requires architecture selection, updates state, and applies normal architecture previews', async () => {
+    const rootPath = createCleanInitializedRepo();
+    process.chdir(rootPath);
+    const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS[1];
+    let askedForArchitectureRepair = false;
+
+    await handleSyncProject(
+      { type: 'sync' },
+      {
+        renderIntro: async () => {},
+        askForNewLanguageSkills: async (state) => ({ state, changedState: false }),
+        askForMissingFrameworkSkills: async (state) => ({ state, changedState: false }),
+        askForNewArchitectureSkill: async (state) => {
+          askedForArchitectureRepair = true;
+          return {
+            state: {
+              ...state,
+              selectedArchitectureSkill: selectedArchitectureSkill.id,
+              updatedAt: new Date().toISOString(),
+            },
+            changedState: true,
+          };
+        },
+        askForSyncAction: async () => 'apply-update',
+      }
+    );
+
+    const state = readState(rootPath);
+    const architectureTargetPath = selectedArchitectureSkill.targetRelativePathsByAgent.codex;
+
+    assert.equal(askedForArchitectureRepair, true);
+    assert.equal(process.exitCode, undefined);
+    assert.equal(state.selectedArchitectureSkill, selectedArchitectureSkill.id);
+    assert.ok(architectureTargetPath);
+    assert.equal(fs.existsSync(path.join(rootPath, architectureTargetPath)), true);
+    assert.equal(state.managedFiles[architectureTargetPath]?.template, selectedArchitectureSkill.templateRelativePath);
+  });
+
+  it('preserves existing architecture selection when no repair change is returned', async () => {
+    const rootPath = createCleanInitializedRepo(SELECTABLE_ARCHITECTURE_SKILLS[0]);
+    process.chdir(rootPath);
+    let askedForArchitectureRepair = false;
+
+    await handleSyncProject(
+      { type: 'sync' },
+      {
+        renderIntro: async () => {},
+        askForNewLanguageSkills: async (state) => ({ state, changedState: false }),
+        askForMissingFrameworkSkills: async (state) => ({ state, changedState: false }),
+        askForNewArchitectureSkill: async (state) => {
+          askedForArchitectureRepair = true;
+          return { state, changedState: false };
+        },
+      }
+    );
+
+    assert.equal(askedForArchitectureRepair, true);
+    assert.equal(readState(rootPath).selectedArchitectureSkill, SELECTABLE_ARCHITECTURE_SKILLS[0].id);
+  });
+});
+
 function createLegacyOnlyRepo(): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-sync-handler-unsupported-agent-'));
   temporaryRoots.push(rootPath);
@@ -112,4 +176,49 @@ function createLegacyOnlyRepo(): string {
   fs.writeFileSync(path.join(rootPath, '.sibu/state.json'), `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 
   return rootPath;
+}
+
+function createCleanInitializedRepo(selectedArchitectureSkill?: (typeof SELECTABLE_ARCHITECTURE_SKILLS)[number]): string {
+  const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-sync-handler-architecture-'));
+  temporaryRoots.push(rootPath);
+  const selectedAgents = [getSupportedAgent('codex')];
+  const targets = getWorkflowTargets(rootPath, selectedAgents, [], [], selectedArchitectureSkill);
+  const files = renderMissingWorkflowFiles({
+    missingTargets: targets,
+    overview: 'Test project.',
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+    selectedArchitectureSkill,
+  });
+
+  for (const file of files) {
+    fs.mkdirSync(path.dirname(file.targetPath), { recursive: true });
+    fs.writeFileSync(file.targetPath, file.contents, 'utf8');
+  }
+
+  writeSibuState({
+    rootPath,
+    statePath: path.join(rootPath, '.sibu/state.json'),
+    selectedAgents,
+    selectedLanguageSkills: [],
+    selectedFrameworkSkills: [],
+    selectedArchitectureSkill,
+    targets,
+  });
+
+  return rootPath;
+}
+
+function readState(rootPath: string): SibuState {
+  return JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8')) as SibuState;
+}
+
+function getSupportedAgent(agentId: (typeof SUPPORTED_AGENTS)[number]['id']): (typeof SUPPORTED_AGENTS)[number] {
+  const agent = SUPPORTED_AGENTS.find((supportedAgent) => supportedAgent.id === agentId);
+
+  if (!agent) {
+    throw new Error(`Unsupported agent: ${agentId}`);
+  }
+
+  return agent;
 }

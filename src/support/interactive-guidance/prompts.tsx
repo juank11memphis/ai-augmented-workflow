@@ -204,6 +204,10 @@ export function getInitArchitectureSkillOptions(): ArchitecturePromptOption[] {
   }));
 }
 
+export function getSyncArchitectureSkillOptions(): ArchitecturePromptOption[] {
+  return getInitArchitectureSkillOptions();
+}
+
 export async function askForArchitectureSkill(): Promise<SelectableArchitectureSkill> {
   const selectedArchitectureSkillId = await select<ArchitectureSkillId>({
     message: 'Select an architecture style for this project.',
@@ -328,16 +332,9 @@ export async function askForNewArchitectureSkill(state: SibuState): Promise<{ st
     return { state, changedState: false };
   }
 
-  const selectedArchitectureSkillId = await select<ArchitectureSkillId | 'none'>({
+  const selectedArchitectureSkillId = await select<ArchitectureSkillId>({
     message: 'Select an architecture style for this project.',
-    options: [
-      { value: 'none', label: 'None', hint: 'Do not install opinionated architecture guidance.' },
-      ...SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => ({
-        value: skill.id,
-        label: skill.name,
-        hint: skill.description,
-      })),
-    ],
+    options: getSyncArchitectureSkillOptions(),
   });
 
   if (isCancel(selectedArchitectureSkillId)) {
@@ -346,15 +343,12 @@ export async function askForNewArchitectureSkill(state: SibuState): Promise<{ st
   }
 
   return {
-    state:
-      selectedArchitectureSkillId === 'none'
-        ? state
-        : {
-            ...state,
-            selectedArchitectureSkill: selectedArchitectureSkillId,
-            updatedAt: new Date().toISOString(),
-          },
-    changedState: selectedArchitectureSkillId !== 'none',
+    state: {
+      ...state,
+      selectedArchitectureSkill: selectedArchitectureSkillId,
+      updatedAt: new Date().toISOString(),
+    },
+    changedState: true,
   };
 }
 

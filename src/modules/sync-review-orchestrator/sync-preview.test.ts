@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 import { writeSibuState } from '../workflow-state-ledger/index.js';
 
-import { SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_MCP_SERVERS, SELECTABLE_WORKFLOW_SKILLS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import { readTemplateManifest } from '../template-catalog/index.js';
 import type { McpServerId, SibuState, SupportedAgent } from '../../shared/types.js';
 import { applySyncAction } from './apply-action.js';
@@ -209,6 +209,49 @@ describe('getSyncPreviews', () => {
     } finally {
       exportToNotion.supplementalTargetsByAgent = originalSupplementalTargets;
     }
+  });
+
+  it('offers selected architecture guidance and routing previews after missing-architecture repair', () => {
+    const rootPath = createCleanInitializedRepo();
+    const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS[1];
+    const state = {
+      ...readState(rootPath),
+      selectedArchitectureSkill: selectedArchitectureSkill.id,
+    };
+    const manifest = readTemplateManifest();
+    state.managedFiles['AGENTS.md'].templateVersion = manifest.templates[state.managedFiles['AGENTS.md'].template]?.version ?? state.managedFiles['AGENTS.md'].templateVersion;
+    const architectureTargetPath = selectedArchitectureSkill.targetRelativePathsByAgent.codex;
+    assert.ok(architectureTargetPath);
+
+    const skillPreview = getSyncPreview(rootPath, state, architectureTargetPath, manifest);
+    const agentsPreview = getSyncPreview(rootPath, state, 'AGENTS.md', manifest);
+
+    assert.equal(skillPreview.status, 'new-template');
+    assert.equal(skillPreview.managedFile.template, selectedArchitectureSkill.templateRelativePath);
+    assert.equal(skillPreview.hasLocalFile, false);
+    assert.equal(agentsPreview.status, 'update-available');
+    assert.deepEqual(agentsPreview.changes, ['Refreshes generated skill routing for the current selected skills.']);
+  });
+
+  it('applies normal sync actions to create repaired architecture guidance', () => {
+    const rootPath = createCleanInitializedRepo();
+    const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS[1];
+    const state = {
+      ...readState(rootPath),
+      selectedArchitectureSkill: selectedArchitectureSkill.id,
+    };
+    const manifest = readTemplateManifest();
+    const architectureTargetPath = selectedArchitectureSkill.targetRelativePathsByAgent.codex;
+    assert.ok(architectureTargetPath);
+    const skillPreview = getSyncPreview(rootPath, state, architectureTargetPath, manifest);
+
+    const applied = applySyncAction({ rootPath, state, manifest, preview: skillPreview, action: 'apply-update' });
+
+    assert.equal(applied.changedFiles, true);
+    assert.equal(applied.changedState, true);
+    assert.equal(fs.existsSync(path.join(rootPath, architectureTargetPath)), true);
+    assert.equal(applied.state.selectedArchitectureSkill, selectedArchitectureSkill.id);
+    assert.equal(applied.state.managedFiles[architectureTargetPath]?.template, selectedArchitectureSkill.templateRelativePath);
   });
 
   it('records the implied exporter skill only when sync adoption is applied', () => {

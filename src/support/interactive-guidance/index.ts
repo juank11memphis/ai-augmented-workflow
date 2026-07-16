@@ -13,6 +13,7 @@ export {
   askForWorkflowSkills,
   getPromptableWorkflowSkills,
   getInitArchitectureSkillOptions,
+  getSyncArchitectureSkillOptions,
   MCP_SERVER_SELECTION_MESSAGE,
   renderIntro,
   shouldAskForNewLanguageSkills,

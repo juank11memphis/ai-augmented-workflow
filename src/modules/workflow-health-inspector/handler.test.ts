@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, test } from 'node:test';
 import { writeSibuState } from '../workflow-state-ledger/index.js';
 
-import { SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
+import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import type { SibuState, SupportedAgent } from '../../shared/types.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines } from './handler.js';
@@ -177,6 +177,32 @@ test('warns when legacy state references an unsupported agent', () => {
 
   assert.equal(issues.some((issue) => issue.message === 'State references unsupported agent: legacy-agent.'), true);
   assert.notEqual(issues.length, 0);
+});
+
+test('diagnoses missing selected architecture skill as a sync-repairable error', () => {
+  const rootPath = createCleanInitializedRepo();
+
+  const issues = diagnoseState({ rootPath, state: readState(rootPath) });
+
+  assert.equal(
+    issues.some(
+      (issue) =>
+        issue.severity === 'error' &&
+        issue.message === 'State is missing a selected architecture skill.' &&
+        issue.hint === 'Run `sibu sync` to choose required architecture guidance for this workflow.'
+    ),
+    true
+  );
+});
+
+test('preserves unsupported selected architecture skill diagnosis', () => {
+  const rootPath = createCleanInitializedRepo();
+  const state = { ...readState(rootPath), selectedArchitectureSkill: 'unknown-architecture' as (typeof SELECTABLE_ARCHITECTURE_SKILLS)[number]['id'] };
+
+  const issues = diagnoseState({ rootPath, state });
+
+  assert.equal(issues.some((issue) => issue.severity === 'warning' && issue.message === 'State references unsupported architecture skill: unknown-architecture.'), true);
+  assert.equal(issues.some((issue) => issue.message === 'State is missing a selected architecture skill.'), false);
 });
 
 test('warns when state references an unsupported MCP server', () => {
