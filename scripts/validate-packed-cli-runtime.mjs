@@ -135,6 +135,7 @@ function writeFixtureState({ fixtureProjectPath, installedPackageRoot }) {
     selectedAgents: [],
     selectedLanguageSkills: [],
     selectedFrameworkSkills: [],
+    selectedArchitectureSkill: 'command-pattern',
     managedFiles,
   };
 
