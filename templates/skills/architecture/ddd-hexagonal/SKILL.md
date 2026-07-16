@@ -27,6 +27,27 @@ This skill is backend-focused. It does not cover frontend component architecture
 
 If a simpler structure preserves clear boundaries, prefer the simpler structure.
 
+
+## Downstream Sibu workflow handoff
+
+Use this selected architecture model as binding guidance for technical design, implementation planning, execution, and review. Keep the guidance concise in downstream artifacts, but make the boundary decisions explicit.
+
+### Technical design
+
+Design use-case-first and domain-first. Name the owning Deep Module, then identify the domain concepts, invariants, and application use cases before choosing infrastructure details. Place business rules and invariants in `domain/**`; place orchestration, transaction coordination, input/output contracts, and outgoing ports in `application/**`; place repositories, SDK clients, persistence mappings, and anti-corruption translation in `infra/**`; keep entrypoints as driving adapters. Dependencies must point inward: entrypoint -> application -> domain + ports, and infrastructure -> application/domain contracts.
+
+### Implementation planning
+
+Plan slices around one externally meaningful use case at a time. For each slice, sequence the work as domain model/invariants first, application use case and ports second, infrastructure adapters third, and framework or CLI entrypoints last. Call out any cross-module dependency explicitly instead of sharing internals or inventing new modules.
+
+### Implementation execution
+
+Implementation agents should keep framework, database, filesystem, SDK, and transport types out of domain and application boundaries unless they are explicit adapter translations. Define application orchestration and ports before infrastructure adapters, then wire entrypoints last. Avoid direct entrypoint-to-database calls, infrastructure imports from the domain, anemic pass-through use cases that hide business rules in adapters, and broad shared services created only for convenience.
+
+### Review and compliance
+
+Reviewers should check that use cases and domain concepts were designed before adapters, invariants live in the domain, application orchestration owns the workflow, ports describe required external capabilities, adapters translate at the boundary, entrypoints stay thin, and all dependencies point inward. If a business rule changes because an external DTO, database row, or framework object changed, the hexagonal boundary is leaking.
+
 ## Deep Module compatibility
 
 Deep Modules answer “where does this implementation work belong?” DDD + Hexagonal answers “how is that module structured internally?”

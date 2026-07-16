@@ -1,5 +1,5 @@
 {
-  "templateVersion": "136",
+  "templateVersion": "137",
   "templates": {
     "AGENTS.md": {
       "version": "35",
@@ -119,17 +119,17 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Adds a framework-agnostic adapter dependency rule requiring delivery entrypoints to call application/orchestration boundaries instead of infrastructure or domain workflow internals."
+        "Adds downstream handoff guidance for applying DDD + Hexagonal Architecture during technical design, implementation planning, execution, and review."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Routes workflow, handler, entrypoint, job, and operational outcome logging concerns to the structured logging skill."
+        "Adds downstream handoff guidance for applying command-oriented vertical slices during technical design, implementation planning, execution, and review."
       ]
     },
     "skills/nextjs/SKILL.md": {
@@ -204,10 +204,10 @@
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable lightweight architecture skill for pragmatic controllers, services, models, and repositories guidance.",
       "changes": [
-        "Adds a Layered Architecture skill for smaller apps that need simple separation of concerns."
+        "Adds downstream handoff guidance for applying Layered Architecture during technical design, implementation planning, execution, and review."
       ]
     },
     "skills/export-to-github/SKILL.md": {

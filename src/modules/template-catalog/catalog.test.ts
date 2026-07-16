@@ -205,6 +205,13 @@ describe('skill target paths', () => {
 });
 
 describe('architecture skill descriptions', () => {
+  it('preserves the fixed architecture catalog', () => {
+    assert.deepEqual(
+      SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => skill.id),
+      ['ddd-hexagonal', 'command-pattern', 'layered-architecture'],
+    );
+  });
+
   it('helps users compare architecture choices', () => {
     const dddHexagonal = getArchitectureSkill('ddd-hexagonal');
     assert.match(dddHexagonal.description, /complex/i);

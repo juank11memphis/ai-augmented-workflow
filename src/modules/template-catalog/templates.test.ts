@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '136');
+    assert.equal(manifest.templateVersion, '137');
     assert.equal(templateMetadata?.version, '1');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
@@ -84,7 +84,7 @@ describe('structured logging routing hooks', () => {
     const expectations = [
       { path: 'skills/typescript/SKILL.md', version: '2', hook: /When TypeScript changes affect logs/ },
       { path: 'skills/golang/SKILL.md', version: '2', hook: /When Go changes affect logs/ },
-      { path: 'skills/architecture/command-pattern/SKILL.md', version: '7', hook: /Operational Behavior Uses Structured Logging/ },
+      { path: 'skills/architecture/command-pattern/SKILL.md', version: '8', hook: /Operational Behavior Uses Structured Logging/ },
     ];
 
     for (const expectation of expectations) {
@@ -92,11 +92,71 @@ describe('structured logging routing hooks', () => {
       const templateMetadata = manifest.templates[expectation.path];
 
       assert.equal(templateMetadata?.version, expectation.version);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging|downstream handoff guidance/i);
       assert.match(contents, /`structured-logging`/);
       assert.match(contents, expectation.hook);
       assert.doesNotMatch(contents, /secrets, credentials, tokens/);
     }
+  });
+});
+
+
+describe('architecture downstream handoff templates', () => {
+  it('preserves the fixed architecture catalog while requiring downstream handoff guidance', () => {
+    const manifest = readTemplateManifest();
+
+    assert.deepEqual(
+      SELECTABLE_ARCHITECTURE_SKILLS.map((skill) => skill.id),
+      ['ddd-hexagonal', 'command-pattern', 'layered-architecture'],
+    );
+
+    for (const skill of SELECTABLE_ARCHITECTURE_SKILLS) {
+      const contents = readTemplate(skill.templateRelativePath);
+      const templateMetadata = manifest.templates[skill.templateRelativePath];
+
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /downstream handoff guidance/i);
+      assert.match(contents, /## Downstream Sibu workflow handoff/);
+      assert.match(contents, /### Technical design/);
+      assert.match(contents, /### Implementation planning/);
+      assert.match(contents, /### Implementation execution/);
+      assert.match(contents, /### Review and compliance/);
+      assert.match(contents, /Dependencies (must|should) (point|flow)|dependency (direction|flow)/i);
+      assert.match(contents, /entrypoints?/i);
+      assert.match(contents, /adapters?|repositories/i);
+    }
+  });
+
+  it('captures DDD and Hexagonal downstream sequencing and boundaries', () => {
+    const contents = readTemplate('skills/architecture/ddd-hexagonal/SKILL.md');
+
+    assert.match(contents, /use-case-first and domain-first/i);
+    assert.match(contents, /business rules and invariants in `domain\/\*\*`/i);
+    assert.match(contents, /application orchestration and ports before infrastructure adapters/i);
+    assert.match(contents, /wire entrypoints last/i);
+    assert.match(contents, /Dependencies must point inward/i);
+  });
+
+  it('captures command-pattern downstream slice sequencing and review checks', () => {
+    const contents = readTemplate('skills/architecture/command-pattern/SKILL.md');
+
+    assert.match(contents, /Design the executable operation first/i);
+    assert.match(contents, /Command and Result shape first/i);
+    assert.match(contents, /Port contracts second/i);
+    assert.match(contents, /Handler orchestration and business validation third/i);
+    assert.match(contents, /Adapter implementations fourth/i);
+    assert.match(contents, /entrypoint wiring last/i);
+    assert.match(contents, /explicit Command, focused Handler, Result, and required Ports/i);
+  });
+
+  it('captures layered-architecture downstream layer ownership and review checks', () => {
+    const contents = readTemplate('skills/architecture/layered-architecture/SKILL.md');
+
+    assert.match(contents, /service responsibility first/i);
+    assert.match(contents, /Business rules and workflow orchestration belong in services/i);
+    assert.match(contents, /persistence details belong in repositories/i);
+    assert.match(contents, /framework or transport adaptation belongs in controllers/i);
+    assert.match(contents, /controller -> service -> repository/i);
+    assert.match(contents, /controller-to-repository shortcuts/i);
   });
 });
 
@@ -106,9 +166,9 @@ describe('layered architecture template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Layered Architecture|lightweight architecture/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Layered Architecture/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /downstream handoff guidance/i);
 
     const contents = readTemplate(templatePath);
 
@@ -145,7 +205,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '136');
+    assert.equal(manifest.templateVersion, '137');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -235,7 +295,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '136');
+    assert.equal(manifest.templateVersion, '137');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);

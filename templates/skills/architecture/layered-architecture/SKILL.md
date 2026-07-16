@@ -15,6 +15,27 @@ This is Sibu's pragmatic layered architecture guidance. It is not the only valid
 
 Keep the layers useful, not ceremonial. If splitting a small function across layers makes the code harder to understand, prefer the simpler code.
 
+
+## Downstream Sibu workflow handoff
+
+Use this selected architecture model as binding guidance for technical design, implementation planning, execution, and review. Keep the design lightweight, but make layer ownership and dependency direction clear.
+
+### Technical design
+
+Design the user-facing operation and service responsibility first, then decide which models and repositories the service needs. Business rules and workflow orchestration belong in services, simple invariants and meaningful states belong in models, persistence details belong in repositories, and framework or transport adaptation belongs in controllers. Dependencies should flow controller -> service -> repository and service -> model; repositories may map storage records to models but should not own workflows.
+
+### Implementation planning
+
+Plan work by feature behavior, not by sweeping all controllers or all repositories at once. For each slice, sequence the service contract and business behavior first, model changes second, repository interface/implementation third, and controller wiring last. Keep the layer split proportional: use existing project folders when clear and avoid adding layers where a small function stays easier to understand.
+
+### Implementation execution
+
+Implementation agents should keep controllers thin, services framework-free, repositories persistence-focused, and models meaningful. Avoid controller-to-repository shortcuts, services that embed SQL/ORM/SDK calls, repositories that return raw storage details to services, models that import controllers or repositories, and miscellaneous service/helper bags that hide unrelated behavior.
+
+### Review and compliance
+
+Reviewers should check that controllers only adapt input/output and call services, services coordinate business behavior without framework objects, repositories hide data access and persistence mappings, models express useful concepts or states without over-modeling, and dependency flow follows the approved layer direction. If the layer split makes a small change harder to understand, simplify while preserving controller/service/repository boundaries.
+
 ## Layer responsibilities
 
 ### Controllers

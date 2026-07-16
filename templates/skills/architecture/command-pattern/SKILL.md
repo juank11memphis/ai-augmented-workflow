@@ -10,6 +10,27 @@ Use this skill to design and implement software features as independent, end-to-
 
 ---
 
+
+## Downstream Sibu workflow handoff
+
+Use this selected architecture model as binding guidance for technical design, implementation planning, execution, and review. Downstream artifacts should make the command boundary and execution flow explicit without adding ceremony that does not protect the slice.
+
+### Technical design
+
+Design the executable operation first. Name the owning Deep Module and feature slice, then define the Command intent, Result contract, Handler responsibilities, required Ports, driving entrypoints, and driven Adapters. Business rules and orchestration belong in the Handler or domain objects it coordinates; infrastructure behavior belongs behind Ports in adapters; entrypoints only adapt transport input into Commands and translate Results. Dependencies flow entrypoint -> Command -> Handler -> Ports, with adapters implementing Ports from outside the slice.
+
+### Implementation planning
+
+Plan each story as one or more end-to-end command slices. For each slice, sequence work as Command and Result shape first, Port contracts second, Handler orchestration and business validation third, Adapter implementations fourth, and entrypoint wiring last. Keep tests aligned to that sequence: handler tests with fake ports before adapter or transport tests.
+
+### Implementation execution
+
+Implementation agents should build vertical slices instead of technical-layer batches. Avoid handlers that instantiate databases, clients, or framework objects; entrypoints that call repositories directly; commands with behavior; ports shared too early across unrelated slices; and feature slices importing another slice's internals. Use composition/bootstrap code for wiring concrete adapters into handlers.
+
+### Review and compliance
+
+Reviewers should check that every operation has an explicit Command, focused Handler, Result, and required Ports; handlers are transport-agnostic; adapters implement ports without leaking SDK/database shapes inward; entrypoints are thin; and dependencies follow the command flow. A change that requires touching unrelated feature slices or framework code to alter handler business behavior signals a boundary problem.
+
 ## Deep Module Compatibility
 
 Deep Modules answer “where does this implementation work belong?” Command Pattern guidance answers “how is that work structured as command-oriented vertical slices inside the selected module?”

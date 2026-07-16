@@ -177,6 +177,7 @@ function writeFixtureState({ fixtureProjectPath, installedPackageRoot }) {
     selectedAgents: [],
     selectedLanguageSkills: [],
     selectedFrameworkSkills: [],
+    selectedArchitectureSkill: 'ddd-hexagonal',
     managedFiles: {
       'AGENTS.md': {
         template: 'AGENTS.md',
