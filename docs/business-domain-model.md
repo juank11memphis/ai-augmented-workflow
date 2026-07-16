@@ -19,6 +19,7 @@ Inside this domain:
 - repo-local workflow adoption and maintenance
 - managed workflow files, templates, drift, and sync review
 - skill selection and focused AI workflow guidance
+- required architecture skill selection from Sibu's fixed catalog
 - the AI-Augmented Development Pipeline for planned feature work
 - hard-stop prerequisite checks between pipeline artifacts
 - small, reviewable AI-assisted work practices
@@ -55,6 +56,9 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Template Update**: a newer Sibu-provided version of a managed template.
 - **Sync Review**: the user-controlled maintenance process for deciding how to handle drift, missing files, local edits, and template updates.
 - **Skill**: focused AI workflow guidance for a specific kind of work or artifact.
+- **Architecture Skill**: a focused skill from Sibu's fixed architecture catalog that gives architecture-specific guidance for how planned technical design, implementation planning, and execution should be shaped.
+- **Selected Architecture Skill**: the one repo-level architecture skill the user explicitly chooses during workflow adoption. It is recorded in Sibu state, installed as workflow guidance, and carried into downstream technical and implementation work.
+- **Architecture Skill Replacement**: an intentional high-impact workflow configuration change where the user replaces the selected architecture skill with a different catalog option after initialization.
 - **MCP Server**: an external tool-connection endpoint that lets an AI agent access capabilities such as GitHub, Notion, Gmail, or other services.
 - **MCP Selection**: the user's choice to configure one or more MCP servers for supported agents in a project.
 - **MCP Configuration**: repo-local agent configuration that tells an agent how to connect to selected MCP servers without embedding secrets.
@@ -71,6 +75,8 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Customized vs Drifted**: customization is user-owned change that may be valid; drift is a detected difference that needs review. Not all drift is a mistake.
 - **Workflow vs Pipeline**: workflow is the overall repo-local AI collaboration setup. Pipeline is the ordered artifact chain used for planned product/feature work.
 - **Skill vs Artifact**: a skill is the guidance/process; an artifact is the project-owned output produced by that skill.
+- **Architecture Skill vs Architecture Model**: users may think in terms of an architecture model, but Sibu expresses that choice as a selected architecture skill from its fixed catalog. This feature does not define or expand the catalog.
+- **Required Selection vs Default Choice**: requiring a user to choose an architecture skill is not the same as Sibu choosing one by default. The user must make the explicit choice.
 - **MCP Server vs Skill**: an MCP server provides external tool access; a skill provides workflow guidance. A skill may tell an agent when or how to use a tool, but it is not the tool itself.
 - **MCP Configuration vs Credentials**: Sibu may render configuration that references credential environment variables, but Sibu should not store or embed secrets.
 - **Guide vs Autopilot**: Sibu guides developers into better AI collaboration; it does not replace the developer or run the whole project unattended.
@@ -82,16 +88,16 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 
 #### Core Subdomains
 
-- **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages.
-- **Workflow Configuration Management**: lets users intentionally change selected workflow guidance and tool integrations after initialization while preserving safety and state consistency.
+- **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages, including the required selected architecture skill.
+- **Workflow Configuration Management**: lets users intentionally change selected workflow guidance, architecture guidance, and tool integrations after initialization while preserving safety and state consistency.
 - **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
-- **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions.
+- **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions, including the repo's selected architecture skill for technical and implementation stages.
 - **Maintainer Release Support**: helps Sibu maintainers prepare, validate, publish, and recover Sibu releases without turning release automation into an end-user workflow.
 
 #### Supporting Subdomains
 
 - **Template Catalog**: provides Sibu-managed source templates for workflow files and skills.
-- **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, deep module mapping, feature briefs, technical design, Scrum planning, implementation planning, and execution.
+- **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, deep module mapping, feature briefs, technical design, Scrum planning, implementation planning, execution, and selected architecture guidance.
 - **Agent Support Selection**: helps choose which agent support files and configurations belong in a project.
 - **MCP / Tool Configuration Support**: helps users select optional MCP servers, renders agent-specific configuration, and keeps external tool access separate from stored credentials.
 
@@ -105,7 +111,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 
 #### Cross-Cutting Principle
 
-- **User Control & Trust**: not a standalone subdomain, but a governing product principle expressed through concrete capabilities in each subdomain. Adoption must make project ownership clear. Maintenance must protect local edits and require sync review decisions. The pipeline must preserve artifact review gates and hard-stop on missing context. Tool configuration must avoid storing secrets. Across the domain, Sibu keeps the engineer responsible for direction and judgment.
+- **User Control & Trust**: not a standalone subdomain, but a governing product principle expressed through concrete capabilities in each subdomain. Adoption must make project ownership clear. Maintenance must protect local edits and require sync review decisions. The pipeline must preserve artifact review gates, hard-stop on missing context, and apply the selected architecture skill where technical design or implementation work depends on architecture guidance. Tool configuration must avoid storing secrets. Across the domain, Sibu keeps the engineer responsible for direction and judgment.
 
 ### Context Map
 
@@ -141,6 +147,8 @@ Configuration Support"]
     WorkflowFiles["Workflow Files"]
     Artifacts["Pipeline Artifacts"]
     State["Sibu State Metadata"]
+    ArchitectureGuidance["Selected Architecture
+Skill Guidance"]
     LocalChoices["Customizations /
 Unmanaged Files"]
     ReleaseArtifacts["Release Notes /
@@ -159,10 +167,12 @@ Other Tools"]
   Adoption --> WorkflowFiles
   Configuration --> WorkflowFiles
   Configuration --> State
+  Configuration --> ArchitectureGuidance
   Maintenance --> WorkflowFiles
   Maintenance --> State
   Maintenance --> LocalChoices
   Pipeline --> Artifacts
+  ArchitectureGuidance --> Artifacts
   ReleaseSupport --> ReleaseArtifacts
   Adoption -. governed by user control & trust .-> WorkflowFiles
   Configuration -. governed by user control & trust .-> WorkflowFiles
@@ -172,6 +182,7 @@ Other Tools"]
 
   Templates --> WorkflowFiles
   Skills --> Artifacts
+  Skills --> ArchitectureGuidance
   AgentSupport --> AiAgents
   McpConfig --> McpServers
   McpServers --> Tools
@@ -180,7 +191,7 @@ Other Tools"]
   ProjectOwned -. owned by developer / team .-> SibuDomain
 ```
 
-This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. Maintainer Release Support is also core, but maintainer-facing: it protects Sibu's own release process rather than a consumer project's installed workflow. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
+This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. Architecture skill selection is required at adoption time, and architecture skill replacement is a high-impact configuration change rather than ordinary drift repair. Maintainer Release Support is also core, but maintainer-facing: it protects Sibu's own release process rather than a consumer project's installed workflow. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
 
 ## Domain Concepts & Conceptual Diagram
 
@@ -229,6 +240,18 @@ An intentional post-initialization change to selected workflow guidance or tool 
 #### Skill
 
 A focused unit of AI workflow guidance for one type of work. Skills are responsible for routing, prerequisites, behavior, and output expectations.
+
+#### Architecture Skill
+
+A selected unit of architecture-specific workflow guidance from Sibu's fixed catalog. It represents the project's chosen architecture model for Sibu-guided work, installs the matching guidance file, and contributes routing instructions to agent support files.
+
+#### Selected Architecture Skill
+
+The repo-level architecture skill chosen by the user during `sibu init`. A healthy initialized workflow should have exactly one selected architecture skill. Downstream technical design, implementation planning, and implementation execution treat it as binding workflow context unless the user intentionally replaces it.
+
+#### Architecture Skill Replacement
+
+A high-impact post-initialization configuration change where the user chooses a different architecture skill. Sibu should warn that this can invalidate or conflict with prior technical designs, implementation plans, and implementation guidance, but still allow the user to proceed intentionally.
 
 #### MCP Server
 
@@ -279,8 +302,10 @@ define focused task
 - A **Project / Repo** has workflow files, Sibu state metadata, selected agent support, and local user changes.
 - A **Template** has a path, version, description, and user-facing change notes.
 - A **Workflow File** has a repo path, source template, current content, recorded hash, template version, and ownership state.
-- **Sibu State Metadata** records managed paths, template versions, file hashes, selected agent support, and whether files are managed, customized, or unmanaged.
+- **Sibu State Metadata** records managed paths, template versions, file hashes, selected agent support, the selected architecture skill, and whether files are managed, customized, or unmanaged.
 - A **Skill** has a purpose, trigger scope, required inputs, hard-stop conditions, owned output artifact, and boundaries.
+- An **Architecture Skill** has a catalog identifier, name, description, routing instruction, source template, and agent-specific target path.
+- A **Selected Architecture Skill** has exactly one catalog choice recorded in state and one installed guidance target for each selected agent that supports skill files.
 - A **Workflow Configuration Change** has a user intent, selected option, affected workflow files, readiness checks, and resulting state updates.
 - An **MCP Configuration** has a selected server, target agent, connection metadata, and references to credential environment variables when needed.
 - An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
@@ -290,6 +315,7 @@ define focused task
 ### Relationships & Cardinality
 
 - A **Project / Repo** can adopt **one Sibu Workflow**.
+- A **Project / Repo** must have exactly one **Selected Architecture Skill** after successful workflow adoption.
 - A **Workflow** contains many **Workflow Files**.
 - A **Template** can generate or update many repo-local **Workflow Files** across different projects.
 - A **Workflow File** is generated from zero or one known **Template**. Some user-owned files may be unmanaged and no longer tied to a template.
@@ -298,13 +324,15 @@ define focused task
 - **Sibu State Metadata** tracks many managed or customized **Workflow Files**.
 - A **Drift** finding refers to one workflow file or one workflow-level state mismatch.
 - A **Sync Review** can resolve, defer, or record many drift findings.
-- A **Workflow Configuration Change** can add, stop, or list selected skills and MCP/tool integrations after initialization.
+- A **Workflow Configuration Change** can add, stop, replace, or list selected skills and MCP/tool integrations after initialization.
 - A **Workflow Configuration Change** may create, update, remove, or record workflow files, but only as an intentional user-requested configuration change.
+- An **Architecture Skill Replacement** replaces exactly one selected architecture skill with exactly one other catalog architecture skill.
 - A **Skill** produces or updates one primary **Artifact** type.
 - A **Skill** may guide use of an MCP-provided tool, but the MCP server remains an external integration.
 - An **Artifact** can be required by one or more downstream **Skills**.
 - A **Maintainer Release** produces or updates release notes, package metadata, git tags, npm publication state, and GitHub Release notes.
 - The **AI-Augmented Development Pipeline** orders many artifacts so each layer of decision-making supports the next.
+- The **AI-Augmented Development Pipeline** uses the **Selected Architecture Skill** as downstream context for technical design, implementation planning, and execution.
 - A **Hard Stop** belongs to a skill and protects one or more prerequisite requirements.
 
 ## Domain Invariants & Business Rules
@@ -317,15 +345,20 @@ define focused task
 - A template is Sibu-provided source; an installed workflow file is project-owned.
 - Managed does not mean Sibu owns the file more than the user does.
 - `sibu init` is for one-time adoption, not routine updates.
+- `sibu init` must require the user to explicitly select exactly one architecture skill from Sibu's existing fixed catalog.
+- Sibu must not choose an architecture skill by default or treat “none” as a healthy initialized choice.
+- A healthy initialized workflow must have exactly one selected architecture skill recorded in state.
 - Intentional post-init configuration changes are distinct from both first-time installation and sync maintenance.
 - `sibu doctor` is read-only and must not change workflow files.
 - `sibu sync` is the maintenance path for reviewing and applying workflow changes after initialization.
 - Sibu must protect customized files from automatic overwrite.
 - Sibu should make drift understandable rather than hide it.
 - Users can customize or unmanage workflow files when Sibu defaults no longer fit.
-- Optional skills and MCP integrations are user-selected and may be changed after initialization.
+- Optional non-architecture skills and MCP integrations are user-selected and may be changed after initialization.
+- Architecture skill replacement is allowed only as an intentional high-impact configuration change after Sibu strongly warns the user about downstream consequences.
 - Sibu must not commit, store, or embed secrets in generated MCP configuration.
 - Feature/product planning work must follow the enforced artifact pipeline when it triggers the relevant skills.
+- Technical design, implementation planning, and implementation execution should apply the selected architecture skill as binding guidance when shaping technical decisions.
 - Each pipeline skill owns a specific artifact and should not write unrelated downstream artifacts.
 - Each pipeline skill must hard-stop when required upstream artifacts are missing or insufficient.
 - Narrow fixes and normal repo work do not require the full product pipeline unless the work creates product, domain, feature, architecture, planning, or implementation-plan ambiguity.
@@ -336,9 +369,11 @@ define focused task
 
 ### Policies
 
-- When a repo has no Sibu workflow, `sibu init` may bootstrap the initial workflow and record state metadata.
+- When a repo has no Sibu workflow, `sibu init` may bootstrap the initial workflow, require architecture skill selection, install the selected architecture guidance, and record state metadata.
 - When workflow health is uncertain, `sibu doctor` should inspect state and report whether the workflow is healthy or needs review.
-- When a user intentionally changes selected skills or MCP/tool integrations after initialization, Sibu should verify the workflow is safe to mutate before changing files or state.
+- When a user intentionally changes selected skills, architecture guidance, or MCP/tool integrations after initialization, Sibu should verify the workflow is safe to mutate before changing files or state.
+- When the user wants to replace the selected architecture skill, Sibu should warn that the change may invalidate prior technical designs, implementation plans, and implementation guidance before allowing the change.
+- When workflow state has no selected architecture skill, Sibu should treat that as workflow state needing review or repair rather than as a normal choice.
 - When drift, missing files, local edits, or template updates are detected, Sibu should direct the user to `sibu sync`.
 - When local edits exist, Sibu should present review options instead of overwriting automatically.
 - When a managed file is missing, Sibu may offer to repair it during sync.
@@ -346,6 +381,7 @@ define focused task
 - When a template update exists, Sibu should explain the meaningful change before the user decides whether to apply it.
 - When the user wants local ownership, Sibu should allow a file to become customized or unmanaged.
 - When planned feature work triggers a downstream skill without prerequisites, that skill should hard-stop and identify the missing upstream artifact.
+- When technical design, implementation planning, or implementation execution starts, the selected architecture skill should be carried into the work as repo-level workflow context.
 - When a skill produces an artifact, that artifact should clarify one layer of decision-making before downstream work starts.
 - When a user requests a narrow fix, Sibu guidance should avoid unnecessary pipeline ceremony unless scope or ownership is unclear.
 - When a maintainer prepares a release, Sibu should derive helpful changelog and SemVer guidance from git history, but the maintainer owns the final decision.
@@ -358,8 +394,8 @@ define focused task
 #### Project Workflow Lifecycle
 
 1. **Uninitialized Repo**: the repo has no Sibu workflow metadata.
-2. **Initialized Workflow**: `sibu init` has created initial workflow files and state metadata.
-3. **Configured Workflow**: the user may intentionally add or stop optional workflow guidance or tool integrations after initialization.
+2. **Initialized Workflow**: `sibu init` has created initial workflow files, installed the selected architecture skill guidance, and recorded state metadata.
+3. **Configured Workflow**: the user may intentionally add or stop optional workflow guidance, replace architecture guidance, or change tool integrations after initialization.
 4. **Healthy Workflow**: managed files match known state and no drift is detected.
 5. **Drifted Workflow**: files are missing, modified, unrecorded, customized, or generated from older templates.
 6. **Sync Review Needed**: the user must decide how to handle detected drift or updates.
@@ -376,6 +412,16 @@ define focused task
 6. **Updated / Repaired / Skipped**: user chooses how to handle the file during sync.
 7. **Unmanaged**: user takes full ownership and Sibu stops controlling it.
 
+#### Architecture Skill Selection Lifecycle
+
+1. **Catalog Available**: Sibu has a fixed set of selectable architecture skills.
+2. **Selection Required**: `sibu init` asks the user to choose one architecture skill and does not silently choose for them.
+3. **Architecture Skill Selected**: the selected architecture skill is installed as workflow guidance and recorded in state.
+4. **Architecture Guidance Applied**: downstream technical design, implementation planning, and execution use the selected architecture skill.
+5. **Replacement Requested**: the user asks to change architecture guidance after initialization.
+6. **Replacement Warned and Confirmed**: Sibu warns about downstream disruption and proceeds only if the user intentionally continues.
+7. **Architecture Skill Replaced**: state and workflow guidance are updated to the newly selected catalog option.
+
 #### AI-Augmented Development Artifact Lifecycle
 
 1. **Prerequisite Artifact Exists**: upstream artifact is present and sufficient.
@@ -389,7 +435,12 @@ define focused task
 
 - **Workflow Initialized**: a repo adopts Sibu and records initial workflow metadata.
 - **Workflow Health Checked**: Sibu inspects workflow state without changing files.
-- **Workflow Configuration Changed**: the user intentionally changes selected skills or MCP/tool integrations after initialization.
+- **Workflow Configuration Changed**: the user intentionally changes selected skills, architecture guidance, or MCP/tool integrations after initialization.
+- **Architecture Skill Selected**: the user chooses one architecture skill during workflow adoption and Sibu records and installs it.
+- **Architecture Skill Replacement Requested**: the user asks to change the selected architecture skill after initialization.
+- **Architecture Skill Replacement Warned**: Sibu explains the likely downstream impact before applying the replacement.
+- **Architecture Skill Replaced**: the user intentionally confirms and Sibu records and installs the replacement architecture guidance.
+- **Architecture Selection Missing**: workflow state lacks a selected architecture skill and needs review or repair.
 - **Drift Detected**: Sibu finds missing, modified, unrecorded, customized, or outdated workflow files.
 - **Template Update Available**: a newer Sibu template exists for a tracked workflow file.
 - **Local Customization Detected**: a workflow file has user edits that must be protected.
@@ -403,7 +454,7 @@ define focused task
 - **Artifact Created**: a skill creates its owned artifact.
 - **Artifact Updated**: a skill revises its owned artifact.
 - **Artifact Accepted for Downstream Work**: an artifact is clear enough to serve as input for the next pipeline stage.
-- **Implementation Plan Ready**: a user story has enough planning detail for AI-assisted execution.
+- **Implementation Plan Ready**: a user story has enough planning detail and selected architecture guidance for AI-assisted execution.
 - **Release Planned**: a maintainer has a preview of changelog, version, validation, and publication steps before side effects occur.
 - **Release Published**: a validated Sibu package version has been tagged, published, pushed, and represented in the GitHub Release surface.
 
@@ -416,6 +467,8 @@ define focused task
 - The AI-Augmented Development Pipeline is enforced for planned product/feature work when the relevant skills are triggered.
 - Normal repo work and narrow fixes should stay lightweight and do not require the full pipeline by default.
 - Users want strong defaults, but they also need local control over languages, frameworks, agents, architecture guidance, and managed files.
+- Architecture guidance is required for initialized Sibu workflows, but the user must explicitly choose it from the existing fixed catalog.
+- This model assumes the fixed architecture skill catalog already exists; expanding or redefining that catalog is separate future work.
 - Installed workflow files are always project-owned, even when Sibu tracks them.
 - Template update notes should be understandable to users reviewing sync decisions.
 - The quality signal is not that AI completed work; it is that the engineer is proud to ship the result.
@@ -424,6 +477,8 @@ define focused task
 
 - **Guidance vs control**: Sibu must be opinionated enough to improve quality but flexible enough to let users take ownership.
 - **Automation vs trust**: Sibu should reduce tedious setup and maintenance work without hiding changes or overriding local decisions.
+- **Required architecture choice vs user control**: Sibu should require a selected architecture skill for workflow consistency without dictating which architecture the user must choose.
+- **Architecture replacement vs downstream consistency**: users may need to change architecture guidance, but doing so can disrupt prior technical designs, implementation plans, and workflow expectations.
 - **Strong defaults vs local adaptation**: defaults should help most users move quickly, while customization and unmanagement remain first-class paths.
 - **Pipeline enforcement vs developer flow**: feature work should follow the artifact chain, but narrow fixes should not be burdened with unnecessary process.
 - **Template freshness vs local edits**: newer templates may be valuable, but customized local files require careful review and protection.

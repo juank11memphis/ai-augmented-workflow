@@ -6,7 +6,7 @@ This Capabilities Map translates Sibu's Product Vision and Business Domain Model
 
 Capabilities are written at the product level: what Sibu must be able to do for developers and teams, not how the software is structured internally.
 
-User Control & Trust is treated as a cross-cutting principle rather than a standalone subdomain. Its concrete capabilities appear in the subdomains where users experience them: adoption, maintenance, pipeline guidance, and tool configuration.
+User Control & Trust is treated as a cross-cutting principle rather than a standalone subdomain. Its concrete capabilities appear in the subdomains where users experience them: adoption, maintenance, pipeline guidance, architecture guidance, and tool configuration.
 
 ## Capability Map
 
@@ -15,28 +15,33 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 #### Workflow Adoption & State Tracking
 
 - **Initialize repo workflow**: bootstrap Sibu into an uninitialized repo so the project can begin using a repo-local AI-augmented development workflow.
-- **Orchestrate initial setup choices**: guide first-time choices for agents, optional skills, and optional MCP/tool support by coordinating the relevant supporting capabilities.
+- **Orchestrate initial setup choices**: guide first-time choices for agents, required architecture guidance, optional skills, and optional MCP/tool support by coordinating the relevant supporting capabilities.
+- **Require architecture skill selection**: ensure `sibu init` cannot complete until the user explicitly chooses one architecture skill from Sibu's existing fixed catalog, without Sibu choosing a default.
 - **Install selected workflow files**: create repo-local workflow files from selected Sibu templates while preserving that those files belong to the project.
-- **Record workflow state**: store selected agents, template versions, file hashes, and ownership status so future workflow health and sync decisions have a reliable baseline.
+- **Install selected architecture guidance**: create the workflow guidance files and routing context for the selected architecture skill as part of the initialized workflow.
+- **Record workflow state**: store selected agents, selected architecture skill, template versions, file hashes, and ownership status so future workflow health and sync decisions have a reliable baseline.
 - **Explain project ownership**: make clear that installed workflow files are project-owned even when Sibu tracks them as managed files.
 - **Explain installed workflow structure**: help users understand what was created, what is managed, what can be customized, and what remains under their control.
 
 #### Workflow Configuration Management
 
-- **List configurable workflow options**: show which optional skills and MCP/tool integrations are available and which are already selected.
+- **List configurable workflow options**: show which optional skills, selected architecture skill, and MCP/tool integrations are available and which are already selected.
 - **Apply intentional selection changes**: let users add or stop optional workflow guidance and tool integrations after initialization.
+- **Warn before architecture replacement**: explain that replacing the selected architecture skill can disrupt prior technical designs, implementation plans, and implementation guidance before the user confirms the change.
+- **Apply intentional architecture replacement**: let users replace the selected architecture skill after warning and confirmation, without treating replacement as routine drift repair.
 - **Check mutation readiness**: prevent post-init configuration changes when unresolved workflow drift or unsafe local state would make mutation ambiguous.
-- **Update selected workflow files**: create, update, or remove affected workflow files for selected skills and MCP/tool integrations without changing unrelated files.
-- **Record configuration state changes**: update selected skills, selected MCP servers, file metadata, hashes, and ownership state after approved configuration changes.
+- **Update selected workflow files**: create, update, or remove affected workflow files for selected skills, selected architecture guidance, and MCP/tool integrations without changing unrelated files.
+- **Record configuration state changes**: update selected skills, selected architecture skill, selected MCP servers, file metadata, hashes, and ownership state after approved configuration changes.
 - **Preserve configuration boundaries**: keep intentional configuration changes distinct from first-time adoption and sync maintenance.
 
 #### Workflow Maintenance & Sync Review
 
 - **Check workflow health**: inspect Sibu-managed workflow state without changing files so users know whether the workflow is healthy or needs attention.
 - **Detect workflow drift**: identify missing, modified, unrecorded, customized, or outdated workflow files that need review.
-- **Explain maintenance findings**: make drift, local edits, and template updates understandable before the user decides what to do.
+- **Detect architecture selection problems**: identify missing or unsupported selected architecture skill state as workflow health that needs review or repair.
+- **Explain maintenance findings**: make drift, local edits, architecture selection problems, and template updates understandable before the user decides what to do.
 - **Protect local edits**: prevent automatic overwrite of user-customized workflow files and preserve local ownership decisions.
-- **Guide sync decisions**: help the user choose whether to repair, update, customize, unmanage, or skip each relevant workflow change.
+- **Guide sync decisions**: help the user choose whether to repair, update, customize, unmanage, select missing required architecture guidance, or skip each relevant workflow change.
 - **Apply approved maintenance changes**: update workflow files and state metadata only after the user chooses an action.
 
 #### AI-Augmented Development Pipeline
@@ -47,6 +52,8 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Gate downstream progression**: require upstream artifacts to be reviewed or clear enough before they become inputs for later workflow stages.
 - **Preserve artifact ownership boundaries**: keep each skill focused on its owned artifact instead of producing unrelated downstream outputs.
 - **Carry reviewed context downstream**: use accepted upstream artifacts as the source of truth for later planning and implementation work.
+- **Carry architecture guidance downstream**: use the repo's selected architecture skill as required context for technical design, implementation planning, and implementation execution.
+- **Hard-stop on missing architecture guidance**: refuse downstream technical or implementation work when the repo has no selected architecture skill, directing the user to repair workflow configuration instead of inventing guidance.
 - **Keep narrow fixes lightweight**: avoid forcing the full product pipeline for small code, documentation, or maintenance tasks when direction and ownership are already clear.
 - **Keep AI work reviewable**: guide work into small, explicit, validated chunks that preserve engineer judgment and accountability.
 
@@ -71,9 +78,10 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 
 #### Skill Guidance
 
-- **Provide focused skills**: supply task-specific guidance for product vision, domain modeling, capabilities mapping, deep module mapping, feature briefs, technical design, Scrum planning, implementation planning, execution, and export workflows.
+- **Provide focused skills**: supply task-specific guidance for product vision, domain modeling, capabilities mapping, deep module mapping, feature briefs, technical design, Scrum planning, implementation planning, execution, architecture guidance, and export workflows.
+- **Provide architecture skill catalog**: make Sibu's existing fixed set of architecture skills available for explicit user selection without expanding or redefining that catalog in this capability.
 - **Define skill boundaries**: make each skill's purpose, required inputs, owned outputs, hard stops, and handoffs clear.
-- **Support optional skill selection**: let users include workflow guidance relevant to their project without forcing every skill into every repo.
+- **Support optional skill selection**: let users include non-architecture workflow guidance relevant to their project without forcing every optional skill into every repo.
 - **Preserve skill handoffs**: ensure skills pass the right reviewed context downstream while avoiding responsibility for artifacts outside their scope.
 
 #### Agent Support Selection
@@ -102,19 +110,22 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 ## Capability Dependencies / Sequencing
 
 - **Template Catalog**, **Skill Guidance**, **Agent Support Selection**, and **MCP / Tool Configuration Support** enable **Workflow Adoption & State Tracking**.
+- **Skill Guidance** must provide the fixed architecture skill catalog before **Workflow Adoption & State Tracking** can require architecture skill selection.
 - **Workflow Adoption & State Tracking** must precede **Workflow Configuration Management** and **Workflow Maintenance & Sync Review**, because both depend on recorded workflow state.
-- **Workflow Configuration Management** depends on **Template Catalog** for selectable skills and workflow templates, **MCP / Tool Configuration Support** for safe tool configuration rendering, and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
-- **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes.
+- **Workflow Configuration Management** depends on **Template Catalog** for selectable skills and workflow templates, **Skill Guidance** for selected architecture guidance, **MCP / Tool Configuration Support** for safe tool configuration rendering, and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
+- **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes, and on **Skill Guidance** to repair missing or unsupported architecture skill selections.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
+- **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before technical design, implementation planning, or implementation execution proceeds.
 - **Maintainer Release Support** depends on source control history, package metadata, npm publishing, GitHub Releases, and validation scripts, but those external systems remain outside Sibu's owned domain.
 - **User Control & Trust** is not sequenced as a separate stage; it constrains every capability where Sibu creates, changes, exports, publishes, or asks AI to act on project-owned work.
 
 ## Known Gaps / Evolution Notes
 
 - **Initial setup breadth**: Sibu may need to decide how much `init` should configure up front versus defer to later `sync` or setup flows.
-- **Workflow configuration breadth**: post-init configuration now has a first-class capability boundary; future work should decide which options beyond skills and MCP servers belong there.
+- **Workflow configuration breadth**: post-init configuration now has a first-class capability boundary; future work should decide which options beyond skills, architecture guidance, and MCP servers belong there.
+- **Architecture replacement risk**: replacing architecture guidance is allowed, but future feature work should define the exact warning, confirmation, and repair experience carefully.
 - **Skill selection depth**: optional skills may start as template choices, but could evolve into richer recommendations based on project type.
 - **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.
-- **Pipeline strictness**: Sibu must balance enforcing artifact prerequisites with staying lightweight for narrow fixes.
+- **Pipeline strictness**: Sibu must balance enforcing artifact prerequisites and required architecture guidance with staying lightweight for narrow fixes.
 - **Release workflow scope**: maintainer release support should stay focused on Sibu's own publication process unless the product explicitly expands into release management for consumer projects.
