@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '138');
+    assert.equal(manifest.templateVersion, '139');
     assert.equal(templateMetadata?.version, '1');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
@@ -205,7 +205,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '138');
+    assert.equal(manifest.templateVersion, '139');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -295,7 +295,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '138');
+    assert.equal(manifest.templateVersion, '139');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
@@ -434,8 +434,8 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '35');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /observability-relevant code-writing tasks/i);
+    assert.equal(templateMetadata?.version, '36');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /UX is required before Technical Design/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -474,10 +474,11 @@ describe('AGENTS.md template', () => {
 
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
-    assert.match(contents, /product vision -> business domain model -> capabilities map -> deep module map \/ feature brief -> technical design -> optional UX -> epics\/stories -> AI executor/);
+    assert.match(contents, /product vision -> business domain model -> capabilities map -> deep module map \/ feature brief -> UX when the feature has UI impact -> technical design -> epics\/stories -> AI executor/);
     assert.match(contents, /Business Domain Model work sits after Product Vision and before the Capabilities Map/);
     assert.match(contents, /Deep Module Map and Feature Brief work are sibling downstream artifacts from Product Vision, Business Domain Model, and Capabilities Map/);
-    assert.match(contents, /Technical Design remains downstream of both Feature Brief and Deep Module Map/);
+    assert.match(contents, /UX is optional overall but required before Technical Design when the feature has UI impact/);
+    assert.match(contents, /Technical Design remains downstream of Feature Brief, Deep Module Map, and required UX/);
     assert.match(contents, /Scrum planning and AI executor flows after Technical Design/);
     assert.match(contents, /Business Domain Model, `docs\/business-domain-model\.md`.*use `business-domain-model-writer`/);
     assert.match(contents, /Capabilities Map, product\/business capabilities, capability coverage by subdomain, `docs\/capabilities-map\.md`, missing capability checks, or capability gaps, use `capabilities-map-writer`/);
@@ -801,14 +802,17 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '4');
+    assert.equal(templateMetadata?.version, '5');
     assert.match(templateMetadata?.description ?? '', /GitHub export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /non-blocking background sub-agent/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /delegated GitHub export flow from inline fallback/i);
     assert.match(contents, /name: export-to-github/);
     assert.match(contents, /github-exporter/);
     assert.match(contents, /clean, narrow export packet/);
     assert.match(contents, /Do not call `wait_agent`/);
     assert.match(contents, /completion will arrive via sub-agent notification/);
+    assert.match(contents, /### Delegated workflow/);
+    assert.match(contents, /### Inline fallback workflow/);
+    assert.match(contents, /Use inline fallback only when delegation is unavailable or has failed and the user explicitly accepts inline fallback/);
     assert.match(contents, /feature name/i);
     assert.match(contents, /Epics and User Stories/i);
     assert.match(contents, /native sub-issues/i);
@@ -822,14 +826,17 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '4');
+    assert.equal(templateMetadata?.version, '5');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /non-blocking background sub-agent/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /delegated Notion export flow from inline fallback/i);
     assert.match(contents, /name: export-to-notion/);
     assert.match(contents, /notion-exporter/);
     assert.match(contents, /clean, narrow export packet/);
     assert.match(contents, /Do not call `wait_agent`/);
     assert.match(contents, /completion will arrive via sub-agent notification/);
+    assert.match(contents, /### Delegated workflow/);
+    assert.match(contents, /### Inline fallback workflow/);
+    assert.match(contents, /Use inline fallback only when delegation is unavailable or has failed and the user explicitly accepts inline fallback/);
     assert.match(contents, /feature name/i);
     assert.match(contents, /feature_brief\.md/);
     assert.match(contents, /ux\.md/);
@@ -893,6 +900,21 @@ describe('session-start hook templates', () => {
       assert.doesNotMatch(contents, /sibu hook session-start/);
       assert.doesNotMatch(contents, /NPM_TOKEN|NODE_AUTH_TOKEN|npmrc/);
     }
+  });
+});
+
+describe('framework skill templates', () => {
+  it('routes Next.js App Router UI component design to React when installed', () => {
+    const templatePath = 'skills/nextjs/SKILL.md';
+    const manifest = readTemplateManifest();
+    const templateMetadata = manifest.templates[templatePath];
+    const contents = readTemplate(templatePath);
+
+    assert.equal(templateMetadata?.version, '4');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /React skill/i);
+    assert.match(contents, /name: nextjs/);
+    assert.match(contents, /also use `react` when that skill is installed/);
+    assert.match(contents, /component responsibility, props, state ownership, or component boundaries/);
   });
 });
 
@@ -983,10 +1005,12 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '22');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
+    assert.equal(templateMetadata?.version, '23');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /database skills/i);
     assert.match(contents, /A Markdown feature brief at `docs\/features\/<feature-slug>\/feature_brief\.md`/);
     assert.match(contents, /`docs\/deep-module-map\.md`/);
+    assert.match(contents, /language skills, framework skills, or database skills/);
+    assert.match(contents, /any selected language, framework, or database skills that apply/);
     assert.match(contents, /Treat the Feature Brief and Deep Module Map as sibling upstream inputs/);
     assert.match(contents, /newer feature briefs may omit that section/);
     assert.match(contents, /use the approved feature scope plus `docs\/deep-module-map\.md` to identify the existing modules during technical clarification/);

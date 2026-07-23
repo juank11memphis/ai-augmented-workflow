@@ -69,13 +69,26 @@ Use this organization under the configured Notion docs parent page:
 
 ## Workflow
 
+### Delegated workflow
+
+When `notion-exporter` is available:
+
+1. Resolve only the feature slug or explicit source paths needed for the export packet.
+2. Read `.sibu/state.json` when available and include `mcpServerConfigs.notion.docsParentPage` as the destination parent.
+3. Ask one explicit opt-in question before creating or modifying Notion pages, unless the user has already granted export mutation approval in the current request.
+4. Spawn `notion-exporter` in the background with the clean, narrow export packet.
+5. Immediately report that the export is running in the background. Do not wait for final URLs in the same turn.
+
+### Inline fallback workflow
+
+Use inline fallback only when delegation is unavailable or has failed and the user explicitly accepts inline fallback. In that case:
+
 1. Resolve the feature slug from the user's feature name.
 2. Read `.sibu/state.json` when available and use `mcpServerConfigs.notion.docsParentPage` as the destination parent.
 3. Confirm which of the allowed source files exist.
 4. Ask one explicit opt-in question before creating or modifying Notion pages.
 5. Create or reuse the repo, Features, and feature organization pages under the configured parent.
 6. Export each existing allowed artifact to its matching Notion page.
-7. After spawning the background exporter, immediately report that the export is running in the background. Do not wait for final URLs in the same turn.
 
 ## Delegation self-check
 

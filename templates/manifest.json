@@ -1,11 +1,11 @@
 {
-  "templateVersion": "138",
+  "templateVersion": "139",
   "templates": {
     "AGENTS.md": {
-      "version": "35",
+      "version": "36",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes observability-relevant code-writing tasks to the structured logging skill."
+        "Clarifies that UX is required before Technical Design for UI-impacting features while remaining optional for non-UI work."
       ]
     },
     ".codex/config.toml": {
@@ -90,10 +90,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "22",
+      "version": "23",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Requires selected architecture guidance before technical design, applies it to implementation boundaries, and directs missing guidance repair to `sibu sync`."
+        "Adds selected database skills to technical design grounding when database work is in scope."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -132,10 +132,10 @@
       ]
     },
     "skills/nextjs/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Selectable framework skill for Next.js App Router and framework-specific behavior.",
       "changes": [
-        "Keeps Next.js boundary guidance architecture-agnostic by referring to the selected orchestration/application boundary instead of naming a specific architecture."
+        "Routes App Router UI work that involves component design to the React skill when installed."
       ]
     },
     "skills/react/SKILL.md": {
@@ -210,17 +210,17 @@
       ]
     },
     "skills/export-to-github/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Selectable GitHub export skill for publishing a named feature's Epics and User Stories to GitHub issues and native sub-issues.",
       "changes": [
-        "Requires GitHub exports to run as non-blocking background sub-agent jobs and prevents the main agent from waiting or polling for completion."
+        "Separates delegated GitHub export flow from inline fallback so background exporter usage remains unambiguous."
       ]
     },
     "skills/export-to-notion/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
-        "Requires Notion exports to run as non-blocking background sub-agent jobs and prevents the main agent from waiting or polling for completion."
+        "Separates delegated Notion export flow from inline fallback so background exporter usage remains unambiguous."
       ]
     },
     ".codex/agents/github-exporter.toml": {

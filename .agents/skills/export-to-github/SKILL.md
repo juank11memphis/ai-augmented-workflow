@@ -43,6 +43,20 @@ If the feature name is ambiguous, inspect `docs/features/` and ask one focused c
 
 ## Workflow
 
+### Delegated workflow
+
+When `github-exporter` is available:
+
+1. Resolve only the feature slug or explicit planning artifact paths needed for the export packet.
+2. Resolve the target repository from the current local repo's GitHub `origin` remote only. Do not ask for or use another repository.
+3. Ask one explicit opt-in question before any GitHub mutation, unless the user has already granted export mutation approval in the current request.
+4. Spawn `github-exporter` in the background with the clean, narrow export packet.
+5. Immediately report that the export is running in the background. Do not wait for created issue numbers or URLs in the same turn.
+
+### Inline fallback workflow
+
+Use inline fallback only when delegation is unavailable or has failed and the user explicitly accepts inline fallback. In that case:
+
 1. Resolve the feature slug from the user's feature name.
 2. Read the feature's Epic briefs and User Story Markdown files under `docs/features/<feature-slug>/epics/**`.
 3. Resolve the target repository from the current local repo's GitHub `origin` remote only. Do not ask for or use another repository.
@@ -52,7 +66,6 @@ If the feature name is ambiguous, inspect `docs/features/` and ask one focused c
    - one issue per Epic, with no labels
    - one issue per User Story, with no labels
    - each User Story issue attached as a native sub-issue of its parent Epic issue
-7. After spawning the background exporter, immediately report that the export is running in the background. Do not wait for created issue numbers or URLs in the same turn.
 
 ## Delegation self-check
 

@@ -17,7 +17,7 @@ Write the smallest useful technical design doc for an approved feature: enough f
 - Relevant existing repo files and flows needed to make implementation direction concrete.
 - `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
 - Selected architecture guidance installed under `.agents/skills/architecture/` or rendered as the selected architecture skill path for this workflow.
-- Relevant implementation guidance skills such as `clean-code`, language skills, or framework skills.
+- Relevant implementation guidance skills such as `clean-code`, language skills, framework skills, or database skills.
 
 ### What this skill writes
 
@@ -51,7 +51,7 @@ Before writing, read:
 4. `docs/features/<feature-slug>/ux.md` when the feature has UI impact
 5. `clean-code`
 6. the selected architecture skill for this workflow
-7. any selected language or framework skills that apply
+7. any selected language, framework, or database skills that apply
 8. relevant existing repo files and flows
 
 Apply those inputs. Do not summarize them back into the technical design unless a specific implication changes the implementation.

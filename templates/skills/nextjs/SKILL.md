@@ -7,7 +7,7 @@ description: Use this skill when working on Next.js App Router files or framewor
 
 Use this skill when working on Next.js App Router files or framework-specific Next.js behavior.
 
-This skill covers Next.js conventions, boundaries, and rendering decisions. It does not cover React component design or UX strategy.
+This skill covers Next.js conventions, boundaries, and rendering decisions. It does not cover React component design or UX strategy. When App Router UI work involves component responsibility, props, state ownership, or component boundaries, also use `react` when that skill is installed.
 
 ## Use this skill for
 

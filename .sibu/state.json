@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.10.0",
-  "templateVersion": "138",
+  "templateVersion": "139",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-07-16T22:37:17.883Z",
+  "updatedAt": "2026-07-23T19:28:09.074Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -31,10 +31,9 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "32",
-      "sha256": "6946ef8fd93813c32687f243d54904f77bbfc1a26f073c131d36dd2af6618dbf",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "35"
+      "templateVersion": "36",
+      "sha256": "79d754e092d2fd33a05f180b795215590384105c89d74e5f9c73fbf6dd1a4e38",
+      "status": "managed"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -83,8 +82,8 @@
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "22",
-      "sha256": "6773156f809f9aa6cca4a9a613243d285586f7eb3180d2dd3dacfb43ba74b55d",
+      "templateVersion": "23",
+      "sha256": "340d79bacd8bd8e055220e0c145d62957b7f0dec6c0c875c92c5e010d622a3fe",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
@@ -144,17 +143,15 @@
     },
     ".agents/skills/export-to-github/SKILL.md": {
       "template": "skills/export-to-github/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "fd00f76ca6c928bb4575e6c496e833ca9cc6dfcb4efba683b8d5abced4666eff",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "4"
+      "templateVersion": "5",
+      "sha256": "f79a80df14959b6772e3902a424fdb3170c94115007c731e404afc33c6a30aa8",
+      "status": "managed"
     },
     ".agents/skills/export-to-notion/SKILL.md": {
       "template": "skills/export-to-notion/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "c2d99aaafb4c4cfc1de4115034722e462777296b8357715d1e23447fae6b6d55",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "4"
+      "templateVersion": "5",
+      "sha256": "964c1f7bbe71e6ad97cd1268696a20ed81e8e9df59c175dc82a8043e127de15f",
+      "status": "managed"
     },
     ".codex/agents/github-exporter.toml": {
       "template": ".codex/agents/github-exporter.toml",
