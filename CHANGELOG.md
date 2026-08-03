@@ -4,6 +4,15 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.22.0 - 2026-08-03
+
+### Added
+- make delegated instructions concise by default
+- make project agent instructions concise by default
+
+### Changed
+- sync concise workflow instructions
+
 ## 0.21.1 - 2026-07-23
 
 ### Fixed
