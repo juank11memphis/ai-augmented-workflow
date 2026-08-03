@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '141');
+    assert.equal(manifest.templateVersion, '142');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
@@ -205,7 +205,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '141');
+    assert.equal(manifest.templateVersion, '142');
     assert.equal(templateMetadata?.version, '17');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
@@ -292,7 +292,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '141');
+    assert.equal(manifest.templateVersion, '142');
     assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
@@ -985,6 +985,38 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
 
   });
 
+  it('requires technical design writer to create a Mermaid diagram companion', () => {
+    const contents = readTemplate('skills/technical-design-writer/SKILL.md');
+
+    assert.match(contents, /docs\/features\/<feature-slug>\/technical_design\.md/);
+    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md/);
+    assert.match(contents, /Always create or update `docs\/features\/<feature-slug>\/tech_design_diagrams\.md` whenever creating or updating `technical_design\.md`/);
+    assert.match(contents, /Mermaid only/i);
+    assert.match(contents, /Do not create deployment diagrams/i);
+    assert.match(contents, /non-Mermaid formats/i);
+    assert.match(contents, /clarify design intent for downstream story planning and implementation/i);
+    assert.match(contents, /implementation boundaries, runtime flow, and data\/state implications/i);
+    assert.match(contents, /sparse, reviewable diagrams over exhaustive diagrams/i);
+    assert.match(contents, /one-sentence skip rationale instead of forcing diagram theater/i);
+    assert.match(contents, /High-Level Architecture Diagram/i);
+    assert.match(contents, /C4 Level 2 \/ Container-style/i);
+    assert.match(contents, /app\/module\/component ownership boundaries, data stores, external systems, key dependencies, and directional protocol\/payload labels/i);
+    assert.match(contents, /deployment topology, hosts, replicas, and infrastructure placement out of scope/i);
+    assert.match(contents, /Sequence Diagram/i);
+    assert.match(contents, /sequenceDiagram/);
+    assert.match(contents, /actors, command\/handler\/module calls, persistence or external calls, the main success path, and important error\/fallback branches/i);
+    assert.match(contents, /Prefer one clear sequence unless multiple materially different workflows are required/i);
+    assert.match(contents, /Data Model \/ State Diagram/i);
+    assert.match(contents, /erDiagram/);
+    assert.match(contents, /stateDiagram/i);
+    assert.match(contents, /Use an ERD when entities, relationships, persistence, or ownership change/i);
+    assert.match(contents, /use a state diagram when lifecycle\/status transitions matter more than schema/i);
+    assert.match(contents, /core entities\/states, keys or identifiers, meaningful relationships, and meaningful transitions/i);
+    assert.match(contents, /short skip rationale/i);
+    assert.match(contents, /same grounding artifacts and hard stops/i);
+    assert.match(contents, /ask or stop rather than inventing missing architecture, workflow, data, or state details/i);
+  });
+
   it('keeps technical design from directly requiring the Business Domain Model', () => {
     const contents = readTemplate('skills/technical-design-writer/SKILL.md');
 
@@ -999,8 +1031,8 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '24');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.equal(templateMetadata?.version, '25');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Mermaid `tech_design_diagrams\.md` companion/i);
     assert.match(contents, /A Markdown feature brief at `docs\/features\/<feature-slug>\/feature_brief\.md`/);
     assert.match(contents, /`docs\/deep-module-map\.md`/);
     assert.match(contents, /language skills, framework skills, or database skills/);

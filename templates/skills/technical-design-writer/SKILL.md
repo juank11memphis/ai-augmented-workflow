@@ -26,6 +26,7 @@ Write the smallest useful technical design doc for an approved feature: enough f
 ### What this skill writes
 
 - `docs/features/<feature-slug>/technical_design.md`.
+- `docs/features/<feature-slug>/tech_design_diagrams.md` as a concise Mermaid companion to the technical design.
 
 ### When this skill stops
 
@@ -43,6 +44,8 @@ Write the smallest useful technical design doc for an approved feature: enough f
 - Do not redesign binding UX mockups.
 - Do not duplicate architecture, language, framework, or clean-code skill guidance.
 - Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
+- Do not create deployment diagrams or non-Mermaid diagram formats.
+- Do not invent missing architecture, workflow, data, or state details for diagrams; ask or stop through the same gates used for the technical design.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 
 ## Grounding
@@ -58,7 +61,7 @@ Before writing, read:
 7. any selected language, framework, or database skills that apply
 8. relevant existing repo files and flows
 
-Apply those inputs. Do not summarize them back into the technical design unless a specific implication changes the implementation.
+Apply those inputs. Do not summarize them back into the technical design unless a specific implication changes the implementation. Use the same grounding artifacts and hard stops for `tech_design_diagrams.md`; ask or stop rather than inventing missing architecture, workflow, data, or state details.
 
 
 ## Selected architecture guidance gate
@@ -140,18 +143,44 @@ Examples:
 2. Inspect the relevant existing code before proposing changes.
 3. Identify only the implementation decisions that matter.
 4. Ask one focused follow-up question at a time until material technical ambiguity is resolved.
-5. Write the doc at `docs/features/<feature-slug>/technical_design.md`.
-6. Keep it concise. Remove any section that does not help implementation.
+5. Write the doc at `docs/features/<feature-slug>/technical_design.md` and the companion at `docs/features/<feature-slug>/tech_design_diagrams.md`.
+6. Keep both artifacts concise. Remove any technical design section or diagram category that does not help implementation; in the diagrams file, use a short skip rationale instead of a low-value placeholder diagram.
 
 ## Output location
 
-Always create or update:
+Always create or update both files together:
 
 ```txt
 docs/features/<feature-slug>/technical_design.md
+docs/features/<feature-slug>/tech_design_diagrams.md
 ```
 
-Use the same kebab-case feature slug as the feature brief.
+Always create or update `docs/features/<feature-slug>/tech_design_diagrams.md` whenever creating or updating `technical_design.md`. Use the same kebab-case feature slug as the feature brief.
+
+## Diagram companion format
+
+`tech_design_diagrams.md` is companion context, not a replacement for `technical_design.md`. Keep it concise and grounded in the same approved feature brief, Deep Module Map, selected architecture guidance, UX when applicable, and focused repo context.
+
+Use Mermaid only. Do not create deployment diagrams or non-Mermaid formats. Include useful diagrams from this menu, and use a short skip rationale when a category would not clarify the feature.
+
+Quality bar:
+
+- Diagrams should clarify design intent for downstream story planning and implementation, especially implementation boundaries, runtime flow, and data/state implications.
+- Prefer sparse, reviewable diagrams over exhaustive diagrams. Do not diagram every helper, method call, table column, or trivial branch.
+- If a diagram would mostly duplicate prose without adding clarity, include a one-sentence skip rationale instead of forcing diagram theater.
+
+```md
+# Technical Design Diagrams: <Feature Name>
+
+## High-Level Architecture Diagram
+<Mermaid flowchart approximating a C4 Level 2 / Container-style view, or a short skip rationale. Show app/module/component ownership boundaries, data stores, external systems, key dependencies, and directional protocol/payload labels. Keep deployment topology, hosts, replicas, and infrastructure placement out of scope.>
+
+## Sequence Diagram
+<Mermaid sequenceDiagram for the primary runtime workflow, or a short skip rationale. Show actors, command/handler/module calls, persistence or external calls, the main success path, and important error/fallback branches. Prefer one clear sequence unless multiple materially different workflows are required.>
+
+## Data Model / State Diagram
+<Mermaid erDiagram or stateDiagram, or a short skip rationale. Use an ERD when entities, relationships, persistence, or ownership change; use a state diagram when lifecycle/status transitions matter more than schema. Show only core entities/states, keys or identifiers, meaningful relationships, and meaningful transitions.>
+```
 
 ## Output format
 
@@ -192,6 +221,6 @@ A good technical design is short, specific, and useful. It should not try to be 
 
 ## Final response behavior
 
-After writing the file, final-answer with only the path created or updated. Do not paste the technical design body, excerpt, outline, or section summaries.
+After writing the files, final-answer with only the paths created or updated. Do not paste the technical design body, diagram body, excerpt, outline, or section summaries.
 
-Only include the full technical design when the user explicitly asks for inline review in the current request.
+Only include the full technical design or diagram companion when the user explicitly asks for inline review in the current request.
