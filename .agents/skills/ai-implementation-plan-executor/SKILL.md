@@ -21,7 +21,8 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 
 - Exactly one User Story file or one story-local `.impl_plan/` folder.
 - Ordered implementation step files in that `.impl_plan/` folder, creating them through the planner route when missing.
-- The story, Epic brief, feature brief, and technical design for the selected plan.
+- The story, Epic brief, feature brief, and `technical_design.md` as the authoritative technical design artifact for the selected plan.
+- `docs/features/<feature-slug>/tech_design_diagrams.md` when present, as optional companion context that never blocks execution when absent.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
 - The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when sub-agent spawning is available.
 - Selected architecture guidance for the workflow.
@@ -82,12 +83,15 @@ docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
 docs/features/<feature-slug>/feature_brief.md
 docs/features/<feature-slug>/technical_design.md
+docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; verify/pass when present and never hard-stop when absent
 docs/features/<feature-slug>/ux.md  # when the story, any step, or feature has UI impact
 ```
 
 If the initial User Story has no matching `.impl_plan/`, or the initial `.impl_plan/` folder is missing, empty, or has no ordered `.md` step files, route through `ai-implementation-planner` to create or repair the story-local plan, then immediately continue into execution without a plan-review gate.
 
 If required source context is missing, stop and ask the user to create or restore the missing artifact first. Do not delegate incomplete execution work to the worker.
+
+If `docs/features/<feature-slug>/tech_design_diagrams.md` exists, verify and pass its path to the executor worker as optional companion context. Missing diagrams are allowed for older features and must not block implementation execution. Do not create, regenerate, require, export, render, sync, or treat diagrams as a replacement for `technical_design.md`.
 
 ## Required sub-agent execution path
 
@@ -96,12 +100,12 @@ When the host exposes any usable sub-agent spawn capability and `sibu-implementa
 Build a narrow executor packet for the worker. The packet must include:
 
 - exactly one User Story path or story-local `.impl_plan/` folder
-- story, Epic brief, feature brief, technical design, and UX path when relevant
+- story, Epic brief, feature brief, technical design, optional tech design diagrams path when present, and UX path when relevant
 - executor toolbox path: `.agents/skills/ai-implementation-executor-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, including story scope, validation expectations, Deep Module boundaries, selected architecture constraints, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
+- distilled skill constraints, including story scope, validation expectations, Deep Module boundaries, selected architecture constraints, optional diagram constraints to preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
 - approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
 - expected output format: changed files, completed steps, validation commands/results, risks, follow-up questions, and approval state
 

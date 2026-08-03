@@ -36,7 +36,7 @@ This toolbox is for `sibu-implementation-planner` workers only. It is not a norm
 Use only the narrow packet from the main agent. The packet must include:
 
 - exactly one User Story path
-- required source artifact paths: Epic brief, feature brief, technical design, and UX spec when the story or feature has UI impact
+- required source artifact paths: Epic brief, feature brief, technical design, optional tech design diagrams when present, and UX spec when the story or feature has UI impact
 - this toolbox skill path
 - selected architecture skill path and distilled architecture constraints
 - required skill paths, including `clean-code`
@@ -48,18 +48,18 @@ If the packet names multiple stories, an Epic without one story, a feature witho
 
 If selected architecture guidance is missing from the packet or unavailable to read, stop and tell the main agent to direct the user to run `sibu sync`; do not choose, infer, or substitute architecture guidance.
 
-If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context.
+If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context. Optional `tech_design_diagrams.md` context may be included when present; its absence must not block older features.
 
 ## Planning rules
 
-- Read the story and required source artifacts before writing step files.
+- Read the story and required source artifacts before writing step files. Read included `tech_design_diagrams.md` context when the packet provides it.
 - Read required skills, the selected architecture skill, and relevant optional installed skills from the packet before writing step files.
 - Inspect repository files narrowly, only enough to make the plan executable.
-- Preserve story scope, acceptance criteria, technical design boundaries, selected architecture constraints, and UX constraints when applicable.
+- Preserve story scope, acceptance criteria, `technical_design.md` as the authoritative technical design artifact, selected architecture constraints, and UX constraints when applicable. Treat included diagrams as companion context and preserve diagram-stated boundaries, flows, and data/state implications.
 - Apply selected architecture guidance to story-local implementation step ordering, boundaries, dependency direction, and reviewable constraints.
 - Create ordered story-local implementation step files under `<story-slug>.impl_plan/*.md`.
 - Never write production code, tests, templates, or unrelated documentation.
-- Never create or change product vision, Deep Module Map, feature brief, technical design, UX, Epic, or User Story artifacts.
+- Never create or change product vision, Deep Module Map, feature brief, technical design, `tech_design_diagrams.md`, UX, Epic, or User Story artifacts.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a plan risk.
 
 ## Step file format

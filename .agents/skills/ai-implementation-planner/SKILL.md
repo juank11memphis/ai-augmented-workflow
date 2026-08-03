@@ -22,7 +22,8 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - Exactly one User Story file at `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`.
 - The story's `epic_brief.md`.
 - The feature's `feature_brief.md`.
-- The feature's `technical_design.md`.
+- The feature's `technical_design.md` as the authoritative technical design artifact.
+- The feature's `tech_design_diagrams.md` when present, as optional companion context that never blocks planning when absent.
 - `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
 - The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when sub-agent spawning is available.
 - Selected architecture guidance for the workflow.
@@ -76,6 +77,7 @@ docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
 docs/features/<feature-slug>/feature_brief.md
 docs/features/<feature-slug>/technical_design.md
+docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; verify/pass when present and never hard-stop when absent
 docs/features/<feature-slug>/ux.md  # when the story or feature has UI impact
 ```
 
@@ -84,6 +86,8 @@ Also read `docs/product-vision.md` only when product fit, target user, scope bou
 If the story or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation planning.
 
 If the technical design is missing, stop and ask the user to create it with `technical-design-writer`. Do not delegate incomplete planning work to the worker.
+
+If `docs/features/<feature-slug>/tech_design_diagrams.md` exists, verify and pass its path to the planner worker as optional companion context. Missing diagrams are allowed for older features and must not block implementation planning. Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design.md`.
 
 When the feature brief or technical design includes Deep Module guidance, treat it as required planning context. Deep Modules answer “where does this implementation work belong?” Implementation steps must preserve approved module boundaries.
 
@@ -94,12 +98,12 @@ When the host exposes any usable sub-agent spawn capability and `sibu-implementa
 Build a narrow planner packet for the worker. The packet must include:
 
 - exactly one User Story path
-- Epic brief, feature brief, technical design, and UX path when relevant
+- Epic brief, feature brief, technical design, optional tech design diagrams path when present, and UX path when relevant
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
+- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “read included diagrams and preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
 - expected output format: plan folder, ordered step files created or updated, source artifacts and skills used, and risks/blockers
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the planner packet.
