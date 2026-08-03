@@ -4,6 +4,12 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.23.0 - 2026-08-03
+
+### Added
+- consume technical design diagrams downstream
+- add technical design diagram companion
+
 ## 0.22.0 - 2026-08-03
 
 ### Added
