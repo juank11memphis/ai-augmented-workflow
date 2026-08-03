@@ -51,10 +51,13 @@ Before planning, read:
 ```txt
 docs/features/<feature-slug>/feature_brief.md
 docs/features/<feature-slug>/technical_design.md
+docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; read when present and never hard-stop when absent
 docs/features/<feature-slug>/ux.md  # when the feature has UI impact
 ```
 
 Also read `docs/product-vision.md` when it exists and the planning decision depends on product fit, scope boundaries, user value, or success signals.
+
+If `docs/features/<feature-slug>/tech_design_diagrams.md` exists, read it as companion context that clarifies design intent. Preserve diagram-stated implementation boundaries, runtime flows, and data/state implications in Epics and Stories. Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design.md`.
 
 If the feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before Scrum planning.
 
@@ -117,6 +120,8 @@ Identify from the technical design:
 - affected commands, files, modules, integrations, or docs
 - validation expectations
 - meaningful risks or unresolved decisions
+
+When optional `tech_design_diagrams.md` context exists, use it only to preserve diagram-stated boundaries, flows, and data/state implications; keep `technical_design.md` authoritative for technical design decisions.
 
 ### 2. Choose Epic boundaries
 

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "142",
+  "templateVersion": "143",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -142,38 +142,38 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "13",
+      "version": "14",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Reads optional `tech_design_diagrams.md` companion context during Scrum planning when present without blocking older features."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "19",
+      "version": "20",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Passes optional `tech_design_diagrams.md` companion context to planner workers when present without making it required."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Reads included diagram companion context and preserves diagram-stated boundaries, flows, and data/state implications while planning."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "27",
+      "version": "28",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Passes optional `tech_design_diagrams.md` companion context to executor workers when present without making it required."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Reads included diagram companion context and preserves diagram-stated boundaries, flows, and data/state implications during implementation and review."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

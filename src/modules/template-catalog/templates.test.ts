@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '142');
+    assert.equal(manifest.templateVersion, '143');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
@@ -205,7 +205,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '142');
+    assert.equal(manifest.templateVersion, '143');
     assert.equal(templateMetadata?.version, '17');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
@@ -292,7 +292,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '142');
+    assert.equal(manifest.templateVersion, '143');
     assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
@@ -590,9 +590,9 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '19');
+    assert.equal(templateMetadata?.version, '20');
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /optional `tech_design_diagrams\.md` companion context/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /technical-design-writer/);
@@ -624,9 +624,9 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '3');
+    assert.equal(templateMetadata?.version, '4');
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /included diagram companion context/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -688,9 +688,9 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '27');
+    assert.equal(templateMetadata?.version, '28');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /optional `tech_design_diagrams\.md` companion context/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -726,9 +726,9 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '4');
+    assert.equal(templateMetadata?.version, '5');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /included diagram companion context/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
@@ -1050,13 +1050,65 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.equal(templateMetadata?.version, '14');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /optional `tech_design_diagrams\.md` companion context/i);
     assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
     assert.doesNotMatch(contents, /GitHub export gate outcome/i);
     assert.doesNotMatch(contents, /Create GitHub Issues for these Epics and User Stories/i);
     assert.match(contents, /After writing files, final-answer with only:/i);
     assert.match(contents, /the Epic directories created or updated/i);
     assert.match(contents, /the number of Epics and User Stories/i);
+  });
+});
+
+describe('downstream technical design diagram companion consumption', () => {
+  it('lets Scrum planning read optional diagram companion context without replacing technical design', () => {
+    const contents = readTemplate('skills/scrum-master-planner/SKILL.md');
+
+    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md\s+# optional companion context; read when present and never hard-stop when absent/i);
+    assert.match(contents, /If `docs\/features\/<feature-slug>\/tech_design_diagrams\.md` exists, read it as companion context/i);
+    assert.match(contents, /Preserve diagram-stated implementation boundaries, runtime flows, and data\/state implications/i);
+    assert.match(contents, /Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design\.md`/);
+    assert.match(contents, /keep `technical_design\.md` authoritative/i);
+  });
+
+  it('passes optional diagram companion context to implementation planner workers when present', () => {
+    const contents = readTemplate('skills/ai-implementation-planner/SKILL.md');
+
+    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md\s+# optional companion context; verify\/pass when present and never hard-stop when absent/i);
+    assert.match(contents, /verify and pass its path to the planner worker as optional companion context/i);
+    assert.match(contents, /Missing diagrams are allowed for older features and must not block implementation planning/i);
+    assert.match(contents, /optional tech design diagrams path when present/i);
+    assert.match(contents, /preserve diagram-stated boundaries, flows, and data\/state implications without replacing `technical_design\.md`/i);
+    assert.match(contents, /Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design\.md`/);
+  });
+
+  it('passes optional diagram companion context to implementation executor workers when present', () => {
+    const contents = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
+
+    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md\s+# optional companion context; verify\/pass when present and never hard-stop when absent/i);
+    assert.match(contents, /verify and pass its path to the executor worker as optional companion context/i);
+    assert.match(contents, /Missing diagrams are allowed for older features and must not block implementation execution/i);
+    assert.match(contents, /optional tech design diagrams path when present/i);
+    assert.match(contents, /preserve diagram-stated boundaries, flows, and data\/state implications without replacing `technical_design\.md`/i);
+    assert.match(contents, /Do not create, regenerate, require, export, render, sync, or treat diagrams as a replacement for `technical_design\.md`/);
+  });
+
+  it('tells planner and executor workers to consume included diagrams as companion context only', () => {
+    const plannerToolbox = readTemplate('skills/ai-implementation-planner-toolbox/SKILL.md');
+    const executorToolbox = readTemplate('skills/ai-implementation-executor-toolbox/SKILL.md');
+
+    for (const contents of [plannerToolbox, executorToolbox]) {
+      assert.match(contents, /optional tech design diagrams when present/i);
+      assert.match(contents, /Optional `tech_design_diagrams\.md` context may be included when present; its absence must not block older features/i);
+      assert.match(contents, /Read included `tech_design_diagrams\.md` context when the packet provides it/i);
+      assert.match(contents, /Treat included diagrams as companion context/i);
+      assert.match(contents, /preserve diagram-stated boundaries, flows, and data\/state implications/i);
+      assert.match(contents, /`technical_design\.md` as the authoritative technical design artifact/i);
+    }
+
+    assert.match(plannerToolbox, /Never create or change .*`tech_design_diagrams\.md`/);
+    assert.match(executorToolbox, /Never create, regenerate, export, render, sync, or replace `tech_design_diagrams\.md`/);
   });
 });
 
