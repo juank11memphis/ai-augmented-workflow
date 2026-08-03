@@ -5,6 +5,10 @@ description: Worker-only operating rules for Sibu implementation planner sub-age
 
 # AI Implementation Planner Toolbox
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 This toolbox is for `sibu-implementation-planner` workers only. It is not a normal user-invoked skill.
 
 ## Focused worker routing

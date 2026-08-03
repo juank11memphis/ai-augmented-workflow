@@ -5,6 +5,10 @@ description: Export a named feature's Epics and User Stories from local Markdown
 
 # Export to GitHub
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 Use this skill when the user asks to export a feature's Epics and User Stories to GitHub.
 
 ## Non-blocking delegation requirement

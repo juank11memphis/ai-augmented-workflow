@@ -5,6 +5,10 @@ description: Use this skill to design and implement software features as indepen
 
 # Skill: Command-Oriented Vertical Slice Architect
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 ## Description
 Use this skill to design and implement software features as independent, end-to-end Vertical Slices. This approach combines the Command Pattern with Hexagonal Architecture and DDD principles. It ensures that business logic is decoupled from transport layers (CLI, API) and infrastructure (Databases, Third-party SDKs).
 

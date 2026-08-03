@@ -5,6 +5,10 @@ description: Use this skill to define business-level feature briefs that stay lo
 
 # Feature Brief Writer
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 ## Purpose
 
 Create concise feature briefs that explain what a feature is, why it matters, who it serves, and how it follows `docs/product-vision.md`, `docs/business-domain-model.md`, and `docs/capabilities-map.md`: purpose, audience, business language, domain concepts, rules, workflows, boundaries, capability coverage, and success signals.
