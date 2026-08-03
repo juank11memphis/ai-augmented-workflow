@@ -32,6 +32,8 @@ Keep responses concise by default, but spend the context needed for correctness,
 
 - Keep responses as short as practical while still being clear and useful.
 - Prefer concise, pragmatic answers over long explanations.
+- Answer only what the user asked. Do not expand a request about X into adjacent topics Y and Z, broad background, tutorials, or alternatives unless the user asks for them or they are required for correctness.
+- Be concise by default, but do not let brevity reduce the quality of required interviews, artifacts, safety warnings, validation details, or review gates.
 - Ask focused questions when needed; otherwise make reasonable assumptions and proceed.
 - If the user wants more detail, they can ask follow-up questions.
 

@@ -1,11 +1,11 @@
 {
-  "templateVersion": "139",
+  "templateVersion": "140",
   "templates": {
     "AGENTS.md": {
-      "version": "36",
+      "version": "37",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Clarifies that UX is required before Technical Design for UI-impacting features while remaining optional for non-UI work."
+        "Adds concise-by-default response guidance while preserving required artifact quality and safety detail."
       ]
     },
     ".codex/config.toml": {

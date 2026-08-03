@@ -30,7 +30,7 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '139');
+    assert.equal(manifest.templateVersion, '140');
     assert.equal(templateMetadata?.version, '1');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
@@ -205,7 +205,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '139');
+    assert.equal(manifest.templateVersion, '140');
     assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
@@ -295,7 +295,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '139');
+    assert.equal(manifest.templateVersion, '140');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
@@ -434,11 +434,14 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '36');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /UX is required before Technical Design/i);
+    assert.equal(templateMetadata?.version, '37');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise-by-default response guidance/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
+    assert.match(contents, /Answer only what the user asked/i);
+    assert.match(contents, /Do not expand a request about X into adjacent topics Y and Z/i);
+    assert.match(contents, /do not let brevity reduce the quality of required interviews, artifacts, safety warnings, validation details, or review gates/i);
     assert.doesNotMatch(contents, /At the start of each session.*run `sibu doctor` once/i);
   });
 
