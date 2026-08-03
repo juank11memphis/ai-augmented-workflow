@@ -5,6 +5,10 @@ description: Use this skill for PostgreSQL schema design, migrations, constraint
 
 # PostgreSQL Expert
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 Use this skill when working with PostgreSQL database design or database-facing application changes.
 
 Apply this skill together with `clean-code`. Keep the guidance practical: prefer the simplest database design that protects data integrity and supports the application's real access patterns.

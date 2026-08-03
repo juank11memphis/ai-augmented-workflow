@@ -30,10 +30,10 @@ describe('structured logging template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '140');
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(manifest.templateVersion, '141');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /required structured logging guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
 
     const contents = readTemplate(templatePath);
 
@@ -72,8 +72,8 @@ describe('structured logging routing hooks', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '6');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /delegates detailed logging policy to structured-logging/i);
+    assert.equal(templateMetadata?.version, '7');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /Keep operational behavior observable/);
     assert.match(contents, /Use `structured-logging` for detailed logging guidance/);
     assert.doesNotMatch(contents, /full prompts or model responses/);
@@ -82,9 +82,9 @@ describe('structured logging routing hooks', () => {
   it('keeps language and architecture skills as concise structured logging handoffs', () => {
     const manifest = readTemplateManifest();
     const expectations = [
-      { path: 'skills/typescript/SKILL.md', version: '2', hook: /When TypeScript changes affect logs/ },
-      { path: 'skills/golang/SKILL.md', version: '2', hook: /When Go changes affect logs/ },
-      { path: 'skills/architecture/command-pattern/SKILL.md', version: '8', hook: /Operational Behavior Uses Structured Logging/ },
+      { path: 'skills/typescript/SKILL.md', version: '3', hook: /When TypeScript changes affect logs/ },
+      { path: 'skills/golang/SKILL.md', version: '3', hook: /When Go changes affect logs/ },
+      { path: 'skills/architecture/command-pattern/SKILL.md', version: '9', hook: /Operational Behavior Uses Structured Logging/ },
     ];
 
     for (const expectation of expectations) {
@@ -92,7 +92,7 @@ describe('structured logging routing hooks', () => {
       const templateMetadata = manifest.templates[expectation.path];
 
       assert.equal(templateMetadata?.version, expectation.version);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /structured logging|downstream handoff guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
       assert.match(contents, /`structured-logging`/);
       assert.match(contents, expectation.hook);
       assert.doesNotMatch(contents, /secrets, credentials, tokens/);
@@ -114,7 +114,7 @@ describe('architecture downstream handoff templates', () => {
       const contents = readTemplate(skill.templateRelativePath);
       const templateMetadata = manifest.templates[skill.templateRelativePath];
 
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /downstream handoff guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
       assert.match(contents, /## Downstream Sibu workflow handoff/);
       assert.match(contents, /### Technical design/);
       assert.match(contents, /### Implementation planning/);
@@ -166,9 +166,9 @@ describe('layered architecture template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /Layered Architecture|lightweight architecture/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /downstream handoff guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
 
     const contents = readTemplate(templatePath);
 
@@ -205,11 +205,9 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '140');
-    assert.equal(templateMetadata?.version, '16');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/capabilities-map\.md before Feature Brief work/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /hard-stop routing prompts/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Capability Coverage/i);
+    assert.equal(manifest.templateVersion, '141');
+    assert.equal(templateMetadata?.version, '17');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 
@@ -246,9 +244,8 @@ describe('UX expert Business Domain Model grounding', () => {
     const contents = readTemplate(templatePath);
     const groundingTerms = ['domain language', 'user-facing concepts', 'rules', 'states', 'workflows', 'boundaries'];
 
-    assert.equal(templateMetadata?.version, '13');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires docs\/business-domain-model\.md before UX work/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /language, user-facing concepts, rules, states, workflows, and boundaries/i);
+    assert.equal(templateMetadata?.version, '14');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     assert.match(contents, /docs\/product-vision\.md/);
@@ -271,9 +268,9 @@ describe('feature idea capture template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '1');
+    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory feature idea capture/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /mandatory feature idea capture/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/feature-ideas.md'], undefined);
 
     const contents = readTemplate(templatePath);
@@ -295,10 +292,10 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '140');
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(manifest.templateVersion, '141');
+    assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /ready-to-paste repair prompts/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 
     assert.match(contents, /name: capabilities-map-writer/);
@@ -329,11 +326,9 @@ describe('business domain model writer template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '7');
+    assert.equal(templateMetadata?.version, '8');
     assert.match(templateMetadata?.description ?? '', /Mandatory Business Domain Model writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /subdomain-focused Mermaid diagram/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /core subdomains, supporting subdomains/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /external or generic domains/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     const contents = readTemplate(templatePath);
@@ -400,9 +395,8 @@ describe('deep module map writer template', () => {
       'business/product abilities',
     ];
 
-    assert.equal(templateMetadata?.version, '7');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /docs\/capabilities-map\.md/);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /business\/product capabilities by subdomain/i);
+    assert.equal(templateMetadata?.version, '8');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
     assert.equal(manifest.templates['docs/deep-module-map.md'], undefined);
@@ -596,9 +590,9 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '18');
+    assert.equal(templateMetadata?.version, '19');
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /technical-design-writer/);
@@ -630,9 +624,9 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -664,9 +658,9 @@ describe('Sibu planner worker templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, '2');
+      assert.equal(templateMetadata?.version, '3');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation planner worker/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /light verbose mode guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise reporting guidance/i);
       assert.match(contents, /sibu-implementation-planner/);
       assert.match(contents, /narrow planner packet/);
       assert.match(contents, /planner toolbox skill/);
@@ -694,9 +688,9 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '26');
+    assert.equal(templateMetadata?.version, '27');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -732,9 +726,9 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '3');
+    assert.equal(templateMetadata?.version, '4');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /selected architecture guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
@@ -771,9 +765,9 @@ describe('Sibu executor worker templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, '2');
+      assert.equal(templateMetadata?.version, '3');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation executor worker/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /light verbose mode guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise reporting guidance/i);
       assert.match(contents, /sibu-implementation-executor/);
       assert.match(contents, /narrow executor packet/);
       assert.match(contents, /executor toolbox skill/);
@@ -805,9 +799,9 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '5');
+    assert.equal(templateMetadata?.version, '6');
     assert.match(templateMetadata?.description ?? '', /GitHub export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /delegated GitHub export flow from inline fallback/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /name: export-to-github/);
     assert.match(contents, /github-exporter/);
     assert.match(contents, /clean, narrow export packet/);
@@ -829,9 +823,9 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '5');
+    assert.equal(templateMetadata?.version, '6');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /delegated Notion export flow from inline fallback/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /name: export-to-notion/);
     assert.match(contents, /notion-exporter/);
     assert.match(contents, /clean, narrow export packet/);
@@ -864,12 +858,9 @@ describe('dedicated exporter skill templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, isCodexAgentTemplate ? '3' : '1');
+      assert.equal(templateMetadata?.version, isCodexAgentTemplate ? '4' : '2');
       assert.match(templateMetadata?.description ?? '', /exporter sub-agent/i);
-      assert.match(
-        templateMetadata?.changes.join('\n') ?? '',
-        isCodexAgentTemplate ? /missing export packet/i : /clean-context|no-local-write/i,
-      );
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise reporting guidance/i);
       assert.match(contents, /sub-agent/i);
       assert.match(contents, /full conversation context/i);
       assert.match(contents, /Do not modify local repository files/i);
@@ -913,8 +904,8 @@ describe('framework skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '4');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /React skill/i);
+    assert.equal(templateMetadata?.version, '5');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /name: nextjs/);
     assert.match(contents, /also use `react` when that skill is installed/);
     assert.match(contents, /component responsibility, props, state ownership, or component boundaries/);
@@ -1008,8 +999,8 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '23');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /database skills/i);
+    assert.equal(templateMetadata?.version, '24');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /A Markdown feature brief at `docs\/features\/<feature-slug>\/feature_brief\.md`/);
     assert.match(contents, /`docs\/deep-module-map\.md`/);
     assert.match(contents, /language skills, framework skills, or database skills/);
@@ -1027,7 +1018,7 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /dedicated exporter skills/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
     assert.doesNotMatch(contents, /GitHub export gate outcome/i);
     assert.doesNotMatch(contents, /Create GitHub Issues for these Epics and User Stories/i);
@@ -1045,9 +1036,8 @@ describe('template catalog source templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '4');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /one component per nearby file/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /before-finish component-boundary self-check/i);
+    assert.equal(templateMetadata?.version, '5');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /Each React component belongs in its own nearby file by default/i);
     assert.match(contents, /Do not define helper subcomponents in a parent component file/i);
     assert.match(contents, /small, file-local, currently unreused/i);
@@ -1060,7 +1050,7 @@ describe('template catalog source templates', () => {
   it('returns manifest-backed template versions', () => {
     const manifest = readTemplateManifest();
 
-    assert.equal(getTemplateVersion(manifest, 'skills/business-domain-model-writer/SKILL.md'), '7');
+    assert.equal(getTemplateVersion(manifest, 'skills/business-domain-model-writer/SKILL.md'), '8');
   });
 
   it('preserves the missing manifest entry error', () => {

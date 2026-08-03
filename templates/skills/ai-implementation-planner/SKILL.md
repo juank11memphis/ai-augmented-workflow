@@ -5,6 +5,10 @@ description: Gatekeep and route one approved User Story into story-local impleme
 
 # AI Implementation Planner
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 ## Purpose
 
 Route exactly one approved User Story into a valid story-local implementation plan. This skill is the main-agent gatekeeper for planning: it verifies the story, required source artifacts, UX requirements when relevant, and skill context before planning work begins. When a sub-agent spawn capability is available and permitted by the host, always spawn `sibu-implementation-planner` using a narrow packet and the planner toolbox. Use the inline fallback rules only when sub-agent spawning is unavailable or blocked by host capability limits.

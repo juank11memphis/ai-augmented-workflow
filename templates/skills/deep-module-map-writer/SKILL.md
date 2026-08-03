@@ -5,6 +5,10 @@ description: Create or update docs/deep-module-map.md as a map of deep, complexi
 
 # Deep Module Map Writer
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 ## Purpose
 
 Create or update `docs/deep-module-map.md`, a technical design map of deep implementation modules that downstream technical designs and implementation plans use to decide where code work belongs.

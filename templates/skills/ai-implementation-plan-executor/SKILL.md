@@ -5,6 +5,10 @@ description: Gatekeep and route one Sibu story implementation plan through sub-a
 
 # AI Implementation Plan Executor
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 ## Purpose
 
 Execute one story implementation plan completely while preserving Sibu's human review and workflow-control guarantees. This skill is the main-agent gatekeeper for execution: it verifies the story or plan, creates a missing plan through `ai-implementation-planner`, checks required source artifacts, requires sub-agent execution whenever spawning is available, and keeps final approval metadata, commit, and feature continuation under main-agent control.

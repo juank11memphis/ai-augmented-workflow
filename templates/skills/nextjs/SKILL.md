@@ -5,6 +5,10 @@ description: Use this skill when working on Next.js App Router files or framewor
 
 # nextjs
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 Use this skill when working on Next.js App Router files or framework-specific Next.js behavior.
 
 This skill covers Next.js conventions, boundaries, and rendering decisions. It does not cover React component design or UX strategy. When App Router UI work involves component responsibility, props, state ownership, or component boundaries, also use `react` when that skill is installed.

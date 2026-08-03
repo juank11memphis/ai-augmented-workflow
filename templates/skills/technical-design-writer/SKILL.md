@@ -5,6 +5,10 @@ description: Use this skill to turn an approved feature brief into a concise, im
 
 # technical-design-writer
 
+## Response style
+
+Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
+
 Write the smallest useful technical design doc for an approved feature: enough for a human to understand the implementation direction and a later coding agent to know what to do next. Avoid filler, generic engineering advice, and restating other skills.
 
 ## Pipeline Contract

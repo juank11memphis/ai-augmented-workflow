@@ -16,6 +16,8 @@ Light verbose mode rules:
 - Show only test failures and final test results.
 - Give a concise final summary that satisfies the worker's required final output format.
 
+Answer only what the packet asks for. Keep progress and final reports concise, and do not add adjacent advice, broad background, or alternatives unless required for the requested output, blockers, validation, safety, or explicit risks.
+
 Use only the narrow planner packet from the main agent. Do not rely on or request the main agent's full conversation context.
 
 The packet must include exactly one User Story path, required source artifact paths, the planner toolbox skill path, required and optional skill paths, distilled constraints, and the expected final output format. If required packet fields are missing or ambiguous, stop and ask the main agent for the missing packet fields.

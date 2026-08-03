@@ -1,5 +1,5 @@
 {
-  "templateVersion": "140",
+  "templateVersion": "141",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -44,267 +44,262 @@
       ]
     },
     "skills/clean-code/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory clean-code skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds concise observability guidance that delegates detailed logging policy to structured-logging."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Makes product vision discovery mandatory before drafting, even when existing context looks complete."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/business-domain-model-writer/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory Business Domain Model writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Changes the Business Domain Model context map guidance to prefer a sparse, subdomain-focused Mermaid diagram.",
-        "Clarifies that the diagram should group core subdomains, supporting subdomains, project-owned outputs, and external or generic domains instead of drawing every operational relationship."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/capabilities-map-writer/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory Capabilities Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds ready-to-paste repair prompts when Capabilities Map work reveals Product Vision or Business Domain Model gaps."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Requires docs/capabilities-map.md before Deep Module Map work and routes missing maps to capabilities-map-writer.",
-        "Uses business/product capabilities by subdomain as input for deep implementation boundary discovery."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/feature-brief-writer/SKILL.md": {
-      "version": "16",
+      "version": "17",
       "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Requires docs/capabilities-map.md before Feature Brief work and removes Deep Module Map as a feature-brief prerequisite.",
-        "Adds hard-stop routing prompts for Product Vision, Business Domain Model, and Capabilities Map gaps before drafting.",
-        "Adds Capability Coverage guidance so feature briefs map requested work to existing subdomain capabilities."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "23",
+      "version": "24",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds selected database skills to technical design grounding when database work is in scope."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/typescript/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Selectable TypeScript skill installed when TypeScript language support is selected.",
       "changes": [
-        "Routes observability-relevant TypeScript changes to the structured logging skill."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/golang/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Selectable Go skill installed when Go language support is selected.",
       "changes": [
-        "Routes observability-relevant Go changes to the structured logging skill."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/postgresql-expert/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Selectable PostgreSQL Expert skill for practical database schema design and PostgreSQL-specific tradeoff guidance.",
       "changes": [
-        "Adds an optional PostgreSQL Expert database skill focused on simple schema design, data integrity, migrations, access patterns, and purposeful indexing."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Adds downstream handoff guidance for applying DDD + Hexagonal Architecture during technical design, implementation planning, execution, and review."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Adds downstream handoff guidance for applying command-oriented vertical slices during technical design, implementation planning, execution, and review."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/nextjs/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Selectable framework skill for Next.js App Router and framework-specific behavior.",
       "changes": [
-        "Routes App Router UI work that involves component design to the React skill when installed."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/react/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Selectable React skill for component design, props, state ownership, and presentational boundaries.",
       "changes": [
-        "Strengthens React guidance to require one component per nearby file by default, disallow same-file helper subcomponents, and add a before-finish component-boundary self-check."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "12",
+      "version": "13",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Keeps Scrum planning focused on local Epic and User Story artifacts and moves GitHub export workflow guidance to dedicated exporter skills."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "18",
+      "version": "19",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Requires selected architecture guidance before implementation planning and passes architecture constraints into story-local planning context."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Requires planner worker packets to include selected architecture guidance and stops missing guidance work for `sibu sync` repair."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "26",
+      "version": "27",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Requires selected architecture guidance before execution and passes architecture constraints into executor review context."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Requires executor worker packets to include selected architecture guidance and apply it during implementation and review."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory feature idea capture skill for storing rough future ideas in docs/feature-ideas.md only when the skill is used.",
       "changes": [
-        "Adds a mandatory feature idea capture skill for quick, raw idea storage without backlog or planning ceremony."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Selectable AI prompt engineering skill for prompt creation, optimization, compression, and evaluation.",
       "changes": [
-        "Compresses the prompt quality checklist while preserving quality-first token discipline, missing-context behavior, output pattern, and prompt verification guidance."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "13",
+      "version": "14",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Requires docs/business-domain-model.md before UX work when UX guidance is installed.",
-        "Grounds UX language, user-facing concepts, rules, states, workflows, and boundaries in the Business Domain Model."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Selectable lightweight architecture skill for pragmatic controllers, services, models, and repositories guidance.",
       "changes": [
-        "Adds downstream handoff guidance for applying Layered Architecture during technical design, implementation planning, execution, and review."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/export-to-github/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Selectable GitHub export skill for publishing a named feature's Epics and User Stories to GitHub issues and native sub-issues.",
       "changes": [
-        "Separates delegated GitHub export flow from inline fallback so background exporter usage remains unambiguous."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     "skills/export-to-notion/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
-        "Separates delegated Notion export flow from inline fallback so background exporter usage remains unambiguous."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     },
     ".codex/agents/github-exporter.toml": {
-      "version": "3",
+      "version": "4",
       "description": "Codex GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
       "changes": [
-        "Requires the Codex github-exporter sub-agent to stop and request missing export packet details instead of inferring from broad conversation context."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".codex/agents/notion-exporter.toml": {
-      "version": "3",
+      "version": "4",
       "description": "Codex Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Requires the Codex notion-exporter sub-agent to stop and request missing export packet details instead of inferring from broad conversation context."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".claude/agents/github-exporter.md": {
-      "version": "1",
+      "version": "2",
       "description": "Claude GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
       "changes": [
-        "Adds a Claude github-exporter sub-agent with clean-context and no-local-write export guidance."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".claude/agents/notion-exporter.md": {
-      "version": "1",
+      "version": "2",
       "description": "Claude Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Adds a Claude notion-exporter sub-agent with clean-context and no-local-write export guidance."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".gemini/agents/github-exporter.md": {
-      "version": "1",
+      "version": "2",
       "description": "Gemini GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
       "changes": [
-        "Adds a Gemini github-exporter sub-agent with clean-context and no-local-write export guidance."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".gemini/agents/notion-exporter.md": {
-      "version": "1",
+      "version": "2",
       "description": "Gemini Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Adds a Gemini notion-exporter sub-agent with clean-context and no-local-write export guidance."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".codex/agents/sibu-implementation-planner.toml": {
-      "version": "2",
+      "version": "3",
       "description": "Codex Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds light verbose mode guidance to keep planner worker progress concise."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".claude/agents/sibu-implementation-planner.md": {
-      "version": "2",
+      "version": "3",
       "description": "Claude Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds light verbose mode guidance to keep planner worker progress concise."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".gemini/agents/sibu-implementation-planner.md": {
-      "version": "2",
+      "version": "3",
       "description": "Gemini Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds light verbose mode guidance to keep planner worker progress concise."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".codex/agents/sibu-implementation-executor.toml": {
-      "version": "2",
+      "version": "3",
       "description": "Codex Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Adds light verbose mode guidance to keep executor worker progress concise."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".claude/agents/sibu-implementation-executor.md": {
-      "version": "2",
+      "version": "3",
       "description": "Claude Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Adds light verbose mode guidance to keep executor worker progress concise."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".gemini/agents/sibu-implementation-executor.md": {
-      "version": "2",
+      "version": "3",
       "description": "Gemini Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Adds light verbose mode guidance to keep executor worker progress concise."
+        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".codex/hooks.json": {
@@ -329,12 +324,10 @@
       ]
     },
     "skills/structured-logging/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory structured logging skill for safe, useful, storytelling logs in code-writing workflows.",
       "changes": [
-        "Adds required structured logging guidance for code-writing workflows.",
-        "Defines safe, structured, storytelling log expectations while avoiding noisy logs in trivial code.",
-        "Guides agents to follow project logging conventions and use concise local logging helpers when useful."
+        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
       ]
     }
   }
