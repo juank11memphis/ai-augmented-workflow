@@ -1,5 +1,5 @@
 {
-  "templateVersion": "144",
+  "templateVersion": "145",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -142,10 +142,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "14",
+      "version": "15",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
       "changes": [
-        "Reads optional `tech_design_diagrams.md` companion context during Scrum planning when present without blocking older features."
+        "Adds story-level verification expectations so generated User Stories describe reviewable evidence derived from the feature brief, technical design quality strategy, and optional diagram context."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {

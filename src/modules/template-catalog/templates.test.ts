@@ -1061,14 +1061,28 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     assert.doesNotMatch(contents, /the feature brief, including its `## Deep Module` section/);
   });
 
+
+  it('adds verification expectations to Scrum planner stories without turning them into implementation plans', () => {
+    const contents = readTemplate('skills/scrum-master-planner/SKILL.md');
+
+    assert.match(contents, /## Verification Expectations/);
+    assert.match(contents, /feature brief, the technical design quality strategy, and optional diagram companion context/i);
+    assert.match(contents, /Acceptance Criteria stay behavior-focused/i);
+    assert.match(contents, /Verification Expectations stay evidence-focused/i);
+    assert.match(contents, /Validation stays command\/check-focused/i);
+    assert.match(contents, /unit, acceptance\/integration, edge\/failure, and regression checks/i);
+    assert.match(contents, /property\/invariant, torture\/fuzz, mutation, or manual QA only when/i);
+    assert.match(contents, /Do not create dedicated test-only stories by default/i);
+  });
+
   it('keeps Scrum planning free of the GitHub export gate', () => {
     const templatePath = 'skills/scrum-master-planner/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '14');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /optional `tech_design_diagrams\.md` companion context/i);
+    assertVersionMetadata(templateMetadata?.version, templatePath);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /story-level verification expectations/i);
     assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
     assert.doesNotMatch(contents, /GitHub export gate outcome/i);
     assert.doesNotMatch(contents, /Create GitHub Issues for these Epics and User Stories/i);

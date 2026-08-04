@@ -118,10 +118,10 @@ Identify from the technical design:
 
 - implementation slices
 - affected commands, files, modules, integrations, or docs
-- validation expectations
+- quality strategy and validation expectations
 - meaningful risks or unresolved decisions
 
-When optional `tech_design_diagrams.md` context exists, use it only to preserve diagram-stated boundaries, flows, and data/state implications; keep `technical_design.md` authoritative for technical design decisions.
+When optional `tech_design_diagrams.md` context exists, use it only to preserve diagram-stated boundaries, flows, data/state implications, and verification-relevant risks; keep `technical_design.md` authoritative for technical design decisions.
 
 ### 2. Choose Epic boundaries
 
@@ -200,14 +200,25 @@ As a <user or contributor>, I want <capability or outcome>, so that <value or re
 ## Acceptance Criteria
 - <Observable, testable behavior or artifact.>
 
+## Verification Expectations
+- <Reviewable evidence expected for this story, proportionate to risk.>
+
 ## Validation
-- <Manual or automated checks from the technical design.>
+- <Likely manual or automated checks from the technical design.>
 
 ## Notes
 - <Optional implementation, sequencing, or risk notes. Omit if not useful.>
 ```
 
 Keep Stories concrete, but do not turn them into implementation plans or task checklists. If detailed implementation guidance is needed, point to the technical design instead of restating it.
+
+Keep `## Acceptance Criteria`, `## Verification Expectations`, and `## Validation` distinct:
+
+- Acceptance Criteria stay behavior-focused: observable product, workflow, or artifact outcomes that must be true.
+- Verification Expectations stay evidence-focused: the confidence reviewers should expect from tests, focused review, manual checks, or justified omissions. Derive them from the feature brief, the technical design quality strategy, and optional diagram companion context when present.
+- Validation stays command/check-focused: likely checks the implementer can run, without duplicating implementation-plan steps.
+
+Verification expectations should name the smallest useful evidence for the story risk. Consider unit, acceptance/integration, edge/failure, and regression checks by default. Mention property/invariant, torture/fuzz, mutation, or manual QA only when the source artifacts or risk profile make them valuable; do not require every verification type for every story. Do not create dedicated test-only stories by default unless the source artifacts explicitly call for them or the risk justifies a separate validation slice.
 
 ### 5. Check coverage and boundaries
 
