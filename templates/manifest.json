@@ -1,5 +1,5 @@
 {
-  "templateVersion": "145",
+  "templateVersion": "146",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -149,17 +149,17 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "20",
+      "version": "21",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Passes optional `tech_design_diagrams.md` companion context to planner workers when present without making it required."
+        "Preserves story verification expectations and technical design quality strategy in planner packets so implementation plans include concrete validation steps."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Reads included diagram companion context and preserves diagram-stated boundaries, flows, and data/state implications while planning."
+        "Translates verification expectations into concrete validation steps, evidence-oriented Done conditions, and concise deeper-check skip rationale when relevant."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {

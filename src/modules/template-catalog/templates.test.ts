@@ -595,9 +595,10 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '20');
+    assert.equal(templateMetadata?.version, '21');
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /optional `tech_design_diagrams\.md` companion context/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /verification expectations/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /quality strategy/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /technical-design-writer/);
@@ -613,6 +614,13 @@ describe('Sibu planner worker templates', () => {
     assert.match(contents, /valid story-local `\.impl_plan\/` exists/);
     assert.match(contents, /planning-only/);
     assert.match(contents, /Do not pass the full main conversation context/);
+    assert.match(contents, /story verification expectations and any technical design quality strategy context needed to plan validation steps/i);
+    assert.match(contents, /turn verification expectations into concrete validation steps/i);
+    assert.match(contents, /unit, acceptance\/integration, edge\/failure, and regression checks/i);
+    assert.match(contents, /property\/invariant, torture\/fuzz, mutation, or manual QA only when/i);
+    assert.match(contents, /short skip rationale/i);
+    assert.match(contents, /handler\/domain validation generally precedes adapter or transport validation/i);
+    assert.match(contents, /validation evidence and residual risks/i);
   });
 
   it('registers and renders the planner toolbox skill', () => {
@@ -629,9 +637,10 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '4');
+    assert.equal(templateMetadata?.version, '5');
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /included diagram companion context/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /validation steps/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /evidence-oriented Done conditions/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -648,6 +657,13 @@ describe('Sibu planner worker templates', () => {
     assert.match(renderedContents, /# Step: <Imperative step title>/);
     assert.match(renderedContents, /Never write production code/);
     assert.match(renderedContents, /unmapped language, framework, database, or architecture pattern/);
+    assert.match(renderedContents, /verification expectations and any technical design quality strategy context needed to plan validation steps/i);
+    assert.match(renderedContents, /concrete validation steps near the work they prove/i);
+    assert.match(renderedContents, /unit, acceptance\/integration, edge\/failure, regression/i);
+    assert.match(renderedContents, /property\/invariant, torture\/fuzz, mutation, or manual QA/i);
+    assert.match(renderedContents, /short skip rationale and residual risks/i);
+    assert.match(renderedContents, /handler\/domain validation before adapter or transport validation/i);
+    assert.match(renderedContents, /Validation evidence this step should create/i);
   });
 
   it('registers thin target-native planner worker templates', () => {
