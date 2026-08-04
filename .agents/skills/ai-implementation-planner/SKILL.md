@@ -22,8 +22,9 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - Exactly one User Story file at `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`.
 - The story's `epic_brief.md`.
 - The feature's `feature_brief.md`.
-- The feature's `technical_design.md` as the authoritative technical design artifact.
+- The feature's `technical_design.md` as the authoritative technical design artifact, including any feature-level quality strategy.
 - The feature's `tech_design_diagrams.md` when present, as optional companion context that never blocks planning when absent.
+- The story's verification expectations and any technical-design quality strategy needed to plan validation steps.
 - `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
 - The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when sub-agent spawning is available.
 - Selected architecture guidance for the workflow.
@@ -99,11 +100,12 @@ Build a narrow planner packet for the worker. The packet must include:
 
 - exactly one User Story path
 - Epic brief, feature brief, technical design, optional tech design diagrams path when present, and UX path when relevant
+- story verification expectations and any technical design quality strategy context needed to plan validation steps
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “read included diagrams and preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
+- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “read included diagrams and preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`,” “turn verification expectations into concrete validation steps,” “include short skip rationale for deeper checks when story risk makes the skip relevant,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
 - expected output format: plan folder, ordered step files created or updated, source artifacts and skills used, and risks/blockers
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the planner packet.
@@ -127,6 +129,8 @@ Before writing step files inline, read and apply:
 - `ai-prompt-engineer-master` when prompt, agent, or reusable AI instruction templates are in scope
 
 If a required skill path is missing, stop and report the blocker. If an optional relevant skill is not installed and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag the gap as a plan risk.
+
+Inline plans must preserve the same verification expectations given to planner workers. Turn the story's verification expectations and technical-design quality strategy into concrete validation steps, not only a generic final test command. Consider unit, acceptance/integration, edge/failure, and regression checks by default, and property/invariant, torture/fuzz, mutation, or manual QA only when the story risk justifies them. When a deeper check is relevant but omitted, include a short skip rationale and any residual risks.
 
 ## Output location
 
@@ -167,7 +171,7 @@ Every step file must use this structure:
 - <Relevant compile, test, lint, build, or manual validation passes>
 ```
 
-Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, feature brief, or technical design.
+Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, feature brief, or technical design. Validation steps should sit close to the behavior they prove; under command-pattern guidance, handler/domain validation generally precedes adapter or transport validation. Done conditions should make expected validation evidence and residual risks reviewable.
 
 ## Plan quality gate
 
@@ -176,7 +180,7 @@ Before considering planning complete, verify:
 - the step files are for exactly one User Story
 - every acceptance criterion maps to at least one step file
 - every step names the file, module, command, or artifact to change when known
-- validation is explicit enough to prove the story is complete
+- validation steps are explicit enough to prove the story is complete and reflect the story's verification expectations
 - the plan preserves approved Deep Module, architecture, and UX boundaries
 - the plan does not add product or implementation scope beyond the source artifacts
 

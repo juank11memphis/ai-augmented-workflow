@@ -105,9 +105,10 @@ Build a narrow executor packet for the worker. The packet must include:
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, including story scope, validation expectations, Deep Module boundaries, selected architecture constraints, optional diagram constraints to preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
+- distilled skill constraints, including story scope, verification expectations, quality strategy context from the technical design when relevant, validation steps from the implementation plan, Deep Module boundaries, selected architecture constraints, optional diagram constraints to preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
+- validation evidence requirements: completion must show tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
 - approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
-- expected output format: changed files, completed steps, validation commands/results, risks, follow-up questions, and approval state
+- expected output format: changed files, completed steps, validation commands/results, compact validation evidence, risks, follow-up questions, and approval state
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
 
@@ -153,7 +154,10 @@ The review packet should include:
 - changed files
 - completed steps
 - validation commands and results
+- validation evidence covering tests added or updated, acceptance criteria verified, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
 - risks or follow-up questions
+
+For non-trivial stories, “tests passed” alone is not enough. Use context-sensitive judgment for simple or documentation-only changes, but require enough validation evidence to review the story against its verification expectations and planned validation steps.
 
 If the user asks questions or requests changes, keep working within the same story until those changes are complete. If requested changes exceed the approved story plan, stop and ask whether the plan should be revised.
 
@@ -192,6 +196,7 @@ After implementing all unapproved steps in one story, briefly report:
 - the story file path and implementation plan folder
 - the steps completed
 - validations run and their results
+- compact validation evidence, including acceptance criteria verified, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
 - notable risks or follow-up questions, if any
 - that you are waiting for story approval before marking steps approved, committing eligible non-ignored changes, and continuing
 

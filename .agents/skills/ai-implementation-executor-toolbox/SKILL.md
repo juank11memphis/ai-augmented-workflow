@@ -43,6 +43,7 @@ Use only the narrow packet from the main agent. The packet must include:
 - required skill paths, including `clean-code` and `structured-logging` when the story touches observability-relevant code
 - optional installed skill paths relevant to the story
 - distilled skill constraints that are binding for this execution task
+- verification expectations, relevant quality strategy context, implementation-plan validation steps, and validation evidence requirements
 - approval and commit rules from the main executor workflow
 - expected final output format
 
@@ -60,7 +61,7 @@ If a required source artifact or required skill path is missing, stop and report
 - Execute all unapproved step files in filename order.
 - Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, diagram-stated implications when included, and distilled constraints. Never create, regenerate, export, render, sync, or replace `tech_design_diagrams.md`.
 - Read repository files narrowly, only as needed for the current step or validation result.
-- Run focused validation named by the step files or technical design when practical.
+- Run focused validation named by the step files or technical design when practical, and collect compact evidence against the story verification expectations and validation steps.
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a Review Gate risk.
 
@@ -94,11 +95,14 @@ The review packet must include:
 - changed files
 - completed steps
 - validation commands and results
+- `Validation Evidence` or a clearly equivalent compact structure covering tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, deeper checks performed or skipped with rationale when relevant, and residual risks or known gaps
 - risks, including missing optional skills or unmapped patterns
 - follow-up questions, if any
+
+For non-trivial stories, do not present “tests passed” as the only completion evidence. Keep validation evidence proportional to story risk: deeper techniques such as property, torture/fuzz, mutation, or manual QA are not universal requirements, but explain skips briefly when those checks are relevant and intentionally omitted.
 
 If the user gives feedback, apply it in the same worker session when the host supports foreground or resumable interaction, then present an updated review packet. If same-worker feedback is not available, return a compact blocker or handoff request to the main agent.
 
 ## Final result
 
-Return a compact completion summary only after explicit approval, or return blockers if approval cannot be reached. Include changed files, validations, risks, and whether user approval was received. Do not commit.
+Return a compact completion summary only after explicit approval, or return blockers if approval cannot be reached. Include changed files, validations, Validation Evidence, risks, and whether user approval was received. Do not commit.

@@ -42,6 +42,7 @@ Use only the narrow packet from the main agent. The packet must include:
 - required skill paths, including `clean-code`
 - optional installed skill paths relevant to the story
 - distilled skill constraints that are binding for this planning task
+- story verification expectations and any technical design quality strategy context needed to plan validation steps
 - expected final output format
 
 If the packet names multiple stories, an Epic without one story, a feature without one story, or no story, stop and ask the main agent for exactly one User Story path.
@@ -56,7 +57,9 @@ If a required source artifact or required skill path is missing, stop and report
 - Read required skills, the selected architecture skill, and relevant optional installed skills from the packet before writing step files.
 - Inspect repository files narrowly, only enough to make the plan executable.
 - Preserve story scope, acceptance criteria, `technical_design.md` as the authoritative technical design artifact, selected architecture constraints, and UX constraints when applicable. Treat included diagrams as companion context and preserve diagram-stated boundaries, flows, and data/state implications.
-- Apply selected architecture guidance to story-local implementation step ordering, boundaries, dependency direction, and reviewable constraints.
+- Apply selected architecture guidance to story-local implementation step ordering, boundaries, dependency direction, and reviewable constraints. Under command-pattern guidance, plan command/result and handler/domain validation before adapter or transport validation unless the story context clearly requires a different order.
+- Translate verification expectations and the technical-design quality strategy into concrete validation steps near the work they prove; do not rely on only a generic final test command.
+- Use context-sensitive validation vocabulary: unit, acceptance/integration, edge/failure, regression, and deeper property/invariant, torture/fuzz, mutation, or manual QA checks when story risk justifies them. Include a short skip rationale and residual risks when a relevant deeper check is omitted.
 - Create ordered story-local implementation step files under `<story-slug>.impl_plan/*.md`.
 - Never write production code, tests, templates, or unrelated documentation.
 - Never create or change product vision, Deep Module Map, feature brief, technical design, `tech_design_diagrams.md`, UX, Epic, or User Story artifacts.
@@ -89,7 +92,10 @@ Every step file must use this exact section structure:
 - <Specific observable completion condition>
 - <Acceptance criterion or technical requirement covered by this step is satisfied>
 - <Relevant compile, test, lint, build, or manual validation passes>
+- <Validation evidence this step should create, such as unit, acceptance/integration, edge/failure, regression, or justified deeper-check coverage>
 ```
+
+Each step's Done conditions should identify the confidence created by that step. Keep validation proportional: use deeper property/invariant, torture/fuzz, mutation, or manual QA checks only when the risk profile justifies them, and explain relevant skips briefly instead of adding test-theater.
 
 ## Final result
 
