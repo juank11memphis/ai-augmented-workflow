@@ -166,6 +166,12 @@ Use Mermaid only. Do not create deployment diagrams or non-Mermaid formats. Incl
 Quality bar:
 
 - Diagrams should clarify design intent for downstream story planning and implementation, especially implementation boundaries, runtime flow, and data/state implications.
+- Every meaningful diagram box or participant should name the concrete thing it represents and its architecture-neutral role, such as actor, presentation/client UI, framework/driving adapter, application use case, application port, domain model/service/rule, infrastructure/driven adapter, persistence/data store, external system, or output/view model/DTO.
+- Draw each diagram from the workflow's selected architecture guidance for the specific feature: use its actual boundaries, dependency rules, and project-specific component names. Keep this skill's instructions architecture-agnostic by pairing any architecture-specific vocabulary with architecture-neutral role labels.
+- Avoid vague labels such as “Service,” “Repository,” or “Reader” unless the label also identifies the owning module/component and layer role.
+- For high-level architecture diagrams, add a short layer/component key table after the Mermaid block with columns for diagram box, owning module/component, and architecture-neutral layer/role.
+- For ports and adapters, make dependency direction explicit: use case to port, adapter implements port, and adapter to external or reused data source.
+- Each diagram should make it clear what component is shown, which module owns it, what layer/role it plays, and which direction dependencies or runtime calls flow.
 - Prefer sparse, reviewable diagrams over exhaustive diagrams. Do not diagram every helper, method call, table column, or trivial branch.
 - If a diagram would mostly duplicate prose without adding clarity, include a one-sentence skip rationale instead of forcing diagram theater.
 
