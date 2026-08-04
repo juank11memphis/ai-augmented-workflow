@@ -126,6 +126,14 @@ Avoid:
 - inventing new Deep Modules or moving work into modules that cannot be justified from the Feature Brief and Deep Module Map
 - large template sections that say “none” without adding value
 
+## Quality strategy guidance
+
+Technical designs must define a concise feature-level quality strategy before Scrum planning or implementation. Treat it as planned verification intent, not a post-implementation command log.
+
+Keep the strategy context-sensitive: choose the smallest useful confidence-building set for the feature risk. Consider unit tests for focused rules or handlers, acceptance/integration tests for user-visible behavior or artifact outcomes, edge/failure tests for boundary and safety paths, and regression tests for fragile or previously broken behavior. Consider property/invariant, torture/fuzz, mutation, or manual QA only when the risk profile makes them valuable. If a deeper technique appears relevant but is skipped, include a short rationale.
+
+Keep this section implementation-oriented and brief. Do not turn the design into a testing methodology guide or mandate every test type for every feature.
+
 ## Delegation rule
 
 A technical design may name the skills that later implementation should use, but it should not repeat their contents.
@@ -208,8 +216,11 @@ Use this structure as a starting point. Delete sections that do not add value.
 
 <For framework/delivery entrypoints, state the application/orchestration API they may call and the lower-level layers, modules, or paths they must not call directly.>
 
+## Quality Strategy
+<Concise plan for confidence-building coverage across behavior, risks, and human-review needs. Name relevant unit, acceptance/integration, edge/failure, regression, property/invariant, torture/fuzz, mutation, or manual QA expectations only when useful for this feature.>
+
 ## Validation
-<Focused test/build/manual checks.>
+<Focused checks, commands, builds, or manual validations that later implementation should run. Keep this distinct from the planned quality strategy above.>
 
 ## Risks / Tradeoffs
 - <Only meaningful risks or tradeoffs that remain after decisions are resolved.>

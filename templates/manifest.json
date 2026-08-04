@@ -1,5 +1,5 @@
 {
-  "templateVersion": "143",
+  "templateVersion": "144",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -86,10 +86,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "25",
+      "version": "26",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Creates a Mermaid `tech_design_diagrams.md` companion whenever technical designs are created or updated."
+        "Adds concise quality strategy guidance so technical designs define verification intent before downstream planning and implementation."
       ]
     },
     "skills/typescript/SKILL.md": {

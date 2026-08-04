@@ -24,13 +24,18 @@ const selectedGithubExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => ski
 const selectedNotionExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion')!;
 
 
+const assertVersionMetadata = (version: string | undefined, label: string): void => {
+  assert.equal(typeof version, 'string', `${label} version should be a string`);
+  assert.match(version ?? '', /^\d+$/, `${label} version should be numeric metadata`);
+};
+
 describe('structured logging template', () => {
   it('is registered, readable, and captures safe storytelling logging guidance', () => {
     const templatePath = 'skills/structured-logging/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(manifest.templateVersion, '143');
+    assertVersionMetadata(manifest.templateVersion, 'global template');
     assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
@@ -205,7 +210,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '143');
+    assertVersionMetadata(manifest.templateVersion, 'global template');
     assert.equal(templateMetadata?.version, '17');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
@@ -292,7 +297,7 @@ describe('capabilities map writer template', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(manifest.templateVersion, '143');
+    assertVersionMetadata(manifest.templateVersion, 'global template');
     assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
@@ -1031,8 +1036,9 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '25');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Mermaid `tech_design_diagrams\.md` companion/i);
+    assertVersionMetadata(templateMetadata?.version, templatePath);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /quality strategy guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /verification intent before downstream planning and implementation/i);
     assert.match(contents, /A Markdown feature brief at `docs\/features\/<feature-slug>\/feature_brief\.md`/);
     assert.match(contents, /`docs\/deep-module-map\.md`/);
     assert.match(contents, /language skills, framework skills, or database skills/);
@@ -1040,6 +1046,17 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     assert.match(contents, /Treat the Feature Brief and Deep Module Map as sibling upstream inputs/);
     assert.match(contents, /newer feature briefs may omit that section/);
     assert.match(contents, /use the approved feature scope plus `docs\/deep-module-map\.md` to identify the existing modules during technical clarification/);
+    assert.match(contents, /## Quality Strategy/);
+    assert.match(contents, /planned verification intent, not a post-implementation command log/i);
+    assert.match(contents, /unit tests/i);
+    assert.match(contents, /acceptance\/integration tests/i);
+    assert.match(contents, /edge\/failure tests/i);
+    assert.match(contents, /regression tests/i);
+    assert.match(contents, /property\/invariant/i);
+    assert.match(contents, /torture\/fuzz/i);
+    assert.match(contents, /mutation/i);
+    assert.match(contents, /manual QA/i);
+    assert.match(contents, /Keep this distinct from the planned quality strategy above/i);
     assert.doesNotMatch(contents, /Require the feature brief to name one or more existing Deep Modules/);
     assert.doesNotMatch(contents, /the feature brief, including its `## Deep Module` section/);
   });
