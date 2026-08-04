@@ -709,9 +709,9 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '28');
+    assert.equal(templateMetadata?.version, '29');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /optional `tech_design_diagrams\.md` companion context/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /validation evidence requirements/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -722,6 +722,16 @@ describe('Sibu executor worker templates', () => {
     assert.match(contents, /trivial pure logic/);
     assert.match(contents, /relevant optional installed skill paths/);
     assert.match(contents, /distilled skill constraints/);
+    assert.match(contents, /verification expectations/i);
+    assert.match(contents, /quality strategy context/i);
+    assert.match(contents, /validation steps/i);
+    assert.match(contents, /validation evidence requirements/i);
+    assert.match(contents, /tests added or updated/i);
+    assert.match(contents, /acceptance criteria verified/i);
+    assert.match(contents, /edge\/failure coverage/i);
+    assert.match(contents, /skipped deeper checks with rationale/i);
+    assert.match(contents, /residual risks or known gaps/i);
+    assert.match(contents, /tests passed.*not enough|tests passed.*not.*only completion evidence/i);
     assert.match(contents, /export-to-github/);
     assert.match(contents, /export-to-notion/);
     assert.match(contents, /Fallback matrix/);
@@ -747,9 +757,9 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '5');
+    assert.equal(templateMetadata?.version, '6');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /included diagram companion context/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /structured Validation Evidence/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
@@ -761,6 +771,16 @@ describe('Sibu executor worker templates', () => {
     assert.match(renderedContents, /selected architecture skill path and distilled architecture constraints/i);
     assert.match(renderedContents, /Apply selected architecture guidance during implementation and review/i);
     assert.match(renderedContents, /run `sibu sync`/);
+    assert.match(renderedContents, /verification expectations/i);
+    assert.match(renderedContents, /quality strategy context/i);
+    assert.match(renderedContents, /implementation-plan validation steps/i);
+    assert.match(renderedContents, /Validation Evidence/i);
+    assert.match(renderedContents, /tests added or updated/i);
+    assert.match(renderedContents, /acceptance criteria verified/i);
+    assert.match(renderedContents, /edge\/failure coverage/i);
+    assert.match(renderedContents, /deeper checks performed or skipped with rationale/i);
+    assert.match(renderedContents, /residual risks or known gaps/i);
+    assert.match(renderedContents, /tests passed.*only completion evidence/i);
     assert.doesNotMatch(renderedContents, /export-to-github/);
     assert.doesNotMatch(renderedContents, /export-to-notion/);
     assert.match(renderedContents, /unapproved step files in filename order/i);

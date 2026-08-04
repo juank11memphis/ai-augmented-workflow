@@ -1,5 +1,5 @@
 {
-  "templateVersion": "146",
+  "templateVersion": "147",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -163,17 +163,19 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "28",
+      "version": "29",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Passes optional `tech_design_diagrams.md` companion context to executor workers when present without making it required."
+        "Passes verification expectations, technical design quality strategy context, implementation-plan validation steps, and validation evidence requirements to executor workers.",
+        "Clarifies that non-trivial story reviews need evidence beyond “tests passed,” including acceptance criteria, edge/failure coverage, skipped deeper checks, and residual risks."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Reads included diagram companion context and preserves diagram-stated boundaries, flows, and data/state implications during implementation and review."
+        "Requires compact structured Validation Evidence in executor review packets and completion summaries.",
+        "Makes tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, skipped deeper checks, and residual risks visible for review."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
