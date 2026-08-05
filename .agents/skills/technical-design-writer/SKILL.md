@@ -126,6 +126,14 @@ Avoid:
 - inventing new Deep Modules or moving work into modules that cannot be justified from the Feature Brief and Deep Module Map
 - large template sections that say “none” without adding value
 
+## Quality strategy guidance
+
+Technical designs must define a concise feature-level quality strategy before Scrum planning or implementation. Treat it as planned verification intent, not a post-implementation command log.
+
+Keep the strategy context-sensitive: choose the smallest useful confidence-building set for the feature risk. Consider unit tests for focused rules or handlers, acceptance/integration tests for user-visible behavior or artifact outcomes, edge/failure tests for boundary and safety paths, and regression tests for fragile or previously broken behavior. Consider property/invariant, torture/fuzz, mutation, or manual QA only when the risk profile makes them valuable. If a deeper technique appears relevant but is skipped, include a short rationale.
+
+Keep this section implementation-oriented and brief. Do not turn the design into a testing methodology guide or mandate every test type for every feature.
+
 ## Delegation rule
 
 A technical design may name the skills that later implementation should use, but it should not repeat their contents.
@@ -166,12 +174,6 @@ Use Mermaid only. Do not create deployment diagrams or non-Mermaid formats. Incl
 Quality bar:
 
 - Diagrams should clarify design intent for downstream story planning and implementation, especially implementation boundaries, runtime flow, and data/state implications.
-- Every meaningful diagram box or participant should name the concrete thing it represents and its architecture-neutral role, such as actor, presentation/client UI, framework/driving adapter, application use case, application port, domain model/service/rule, infrastructure/driven adapter, persistence/data store, external system, or output/view model/DTO.
-- Draw each diagram from the workflow's selected architecture guidance for the specific feature: use its actual boundaries, dependency rules, and project-specific component names. Keep this skill's instructions architecture-agnostic by pairing any architecture-specific vocabulary with architecture-neutral role labels.
-- Avoid vague labels such as “Service,” “Repository,” or “Reader” unless the label also identifies the owning module/component and layer role.
-- For high-level architecture diagrams, add a short layer/component key table after the Mermaid block with columns for diagram box, owning module/component, and architecture-neutral layer/role.
-- For ports and adapters, make dependency direction explicit: use case to port, adapter implements port, and adapter to external or reused data source.
-- Each diagram should make it clear what component is shown, which module owns it, what layer/role it plays, and which direction dependencies or runtime calls flow.
 - Prefer sparse, reviewable diagrams over exhaustive diagrams. Do not diagram every helper, method call, table column, or trivial branch.
 - If a diagram would mostly duplicate prose without adding clarity, include a one-sentence skip rationale instead of forcing diagram theater.
 
@@ -214,8 +216,11 @@ Use this structure as a starting point. Delete sections that do not add value.
 
 <For framework/delivery entrypoints, state the application/orchestration API they may call and the lower-level layers, modules, or paths they must not call directly.>
 
+## Quality Strategy
+<Concise plan for confidence-building coverage across behavior, risks, and human-review needs. Name relevant unit, acceptance/integration, edge/failure, regression, property/invariant, torture/fuzz, mutation, or manual QA expectations only when useful for this feature.>
+
 ## Validation
-<Focused test/build/manual checks.>
+<Focused checks, commands, builds, or manual validations that later implementation should run. Keep this distinct from the planned quality strategy above.>
 
 ## Risks / Tradeoffs
 - <Only meaningful risks or tradeoffs that remain after decisions are resolved.>
