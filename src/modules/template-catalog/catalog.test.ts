@@ -134,6 +134,32 @@ describe('export workflow skill MCP pairings', () => {
 });
 
 describe('skill target paths', () => {
+  it('registers the touched source file size checker as shared clean-code support for all supported agents', () => {
+    const cleanCodeSkills = MANDATORY_SKILLS.filter((skill) => skill.templateRelativePath === 'skills/clean-code/SKILL.md');
+
+    assert.equal(cleanCodeSkills.length, 1);
+    assert.deepEqual(cleanCodeSkills[0]?.supplementalTargetsByAgent, {
+      codex: [
+        {
+          templateRelativePath: 'scripts/check-touched-source-file-lines.mjs',
+          targetRelativePath: '.agents/scripts/check-touched-source-file-lines.mjs',
+        },
+      ],
+      gemini: [
+        {
+          templateRelativePath: 'scripts/check-touched-source-file-lines.mjs',
+          targetRelativePath: '.agents/scripts/check-touched-source-file-lines.mjs',
+        },
+      ],
+      claude: [
+        {
+          templateRelativePath: 'scripts/check-touched-source-file-lines.mjs',
+          targetRelativePath: '.agents/scripts/check-touched-source-file-lines.mjs',
+        },
+      ],
+    });
+  });
+
   it('registers structured logging as one required workflow skill for all supported agents', () => {
     const structuredLoggingSkills = MANDATORY_SKILLS.filter(
       (skill) => skill.templateRelativePath === 'skills/structured-logging/SKILL.md'

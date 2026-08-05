@@ -1,5 +1,5 @@
 {
-  "templateVersion": "147",
+  "templateVersion": "148",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -41,6 +41,13 @@
       "description": "Gemini MCP configuration template managed when selectable MCP servers are selected.",
       "changes": [
         "Updates Gemini GitHub MCP rendering to use the hosted streamable HTTP endpoint with an Authorization header instead of Docker."
+      ]
+    },
+    "scripts/check-touched-source-file-lines.mjs": {
+      "version": "1",
+      "description": "Managed dependency-free Node checker for touched source files over the 500-line quality gate.",
+      "changes": [
+        "Adds a reusable validation script that checks git-touched source files and reports any over 500 lines."
       ]
     },
     "skills/clean-code/SKILL.md": {
@@ -167,7 +174,7 @@
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
         "Passes verification expectations, technical design quality strategy context, implementation-plan validation steps, and validation evidence requirements to executor workers.",
-        "Clarifies that non-trivial story reviews need evidence beyond “tests passed,” including acceptance criteria, edge/failure coverage, skipped deeper checks, and residual risks."
+        "Clarifies that non-trivial story reviews need evidence beyond \u201ctests passed,\u201d including acceptance criteria, edge/failure coverage, skipped deeper checks, and residual risks."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

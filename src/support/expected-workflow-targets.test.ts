@@ -56,6 +56,7 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('CLAUDE.md'), true);
     assert.equal(targetPaths.includes('.claude/settings.json'), true);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/structured-logging/SKILL.md').length, 1);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/scripts/check-touched-source-file-lines.mjs').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/business-domain-model-writer/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/capabilities-map-writer/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
@@ -175,6 +176,7 @@ describe('getWorkflowTargets', () => {
 
     assert.deepEqual(targetPaths, [
       '.agents/skills/clean-code/SKILL.md',
+      '.agents/scripts/check-touched-source-file-lines.mjs',
       '.agents/skills/structured-logging/SKILL.md',
       '.agents/skills/product-vision-writer/SKILL.md',
       '.agents/skills/business-domain-model-writer/SKILL.md',
