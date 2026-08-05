@@ -4,6 +4,15 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 0.25.0 - 2026-08-05
+
+### Added
+- enforce source file size gate in guidance
+- add touched source file size checker
+
+### Changed
+- sync local workflow updates
+
 ## 0.24.0 - 2026-08-04
 
 ### Added
