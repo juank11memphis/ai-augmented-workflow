@@ -45,6 +45,7 @@ If a required source artifact or required skill path is missing, stop and report
 - Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, diagram-stated implications when included, and distilled constraints. Never create, regenerate, export, render, sync, or replace `tech_design_diagrams.md`.
 - Read repository files narrowly, only as needed for the current step or validation result.
 - Run focused validation named by the step files or technical design when practical, and collect compact evidence against the story verification expectations and validation steps.
+- For code-changing work, run `node .agents/scripts/check-touched-source-file-lines.mjs` before presenting a review packet. If it fails, refactor touched oversized source files into cohesive focused files and re-run the checker successfully before review.
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a Review Gate risk.
 
@@ -78,7 +79,7 @@ The review packet must include:
 - changed files
 - completed steps
 - validation commands and results
-- `Validation Evidence` or a clearly equivalent compact structure covering tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, deeper checks performed or skipped with rationale when relevant, and residual risks or known gaps
+- `Validation Evidence` or a clearly equivalent compact structure covering tests added or updated, acceptance criteria verified, commands run, file-size gate result for code-changing work, edge/failure coverage, deeper checks performed or skipped with rationale when relevant, and residual risks or known gaps
 - risks, including missing optional skills or unmapped patterns
 - follow-up questions, if any
 
@@ -88,4 +89,4 @@ If the user gives feedback, apply it in the same worker session when the host su
 
 ## Final result
 
-Return a compact completion summary only after explicit approval, or return blockers if approval cannot be reached. Include changed files, validations, Validation Evidence, risks, and whether user approval was received. Do not commit.
+Return a compact completion summary only after explicit approval, or return blockers if approval cannot be reached. Include changed files, validations, Validation Evidence including the file-size gate result for code-changing work, risks, and whether user approval was received. Do not commit.

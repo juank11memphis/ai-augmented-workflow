@@ -1,5 +1,5 @@
 {
-  "templateVersion": "148",
+  "templateVersion": "149",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -51,10 +51,10 @@
       ]
     },
     "skills/clean-code/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory clean-code skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Adds a hard 500-line completion gate for touched source files and requires cohesive responsibility-based splitting."
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
@@ -163,10 +163,10 @@
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Translates verification expectations into concrete validation steps, evidence-oriented Done conditions, and concise deeper-check skip rationale when relevant."
+        "Requires code-changing implementation plans to include touched source-file size validation and plan cohesive refactoring when files are near or over 500 lines."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
@@ -178,11 +178,10 @@
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Requires compact structured Validation Evidence in executor review packets and completion summaries.",
-        "Makes tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, skipped deeper checks, and residual risks visible for review."
+        "Requires executors to run the touched source-file size checker before review, refactor on failure, and report the result in Validation Evidence."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

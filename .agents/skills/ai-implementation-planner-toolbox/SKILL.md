@@ -55,10 +55,12 @@ If a required source artifact or required skill path is missing, stop and report
 
 - Read the story and required source artifacts before writing step files. Read included `tech_design_diagrams.md` context when the packet provides it.
 - Read required skills, the selected architecture skill, and relevant optional installed skills from the packet before writing step files.
-- Inspect repository files narrowly, only enough to make the plan executable.
+- Inspect repository files narrowly, only enough to make the plan executable and identify likely touched source files that are large, near 500 lines, or at risk of exceeding the limit.
 - Preserve story scope, acceptance criteria, `technical_design.md` as the authoritative technical design artifact, selected architecture constraints, and UX constraints when applicable. Treat included diagrams as companion context and preserve diagram-stated boundaries, flows, and data/state implications.
 - Apply selected architecture guidance to story-local implementation step ordering, boundaries, dependency direction, and reviewable constraints. Under command-pattern guidance, plan command/result and handler/domain validation before adapter or transport validation unless the story context clearly requires a different order.
 - Translate verification expectations and the technical-design quality strategy into concrete validation steps near the work they prove; do not rely on only a generic final test command.
+- For code-changing stories, include `node .agents/scripts/check-touched-source-file-lines.mjs` in validation expectations and require pass/fail evidence for the touched source-file size gate.
+- When likely touched source files are large, near 500 lines, already over the limit, or likely to exceed it, plan explicit cohesive refactoring steps or Done conditions before final file-size validation.
 - Use context-sensitive validation vocabulary: unit, acceptance/integration, edge/failure, regression, and deeper property/invariant, torture/fuzz, mutation, or manual QA checks when story risk justifies them. Include a short skip rationale and residual risks when a relevant deeper check is omitted.
 - Create ordered story-local implementation step files under `<story-slug>.impl_plan/*.md`.
 - Never write production code, tests, templates, or unrelated documentation.

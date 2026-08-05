@@ -20,6 +20,12 @@ Apply these principles by default unless a more specific repo rule or task requi
 - reviewing implementation quality
 - simplifying code during an in-scope change
 
+## Hard source-file size gate
+
+- Source files created or modified by the task must finish at or below 500 lines.
+- If a task touches a source file that was already over 500 lines, that file must be refactored to finish at or below 500 lines as part of the task; oversized files untouched by the task are outside this gate.
+- Split files by cohesive responsibilities, stable module boundaries, and readability. Do not chop files mechanically just to satisfy the line count.
+
 ## Core principles
 
 ### 1. Prefer clarity over cleverness
