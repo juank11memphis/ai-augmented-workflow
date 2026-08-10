@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
-import { createBrowserState, createRunRequestPayload, failRun, finishRun, navigateResultCell, parseEvalRunResponse, resolveFocusRestoreSelection, selectCell, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
+import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, parseEvalRunResponse, resolveFocusRestoreSelection, selectCell, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
 import { createWorkbenchViewModel } from './view-model.js';
 
 describe('browser-state', () => {
@@ -65,6 +65,15 @@ describe('browser-state', () => {
     assert.equal(finishRun(running, completedRun('passed')).viewModel.status, 'passed');
     assert.equal(finishRun(running, blockedRun()).viewModel.status, 'blocked');
     assert.equal(failRun(running).viewModel.status, 'error');
+  });
+
+
+
+  it('builds selected-cell retry payload for the current suite, cell model, and test case scope', () => {
+    const state = selectCell(setVisibleVariantIds(initialState(), ['gpt-5-mini', 'gpt-5']), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5' }, 'desktop');
+
+    assert.deepEqual(createSelectedCellRetryPayload(state), { suiteId: 'skill-authoring', evalRunModel: 'gpt-5', scope: { type: 'test_case', testCaseId: 'missing-skill-boundary' } });
+    assert.equal(createSelectedCellRetryPayload(initialState()), null);
   });
 
   it('turns malformed endpoint responses into explicit errors', () => {

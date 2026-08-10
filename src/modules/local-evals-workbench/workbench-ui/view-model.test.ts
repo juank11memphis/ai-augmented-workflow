@@ -31,6 +31,42 @@ describe('createWorkbenchViewModel', () => {
     assert.equal(failedCell?.diagnosticsSummary, 'Assertion failed: must stop first.');
   });
 
+
+  it('builds passed selected-cell detail with assertions, metrics, output, and artifacts', () => {
+    const display = createResultDisplay(completedRun('passed').matrix, {}, { testCaseId: 'names-artifact', modelId: 'gpt-5-mini' });
+    const detail = display.selectedCell;
+
+    assert.equal(detail?.title, 'Passed result');
+    assert.equal(detail?.description, 'Passed · GPT-5 mini · names-artifact');
+    assert.equal(detail?.sections.find((section) => section.title === 'Assertions')?.items[0]?.label, 'Passed: Must hard-stop first');
+    assert.equal(detail?.sections.find((section) => section.title === 'Raw artifacts')?.items[0]?.value, 'raw output preview');
+    assert.equal(detail?.retryActionLabel, null);
+  });
+
+  it('builds selected-cell detail for running, blocked, error, and not-run states', () => {
+    const matrix = completedRun('blocked').matrix;
+    const rows = [
+      rowWithCell('running-case', 'Running case', uiCell('running-case', 'gpt-5-mini', 'running')),
+      rowWithCell('blocked-case', 'Blocked case', uiCell('blocked-case', 'gpt-5-mini', 'blocked')),
+      rowWithCell('error-case', 'Error case', uiCell('error-case', 'gpt-5-mini', 'error')),
+      rowWithCell('not-run-case', 'Not run case', uiCell('not-run-case', 'gpt-5-mini', 'not-run')),
+    ];
+    const displayMatrix = { ...matrix, rows } as typeof matrix;
+
+    const running = createResultDisplay(displayMatrix, {}, { testCaseId: 'running-case', modelId: 'gpt-5-mini' }).selectedCell;
+    const blocked = createResultDisplay(displayMatrix, {}, { testCaseId: 'blocked-case', modelId: 'gpt-5-mini' }).selectedCell;
+    const error = createResultDisplay(displayMatrix, {}, { testCaseId: 'error-case', modelId: 'gpt-5-mini' }).selectedCell;
+    const notRun = createResultDisplay(displayMatrix, {}, { testCaseId: 'not-run-case', modelId: 'gpt-5-mini' }).selectedCell;
+
+    assert.equal(running?.recoveryGuidance, 'Wait for this run to finish.');
+    assert.equal(running?.sections[0]?.emptyMessage, 'Running local evals. Details will appear when this run finishes.');
+    assert.equal(blocked?.recoveryGuidance, 'Add local config, then run the eval again.');
+    assert.equal(blocked?.sections.find((section) => section.title === 'Diagnostics')?.items[0]?.value, 'Diagnostic for blocked-case');
+    assert.equal(error?.retryActionLabel, 'Try again');
+    assert.equal(error?.recoveryGuidance, 'Try again after checking local setup.');
+    assert.equal(notRun?.sections[0]?.emptyMessage, 'Output will appear after running the eval.');
+  });
+
   it('filters failures, searches test case names and ids, and hides non-selected variants', () => {
     const matrix = completedRun('failed').matrix;
     const display = createResultDisplay(matrix, { failuresOnly: true, searchQuery: 'boundary', visibleVariantIds: ['gpt-5-mini'] });
@@ -106,6 +142,14 @@ function completedRun(status: EvalRunStatus): RunLocalEvalSuiteResult & { status
   };
 }
 
+function rowWithCell(testCaseId: string, name: string, evalCell: EvalCell) {
+  return { testCaseId, name, status: evalCell.status, cells: [evalCell] };
+}
+
+function uiCell(testCaseId: string, modelId: string, status: EvalRunStatus | 'running' | 'not-run'): EvalCell {
+  return { ...cell(testCaseId, modelId, status === 'running' || status === 'not-run' ? 'blocked' : status, 0, 0), status, outputPreview: null, assertions: [], diagnostics: [{ code: 'diag', severity: status === 'error' ? 'error' : 'warning', message: `Diagnostic for ${testCaseId}` }] } as unknown as EvalCell;
+}
+
 function cell(testCaseId: string, modelId: string, status: EvalRunStatus, durationMs: number, cost: number): EvalCell {
   return {
     testCaseId,
@@ -119,7 +163,7 @@ function cell(testCaseId: string, modelId: string, status: EvalRunStatus, durati
     ],
     diagnostics: status === 'failed' ? [{ code: 'assertion-failed', severity: 'error', message: 'Assertion failed: must stop first.' }] : [],
     metrics: [{ name: 'total_cost', value: cost, unit: 'usd' }, { name: 'total_tokens', value: 1200 }],
-    artifacts: [],
+    artifacts: [{ id: 'raw-output', label: 'Raw output', kind: 'file', preview: 'raw output preview', reference: 'artifacts/result.json' }],
     durationMs,
   };
 }

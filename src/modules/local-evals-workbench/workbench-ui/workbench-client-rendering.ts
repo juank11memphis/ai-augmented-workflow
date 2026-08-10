@@ -1,0 +1,154 @@
+export const WORKBENCH_CLIENT_RENDERING_SECTION = {
+  name: 'rendering',
+  source: String.raw`  function renderReady() {
+    const suite = selectedSuite();
+    if (!suite) return;
+    state = { ...state, selectedSuiteId: suite.id, runScope: state.runScope || { type: 'all' } };
+    const models = suite.modelOptions || [];
+    if (!models.some((model) => model.id === state.selectedEvalRunModel)) state.selectedEvalRunModel = models[0]?.id || 'gpt-5-mini';
+    setText('suite-name', suite.name);
+    setText('suite-description', suite.description);
+    setText('status-label', state.discovery.status === 'blocked' ? 'Blocked' : 'Ready');
+    setText('status-message', state.discovery.status === 'blocked' ? state.discovery.message : suite.readyTestCaseCount + ' test case' + (suite.readyTestCaseCount === 1 ? '' : 's') + ' ready.');
+    setText('progress-label', '0/' + suite.readyTestCaseCount + ' complete');
+    setText('pass-rate', '—');
+    setText('avg-latency', '—');
+    setText('total-cost', '$0.0000');
+    setProgress(0);
+    renderModelOptions(models);
+    renderRunButton(false);
+    renderResults();
+  }
+
+  function renderModelOptions(models) {
+    const model = control('model');
+    if (!model) return;
+    model.textContent = '';
+    for (const option of models) model.add(new Option(option.label, option.id, option.id === state.selectedEvalRunModel, option.id === state.selectedEvalRunModel));
+  }
+
+  function renderRunButton(disabled) {
+    const run = control('run');
+    if (!run) return;
+    run.textContent = disabled ? 'Running...' : state.runScope?.type === 'test_case' ? 'Run 1 test case' : 'Run all ' + (selectedSuite()?.readyTestCaseCount || 0) + ' test cases';
+    setDisabled(disabled);
+  }
+
+  function renderRunning() {
+    selectedCell = null;
+    focusRestoreKey = null;
+    renderSelectedCell();
+    renderRunButton(true);
+    setText('status-label', 'Running...');
+    setText('status-message', 'Running local evals. Controls are disabled until this run finishes.');
+    setText('progress-label', '0/' + (selectedSuite()?.readyTestCaseCount || 0) + ' complete');
+    setProgress(0);
+  }
+
+  function renderRunResult(payload) {
+    latestRun = payload;
+    const currentMatrix = matrix();
+    const status = payload?.status === 'completed' ? currentMatrix?.status : payload?.status;
+    normalizeVisibleVariants();
+    selectedCell = null;
+    setText('status-label', statusLabel(status));
+    setText('status-message', payload?.message || statusMessage(status));
+    if (currentMatrix?.aggregates) {
+      const total = currentMatrix.aggregates.total || 0;
+      const passed = currentMatrix.aggregates.passed || 0;
+      setText('pass-rate', total > 0 ? Math.round((passed / total) * 100) + '%' : '0%');
+      setText('progress-label', total + '/' + total + ' complete');
+      setProgress(total > 0 ? 100 : 0);
+      setText('avg-latency', averageLatency(currentMatrix));
+      setText('total-cost', totalCost(currentMatrix));
+    }
+    setDisabled(false);
+    renderRunButton(false);
+    renderFilters();
+    renderResults();
+    renderSelectedCell();
+  }
+
+  function renderFilters() {
+    const failuresOnly = control('failures-only');
+    const search = control('search');
+    if (failuresOnly) failuresOnly.checked = filters.failuresOnly;
+    if (search) search.value = filters.searchQuery;
+    root.querySelectorAll('[data-control="variant"]').forEach((input) => { input.checked = filters.visibleVariantIds.includes(input.value); });
+  }
+
+  function renderResults() {
+    const region = root.querySelector('[data-results-region]');
+    if (!region) return;
+    const currentMatrix = matrix();
+    if (!currentMatrix) { region.innerHTML = statePanel() + '<p class="empty-results">Run evals to see result cards and the matrix.</p>'; return; }
+    const rows = filteredRows(currentMatrix);
+    const variants = visibleVariants(currentMatrix);
+    if (rows.length === 0) { region.innerHTML = statePanel() + '<p class="empty-results">' + emptyMessage() + '</p>'; return; }
+    region.innerHTML = statePanel() + phoneCards(rows) + desktopMatrix(rows, variants);
+  }
+
+  function statePanel() {
+    const status = latestRun?.status === 'completed' ? matrix()?.status : latestRun?.status || (state.discovery.status === 'blocked' ? 'blocked' : null);
+    if (status !== 'blocked' && status !== 'error') return '';
+    const title = status === 'error' ? 'Could not run' : 'Blocked';
+    const message = latestRun?.message || (state.discovery.status === 'blocked' ? state.discovery.message : statusMessage(status));
+    const guidance = status === 'error' ? 'Try again after checking local setup.' : 'Add local config, then run the eval again.';
+    const diagnostics = [...(state.discovery.diagnostics || []), ...(latestRun?.diagnostics || []), ...(matrix()?.diagnostics || [])];
+    const diagnosticList = diagnostics.length ? '<ul>' + diagnostics.map((diagnostic) => '<li>' + h(diagnostic.message) + '</li>').join('') + '</ul>' : '';
+    const action = status === 'error' ? '<button type="button" data-control="retry-run">Try again</button>' : '';
+    return '<section class="state-panel state-panel--' + h(status) + '" role="status" aria-live="polite"><h2>' + h(title) + '</h2><p>' + h(message) + '</p><p>' + h(guidance) + '</p>' + diagnosticList + action + '</section>';
+  }
+
+  function phoneCards(rows) {
+    return '<div class="phone-cards" data-view="phone"><h2>Test Cases</h2>' + rows.map((row) => '<article class="test-card"><header><h3>' + h(row.name) + '</h3><code>' + h(row.testCaseId) + '</code></header>' + visibleCells(row).map((cell) => cellButton(cell, 'phone')).join('') + '</article>').join('') + '</div>';
+  }
+
+  function desktopMatrix(rows, variants) {
+    return '<div class="matrix-wrap" data-view="desktop"><table class="matrix"><caption>Eval result matrix</caption><thead><tr><th scope="col">Test Case</th>' + variants.map((variant) => '<th scope="col">' + h(variant.label) + '</th>').join('') + '</tr></thead><tbody>' + rows.map((row) => '<tr><th scope="row"><span>' + h(row.name) + '</span><code>' + h(row.testCaseId) + '</code></th>' + variants.map((variant) => '<td>' + (row.cells || []).filter((cell) => cell.modelId === variant.id).map((cell) => cellButton(cell, 'desktop')).join('') + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+  }
+
+  function cellButton(cell, mode) {
+    const label = 'Open ' + cell.modelLabel + ' ' + statusLabel(cell.status) + ' result for test case ' + cell.testCaseId;
+    return '<button type="button" class="result-cell result-cell--' + h(cell.status) + '" data-cell-button data-test-case-id="' + h(cell.testCaseId) + '" data-model-id="' + h(cell.modelId) + '" data-mode="' + mode + '" data-focus-key="' + h(keyFor({ testCaseId: cell.testCaseId, modelId: cell.modelId }, mode)) + '" aria-label="' + h(label) + '"><span class="status"><span aria-hidden="true">' + h(statusIcon(cell.status)) + '</span> ' + h(statusLabel(cell.status)) + '</span><span>' + h(assertionSummary(cell)) + '</span><span>' + h(cell.modelLabel) + '</span><span>' + h(metricsSummary(cell)) + '</span><span>' + h(cell.outputPreview || 'Output will appear here.') + '</span><span>' + h((cell.diagnostics || [])[0]?.message || 'No diagnostics.') + '</span></button>';
+  }
+
+  function renderSelectedCell() {
+    const slot = root.querySelector('[data-selected-cell]');
+    if (!slot) return;
+    if (!selectedCell) { slot.outerHTML = '<div data-selected-cell></div>'; restoreFocus(); return; }
+    const cell = findCell(selectedCell);
+    if (!cell) { selectedCell = null; slot.outerHTML = '<div data-selected-cell></div>'; restoreFocus(); return; }
+    slot.outerHTML = drawerHtml(cell);
+    root.querySelector('[data-control="close-cell"]')?.focus();
+  }
+
+  function drawerHtml(cell) {
+    const title = statusLabel(cell.status) + ' result';
+    const description = statusLabel(cell.status) + ' · ' + cell.modelLabel + ' · ' + cell.testCaseId;
+    const retry = cell.status === 'error' ? '<button type="button" data-control="retry-cell">Try again</button>' : '';
+    return '<div class="cell-dialog-overlay" data-selected-cell data-cell-overlay><aside class="cell-dialog" role="dialog" aria-modal="true" aria-labelledby="cell-dialog-title" aria-describedby="cell-dialog-description"><div class="cell-dialog__header"><div><p class="cell-dialog__eyebrow">Result detail</p><h2 id="cell-dialog-title">' + h(title) + '</h2><p id="cell-dialog-description">' + h(description) + '</p></div><button type="button" data-control="close-cell" aria-label="Close result detail">Close</button></div>' + recoveryHtml(cell) + detailSections(cell) + retry + '</aside></div>';
+  }
+
+  function recoveryHtml(cell) {
+    const guidance = cell.status === 'blocked' ? 'Add local config, then run the eval again.' : cell.status === 'error' ? 'Try again after checking local setup.' : cell.status === 'running' ? 'Wait for this run to finish.' : cell.status === 'not-run' ? 'Run this eval to inspect output.' : '';
+    return guidance ? '<section class="detail-section detail-section--guidance"><h3>Next</h3><p>' + h(guidance) + '</p></section>' : '';
+  }
+
+  function detailSections(cell) {
+    if (cell.status === 'running') return sectionHtml('Status', [], 'Running local evals. Details will appear when this run finishes.');
+    if (cell.status === 'not-run') return sectionHtml('Status', [], 'Output will appear after running the eval.');
+    return sectionHtml('Assertions', (cell.assertions || []).map((assertion) => ({ label: statusLabel(assertion.status) + ': ' + assertion.label, value: assertion.message || (assertion.status === 'passed' ? 'Passed.' : 'No assertion message.'), meta: [assertion.expectedPreview ? 'Expected: ' + assertion.expectedPreview : null, assertion.actualPreview ? 'Actual: ' + assertion.actualPreview : null].filter(Boolean).join(' · '), tone: assertion.status })), cell.status === 'passed' ? 'No assertions reported.' : 'No assertion details reported.') + sectionHtml('Diagnostics', (cell.diagnostics || []).map((diagnostic) => ({ label: diagnostic.code, value: diagnostic.message, meta: diagnostic.location, tone: diagnostic.severity })), 'No diagnostics.') + sectionHtml('Output', cell.outputPreview ? [{ label: 'Output preview', value: cell.outputPreview }] : [], 'Output will appear after running the eval.') + sectionHtml('Metrics', metricItems(cell), 'Metrics unavailable.') + sectionHtml('Raw artifacts', (cell.artifacts || []).map((artifact) => ({ label: artifact.label, value: artifact.preview || artifact.reference || artifact.kind, meta: artifact.reference })), 'No raw artifacts.');
+  }
+
+  function sectionHtml(title, items, emptyMessage) {
+    const body = items.length ? '<ul>' + items.map(itemHtml).join('') + '</ul>' : '<p>' + h(emptyMessage) + '</p>';
+    return '<section class="detail-section"><h3>' + h(title) + '</h3>' + body + '</section>';
+  }
+
+  function itemHtml(item) {
+    const tone = item.tone === 'passed' ? ' detail-item--success' : item.tone === 'blocked' || item.tone === 'warning' ? ' detail-item--warning' : item.tone === 'failed' || item.tone === 'error' ? ' detail-item--error' : '';
+    const meta = item.meta ? '<p class="detail-item__meta">' + h(item.meta) + '</p>' : '';
+    return '<li class="detail-item' + tone + '"><strong>' + h(item.label) + '</strong><p>' + h(item.value) + '</p>' + meta + '</li>';
+  }`,
+} as const;

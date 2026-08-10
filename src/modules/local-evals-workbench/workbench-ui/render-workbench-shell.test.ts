@@ -5,6 +5,20 @@ import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-sui
 import type { EvalCell, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
 import { createWorkbenchViewModel } from './view-model.js';
 import { renderWorkbenchShell } from './render-workbench-shell.js';
+import { WORKBENCH_CLIENT_SCRIPT } from './workbench-client.js';
+
+describe('WORKBENCH_CLIENT_SCRIPT', () => {
+  it('contains drawer focus trap, Escape close, overlay close, focus restoration, and retry hooks', () => {
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /function trapDrawerFocus/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /event.key === 'Escape'/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /data-cell-overlay/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /restoreFocus/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"retry-cell\"/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/eval-runs/);
+    assert.doesNotThrow(() => new Function(WORKBENCH_CLIENT_SCRIPT));
+    assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /Analyze this failure|repair proposal|Approve change|automated repair/i);
+  });
+});
 
 describe('renderWorkbenchShell', () => {
   it('renders accessible suite controls, labels, summary, filters, and progress', () => {
@@ -35,20 +49,51 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /Assertion failed: must stop/);
   });
 
-  it('renders accessible cell button labels and selected-cell scaffolding', () => {
+  it('renders accessible cell button labels and selected-cell detail drawer content', () => {
     const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery(), latestRun: completedRun(), selectedCell: { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' } }), '');
 
     assert.match(html, /aria-label="Open GPT-5 mini Failed result for test case missing-skill-boundary"/);
     assert.match(html, /role="dialog"/);
     assert.match(html, /aria-modal="true"/);
-    assert.match(html, /data-control="close-cell"/);
+    assert.match(html, /aria-describedby="cell-dialog-description"/);
+    assert.match(html, /aria-label="Close result detail"/);
+    assert.match(html, /Failed: &lt;assertion&gt;/);
+    assert.match(html, /Output preview/);
+    assert.match(html, /Raw artifacts/);
+    assert.doesNotMatch(html, /Analyze this failure|proposal|Approve change|repair/i);
+  });
+
+
+
+  it('renders passed, blocked, error, running, and not-run drawer states without repair controls', () => {
+    for (const status of ['passed', 'blocked', 'error', 'running', 'not-run'] as const) {
+      const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery(), latestRun: runWithUiCell(status), selectedCell: { testCaseId: `${status}-case`, modelId: 'gpt-5-mini' } }), '');
+
+      assert.match(html, /role="dialog"/);
+      assert.match(html, /aria-modal="true"/);
+      assert.match(html, new RegExp(status === 'error' ? 'Try again' : status === 'blocked' ? 'Add local config, then run the eval again.' : status === 'running' ? 'Running local evals' : status === 'not-run' ? 'Output will appear after running the eval.' : 'Passed: Must pass'));
+      assert.doesNotMatch(html, /Analyze this failure|repair proposal|Approve change|automated repair/i);
+    }
+  });
+
+  it('renders run-level blocked and error panels with diagnostics and retry copy', () => {
+    const blockedHtml = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery(), latestRun: blockedRun() }), '');
+    const errorHtml = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery(), latestRun: errorRun() }), '');
+
+    assert.match(blockedHtml, /class="state-panel state-panel--blocked" role="status"/);
+    assert.match(blockedHtml, /Runner config missing/);
+    assert.match(blockedHtml, /Add local config, then run the eval again./);
+    assert.match(errorHtml, /class="state-panel state-panel--error" role="status"/);
+    assert.match(errorHtml, /Could not run/);
+    assert.match(errorHtml, /Try again/);
+    assert.match(errorHtml, /Artifact store failed/);
   });
 
   it('keeps blocked state behavior and disabled controls intact', () => {
     const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: blockedDiscovery() }), '');
 
     assert.match(html, /data-control="run" disabled aria-disabled="true"/);
-    assert.match(html, /<section class="blocked" role="status">/);
+    assert.match(html, /<section class="state-panel state-panel--blocked" role="status"/);
     assert.match(html, /No conventional evals folder was found/);
   });
 
@@ -75,6 +120,19 @@ function blockedDiscovery(): EvalSuiteDiscoveryResult {
 
 function unsafeDiscovery(): EvalSuiteDiscoveryResult {
   return { status: 'ready', suites: [{ id: '<script>alert(1)</script>', name: '<img src=x onerror=alert(1)>', description: 'safe <script>alert(1)</script>', readyTestCaseCount: 1, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT <script>' }] }], diagnostics: [] };
+}
+
+function runWithUiCell(status: 'passed' | 'blocked' | 'error' | 'running' | 'not-run'): RunLocalEvalSuiteResult {
+  const evalCell = { ...cell(`${status}-case`, 'gpt-5-mini', 'GPT-5 mini'), status, outputPreview: status === 'passed' ? 'Everything passed' : null, assertions: status === 'passed' ? [{ id: 'a1', label: 'Must pass', kind: 'assertion', status: 'passed', message: 'Passed.', metrics: [], diagnostics: [], artifacts: [] }] : [], diagnostics: [{ code: `${status}-diag`, severity: status === 'error' ? 'error' : 'warning', message: `${status} diagnostic` }] } as unknown as EvalCell;
+  return { status: 'completed', scope: 'all', matrix: { suiteId: 'skill-authoring', suiteName: 'Skill authoring checks', status: status === 'running' || status === 'not-run' ? 'blocked' : status, aggregates: { total: 1, passed: status === 'passed' ? 1 : 0, failed: 0, blocked: status === 'blocked' ? 1 : 0, error: status === 'error' ? 1 : 0 }, diagnostics: [], rows: [{ testCaseId: `${status}-case`, name: `${status} case`, status: evalCell.status, cells: [evalCell] }] } } as unknown as RunLocalEvalSuiteResult;
+}
+
+function blockedRun(): RunLocalEvalSuiteResult {
+  return { status: 'blocked', reason: 'runner-blocked', message: 'Runner blocked.', diagnostics: [{ code: 'blocked', severity: 'error', message: 'Runner config missing' }], matrix: completedRun().matrix };
+}
+
+function errorRun(): RunLocalEvalSuiteResult {
+  return { status: 'error', reason: 'artifact-store-error', message: 'Could not run.', diagnostics: [{ code: 'artifact-store', severity: 'error', message: 'Artifact store failed' }], matrix: completedRun().matrix };
 }
 
 function completedRun(): RunLocalEvalSuiteResult {

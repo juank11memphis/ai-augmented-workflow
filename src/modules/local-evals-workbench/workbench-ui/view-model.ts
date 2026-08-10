@@ -2,6 +2,7 @@ import type { EvalSuiteDiscoveryDiagnostic, EvalSuiteDiscoveryResult, EvalSuiteS
 import type { EvalCell, EvalDiagnostic, EvalMatrix, EvalMatrixRow, EvalMetric, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
 
 export type WorkbenchLifecycleStatus = 'ready' | 'running' | 'passed' | 'failed' | 'blocked' | 'error';
+export type WorkbenchCellStatus = EvalRunStatus | 'running' | 'not-run';
 export type WorkbenchRunScope = { readonly type: 'all' } | { readonly type: 'test_case'; readonly testCaseId: string };
 export type ResultMatrixNavigationMode = 'desktop' | 'phone';
 export type ResultMatrixNavigationDirection = 'up' | 'down' | 'left' | 'right';
@@ -56,7 +57,7 @@ export type WorkbenchCellSummary = {
   readonly testCaseId: string;
   readonly modelId: string;
   readonly modelLabel: string;
-  readonly status: EvalRunStatus;
+  readonly status: WorkbenchCellStatus;
   readonly statusLabel: string;
   readonly statusIcon: string;
   readonly assertionSummary: string;
@@ -66,13 +67,38 @@ export type WorkbenchCellSummary = {
   readonly actionLabel: string;
 };
 
+export type WorkbenchSelectedCellDetail = WorkbenchCellSummary & {
+  readonly title: string;
+  readonly description: string;
+  readonly sections: readonly WorkbenchDetailSection[];
+  readonly recoveryGuidance: string | null;
+  readonly retryActionLabel: string | null;
+  readonly dialogLabelId: 'cell-dialog-title';
+  readonly dialogDescriptionId: 'cell-dialog-description';
+};
+
+export type WorkbenchDetailSection = {
+  readonly title: string;
+  readonly emptyMessage: string;
+  readonly items: readonly WorkbenchDetailItem[];
+};
+
+export type WorkbenchDetailItem = {
+  readonly label: string;
+  readonly value: string;
+  readonly tone?: 'neutral' | 'success' | 'warning' | 'error';
+  readonly meta?: string;
+};
+
+type WorkbenchDetailCell = Omit<EvalCell, 'status'> & { readonly status: WorkbenchCellStatus };
+
 export type WorkbenchResultDisplay = {
   readonly hasMatrix: boolean;
   readonly filters: WorkbenchResultFilters;
   readonly variants: readonly WorkbenchResultVariant[];
   readonly visibleVariants: readonly WorkbenchResultVariant[];
   readonly rows: readonly WorkbenchResultRow[];
-  readonly selectedCell: WorkbenchCellSummary | null;
+  readonly selectedCell: WorkbenchSelectedCellDetail | null;
   readonly emptyMessage: string | null;
 };
 
@@ -149,9 +175,9 @@ export function normalizeResultFilters(matrix: EvalMatrix | undefined, filters: 
   return { failuresOnly: Boolean(filters.failuresOnly), searchQuery: filters.searchQuery?.trim() ?? '', visibleVariantIds };
 }
 
-export function findCellSummary(matrix: EvalMatrix, selection: WorkbenchCellSelection): WorkbenchCellSummary | null {
+export function findCellSummary(matrix: EvalMatrix, selection: WorkbenchCellSelection): WorkbenchSelectedCellDetail | null {
   const cell = findMatrixCell(matrix.rows, selection);
-  return cell ? summarizeCell(cell) : null;
+  return cell ? createSelectedCellDetail(cell) : null;
 }
 
 export function findNextResultCellSelection(input: {
@@ -201,7 +227,7 @@ function toResultRow(row: EvalMatrixRow, visibleVariantIdSet: ReadonlySet<string
   return { testCaseId: row.testCaseId, name: row.name, status: row.status, statusLabel: statusLabel(row.status), cells };
 }
 
-function summarizeCell(cell: EvalCell): WorkbenchCellSummary {
+function summarizeCell(cell: WorkbenchDetailCell): WorkbenchCellSummary {
   return {
     key: createCellKey(cell),
     testCaseId: cell.testCaseId,
@@ -218,7 +244,68 @@ function summarizeCell(cell: EvalCell): WorkbenchCellSummary {
   };
 }
 
-function assertionSummary(cell: EvalCell): string {
+function createSelectedCellDetail(cell: WorkbenchDetailCell): WorkbenchSelectedCellDetail {
+  const summary = summarizeCell(cell);
+  return {
+    ...summary,
+    title: `${statusLabel(cell.status)} result`,
+    description: `${statusLabel(cell.status)} · ${cell.modelLabel} · ${cell.testCaseId}`,
+    sections: detailSections(cell),
+    recoveryGuidance: recoveryGuidance(cell),
+    retryActionLabel: cell.status === 'error' ? 'Try again' : null,
+    dialogLabelId: 'cell-dialog-title',
+    dialogDescriptionId: 'cell-dialog-description',
+  };
+}
+
+function detailSections(cell: WorkbenchDetailCell): readonly WorkbenchDetailSection[] {
+  if (cell.status === 'running') return [detailSection('Status', 'Running local evals. Details will appear when this run finishes.', [])];
+  if (cell.status === 'not-run') return [detailSection('Status', 'Output will appear after running the eval.', [])];
+
+  return [
+    detailSection('Assertions', assertionEmptyMessage(cell.status), cell.assertions.map((assertion) => ({
+      label: `${statusLabel(assertion.status)}: ${assertion.label}`,
+      value: assertion.message ?? (assertion.status === 'passed' ? 'Passed.' : 'No assertion message.'),
+      tone: assertionTone(assertion.status),
+      meta: [assertion.expectedPreview ? `Expected: ${assertion.expectedPreview}` : null, assertion.actualPreview ? `Actual: ${assertion.actualPreview}` : null].filter((item): item is string => Boolean(item)).join(' · ') || undefined,
+    }))),
+    detailSection('Diagnostics', 'No diagnostics.', cell.diagnostics.map((diagnostic) => ({ label: diagnostic.code, value: diagnostic.message, tone: diagnostic.severity === 'error' ? 'error' : diagnostic.severity === 'warning' ? 'warning' : 'neutral', meta: diagnostic.location }))),
+    detailSection('Output', 'Output will appear after running the eval.', cell.outputPreview ? [{ label: 'Output preview', value: cell.outputPreview }] : []),
+    detailSection('Metrics', 'Metrics unavailable.', metricItems(cell)),
+    detailSection('Raw artifacts', 'No raw artifacts.', cell.artifacts.map((artifact) => ({ label: artifact.label, value: artifact.preview ?? artifact.reference ?? artifact.kind, meta: artifact.reference }))),
+  ];
+}
+
+function detailSection(title: string, emptyMessage: string, items: readonly WorkbenchDetailItem[]): WorkbenchDetailSection {
+  return { title, emptyMessage, items };
+}
+
+function metricItems(cell: WorkbenchDetailCell): readonly WorkbenchDetailItem[] {
+  const duration = cell.durationMs === null ? [] : [{ label: 'Duration', value: `${Math.round(cell.durationMs)} ms` }];
+  return [...duration, ...cell.metrics.map((metric) => ({ label: metric.name, value: `${metric.value}${metric.unit ? ` ${metric.unit}` : ''}` }))];
+}
+
+function recoveryGuidance(cell: WorkbenchDetailCell): string | null {
+  if (cell.status === 'blocked') return 'Add local config, then run the eval again.';
+  if (cell.status === 'error') return 'Try again after checking local setup.';
+  if (cell.status === 'running') return 'Wait for this run to finish.';
+  if (cell.status === 'not-run') return 'Run this eval to inspect output.';
+  return null;
+}
+
+function assertionEmptyMessage(status: WorkbenchCellStatus): string {
+  if (status === 'passed') return 'No assertions reported.';
+  return 'No assertion details reported.';
+}
+
+function assertionTone(status: WorkbenchCellStatus): WorkbenchDetailItem['tone'] {
+  if (status === 'passed') return 'success';
+  if (status === 'blocked') return 'warning';
+  if (status === 'failed' || status === 'error') return 'error';
+  return 'neutral';
+}
+
+function assertionSummary(cell: WorkbenchDetailCell): string {
   const total = cell.assertions.length;
   if (total === 0) return cell.status === 'passed' ? 'No assertions reported.' : 'No assertion details reported.';
   const failed = cell.assertions.filter((assertion) => assertion.status === 'failed').length;
@@ -227,7 +314,7 @@ function assertionSummary(cell: EvalCell): string {
   return `${passed} passed / ${total}`;
 }
 
-function metricsSummary(cell: EvalCell): string {
+function metricsSummary(cell: WorkbenchDetailCell): string {
   const labels = [cell.durationMs === null ? null : `${Math.round(cell.durationMs)} ms`, tokenMetricLabel(cell.metrics), costMetricLabel(cell.metrics)].filter((label): label is string => Boolean(label));
   return labels.length > 0 ? labels.join(' · ') : 'Metrics unavailable';
 }
@@ -304,12 +391,12 @@ function resolveStatus(discovery: EvalSuiteDiscoveryResult, latestRun: RunLocalE
   return discovery.status === 'blocked' ? 'blocked' : 'ready';
 }
 
-function statusLabel(status: WorkbenchLifecycleStatus | EvalRunStatus): string {
-  return ({ ready: 'Ready', running: 'Running...', passed: 'Passed', failed: 'Failed', blocked: 'Blocked', error: 'Could not run' } as const)[status];
+function statusLabel(status: WorkbenchLifecycleStatus | WorkbenchCellStatus): string {
+  return ({ ready: 'Ready', running: 'Running...', 'not-run': 'Not run', passed: 'Passed', failed: 'Failed', blocked: 'Blocked', error: 'Could not run' } as const)[status];
 }
 
-function statusIcon(status: EvalRunStatus): string {
-  return ({ passed: '✓', failed: '!', blocked: '◇', error: '×' } as const)[status];
+function statusIcon(status: WorkbenchCellStatus): string {
+  return ({ passed: '✓', failed: '!', blocked: '◇', error: '×', running: '…', 'not-run': '○' } as const)[status];
 }
 
 function statusMessage(status: WorkbenchLifecycleStatus, discovery: EvalSuiteDiscoveryResult, latestRun: RunLocalEvalSuiteResult | undefined, suite: EvalSuiteSummary, progress: WorkbenchProgress): string {

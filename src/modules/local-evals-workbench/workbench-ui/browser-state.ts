@@ -94,6 +94,15 @@ export function createRunRequestPayload(state: BrowserState): EvalRunRequestPayl
   return { suiteId: state.viewModel.selectedSuite.id, evalRunModel: state.viewModel.selectedEvalRunModel, scope: state.viewModel.runScope };
 }
 
+export function createSelectedCellRetryPayload(state: BrowserState): EvalRunRequestPayload | null {
+  if (!state.selectedCell) return null;
+  return {
+    suiteId: state.viewModel.selectedSuite.id,
+    evalRunModel: state.selectedCell.modelId,
+    scope: { type: 'test_case', testCaseId: state.selectedCell.testCaseId },
+  };
+}
+
 export function parseEvalRunResponse(payload: unknown): RunLocalEvalSuiteResult {
   if (!isRecord(payload) || typeof payload.status !== 'string') return invalidResponse();
   if (payload.status === 'completed' && isRecord(payload.matrix)) return payload as RunLocalEvalSuiteResult;
