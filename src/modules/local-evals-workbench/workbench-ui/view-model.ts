@@ -1,8 +1,10 @@
 import type { EvalSuiteDiscoveryDiagnostic, EvalSuiteDiscoveryResult, EvalSuiteSummary } from '../discover-conventional-eval-suites/result.js';
-import type { EvalDiagnostic, EvalMatrix, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
+import type { EvalCell, EvalDiagnostic, EvalMatrix, EvalMatrixRow, EvalMetric, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
 
 export type WorkbenchLifecycleStatus = 'ready' | 'running' | 'passed' | 'failed' | 'blocked' | 'error';
 export type WorkbenchRunScope = { readonly type: 'all' } | { readonly type: 'test_case'; readonly testCaseId: string };
+export type ResultMatrixNavigationMode = 'desktop' | 'phone';
+export type ResultMatrixNavigationDirection = 'up' | 'down' | 'left' | 'right';
 
 export type WorkbenchViewModel = {
   readonly title: 'Local Sibu Evals';
@@ -21,6 +23,7 @@ export type WorkbenchViewModel = {
   readonly summary: WorkbenchSummary;
   readonly progress: WorkbenchProgress;
   readonly diagnostics: readonly WorkbenchDiagnostic[];
+  readonly resultDisplay: WorkbenchResultDisplay;
   readonly bootstrappedState: WorkbenchBootstrapState;
 };
 
@@ -31,19 +34,47 @@ export type WorkbenchBootstrapState = {
   readonly runScope: WorkbenchRunScope;
 };
 
-export type WorkbenchSuiteOption = {
-  readonly id: string;
-  readonly name: string;
-  readonly description: string;
-  readonly readyTestCaseCount: number;
-  readonly selected: boolean;
-};
-
+export type WorkbenchSuiteOption = { readonly id: string; readonly name: string; readonly description: string; readonly readyTestCaseCount: number; readonly selected: boolean };
 export type WorkbenchModelOption = { readonly id: string; readonly label: string; readonly selected: boolean };
 export type WorkbenchRunScopeOption = { readonly type: WorkbenchRunScope['type']; readonly label: string; readonly selected: boolean; readonly disabled: boolean };
 export type WorkbenchSummary = { readonly passRateLabel: string; readonly averageLatencyLabel: string; readonly totalCostLabel: string };
 export type WorkbenchProgress = { readonly completed: number; readonly total: number; readonly percent: number; readonly label: string };
 export type WorkbenchDiagnostic = { readonly code: string; readonly severity: 'info' | 'warning' | 'error'; readonly message: string };
+
+export type WorkbenchResultFilters = {
+  readonly failuresOnly: boolean;
+  readonly searchQuery: string;
+  readonly visibleVariantIds: readonly string[];
+};
+
+export type WorkbenchCellSelection = { readonly testCaseId: string; readonly modelId: string };
+export type WorkbenchResultVariant = { readonly id: string; readonly label: string; readonly selected: boolean };
+export type WorkbenchResultRow = { readonly testCaseId: string; readonly name: string; readonly status: EvalRunStatus; readonly statusLabel: string; readonly cells: readonly WorkbenchCellSummary[] };
+
+export type WorkbenchCellSummary = {
+  readonly key: string;
+  readonly testCaseId: string;
+  readonly modelId: string;
+  readonly modelLabel: string;
+  readonly status: EvalRunStatus;
+  readonly statusLabel: string;
+  readonly statusIcon: string;
+  readonly assertionSummary: string;
+  readonly metricsSummary: string;
+  readonly outputPreview: string;
+  readonly diagnosticsSummary: string;
+  readonly actionLabel: string;
+};
+
+export type WorkbenchResultDisplay = {
+  readonly hasMatrix: boolean;
+  readonly filters: WorkbenchResultFilters;
+  readonly variants: readonly WorkbenchResultVariant[];
+  readonly visibleVariants: readonly WorkbenchResultVariant[];
+  readonly rows: readonly WorkbenchResultRow[];
+  readonly selectedCell: WorkbenchCellSummary | null;
+  readonly emptyMessage: string | null;
+};
 
 export type CreateWorkbenchViewModelInput = {
   readonly discovery: EvalSuiteDiscoveryResult;
@@ -52,6 +83,8 @@ export type CreateWorkbenchViewModelInput = {
   readonly runScope?: WorkbenchRunScope;
   readonly latestRun?: RunLocalEvalSuiteResult;
   readonly isRunning?: boolean;
+  readonly resultFilters?: Partial<WorkbenchResultFilters>;
+  readonly selectedCell?: WorkbenchCellSelection | null;
 };
 
 const EMPTY_SUITE: EvalSuiteSummary = { id: 'no-suite', name: 'No eval suites', description: 'Add local config, then run the eval again.', readyTestCaseCount: 0, modelOptions: [] };
@@ -83,8 +116,170 @@ export function createWorkbenchViewModel(input: CreateWorkbenchViewModelInput): 
     summary: createSummary(matrix),
     progress,
     diagnostics,
+    resultDisplay: createResultDisplay(matrix, input.resultFilters, input.selectedCell),
     bootstrappedState: { discovery: input.discovery, selectedSuiteId: selectedSuite.id, selectedEvalRunModel: selectedModel, runScope },
   };
+}
+
+export function createResultDisplay(matrix: EvalMatrix | undefined, filters: Partial<WorkbenchResultFilters> = {}, selectedCell?: WorkbenchCellSelection | null): WorkbenchResultDisplay {
+  if (!matrix) return emptyResultDisplay(filters);
+  const allVariants = collectVariants(matrix);
+  const normalizedFilters = normalizeResultFilters(matrix, filters);
+  const visibleVariantIdSet = new Set(normalizedFilters.visibleVariantIds);
+  const variants = allVariants.map((variant) => ({ ...variant, selected: visibleVariantIdSet.has(variant.id) }));
+  const visibleVariants = variants.filter((variant) => variant.selected);
+  const rows = filterMatrixRows(matrix.rows, normalizedFilters).map((row) => toResultRow(row, visibleVariantIdSet));
+  const selectedSummary = selectedCell ? findCellSummary(matrix, selectedCell) : null;
+
+  return {
+    hasMatrix: true,
+    filters: normalizedFilters,
+    variants,
+    visibleVariants,
+    rows,
+    selectedCell: selectedSummary,
+    emptyMessage: rows.length === 0 ? emptyResultMessage(normalizedFilters) : null,
+  };
+}
+
+export function normalizeResultFilters(matrix: EvalMatrix | undefined, filters: Partial<WorkbenchResultFilters> = {}): WorkbenchResultFilters {
+  const availableVariantIds = matrix ? collectVariants(matrix).map((variant) => variant.id) : [];
+  const requestedVisibleIds = filters.visibleVariantIds?.filter((id) => availableVariantIds.includes(id)) ?? availableVariantIds;
+  const visibleVariantIds = requestedVisibleIds.length > 0 ? requestedVisibleIds : availableVariantIds.slice(0, 1);
+  return { failuresOnly: Boolean(filters.failuresOnly), searchQuery: filters.searchQuery?.trim() ?? '', visibleVariantIds };
+}
+
+export function findCellSummary(matrix: EvalMatrix, selection: WorkbenchCellSelection): WorkbenchCellSummary | null {
+  const cell = findMatrixCell(matrix.rows, selection);
+  return cell ? summarizeCell(cell) : null;
+}
+
+export function findNextResultCellSelection(input: {
+  readonly rows: readonly WorkbenchResultRow[];
+  readonly current: WorkbenchCellSelection;
+  readonly direction: ResultMatrixNavigationDirection;
+  readonly mode: ResultMatrixNavigationMode;
+}): WorkbenchCellSelection | null {
+  const grid = input.mode === 'phone' ? phoneNavigationGrid(input.rows) : desktopNavigationGrid(input.rows);
+  const position = findGridPosition(grid, input.current);
+  if (!position) return null;
+  const nextPosition = nextGridPosition(position, input.direction, input.mode);
+  return grid[nextPosition.row]?.[nextPosition.column] ?? null;
+}
+
+export function createCellKey(selection: WorkbenchCellSelection, mode?: ResultMatrixNavigationMode): string {
+  const suffix = mode ? `:${mode}` : '';
+  return `${selection.testCaseId}:${selection.modelId}${suffix}`;
+}
+
+function emptyResultDisplay(filters: Partial<WorkbenchResultFilters>): WorkbenchResultDisplay {
+  const normalizedFilters = { failuresOnly: Boolean(filters.failuresOnly), searchQuery: filters.searchQuery?.trim() ?? '', visibleVariantIds: filters.visibleVariantIds ?? [] };
+  return { hasMatrix: false, filters: normalizedFilters, variants: [], visibleVariants: [], rows: [], selectedCell: null, emptyMessage: 'Run evals to see result cards and the matrix.' };
+}
+
+function collectVariants(matrix: EvalMatrix): readonly WorkbenchResultVariant[] {
+  const variants = new Map<string, WorkbenchResultVariant>();
+  for (const row of matrix.rows) {
+    for (const cell of row.cells) variants.set(cell.modelId, { id: cell.modelId, label: cell.modelLabel, selected: true });
+  }
+  return [...variants.values()];
+}
+
+function filterMatrixRows(rows: readonly EvalMatrixRow[], filters: WorkbenchResultFilters): readonly EvalMatrixRow[] {
+  const visibleVariantIdSet = new Set(filters.visibleVariantIds);
+  const query = filters.searchQuery.toLowerCase();
+  return rows.filter((row) => {
+    if (query && !`${row.name} ${row.testCaseId}`.toLowerCase().includes(query)) return false;
+    const visibleCells = row.cells.filter((cell) => visibleVariantIdSet.has(cell.modelId));
+    if (visibleCells.length === 0) return false;
+    return !filters.failuresOnly || visibleCells.some((cell) => cell.status === 'failed');
+  });
+}
+
+function toResultRow(row: EvalMatrixRow, visibleVariantIdSet: ReadonlySet<string>): WorkbenchResultRow {
+  const cells = row.cells.filter((cell) => visibleVariantIdSet.has(cell.modelId)).map(summarizeCell);
+  return { testCaseId: row.testCaseId, name: row.name, status: row.status, statusLabel: statusLabel(row.status), cells };
+}
+
+function summarizeCell(cell: EvalCell): WorkbenchCellSummary {
+  return {
+    key: createCellKey(cell),
+    testCaseId: cell.testCaseId,
+    modelId: cell.modelId,
+    modelLabel: cell.modelLabel,
+    status: cell.status,
+    statusLabel: statusLabel(cell.status),
+    statusIcon: statusIcon(cell.status),
+    assertionSummary: assertionSummary(cell),
+    metricsSummary: metricsSummary(cell),
+    outputPreview: cell.outputPreview?.trim() || 'Output will appear here.',
+    diagnosticsSummary: diagnosticsSummary(cell.diagnostics),
+    actionLabel: `Open ${cell.modelLabel} ${statusLabel(cell.status)} result for test case ${cell.testCaseId}`,
+  };
+}
+
+function assertionSummary(cell: EvalCell): string {
+  const total = cell.assertions.length;
+  if (total === 0) return cell.status === 'passed' ? 'No assertions reported.' : 'No assertion details reported.';
+  const failed = cell.assertions.filter((assertion) => assertion.status === 'failed').length;
+  const passed = cell.assertions.filter((assertion) => assertion.status === 'passed').length;
+  if (failed > 0) return `${failed} failed / ${total}`;
+  return `${passed} passed / ${total}`;
+}
+
+function metricsSummary(cell: EvalCell): string {
+  const labels = [cell.durationMs === null ? null : `${Math.round(cell.durationMs)} ms`, tokenMetricLabel(cell.metrics), costMetricLabel(cell.metrics)].filter((label): label is string => Boolean(label));
+  return labels.length > 0 ? labels.join(' · ') : 'Metrics unavailable';
+}
+
+function tokenMetricLabel(metrics: readonly EvalMetric[]): string | null {
+  const metric = metrics.find((item) => item.name.includes('token'));
+  return metric ? `${Math.round(metric.value).toLocaleString('en-US')} tokens` : null;
+}
+
+function costMetricLabel(metrics: readonly EvalMetric[]): string | null {
+  const metric = metrics.find((item) => ['cost', 'total_cost', 'usd_cost'].includes(item.name) || item.unit === 'usd');
+  return metric ? `$${metric.value.toFixed(4)}` : null;
+}
+
+function diagnosticsSummary(diagnostics: readonly EvalDiagnostic[]): string {
+  if (diagnostics.length === 0) return 'No diagnostics.';
+  return diagnostics[0]?.message ?? `${diagnostics.length} diagnostics reported.`;
+}
+
+function findMatrixCell(rows: readonly EvalMatrixRow[], selection: WorkbenchCellSelection): EvalCell | undefined {
+  return rows.find((row) => row.testCaseId === selection.testCaseId)?.cells.find((cell) => cell.modelId === selection.modelId);
+}
+
+function emptyResultMessage(filters: WorkbenchResultFilters): string {
+  if (filters.failuresOnly && filters.searchQuery) return 'No failed results match this search.';
+  if (filters.failuresOnly) return 'No failed results are visible.';
+  if (filters.searchQuery) return 'No test cases match this search.';
+  return 'No results are visible with the selected models.';
+}
+
+function desktopNavigationGrid(rows: readonly WorkbenchResultRow[]): readonly (readonly WorkbenchCellSelection[])[] {
+  return rows.map((row) => row.cells.map((cell) => ({ testCaseId: row.testCaseId, modelId: cell.modelId })));
+}
+
+function phoneNavigationGrid(rows: readonly WorkbenchResultRow[]): readonly (readonly WorkbenchCellSelection[])[] {
+  return rows.flatMap((row) => row.cells.map((cell) => [{ testCaseId: row.testCaseId, modelId: cell.modelId }]));
+}
+
+function findGridPosition(grid: readonly (readonly WorkbenchCellSelection[])[], current: WorkbenchCellSelection): { readonly row: number; readonly column: number } | null {
+  for (let row = 0; row < grid.length; row += 1) {
+    const column = grid[row]?.findIndex((cell) => cell.testCaseId === current.testCaseId && cell.modelId === current.modelId) ?? -1;
+    if (column >= 0) return { row, column };
+  }
+  return null;
+}
+
+function nextGridPosition(position: { readonly row: number; readonly column: number }, direction: ResultMatrixNavigationDirection, mode: ResultMatrixNavigationMode): { readonly row: number; readonly column: number } {
+  if (mode === 'phone') return { row: position.row + (direction === 'down' || direction === 'right' ? 1 : direction === 'up' || direction === 'left' ? -1 : 0), column: 0 };
+  if (direction === 'up') return { row: position.row - 1, column: position.column };
+  if (direction === 'down') return { row: position.row + 1, column: position.column };
+  if (direction === 'left') return { row: position.row, column: position.column - 1 };
+  return { row: position.row, column: position.column + 1 };
 }
 
 function selectSuite(suites: readonly EvalSuiteSummary[], selectedSuiteId: string | undefined): EvalSuiteSummary {
@@ -109,8 +304,12 @@ function resolveStatus(discovery: EvalSuiteDiscoveryResult, latestRun: RunLocalE
   return discovery.status === 'blocked' ? 'blocked' : 'ready';
 }
 
-function statusLabel(status: WorkbenchLifecycleStatus): string {
+function statusLabel(status: WorkbenchLifecycleStatus | EvalRunStatus): string {
   return ({ ready: 'Ready', running: 'Running...', passed: 'Passed', failed: 'Failed', blocked: 'Blocked', error: 'Could not run' } as const)[status];
+}
+
+function statusIcon(status: EvalRunStatus): string {
+  return ({ passed: '✓', failed: '!', blocked: '◇', error: '×' } as const)[status];
 }
 
 function statusMessage(status: WorkbenchLifecycleStatus, discovery: EvalSuiteDiscoveryResult, latestRun: RunLocalEvalSuiteResult | undefined, suite: EvalSuiteSummary, progress: WorkbenchProgress): string {
@@ -124,7 +323,7 @@ function statusMessage(status: WorkbenchLifecycleStatus, discovery: EvalSuiteDis
 }
 
 function matrixForSelectedSuite(latestRun: RunLocalEvalSuiteResult | undefined, suiteId: string): EvalMatrix | undefined {
-  const matrix = latestRun?.status === 'completed' || latestRun?.matrix ? latestRun.matrix : undefined;
+  const matrix = latestRun?.matrix;
   return matrix?.suiteId === suiteId ? matrix : undefined;
 }
 
