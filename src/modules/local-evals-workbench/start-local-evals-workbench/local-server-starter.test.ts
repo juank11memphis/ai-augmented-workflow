@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
 describe('NodeLocalWorkbenchServerStarter', () => {
@@ -74,6 +75,83 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       await result.stop?.();
     }
   });
+
+
+  it('runs all test cases through POST /api/eval-runs', async () => {
+    const fakeServer = new FakeLocalHttpServer(4321);
+    const calls: string[][] = [];
+    const starter = new NodeLocalWorkbenchServerStarter((handler) => {
+      fakeServer.handler = handler;
+      return fakeServer;
+    }, () => runDependencies(calls));
+
+    const result = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await fakeServer.renderJsonResponse('/api/eval-runs', { suiteId: 'skill-authoring', evalRunModel: 'gpt-5-mini', scope: { type: 'all' } });
+      const payload = JSON.parse(response.body) as { status: string; matrix: { rows: readonly { testCaseId: string }[] } };
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(payload.status, 'completed');
+      assert.deepEqual(payload.matrix.rows.map((row) => row.testCaseId), ['missing-skill-boundary', 'names-artifact']);
+      assert.deepEqual(calls, [['missing-skill-boundary', 'names-artifact']]);
+      assert.doesNotMatch(response.body, /\/repo|secret|full raw output/);
+    } finally {
+      await result.stop?.();
+    }
+  });
+
+  it('runs one test case through POST /api/eval-runs', async () => {
+    const fakeServer = new FakeLocalHttpServer(4321);
+    const calls: string[][] = [];
+    const starter = new NodeLocalWorkbenchServerStarter((handler) => {
+      fakeServer.handler = handler;
+      return fakeServer;
+    }, () => runDependencies(calls));
+
+    const result = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await fakeServer.renderJsonResponse('/api/eval-runs', { suiteId: 'skill-authoring', evalRunModel: 'gpt-5-mini', scope: { type: 'test_case', testCaseId: 'names-artifact' } });
+      const payload = JSON.parse(response.body) as { status: string; matrix: { rows: readonly { testCaseId: string }[] } };
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(payload.status, 'completed');
+      assert.deepEqual(payload.matrix.rows.map((row) => row.testCaseId), ['names-artifact']);
+      assert.deepEqual(calls, [['names-artifact']]);
+    } finally {
+      await result.stop?.();
+    }
+  });
+
+  it('returns structured JSON for malformed, blocked, and error eval run requests', async () => {
+    const malformedServer = new FakeLocalHttpServer(4321);
+    const malformedStarter = new NodeLocalWorkbenchServerStarter((handler) => {
+      malformedServer.handler = handler;
+      return malformedServer;
+    }, () => runDependencies([]));
+    const malformedResult = await malformedStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      assert.equal((await malformedServer.renderRawResponse('/api/eval-runs', '{ not json')).statusCode, 400);
+      assert.equal((await malformedServer.renderJsonResponse('/api/eval-runs', { suiteId: 'missing', evalRunModel: 'gpt-5-mini', scope: { type: 'all' } })).statusCode, 422);
+      assert.equal((await malformedServer.renderJsonResponse('/api/eval-runs', { suiteId: 'skill-authoring', evalRunModel: 'gpt-5-mini', scope: { type: 'test_case', testCaseId: 'missing' } })).statusCode, 422);
+    } finally {
+      await malformedResult.stop?.();
+    }
+
+    const errorServer = new FakeLocalHttpServer(4321);
+    const errorStarter = new NodeLocalWorkbenchServerStarter((handler) => {
+      errorServer.handler = handler;
+      return errorServer;
+    }, () => runDependencies([], { throws: true }));
+    const errorResult = await errorStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await errorServer.renderJsonResponse('/api/eval-runs', { suiteId: 'skill-authoring', evalRunModel: 'gpt-5-mini', scope: { type: 'all' } });
+      assert.equal(response.statusCode, 422);
+      assert.match(response.body, /runner-error/);
+      assert.doesNotMatch(response.body, /full raw output|secret|\/repo/);
+    } finally {
+      await errorResult.stop?.();
+    }
+  });
 });
 
 function readyDiscovery(): EvalSuiteDiscoveryResult {
@@ -101,13 +179,36 @@ function blockedDiscovery(): EvalSuiteDiscoveryResult {
   };
 }
 
+
+
+function runDependencies(calls: string[][], options: { readonly throws?: boolean } = {}): RunLocalEvalSuiteDependencies {
+  const suite = {
+    id: 'skill-authoring',
+    name: 'Skill authoring checks',
+    modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
+    testCases: [{ id: 'missing-skill-boundary', name: 'Missing skill boundary' }, { id: 'names-artifact', name: 'Names artifact' }],
+  };
+  return {
+    suiteRegistry: { findSuite: async (_projectRoot, suiteId) => suiteId === suite.id ? suite : null },
+    evalRunner: {
+      runSuite: async (request) => {
+        calls.push(request.testCases.map((testCase) => testCase.id));
+        if (options.throws) throw new Error('full raw output secret /repo');
+        return { status: 'completed', cells: request.testCases.map((testCase) => ({ testCaseId: testCase.id, status: 'passed' as const, output: 'short safe preview' })) };
+      },
+    },
+    artifactStore: { storeRunArtifact: async () => undefined },
+    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+  };
+}
+
 type FakeResponse = {
   readonly statusCode: number;
   readonly headers: Record<string, string>;
   readonly body: string;
 };
 
-type FakeHandler = (request: { readonly url?: string }, response: {
+type FakeHandler = (request: { readonly url?: string; readonly method?: string; readonly on?: (event: string, listener: Function) => void }, response: {
   writeHead(statusCode: number, headers: Record<string, string>): void;
   end(body: string): void;
 }) => void;
@@ -144,7 +245,7 @@ class FakeLocalHttpServer {
     let headers: Record<string, string> = {};
     let body = '';
 
-    this.handler({ url }, {
+    this.handler({ url, method: 'GET' }, {
       writeHead: (nextStatusCode, nextHeaders) => {
         statusCode = nextStatusCode;
         headers = nextHeaders;
@@ -156,4 +257,40 @@ class FakeLocalHttpServer {
 
     return { statusCode, headers, body };
   }
+
+  async renderJsonResponse(url: string, payload: unknown): Promise<FakeResponse> {
+    return this.renderRawResponse(url, JSON.stringify(payload));
+  }
+
+  async renderRawResponse(url: string, bodyPayload: string): Promise<FakeResponse> {
+    assert.equal(this.closed, false);
+    assert.ok(this.handler);
+    let statusCode = 0;
+    let headers: Record<string, string> = {};
+    let body = '';
+    const listeners = new Map<string, Function[]>();
+    const request = {
+      url,
+      method: 'POST',
+      on: (event: string, listener: Function) => {
+        listeners.set(event, [...(listeners.get(event) ?? []), listener]);
+      },
+    };
+
+    this.handler(request, {
+      writeHead: (nextStatusCode, nextHeaders) => {
+        statusCode = nextStatusCode;
+        headers = nextHeaders;
+      },
+      end: (nextBody) => {
+        body = nextBody;
+      },
+    });
+
+    for (const listener of listeners.get('data') ?? []) listener(bodyPayload);
+    for (const listener of listeners.get('end') ?? []) listener();
+    await new Promise((resolve) => setImmediate(resolve));
+    return { statusCode, headers, body };
+  }
 }
+
