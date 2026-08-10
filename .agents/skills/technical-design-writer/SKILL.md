@@ -177,6 +177,15 @@ Quality bar:
 - Prefer sparse, reviewable diagrams over exhaustive diagrams. Do not diagram every helper, method call, table column, or trivial branch.
 - If a diagram would mostly duplicate prose without adding clarity, include a one-sentence skip rationale instead of forcing diagram theater.
 
+Mermaid safety preflight:
+
+- Keep Mermaid IDs simple: letters, numbers, and underscores only; put readable names in labels.
+- Avoid Markdown formatting, backticks, raw file paths with unusual punctuation, and long prose inside Mermaid labels.
+- In `sequenceDiagram` messages, do not use semicolons (`;`) after `:`; use `and`, a comma, or split the message into two lines.
+- Verify every arrow has both source and target participants/nodes.
+- Check brackets, quotes, parentheses, and Mermaid code fences are balanced before writing the file.
+- Prefer short message labels such as `return result` over sentence-like descriptions.
+
 ```md
 # Technical Design Diagrams: <Feature Name>
 

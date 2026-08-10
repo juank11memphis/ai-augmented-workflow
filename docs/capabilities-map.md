@@ -6,7 +6,7 @@ This Capabilities Map translates Sibu's Product Vision and Business Domain Model
 
 Capabilities are written at the product level: what Sibu must be able to do for developers and teams, not how the software is structured internally.
 
-User Control & Trust is treated as a cross-cutting principle rather than a standalone subdomain. Its concrete capabilities appear in the subdomains where users experience them: adoption, maintenance, pipeline guidance, architecture guidance, and tool configuration.
+User Control & Trust is treated as a cross-cutting principle rather than a standalone subdomain. Its concrete capabilities appear in the subdomains where users experience them: adoption, maintenance, pipeline guidance, architecture guidance, local eval repair, and tool configuration.
 
 ## Capability Map
 
@@ -57,6 +57,20 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Keep narrow fixes lightweight**: avoid forcing the full product pipeline for small code, documentation, or maintenance tasks when direction and ownership are already clear.
 - **Keep AI work reviewable**: guide work into small, explicit, validated chunks that preserve engineer judgment and accountability.
 
+#### Local Evals Workbench
+
+- **Discover local eval suites**: find valid eval suites from the repo's conventional eval workspace without requiring dashboard-specific configuration.
+- **Run focused eval scope**: let users run either all test cases in a suite or one selected test case so repairs can be validated in small loops.
+- **Show eval result status**: make suite, test case, and assertion/grader outcomes visible through a local matrix/list result experience.
+- **Inspect failure evidence**: show the exact output or excerpt, failed assertion/grader, expected/reference context, diagnostics, and raw artifacts needed to understand a failure.
+- **Analyze one failed assertion at a time**: support conversational LLM analysis focused on a single selected failed assertion, even when a cell has multiple failures.
+- **Classify likely failure cause**: help distinguish prompt issues, assertion/grader issues, fixture/input issues, model nondeterminism, and unclear expectations with explicit uncertainty.
+- **Draft concrete repair proposals**: produce specific proposed project file changes with affected files, rationale, and expected eval impact.
+- **Gate repair mutations by approval**: prevent prompt, assertion, fixture, eval definition, workflow artifact, or other project file mutation until the user approves the concrete proposal.
+- **Apply approved project repairs**: mutate only approved files inside the project root, avoid secrets/credentials, and report exactly what changed.
+- **Guide eval reruns after repair**: offer or suggest rerunning the relevant test case or suite after an approved change.
+- **Handle missing LLM configuration plainly**: keep result inspection available while explaining that analysis/proposal drafting needs server-side provider credentials such as `OPENAI_API_KEY` and may use `SIBU_EVALS_MODEL`.
+
 #### Maintainer Release Support
 
 - **Generate release notes guidance**: inspect git history and propose changelog entries that maintainers can review and edit.
@@ -75,6 +89,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Version templates**: track template versions so projects can detect freshness, drift, and available updates.
 - **Describe template changes**: provide user-facing update notes that make sync decisions understandable.
 - **Support safe template adoption**: make templates available for initialization and sync without implying that Sibu may silently overwrite project-owned files.
+- **Provide eval-authoring templates**: distribute Sibu's eval-authoring skill and any conventional eval artifact templates without owning project-specific eval content.
 
 #### Skill Guidance
 
@@ -83,6 +98,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Define skill boundaries**: make each skill's purpose, required inputs, owned outputs, hard stops, and handoffs clear.
 - **Support optional skill selection**: let users include non-architecture workflow guidance relevant to their project without forcing every optional skill into every repo.
 - **Preserve skill handoffs**: ensure skills pass the right reviewed context downstream while avoiding responsibility for artifacts outside their scope.
+- **Guide eval authoring**: provide focused guidance so agents create and maintain eval suites, test cases, assertions/graders, fixtures, and expected/reference artifacts in Sibu's expected format.
 
 #### Agent Support Selection
 
@@ -105,6 +121,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Documentation workspaces**: external systems such as Notion may receive exported planning artifacts.
 - **MCP servers**: external tool-access endpoints provide capabilities to agents when selected by the user.
 - **AI models and coding agents**: external providers and tools assist with AI work, but Sibu does not provide the models or replace engineer judgment.
+- **LLM provider APIs**: external APIs such as OpenAI may power failure analysis and proposal drafting; Sibu only reads server-side credentials from the project/shell environment and must not expose them to the browser.
 - **Editors / IDEs**: external development surfaces remain outside Sibu's core product boundary.
 
 ## Capability Dependencies / Sequencing
@@ -116,6 +133,9 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes, and on **Skill Guidance** to repair missing or unsupported architecture skill selections.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before technical design, implementation planning, or implementation execution proceeds.
+- **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while project-specific eval suites and target files remain project-owned.
+- **Local Evals Workbench** depends on external **LLM provider APIs** only for analysis and proposal drafting; eval result inspection should still work without provider credentials.
+- **Local Evals Workbench** depends on **User Control & Trust** constraints before applying any repair proposal to project files.
 - **Maintainer Release Support** depends on source control history, package metadata, npm publishing, GitHub Releases, and validation scripts, but those external systems remain outside Sibu's owned domain.
 - **User Control & Trust** is not sequenced as a separate stage; it constrains every capability where Sibu creates, changes, exports, publishes, or asks AI to act on project-owned work.
 
@@ -129,3 +149,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.
 - **Pipeline strictness**: Sibu must balance enforcing artifact prerequisites and required architecture guidance with staying lightweight for narrow fixes.
 - **Release workflow scope**: maintainer release support should stay focused on Sibu's own publication process unless the product explicitly expands into release management for consumer projects.
+
+- **Local eval format maturity**: the first eval format should be conventional and narrow, but may need migration/versioning once real projects create many suites.
+- **Repair safety breadth**: approved eval repairs may target any project file, so future work should strengthen diff preview, sensitive-file protection, and recovery behavior before broad automation.
+- **Provider configuration**: MVP can standardize on `OPENAI_API_KEY` and `SIBU_EVALS_MODEL`, while future work may need multi-provider configuration without leaking credentials into project files.

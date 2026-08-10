@@ -66,6 +66,7 @@ For planned product/feature work, use this pipeline: product vision -> business 
 - For prompt creation, rewriting, optimization, compression, evaluation, or reusable templates for AI models, agents, tools, coding assistants, or product workflows, use `ai-prompt-engineer-master`.
 - For exporting a feature's Epics and User Stories to GitHub issues or sub-issues, use `export-to-github`.
 - For exporting a feature's feature brief, UX design, or technical design to Notion, use `export-to-notion`.
+- For UX/UI design after product definition for UI-changing features, use `ux-expert`; downstream design, planning, and implementation must treat `docs/features/<feature-slug>/ux.md` mockups as binding UI goals, not redesign targets.
 
 ## Sibu maintenance
 

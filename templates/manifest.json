@@ -1,5 +1,5 @@
 {
-  "templateVersion": "149",
+  "templateVersion": "150",
   "templates": {
     "AGENTS.md": {
       "version": "37",
@@ -93,10 +93,10 @@
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "26",
+      "version": "27",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds concise quality strategy guidance so technical designs define verification intent before downstream planning and implementation."
+        "Adds Mermaid safety preflight and quality strategy guidance for verification intent before downstream planning and implementation."
       ]
     },
     "skills/typescript/SKILL.md": {

@@ -6,7 +6,7 @@ This Deep Module Map identifies Sibu's durable implementation boundaries: module
 
 The map is derived from the Product Vision, Business Domain Model, and Capabilities Map. It should guide future feature briefs, technical designs, and implementation plans by clarifying where behavior belongs without prescribing internal architecture, framework structure, database design, or command layout. Sibu's selected architecture skill is repo-level workflow guidance handled across the existing workflow modules, not a standalone deep module.
 
-User Control & Trust is a cross-module rule, not a standalone module. Each module must preserve project ownership, avoid silent destructive behavior, and keep Sibu's actions understandable and reviewable.
+User Control & Trust is a cross-module rule, not a standalone module. Each module must preserve project ownership, avoid silent destructive behavior, and keep Sibu's actions understandable and reviewable. Local eval repair follows the same rule: analysis and proposals are allowed, but project file mutation requires explicit approval.
 
 ## Modules
 
@@ -23,6 +23,7 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
   - Sibu needs user-facing notes explaining what changed in a template update.
   - Sibu needs to list architecture skill options from the fixed catalog without inventing a default.
   - A skill file is distributed as a managed template.
+  - The eval-authoring skill and conventional eval templates are distributed without owning project-specific eval content.
 - Related modules: Agent Tool Configuration, Workflow Installer, Workflow Configuration Manager, Workflow Health Inspector, Sync Review Orchestrator.
 - Boundary notes: the catalog exposes available templates, selectable skill catalog entries, and metadata; it does not own the adoption, configuration, or sync workflow that decides what to do with them.
 
@@ -124,6 +125,25 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
 - Boundary notes: sync review is where read-only findings become user-approved maintenance actions, including repair of missing architecture selection. It must never silently overwrite project-owned work.
 
 
+
+### Local Evals Workbench
+
+- Suggested module slug: `local-evals-workbench`
+- Simple interface / outside promise: given a Sibu-managed repo, provide a local eval loop that discovers suites, runs all or one test case, exposes result evidence, supports one-failed-assertion-at-a-time analysis, drafts repair proposals, applies only approved project file changes, and points users to focused reruns.
+- Hidden complexity: eval workspace discovery, suite metadata validation, test-case scope selection, run orchestration, result normalization, assertion/grader terminology, run artifact handling, local dashboard state, failure queue selection, one-failure conversational context, LLM provider credential availability, model selection through `SIBU_EVALS_MODEL`, proposal safety checks, project-root write boundaries, sensitive-file exclusion, mutation reporting, and rerun guidance.
+- Owns: local eval suite discovery, eval run coordination, result matrix/workbench view models, failure evidence assembly, failure analysis request policy, repair proposal lifecycle, approval-gated project file mutation for eval repair, and local eval run artifact reporting.
+- Does not own: Sibu template source metadata, eval-authoring skill template distribution, project-specific product prompts or fixtures as business content, external model quality, provider billing, hosted eval persistence, general workflow drift repair, or replacing the AI-Augmented Development Pipeline artifacts.
+- Key scenarios:
+  - A user runs `sibu evals` in a Sibu-managed repo and sees local eval suites discovered from conventional project artifacts.
+  - A user runs all test cases in a suite to see current workflow quality.
+  - A user runs one selected test case after an approved repair to validate a focused change.
+  - A result cell has multiple failed assertions, and the workbench keeps the LLM/human conversation focused on one selected failure at a time.
+  - The LLM analyzes the exact failed output and classifies the likely cause as prompt, assertion/grader, fixture/input, nondeterminism, or unclear.
+  - The LLM drafts a repair proposal that names affected project file(s), but Sibu mutates nothing until the user approves.
+  - A proposal targets a prompt file outside `evals/`; Sibu allows it only when the file is inside the project root, non-secret, and explicitly approved.
+- Related modules: Template Catalog, Skill Guidance, Workflow State Ledger, Workflow Health Inspector, Sync Review Orchestrator, AI-Augmented Development Pipeline.
+- Boundary notes: this module owns the eval improvement loop, not Sibu workflow maintenance. It may read workflow state to verify the repo is Sibu-managed and may use eval-authoring conventions from Skill Guidance/Template Catalog, but local eval artifacts and repair target files remain project-owned.
+
 ### Maintainer Release Support
 
 - Suggested module slug: `maintainer-release-support`
@@ -150,6 +170,7 @@ User Control & Trust is a cross-module rule, not a standalone module. Each modul
 - **Secrets are never stored by Sibu-managed configuration**: tool configuration must reference credentials safely instead of embedding secret values.
 - **Architecture guidance is cross-module workflow context**: required architecture selection belongs to Workflow Installer, recorded state belongs to Workflow State Ledger, replacement belongs to Workflow Configuration Manager, health/repair belongs to Workflow Health Inspector and Sync Review Orchestrator, and downstream application belongs to skill guidance. Do not create a standalone Architecture module unless future behavior hides a deeper, independent complexity behind a smaller interface.
 - **Downstream skills must not invent architecture guidance**: technical design, implementation planning, and execution should hard-stop when selected architecture guidance is missing and direct the user to workflow repair.
-- **Skill routing remains prompt-owned unless product behavior changes**: because routing and prerequisite policy currently live in skill instructions, it is not modeled as an app-level deep module. Selecting which optional skill files are installed after initialization belongs to Workflow Configuration Manager.
+- **Skill routing remains prompt-owned unless product behavior changes**: because routing and prerequisite policy currently live in skill instructions, it is not modeled as an app-level deep module. Selecting which optional skill files are installed after initialization belongs to Workflow Configuration Manager; distributing eval-authoring guidance belongs to Template Catalog/Skill Guidance, while running evals belongs to Local Evals Workbench.
 - **Maintainer-facing is still product-owned when it protects Sibu's own lifecycle**: release support may be a Deep Module even though it is not a public `sibu` command, because it hides release complexity and safety rules for Sibu maintainers.
+- **Eval repairs can target any project file, but only through approval**: Local Evals Workbench may apply approved repair proposals to project files outside `evals/`, but must keep writes inside the project root, avoid secrets/credentials, name affected files, and report what changed.
 - **New modules require hidden complexity**: add a module only when callers need a simpler promise that hides meaningful implementation detail; do not add modules for one command, one helper, one file, or one workflow step.
