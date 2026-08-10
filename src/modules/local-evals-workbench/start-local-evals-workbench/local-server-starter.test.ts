@@ -23,7 +23,13 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.equal(result.host, '127.0.0.1');
       assert.equal(result.url, 'http://127.0.0.1:4321/');
       assert.match(response.body, /Local Sibu Evals/);
-      assert.match(response.body, /1 eval suite ready/);
+      assert.match(response.body, /Eval Suite/);
+      assert.match(response.body, /Skill authoring checks/);
+      assert.match(response.body, /Run scope/);
+      assert.match(response.body, /Run all 2 test cases/);
+      assert.match(response.body, /Model/);
+      assert.match(response.body, /Pass rate/);
+      assert.match(response.body, /0\/2 complete/);
       assert.equal(response.headers['cache-control'], 'no-store');
       assert.doesNotMatch(response.body, /openai-secret-for-test|model-secret-for-test|OPENAI_API_KEY|SIBU_EVALS_MODEL|process\.env|mutation|mutate|\/repo/);
     } finally {

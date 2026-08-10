@@ -1,6 +1,7 @@
 import http from 'node:http';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import { createWorkbenchViewModel, renderWorkbenchShell, WORKBENCH_CLIENT_SCRIPT } from '../workbench-ui/index.js';
 import { InMemoryRunArtifactStore, JsonEvalSuiteRegistry, JsonEvalSuiteRunnerAdapter, parseEvalRunRequest, runLocalEvalSuite } from '../run-local-eval-suite/index.js';
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
 import type { LocalWorkbenchServerStarterPort, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStartResult } from './ports.js';
@@ -79,7 +80,7 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
     return;
   }
 
-  writeHtml(response, renderSafeWorkbenchShell(startRequest.initialDiscoveryResult));
+  writeHtml(response, renderWorkbenchShell(createWorkbenchViewModel({ discovery: startRequest.initialDiscoveryResult }), WORKBENCH_CLIENT_SCRIPT));
 }
 
 async function handleEvalRunRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: RunLocalEvalSuiteDependencies): Promise<void> {
@@ -110,29 +111,6 @@ function defaultRunDependencies(_request: LocalWorkbenchServerStartRequest): Run
     artifactStore: new InMemoryRunArtifactStore(),
     logger: { info: console.info, warn: console.warn, error: console.error },
   };
-}
-
-function renderSafeWorkbenchShell(discoveryResult: EvalSuiteDiscoveryResult): string {
-  const statusMessage = discoveryResult.status === 'ready'
-    ? `${discoveryResult.suites.length} eval suite${discoveryResult.suites.length === 1 ? '' : 's'} ready.`
-    : discoveryResult.message;
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sibu Local Evals</title>
-</head>
-<body>
-  <main>
-    <h1>Local Sibu Evals</h1>
-    <p>The local evals workbench runtime is running.</p>
-    <p>${escapeHtml(statusMessage)}</p>
-    <p>Eval execution is available through the local JSON runtime.</p>
-  </main>
-</body>
-</html>`;
 }
 
 async function readJsonBody(request: LocalHttpRequest): Promise<{ readonly status: 'ok'; readonly payload: unknown } | { readonly status: 'invalid'; readonly message: string }> {
@@ -171,10 +149,6 @@ function htmlHeaders(): Record<string, string> {
 
 function jsonHeaders(): Record<string, string> {
   return { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[character] ?? character));
 }
 
 function closeServer(server: LocalHttpServer): Promise<void> {
