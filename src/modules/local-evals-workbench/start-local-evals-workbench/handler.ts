@@ -1,9 +1,10 @@
 import type { StartLocalEvalsWorkbenchCommand } from './command.js';
-import type { LocalEvalsWorkbenchLoggerPort, LocalWorkbenchServerStarterPort, WorkflowStateReaderPort, WorkflowStateStatus } from './ports.js';
+import type { EvalSuiteDiscoveryPort, LocalEvalsWorkbenchLoggerPort, LocalWorkbenchServerStarterPort, WorkflowStateReaderPort, WorkflowStateStatus } from './ports.js';
 import type { LocalEvalsWorkbenchBlockReason, StartLocalEvalsWorkbenchResult } from './result.js';
 
 export type StartLocalEvalsWorkbenchHandlerDependencies = {
   readonly workflowStateReader: WorkflowStateReaderPort;
+  readonly suiteDiscovery: EvalSuiteDiscoveryPort;
   readonly serverStarter: LocalWorkbenchServerStarterPort;
   readonly logger: LocalEvalsWorkbenchLoggerPort;
 };
@@ -20,8 +21,15 @@ export async function startLocalEvalsWorkbench(
   }
 
   try {
-    const server = await dependencies.serverStarter.startServer({ projectRoot: command.projectRoot });
-    dependencies.logger.info({ event: 'local_evals_workbench_started', host: server.host, port: server.port });
+    const initialDiscoveryResult = await dependencies.suiteDiscovery.discover(command.projectRoot);
+    const server = await dependencies.serverStarter.startServer({ projectRoot: command.projectRoot, initialDiscoveryResult });
+    dependencies.logger.info({
+      event: 'local_evals_workbench_started',
+      host: server.host,
+      port: server.port,
+      suiteCount: initialDiscoveryResult.suites.length,
+      discoveryStatus: initialDiscoveryResult.status,
+    });
 
     return {
       status: 'started',

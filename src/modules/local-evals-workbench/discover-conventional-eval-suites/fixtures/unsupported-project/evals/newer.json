@@ -1,0 +1,1 @@
+{ "version": 2, "kind": "sibu-eval-suite", "id": "future", "name": "Future", "description": "Future format", "modelOptions": [{ "id": "gpt-5", "label": "GPT-5" }], "testCases": [] }

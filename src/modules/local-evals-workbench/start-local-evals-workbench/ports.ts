@@ -1,3 +1,4 @@
+import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { LocalWorkbenchHost } from './result.js';
 
 export type WorkflowStateStatus =
@@ -9,8 +10,13 @@ export type WorkflowStateReaderPort = {
   readWorkflowState(projectRoot: string): WorkflowStateStatus;
 };
 
+export type EvalSuiteDiscoveryPort = {
+  discover(projectRoot: string): Promise<EvalSuiteDiscoveryResult>;
+};
+
 export type LocalWorkbenchServerStartRequest = {
   readonly projectRoot: string;
+  readonly initialDiscoveryResult: EvalSuiteDiscoveryResult;
 };
 
 export type LocalWorkbenchServerStartResult = {
@@ -27,7 +33,7 @@ export type LocalWorkbenchServerStarterPort = {
 export type LocalEvalsWorkbenchLogEvent =
   | { readonly event: 'local_evals_workbench_start_requested' }
   | { readonly event: 'local_evals_workbench_state_blocked'; readonly reason: 'missing-workflow-state' | 'invalid-workflow-state' }
-  | { readonly event: 'local_evals_workbench_started'; readonly host: LocalWorkbenchHost; readonly port: number }
+  | { readonly event: 'local_evals_workbench_started'; readonly host: LocalWorkbenchHost; readonly port: number; readonly suiteCount: number; readonly discoveryStatus: 'ready' | 'blocked' }
   | { readonly event: 'local_evals_workbench_start_failed'; readonly reason: 'server-start-failed' };
 
 export type LocalEvalsWorkbenchLoggerPort = {

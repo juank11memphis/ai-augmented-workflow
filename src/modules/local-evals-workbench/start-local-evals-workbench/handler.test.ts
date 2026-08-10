@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { startLocalEvalsWorkbench } from './handler.js';
-import type { LocalEvalsWorkbenchLogEvent, LocalWorkbenchServerStarterPort, WorkflowStateReaderPort } from './ports.js';
+import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import type { EvalSuiteDiscoveryPort, LocalEvalsWorkbenchLogEvent, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStarterPort, WorkflowStateReaderPort } from './ports.js';
 
 const projectRoot = '/repo';
 
@@ -13,6 +14,7 @@ describe('startLocalEvalsWorkbench', () => {
 
     const result = await startLocalEvalsWorkbench({ type: 'evals', projectRoot }, {
       workflowStateReader: stateReader({ status: 'valid' }),
+      suiteDiscovery: suiteDiscovery(readyDiscovery()),
       serverStarter,
       logger: logs,
     });
@@ -21,6 +23,7 @@ describe('startLocalEvalsWorkbench', () => {
     assert.equal(result.url, 'http://127.0.0.1:4321/');
     assert.equal(serverStarter.calls, 1);
     assert.deepEqual(logs.events.map((event) => event.event), ['local_evals_workbench_start_requested', 'local_evals_workbench_started']);
+    assert.equal(serverStarter.lastRequest?.initialDiscoveryResult.status, 'ready');
   });
 
   it('blocks and skips server startup when workflow state is missing', async () => {
@@ -28,6 +31,7 @@ describe('startLocalEvalsWorkbench', () => {
 
     const result = await startLocalEvalsWorkbench({ type: 'evals', projectRoot }, {
       workflowStateReader: stateReader({ status: 'missing', message: '.sibu/state.json is missing.' }),
+      suiteDiscovery: suiteDiscovery(readyDiscovery()),
       serverStarter,
       logger: new CapturingLogger(),
     });
@@ -43,6 +47,7 @@ describe('startLocalEvalsWorkbench', () => {
 
     const result = await startLocalEvalsWorkbench({ type: 'evals', projectRoot }, {
       workflowStateReader: stateReader({ status: 'invalid', message: '.sibu/state.json could not be parsed.' }),
+      suiteDiscovery: suiteDiscovery(readyDiscovery()),
       serverStarter,
       logger: new CapturingLogger(),
     });
@@ -59,6 +64,7 @@ describe('startLocalEvalsWorkbench', () => {
 
     const result = await startLocalEvalsWorkbench({ type: 'evals', projectRoot }, {
       workflowStateReader: stateReader({ status: 'valid' }),
+      suiteDiscovery: suiteDiscovery(readyDiscovery()),
       serverStarter: { startServer: async () => { throw new Error('boom OPENAI_API_KEY=secret'); } },
       logger: logs,
     });
@@ -70,6 +76,19 @@ describe('startLocalEvalsWorkbench', () => {
   });
 });
 
+
+function suiteDiscovery(result: EvalSuiteDiscoveryResult): EvalSuiteDiscoveryPort {
+  return { discover: async () => result };
+}
+
+function readyDiscovery(): EvalSuiteDiscoveryResult {
+  return {
+    status: 'ready',
+    suites: [{ id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] }],
+    diagnostics: [],
+  };
+}
+
 function stateReader(status: ReturnType<WorkflowStateReaderPort['readWorkflowState']>): WorkflowStateReaderPort {
   return { readWorkflowState: () => status };
 }
@@ -77,8 +96,11 @@ function stateReader(status: ReturnType<WorkflowStateReaderPort['readWorkflowSta
 class CountingServerStarter implements LocalWorkbenchServerStarterPort {
   calls = 0;
 
-  async startServer(): Promise<{ url: string; host: '127.0.0.1'; port: number }> {
+  lastRequest?: LocalWorkbenchServerStartRequest;
+
+  async startServer(request: LocalWorkbenchServerStartRequest): Promise<{ url: string; host: '127.0.0.1'; port: number }> {
     this.calls += 1;
+    this.lastRequest = request;
     return { url: 'http://127.0.0.1:4321/', host: '127.0.0.1', port: 4321 };
   }
 }

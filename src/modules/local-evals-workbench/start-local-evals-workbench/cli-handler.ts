@@ -1,4 +1,5 @@
 import { getProjectContext } from '../../../shared/paths.js';
+import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader } from '../discover-conventional-eval-suites/index.js';
 import type { StartLocalEvalsWorkbenchCommand } from './command.js';
 import { startLocalEvalsWorkbench, type StartLocalEvalsWorkbenchHandlerDependencies } from './handler.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
@@ -15,10 +16,17 @@ export async function handleStartLocalEvalsWorkbenchCommand(
   command: StartLocalEvalsWorkbenchCommand,
   dependencies: HandleStartLocalEvalsWorkbenchDependencies = {}
 ): Promise<StartLocalEvalsWorkbenchResult> {
+  const logger = dependencies.logger ?? new SafeConsoleLocalEvalsLogger();
   const handlerDependencies: StartLocalEvalsWorkbenchHandlerDependencies = {
     workflowStateReader: dependencies.workflowStateReader ?? new SibuWorkflowStateReader(),
     serverStarter: dependencies.serverStarter ?? new NodeLocalWorkbenchServerStarter(),
-    logger: dependencies.logger ?? new SafeConsoleLocalEvalsLogger(),
+    logger,
+    suiteDiscovery: dependencies.suiteDiscovery ?? {
+      discover: (projectRoot) => discoverConventionalEvalSuites(
+        { type: 'discover-conventional-eval-suites', projectRoot },
+        { discoveryReader: new NodeEvalSuiteDiscoveryReader(), logger: new SafeConsoleLocalEvalsLogger() }
+      ),
+    },
   };
   const result = await startLocalEvalsWorkbench(command, handlerDependencies);
   const writeLine = dependencies.writeLine ?? console.log;

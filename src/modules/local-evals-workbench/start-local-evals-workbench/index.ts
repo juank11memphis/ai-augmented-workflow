@@ -5,6 +5,7 @@ export { startLocalEvalsWorkbench } from './handler.js';
 export type { StartLocalEvalsWorkbenchHandlerDependencies } from './handler.js';
 export { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 export type {
+  EvalSuiteDiscoveryPort,
   LocalEvalsWorkbenchLoggerPort,
   LocalEvalsWorkbenchLogEvent,
   LocalWorkbenchServerStarterPort,

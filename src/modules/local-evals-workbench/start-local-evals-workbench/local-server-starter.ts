@@ -1,5 +1,6 @@
 import http from 'node:http';
 
+import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { LocalWorkbenchServerStarterPort, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStartResult } from './ports.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
@@ -9,7 +10,11 @@ type LocalHttpResponse = {
   end(body: string): void;
 };
 
-type LocalHttpRequestHandler = (request: unknown, response: LocalHttpResponse) => void;
+type LocalHttpRequest = {
+  readonly url?: string;
+};
+
+type LocalHttpRequestHandler = (request: LocalHttpRequest, response: LocalHttpResponse) => void;
 
 type LocalHttpServer = {
   once(event: 'error', listener: (error: Error) => void): void;
@@ -24,13 +29,16 @@ type LocalHttpServerFactory = (handler: LocalHttpRequestHandler) => LocalHttpSer
 export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStarterPort {
   constructor(private readonly createServer: LocalHttpServerFactory = createNodeHttpServer) {}
 
-  async startServer(_request: LocalWorkbenchServerStartRequest): Promise<LocalWorkbenchServerStartResult> {
-    const server = this.createServer((_request, response) => {
-      response.writeHead(200, {
-        'content-type': 'text/html; charset=utf-8',
-        'cache-control': 'no-store',
-      });
-      response.end(renderSafeWorkbenchShell());
+  async startServer(request: LocalWorkbenchServerStartRequest): Promise<LocalWorkbenchServerStartResult> {
+    const server = this.createServer((httpRequest, response) => {
+      if (httpRequest.url === '/api/eval-suites') {
+        response.writeHead(200, jsonHeaders());
+        response.end(JSON.stringify(request.initialDiscoveryResult));
+        return;
+      }
+
+      response.writeHead(200, htmlHeaders());
+      response.end(renderSafeWorkbenchShell(request.initialDiscoveryResult));
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -60,7 +68,11 @@ function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer
   return http.createServer((request, response) => handler(request, response));
 }
 
-function renderSafeWorkbenchShell(): string {
+function renderSafeWorkbenchShell(discoveryResult: EvalSuiteDiscoveryResult): string {
+  const statusMessage = discoveryResult.status === 'ready'
+    ? `${discoveryResult.suites.length} eval suite${discoveryResult.suites.length === 1 ? '' : 's'} ready.`
+    : discoveryResult.message;
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -72,10 +84,29 @@ function renderSafeWorkbenchShell(): string {
   <main>
     <h1>Local Sibu Evals</h1>
     <p>The local evals workbench runtime is running.</p>
+    <p>${escapeHtml(statusMessage)}</p>
     <p>Eval execution and failure analysis will be available in later workbench stories.</p>
   </main>
 </body>
 </html>`;
+}
+
+function htmlHeaders(): Record<string, string> {
+  return {
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-store',
+  };
+}
+
+function jsonHeaders(): Record<string, string> {
+  return {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+  };
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[character] ?? character));
 }
 
 function closeServer(server: LocalHttpServer): Promise<void> {

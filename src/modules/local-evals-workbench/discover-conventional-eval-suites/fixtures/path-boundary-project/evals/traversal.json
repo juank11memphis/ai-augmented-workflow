@@ -1,0 +1,1 @@
+{ "version": 1, "kind": "sibu-eval-suite", "id": "unsafe", "name": "Unsafe", "description": "Unsafe refs", "modelOptions": [{ "id": "gpt-5", "label": "GPT-5" }], "testCases": [{ "id": "case", "input": { "fixture": "../../outside-secret.txt" }, "assertions": [{ "type": "contains", "value": "x" }] }] }

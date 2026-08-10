@@ -1,13 +1,15 @@
+import type { EvalSuiteDiscoveryLogEvent, EvalSuiteDiscoveryLoggerPort } from '../discover-conventional-eval-suites/index.js';
 import type { LocalEvalsWorkbenchLogEvent, LocalEvalsWorkbenchLoggerPort } from './ports.js';
 
 type LogLevel = 'info' | 'warn' | 'error';
+type SafeLogEvent = LocalEvalsWorkbenchLogEvent | EvalSuiteDiscoveryLogEvent;
 
-export class SafeConsoleLocalEvalsLogger implements LocalEvalsWorkbenchLoggerPort {
-  info(event: LocalEvalsWorkbenchLogEvent): void {
+export class SafeConsoleLocalEvalsLogger implements LocalEvalsWorkbenchLoggerPort, EvalSuiteDiscoveryLoggerPort {
+  info(event: SafeLogEvent): void {
     writeLog('info', event);
   }
 
-  warn(event: LocalEvalsWorkbenchLogEvent): void {
+  warn(event: SafeLogEvent): void {
     writeLog('warn', event);
   }
 
@@ -16,6 +18,6 @@ export class SafeConsoleLocalEvalsLogger implements LocalEvalsWorkbenchLoggerPor
   }
 }
 
-function writeLog(level: LogLevel, event: LocalEvalsWorkbenchLogEvent): void {
+function writeLog(level: LogLevel, event: SafeLogEvent): void {
   console.error(JSON.stringify({ level, ...event }));
 }
