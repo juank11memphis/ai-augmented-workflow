@@ -4,6 +4,14 @@ import { describe, it } from 'node:test';
 import { createProgram } from './create-program.js';
 
 describe('createProgram', () => {
+  it('registers the evals command', () => {
+    const program = createProgram();
+    const evalsCommand = program.commands.find((command) => command.name() === 'evals');
+
+    assert.ok(evalsCommand);
+    assert.equal(evalsCommand.description(), 'Start the local Sibu evals workbench');
+  });
+
   it('registers the mcp list command', () => {
     const program = createProgram();
     const mcpCommand = program.commands.find((command) => command.name() === 'mcp');

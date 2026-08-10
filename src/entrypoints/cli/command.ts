@@ -1,3 +1,4 @@
+import type { StartLocalEvalsWorkbenchCommand } from '../../modules/local-evals-workbench/index.js';
 import type { DoctorProjectCommand } from '../../modules/workflow-health-inspector/index.js';
 import type { InitProjectCommand } from '../../modules/workflow-installer/index.js';
 import type {
@@ -19,4 +20,5 @@ export type SibuCliCommand =
   | UseSkillCommand
   | ListMcpServersCommand
   | UseMcpServerCommand
-  | StopMcpServerCommand;
+  | StopMcpServerCommand
+  | StartLocalEvalsWorkbenchCommand;

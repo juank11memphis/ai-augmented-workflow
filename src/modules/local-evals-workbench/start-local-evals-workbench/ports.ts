@@ -1,0 +1,37 @@
+import type { LocalWorkbenchHost } from './result.js';
+
+export type WorkflowStateStatus =
+  | { readonly status: 'valid' }
+  | { readonly status: 'missing'; readonly message: string }
+  | { readonly status: 'invalid'; readonly message: string };
+
+export type WorkflowStateReaderPort = {
+  readWorkflowState(projectRoot: string): WorkflowStateStatus;
+};
+
+export type LocalWorkbenchServerStartRequest = {
+  readonly projectRoot: string;
+};
+
+export type LocalWorkbenchServerStartResult = {
+  readonly url: string;
+  readonly host: LocalWorkbenchHost;
+  readonly port: number;
+  readonly stop?: () => Promise<void>;
+};
+
+export type LocalWorkbenchServerStarterPort = {
+  startServer(request: LocalWorkbenchServerStartRequest): Promise<LocalWorkbenchServerStartResult>;
+};
+
+export type LocalEvalsWorkbenchLogEvent =
+  | { readonly event: 'local_evals_workbench_start_requested' }
+  | { readonly event: 'local_evals_workbench_state_blocked'; readonly reason: 'missing-workflow-state' | 'invalid-workflow-state' }
+  | { readonly event: 'local_evals_workbench_started'; readonly host: LocalWorkbenchHost; readonly port: number }
+  | { readonly event: 'local_evals_workbench_start_failed'; readonly reason: 'server-start-failed' };
+
+export type LocalEvalsWorkbenchLoggerPort = {
+  info(event: LocalEvalsWorkbenchLogEvent): void;
+  warn(event: LocalEvalsWorkbenchLogEvent): void;
+  error(event: LocalEvalsWorkbenchLogEvent): void;
+};

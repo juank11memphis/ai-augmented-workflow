@@ -3,9 +3,12 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
-const CHECKER_PATH = path.resolve('templates/scripts/check-touched-source-file-lines.mjs');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const CHECKER_PATH = path.resolve(__dirname, '..', '..', 'templates', 'scripts', 'check-touched-source-file-lines.mjs');
 
 describe('check-touched-source-file-lines', () => {
   it('passes with a concise report when no source files are touched', () => {

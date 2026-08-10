@@ -1,5 +1,6 @@
 import { Command as CommanderCommand } from 'commander';
 
+import { createStartLocalEvalsWorkbenchCommand } from '../../modules/local-evals-workbench/index.js';
 import { SIBU_VERSION } from '../../support/version-advisory/index.js';
 import { executeCliCommand } from './execute-command.js';
 
@@ -22,6 +23,11 @@ export function createProgram(): CommanderCommand {
     .command('sync')
     .description('Interactively review and apply Sibu template updates')
     .action(() => executeCliCommand({ type: 'sync' }));
+
+  cli
+    .command('evals')
+    .description('Start the local Sibu evals workbench')
+    .action(() => executeCliCommand(createStartLocalEvalsWorkbenchCommand()));
 
   const skills = cli.command('skills').description('Manage Sibu workflow skills');
 
