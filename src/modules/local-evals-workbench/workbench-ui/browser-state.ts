@@ -1,3 +1,4 @@
+import type { AnalyzeFailedAssertionResult } from '../analyze-failed-assertion/result.js';
 import type { RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
 import {
   createCellKey,
@@ -19,7 +20,15 @@ export type BrowserState = {
   readonly selectedCell: WorkbenchCellSelection | null;
   readonly activeConversationScopeKey: string | null;
   readonly focusRestoreKey: string | null;
+  readonly analysis: FailureAnalysisState;
 };
+
+export type FailureAnalysisState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'loading'; readonly scopeKey: string }
+  | { readonly status: 'ready'; readonly scopeKey: string; readonly result: AnalyzeFailedAssertionResult & { readonly status: 'analysis-ready' } }
+  | { readonly status: 'unavailable'; readonly scopeKey: string; readonly result: AnalyzeFailedAssertionResult & { readonly status: 'analysis-unavailable' } }
+  | { readonly status: 'error'; readonly scopeKey: string; readonly message: string };
 
 export type EvalRunRequestPayload = {
   readonly suiteId: string;
@@ -28,7 +37,7 @@ export type EvalRunRequestPayload = {
 };
 
 export function createBrowserState(viewModel: WorkbenchViewModel, latestRun?: RunLocalEvalSuiteResult): BrowserState {
-  return { viewModel, latestRun, resultFilters: viewModel.resultDisplay.filters, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null };
+  return { viewModel, latestRun, resultFilters: viewModel.resultDisplay.filters, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null, analysis: { status: 'idle' } };
 }
 
 export function selectSuite(state: BrowserState, suiteId: string): BrowserState {
@@ -104,6 +113,38 @@ export function createSelectedCellRetryPayload(state: BrowserState): EvalRunRequ
   };
 }
 
+
+export function startFailureAnalysis(state: BrowserState): BrowserState {
+  if (!state.activeConversationScopeKey) return state;
+  return { ...state, analysis: { status: 'loading', scopeKey: state.activeConversationScopeKey } };
+}
+
+export function finishFailureAnalysis(state: BrowserState, result: AnalyzeFailedAssertionResult): BrowserState {
+  const scopeKey = state.activeConversationScopeKey;
+  if (!scopeKey) return { ...state, analysis: { status: 'idle' } };
+  if (result.status === 'analysis-ready') return { ...state, analysis: { status: 'ready', scopeKey, result } };
+  if (result.status === 'analysis-unavailable') return { ...state, analysis: { status: 'unavailable', scopeKey, result } };
+  return { ...state, analysis: { status: 'error', scopeKey, message: result.message } };
+}
+
+export function createFailureAnalysisRequestPayload(state: BrowserState): unknown | null {
+  const workbench = state.viewModel.resultDisplay.selectedCell?.failureWorkbench;
+  if (!workbench || !state.selectedCell) return null;
+  return {
+    suiteId: state.viewModel.selectedSuite.id,
+    testCaseId: state.selectedCell.testCaseId,
+    evalRunModelId: state.selectedCell.modelId,
+    runScope: state.viewModel.runScope,
+    assertionId: workbench.activeEvidence.assertionId,
+  };
+}
+
+export function parseFailureAnalysisResponse(payload: unknown): AnalyzeFailedAssertionResult {
+  if (!isRecord(payload) || typeof payload.status !== 'string') return invalidAnalysisResponse();
+  if (payload.status === 'analysis-ready' || payload.status === 'analysis-unavailable' || payload.status === 'blocked' || payload.status === 'error') return payload as AnalyzeFailedAssertionResult;
+  return invalidAnalysisResponse();
+}
+
 export function parseEvalRunResponse(payload: unknown): RunLocalEvalSuiteResult {
   if (!isRecord(payload) || typeof payload.status !== 'string') return invalidResponse();
   if (payload.status === 'completed' && isRecord(payload.matrix)) return payload as RunLocalEvalSuiteResult;
@@ -120,7 +161,9 @@ function rebuildFilteredState(state: BrowserState, filters: Partial<WorkbenchRes
 
 function rebuildState(state: BrowserState, overrides: { readonly selectedEvalRunModel?: string; readonly runScope?: WorkbenchRunScope; readonly latestRun?: RunLocalEvalSuiteResult; readonly isRunning?: boolean } = {}): BrowserState {
   const viewModel = rebuildViewModel(state, overrides);
-  return { ...state, viewModel, resultFilters: viewModel.resultDisplay.filters, activeConversationScopeKey: viewModel.resultDisplay.selectedCell?.failureWorkbench?.conversationScopeKey ?? null, selectedCell: viewModel.resultDisplay.selectedCell?.failureWorkbench ? { ...state.selectedCell!, activeAssertionId: viewModel.resultDisplay.selectedCell.failureWorkbench.activeEvidence.assertionId } : state.selectedCell && viewModel.resultDisplay.selectedCell ? withoutActiveAssertion(state.selectedCell) : state.selectedCell };
+  const activeConversationScopeKey = viewModel.resultDisplay.selectedCell?.failureWorkbench?.conversationScopeKey ?? null;
+  const analysis = activeConversationScopeKey && analysisMatchesScope(state.analysis, activeConversationScopeKey) ? state.analysis : { status: 'idle' as const };
+  return { ...state, viewModel, resultFilters: viewModel.resultDisplay.filters, activeConversationScopeKey, analysis, selectedCell: viewModel.resultDisplay.selectedCell?.failureWorkbench ? { ...state.selectedCell!, activeAssertionId: viewModel.resultDisplay.selectedCell.failureWorkbench.activeEvidence.assertionId } : state.selectedCell && viewModel.resultDisplay.selectedCell ? withoutActiveAssertion(state.selectedCell) : state.selectedCell };
 }
 
 function rebuildViewModel(state: BrowserState, overrides: { readonly selectedEvalRunModel?: string; readonly runScope?: WorkbenchRunScope; readonly latestRun?: RunLocalEvalSuiteResult; readonly isRunning?: boolean; readonly resultFilters?: Partial<WorkbenchResultFilters> }): WorkbenchViewModel {
@@ -167,4 +210,12 @@ function invalidResponse(): RunLocalEvalSuiteResult {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function analysisMatchesScope(analysis: FailureAnalysisState, scopeKey: string): boolean {
+  return analysis.status !== 'idle' && analysis.scopeKey === scopeKey;
+}
+
+function invalidAnalysisResponse(): AnalyzeFailedAssertionResult {
+  return { status: 'error', reason: 'invalid-llm-response', message: 'The analysis server returned an unreadable response.', assistanceModelLabel: 'unknown' };
 }

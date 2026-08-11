@@ -15,6 +15,8 @@ describe('WORKBENCH_CLIENT_SCRIPT', () => {
     assert.match(WORKBENCH_CLIENT_SCRIPT, /restoreFocus/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"retry-cell\"/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/eval-runs/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/failure-analysis/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"analyze-failure\"/);
     assert.doesNotThrow(() => new Function(WORKBENCH_CLIENT_SCRIPT));
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"select-assertion\"/);
     const switchStart = WORKBENCH_CLIENT_SCRIPT.indexOf(`event.target.closest('[data-control=\"select-assertion\"]')`);
@@ -22,7 +24,7 @@ describe('WORKBENCH_CLIENT_SCRIPT', () => {
     const switchBranch = WORKBENCH_CLIENT_SCRIPT.slice(switchStart, switchEnd);
     assert.match(switchBranch, /renderSelectedCell\(\)/);
     assert.doesNotMatch(switchBranch, /fetch|api\/eval-runs|proposal|mutation/i);
-    assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /repair proposal|Approve change|automated repair|proposal preview|apply mutation/i);
+    assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /repair proposal|Approve change|automated repair|proposal preview|apply mutation|Ask about this failure/i);
   });
 });
 
@@ -73,6 +75,7 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /Expected/);
     assert.match(html, /Raw artifacts/);
     assert.match(html, /Want me to analyze this failed assertion\?/);
+    assert.match(html, /data-control="analyze-failure"/);
     assert.doesNotMatch(html, /proposal|Approve change|Reject|mutation/i);
   });
 

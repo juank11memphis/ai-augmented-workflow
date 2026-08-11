@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
-import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, parseEvalRunResponse, resolveFocusRestoreSelection, selectActiveFailedAssertion, selectCell, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
+import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, createFailureAnalysisRequestPayload, finishFailureAnalysis, parseEvalRunResponse, parseFailureAnalysisResponse, resolveFocusRestoreSelection, selectActiveFailedAssertion, selectCell, startFailureAnalysis, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
 import { createWorkbenchViewModel } from './view-model.js';
 
 describe('browser-state', () => {
@@ -89,6 +89,31 @@ describe('browser-state', () => {
     assert.equal(selected.viewModel.resultDisplay.selectedCell?.failureWorkbench, null);
   });
 
+
+  it('builds single active assertion analysis payload and resets analysis when assertion changes', () => {
+    const selected = selectCell(initialState(), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' }, 'desktop');
+    const loading = startFailureAnalysis(selected);
+    const ready = finishFailureAnalysis(loading, analysisReady('a1'));
+    const switched = selectActiveFailedAssertion(ready, 'a2');
+
+    assert.deepEqual(createFailureAnalysisRequestPayload(selected), { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1' });
+    assert.equal(loading.analysis.status, 'loading');
+    assert.equal(ready.analysis.status, 'ready');
+    assert.equal(switched.activeConversationScopeKey, 'skill-authoring:missing-skill-boundary:gpt-5-mini:a2');
+    assert.equal(switched.analysis.status, 'idle');
+  });
+
+  it('tracks unavailable and endpoint error analysis without affecting evidence inspection', () => {
+    const selected = selectCell(initialState(), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' }, 'desktop');
+    const unavailable = finishFailureAnalysis(selected, { status: 'analysis-unavailable', reason: 'missing-openai-api-key', message: 'Analysis unavailable', setupGuidance: ['Set OPENAI_API_KEY.'], assistanceModelLabel: 'gpt-5-mini' });
+    const error = finishFailureAnalysis(selected, parseFailureAnalysisResponse({ nope: true }));
+
+    assert.equal(unavailable.analysis.status, 'unavailable');
+    assert.equal(unavailable.viewModel.resultDisplay.selectedCell?.failureWorkbench?.activeEvidence.assertionId, 'a1');
+    assert.equal(error.analysis.status, 'error');
+    assert.equal(createFailureAnalysisRequestPayload(initialState()), null);
+  });
+
   it('builds selected-cell retry payload for the current suite, cell model, and test case scope', () => {
     const state = selectCell(setVisibleVariantIds(initialState(), ['gpt-5-mini', 'gpt-5']), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5' }, 'desktop');
 
@@ -129,4 +154,9 @@ function cell(testCaseId: string, modelId: string, status: EvalRunStatus): EvalC
 
 function blockedRun(): RunLocalEvalSuiteResult {
   return { status: 'blocked', reason: 'runner-blocked', message: 'Runner blocked.', diagnostics: [] };
+}
+
+
+function analysisReady(assertionId: string) {
+  return { status: 'analysis-ready' as const, assistanceModelLabel: 'gpt-5-mini', evidence: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId, assertionLabel: 'A', assertionKind: 'assertion' as const, assertionMessage: 'Failed.', actualOutputPreview: 'actual', expectedPreview: 'expected', cellOutputPreview: null, diagnostics: [], artifacts: [] }, analysis: { exactFailureExplanation: 'Failed.', likelyCause: 'prompt_issue' as const, evidenceSummary: 'Evidence.', uncertainty: 'Low.' } };
 }

@@ -4,6 +4,8 @@ import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-sui
 import { createWorkbenchViewModel, renderWorkbenchShell, WORKBENCH_CLIENT_SCRIPT } from '../workbench-ui/index.js';
 import { InMemoryRunArtifactStore, JsonEvalSuiteRegistry, JsonEvalSuiteRunnerAdapter, parseEvalRunRequest, runLocalEvalSuite } from '../run-local-eval-suite/index.js';
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
+import { analyzeFailedAssertion, EnvironmentAssistanceConfig, OpenAiFailureAnalysisAdapter, parseAnalyzeFailedAssertionRequest } from '../analyze-failed-assertion/index.js';
+import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
 import type { LocalWorkbenchServerStarterPort, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStartResult } from './ports.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
@@ -37,13 +39,13 @@ type LocalHttpServerFactory = (handler: LocalHttpRequestHandler) => LocalHttpSer
 export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStarterPort {
   constructor(
     private readonly createServer: LocalHttpServerFactory = createNodeHttpServer,
-    private readonly runDependenciesFactory: (request: LocalWorkbenchServerStartRequest) => RunLocalEvalSuiteDependencies = defaultRunDependencies
+    private readonly dependenciesFactory: (request: LocalWorkbenchServerStartRequest) => LocalWorkbenchRuntimeDependencies = defaultRuntimeDependencies
   ) {}
 
   async startServer(request: LocalWorkbenchServerStartRequest): Promise<LocalWorkbenchServerStartResult> {
-    const runDependencies = this.runDependenciesFactory(request);
+    const runtimeDependencies = this.dependenciesFactory(request);
     const server = this.createServer((httpRequest, response) => {
-      void routeLocalRequest(httpRequest, response, request, runDependencies);
+      void routeLocalRequest(httpRequest, response, request, runtimeDependencies);
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -69,14 +71,21 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
   }
 }
 
-async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, runDependencies: RunLocalEvalSuiteDependencies): Promise<void> {
+type LocalWorkbenchRuntimeDependencies = { readonly run: RunLocalEvalSuiteDependencies; readonly analysis: AnalyzeFailedAssertionDependencies };
+
+async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies): Promise<void> {
   if (request.url === '/api/eval-suites') {
     writeJson(response, 200, startRequest.initialDiscoveryResult);
     return;
   }
 
   if (request.url === '/api/eval-runs' && request.method === 'POST') {
-    await handleEvalRunRequest(request, response, startRequest, runDependencies);
+    await handleEvalRunRequest(request, response, startRequest, dependencies.run);
+    return;
+  }
+
+  if (request.url === '/api/failure-analysis' && request.method === 'POST') {
+    await handleFailureAnalysisRequest(request, response, startRequest, dependencies.analysis);
     return;
   }
 
@@ -100,16 +109,45 @@ async function handleEvalRunRequest(request: LocalHttpRequest, response: LocalHt
   writeJson(response, result.status === 'completed' ? 200 : 422, result);
 }
 
+async function handleFailureAnalysisRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: AnalyzeFailedAssertionDependencies): Promise<void> {
+  const body = await readJsonBody(request);
+  if (body.status === 'invalid') {
+    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: body.message });
+    return;
+  }
+
+  const parsed = parseAnalyzeFailedAssertionRequest(startRequest.projectRoot, body.payload);
+  if (parsed.status === 'invalid') {
+    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: parsed.message });
+    return;
+  }
+
+  const result = await analyzeFailedAssertion(parsed.command, dependencies);
+  writeJson(response, result.status === 'analysis-ready' || result.status === 'analysis-unavailable' ? 200 : result.status === 'blocked' ? 422 : 502, result);
+}
+
 function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer {
   return http.createServer((request, response) => handler(request, response));
 }
 
-function defaultRunDependencies(_request: LocalWorkbenchServerStartRequest): RunLocalEvalSuiteDependencies {
+function defaultRuntimeDependencies(_request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
+  const artifactStore = new InMemoryRunArtifactStore();
+  const logger = { info: console.info, warn: console.warn, error: console.error };
+  const assistanceConfig = new EnvironmentAssistanceConfig();
+  const config = assistanceConfig.getConfig();
   return {
-    suiteRegistry: new JsonEvalSuiteRegistry(),
-    evalRunner: new JsonEvalSuiteRunnerAdapter(),
-    artifactStore: new InMemoryRunArtifactStore(),
-    logger: { info: console.info, warn: console.warn, error: console.error },
+    run: {
+      suiteRegistry: new JsonEvalSuiteRegistry(),
+      evalRunner: new JsonEvalSuiteRunnerAdapter(),
+      artifactStore,
+      logger,
+    },
+    analysis: {
+      artifactReader: artifactStore,
+      assistanceConfig,
+      llm: new OpenAiFailureAnalysisAdapter(config.apiKey ?? ''),
+      logger,
+    },
   };
 }
 

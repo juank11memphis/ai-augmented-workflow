@@ -3,6 +3,8 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
+import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
+import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
 describe('NodeLocalWorkbenchServerStarter', () => {
@@ -89,7 +91,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     const starter = new NodeLocalWorkbenchServerStarter((handler) => {
       fakeServer.handler = handler;
       return fakeServer;
-    }, () => runDependencies(calls));
+    }, () => runtimeDependencies({ run: runDependencies(calls) }));
 
     const result = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
     try {
@@ -112,7 +114,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     const starter = new NodeLocalWorkbenchServerStarter((handler) => {
       fakeServer.handler = handler;
       return fakeServer;
-    }, () => runDependencies(calls));
+    }, () => runtimeDependencies({ run: runDependencies(calls) }));
 
     const result = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
     try {
@@ -133,7 +135,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     const malformedStarter = new NodeLocalWorkbenchServerStarter((handler) => {
       malformedServer.handler = handler;
       return malformedServer;
-    }, () => runDependencies([]));
+    }, () => runtimeDependencies({ run: runDependencies([]) }));
     const malformedResult = await malformedStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
     try {
       assert.equal((await malformedServer.renderRawResponse('/api/eval-runs', '{ not json')).statusCode, 400);
@@ -147,7 +149,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     const errorStarter = new NodeLocalWorkbenchServerStarter((handler) => {
       errorServer.handler = handler;
       return errorServer;
-    }, () => runDependencies([], { throws: true }));
+    }, () => runtimeDependencies({ run: runDependencies([], { throws: true }) }));
     const errorResult = await errorStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
     try {
       const response = await errorServer.renderJsonResponse('/api/eval-runs', { suiteId: 'skill-authoring', evalRunModel: 'gpt-5-mini', scope: { type: 'all' } });
@@ -158,6 +160,57 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       await errorResult.stop?.();
     }
   });
+
+  it('serves failure analysis unavailable, success, LLM failure, invalid JSON, oversized body, and one-assertion scope checks', async () => {
+    const fakeServer = new FakeLocalHttpServer(4321);
+    const analysisCalls: unknown[] = [];
+    const starter = new NodeLocalWorkbenchServerStarter((handler) => {
+      fakeServer.handler = handler;
+      return fakeServer;
+    }, () => runtimeDependencies({ analysis: analysisDependencies({ hasKey: false, analysisCalls }) }));
+
+    const result = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const unavailable = await fakeServer.renderJsonResponse('/api/failure-analysis', analysisPayload());
+      assert.equal(unavailable.statusCode, 200);
+      assert.match(unavailable.body, /analysis-unavailable|Analysis unavailable|OPENAI_API_KEY/);
+      assert.equal(analysisCalls.length, 0);
+      assert.doesNotMatch(unavailable.body, /secret|raw prompt|full model response|other failed output|\/repo/);
+
+      assert.equal((await fakeServer.renderRawResponse('/api/failure-analysis', '{ nope')).statusCode, 400);
+      assert.equal((await fakeServer.renderRawResponse('/api/failure-analysis', JSON.stringify(analysisPayload()) + 'x'.repeat(70 * 1024))).statusCode, 400);
+      assert.equal((await fakeServer.renderJsonResponse('/api/failure-analysis', { ...analysisPayload(), assertionIds: ['a1', 'a2'] })).statusCode, 400);
+    } finally {
+      await result.stop?.();
+    }
+
+    const successServer = new FakeLocalHttpServer(4321);
+    const successCalls: unknown[] = [];
+    const successStarter = new NodeLocalWorkbenchServerStarter((handler) => { successServer.handler = handler; return successServer; }, () => runtimeDependencies({ analysis: analysisDependencies({ model: 'override-model', analysisCalls: successCalls }) }));
+    const successResult = await successStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await successServer.renderJsonResponse('/api/failure-analysis', analysisPayload());
+      assert.equal(response.statusCode, 200);
+      assert.match(response.body, /analysis-ready|override-model|prompt_issue/);
+      assert.equal(successCalls.length, 1);
+      assert.doesNotMatch(response.body, /secret|raw prompt|full model response|other failed output|proposal|approve|mutation|\/repo/);
+    } finally {
+      await successResult.stop?.();
+    }
+
+    const failureServer = new FakeLocalHttpServer(4321);
+    const failureStarter = new NodeLocalWorkbenchServerStarter((handler) => { failureServer.handler = handler; return failureServer; }, () => runtimeDependencies({ analysis: analysisDependencies({ throws: true }) }));
+    const failureResult = await failureStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await failureServer.renderJsonResponse('/api/failure-analysis', analysisPayload());
+      assert.equal(response.statusCode, 502);
+      assert.match(response.body, /llm-failure/);
+      assert.doesNotMatch(response.body, /full model response|secret|raw prompt/);
+    } finally {
+      await failureResult.stop?.();
+    }
+  });
+
 });
 
 function readyDiscovery(): EvalSuiteDiscoveryResult {
@@ -300,3 +353,31 @@ class FakeLocalHttpServer {
   }
 }
 
+
+
+function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDependencies; readonly analysis?: AnalyzeFailedAssertionDependencies } = {}) {
+  return { run: overrides.run ?? runDependencies([]), analysis: overrides.analysis ?? analysisDependencies() };
+}
+
+function analysisPayload() {
+  return { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1' };
+}
+
+function analysisDependencies(options: { readonly hasKey?: boolean; readonly model?: string; readonly throws?: boolean; readonly analysisCalls?: unknown[] } = {}): AnalyzeFailedAssertionDependencies {
+  return {
+    artifactReader: { getRunArtifact: () => failedArtifact() },
+    assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
+    llm: { analyzeFailure: async (request) => { options.analysisCalls?.push(request); if (options.throws) throw new Error('full model response secret raw prompt'); return { exactFailureExplanation: 'The selected assertion failed.', likelyCause: 'prompt_issue', evidenceSummary: 'The output did not stop.', uncertainty: 'Low uncertainty.' }; } },
+    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+  };
+}
+
+function failedArtifact(): StoredRunArtifact {
+  return {
+    suiteId: 'skill-authoring', modelId: 'gpt-5-mini', scope: 'all',
+    matrix: { suiteId: 'skill-authoring', suiteName: 'Skill checks', status: 'failed', aggregates: { total: 1, passed: 0, failed: 1, blocked: 0, error: 0 }, diagnostics: [], rows: [{ testCaseId: 'missing-skill-boundary', name: 'Missing skill boundary', status: 'failed', cells: [{ testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini', modelLabel: 'GPT-5 mini', status: 'failed', outputPreview: 'short output', durationMs: 10, diagnostics: [], metrics: [], artifacts: [], assertions: [
+      { id: 'a1', label: 'Must stop first', kind: 'assertion', status: 'failed', message: 'Failed active', expectedPreview: 'expected stop', actualPreview: 'active failed output', metrics: [], diagnostics: [], artifacts: [] },
+      { id: 'a2', label: 'Other failure', kind: 'assertion', status: 'failed', message: 'Other failed', expectedPreview: 'expected other', actualPreview: 'other failed output', metrics: [], diagnostics: [], artifacts: [] },
+    ] }] }] },
+  };
+}
