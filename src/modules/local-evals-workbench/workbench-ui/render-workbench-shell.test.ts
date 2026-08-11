@@ -16,7 +16,13 @@ describe('WORKBENCH_CLIENT_SCRIPT', () => {
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"retry-cell\"/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/eval-runs/);
     assert.doesNotThrow(() => new Function(WORKBENCH_CLIENT_SCRIPT));
-    assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /Analyze this failure|repair proposal|Approve change|automated repair/i);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"select-assertion\"/);
+    const switchStart = WORKBENCH_CLIENT_SCRIPT.indexOf(`event.target.closest('[data-control=\"select-assertion\"]')`);
+    const switchEnd = WORKBENCH_CLIENT_SCRIPT.indexOf(`event.target.matches('[data-control=\"close-cell\"]')`);
+    const switchBranch = WORKBENCH_CLIENT_SCRIPT.slice(switchStart, switchEnd);
+    assert.match(switchBranch, /renderSelectedCell\(\)/);
+    assert.doesNotMatch(switchBranch, /fetch|api\/eval-runs|proposal|mutation/i);
+    assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /repair proposal|Approve change|automated repair|proposal preview|apply mutation/i);
   });
 });
 
@@ -43,13 +49,13 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /<caption>Eval result matrix<\/caption>/);
     assert.match(html, /Missing skill boundary/);
     assert.match(html, /!<\/span> Failed/);
-    assert.match(html, /1 failed \/ 2/);
+    assert.match(html, /2 failed \/ 3/);
     assert.match(html, /100 ms · 1,200 tokens · \$0\.0100/);
     assert.match(html, /Output says &lt;stop&gt; must happen/);
     assert.match(html, /Assertion failed: must stop/);
   });
 
-  it('renders accessible cell button labels and selected-cell detail drawer content', () => {
+  it('renders accessible cell button labels and failure workbench queue/evidence', () => {
     const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery(), latestRun: completedRun(), selectedCell: { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' } }), '');
 
     assert.match(html, /aria-label="Open GPT-5 mini Failed result for test case missing-skill-boundary"/);
@@ -57,10 +63,27 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /aria-modal="true"/);
     assert.match(html, /aria-describedby="cell-dialog-description"/);
     assert.match(html, /aria-label="Close result detail"/);
-    assert.match(html, /Failed: &lt;assertion&gt;/);
-    assert.match(html, /Output preview/);
+    assert.match(html, /Failure Workbench/);
+    assert.match(html, /Failed assertions/);
+    assert.match(html, /data-control="select-assertion"/);
+    assert.match(html, /aria-pressed="true"/);
+    assert.match(html, /data-conversation-scope-key="skill-authoring:missing-skill-boundary:gpt-5-mini:a1"/);
+    assert.match(html, /Active failure/);
+    assert.match(html, /Actual output/);
+    assert.match(html, /Expected/);
     assert.match(html, /Raw artifacts/);
-    assert.doesNotMatch(html, /Analyze this failure|proposal|Approve change|repair/i);
+    assert.match(html, /Want me to analyze this failed assertion\?/);
+    assert.doesNotMatch(html, /proposal|Approve change|Reject|mutation/i);
+  });
+
+  it('renders switched active assertion evidence and escapes failure labels', () => {
+    const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery(), latestRun: completedRun(), selectedCell: { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini', activeAssertionId: 'a3' } }), '');
+
+    assert.match(html, /data-conversation-scope-key="skill-authoring:missing-skill-boundary:gpt-5-mini:a3"/);
+    assert.match(html, /Must cite artifact/);
+    assert.match(html, /expected artifact/);
+    assert.match(html, /actual second/);
+    assert.match(html, /&lt;assertion&gt;/);
   });
 
 
@@ -72,7 +95,7 @@ describe('renderWorkbenchShell', () => {
       assert.match(html, /role="dialog"/);
       assert.match(html, /aria-modal="true"/);
       assert.match(html, new RegExp(status === 'error' ? 'Try again' : status === 'blocked' ? 'Add local config, then run the eval again.' : status === 'running' ? 'Running local evals' : status === 'not-run' ? 'Output will appear after running the eval.' : 'Passed: Must pass'));
-      assert.doesNotMatch(html, /Analyze this failure|repair proposal|Approve change|automated repair/i);
+      assert.doesNotMatch(html, /repair proposal|Approve change|automated repair|Reject|mutation/i);
     }
   });
 
@@ -144,5 +167,5 @@ function unsafeRun(): RunLocalEvalSuiteResult {
 }
 
 function cell(testCaseId: string, modelId: string, modelLabel: string): EvalCell {
-  return { testCaseId, modelId, modelLabel, status: 'failed', outputPreview: 'Output says <stop> must happen', assertions: [{ id: 'a1', label: '<assertion>', kind: 'assertion', status: 'failed', metrics: [], diagnostics: [], artifacts: [] }, { id: 'a2', label: 'Passes', kind: 'assertion', status: 'passed', metrics: [], diagnostics: [], artifacts: [] }], diagnostics: [{ code: 'failed', severity: 'error', message: 'Assertion failed: must stop <diagnostic>' }], metrics: [{ name: 'total_tokens', value: 1200 }, { name: 'total_cost', value: 0.01, unit: 'usd' }], artifacts: [], durationMs: 100 };
+  return { testCaseId, modelId, modelLabel, status: 'failed', outputPreview: 'Output says <stop> must happen', assertions: [{ id: 'a1', label: '<assertion>', kind: 'assertion', status: 'failed', expectedPreview: 'expected <stop>', actualPreview: 'actual <stop>', metrics: [], diagnostics: [], artifacts: [] }, { id: 'a2', label: 'Passes', kind: 'assertion', status: 'passed', metrics: [], diagnostics: [], artifacts: [] }, { id: 'a3', label: 'Must cite artifact', kind: 'grader', status: 'failed', expectedPreview: 'expected artifact', actualPreview: 'actual second', metrics: [], diagnostics: [], artifacts: [] }], diagnostics: [{ code: 'failed', severity: 'error', message: 'Assertion failed: must stop <diagnostic>' }], metrics: [{ name: 'total_tokens', value: 1200 }, { name: 'total_cost', value: 0.01, unit: 'usd' }], artifacts: [], durationMs: 100 };
 }

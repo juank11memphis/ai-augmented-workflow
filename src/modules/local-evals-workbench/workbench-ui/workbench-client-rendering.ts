@@ -36,6 +36,7 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
 
   function renderRunning() {
     selectedCell = null;
+    activeAssertionId = null;
     focusRestoreKey = null;
     renderSelectedCell();
     renderRunButton(true);
@@ -51,6 +52,7 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
     const status = payload?.status === 'completed' ? currentMatrix?.status : payload?.status;
     normalizeVisibleVariants();
     selectedCell = null;
+    activeAssertionId = null;
     setText('status-label', statusLabel(status));
     setText('status-message', payload?.message || statusMessage(status));
     if (currentMatrix?.aggregates) {
@@ -124,10 +126,17 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
   }
 
   function drawerHtml(cell) {
-    const title = statusLabel(cell.status) + ' result';
-    const description = statusLabel(cell.status) + ' · ' + cell.modelLabel + ' · ' + cell.testCaseId;
+    const failure = failureWorkbench(cell);
+    const title = failure ? 'Failure Workbench' : statusLabel(cell.status) + ' result';
+    const description = (failure ? 'Failed' : statusLabel(cell.status)) + ' · ' + cell.modelLabel + ' · ' + cell.testCaseId;
     const retry = cell.status === 'error' ? '<button type="button" data-control="retry-cell">Try again</button>' : '';
-    return '<div class="cell-dialog-overlay" data-selected-cell data-cell-overlay><aside class="cell-dialog" role="dialog" aria-modal="true" aria-labelledby="cell-dialog-title" aria-describedby="cell-dialog-description"><div class="cell-dialog__header"><div><p class="cell-dialog__eyebrow">Result detail</p><h2 id="cell-dialog-title">' + h(title) + '</h2><p id="cell-dialog-description">' + h(description) + '</p></div><button type="button" data-control="close-cell" aria-label="Close result detail">Close</button></div>' + recoveryHtml(cell) + detailSections(cell) + retry + '</aside></div>';
+    const body = failure ? failureWorkbenchHtml(failure) : recoveryHtml(cell) + detailSections(cell) + retry;
+    return '<div class="cell-dialog-overlay" data-selected-cell data-cell-overlay><aside class="cell-dialog" role="dialog" aria-modal="true" aria-labelledby="cell-dialog-title" aria-describedby="cell-dialog-description"><div class="cell-dialog__header"><div><p class="cell-dialog__eyebrow">Result detail</p><h2 id="cell-dialog-title">' + h(title) + '</h2><p id="cell-dialog-description">' + h(description) + '</p></div><button type="button" data-control="close-cell" aria-label="Close result detail">Close</button></div>' + body + '</aside></div>';
+  }
+
+  function failureWorkbenchHtml(workbench) {
+    const evidence = workbench.activeEvidence;
+    return '<section class="failure-workbench" data-failure-workbench data-conversation-scope-key="' + h(workbench.conversationScopeKey) + '"><section class="detail-section"><h3>Failed assertions</h3><div class="failure-queue">' + workbench.queue.map((item) => '<button type="button" class="failure-queue__item' + (item.selected ? ' failure-queue__item--active' : '') + '" data-control="select-assertion" data-assertion-id="' + h(item.assertionId) + '" aria-pressed="' + (item.selected ? 'true' : 'false') + '" aria-label="' + h((item.selected ? 'Selected ' : 'Select ') + item.kind + ' ' + item.label) + '"><span aria-hidden="true">' + (item.selected ? '●' : '○') + '</span> <strong>' + h(item.label) + '</strong><span>' + h(item.kind) + '</span></button>').join('') + '</div></section>' + sectionHtml('Active failure', [{ label: evidence.label, value: evidence.message }], 'No active failure.') + sectionHtml('Actual output', evidence.actualPreview ? [{ label: 'Actual preview', value: evidence.actualPreview }] : [], 'No actual output preview reported.') + sectionHtml('Expected', evidence.expectedPreview ? [{ label: 'Expected preview', value: evidence.expectedPreview }] : [], 'No expected or reference context reported.') + sectionHtml('Cell output', evidence.containingCellOutputPreview ? [{ label: 'Output preview', value: evidence.containingCellOutputPreview }] : [], 'No containing cell output preview reported.') + sectionHtml('Diagnostics', evidence.diagnostics.map((diagnostic) => ({ label: diagnostic.code, value: diagnostic.message, meta: diagnostic.location, tone: diagnostic.severity })), 'No diagnostics.') + sectionHtml('Raw artifacts', evidence.artifacts.map((artifact) => ({ label: artifact.label, value: artifact.preview || artifact.reference || artifact.kind, meta: artifact.reference })), 'No raw artifacts.') + '<section class="detail-section conversation-placeholder"><h3>Conversation</h3><p>Sibu: Want me to analyze this failed assertion?</p><button type="button" disabled aria-disabled="true">Analyze this failure</button><button type="button" disabled aria-disabled="true">Ask about this failure</button></section></section>';
   }
 
   function recoveryHtml(cell) {

@@ -10,6 +10,7 @@ const WORKBENCH_CLIENT_SETUP = String.raw`  const root = document.querySelector(
   let latestRun = null;
   let filters = { failuresOnly: false, searchQuery: '', visibleVariantIds: [] };
   let selectedCell = null;
+  let activeAssertionId = null;
   let focusRestoreKey = null;
 
   const control = (name) => root.querySelector('[data-control="' + name + '"]');

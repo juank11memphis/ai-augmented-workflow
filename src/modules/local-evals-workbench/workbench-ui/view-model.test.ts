@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
+import { createFailureConversationScopeKey } from './failure-workbench-view-model.js';
 import { createCellKey, createResultDisplay, createWorkbenchViewModel, findNextResultCellSelection } from './view-model.js';
 
 describe('createWorkbenchViewModel', () => {
@@ -25,12 +26,60 @@ describe('createWorkbenchViewModel', () => {
     assert.equal(viewModel.summary.averageLatencyLabel, '150 ms');
     assert.equal(viewModel.summary.totalCostLabel, '$0.0500');
     assert.equal(failedCell?.statusLabel, 'Failed');
-    assert.equal(failedCell?.assertionSummary, '1 failed / 2');
+    assert.equal(failedCell?.assertionSummary, '2 failed / 3');
     assert.equal(failedCell?.metricsSummary, '200 ms · 1,200 tokens · $0.0200');
     assert.equal(failedCell?.outputPreview, 'Output says the skill may continue.');
     assert.equal(failedCell?.diagnosticsSummary, 'Assertion failed: must stop first.');
   });
 
+  it('defaults a failed selected cell to the first failed assertion and exposes active evidence', () => {
+    const display = createResultDisplay(completedRun('failed').matrix, {}, { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' });
+    const workbench = display.selectedCell?.failureWorkbench;
+
+    assert.equal(display.selectedCell?.title, 'Failure Workbench');
+    assert.equal(workbench?.activeEvidence.assertionId, 'a1');
+    assert.equal(workbench?.activeEvidence.label, 'Must hard-stop first');
+    assert.equal(workbench?.activeEvidence.message, 'Assertion failed: must stop first.');
+    assert.equal(workbench?.activeEvidence.actualPreview, 'actual first failure');
+    assert.equal(workbench?.activeEvidence.expectedPreview, 'expected stop');
+    assert.equal(workbench?.activeEvidence.containingCellOutputPreview, 'Output says the skill may continue.');
+    assert.deepEqual(workbench?.queue.map((item) => [item.assertionId, item.selected]), [['a1', true], ['a3', false]]);
+    assert.equal(workbench?.conversationScopeKey, 'skill-authoring:missing-skill-boundary:gpt-5-mini:a1');
+  });
+
+  it('switches active failed assertion evidence without mixing assertion context', () => {
+    const display = createResultDisplay(completedRun('failed').matrix, {}, { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini', activeAssertionId: 'a3' });
+    const workbench = display.selectedCell?.failureWorkbench;
+
+    assert.equal(workbench?.activeEvidence.assertionId, 'a3');
+    assert.equal(workbench?.activeEvidence.label, 'Must cite artifact');
+    assert.equal(workbench?.activeEvidence.actualPreview, 'actual second failure');
+    assert.equal(workbench?.activeEvidence.expectedPreview, 'expected artifact');
+    assert.equal(workbench?.conversationScopeKey, 'skill-authoring:missing-skill-boundary:gpt-5-mini:a3');
+    assert.deepEqual(workbench?.queue.map((item) => [item.assertionId, item.selected]), [['a1', false], ['a3', true]]);
+  });
+
+  it('does not expose a failure workbench for failed cells with no failed assertions', () => {
+    const matrix = completedRun('failed').matrix;
+    const noFailureCell = { ...cell('missing-skill-boundary', 'gpt-5-mini', 'failed', 200, 0.02), assertions: [] };
+    const display = createResultDisplay({ ...matrix, rows: [rowWithCell('missing-skill-boundary', 'Missing skill boundary', noFailureCell)] }, {}, { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' });
+
+    assert.equal(display.selectedCell?.failureWorkbench, null);
+    assert.equal(display.selectedCell?.title, 'Failed result');
+  });
+
+  it('creates unique conversation scope keys across suite, case, model, and assertion ids', () => {
+    const base = { suiteId: 'skill-authoring', testCaseId: 'case-a', modelId: 'gpt-5-mini', assertionId: 'a1' };
+    const keys = new Set([
+      createFailureConversationScopeKey(base),
+      createFailureConversationScopeKey({ ...base, suiteId: 'prompt-drift' }),
+      createFailureConversationScopeKey({ ...base, testCaseId: 'case-b' }),
+      createFailureConversationScopeKey({ ...base, modelId: 'gpt-5' }),
+      createFailureConversationScopeKey({ ...base, assertionId: 'a2' }),
+    ]);
+
+    assert.equal(keys.size, 5);
+  });
 
   it('builds passed selected-cell detail with assertions, metrics, output, and artifacts', () => {
     const display = createResultDisplay(completedRun('passed').matrix, {}, { testCaseId: 'names-artifact', modelId: 'gpt-5-mini' });
@@ -158,8 +207,9 @@ function cell(testCaseId: string, modelId: string, status: EvalRunStatus, durati
     status,
     outputPreview: status === 'failed' ? 'Output says the skill may continue.' : 'Output follows the requested boundary.',
     assertions: [
-      { id: 'a1', label: 'Must hard-stop first', kind: 'assertion', status, message: status === 'failed' ? 'Assertion failed: must stop first.' : 'Passed.', metrics: [], diagnostics: [], artifacts: [] },
+      { id: 'a1', label: 'Must hard-stop first', kind: 'assertion', status, message: status === 'failed' ? 'Assertion failed: must stop first.' : 'Passed.', expectedPreview: status === 'failed' ? 'expected stop' : undefined, actualPreview: status === 'failed' ? 'actual first failure' : undefined, metrics: [], diagnostics: [{ code: 'a1-diag', severity: 'error', message: 'A1 diagnostic' }], artifacts: [{ id: 'a1-artifact', label: 'A1 artifact', kind: 'trace', preview: 'trace first' }] },
       { id: 'a2', label: 'Must name artifact', kind: 'assertion', status: 'passed', metrics: [], diagnostics: [], artifacts: [] },
+      { id: 'a3', label: 'Must cite artifact', kind: 'grader', status: status === 'failed' ? 'failed' : 'passed', message: status === 'failed' ? 'Assertion failed: must cite artifact.' : 'Passed.', expectedPreview: status === 'failed' ? 'expected artifact' : undefined, actualPreview: status === 'failed' ? 'actual second failure' : undefined, metrics: [], diagnostics: [], artifacts: [] },
     ],
     diagnostics: status === 'failed' ? [{ code: 'assertion-failed', severity: 'error', message: 'Assertion failed: must stop first.' }] : [],
     metrics: [{ name: 'total_cost', value: cost, unit: 'usd' }, { name: 'total_tokens', value: 1200 }],

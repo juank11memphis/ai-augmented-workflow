@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
-import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, parseEvalRunResponse, resolveFocusRestoreSelection, selectCell, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
+import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, parseEvalRunResponse, resolveFocusRestoreSelection, selectActiveFailedAssertion, selectCell, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
 import { createWorkbenchViewModel } from './view-model.js';
 
 describe('browser-state', () => {
@@ -68,6 +68,26 @@ describe('browser-state', () => {
   });
 
 
+  it('defaults failed cells to first assertion and switches active assertion scope', () => {
+    const selected = selectCell(initialState(), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' }, 'desktop');
+    const switched = selectActiveFailedAssertion(selected, 'a2');
+
+    assert.equal(selected.selectedCell?.activeAssertionId, 'a1');
+    assert.equal(selected.activeConversationScopeKey, 'skill-authoring:missing-skill-boundary:gpt-5-mini:a1');
+    assert.equal(switched.selectedCell?.testCaseId, 'missing-skill-boundary');
+    assert.equal(switched.selectedCell?.modelId, 'gpt-5-mini');
+    assert.equal(switched.selectedCell?.activeAssertionId, 'a2');
+    assert.equal(switched.activeConversationScopeKey, 'skill-authoring:missing-skill-boundary:gpt-5-mini:a2');
+    assert.equal(switched.viewModel.resultDisplay.selectedCell?.failureWorkbench?.activeEvidence.label, 'B');
+  });
+
+  it('avoids active assertion state for non-failed selected cells', () => {
+    const selected = selectCell(initialState(), { testCaseId: 'names-artifact', modelId: 'gpt-5-mini' }, 'desktop');
+
+    assert.equal(selected.selectedCell?.activeAssertionId, undefined);
+    assert.equal(selected.activeConversationScopeKey, null);
+    assert.equal(selected.viewModel.resultDisplay.selectedCell?.failureWorkbench, null);
+  });
 
   it('builds selected-cell retry payload for the current suite, cell model, and test case scope', () => {
     const state = selectCell(setVisibleVariantIds(initialState(), ['gpt-5-mini', 'gpt-5']), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5' }, 'desktop');
@@ -104,7 +124,7 @@ function completedRun(status: EvalRunStatus): RunLocalEvalSuiteResult & { status
 }
 
 function cell(testCaseId: string, modelId: string, status: EvalRunStatus): EvalCell {
-  return { testCaseId, modelId, modelLabel: modelId, status, outputPreview: null, assertions: [{ id: 'a1', label: 'A', kind: 'assertion', status, metrics: [], diagnostics: [], artifacts: [] }], diagnostics: [], metrics: [], artifacts: [], durationMs: null };
+  return { testCaseId, modelId, modelLabel: modelId, status, outputPreview: null, assertions: [{ id: 'a1', label: 'A', kind: 'assertion', status, metrics: [], diagnostics: [], artifacts: [] }, { id: 'a2', label: 'B', kind: 'grader', status: status === 'failed' ? 'failed' : 'passed', actualPreview: 'second actual', expectedPreview: 'second expected', metrics: [], diagnostics: [], artifacts: [] }], diagnostics: [], metrics: [], artifacts: [], durationMs: null };
 }
 
 function blockedRun(): RunLocalEvalSuiteResult {

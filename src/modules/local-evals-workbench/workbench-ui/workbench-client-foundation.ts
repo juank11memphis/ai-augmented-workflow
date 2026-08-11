@@ -10,6 +10,28 @@ export const WORKBENCH_CLIENT_FOUNDATION_SECTION = {
   function normalizeVisibleVariants() { const ids = matrix() ? variants(matrix()).map((variant) => variant.id) : []; filters.visibleVariantIds = filters.visibleVariantIds.filter((id) => ids.includes(id)); if (filters.visibleVariantIds.length === 0) filters.visibleVariantIds = ids.slice(0, 1); }
   function findCell(selection) { return (matrix()?.rows || []).find((row) => row.testCaseId === selection.testCaseId)?.cells?.find((cell) => cell.modelId === selection.modelId); }
 
+  function failedAssertions(cell) { return (cell.assertions || []).filter((assertion) => assertion.status === 'failed'); }
+  function failureWorkbench(cell) {
+    if (cell.status !== 'failed') { activeAssertionId = null; return null; }
+    const failed = failedAssertions(cell);
+    const active = failed.find((assertion) => assertion.id === activeAssertionId) || failed[0];
+    if (!active) { activeAssertionId = null; return null; }
+    activeAssertionId = active.id;
+    return {
+      conversationScopeKey: state.selectedSuiteId + ':' + cell.testCaseId + ':' + cell.modelId + ':' + active.id,
+      queue: failed.map((assertion) => ({ ...assertion, assertionId: assertion.id, selected: assertion.id === active.id })),
+      activeEvidence: {
+        label: active.label,
+        message: active.message || 'No assertion message.',
+        actualPreview: active.actualPreview || cell.outputPreview || null,
+        expectedPreview: active.expectedPreview || null,
+        containingCellOutputPreview: cell.outputPreview || null,
+        diagnostics: [...(active.diagnostics || []), ...(cell.diagnostics || [])],
+        artifacts: [...(active.artifacts || []), ...(cell.artifacts || [])],
+      },
+    };
+  }
+
   function navigate(current, direction, mode) {
     const rows = filteredRows(matrix()).map((row) => visibleCells(row).map((cell) => ({ testCaseId: row.testCaseId, modelId: cell.modelId })));
     const grid = mode === 'phone' ? rows.flatMap((row) => row.map((cell) => [cell])) : rows;

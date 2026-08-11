@@ -17,6 +17,7 @@ export type BrowserState = {
   readonly latestRun?: RunLocalEvalSuiteResult;
   readonly resultFilters: WorkbenchResultFilters;
   readonly selectedCell: WorkbenchCellSelection | null;
+  readonly activeConversationScopeKey: string | null;
   readonly focusRestoreKey: string | null;
 };
 
@@ -27,7 +28,7 @@ export type EvalRunRequestPayload = {
 };
 
 export function createBrowserState(viewModel: WorkbenchViewModel, latestRun?: RunLocalEvalSuiteResult): BrowserState {
-  return { viewModel, latestRun, resultFilters: viewModel.resultDisplay.filters, selectedCell: null, focusRestoreKey: null };
+  return { viewModel, latestRun, resultFilters: viewModel.resultDisplay.filters, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null };
 }
 
 export function selectSuite(state: BrowserState, suiteId: string): BrowserState {
@@ -36,7 +37,7 @@ export function selectSuite(state: BrowserState, suiteId: string): BrowserState 
 }
 
 export function selectModel(state: BrowserState, selectedEvalRunModel: string): BrowserState {
-  return rebuildState({ ...state, focusRestoreKey: null }, { selectedEvalRunModel });
+  return rebuildState({ ...state, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null }, { selectedEvalRunModel });
 }
 
 export function selectRunScope(state: BrowserState, runScope: WorkbenchRunScope): BrowserState {
@@ -56,12 +57,12 @@ export function setVisibleVariantIds(state: BrowserState, visibleVariantIds: rea
 }
 
 export function selectCell(state: BrowserState, selection: WorkbenchCellSelection, mode: ResultMatrixNavigationMode): BrowserState {
-  return rebuildState({ ...state, selectedCell: selection, focusRestoreKey: createCellKey(selection, mode) });
+  return rebuildState({ ...state, selectedCell: withoutActiveAssertion(selection), activeConversationScopeKey: null, focusRestoreKey: createCellKey(selection, mode) });
 }
 
 export function clearSelectedCell(state: BrowserState, mode: ResultMatrixNavigationMode): BrowserState {
   const focusRestoreKey = state.selectedCell ? state.focusRestoreKey ?? createCellKey(state.selectedCell, mode) : state.focusRestoreKey;
-  return rebuildState({ ...state, selectedCell: null, focusRestoreKey });
+  return rebuildState({ ...state, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey });
 }
 
 export function resolveFocusRestoreSelection(state: BrowserState, mode: ResultMatrixNavigationMode): WorkbenchCellSelection | null {
@@ -77,12 +78,12 @@ export function navigateResultCell(state: BrowserState, current: WorkbenchCellSe
 }
 
 export function startRun(state: BrowserState): BrowserState {
-  return rebuildState({ ...state, selectedCell: null, focusRestoreKey: null }, { isRunning: true });
+  return rebuildState({ ...state, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null }, { isRunning: true });
 }
 
 export function finishRun(state: BrowserState, latestRun: RunLocalEvalSuiteResult): BrowserState {
   const resultFilters = normalizeResultFilters(latestRun.matrix, state.resultFilters);
-  const next = rebuildState({ ...state, latestRun, resultFilters, selectedCell: null, focusRestoreKey: null }, { latestRun });
+  const next = rebuildState({ ...state, latestRun, resultFilters, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null }, { latestRun });
   return { ...next, latestRun };
 }
 
@@ -112,13 +113,14 @@ export function parseEvalRunResponse(payload: unknown): RunLocalEvalSuiteResult 
 
 function rebuildFilteredState(state: BrowserState, filters: Partial<WorkbenchResultFilters>): BrowserState {
   const resultFilters = normalizeResultFilters(state.latestRun?.matrix, filters);
-  const selectedCell = state.selectedCell && isVisibleCell({ ...state, resultFilters, viewModel: rebuildViewModel(state, { resultFilters }) }, state.selectedCell) ? state.selectedCell : null;
-  return rebuildState({ ...state, resultFilters, selectedCell });
+  const filteredState = { ...state, resultFilters, viewModel: rebuildViewModel(state, { resultFilters }) };
+  const selectedCell = state.selectedCell && isVisibleCell(filteredState, state.selectedCell) ? state.selectedCell : null;
+  return rebuildState({ ...state, resultFilters, selectedCell, activeConversationScopeKey: selectedCell ? state.activeConversationScopeKey : null });
 }
 
 function rebuildState(state: BrowserState, overrides: { readonly selectedEvalRunModel?: string; readonly runScope?: WorkbenchRunScope; readonly latestRun?: RunLocalEvalSuiteResult; readonly isRunning?: boolean } = {}): BrowserState {
   const viewModel = rebuildViewModel(state, overrides);
-  return { ...state, viewModel, resultFilters: viewModel.resultDisplay.filters };
+  return { ...state, viewModel, resultFilters: viewModel.resultDisplay.filters, activeConversationScopeKey: viewModel.resultDisplay.selectedCell?.failureWorkbench?.conversationScopeKey ?? null, selectedCell: viewModel.resultDisplay.selectedCell?.failureWorkbench ? { ...state.selectedCell!, activeAssertionId: viewModel.resultDisplay.selectedCell.failureWorkbench.activeEvidence.assertionId } : state.selectedCell && viewModel.resultDisplay.selectedCell ? withoutActiveAssertion(state.selectedCell) : state.selectedCell };
 }
 
 function rebuildViewModel(state: BrowserState, overrides: { readonly selectedEvalRunModel?: string; readonly runScope?: WorkbenchRunScope; readonly latestRun?: RunLocalEvalSuiteResult; readonly isRunning?: boolean; readonly resultFilters?: Partial<WorkbenchResultFilters> }): WorkbenchViewModel {
@@ -128,6 +130,15 @@ function rebuildViewModel(state: BrowserState, overrides: { readonly selectedEva
     resultFilters: overrides.resultFilters ?? state.resultFilters,
     selectedCell: state.selectedCell,
   });
+}
+
+export function selectActiveFailedAssertion(state: BrowserState, activeAssertionId: string): BrowserState {
+  if (!state.selectedCell || !state.viewModel.resultDisplay.selectedCell?.failureWorkbench) return state;
+  return rebuildState({ ...state, selectedCell: { ...state.selectedCell, activeAssertionId } });
+}
+
+function withoutActiveAssertion(selection: WorkbenchCellSelection): WorkbenchCellSelection {
+  return { testCaseId: selection.testCaseId, modelId: selection.modelId };
 }
 
 function baseInput(state: BrowserState) {

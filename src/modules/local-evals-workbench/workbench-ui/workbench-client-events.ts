@@ -2,18 +2,19 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
   name: 'events',
   source: String.raw`  root.addEventListener('change', (event) => {
     const target = event.target;
-    if (target.matches('[data-control="suite"]')) { latestRun = null; filters = { failuresOnly: false, searchQuery: '', visibleVariantIds: [] }; selectedCell = null; state = { ...state, selectedSuiteId: target.value, runScope: { type: 'all' } }; renderReady(); }
-    if (target.matches('[data-control="model"]')) state = { ...state, selectedEvalRunModel: target.value };
+    if (target.matches('[data-control="suite"]')) { latestRun = null; filters = { failuresOnly: false, searchQuery: '', visibleVariantIds: [] }; selectedCell = null; activeAssertionId = null; state = { ...state, selectedSuiteId: target.value, runScope: { type: 'all' } }; renderReady(); }
+    if (target.matches('[data-control="model"]')) { state = { ...state, selectedEvalRunModel: target.value }; selectedCell = null; activeAssertionId = null; renderSelectedCell(); }
     if (target.matches('input[name="runScope"]')) { state = { ...state, runScope: selectedScope() }; renderRunButton(false); }
-    if (target.matches('[data-control="failures-only"]')) { filters.failuresOnly = target.checked; selectedCell = null; renderResults(); renderSelectedCell(); }
-    if (target.matches('[data-control="variant"]')) { const checked = [...root.querySelectorAll('[data-control="variant"]:checked')].map((input) => input.value); filters.visibleVariantIds = checked.length ? checked : filters.visibleVariantIds.slice(0, 1); selectedCell = null; renderFilters(); renderResults(); renderSelectedCell(); }
+    if (target.matches('[data-control="failures-only"]')) { filters.failuresOnly = target.checked; selectedCell = null; activeAssertionId = null; renderResults(); renderSelectedCell(); }
+    if (target.matches('[data-control="variant"]')) { const checked = [...root.querySelectorAll('[data-control="variant"]:checked')].map((input) => input.value); filters.visibleVariantIds = checked.length ? checked : filters.visibleVariantIds.slice(0, 1); selectedCell = null; activeAssertionId = null; renderFilters(); renderResults(); renderSelectedCell(); }
   });
-  root.addEventListener('input', (event) => { if (event.target.matches('[data-control="search"]')) { filters.searchQuery = event.target.value; selectedCell = null; renderResults(); renderSelectedCell(); } });
+  root.addEventListener('input', (event) => { if (event.target.matches('[data-control="search"]')) { filters.searchQuery = event.target.value; selectedCell = null; activeAssertionId = null; renderResults(); renderSelectedCell(); } });
   root.addEventListener('click', async (event) => {
     const cellButton = event.target.closest('[data-cell-button]');
-    if (cellButton) { selectedCell = { testCaseId: cellButton.dataset.testCaseId, modelId: cellButton.dataset.modelId }; focusRestoreKey = keyFor(selectedCell, cellButton.dataset.mode); cellButton.dataset.focusKey = focusRestoreKey; renderSelectedCell(); return; }
-    if (event.target.matches('[data-control="close-cell"]') || event.target.matches('[data-cell-overlay]')) { selectedCell = null; renderSelectedCell(); return; }
-    if (event.target.matches('[data-control="retry-cell"]')) { const cell = selectedCell; const scope = cell ? { type: 'test_case', testCaseId: cell.testCaseId } : selectedScope(); state = { ...state, selectedEvalRunModel: cell?.modelId || state.selectedEvalRunModel, runScope: scope }; selectedCell = null; renderSelectedCell(); await runEval(scope); return; }
+    if (cellButton) { selectedCell = { testCaseId: cellButton.dataset.testCaseId, modelId: cellButton.dataset.modelId }; activeAssertionId = null; focusRestoreKey = keyFor(selectedCell, cellButton.dataset.mode); cellButton.dataset.focusKey = focusRestoreKey; renderSelectedCell(); return; }
+    if (event.target.closest('[data-control="select-assertion"]')) { activeAssertionId = event.target.closest('[data-control="select-assertion"]').dataset.assertionId; renderSelectedCell(); root.querySelector('[data-control="select-assertion"][data-assertion-id="' + h(activeAssertionId) + '"]')?.focus(); return; }
+    if (event.target.matches('[data-control="close-cell"]') || event.target.matches('[data-cell-overlay]')) { selectedCell = null; activeAssertionId = null; renderSelectedCell(); return; }
+    if (event.target.matches('[data-control="retry-cell"]')) { const cell = selectedCell; const scope = cell ? { type: 'test_case', testCaseId: cell.testCaseId } : selectedScope(); state = { ...state, selectedEvalRunModel: cell?.modelId || state.selectedEvalRunModel, runScope: scope }; selectedCell = null; activeAssertionId = null; renderSelectedCell(); await runEval(scope); return; }
     if (!event.target.matches('[data-control="run"]') && !event.target.matches('[data-control="retry-run"]')) return;
     await runEval();
   });
@@ -27,7 +28,7 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     } catch { renderRunResult({ status: 'error', message: 'The eval could not finish. Try again after checking local setup.' }); }
   }
   root.addEventListener('keydown', (event) => {
-    if (selectedCell && event.key === 'Escape') { event.preventDefault(); selectedCell = null; renderSelectedCell(); return; }
+    if (selectedCell && event.key === 'Escape') { event.preventDefault(); selectedCell = null; activeAssertionId = null; renderSelectedCell(); return; }
     if (selectedCell && event.key === 'Tab') { trapDrawerFocus(event); return; }
     const cellButton = event.target.closest?.('[data-cell-button]');
     if (!cellButton || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
