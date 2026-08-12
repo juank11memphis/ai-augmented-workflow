@@ -30,6 +30,7 @@ This toolbox is for `sibu-implementation-planner` workers only. It is not a norm
 ### Optional installed skills relevant to planner work
 - TypeScript: read `.agents/skills/typescript/SKILL.md` when relevant. For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - AI Prompt Engineer Master: read `.agents/skills/ai-prompt-engineer-master/SKILL.md` when relevant. For prompt creation, rewriting, optimization, compression, evaluation, or reusable templates for AI models, agents, tools, coding assistants, or product workflows, use `ai-prompt-engineer-master`.
+- UX Expert: read `.agents/skills/ux-expert/SKILL.md` when relevant. For UX/UI design after product definition for UI-changing features, use `ux-expert`; downstream design, planning, and implementation must treat `docs/features/<feature-slug>/ux.md` mockups as binding UI goals, not redesign targets.
 
 ## Worker packet contract
 
