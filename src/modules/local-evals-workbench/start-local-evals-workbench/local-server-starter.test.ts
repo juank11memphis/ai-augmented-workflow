@@ -5,6 +5,8 @@ import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-sui
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
 import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
 import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-proposal/index.js';
+import { APPLY_APPROVED_REPAIR_MARKER } from '../apply-approved-eval-repair/index.js';
+import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
@@ -257,6 +259,38 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     } finally { await failureResult.stop?.(); }
   });
 
+  it('maps approved repair apply endpoint invalid, missing approval, stale, blocked, and successful results', async () => {
+    const fakeServer = new FakeLocalHttpServer(4321);
+    const mutationCalls: unknown[] = [];
+    const starter = new NodeLocalWorkbenchServerStarter((handler) => { fakeServer.handler = handler; return fakeServer; }, () => runtimeDependencies({ applyRepair: applyRepairDependencies({ mutationCalls }) }));
+    const result = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      assert.equal((await fakeServer.renderRawResponse('/api/repair-proposals/apply', '{ nope')).statusCode, 400);
+      assert.equal((await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'repair_1' })).statusCode, 400);
+
+      const missingApproval = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'repair_1', approvalMarker: 'not-approved' });
+      assert.equal(missingApproval.statusCode, 422);
+      assert.match(missingApproval.body, /missing-approval/);
+      assert.equal(mutationCalls.length, 0);
+
+      const stale = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'stale', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
+      assert.equal(stale.statusCode, 422);
+      assert.match(stale.body, /stale-proposal/);
+      assert.equal(mutationCalls.length, 0);
+
+      const blocked = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'unsafe', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
+      assert.equal(blocked.statusCode, 422);
+      assert.match(blocked.body, /unsafe-target/);
+      assert.equal(mutationCalls.length, 0);
+
+      const applied = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'repair_1', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
+      assert.equal(applied.statusCode, 200);
+      assert.match(applied.body, /applied|prompts\/skill-authoring\.md/);
+      assert.equal(mutationCalls.length, 1);
+      assert.doesNotMatch(applied.body, /secret|OPENAI_API_KEY|workflow health|old content|new content/);
+    } finally { await result.stop?.(); }
+  });
+
 });
 
 function readyDiscovery(): EvalSuiteDiscoveryResult {
@@ -401,8 +435,18 @@ class FakeLocalHttpServer {
 
 
 
-function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDependencies; readonly analysis?: AnalyzeFailedAssertionDependencies; readonly proposal?: DraftEvalRepairProposalDependencies } = {}) {
-  return { run: overrides.run ?? runDependencies([]), analysis: overrides.analysis ?? analysisDependencies(), proposal: overrides.proposal ?? proposalDependencies() };
+function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDependencies; readonly analysis?: AnalyzeFailedAssertionDependencies; readonly proposal?: DraftEvalRepairProposalDependencies; readonly applyRepair?: ApplyApprovedEvalRepairDependencies } = {}) {
+  return { run: overrides.run ?? runDependencies([]), analysis: overrides.analysis ?? analysisDependencies(), proposal: overrides.proposal ?? proposalDependencies(), applyRepair: overrides.applyRepair ?? applyRepairDependencies() };
+}
+
+function applyRepairDependencies(options: { readonly mutationCalls?: unknown[] } = {}): ApplyApprovedEvalRepairDependencies {
+  return {
+    proposalReader: { getPendingProposal: (proposalId) => proposalId === 'stale' ? null : { proposalId, projectRoot: '/repo', affectedProjectFiles: [proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md'], changeSummary: 'Add hard stop rule.', rationale: 'The active assertion skipped the rule.', expectedEvalImpact: 'The focused assertion should pass.', proposedChange: { kind: 'replacement', representation: 'new content' }, approvalState: 'pending' } },
+    safety: { validateTargets: async (_root, targets) => targets.some((target) => target.startsWith('..')) ? { status: 'blocked', reason: 'unsafe target', unsafePaths: targets } : { status: 'ok', safeTargets: targets } },
+    workflowReadiness: { checkReadiness: async () => ({ status: 'ready' }) },
+    mutator: { applyApprovedChange: async (request) => { options.mutationCalls?.push(request); return { status: 'applied', changedFiles: request.targetPaths.map((target) => ({ path: target })) }; } },
+    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+  };
 }
 
 function analysisPayload() {

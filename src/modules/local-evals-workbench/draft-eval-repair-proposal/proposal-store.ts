@@ -7,7 +7,7 @@ export class InMemoryRepairProposalStore implements RepairProposalStorePort {
 
   async savePendingProposal(request: Parameters<RepairProposalStorePort['savePendingProposal']>[0]): Promise<RepairProposalPreview> {
     const proposalId = createProposalId(request);
-    const proposal = { ...request.proposal, proposalId, approvalState: 'pending' as const };
+    const proposal = { ...request.proposal, proposalId, projectRoot: request.projectRoot, approvalState: 'pending' as const };
     this.proposals.set(proposalId, proposal);
     return proposal;
   }

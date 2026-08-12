@@ -43,6 +43,7 @@ export type RepairProposalStorePort = {
     readonly assertionId: string;
     readonly proposal: Omit<RepairProposalPreview, 'proposalId' | 'approvalState'>;
   }): Promise<RepairProposalPreview>;
+  getPendingProposal?(proposalId: string): RepairProposalPreview | undefined;
 };
 
 export type DraftRepairProposalLogEvent =
