@@ -14,6 +14,8 @@ describe('WORKBENCH_CLIENT_SCRIPT', () => {
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-cell-overlay/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /restoreFocus/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"retry-cell\"/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"rerun-recommendation\"/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /function rerunRecommended/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/eval-runs/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/failure-analysis/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"analyze-failure\"/);

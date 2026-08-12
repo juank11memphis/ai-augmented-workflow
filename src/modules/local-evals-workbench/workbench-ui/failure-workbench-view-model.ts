@@ -81,3 +81,39 @@ export function createFailureWorkbenchViewModel(input: {
     },
   };
 }
+
+import type { ApplyApprovedEvalRepairResult } from '../apply-approved-eval-repair/result.js';
+
+export type ProposalOutcomeViewModel = {
+  readonly title: string;
+  readonly message: string;
+  readonly changedFileCount: number;
+  readonly changedFiles: readonly { readonly path: string; readonly summary: string }[];
+  readonly validationMessage: string;
+  readonly primaryActionLabel: string | null;
+  readonly alternateActionLabel: string | null;
+};
+
+export function createProposalOutcomeViewModel(result: ApplyApprovedEvalRepairResult): ProposalOutcomeViewModel {
+  if (result.status === 'applied') {
+    return {
+      title: 'Proposal applied',
+      message: result.changedFileCount === 1 ? '1 project file changed.' : `${result.changedFileCount} project files changed.`,
+      changedFileCount: result.changedFileCount,
+      changedFiles: result.changedFiles.map((file) => ({ path: file.path, summary: file.summary ?? 'Changed by approved proposal.' })),
+      validationMessage: 'Validation has not rerun yet. Rerun evals before treating the issue as resolved.',
+      primaryActionLabel: result.rerunRecommendation.primaryAction.label,
+      alternateActionLabel: result.rerunRecommendation.alternateActions[0]?.label ?? null,
+    };
+  }
+
+  return {
+    title: result.status === 'blocked' ? 'Proposal blocked' : 'Proposal not applied',
+    message: `${result.message} No project files changed.`,
+    changedFileCount: 0,
+    changedFiles: [],
+    validationMessage: 'Validation has not rerun because no project files changed.',
+    primaryActionLabel: null,
+    alternateActionLabel: null,
+  };
+}

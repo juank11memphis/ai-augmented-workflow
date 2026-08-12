@@ -17,6 +17,7 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     if (event.target.matches('[data-control="analyze-failure"]')) { await analyzeFailure(); return; }
     if (event.target.matches('[data-control="draft-proposal"]')) { await draftProposal(); return; }
     if (event.target.matches('[data-control="apply-proposal"]')) { await applyProposal(event.target.dataset.proposalId); return; }
+    if (event.target.matches('[data-control="rerun-recommendation"]')) { await rerunRecommended(event.target.dataset.rerunScope === 'suite'); return; }
     if (event.target.matches('[data-control="retry-cell"]')) { const cell = selectedCell; const scope = cell ? { type: 'test_case', testCaseId: cell.testCaseId } : selectedScope(); state = { ...state, selectedEvalRunModel: cell?.modelId || state.selectedEvalRunModel, runScope: scope }; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); await runEval(scope); return; }
     if (!event.target.matches('[data-control="run"]') && !event.target.matches('[data-control="retry-run"]')) return;
     await runEval();
@@ -91,7 +92,7 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
       const current = selectedCell && findCell(selectedCell);
       const now = current && failureWorkbench(current);
       if (!now || now.conversationScopeKey !== proposalState.scopeKey) return;
-      proposalState = payload.status === 'applied' ? { status: 'applied', scopeKey: now.conversationScopeKey, result: payload } : { status: 'error', scopeKey: now.conversationScopeKey, message: payload.message || 'Proposal was not applied.' };
+      proposalState = payload.status === 'applied' ? { status: 'applied', scopeKey: now.conversationScopeKey, result: payload } : payload.status === 'blocked' ? { status: 'blocked', scopeKey: now.conversationScopeKey, result: payload } : { status: 'error', scopeKey: now.conversationScopeKey, message: payload.message || 'Proposal was not applied.' };
       renderSelectedCell();
     } catch {
       const current = selectedCell && findCell(selectedCell);
@@ -100,6 +101,23 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
       proposalState = { status: 'error', scopeKey: now.conversationScopeKey, message: 'Proposal could not be applied. Try again.' };
       renderSelectedCell();
     }
+  }
+
+
+  async function rerunRecommended(useFullSuite) {
+    if (proposalState.status !== 'applied') return;
+    const recommendation = proposalState.result.rerunRecommendation || {};
+    const alternate = (recommendation.alternateActions || []).find((item) => item.scope === 'suite');
+    const action = useFullSuite ? (alternate || recommendation.primaryAction) : recommendation.primaryAction;
+    if (!action) return;
+    const scope = action.scope === 'test_case' ? { type: 'test_case', testCaseId: action.testCaseId } : { type: 'all' };
+    state = { ...state, selectedSuiteId: action.suiteId || state.selectedSuiteId, selectedEvalRunModel: action.evalRunModelId || state.selectedEvalRunModel, runScope: scope };
+    selectedCell = null;
+    activeAssertionId = null;
+    analysisState = { status: 'idle' };
+    proposalState = { status: 'idle' };
+    renderSelectedCell();
+    await runEval(scope);
   }
 
 

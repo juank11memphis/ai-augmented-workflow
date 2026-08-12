@@ -73,11 +73,60 @@ describe('applyApprovedEvalRepair', () => {
     const result = await applyApprovedEvalRepair(command(), dependencies);
 
     assert.equal(result.status, 'applied');
-    assert.deepEqual(result.changedFiles, [{ path: 'prompts/skill.md' }]);
+    assert.deepEqual(result.changedFiles, [{ path: 'prompts/skill.md', summary: 'Changed by approved proposal.' }]);
+    assert.equal(result.changedFileCount, 1);
+    assert.equal(result.validationStatus, 'not-rerun');
+    assert.equal(result.rerunRecommendation.primaryAction.scope, 'test_case');
+    assert.equal(result.rerunRecommendation.primaryAction.label, 'Rerun this test case');
+    assert.equal(result.rerunRecommendation.alternateActions[0]?.scope, 'suite');
     assert.equal(dependencies.calls.mutations.length, 1);
     assert.deepEqual(dependencies.calls.mutations[0], { projectRoot, targetPaths: ['prompts/skill.md'], approvedChange });
     assert.doesNotMatch(JSON.stringify(dependencies.events), /approved new content|secret-token-value/);
   });
+
+
+  it('reports multiple changed files and keeps full-suite rerun available', async () => {
+    const dependencies = fakeDependencies({ proposal: proposal({ affectedProjectFiles: ['prompts/skill.md', 'evals/skill.json'] }) });
+    const result = await applyApprovedEvalRepair(command(), dependencies);
+
+    assert.equal(result.status, 'applied');
+    assert.equal(result.changedFileCount, 2);
+    assert.deepEqual(result.changedFiles.map((file) => file.path), ['prompts/skill.md', 'evals/skill.json']);
+    assert.equal(result.rerunRecommendation.primaryAction.scope, 'test_case');
+    assert.equal(result.rerunRecommendation.alternateActions[0]?.label, 'Rerun full suite');
+  });
+
+  it('reports applied no-op mutations without claiming validation success', async () => {
+    const dependencies = fakeDependencies({ changedFiles: [] });
+    const result = await applyApprovedEvalRepair(command(), dependencies);
+
+    assert.equal(result.status, 'applied');
+    assert.equal(result.changedFileCount, 0);
+    assert.deepEqual(result.changedFiles, []);
+    assert.equal(result.validationStatus, 'not-rerun');
+    assert.doesNotMatch(result.message, /fixed|resolved/i);
+  });
+
+  it('returns no-change semantics for blocked paths', async () => {
+    const scenarios = [
+      { marker: 'wrong', reason: 'missing-approval' },
+      { proposal: null, reason: 'stale-proposal' },
+      { proposal: proposal({ projectRoot: '/other-repo' }), reason: 'wrong-project-root' },
+      { unsafePaths: ['.env'], reason: 'unsafe-target' },
+      { readiness: { status: 'blocked' as const, message: 'Run sibu sync first.', guidance: ['Run `sibu sync`.'], affectedPaths: ['AGENTS.md'] }, reason: 'unsafe-workflow-readiness' },
+    ];
+
+    for (const scenario of scenarios) {
+      const dependencies = fakeDependencies(scenario);
+      const result = await applyApprovedEvalRepair({ ...command(), approvalMarker: scenario.marker ?? APPLY_APPROVED_REPAIR_MARKER }, dependencies);
+      assert.equal(result.status, 'blocked');
+      assert.equal(result.reason, scenario.reason);
+      assert.equal(result.changedFileCount, 0);
+      assert.deepEqual(result.changedFiles, []);
+      assert.match(result.message, /No project files changed/i);
+    }
+  });
+
 });
 
 function command() {
@@ -94,6 +143,7 @@ function proposal(overrides: Partial<PendingApprovedRepairProposal> = {}): Pendi
     expectedEvalImpact: 'The focused assertion should pass after rerun.',
     proposedChange: approvedChange,
     approvalState: 'pending',
+    sourceFailureScope: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1' },
     ...overrides,
   };
 }
@@ -103,6 +153,8 @@ function fakeDependencies(options: {
   readonly unsafePaths?: readonly string[];
   readonly readiness?: Awaited<ReturnType<ApplyApprovedEvalRepairDependencies['workflowReadiness']['checkReadiness']>>;
   readonly mutationFails?: boolean;
+  readonly changedFiles?: readonly { readonly path: string }[];
+  readonly marker?: string;
 } = {}): ApplyApprovedEvalRepairDependencies & { readonly calls: { lookup: number; mutations: unknown[] }; readonly events: ApplyApprovedRepairLogEvent[] } {
   const calls = { lookup: 0, mutations: [] as unknown[] };
   const events: ApplyApprovedRepairLogEvent[] = [];
@@ -112,7 +164,7 @@ function fakeDependencies(options: {
     proposalReader: { getPendingProposal: () => { calls.lookup += 1; return options.proposal === undefined ? proposal() : options.proposal; } },
     safety: { validateTargets: async (_root, targetPaths) => options.unsafePaths?.length ? { status: 'blocked', reason: 'unsafe target', unsafePaths: options.unsafePaths } : { status: 'ok', safeTargets: targetPaths } },
     workflowReadiness: { checkReadiness: async () => options.readiness ?? { status: 'ready' } },
-    mutator: { applyApprovedChange: async (request) => { calls.mutations.push(request); return options.mutationFails ? { status: 'failed', reason: 'disk-error' } : { status: 'applied', changedFiles: request.targetPaths.map((path) => ({ path })) }; } },
+    mutator: { applyApprovedChange: async (request) => { calls.mutations.push(request); return options.mutationFails ? { status: 'failed', reason: 'disk-error' } : { status: 'applied', changedFiles: options.changedFiles ?? request.targetPaths.map((path) => ({ path })) }; } },
     logger: { info: (event) => events.push(event), warn: (event) => events.push(event), error: (event) => events.push(event) },
     clock: () => 10,
   };

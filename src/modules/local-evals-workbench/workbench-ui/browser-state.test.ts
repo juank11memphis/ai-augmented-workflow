@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
-import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, createFailureAnalysisRequestPayload, createRepairProposalRequestPayload, finishFailureAnalysis, finishRepairProposal, parseEvalRunResponse, parseFailureAnalysisResponse, parseRepairProposalResponse, resolveFocusRestoreSelection, selectActiveFailedAssertion, selectCell, startFailureAnalysis, startRepairProposal, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
+import { createBrowserState, createRunRequestPayload, createRerunRecommendationPayload, createSelectedCellRetryPayload, failRun, finishApplyApprovedProposal, finishRun, navigateResultCell, createFailureAnalysisRequestPayload, createRepairProposalRequestPayload, finishFailureAnalysis, finishRepairProposal, parseApplyRepairResponse, parseEvalRunResponse, parseFailureAnalysisResponse, parseRepairProposalResponse, resolveFocusRestoreSelection, selectActiveFailedAssertion, selectCell, startApplyApprovedProposal, startFailureAnalysis, startRepairProposal, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
 import { createWorkbenchViewModel } from './view-model.js';
 
 describe('browser-state', () => {
@@ -137,6 +137,23 @@ describe('browser-state', () => {
     assert.equal(createRepairProposalRequestPayload(initialState(), { type: 'prompt_issue' }), null);
   });
 
+
+
+  it('tracks applied and blocked repair outcomes with focused and full-suite rerun payloads', () => {
+    const selected = selectCell(initialState(), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' }, 'desktop');
+    const applying = startApplyApprovedProposal(selected);
+    const applied = finishApplyApprovedProposal(applying, appliedRepairResult());
+    const blocked = finishApplyApprovedProposal(applying, { status: 'blocked', reason: 'unsafe-target', proposalId: 'repair_1', changedFiles: [], changedFileCount: 0, message: 'Unsafe target. No project files changed.' });
+
+    assert.equal(applying.proposal.status, 'applying');
+    assert.equal(applied.proposal.status, 'applied');
+    assert.equal(blocked.proposal.status, 'blocked');
+    assert.deepEqual(createRerunRecommendationPayload(applied), { suiteId: 'skill-authoring', evalRunModel: 'gpt-5-mini', scope: { type: 'test_case', testCaseId: 'missing-skill-boundary' } });
+    assert.deepEqual(createRerunRecommendationPayload(applied, true), { suiteId: 'skill-authoring', evalRunModel: 'gpt-5-mini', scope: { type: 'all' } });
+    assert.equal(createRerunRecommendationPayload(blocked), null);
+    assert.equal(parseApplyRepairResponse({ nope: true }).status, 'error');
+  });
+
   it('builds selected-cell retry payload for the current suite, cell model, and test case scope', () => {
     const state = selectCell(setVisibleVariantIds(initialState(), ['gpt-5-mini', 'gpt-5']), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5' }, 'desktop');
 
@@ -187,4 +204,21 @@ function analysisReady(assertionId: string) {
 
 function proposalReady() {
   return { status: 'proposal-ready' as const, assistanceModelLabel: 'gpt-5-mini', evidence: analysisReady('a1').evidence, proposal: { proposalId: 'repair_1', affectedProjectFiles: ['prompts/skill.md'], changeSummary: 'Add hard stop rule.', rationale: 'The active failure skipped the rule.', expectedEvalImpact: 'The selected assertion should pass.', proposedChange: { kind: 'instructions' as const, representation: 'Add rule.' }, approvalState: 'pending' as const } };
+}
+
+
+function appliedRepairResult() {
+  return {
+    status: 'applied' as const,
+    proposalId: 'repair_1',
+    changedFiles: [{ path: 'prompts/skill.md', summary: 'Changed by approved proposal.' }],
+    changedFileCount: 1,
+    message: 'Proposal applied. 1 project file changed; rerun validation before treating the issue as resolved.',
+    validationStatus: 'not-rerun' as const,
+    rerunRecommendation: {
+      message: 'Rerun this test case first.',
+      primaryAction: { scope: 'test_case' as const, label: 'Rerun this test case' as const, suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1', primary: true as const },
+      alternateActions: [{ scope: 'suite' as const, label: 'Rerun full suite' as const, suiteId: 'skill-authoring', evalRunModelId: 'gpt-5-mini', primary: false }],
+    },
+  };
 }

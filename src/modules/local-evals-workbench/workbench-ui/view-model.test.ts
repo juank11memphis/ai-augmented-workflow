@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
-import { createFailureConversationScopeKey } from './failure-workbench-view-model.js';
+import { createFailureConversationScopeKey, createProposalOutcomeViewModel } from './failure-workbench-view-model.js';
 import { createCellKey, createResultDisplay, createWorkbenchViewModel, findNextResultCellSelection } from './view-model.js';
 
 describe('createWorkbenchViewModel', () => {
@@ -79,6 +79,23 @@ describe('createWorkbenchViewModel', () => {
     ]);
 
     assert.equal(keys.size, 5);
+  });
+
+
+
+  it('models applied, blocked, and validation-not-rerun proposal outcomes without fixed language', () => {
+    const applied = createProposalOutcomeViewModel(appliedRepairResult());
+    const blocked = createProposalOutcomeViewModel({ status: 'blocked', reason: 'unsafe-target', proposalId: 'repair_1', changedFiles: [], changedFileCount: 0, message: 'Unsafe target. No project files changed.' });
+
+    assert.equal(applied.title, 'Proposal applied');
+    assert.equal(applied.changedFileCount, 1);
+    assert.equal(applied.changedFiles[0]?.path, 'prompts/skill.md');
+    assert.equal(applied.primaryActionLabel, 'Rerun this test case');
+    assert.equal(applied.alternateActionLabel, 'Rerun full suite');
+    assert.doesNotMatch(`${applied.message} ${applied.validationMessage}`, /fixed/i);
+    assert.equal(blocked.title, 'Proposal blocked');
+    assert.equal(blocked.changedFileCount, 0);
+    assert.match(blocked.message, /No project files changed/i);
   });
 
   it('builds passed selected-cell detail with assertions, metrics, output, and artifacts', () => {
@@ -215,5 +232,22 @@ function cell(testCaseId: string, modelId: string, status: EvalRunStatus, durati
     metrics: [{ name: 'total_cost', value: cost, unit: 'usd' }, { name: 'total_tokens', value: 1200 }],
     artifacts: [{ id: 'raw-output', label: 'Raw output', kind: 'file', preview: 'raw output preview', reference: 'artifacts/result.json' }],
     durationMs,
+  };
+}
+
+
+function appliedRepairResult() {
+  return {
+    status: 'applied' as const,
+    proposalId: 'repair_1',
+    changedFiles: [{ path: 'prompts/skill.md', summary: 'Changed by approved proposal.' }],
+    changedFileCount: 1,
+    message: 'Proposal applied. 1 project file changed; rerun validation before treating the issue as resolved.',
+    validationStatus: 'not-rerun' as const,
+    rerunRecommendation: {
+      message: 'Rerun this test case first.',
+      primaryAction: { scope: 'test_case' as const, label: 'Rerun this test case' as const, suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1', primary: true as const },
+      alternateActions: [{ scope: 'suite' as const, label: 'Rerun full suite' as const, suiteId: 'skill-authoring', evalRunModelId: 'gpt-5-mini', primary: false }],
+    },
   };
 }

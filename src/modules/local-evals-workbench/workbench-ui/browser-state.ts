@@ -1,4 +1,5 @@
 import type { AnalyzeFailedAssertionResult } from '../analyze-failed-assertion/result.js';
+import type { ApplyApprovedEvalRepairResult } from '../apply-approved-eval-repair/result.js';
 import type { DraftEvalRepairProposalResult } from '../draft-eval-repair-proposal/result.js';
 import type { RepairDirection } from '../draft-eval-repair-proposal/command.js';
 import type { RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
@@ -38,6 +39,9 @@ export type RepairProposalState =
   | { readonly status: 'direction-needed'; readonly scopeKey: string }
   | { readonly status: 'drafting'; readonly scopeKey: string }
   | { readonly status: 'ready'; readonly scopeKey: string; readonly result: DraftEvalRepairProposalResult & { readonly status: 'proposal-ready' } }
+  | { readonly status: 'applying'; readonly scopeKey: string }
+  | { readonly status: 'applied'; readonly scopeKey: string; readonly result: ApplyApprovedEvalRepairResult & { readonly status: 'applied' } }
+  | { readonly status: 'blocked'; readonly scopeKey: string; readonly result: ApplyApprovedEvalRepairResult & { readonly status: 'blocked' } }
   | { readonly status: 'unavailable'; readonly scopeKey: string; readonly result: DraftEvalRepairProposalResult & { readonly status: 'proposal-unavailable' } }
   | { readonly status: 'rejected'; readonly scopeKey: string; readonly message: string }
   | { readonly status: 'error'; readonly scopeKey: string; readonly message: string };
@@ -191,6 +195,36 @@ export function parseRepairProposalResponse(payload: unknown): DraftEvalRepairPr
   return invalidProposalResponse();
 }
 
+
+export function startApplyApprovedProposal(state: BrowserState): BrowserState {
+  if (!state.activeConversationScopeKey) return state;
+  return { ...state, proposal: { status: 'applying', scopeKey: state.activeConversationScopeKey } };
+}
+
+export function finishApplyApprovedProposal(state: BrowserState, result: ApplyApprovedEvalRepairResult): BrowserState {
+  const scopeKey = state.activeConversationScopeKey;
+  if (!scopeKey) return { ...state, proposal: { status: 'idle' } };
+  if (result.status === 'applied') return { ...state, proposal: { status: 'applied', scopeKey, result } };
+  if (result.status === 'blocked') return { ...state, proposal: { status: 'blocked', scopeKey, result } };
+  return { ...state, proposal: { status: 'error', scopeKey, message: result.message } };
+}
+
+export function createRerunRecommendationPayload(state: BrowserState, useFullSuite = false): EvalRunRequestPayload | null {
+  if (state.proposal.status !== 'applied') return null;
+  const action = useFullSuite
+    ? state.proposal.result.rerunRecommendation.alternateActions.find((item) => item.scope === 'suite') ?? state.proposal.result.rerunRecommendation.primaryAction
+    : state.proposal.result.rerunRecommendation.primaryAction;
+  return action.scope === 'test_case'
+    ? { suiteId: action.suiteId, evalRunModel: action.evalRunModelId, scope: { type: 'test_case', testCaseId: action.testCaseId } }
+    : { suiteId: action.suiteId, evalRunModel: action.evalRunModelId, scope: { type: 'all' } };
+}
+
+export function parseApplyRepairResponse(payload: unknown): ApplyApprovedEvalRepairResult {
+  if (!isRecord(payload) || typeof payload.status !== 'string') return invalidApplyResponse();
+  if (payload.status === 'applied' || payload.status === 'blocked' || payload.status === 'error') return payload as ApplyApprovedEvalRepairResult;
+  return invalidApplyResponse();
+}
+
 export function parseEvalRunResponse(payload: unknown): RunLocalEvalSuiteResult {
   if (!isRecord(payload) || typeof payload.status !== 'string') return invalidResponse();
   if (payload.status === 'completed' && isRecord(payload.matrix)) return payload as RunLocalEvalSuiteResult;
@@ -249,6 +283,10 @@ function parseCellKey(key: string): WorkbenchCellSelection | null {
   const [testCaseId, modelId] = key.split(':');
   if (!testCaseId || !modelId) return null;
   return { testCaseId, modelId };
+}
+
+function invalidApplyResponse(): ApplyApprovedEvalRepairResult {
+  return { status: 'error', reason: 'mutation-failure', proposalId: 'unknown', changedFiles: [], changedFileCount: 0, message: 'The repair server returned an unreadable response.' };
 }
 
 function invalidResponse(): RunLocalEvalSuiteResult {

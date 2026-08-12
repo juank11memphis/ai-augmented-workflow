@@ -285,7 +285,8 @@ describe('NodeLocalWorkbenchServerStarter', () => {
 
       const applied = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'repair_1', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
       assert.equal(applied.statusCode, 200);
-      assert.match(applied.body, /applied|prompts\/skill-authoring\.md/);
+      assert.match(applied.body, /applied|prompts\/skill-authoring\.md|changedFileCount|rerunRecommendation/);
+      assert.match(applied.body, /Rerun this test case|Rerun full suite/);
       assert.equal(mutationCalls.length, 1);
       assert.doesNotMatch(applied.body, /secret|OPENAI_API_KEY|workflow health|old content|new content/);
     } finally { await result.stop?.(); }
@@ -441,7 +442,7 @@ function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDepend
 
 function applyRepairDependencies(options: { readonly mutationCalls?: unknown[] } = {}): ApplyApprovedEvalRepairDependencies {
   return {
-    proposalReader: { getPendingProposal: (proposalId) => proposalId === 'stale' ? null : { proposalId, projectRoot: '/repo', affectedProjectFiles: [proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md'], changeSummary: 'Add hard stop rule.', rationale: 'The active assertion skipped the rule.', expectedEvalImpact: 'The focused assertion should pass.', proposedChange: { kind: 'replacement', representation: 'new content' }, approvalState: 'pending' } },
+    proposalReader: { getPendingProposal: (proposalId) => proposalId === 'stale' ? null : { proposalId, projectRoot: '/repo', affectedProjectFiles: [proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md'], changeSummary: 'Add hard stop rule.', rationale: 'The active assertion skipped the rule.', expectedEvalImpact: 'The focused assertion should pass.', proposedChange: { kind: 'replacement', representation: 'new content' }, approvalState: 'pending', sourceFailureScope: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1' } } },
     safety: { validateTargets: async (_root, targets) => targets.some((target) => target.startsWith('..')) ? { status: 'blocked', reason: 'unsafe target', unsafePaths: targets } : { status: 'ok', safeTargets: targets } },
     workflowReadiness: { checkReadiness: async () => ({ status: 'ready' }) },
     mutator: { applyApprovedChange: async (request) => { options.mutationCalls?.push(request); return { status: 'applied', changedFiles: request.targetPaths.map((target) => ({ path: target })) }; } },
@@ -472,7 +473,7 @@ function proposalDependencies(options: { readonly hasKey?: boolean; readonly mod
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
     projectFileReader: { readProjectFilePreviews: async () => ({ status: 'ok', files: [] }) },
     llm: { draftProposal: async (request) => { options.proposalCalls?.push(request); if (options.throws) throw new Error('full model response raw prompt secret'); return { affectedProjectFiles: [options.targetFile ?? 'prompts/skill-authoring.md'], changeSummary: options.summary ?? 'Require missing input hard stops before drafting.', rationale: 'The active assertion failed because the prompt skipped the stop rule.', expectedEvalImpact: 'The selected assertion should pass while preserving other checks.', proposedChange: { kind: 'instructions', representation: 'Add an explicit missing-input hard stop rule.' } }; } },
-    proposalStore: { savePendingProposal: async (request) => ({ ...request.proposal, proposalId: 'repair_test', approvalState: 'pending' }) },
+    proposalStore: { savePendingProposal: async (request) => ({ ...request.proposal, proposalId: 'repair_test', approvalState: 'pending', sourceFailureScope: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1' } }) },
     logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
   };
 }

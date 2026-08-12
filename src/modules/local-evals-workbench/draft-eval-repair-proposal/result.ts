@@ -2,6 +2,13 @@ import type { FailedAssertionEvidence } from '../analyze-failed-assertion/eviden
 
 export type RepairProposalApprovalState = 'pending';
 
+export type RepairProposalSourceFailureScope = {
+  readonly suiteId: string;
+  readonly testCaseId: string;
+  readonly evalRunModelId: string;
+  readonly assertionId: string;
+};
+
 export type ProposedRepairChange = {
   readonly kind: 'unified-diff' | 'replacement' | 'instructions';
   readonly representation: string;
@@ -15,6 +22,7 @@ export type RepairProposalPreview = {
   readonly expectedEvalImpact: string;
   readonly proposedChange: ProposedRepairChange;
   readonly approvalState: RepairProposalApprovalState;
+  readonly sourceFailureScope?: RepairProposalSourceFailureScope;
 };
 
 export type DraftEvalRepairProposalReadyResult = {
