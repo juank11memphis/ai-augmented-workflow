@@ -13,6 +13,7 @@ const WORKBENCH_CLIENT_SETUP = String.raw`  const root = document.querySelector(
   let activeAssertionId = null;
   let focusRestoreKey = null;
   let analysisState = { status: 'idle' };
+  let proposalState = { status: 'idle' };
 
   const control = (name) => root.querySelector('[data-control="' + name + '"]');
   const bind = (name) => root.querySelectorAll('[data-bind="' + name + '"]');

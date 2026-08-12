@@ -6,6 +6,8 @@ import { InMemoryRunArtifactStore, JsonEvalSuiteRegistry, JsonEvalSuiteRunnerAda
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
 import { analyzeFailedAssertion, EnvironmentAssistanceConfig, OpenAiFailureAnalysisAdapter, parseAnalyzeFailedAssertionRequest } from '../analyze-failed-assertion/index.js';
 import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
+import { draftEvalRepairProposal, InMemoryRepairProposalStore, NodeSafeProjectFileReader, OpenAiRepairProposalAdapter, parseDraftEvalRepairProposalRequest } from '../draft-eval-repair-proposal/index.js';
+import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-proposal/index.js';
 import type { LocalWorkbenchServerStarterPort, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStartResult } from './ports.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
@@ -71,7 +73,7 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
   }
 }
 
-type LocalWorkbenchRuntimeDependencies = { readonly run: RunLocalEvalSuiteDependencies; readonly analysis: AnalyzeFailedAssertionDependencies };
+type LocalWorkbenchRuntimeDependencies = { readonly run: RunLocalEvalSuiteDependencies; readonly analysis: AnalyzeFailedAssertionDependencies; readonly proposal: DraftEvalRepairProposalDependencies };
 
 async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies): Promise<void> {
   if (request.url === '/api/eval-suites') {
@@ -86,6 +88,11 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
 
   if (request.url === '/api/failure-analysis' && request.method === 'POST') {
     await handleFailureAnalysisRequest(request, response, startRequest, dependencies.analysis);
+    return;
+  }
+
+  if (request.url === '/api/repair-proposals' && request.method === 'POST') {
+    await handleRepairProposalRequest(request, response, startRequest, dependencies.proposal);
     return;
   }
 
@@ -126,6 +133,23 @@ async function handleFailureAnalysisRequest(request: LocalHttpRequest, response:
   writeJson(response, result.status === 'analysis-ready' || result.status === 'analysis-unavailable' ? 200 : result.status === 'blocked' ? 422 : 502, result);
 }
 
+async function handleRepairProposalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: DraftEvalRepairProposalDependencies): Promise<void> {
+  const body = await readJsonBody(request);
+  if (body.status === 'invalid') {
+    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: body.message });
+    return;
+  }
+
+  const parsed = parseDraftEvalRepairProposalRequest(startRequest.projectRoot, body.payload);
+  if (parsed.status === 'invalid') {
+    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: parsed.message });
+    return;
+  }
+
+  const result = await draftEvalRepairProposal(parsed.command, dependencies);
+  writeJson(response, result.status === 'proposal-ready' || result.status === 'proposal-unavailable' ? 200 : result.status === 'blocked' || result.status === 'proposal-rejected' ? 422 : 502, result);
+}
+
 function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer {
   return http.createServer((request, response) => handler(request, response));
 }
@@ -146,6 +170,14 @@ function defaultRuntimeDependencies(_request: LocalWorkbenchServerStartRequest):
       artifactReader: artifactStore,
       assistanceConfig,
       llm: new OpenAiFailureAnalysisAdapter(config.apiKey ?? ''),
+      logger,
+    },
+    proposal: {
+      artifactReader: artifactStore,
+      assistanceConfig,
+      projectFileReader: new NodeSafeProjectFileReader(),
+      llm: new OpenAiRepairProposalAdapter(config.apiKey ?? ''),
+      proposalStore: new InMemoryRepairProposalStore(),
       logger,
     },
   };

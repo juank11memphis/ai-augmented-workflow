@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
 import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
+import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-proposal/index.js';
 import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
@@ -211,6 +212,51 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     }
   });
 
+  it('serves repair proposal unavailable, success, rejection, LLM failure, invalid JSON, and active assertion scoping', async () => {
+    const unavailableServer = new FakeLocalHttpServer(4321);
+    const proposalCalls: unknown[] = [];
+    const unavailableStarter = new NodeLocalWorkbenchServerStarter((handler) => { unavailableServer.handler = handler; return unavailableServer; }, () => runtimeDependencies({ proposal: proposalDependencies({ hasKey: false, proposalCalls }) }));
+    const unavailableResult = await unavailableStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await unavailableServer.renderJsonResponse('/api/repair-proposals', proposalPayload());
+      assert.equal(response.statusCode, 200);
+      assert.match(response.body, /proposal-unavailable|OPENAI_API_KEY/);
+      assert.equal(proposalCalls.length, 0);
+      assert.doesNotMatch(response.body, /secret|raw prompt|full model response|other failed output|\/repo/);
+      assert.equal((await unavailableServer.renderRawResponse('/api/repair-proposals', '{ nope')).statusCode, 400);
+      assert.equal((await unavailableServer.renderRawResponse('/api/repair-proposals', JSON.stringify(proposalPayload()) + 'x'.repeat(70 * 1024))).statusCode, 400);
+      assert.equal((await unavailableServer.renderJsonResponse('/api/repair-proposals', { ...proposalPayload(), assertionIds: ['a1', 'a2'] })).statusCode, 400);
+    } finally { await unavailableResult.stop?.(); }
+
+    const successServer = new FakeLocalHttpServer(4321);
+    const successCalls: unknown[] = [];
+    const successStarter = new NodeLocalWorkbenchServerStarter((handler) => { successServer.handler = handler; return successServer; }, () => runtimeDependencies({ proposal: proposalDependencies({ model: 'override-model', proposalCalls: successCalls }) }));
+    const successResult = await successStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await successServer.renderJsonResponse('/api/repair-proposals', proposalPayload());
+      assert.equal(response.statusCode, 200);
+      assert.match(response.body, /proposal-ready|override-model|pending|prompts\/skill-authoring\.md/);
+      assert.equal(successCalls.length, 1);
+      assert.doesNotMatch(response.body, /OPENAI_API_KEY|secret|raw prompt|full model response|other failed output|\/repo/);
+    } finally { await successResult.stop?.(); }
+
+    const rejectedServer = new FakeLocalHttpServer(4321);
+    const rejectedStarter = new NodeLocalWorkbenchServerStarter((handler) => { rejectedServer.handler = handler; return rejectedServer; }, () => runtimeDependencies({ proposal: proposalDependencies({ summary: 'fix it' }) }));
+    const rejectedResult = await rejectedStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try { assert.equal((await rejectedServer.renderJsonResponse('/api/repair-proposals', proposalPayload())).statusCode, 422); }
+    finally { await rejectedResult.stop?.(); }
+
+    const failureServer = new FakeLocalHttpServer(4321);
+    const failureStarter = new NodeLocalWorkbenchServerStarter((handler) => { failureServer.handler = handler; return failureServer; }, () => runtimeDependencies({ proposal: proposalDependencies({ throws: true }) }));
+    const failureResult = await failureStarter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const response = await failureServer.renderJsonResponse('/api/repair-proposals', proposalPayload());
+      assert.equal(response.statusCode, 502);
+      assert.match(response.body, /llm-failure/);
+      assert.doesNotMatch(response.body, /full model response|secret|raw prompt/);
+    } finally { await failureResult.stop?.(); }
+  });
+
 });
 
 function readyDiscovery(): EvalSuiteDiscoveryResult {
@@ -355,12 +401,16 @@ class FakeLocalHttpServer {
 
 
 
-function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDependencies; readonly analysis?: AnalyzeFailedAssertionDependencies } = {}) {
-  return { run: overrides.run ?? runDependencies([]), analysis: overrides.analysis ?? analysisDependencies() };
+function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDependencies; readonly analysis?: AnalyzeFailedAssertionDependencies; readonly proposal?: DraftEvalRepairProposalDependencies } = {}) {
+  return { run: overrides.run ?? runDependencies([]), analysis: overrides.analysis ?? analysisDependencies(), proposal: overrides.proposal ?? proposalDependencies() };
 }
 
 function analysisPayload() {
   return { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1' };
+}
+
+function proposalPayload() {
+  return { ...analysisPayload(), repairDirection: { type: 'prompt_issue' } };
 }
 
 function analysisDependencies(options: { readonly hasKey?: boolean; readonly model?: string; readonly throws?: boolean; readonly analysisCalls?: unknown[] } = {}): AnalyzeFailedAssertionDependencies {
@@ -368,6 +418,17 @@ function analysisDependencies(options: { readonly hasKey?: boolean; readonly mod
     artifactReader: { getRunArtifact: () => failedArtifact() },
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
     llm: { analyzeFailure: async (request) => { options.analysisCalls?.push(request); if (options.throws) throw new Error('full model response secret raw prompt'); return { exactFailureExplanation: 'The selected assertion failed.', likelyCause: 'prompt_issue', evidenceSummary: 'The output did not stop.', uncertainty: 'Low uncertainty.' }; } },
+    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
+  };
+}
+
+function proposalDependencies(options: { readonly hasKey?: boolean; readonly model?: string; readonly throws?: boolean; readonly proposalCalls?: unknown[]; readonly targetFile?: string; readonly summary?: string } = {}): DraftEvalRepairProposalDependencies {
+  return {
+    artifactReader: { getRunArtifact: () => failedArtifact() },
+    assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
+    projectFileReader: { readProjectFilePreviews: async () => ({ status: 'ok', files: [] }) },
+    llm: { draftProposal: async (request) => { options.proposalCalls?.push(request); if (options.throws) throw new Error('full model response raw prompt secret'); return { affectedProjectFiles: [options.targetFile ?? 'prompts/skill-authoring.md'], changeSummary: options.summary ?? 'Require missing input hard stops before drafting.', rationale: 'The active assertion failed because the prompt skipped the stop rule.', expectedEvalImpact: 'The selected assertion should pass while preserving other checks.', proposedChange: { kind: 'instructions', representation: 'Add an explicit missing-input hard stop rule.' } }; } },
+    proposalStore: { savePendingProposal: async (request) => ({ ...request.proposal, proposalId: 'repair_test', approvalState: 'pending' }) },
     logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
   };
 }

@@ -1,4 +1,6 @@
 import type { AnalyzeFailedAssertionResult } from '../analyze-failed-assertion/result.js';
+import type { DraftEvalRepairProposalResult } from '../draft-eval-repair-proposal/result.js';
+import type { RepairDirection } from '../draft-eval-repair-proposal/command.js';
 import type { RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
 import {
   createCellKey,
@@ -21,6 +23,7 @@ export type BrowserState = {
   readonly activeConversationScopeKey: string | null;
   readonly focusRestoreKey: string | null;
   readonly analysis: FailureAnalysisState;
+  readonly proposal: RepairProposalState;
 };
 
 export type FailureAnalysisState =
@@ -30,6 +33,15 @@ export type FailureAnalysisState =
   | { readonly status: 'unavailable'; readonly scopeKey: string; readonly result: AnalyzeFailedAssertionResult & { readonly status: 'analysis-unavailable' } }
   | { readonly status: 'error'; readonly scopeKey: string; readonly message: string };
 
+export type RepairProposalState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'direction-needed'; readonly scopeKey: string }
+  | { readonly status: 'drafting'; readonly scopeKey: string }
+  | { readonly status: 'ready'; readonly scopeKey: string; readonly result: DraftEvalRepairProposalResult & { readonly status: 'proposal-ready' } }
+  | { readonly status: 'unavailable'; readonly scopeKey: string; readonly result: DraftEvalRepairProposalResult & { readonly status: 'proposal-unavailable' } }
+  | { readonly status: 'rejected'; readonly scopeKey: string; readonly message: string }
+  | { readonly status: 'error'; readonly scopeKey: string; readonly message: string };
+
 export type EvalRunRequestPayload = {
   readonly suiteId: string;
   readonly evalRunModel: string;
@@ -37,7 +49,7 @@ export type EvalRunRequestPayload = {
 };
 
 export function createBrowserState(viewModel: WorkbenchViewModel, latestRun?: RunLocalEvalSuiteResult): BrowserState {
-  return { viewModel, latestRun, resultFilters: viewModel.resultDisplay.filters, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null, analysis: { status: 'idle' } };
+  return { viewModel, latestRun, resultFilters: viewModel.resultDisplay.filters, selectedCell: null, activeConversationScopeKey: null, focusRestoreKey: null, analysis: { status: 'idle' }, proposal: { status: 'idle' } };
 }
 
 export function selectSuite(state: BrowserState, suiteId: string): BrowserState {
@@ -145,6 +157,40 @@ export function parseFailureAnalysisResponse(payload: unknown): AnalyzeFailedAss
   return invalidAnalysisResponse();
 }
 
+export function startRepairProposal(state: BrowserState): BrowserState {
+  if (!state.activeConversationScopeKey) return state;
+  return { ...state, proposal: { status: 'drafting', scopeKey: state.activeConversationScopeKey } };
+}
+
+export function finishRepairProposal(state: BrowserState, result: DraftEvalRepairProposalResult): BrowserState {
+  const scopeKey = state.activeConversationScopeKey;
+  if (!scopeKey) return { ...state, proposal: { status: 'idle' } };
+  if (result.status === 'proposal-ready') return { ...state, proposal: { status: 'ready', scopeKey, result } };
+  if (result.status === 'proposal-unavailable') return { ...state, proposal: { status: 'unavailable', scopeKey, result } };
+  if (result.status === 'proposal-rejected' || result.status === 'blocked') return { ...state, proposal: { status: 'rejected', scopeKey, message: result.message } };
+  return { ...state, proposal: { status: 'error', scopeKey, message: result.message } };
+}
+
+export function createRepairProposalRequestPayload(state: BrowserState, repairDirection: RepairDirection): unknown | null {
+  const workbench = state.viewModel.resultDisplay.selectedCell?.failureWorkbench;
+  if (!workbench || !state.selectedCell) return null;
+  return {
+    suiteId: state.viewModel.selectedSuite.id,
+    testCaseId: state.selectedCell.testCaseId,
+    evalRunModelId: state.selectedCell.modelId,
+    runScope: state.viewModel.runScope,
+    assertionId: workbench.activeEvidence.assertionId,
+    repairDirection,
+    priorAnalysis: state.analysis.status === 'ready' && state.analysis.scopeKey === workbench.conversationScopeKey ? { summary: state.analysis.result.analysis.evidenceSummary, likelyCause: state.analysis.result.analysis.likelyCause } : undefined,
+  };
+}
+
+export function parseRepairProposalResponse(payload: unknown): DraftEvalRepairProposalResult {
+  if (!isRecord(payload) || typeof payload.status !== 'string') return invalidProposalResponse();
+  if (payload.status === 'proposal-ready' || payload.status === 'proposal-unavailable' || payload.status === 'proposal-rejected' || payload.status === 'blocked' || payload.status === 'error') return payload as DraftEvalRepairProposalResult;
+  return invalidProposalResponse();
+}
+
 export function parseEvalRunResponse(payload: unknown): RunLocalEvalSuiteResult {
   if (!isRecord(payload) || typeof payload.status !== 'string') return invalidResponse();
   if (payload.status === 'completed' && isRecord(payload.matrix)) return payload as RunLocalEvalSuiteResult;
@@ -156,14 +202,15 @@ function rebuildFilteredState(state: BrowserState, filters: Partial<WorkbenchRes
   const resultFilters = normalizeResultFilters(state.latestRun?.matrix, filters);
   const filteredState = { ...state, resultFilters, viewModel: rebuildViewModel(state, { resultFilters }) };
   const selectedCell = state.selectedCell && isVisibleCell(filteredState, state.selectedCell) ? state.selectedCell : null;
-  return rebuildState({ ...state, resultFilters, selectedCell, activeConversationScopeKey: selectedCell ? state.activeConversationScopeKey : null });
+  return rebuildState({ ...state, resultFilters, selectedCell, activeConversationScopeKey: selectedCell ? state.activeConversationScopeKey : null, proposal: selectedCell ? state.proposal : { status: 'idle' } });
 }
 
 function rebuildState(state: BrowserState, overrides: { readonly selectedEvalRunModel?: string; readonly runScope?: WorkbenchRunScope; readonly latestRun?: RunLocalEvalSuiteResult; readonly isRunning?: boolean } = {}): BrowserState {
   const viewModel = rebuildViewModel(state, overrides);
   const activeConversationScopeKey = viewModel.resultDisplay.selectedCell?.failureWorkbench?.conversationScopeKey ?? null;
   const analysis = activeConversationScopeKey && analysisMatchesScope(state.analysis, activeConversationScopeKey) ? state.analysis : { status: 'idle' as const };
-  return { ...state, viewModel, resultFilters: viewModel.resultDisplay.filters, activeConversationScopeKey, analysis, selectedCell: viewModel.resultDisplay.selectedCell?.failureWorkbench ? { ...state.selectedCell!, activeAssertionId: viewModel.resultDisplay.selectedCell.failureWorkbench.activeEvidence.assertionId } : state.selectedCell && viewModel.resultDisplay.selectedCell ? withoutActiveAssertion(state.selectedCell) : state.selectedCell };
+  const proposal = activeConversationScopeKey && proposalMatchesScope(state.proposal, activeConversationScopeKey) ? state.proposal : { status: 'idle' as const };
+  return { ...state, viewModel, resultFilters: viewModel.resultDisplay.filters, activeConversationScopeKey, analysis, proposal, selectedCell: viewModel.resultDisplay.selectedCell?.failureWorkbench ? { ...state.selectedCell!, activeAssertionId: viewModel.resultDisplay.selectedCell.failureWorkbench.activeEvidence.assertionId } : state.selectedCell && viewModel.resultDisplay.selectedCell ? withoutActiveAssertion(state.selectedCell) : state.selectedCell };
 }
 
 function rebuildViewModel(state: BrowserState, overrides: { readonly selectedEvalRunModel?: string; readonly runScope?: WorkbenchRunScope; readonly latestRun?: RunLocalEvalSuiteResult; readonly isRunning?: boolean; readonly resultFilters?: Partial<WorkbenchResultFilters> }): WorkbenchViewModel {
@@ -218,4 +265,12 @@ function analysisMatchesScope(analysis: FailureAnalysisState, scopeKey: string):
 
 function invalidAnalysisResponse(): AnalyzeFailedAssertionResult {
   return { status: 'error', reason: 'invalid-llm-response', message: 'The analysis server returned an unreadable response.', assistanceModelLabel: 'unknown' };
+}
+
+function proposalMatchesScope(proposal: RepairProposalState, scopeKey: string): boolean {
+  return proposal.status !== 'idle' && proposal.scopeKey === scopeKey;
+}
+
+function invalidProposalResponse(): DraftEvalRepairProposalResult {
+  return { status: 'error', reason: 'invalid-llm-response', message: 'The proposal server returned an unreadable response.', assistanceModelLabel: 'unknown' };
 }

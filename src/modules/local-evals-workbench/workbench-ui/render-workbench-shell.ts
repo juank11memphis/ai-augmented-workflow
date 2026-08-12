@@ -139,6 +139,7 @@ function renderFailureWorkbench(workbench: FailureWorkbenchViewModel): string {
     ${renderDiagnosticsEvidence(evidence.diagnostics)}
     ${renderArtifactsEvidence(evidence.artifacts)}
     <section class="detail-section conversation-placeholder" aria-live="polite"><h3>Conversation</h3><p>Sibu: Want me to analyze this failed assertion?</p><button type="button" data-control="analyze-failure">Analyze this failure</button></section>
+    <section class="detail-section proposal-preview"><h3>Proposal</h3><p>Choose a repair direction for this active failed assertion. No project files are changed by drafting.</p><label class="field">Repair direction<select data-control="repair-direction" aria-label="Repair direction"><option value="prompt_issue">Prompt issue</option><option value="eval_assertion_issue">Eval assertion issue</option><option value="fixture_input_issue">Fixture/input issue</option><option value="regression_case">Regression case</option><option value="custom">Custom direction</option></select></label><label class="field">Custom direction<input type="text" data-control="repair-direction-custom" aria-label="Custom repair direction" placeholder="Name the target and intended change"></label><button type="button" data-control="draft-proposal">Draft proposal</button></section>
   </section>`;
 }
 

@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
-import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, createFailureAnalysisRequestPayload, finishFailureAnalysis, parseEvalRunResponse, parseFailureAnalysisResponse, resolveFocusRestoreSelection, selectActiveFailedAssertion, selectCell, startFailureAnalysis, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
+import { createBrowserState, createRunRequestPayload, createSelectedCellRetryPayload, failRun, finishRun, navigateResultCell, createFailureAnalysisRequestPayload, createRepairProposalRequestPayload, finishFailureAnalysis, finishRepairProposal, parseEvalRunResponse, parseFailureAnalysisResponse, parseRepairProposalResponse, resolveFocusRestoreSelection, selectActiveFailedAssertion, selectCell, startFailureAnalysis, startRepairProposal, selectModel, selectRunScope, selectSuite, setFailuresOnly, setSearchQuery, setVisibleVariantIds, startRun, type BrowserState } from './browser-state.js';
 import { createWorkbenchViewModel } from './view-model.js';
 
 describe('browser-state', () => {
@@ -114,6 +114,29 @@ describe('browser-state', () => {
     assert.equal(createFailureAnalysisRequestPayload(initialState()), null);
   });
 
+
+  it('builds active assertion proposal payload, tracks preview states, and resets when assertion changes', () => {
+    const selected = selectCell(initialState(), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' }, 'desktop');
+    const drafting = startRepairProposal(selected);
+    const ready = finishRepairProposal(drafting, proposalReady());
+    const switched = selectActiveFailedAssertion(ready, 'a2');
+
+    assert.deepEqual(createRepairProposalRequestPayload(selected, { type: 'prompt_issue' }), { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1', repairDirection: { type: 'prompt_issue' }, priorAnalysis: undefined });
+    assert.equal(drafting.proposal.status, 'drafting');
+    assert.equal(ready.proposal.status, 'ready');
+    if (ready.proposal.status === 'ready') assert.equal(ready.proposal.result.proposal.approvalState, 'pending');
+    assert.equal(switched.proposal.status, 'idle');
+  });
+
+  it('tracks unavailable, rejected, unsafe blocker, and endpoint error proposal states', () => {
+    const selected = selectCell(initialState(), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini' }, 'desktop');
+    assert.equal(finishRepairProposal(selected, { status: 'proposal-unavailable', reason: 'missing-openai-api-key', message: 'Proposal unavailable', setupGuidance: ['Set OPENAI_API_KEY.'], assistanceModelLabel: 'gpt-5-mini' }).proposal.status, 'unavailable');
+    assert.equal(finishRepairProposal(selected, { status: 'proposal-rejected', reason: 'vague-proposal', message: 'Too vague.', assistanceModelLabel: 'gpt-5-mini' }).proposal.status, 'rejected');
+    assert.equal(finishRepairProposal(selected, { status: 'blocked', reason: 'unsafe-target-files', message: 'Unsafe target.' }).proposal.status, 'rejected');
+    assert.equal(finishRepairProposal(selected, parseRepairProposalResponse({ nope: true })).proposal.status, 'error');
+    assert.equal(createRepairProposalRequestPayload(initialState(), { type: 'prompt_issue' }), null);
+  });
+
   it('builds selected-cell retry payload for the current suite, cell model, and test case scope', () => {
     const state = selectCell(setVisibleVariantIds(initialState(), ['gpt-5-mini', 'gpt-5']), { testCaseId: 'missing-skill-boundary', modelId: 'gpt-5' }, 'desktop');
 
@@ -159,4 +182,9 @@ function blockedRun(): RunLocalEvalSuiteResult {
 
 function analysisReady(assertionId: string) {
   return { status: 'analysis-ready' as const, assistanceModelLabel: 'gpt-5-mini', evidence: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId, assertionLabel: 'A', assertionKind: 'assertion' as const, assertionMessage: 'Failed.', actualOutputPreview: 'actual', expectedPreview: 'expected', cellOutputPreview: null, diagnostics: [], artifacts: [] }, analysis: { exactFailureExplanation: 'Failed.', likelyCause: 'prompt_issue' as const, evidenceSummary: 'Evidence.', uncertainty: 'Low.' } };
+}
+
+
+function proposalReady() {
+  return { status: 'proposal-ready' as const, assistanceModelLabel: 'gpt-5-mini', evidence: analysisReady('a1').evidence, proposal: { proposalId: 'repair_1', affectedProjectFiles: ['prompts/skill.md'], changeSummary: 'Add hard stop rule.', rationale: 'The active failure skipped the rule.', expectedEvalImpact: 'The selected assertion should pass.', proposedChange: { kind: 'instructions' as const, representation: 'Add rule.' }, approvalState: 'pending' as const } };
 }

@@ -23,8 +23,10 @@ describe('WORKBENCH_CLIENT_SCRIPT', () => {
     const switchEnd = WORKBENCH_CLIENT_SCRIPT.indexOf(`event.target.matches('[data-control=\"close-cell\"]')`);
     const switchBranch = WORKBENCH_CLIENT_SCRIPT.slice(switchStart, switchEnd);
     assert.match(switchBranch, /renderSelectedCell\(\)/);
-    assert.doesNotMatch(switchBranch, /fetch|api\/eval-runs|proposal|mutation/i);
-    assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /repair proposal|Approve change|automated repair|proposal preview|apply mutation|Ask about this failure/i);
+    assert.doesNotMatch(switchBranch, /fetch|api\/eval-runs|api\/repair-proposals|mutation/i);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/repair-proposals/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"draft-proposal\"/);
+    assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /automated repair|apply mutation|Ask about this failure/i);
   });
 });
 
@@ -76,7 +78,10 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /Raw artifacts/);
     assert.match(html, /Want me to analyze this failed assertion\?/);
     assert.match(html, /data-control="analyze-failure"/);
-    assert.doesNotMatch(html, /proposal|Approve change|Reject|mutation/i);
+    assert.match(html, /Proposal/);
+    assert.match(html, /Repair direction/);
+    assert.match(html, /data-control="draft-proposal"/);
+    assert.doesNotMatch(html, /Approve change|Reject|mutation/i);
   });
 
   it('renders switched active assertion evidence and escapes failure labels', () => {

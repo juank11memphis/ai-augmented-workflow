@@ -21,6 +21,7 @@ export const WORKBENCH_CLIENT_FOUNDATION_SECTION = {
       conversationScopeKey: state.selectedSuiteId + ':' + cell.testCaseId + ':' + cell.modelId + ':' + active.id,
       queue: failed.map((assertion) => ({ ...assertion, assertionId: assertion.id, selected: assertion.id === active.id })),
       activeEvidence: {
+        assertionId: active.id,
         label: active.label,
         message: active.message || 'No assertion message.',
         actualPreview: active.actualPreview || cell.outputPreview || null,
