@@ -174,6 +174,14 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
+    templateRelativePath: 'skills/eval-authoring/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/eval-authoring/SKILL.md',
+      gemini: '.agents/skills/eval-authoring/SKILL.md',
+      claude: '.agents/skills/eval-authoring/SKILL.md',
+    },
+  },
+  {
     templateRelativePath: 'skills/feature-idea-capture/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/feature-idea-capture/SKILL.md',

@@ -1,11 +1,11 @@
 {
-  "templateVersion": "150",
+  "templateVersion": "151",
   "templates": {
     "AGENTS.md": {
-      "version": "37",
+      "version": "38",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds concise-by-default response guidance while preserving required artifact quality and safety detail."
+        "Routes Sibu eval artifact authoring requests to the mandatory eval-authoring skill."
       ]
     },
     ".codex/config.toml": {
@@ -336,6 +336,13 @@
       "description": "Mandatory structured logging skill for safe, useful, storytelling logs in code-writing workflows.",
       "changes": [
         "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+      ]
+    },
+    "skills/eval-authoring/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
+      "changes": [
+        "Adds mandatory eval-authoring guidance for Sibu-format suites, cases, fixtures, assertions, graders, and boundaries."
       ]
     }
   }

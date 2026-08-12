@@ -34,8 +34,8 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '37');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise-by-default response guidance/i);
+    assert.equal(templateMetadata?.version, '38');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Routes Sibu eval artifact authoring/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
