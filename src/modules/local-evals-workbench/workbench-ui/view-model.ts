@@ -37,7 +37,8 @@ export type WorkbenchBootstrapState = {
   readonly runScope: WorkbenchRunScope;
 };
 
-export type WorkbenchSuiteOption = { readonly id: string; readonly name: string; readonly description: string; readonly readyTestCaseCount: number; readonly selected: boolean };
+export type WorkbenchSuiteOption = { readonly id: string; readonly name: string; readonly description: string; readonly readyTestCaseCount: number; readonly testCases: readonly WorkbenchTestCaseOption[]; readonly selected: boolean };
+export type WorkbenchTestCaseOption = { readonly id: string; readonly name: string; readonly selected: boolean };
 export type WorkbenchModelOption = { readonly id: string; readonly label: string; readonly selected: boolean };
 export type WorkbenchRunScopeOption = { readonly type: WorkbenchRunScope['type']; readonly label: string; readonly selected: boolean; readonly disabled: boolean };
 export type WorkbenchSummary = { readonly passRateLabel: string; readonly averageLatencyLabel: string; readonly totalCostLabel: string };
@@ -116,7 +117,7 @@ export type CreateWorkbenchViewModelInput = {
   readonly selectedCell?: WorkbenchCellSelection | null;
 };
 
-const EMPTY_SUITE: EvalSuiteSummary = { id: 'no-suite', name: 'No eval suites', description: 'Add local config, then run the eval again.', readyTestCaseCount: 0, modelOptions: [] };
+const EMPTY_SUITE: EvalSuiteSummary = { id: 'no-suite', name: 'No eval suites', description: 'Add local config, then run the eval again.', readyTestCaseCount: 0, testCases: [], modelOptions: [] };
 const FALLBACK_MODEL = { id: 'gpt-5-mini', label: 'GPT-5 mini' } as const;
 
 export function createWorkbenchViewModel(input: CreateWorkbenchViewModelInput): WorkbenchViewModel {
@@ -134,8 +135,8 @@ export function createWorkbenchViewModel(input: CreateWorkbenchViewModelInput): 
     status,
     statusLabel: statusLabel(status),
     statusMessage: statusMessage(status, input.discovery, input.latestRun, selectedSuite, progress),
-    suites: input.discovery.suites.map((suite) => toSuiteOption(suite, selectedSuite.id)),
-    selectedSuite: toSuiteOption(selectedSuite, selectedSuite.id),
+    suites: input.discovery.suites.map((suite) => toSuiteOption(suite, selectedSuite.id, runScope)),
+    selectedSuite: toSuiteOption(selectedSuite, selectedSuite.id, runScope),
     modelOptions: modelOptions(selectedSuite, selectedModel),
     selectedEvalRunModel: selectedModel,
     runScope,
@@ -275,8 +276,11 @@ function selectModel(suite: EvalSuiteSummary, selectedEvalRunModel: string | und
 }
 
 function normalizeRunScope(scope: WorkbenchRunScope | undefined, suite: EvalSuiteSummary): WorkbenchRunScope {
-  if (scope?.type === 'test_case' && scope.testCaseId.trim().length > 0) return scope;
-  return { type: 'all' };
+  if (scope?.type !== 'test_case') return { type: 'all' };
+  const testCaseId = scope.testCaseId.trim();
+  if (suite.testCases.some((testCase) => testCase.id === testCaseId)) return { type: 'test_case', testCaseId };
+  const fallbackTestCase = suite.testCases[0];
+  return fallbackTestCase ? { type: 'test_case', testCaseId: fallbackTestCase.id } : { type: 'all' };
 }
 
 function resolveStatus(discovery: EvalSuiteDiscoveryResult, latestRun: RunLocalEvalSuiteResult | undefined, isRunning: boolean): WorkbenchLifecycleStatus {
@@ -373,6 +377,13 @@ function runDiagnostic(diagnostic: EvalDiagnostic): WorkbenchDiagnostic {
   return { code: diagnostic.code, severity: diagnostic.severity, message: diagnostic.message };
 }
 
-function toSuiteOption(suite: EvalSuiteSummary, selectedSuiteId: string): WorkbenchSuiteOption {
-  return { id: suite.id, name: suite.name, description: suite.description, readyTestCaseCount: suite.readyTestCaseCount, selected: suite.id === selectedSuiteId };
+function toSuiteOption(suite: EvalSuiteSummary, selectedSuiteId: string, runScope: WorkbenchRunScope): WorkbenchSuiteOption {
+  return {
+    id: suite.id,
+    name: suite.name,
+    description: suite.description,
+    readyTestCaseCount: suite.readyTestCaseCount,
+    testCases: suite.testCases.map((testCase) => ({ ...testCase, selected: runScope.type === 'test_case' && testCase.id === runScope.testCaseId })),
+    selected: suite.id === selectedSuiteId,
+  };
 }

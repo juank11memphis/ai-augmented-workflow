@@ -16,6 +16,7 @@ export function renderWorkbenchShell(viewModel: WorkbenchViewModel, clientScript
       <p>${escapeHtml(viewModel.eyebrow)}</p>
       <h1>${escapeHtml(viewModel.title)}</h1>
     </header>
+    ${renderSuiteRail(viewModel)}
     ${renderControls(viewModel)}
     ${renderResults(viewModel)}
     ${renderSelectedCell(viewModel)}
@@ -30,9 +31,25 @@ export function renderWorkbenchControls(viewModel: WorkbenchViewModel): string {
   return renderControls(viewModel);
 }
 
+function renderSuiteRail(viewModel: WorkbenchViewModel): string {
+  const suites = viewModel.suites.length === 0
+    ? '<p class="suite-nav__empty">No eval suites found.</p>'
+    : viewModel.suites.map(renderSuiteButton).join('');
+  return `<aside class="suite-nav" aria-label="Eval suites"><h2>Eval Suites</h2><div class="suite-nav__list">${suites}</div></aside>`;
+}
+
+function renderSuiteButton(suite: WorkbenchViewModel['suites'][number]): string {
+  const selectedClass = suite.selected ? ' suite-nav__item--selected' : '';
+  const selectedAttribute = suite.selected ? 'aria-current="page"' : '';
+  return `<button type="button" class="suite-nav__item${selectedClass}" data-control="suite-option" data-suite-id="${escapeAttribute(suite.id)}" ${selectedAttribute}>
+    <span>${escapeHtml(suite.name)}</span>
+    <small>${suite.readyTestCaseCount} test case${suite.readyTestCaseCount === 1 ? '' : 's'}</small>
+  </button>`;
+}
+
 function renderControls(viewModel: WorkbenchViewModel): string {
   return `<section class="workbench__controls" aria-label="Eval suite controls">
-    <label class="field">Eval Suite
+    <label class="field suite-picker">Eval Suite
       <select name="suiteId" data-control="suite" ${disabled(viewModel.controlsDisabled)}>${viewModel.suites.map((suite) => `<option value="${escapeAttribute(suite.id)}" ${optionSelected(suite.selected)}>${escapeHtml(suite.name)}</option>`).join('')}</select>
     </label>
     <div class="suite-summary">
@@ -44,6 +61,7 @@ function renderControls(viewModel: WorkbenchViewModel): string {
       <legend>Run scope</legend>
       ${viewModel.runScopeOptions.map((option) => `<label><input type="radio" name="runScope" value="${option.type}" ${inputChecked(option.selected)} ${disabled(option.disabled)}> ${escapeHtml(option.label)}</label>`).join('')}
     </fieldset>
+    ${renderTestCasePicker(viewModel)}
     <button type="button" data-control="run" ${disabled(viewModel.controlsDisabled)}>${escapeHtml(viewModel.runButtonLabel)}</button>
     <label class="field">Model
       <select name="evalRunModel" data-control="model" ${disabled(viewModel.controlsDisabled)}>${viewModel.modelOptions.map((model) => `<option value="${escapeAttribute(model.id)}" ${optionSelected(model.selected)}>${escapeHtml(model.label)}</option>`).join('')}</select>
@@ -58,6 +76,15 @@ function renderControls(viewModel: WorkbenchViewModel): string {
     ${renderResultFilters(viewModel)}
     ${renderDiagnostics(viewModel)}
   </section>`;
+}
+
+function renderTestCasePicker(viewModel: WorkbenchViewModel): string {
+  const isVisible = viewModel.runScope.type === 'test_case';
+  const testCases = viewModel.selectedSuite.testCases;
+  const options = testCases.map((testCase) => `<option value="${escapeAttribute(testCase.id)}" ${optionSelected(testCase.selected)}>${escapeHtml(testCase.name)}</option>`).join('');
+  return `<label class="field test-case-picker" ${isVisible ? '' : 'hidden'}>Test case
+      <select name="testCaseId" data-control="test-case" ${disabled(viewModel.controlsDisabled || testCases.length === 0)}>${options}</select>
+    </label>`;
 }
 
 function renderResultFilters(viewModel: WorkbenchViewModel): string {
@@ -178,7 +205,7 @@ function renderDiagnostics(viewModel: WorkbenchViewModel): string {
 }
 
 function workbenchStyles(): string {
-  return `body{margin:0;background:#020617;color:#f8fafc;font-family:Inter,system-ui,sans-serif}.workbench{max-width:86rem;margin:0 auto;padding:1rem}.workbench__header,.workbench__controls,.state-panel,.test-card,.matrix th,.matrix td,.cell-dialog,.detail-item{border:1px solid #334155;background:#0f172a}.workbench__header,.workbench__controls,.state-panel,.test-card,.cell-dialog{padding:1rem}.workbench__controls,.filters,.phone-cards,.results,.cell-dialog,.detail-section{display:flex;flex-direction:column;gap:1rem}.field{display:flex;flex-direction:column;gap:.4rem}.suite-summary__title-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}.run-scope,.variant-filter{display:flex;gap:1rem;flex-wrap:wrap}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.75rem}.summary div{border:1px solid #334155;padding:.75rem}.progress{display:flex;flex-direction:column;gap:.4rem}.filters{border-top:1px solid #334155;padding-top:1rem}select,button,input[type=search]{min-height:44px;border:1px solid #475569;background:#020617;color:#f8fafc;padding:.5rem}button{background:#2563eb;border-color:#60a5fa;font-weight:700}button:disabled,select:disabled,input:disabled{opacity:.55;cursor:not-allowed}.result-cell{display:grid;width:100%;gap:.25rem;text-align:left;background:#020617}.result-cell--passed{border-color:#34d399}.result-cell--failed{border-color:#fb7185}.result-cell--blocked{border-color:#fbbf24}.result-cell--error{border-color:#f87171}.status{font-weight:800}.matrix-wrap{display:none;overflow:auto}.matrix{width:100%;border-collapse:collapse}.matrix caption{text-align:left;font-weight:800;margin:.75rem 0}.matrix th,.matrix td{padding:.75rem;vertical-align:top}.matrix code,.test-card code{display:block;color:#cbd5e1}.cell-dialog-overlay{position:fixed;inset:0;background:#020617bf;z-index:20}.cell-dialog{position:fixed;inset:auto 0 0;max-height:80vh;overflow:auto;box-shadow:0 -20px 60px #0008}.cell-dialog__header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;border-bottom:1px solid #334155;padding-bottom:1rem}.cell-dialog__eyebrow{color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;font-size:.75rem}.detail-section{border-top:1px solid #1e293b;padding-top:1rem}.detail-section ul{display:flex;flex-direction:column;gap:.5rem;margin:0;padding:0;list-style:none}.failure-queue{display:flex;flex-direction:column;gap:.5rem}.failure-queue__item{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem;align-items:center;text-align:left;background:#1e293b}.failure-queue__item--active{border-color:#fb7185;box-shadow:inset 4px 0 0 #fb7185}.conversation-placeholder button{width:100%;margin-top:.5rem}.analysis-result{border-color:#60a5fa}.analysis-result__cause{text-transform:capitalize}.analysis-error{border-color:#f87171}.analysis-unavailable{border-color:#fbbf24}.detail-item{padding:.75rem}.detail-item--success{border-color:#34d399}.detail-item--warning{border-color:#fbbf24}.detail-item--error{border-color:#f87171}.detail-item__meta{color:#cbd5e1;font-family:ui-monospace,monospace}.state-panel{border-color:#fbbf24}.state-panel--error{border-color:#f87171}:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}@media (min-width:768px){.workbench__controls{display:grid;grid-template-columns:16rem 1fr auto;align-items:end}.suite-summary,.summary,.progress,.filters,.diagnostics{grid-column:1/-1}.cell-dialog{inset:0 0 0 auto;width:min(28rem,45vw)}}@media (min-width:1024px){.workbench{display:grid;grid-template-columns:16rem 1fr;gap:1rem}.workbench__header{grid-column:1/-1}.workbench__controls,.results{grid-column:2}.phone-cards{display:none}.matrix-wrap{display:block}}`;
+  return `body{margin:0;background:#020617;color:#f8fafc;font-family:Inter,system-ui,sans-serif}.workbench{max-width:86rem;margin:0 auto;padding:1rem}.workbench__header,.workbench__controls,.suite-nav,.state-panel,.test-card,.matrix th,.matrix td,.cell-dialog,.detail-item{border:1px solid #334155;background:#0f172a}.workbench__header,.workbench__controls,.suite-nav,.state-panel,.test-card,.cell-dialog{padding:1rem}.workbench__controls,.suite-nav,.suite-nav__list,.filters,.phone-cards,.results,.cell-dialog,.detail-section{display:flex;flex-direction:column;gap:1rem}.field{display:flex;flex-direction:column;gap:.4rem}.suite-nav h2{font-size:1rem;margin:0}.suite-nav__item{display:grid;gap:.25rem;text-align:left;background:#020617}.suite-nav__item small{color:#cbd5e1;font-weight:400}.suite-nav__item--selected{border-color:#93c5fd;box-shadow:inset 4px 0 0 #60a5fa}.suite-nav__empty{color:#cbd5e1;margin:0}.suite-summary__title-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}.run-scope,.variant-filter{display:flex;gap:1rem;flex-wrap:wrap}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.75rem}.summary div{border:1px solid #334155;padding:.75rem}.progress{display:flex;flex-direction:column;gap:.4rem}.filters{border-top:1px solid #334155;padding-top:1rem}select,button,input[type=search]{min-height:44px;border:1px solid #475569;background:#020617;color:#f8fafc;padding:.5rem}button{background:#2563eb;border-color:#60a5fa;font-weight:700}button:disabled,select:disabled,input:disabled{opacity:.55;cursor:not-allowed}.result-cell{display:grid;width:100%;gap:.25rem;text-align:left;background:#020617}.result-cell--passed{border-color:#34d399}.result-cell--failed{border-color:#fb7185}.result-cell--blocked{border-color:#fbbf24}.result-cell--error{border-color:#f87171}.status{font-weight:800}.matrix-wrap{display:none;overflow:auto}.matrix{width:100%;border-collapse:collapse}.matrix caption{text-align:left;font-weight:800;margin:.75rem 0}.matrix th,.matrix td{padding:.75rem;vertical-align:top}.matrix code,.test-card code{display:block;color:#cbd5e1}.cell-dialog-overlay{position:fixed;inset:0;background:#020617bf;z-index:20}.cell-dialog{position:fixed;inset:auto 0 0;max-height:80vh;overflow:auto;box-shadow:0 -20px 60px #0008}.cell-dialog__header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;border-bottom:1px solid #334155;padding-bottom:1rem}.cell-dialog__eyebrow{color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;font-size:.75rem}.detail-section{border-top:1px solid #1e293b;padding-top:1rem}.detail-section ul{display:flex;flex-direction:column;gap:.5rem;margin:0;padding:0;list-style:none}.failure-queue{display:flex;flex-direction:column;gap:.5rem}.failure-queue__item{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem;align-items:center;text-align:left;background:#1e293b}.failure-queue__item--active{border-color:#fb7185;box-shadow:inset 4px 0 0 #fb7185}.conversation-placeholder button{width:100%;margin-top:.5rem}.analysis-result{border-color:#60a5fa}.analysis-result__cause{text-transform:capitalize}.analysis-error{border-color:#f87171}.analysis-unavailable{border-color:#fbbf24}.detail-item{padding:.75rem}.detail-item--success{border-color:#34d399}.detail-item--warning{border-color:#fbbf24}.detail-item--error{border-color:#f87171}.detail-item__meta{color:#cbd5e1;font-family:ui-monospace,monospace}.state-panel{border-color:#fbbf24}.state-panel--error{border-color:#f87171}:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}@media (min-width:768px){.workbench__controls{display:grid;grid-template-columns:16rem 1fr auto;align-items:end}.suite-summary,.summary,.progress,.filters,.diagnostics{grid-column:1/-1}.cell-dialog{inset:0 0 0 auto;width:min(28rem,45vw)}}@media (min-width:1024px){.workbench{display:grid;grid-template-columns:16rem 1fr;gap:1rem}.workbench__header{grid-column:1/-1}.suite-nav{grid-column:1;grid-row:2/4;align-self:start;position:sticky;top:1rem}.suite-picker{display:none}.workbench__controls,.results{grid-column:2}.phone-cards{display:none}.matrix-wrap{display:block}}`;
 }
 
 function disabled(isDisabled: boolean): string {

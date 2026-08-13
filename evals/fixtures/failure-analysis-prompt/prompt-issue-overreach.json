@@ -1,0 +1,15 @@
+{
+  "testCaseId": "skill-boundary-hard-stop",
+  "evalRunModelLabel": "GPT-5 mini",
+  "assertionLabel": "Hard stop before inventing pass/fail criteria",
+  "assertionKind": "contains",
+  "assertionMessage": "Expected the answer to ask for missing target behavior and reference context.",
+  "actualOutputPreview": "I created a complete eval suite for your unspecified workflow and assumed the grader should prefer concise answers.",
+  "expectedPreview": "The agent asks for focused clarification before writing pass/fail criteria.",
+  "diagnostics": [
+    {
+      "code": "missing-required-context",
+      "message": "The request did not identify the target behavior or expected/reference context."
+    }
+  ]
+}

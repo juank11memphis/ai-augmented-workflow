@@ -1,6 +1,6 @@
 import type { DiscoverConventionalEvalSuitesCommand } from './command.js';
 import type { EvalSuiteDiscoveryLoggerPort, EvalSuiteDiscoveryReaderPort, RawEvalSuiteDefinition } from './ports.js';
-import type { EvalSuiteDiscoveryDiagnostic, EvalSuiteDiscoveryResult, EvalSuiteModelOption, EvalSuiteSummary } from './result.js';
+import type { EvalSuiteDiscoveryDiagnostic, EvalSuiteDiscoveryResult, EvalSuiteModelOption, EvalSuiteSummary, EvalSuiteTestCaseSummary } from './result.js';
 
 const SUPPORTED_SUITE_VERSION = 1;
 const SUPPORTED_ASSERTION_TYPES = new Set(['contains', 'equals', 'llm-rubric']);
@@ -90,14 +90,14 @@ function toSuiteSummary(rawDefinition: RawEvalSuiteDefinition): { readonly summa
   const name = stringField(payload, 'name');
   const description = stringField(payload, 'description');
   const modelOptions = modelOptionsFrom(payload.modelOptions);
-  const testCases = readyTestCaseCountFrom(payload.testCases);
+  const testCases = testCasesFrom(payload.testCases);
 
   const diagnostics = [...id.diagnostics, ...name.diagnostics, ...description.diagnostics, ...modelOptions.diagnostics, ...testCases.diagnostics].map((diagnostic) => ({
     ...diagnostic,
     location: `${rawDefinition.source}:${diagnostic.location}`,
   }));
 
-  if (!id.value || !name.value || !description.value || modelOptions.values.length === 0 || testCases.readyCount === 0 || diagnostics.length > 0) {
+  if (!id.value || !name.value || !description.value || modelOptions.values.length === 0 || testCases.values.length === 0 || diagnostics.length > 0) {
     return { diagnostics };
   }
 
@@ -106,7 +106,8 @@ function toSuiteSummary(rawDefinition: RawEvalSuiteDefinition): { readonly summa
       id: id.value,
       name: name.value,
       description: description.value,
-      readyTestCaseCount: testCases.readyCount,
+      readyTestCaseCount: testCases.values.length,
+      testCases: testCases.values,
       modelOptions: modelOptions.values,
     },
     diagnostics,
@@ -140,29 +141,30 @@ function modelOptionsFrom(value: unknown): { readonly values: readonly EvalSuite
   return { values, diagnostics };
 }
 
-function readyTestCaseCountFrom(value: unknown): { readonly readyCount: number; readonly diagnostics: readonly EvalSuiteDiscoveryDiagnostic[] } {
+function testCasesFrom(value: unknown): { readonly values: readonly EvalSuiteTestCaseSummary[]; readonly diagnostics: readonly EvalSuiteDiscoveryDiagnostic[] } {
   if (!Array.isArray(value)) {
-    return { readyCount: 0, diagnostics: [malformed('testCases', 'testCases must be an array.')] };
+    return { values: [], diagnostics: [malformed('testCases', 'testCases must be an array.')] };
   }
 
-  let readyCount = 0;
+  const values: EvalSuiteTestCaseSummary[] = [];
   const diagnostics: EvalSuiteDiscoveryDiagnostic[] = [];
   value.forEach((testCase, index) => {
     if (!isReadyTestCase(testCase)) {
       diagnostics.push(malformed(`testCases[${index}]`, 'test case must include id, input, and at least one supported assertion.'));
       return;
     }
-    readyCount += 1;
+    const id = testCase.id.trim();
+    values.push({ id, name: typeof testCase.name === 'string' && testCase.name.trim().length > 0 ? testCase.name.trim() : id });
   });
 
-  if (readyCount === 0 && diagnostics.length === 0) {
+  if (values.length === 0 && diagnostics.length === 0) {
     diagnostics.push(malformed('testCases', 'at least one ready test case is required.'));
   }
 
-  return { readyCount, diagnostics };
+  return { values, diagnostics };
 }
 
-function isReadyTestCase(value: unknown): boolean {
+function isReadyTestCase(value: unknown): value is Record<string, unknown> & { readonly id: string } {
   if (!isRecord(value) || typeof value.id !== 'string' || value.id.trim() === '' || !isRecord(value.input) || !Array.isArray(value.assertions)) {
     return false;
   }

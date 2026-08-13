@@ -21,6 +21,7 @@ describe('discoverConventionalEvalSuites', () => {
       name: 'Skill authoring checks',
       description: 'Checks generated skills.',
       readyTestCaseCount: 1,
+      testCases: [{ id: 'missing-boundary', name: 'missing-boundary' }],
       modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
     }]);
     assert.deepEqual(logger.events.at(-1), {

@@ -18,6 +18,7 @@ describe('NodeEvalSuiteDiscoveryReader', () => {
     assert.deepEqual(result.suites.map((suite) => suite.name), ['Skill authoring checks']);
     assert.deepEqual(result.suites[0]?.modelOptions.map((model) => model.id), ['gpt-5-mini', 'gpt-5']);
     assert.equal(result.suites[0]?.readyTestCaseCount, 2);
+    assert.deepEqual(result.suites[0]?.testCases.map((testCase) => testCase.id), ['missing-skill-boundary', 'names-artifact']);
     assert.equal(result.diagnostics.length, 0);
   });
 

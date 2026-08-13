@@ -2,14 +2,17 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
   name: 'events',
   source: String.raw`  root.addEventListener('change', (event) => {
     const target = event.target;
-    if (target.matches('[data-control="suite"]')) { latestRun = null; filters = { failuresOnly: false, searchQuery: '', visibleVariantIds: [] }; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; state = { ...state, selectedSuiteId: target.value, runScope: { type: 'all' } }; renderReady(); }
+    if (target.matches('[data-control="suite"]')) { selectSuite(target.value); }
     if (target.matches('[data-control="model"]')) { state = { ...state, selectedEvalRunModel: target.value }; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); }
-    if (target.matches('input[name="runScope"]')) { state = { ...state, runScope: selectedScope() }; renderRunButton(false); }
+    if (target.matches('input[name="runScope"]')) { state = { ...state, runScope: selectedScope() }; renderTestCasePicker(); renderRunButton(false); }
+    if (target.matches('[data-control="test-case"]')) { state = { ...state, runScope: { type: 'test_case', testCaseId: target.value } }; renderRunButton(false); }
     if (target.matches('[data-control="failures-only"]')) { filters.failuresOnly = target.checked; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); }
     if (target.matches('[data-control="variant"]')) { const checked = [...root.querySelectorAll('[data-control="variant"]:checked')].map((input) => input.value); filters.visibleVariantIds = checked.length ? checked : filters.visibleVariantIds.slice(0, 1); selectedCell = null; activeAssertionId = null; renderFilters(); renderResults(); renderSelectedCell(); }
   });
   root.addEventListener('input', (event) => { if (event.target.matches('[data-control="search"]')) { filters.searchQuery = event.target.value; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); } });
   root.addEventListener('click', async (event) => {
+    const suiteOption = event.target.closest('[data-control="suite-option"]');
+    if (suiteOption) { selectSuite(suiteOption.dataset.suiteId); return; }
     const cellButton = event.target.closest('[data-cell-button]');
     if (cellButton) { selectedCell = { testCaseId: cellButton.dataset.testCaseId, modelId: cellButton.dataset.modelId }; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; focusRestoreKey = keyFor(selectedCell, cellButton.dataset.mode); cellButton.dataset.focusKey = focusRestoreKey; renderSelectedCell(); return; }
     if (event.target.closest('[data-control="select-assertion"]')) { activeAssertionId = event.target.closest('[data-control="select-assertion"]').dataset.assertionId; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); root.querySelector('[data-control="select-assertion"][data-assertion-id="' + h(activeAssertionId) + '"]')?.focus(); return; }
@@ -22,6 +25,18 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     if (!event.target.matches('[data-control="run"]') && !event.target.matches('[data-control="retry-run"]')) return;
     await runEval();
   });
+
+  function selectSuite(suiteId) {
+    if (!suiteId || suiteId === state.selectedSuiteId) return;
+    latestRun = null;
+    filters = { failuresOnly: false, searchQuery: '', visibleVariantIds: [] };
+    selectedCell = null;
+    activeAssertionId = null;
+    analysisState = { status: 'idle' };
+    proposalState = { status: 'idle' };
+    state = { ...state, selectedSuiteId: suiteId, runScope: { type: 'all' } };
+    renderReady();
+  }
 
   async function runEval(scopeOverride) {
     const scope = scopeOverride || selectedScope();

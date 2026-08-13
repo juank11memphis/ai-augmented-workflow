@@ -18,6 +18,16 @@ describe('createWorkbenchViewModel', () => {
     assert.equal(viewModel.resultDisplay.emptyMessage, 'Run evals to see result cards and the matrix.');
   });
 
+
+  it('exposes selected suite test cases and normalizes selected test-case scope', () => {
+    const viewModel = createWorkbenchViewModel({ discovery: readyDiscovery(), runScope: { type: 'test_case', testCaseId: 'missing-skill-boundary' } });
+    const fallback = createWorkbenchViewModel({ discovery: readyDiscovery(), runScope: { type: 'test_case', testCaseId: 'missing' } });
+
+    assert.deepEqual(viewModel.runScope, { type: 'test_case', testCaseId: 'missing-skill-boundary' });
+    assert.deepEqual(viewModel.selectedSuite.testCases.map((testCase) => [testCase.id, testCase.selected]), [['names-artifact', false], ['missing-skill-boundary', true]]);
+    assert.deepEqual(fallback.runScope, { type: 'test_case', testCaseId: 'names-artifact' });
+  });
+
   it('summarizes completed run results and cell display details', () => {
     const viewModel = createWorkbenchViewModel({ discovery: readyDiscovery(), latestRun: completedRun('failed') });
     const failedCell = viewModel.resultDisplay.rows[1]?.cells[0];
@@ -179,8 +189,8 @@ function readyDiscovery(): EvalSuiteDiscoveryResult {
   return {
     status: 'ready',
     suites: [
-      { id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }] },
-      { id: 'prompt-drift', name: 'Prompt drift checks', description: 'Checks prompt behavior.', readyTestCaseCount: 1, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] },
+      { id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }] },
+      { id: 'prompt-drift', name: 'Prompt drift checks', description: 'Checks prompt behavior.', readyTestCaseCount: 1, testCases: [{ id: 'single-case', name: 'Single case' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] },
     ],
     diagnostics: [],
   };

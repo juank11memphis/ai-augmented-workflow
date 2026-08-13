@@ -15,6 +15,8 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
     setText('avg-latency', '—');
     setText('total-cost', '$0.0000');
     setProgress(0);
+    renderSuiteNavigationState(suite.id);
+    renderTestCasePicker();
     renderModelOptions(models);
     renderRunButton(false);
     renderResults();
@@ -25,6 +27,29 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
     if (!model) return;
     model.textContent = '';
     for (const option of models) model.add(new Option(option.label, option.id, option.id === state.selectedEvalRunModel, option.id === state.selectedEvalRunModel));
+  }
+
+  function renderSuiteNavigationState(selectedSuiteId) {
+    const suiteSelect = control('suite');
+    if (suiteSelect) suiteSelect.value = selectedSuiteId;
+    for (const button of root.querySelectorAll('[data-control="suite-option"]')) {
+      const selected = button.dataset.suiteId === selectedSuiteId;
+      button.classList.toggle('suite-nav__item--selected', selected);
+      if (selected) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    }
+  }
+
+  function renderTestCasePicker() {
+    const picker = root.querySelector('.test-case-picker');
+    const select = control('test-case');
+    if (!picker || !select) return;
+    const suite = selectedSuite();
+    const testCases = suite?.testCases || [];
+    select.textContent = '';
+    for (const testCase of testCases) select.add(new Option(testCase.name, testCase.id, testCase.id === state.runScope?.testCaseId, testCase.id === state.runScope?.testCaseId));
+    if (state.runScope?.type === 'test_case' && !testCases.some((testCase) => testCase.id === state.runScope.testCaseId) && testCases[0]) state.runScope = { type: 'test_case', testCaseId: testCases[0].id };
+    picker.hidden = state.runScope?.type !== 'test_case';
   }
 
   function renderRunButton(disabled) {

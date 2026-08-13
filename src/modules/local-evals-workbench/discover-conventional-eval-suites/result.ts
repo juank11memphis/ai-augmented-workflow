@@ -20,7 +20,13 @@ export type EvalSuiteSummary = {
   readonly name: string;
   readonly description: string;
   readonly readyTestCaseCount: number;
+  readonly testCases: readonly EvalSuiteTestCaseSummary[];
   readonly modelOptions: readonly EvalSuiteModelOption[];
+};
+
+export type EvalSuiteTestCaseSummary = {
+  readonly id: string;
+  readonly name: string;
 };
 
 export type EvalSuiteModelOption = {

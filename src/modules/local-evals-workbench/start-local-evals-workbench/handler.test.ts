@@ -84,7 +84,7 @@ function suiteDiscovery(result: EvalSuiteDiscoveryResult): EvalSuiteDiscoveryPor
 function readyDiscovery(): EvalSuiteDiscoveryResult {
   return {
     status: 'ready',
-    suites: [{ id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] }],
+    suites: [{ id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] }],
     diagnostics: [],
   };
 }

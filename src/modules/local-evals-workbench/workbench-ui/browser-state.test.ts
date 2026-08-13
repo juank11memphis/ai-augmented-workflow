@@ -176,8 +176,8 @@ function initialState(runScope: { readonly type: 'all' } | { readonly type: 'tes
 
 function discovery(): EvalSuiteDiscoveryResult {
   return { status: 'ready', suites: [
-    { id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }] },
-    { id: 'prompt-drift', name: 'Prompt drift checks', description: 'Checks prompt drift.', readyTestCaseCount: 1, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] },
+    { id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }] },
+    { id: 'prompt-drift', name: 'Prompt drift checks', description: 'Checks prompt drift.', readyTestCaseCount: 1, testCases: [{ id: 'single-case', name: 'Single case' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] },
   ], diagnostics: [] };
 }
 

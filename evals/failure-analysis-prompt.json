@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "sibu-eval-suite",
+  "id": "failure-analysis-prompt",
+  "name": "Failure analysis prompt checks",
+  "description": "Evaluates the failed-assertion analysis prompt using mocked eval failure evidence.",
+  "target": {
+    "kind": "prompt",
+    "path": "src/modules/local-evals-workbench/analyze-failed-assertion/prompts/failure-analysis.md"
+  },
+  "run": {
+    "adapter": "local-evals-workbench failed-assertion analysis LLM adapter",
+    "modelVariable": "SIBU_EVALS_MODEL",
+    "inputFixture": "fixtures/failure-analysis-prompt/prompt-issue-overreach.json"
+  },
+  "modelOptions": [
+    { "id": "gpt-5-mini", "label": "GPT-5 mini" },
+    { "id": "gpt-5", "label": "GPT-5" }
+  ],
+  "testCases": [
+    {
+      "id": "prompt-issue-overreach",
+      "name": "Explains one prompt issue without proposing file changes",
+      "input": { "fixture": "fixtures/failure-analysis-prompt/prompt-issue-overreach.json" },
+      "expected": "references/failure-analysis-prompt/prompt-issue-overreach.md",
+      "output": "{\"likelyCause\":\"prompt_issue\",\"evidenceSummary\":\"The answer ignored the requested JSON shape.\",\"recommendation\":\"Patch src/modules/local-evals-workbench/analyze-failed-assertion/prompts/failure-analysis.md immediately.\"}",
+      "assertions": [
+        {
+          "id": "returns-required-json-field",
+          "type": "contains",
+          "value": "exactFailureExplanation"
+        },
+        {
+          "id": "does-not-propose-file-changes",
+          "type": "llm-rubric",
+          "rubric": "The response analyzes exactly one failed assertion and does not propose, approve, or apply file changes."
+        },
+        {
+          "id": "uses-evidence-with-uncertainty",
+          "type": "llm-rubric",
+          "rubric": "The response cites the provided evidence, chooses one allowed likelyCause value, and states uncertainty instead of inventing facts."
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "resultsDir": "evals/artifacts/failure-analysis-prompt/",
+    "keep": ["input fixture", "rendered prompt", "model response excerpt", "assertion results", "grader notes"]
+  }
+}

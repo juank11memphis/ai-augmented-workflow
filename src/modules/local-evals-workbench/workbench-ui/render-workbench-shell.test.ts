@@ -15,6 +15,8 @@ describe('WORKBENCH_CLIENT_SCRIPT', () => {
     assert.match(WORKBENCH_CLIENT_SCRIPT, /restoreFocus/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"retry-cell\"/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"rerun-recommendation\"/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"suite-option\"/);
+    assert.match(WORKBENCH_CLIENT_SCRIPT, /function selectSuite/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /function rerunRecommended/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/eval-runs/);
     assert.match(WORKBENCH_CLIENT_SCRIPT, /\/api\/failure-analysis/);
@@ -36,8 +38,14 @@ describe('renderWorkbenchShell', () => {
   it('renders accessible suite controls, labels, summary, filters, and progress', () => {
     const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery() }), '');
 
-    assert.match(html, /<label class="field">Eval Suite/);
+    assert.match(html, /<label class="field suite-picker">Eval Suite/);
+    assert.match(html, /<aside class="suite-nav" aria-label="Eval suites">/);
+    assert.match(html, /data-control="suite-option"/);
+    assert.match(html, /suite-nav__item--selected/);
+    assert.match(html, /aria-current="page"/);
     assert.match(html, /<legend>Run scope<\/legend>/);
+    assert.match(html, /class="field test-case-picker" hidden>Test case/);
+    assert.match(html, /<option value="names-artifact" >Names artifact<\/option>/);
     assert.match(html, /<button[^>]*>Run all 2 test cases<\/button>/);
     assert.match(html, /<label class="field">Model/);
     assert.match(html, /aria-live="polite"/);
@@ -45,6 +53,15 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /Failures only/);
     assert.match(html, /Search test cases/);
     assert.match(html, /aria-label="Visible models"/);
+  });
+
+
+  it('shows the selected test case picker when test-case scope is active', () => {
+    const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery(), runScope: { type: 'test_case', testCaseId: 'missing-skill-boundary' } }), '');
+
+    assert.match(html, /class="field test-case-picker" >Test case/);
+    assert.match(html, /<option value="missing-skill-boundary" selected>Missing skill boundary<\/option>/);
+    assert.match(html, /Run 1 test case/);
   });
 
   it('renders phone cards and desktop matrix with color-independent status cues', () => {
@@ -105,7 +122,7 @@ describe('renderWorkbenchShell', () => {
       assert.match(html, /role="dialog"/);
       assert.match(html, /aria-modal="true"/);
       assert.match(html, new RegExp(status === 'error' ? 'Try again' : status === 'blocked' ? 'Add local config, then run the eval again.' : status === 'running' ? 'Running local evals' : status === 'not-run' ? 'Output will appear after running the eval.' : 'Passed: Must pass'));
-      assert.doesNotMatch(html, /repair proposal|Approve change|automated repair|Reject|mutation/i);
+      assert.doesNotMatch(html, /Approve change|automated repair|Reject|mutation/i);
     }
   });
 
@@ -144,7 +161,14 @@ describe('renderWorkbenchShell', () => {
 });
 
 function readyDiscovery(): EvalSuiteDiscoveryResult {
-  return { status: 'ready', suites: [{ id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }] }], diagnostics: [] };
+  return {
+    status: 'ready',
+    suites: [
+      { id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }] },
+      { id: 'repair-proposal-prompt', name: 'Repair proposal prompt checks', description: 'Checks repair proposals.', readyTestCaseCount: 1, testCases: [{ id: 'single-case', name: 'Single case' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] },
+    ],
+    diagnostics: [],
+  };
 }
 
 function blockedDiscovery(): EvalSuiteDiscoveryResult {
@@ -152,7 +176,7 @@ function blockedDiscovery(): EvalSuiteDiscoveryResult {
 }
 
 function unsafeDiscovery(): EvalSuiteDiscoveryResult {
-  return { status: 'ready', suites: [{ id: '<script>alert(1)</script>', name: '<img src=x onerror=alert(1)>', description: 'safe <script>alert(1)</script>', readyTestCaseCount: 1, modelOptions: [{ id: 'gpt-5-mini', label: 'GPT <script>' }] }], diagnostics: [] };
+  return { status: 'ready', suites: [{ id: '<script>alert(1)</script>', name: '<img src=x onerror=alert(1)>', description: 'safe <script>alert(1)</script>', readyTestCaseCount: 1, testCases: [{ id: 'single-case', name: 'Single case' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT <script>' }] }], diagnostics: [] };
 }
 
 function runWithUiCell(status: 'passed' | 'blocked' | 'error' | 'running' | 'not-run'): RunLocalEvalSuiteResult {

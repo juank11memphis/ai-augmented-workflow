@@ -60,6 +60,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.equal(payload.status, 'ready');
       assert.equal(payload.suites[0]?.name, 'Skill authoring checks');
       assert.equal(payload.suites[0]?.readyTestCaseCount, 2);
+      assert.equal(payload.suites[0]?.testCases[0]?.id, 'names-artifact');
       assert.equal(payload.suites[0]?.modelOptions[0]?.id, 'gpt-5-mini');
       assert.doesNotMatch(response.body, /\/repo|OPENAI_API_KEY|secret/);
     } finally {
@@ -302,6 +303,7 @@ function readyDiscovery(): EvalSuiteDiscoveryResult {
       name: 'Skill authoring checks',
       description: 'Checks generated skills.',
       readyTestCaseCount: 2,
+      testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }],
       modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
     }],
     diagnostics: [],
