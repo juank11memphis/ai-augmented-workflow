@@ -32,6 +32,8 @@ export type EvalSuiteTestCaseSummary = {
 export type EvalSuiteModelOption = {
   readonly id: string;
   readonly label: string;
+  readonly family?: string;
+  readonly priceEstimate?: string;
 };
 
 export type EvalSuiteDiscoveryDiagnostic = {

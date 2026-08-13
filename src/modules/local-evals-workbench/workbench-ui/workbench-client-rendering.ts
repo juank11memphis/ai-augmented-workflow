@@ -26,7 +26,26 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
     const model = control('model');
     if (!model) return;
     model.textContent = '';
-    for (const option of models) model.add(new Option(option.label, option.id, option.id === state.selectedEvalRunModel, option.id === state.selectedEvalRunModel));
+    const families = new Map();
+    for (const option of models) {
+      const family = option.family || 'Models';
+      families.set(family, [...(families.get(family) || []), option]);
+    }
+    if (families.size <= 1 && families.has('Models')) {
+      for (const option of models) model.add(modelOption(option));
+      return;
+    }
+    for (const [family, options] of families) {
+      const group = document.createElement('optgroup');
+      group.label = family;
+      for (const option of options) group.append(modelOption(option));
+      model.append(group);
+    }
+  }
+
+  function modelOption(option) {
+    const label = option.label + (option.priceEstimate ? ' · ' + option.priceEstimate : '');
+    return new Option(label, option.id, option.id === state.selectedEvalRunModel, option.id === state.selectedEvalRunModel);
   }
 
   function renderSuiteNavigationState(selectedSuiteId) {

@@ -39,7 +39,7 @@ export type WorkbenchBootstrapState = {
 
 export type WorkbenchSuiteOption = { readonly id: string; readonly name: string; readonly description: string; readonly readyTestCaseCount: number; readonly testCases: readonly WorkbenchTestCaseOption[]; readonly selected: boolean };
 export type WorkbenchTestCaseOption = { readonly id: string; readonly name: string; readonly selected: boolean };
-export type WorkbenchModelOption = { readonly id: string; readonly label: string; readonly selected: boolean };
+export type WorkbenchModelOption = { readonly id: string; readonly label: string; readonly family?: string; readonly priceEstimate?: string; readonly selected: boolean };
 export type WorkbenchRunScopeOption = { readonly type: WorkbenchRunScope['type']; readonly label: string; readonly selected: boolean; readonly disabled: boolean };
 export type WorkbenchSummary = { readonly passRateLabel: string; readonly averageLatencyLabel: string; readonly totalCostLabel: string };
 export type WorkbenchProgress = { readonly completed: number; readonly total: number; readonly percent: number; readonly label: string };

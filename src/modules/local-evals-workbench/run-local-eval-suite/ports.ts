@@ -11,6 +11,8 @@ export type RunnableEvalSuite = {
 export type RunnableEvalModelOption = {
   readonly id: string;
   readonly label: string;
+  readonly family?: string;
+  readonly priceEstimate?: string;
 };
 
 export type RunnableEvalTestCase = {

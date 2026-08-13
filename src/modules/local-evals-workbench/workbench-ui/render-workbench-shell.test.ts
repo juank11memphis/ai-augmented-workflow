@@ -48,6 +48,9 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /<option value="names-artifact" >Names artifact<\/option>/);
     assert.match(html, /<button[^>]*>Run all 2 test cases<\/button>/);
     assert.match(html, /<label class="field">Model/);
+    assert.match(html, /<optgroup label="GPT-4 family">/);
+    assert.match(html, /GPT-4o mini · ~\$0\.15 in \/ \$0\.60 out per 1M/);
+    assert.match(html, /<optgroup label="GPT-5 family">/);
     assert.match(html, /aria-live="polite"/);
     assert.match(html, /<progress[^>]+aria-label="Eval run progress"/);
     assert.match(html, /Failures only/);
@@ -164,7 +167,7 @@ function readyDiscovery(): EvalSuiteDiscoveryResult {
   return {
     status: 'ready',
     suites: [
-      { id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }, { id: 'gpt-5', label: 'GPT-5' }] },
+      { id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }], modelOptions: [{ id: 'gpt-4o-mini', label: 'GPT-4o mini', family: 'GPT-4 family', priceEstimate: '~$0.15 in / $0.60 out per 1M' }, { id: 'gpt-5-mini', label: 'GPT-5 mini', family: 'GPT-5 family', priceEstimate: '~$0.25 in / $2.00 out per 1M' }] },
       { id: 'repair-proposal-prompt', name: 'Repair proposal prompt checks', description: 'Checks repair proposals.', readyTestCaseCount: 1, testCases: [{ id: 'single-case', name: 'Single case' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] },
     ],
     diagnostics: [],

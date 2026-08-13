@@ -22,7 +22,7 @@ describe('discoverConventionalEvalSuites', () => {
       description: 'Checks generated skills.',
       readyTestCaseCount: 1,
       testCases: [{ id: 'missing-boundary', name: 'missing-boundary' }],
-      modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
+      modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini', family: 'GPT-5 family', priceEstimate: '~$0.25 in / $2.00 out per 1M' }],
     }]);
     assert.deepEqual(logger.events.at(-1), {
       event: 'eval_suite_discovery_completed',
@@ -100,7 +100,7 @@ function validSuite(): Record<string, unknown> {
     id: 'skill-authoring',
     name: 'Skill authoring checks',
     description: 'Checks generated skills.',
-    modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
+    modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini', family: 'GPT-5 family', priceEstimate: '~$0.25 in / $2.00 out per 1M' }],
     testCases: [{ id: 'missing-boundary', input: { prompt: 'short prompt' }, assertions: [{ type: 'contains', value: 'hard stop' }] }],
   };
 }

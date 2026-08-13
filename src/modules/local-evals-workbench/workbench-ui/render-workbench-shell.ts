@@ -64,7 +64,7 @@ function renderControls(viewModel: WorkbenchViewModel): string {
     ${renderTestCasePicker(viewModel)}
     <button type="button" data-control="run" ${disabled(viewModel.controlsDisabled)}>${escapeHtml(viewModel.runButtonLabel)}</button>
     <label class="field">Model
-      <select name="evalRunModel" data-control="model" ${disabled(viewModel.controlsDisabled)}>${viewModel.modelOptions.map((model) => `<option value="${escapeAttribute(model.id)}" ${optionSelected(model.selected)}>${escapeHtml(model.label)}</option>`).join('')}</select>
+      <select name="evalRunModel" data-control="model" ${disabled(viewModel.controlsDisabled)}>${renderModelOptions(viewModel.modelOptions)}</select>
     </label>
     <dl class="summary" aria-label="Run summary">
       <div><dt>Pass rate</dt><dd data-bind="pass-rate">${escapeHtml(viewModel.summary.passRateLabel)}</dd></div>
@@ -76,6 +76,23 @@ function renderControls(viewModel: WorkbenchViewModel): string {
     ${renderResultFilters(viewModel)}
     ${renderDiagnostics(viewModel)}
   </section>`;
+}
+
+
+function renderModelOptions(models: readonly WorkbenchViewModel['modelOptions'][number][]): string {
+  const families = new Map<string, typeof models>();
+  for (const model of models) {
+    const family = model.family ?? 'Models';
+    families.set(family, [...(families.get(family) ?? []), model]);
+  }
+
+  if (families.size <= 1 && families.has('Models')) return models.map(renderModelOption).join('');
+  return [...families.entries()].map(([family, familyModels]) => `<optgroup label="${escapeAttribute(family)}">${familyModels.map(renderModelOption).join('')}</optgroup>`).join('');
+}
+
+function renderModelOption(model: WorkbenchViewModel['modelOptions'][number]): string {
+  const price = model.priceEstimate ? ` · ${model.priceEstimate}` : '';
+  return `<option value="${escapeAttribute(model.id)}" ${optionSelected(model.selected)}>${escapeHtml(`${model.label}${price}`)}</option>`;
 }
 
 function renderTestCasePicker(viewModel: WorkbenchViewModel): string {

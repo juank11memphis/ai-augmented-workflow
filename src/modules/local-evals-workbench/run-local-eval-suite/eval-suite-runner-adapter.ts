@@ -37,7 +37,7 @@ export class JsonEvalSuiteRunnerAdapter implements EvalRunnerPort {
 type RawSuiteDefinition = {
   readonly id: string;
   readonly name: string;
-  readonly modelOptions: readonly { readonly id: string; readonly label: string }[];
+  readonly modelOptions: readonly { readonly id: string; readonly label: string; readonly family?: string; readonly priceEstimate?: string }[];
   readonly testCases: readonly RawTestCaseDefinition[];
 };
 
@@ -77,7 +77,7 @@ function toRunnableSuiteDefinition(payload: unknown): RawSuiteDefinition | null 
   const name = nonBlank(payload.name);
   if (!id || !name || !Array.isArray(payload.modelOptions) || !Array.isArray(payload.testCases)) return null;
 
-  const modelOptions = payload.modelOptions.filter(isModelOption).map((option) => ({ id: option.id.trim(), label: option.label.trim() }));
+  const modelOptions = payload.modelOptions.filter(isModelOption).map((option) => ({ id: option.id.trim(), label: option.label.trim(), ...optionalModelMetadata(option) }));
   const testCases = payload.testCases.filter(isRawTestCase).map((testCase) => ({ id: testCase.id.trim(), name: nonBlank(testCase.name), output: nonBlank(testCase.output), assertions: Array.isArray(testCase.assertions) ? testCase.assertions.filter(isRawAssertion) : [] }));
   return { id, name, modelOptions, testCases };
 }
@@ -97,8 +97,15 @@ function runAssertion(assertion: RawAssertionDefinition, output: string, index: 
   return { id: assertion.id ?? `assertion-${index + 1}`, label: assertion.label ?? assertion.type ?? `Assertion ${index + 1}`, status: passed ? 'passed' : 'failed', expected, actual: output, message: passed ? 'Assertion passed.' : 'Expected content was not present in output.' };
 }
 
-function isModelOption(value: unknown): value is { readonly id: string; readonly label: string } {
+function isModelOption(value: unknown): value is { readonly id: string; readonly label: string; readonly family?: string; readonly priceEstimate?: string } {
   return isRecord(value) && nonBlank(value.id) !== undefined && nonBlank(value.label) !== undefined;
+}
+
+function optionalModelMetadata(option: { readonly family?: string; readonly priceEstimate?: string }): { readonly family?: string; readonly priceEstimate?: string } {
+  return {
+    ...(nonBlank(option.family) ? { family: nonBlank(option.family) } : {}),
+    ...(nonBlank(option.priceEstimate) ? { priceEstimate: nonBlank(option.priceEstimate) } : {}),
+  };
 }
 
 function isRawTestCase(value: unknown): value is RawTestCaseDefinition {

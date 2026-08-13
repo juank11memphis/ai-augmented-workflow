@@ -135,10 +135,21 @@ function modelOptionsFrom(value: unknown): { readonly values: readonly EvalSuite
       diagnostics.push(malformed(`modelOptions[${index}]`, 'model option must include non-empty id and label.'));
       return;
     }
-    values.push({ id: option.id.trim(), label: option.label.trim() });
+    values.push({
+      id: option.id.trim(),
+      label: option.label.trim(),
+      ...optionalModelMetadata(option),
+    });
   });
 
   return { values, diagnostics };
+}
+
+function optionalModelMetadata(option: Record<string, unknown>): Pick<EvalSuiteModelOption, 'family' | 'priceEstimate'> {
+  return {
+    ...(typeof option.family === 'string' && option.family.trim().length > 0 ? { family: option.family.trim() } : {}),
+    ...(typeof option.priceEstimate === 'string' && option.priceEstimate.trim().length > 0 ? { priceEstimate: option.priceEstimate.trim() } : {}),
+  };
 }
 
 function testCasesFrom(value: unknown): { readonly values: readonly EvalSuiteTestCaseSummary[]; readonly diagnostics: readonly EvalSuiteDiscoveryDiagnostic[] } {
