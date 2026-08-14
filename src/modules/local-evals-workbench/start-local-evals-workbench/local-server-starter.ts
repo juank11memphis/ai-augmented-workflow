@@ -103,7 +103,8 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
     return;
   }
 
-  writeHtml(response, renderWorkbenchShell(createWorkbenchViewModel({ discovery: startRequest.initialDiscoveryResult }), WORKBENCH_CLIENT_SCRIPT));
+  const preferredEvalRunModel = dependencies.analysis.assistanceConfig.getConfig().assistanceModelLabel;
+  writeHtml(response, renderWorkbenchShell(createWorkbenchViewModel({ discovery: startRequest.initialDiscoveryResult, preferredEvalRunModel }), WORKBENCH_CLIENT_SCRIPT));
 }
 
 async function handleEvalRunRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: RunLocalEvalSuiteDependencies): Promise<void> {

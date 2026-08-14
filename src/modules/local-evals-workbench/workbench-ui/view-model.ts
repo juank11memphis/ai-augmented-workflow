@@ -1,3 +1,4 @@
+import { DEFAULT_FAILURE_ANALYSIS_MODEL } from '../analyze-failed-assertion/assistance-config.js';
 import type { EvalSuiteDiscoveryDiagnostic, EvalSuiteDiscoveryResult, EvalSuiteSummary } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, EvalDiagnostic, EvalMatrix, EvalMatrixRow, EvalRunStatus, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
 import type { FailureWorkbenchViewModel } from './failure-workbench-view-model.js';
@@ -19,6 +20,7 @@ export type WorkbenchViewModel = {
   readonly selectedSuite: WorkbenchSuiteOption;
   readonly modelOptions: readonly WorkbenchModelOption[];
   readonly selectedEvalRunModel: string;
+  readonly preferredEvalRunModel?: string;
   readonly runScope: WorkbenchRunScope;
   readonly runScopeOptions: readonly WorkbenchRunScopeOption[];
   readonly runButtonLabel: string;
@@ -34,6 +36,7 @@ export type WorkbenchBootstrapState = {
   readonly discovery: EvalSuiteDiscoveryResult;
   readonly selectedSuiteId: string;
   readonly selectedEvalRunModel: string;
+  readonly preferredEvalRunModel?: string;
   readonly runScope: WorkbenchRunScope;
 };
 
@@ -110,6 +113,7 @@ export type CreateWorkbenchViewModelInput = {
   readonly discovery: EvalSuiteDiscoveryResult;
   readonly selectedSuiteId?: string;
   readonly selectedEvalRunModel?: string;
+  readonly preferredEvalRunModel?: string;
   readonly runScope?: WorkbenchRunScope;
   readonly latestRun?: RunLocalEvalSuiteResult;
   readonly isRunning?: boolean;
@@ -122,7 +126,8 @@ const FALLBACK_MODEL = { id: 'gpt-5-mini', label: 'GPT-5 mini' } as const;
 
 export function createWorkbenchViewModel(input: CreateWorkbenchViewModelInput): WorkbenchViewModel {
   const selectedSuite = selectSuite(input.discovery.suites, input.selectedSuiteId);
-  const selectedModel = selectModel(selectedSuite, input.selectedEvalRunModel);
+  const preferredModel = selectPreferredModel(input.discovery.suites, input.preferredEvalRunModel);
+  const selectedModel = selectModel(selectedSuite, input.selectedEvalRunModel, preferredModel);
   const runScope = normalizeRunScope(input.runScope, selectedSuite);
   const matrix = matrixForSelectedSuite(input.latestRun, selectedSuite.id);
   const status = resolveStatus(input.discovery, input.latestRun, Boolean(input.isRunning));
@@ -139,6 +144,7 @@ export function createWorkbenchViewModel(input: CreateWorkbenchViewModelInput): 
     selectedSuite: toSuiteOption(selectedSuite, selectedSuite.id, runScope),
     modelOptions: modelOptions(selectedSuite, selectedModel),
     selectedEvalRunModel: selectedModel,
+    preferredEvalRunModel: preferredModel,
     runScope,
     runScopeOptions: runScopeOptions(runScope, selectedSuite, status),
     runButtonLabel: runButtonLabel(status, runScope, selectedSuite.readyTestCaseCount),
@@ -147,7 +153,7 @@ export function createWorkbenchViewModel(input: CreateWorkbenchViewModelInput): 
     progress,
     diagnostics,
     resultDisplay: createResultDisplay(matrix, input.resultFilters, input.selectedCell),
-    bootstrappedState: { discovery: input.discovery, selectedSuiteId: selectedSuite.id, selectedEvalRunModel: selectedModel, runScope },
+    bootstrappedState: { discovery: input.discovery, selectedSuiteId: selectedSuite.id, selectedEvalRunModel: selectedModel, preferredEvalRunModel: preferredModel, runScope },
   };
 }
 
@@ -270,9 +276,17 @@ function selectSuite(suites: readonly EvalSuiteSummary[], selectedSuiteId: strin
   return suites.find((suite) => suite.id === selectedSuiteId) ?? suites[0] ?? EMPTY_SUITE;
 }
 
-function selectModel(suite: EvalSuiteSummary, selectedEvalRunModel: string | undefined): string {
+function selectModel(suite: EvalSuiteSummary, selectedEvalRunModel: string | undefined, preferredEvalRunModel: string | undefined): string {
   if (selectedEvalRunModel && suite.modelOptions.some((option) => option.id === selectedEvalRunModel)) return selectedEvalRunModel;
+  if (preferredEvalRunModel && suite.modelOptions.some((option) => option.id === preferredEvalRunModel)) return preferredEvalRunModel;
   return suite.modelOptions[0]?.id ?? FALLBACK_MODEL.id;
+}
+
+function selectPreferredModel(suites: readonly EvalSuiteSummary[], configuredModel: string | undefined): string | undefined {
+  const configured = configuredModel?.trim();
+  if (configured && suites.some((suite) => suite.modelOptions.some((option) => option.id === configured))) return configured;
+  if (suites.some((suite) => suite.modelOptions.some((option) => option.id === DEFAULT_FAILURE_ANALYSIS_MODEL))) return DEFAULT_FAILURE_ANALYSIS_MODEL;
+  return undefined;
 }
 
 function normalizeRunScope(scope: WorkbenchRunScope | undefined, suite: EvalSuiteSummary): WorkbenchRunScope {

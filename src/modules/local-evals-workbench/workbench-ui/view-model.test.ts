@@ -18,6 +18,18 @@ describe('createWorkbenchViewModel', () => {
     assert.equal(viewModel.resultDisplay.emptyMessage, 'Run evals to see result cards and the matrix.');
   });
 
+  it('prefers the configured assistance model and falls back to the app default model', () => {
+    const defaulted = createWorkbenchViewModel({ discovery: discoveryWithFirstNonDefaultModel() });
+    const configured = createWorkbenchViewModel({ discovery: discoveryWithFirstNonDefaultModel(), preferredEvalRunModel: 'gpt-4o-mini' });
+    const unsupported = createWorkbenchViewModel({ discovery: discoveryWithFirstNonDefaultModel(), preferredEvalRunModel: 'secret-model-name' });
+
+    assert.equal(defaulted.selectedEvalRunModel, 'gpt-5-mini');
+    assert.equal(defaulted.bootstrappedState.preferredEvalRunModel, 'gpt-5-mini');
+    assert.equal(configured.selectedEvalRunModel, 'gpt-4o-mini');
+    assert.equal(configured.bootstrappedState.preferredEvalRunModel, 'gpt-4o-mini');
+    assert.equal(unsupported.selectedEvalRunModel, 'gpt-5-mini');
+    assert.doesNotMatch(JSON.stringify(unsupported.bootstrappedState), /secret-model-name/);
+  });
 
   it('exposes selected suite test cases and normalizes selected test-case scope', () => {
     const viewModel = createWorkbenchViewModel({ discovery: readyDiscovery(), runScope: { type: 'test_case', testCaseId: 'missing-skill-boundary' } });
@@ -184,6 +196,22 @@ describe('createWorkbenchViewModel', () => {
     assert.equal(viewModel.diagnostics[0]?.message, 'Project does not contain a root evals/ folder.');
   });
 });
+
+
+function discoveryWithFirstNonDefaultModel(): EvalSuiteDiscoveryResult {
+  return {
+    status: 'ready',
+    suites: [{
+      id: 'model-defaults',
+      name: 'Model defaults',
+      description: 'Checks model default selection.',
+      readyTestCaseCount: 1,
+      testCases: [{ id: 'case', name: 'Case' }],
+      modelOptions: [{ id: 'gpt-4o-mini', label: 'GPT-4o mini' }, { id: 'gpt-5-mini', label: 'GPT-5 mini' }],
+    }],
+    diagnostics: [],
+  };
+}
 
 function readyDiscovery(): EvalSuiteDiscoveryResult {
   return {

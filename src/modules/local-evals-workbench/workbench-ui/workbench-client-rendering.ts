@@ -5,7 +5,9 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
     if (!suite) return;
     state = { ...state, selectedSuiteId: suite.id, runScope: state.runScope || { type: 'all' } };
     const models = suite.modelOptions || [];
-    if (!models.some((model) => model.id === state.selectedEvalRunModel)) state.selectedEvalRunModel = models[0]?.id || 'gpt-5-mini';
+    if (!models.some((model) => model.id === state.selectedEvalRunModel)) {
+      state.selectedEvalRunModel = models.some((model) => model.id === state.preferredEvalRunModel) ? state.preferredEvalRunModel : models[0]?.id || 'gpt-5-mini';
+    }
     setText('suite-name', suite.name);
     setText('suite-description', suite.description);
     setText('status-label', state.discovery.status === 'blocked' ? 'Blocked' : 'Ready');

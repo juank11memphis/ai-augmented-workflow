@@ -57,7 +57,7 @@ export function createBrowserState(viewModel: WorkbenchViewModel, latestRun?: Ru
 }
 
 export function selectSuite(state: BrowserState, suiteId: string): BrowserState {
-  const viewModel = createWorkbenchViewModel({ discovery: state.viewModel.bootstrappedState.discovery, selectedSuiteId: suiteId, runScope: { type: 'all' } });
+  const viewModel = createWorkbenchViewModel({ discovery: state.viewModel.bootstrappedState.discovery, selectedSuiteId: suiteId, preferredEvalRunModel: state.viewModel.bootstrappedState.preferredEvalRunModel, runScope: { type: 'all' } });
   return createBrowserState(viewModel);
 }
 
@@ -270,6 +270,7 @@ function baseInput(state: BrowserState) {
     discovery: state.viewModel.bootstrappedState.discovery,
     selectedSuiteId: state.viewModel.selectedSuite.id,
     selectedEvalRunModel: state.viewModel.selectedEvalRunModel,
+    preferredEvalRunModel: state.viewModel.bootstrappedState.preferredEvalRunModel,
     runScope: state.viewModel.runScope,
     latestRun: state.latestRun,
   };
