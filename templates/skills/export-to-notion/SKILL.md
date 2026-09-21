@@ -1,6 +1,6 @@
 ---
 name: export-to-notion
-description: Export a named feature's local feature brief, UX design, and technical design Markdown files to Notion using configured Notion MCP capabilities.
+description: Export a named feature's local BRD, UX design, and technical design Markdown files to Notion using configured Notion MCP capabilities.
 ---
 
 # Export to Notion
@@ -50,7 +50,7 @@ If the feature name is ambiguous, inspect `docs/features/` and ask one focused c
 Export only these local Markdown files when present:
 
 ```txt
-docs/features/<feature-slug>/feature_brief.md
+docs/features/<feature-slug>/brd.md
 docs/features/<feature-slug>/ux.md
 docs/features/<feature-slug>/technical_design.md
 ```
@@ -66,7 +66,7 @@ Use this organization under the configured Notion docs parent page:
 └── <repo name>
     └── Features
         └── <feature name>
-            ├── Feature Brief
+            ├── Business Requirements Document
             ├── UX Design
             └── Technical Design
 ```
@@ -110,3 +110,5 @@ Before finalizing, verify:
 - Do not invent missing source artifacts.
 - Do not export files outside the allowed source list.
 - If Notion MCP capabilities or destination configuration are unavailable, fail clearly and explain what is missing.
+
+Export `docs/features/<feature-slug>/brd.md` under the page title `Business Requirements Document`. Preserve requirement IDs, objective links, business rules, and acceptance content during Markdown conversion; do not silently drop or relabel their business meaning. No BRD approval status is required; explicit opt-in for external mutation remains required. Do not match legacy pages, rename old pages, or perform cleanup.

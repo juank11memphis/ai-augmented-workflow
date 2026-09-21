@@ -59,9 +59,9 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '6');
+    assert.equal(templateMetadata?.version, '7');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.match(contents, /name: export-to-notion/);
     assert.match(contents, /notion-exporter/);
     assert.match(contents, /clean, narrow export packet/);
@@ -71,7 +71,7 @@ describe('dedicated exporter skill templates', () => {
     assert.match(contents, /### Inline fallback workflow/);
     assert.match(contents, /Use inline fallback only when delegation is unavailable or has failed and the user explicitly accepts inline fallback/);
     assert.match(contents, /feature name/i);
-    assert.match(contents, /feature_brief\.md/);
+    assert.match(contents, /brd\.md/);
     assert.match(contents, /ux\.md/);
     assert.match(contents, /technical_design\.md/);
     assert.match(contents, /Do not export Epics, User Stories, implementation plans, product vision, Deep Module Maps, or arbitrary docs/i);
@@ -94,9 +94,9 @@ describe('dedicated exporter skill templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, isCodexAgentTemplate ? '4' : '2');
+      assert.equal(templateMetadata?.version, templatePath.includes('notion-exporter') ? (isCodexAgentTemplate ? '5' : '3') : (isCodexAgentTemplate ? '4' : '2'));
       assert.match(templateMetadata?.description ?? '', /exporter sub-agent/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise reporting guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', templatePath.includes('notion-exporter') ? /BRD/i : /concise reporting guidance/i);
       assert.match(contents, /sub-agent/i);
       assert.match(contents, /full conversation context/i);
       assert.match(contents, /Do not modify local repository files/i);
@@ -206,7 +206,7 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
   it('keeps document authoring templates free of Notion export workflows', () => {
     const manifest = readTemplateManifest();
     const authoringTemplatePaths = [
-      'skills/feature-brief-writer/SKILL.md',
+      'skills/business-requirements-writer/SKILL.md',
       'skills/technical-design-writer/SKILL.md',
       'skills/ux-expert/SKILL.md',
     ];
@@ -261,22 +261,22 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
   });
 
 
-  it('joins Feature Brief and Deep Module Map as sibling technical design inputs', () => {
+  it('joins BRD and Deep Module Map as sibling technical design inputs', () => {
     const templatePath = 'skills/technical-design-writer/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
     assertVersionMetadata(templateMetadata?.version, templatePath);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /quality strategy guidance/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /verification intent before downstream planning and implementation/i);
-    assert.match(contents, /A Markdown feature brief at `docs\/features\/<feature-slug>\/feature_brief\.md`/);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
+    assert.match(contents, /A Markdown BRD at `docs\/features\/<feature-slug>\/brd\.md`/);
     assert.match(contents, /`docs\/deep-module-map\.md`/);
     assert.match(contents, /language skills, framework skills, or database skills/);
     assert.match(contents, /any selected language, framework, or database skills that apply/);
-    assert.match(contents, /Treat the Feature Brief and Deep Module Map as sibling upstream inputs/);
-    assert.match(contents, /newer feature briefs may omit that section/);
-    assert.match(contents, /use the approved feature scope plus `docs\/deep-module-map\.md` to identify the existing modules during technical clarification/);
+    assert.match(contents, /Treat the BRD and Deep Module Map as sibling upstream inputs/);
+    assert.match(contents, /A BRD may name selected Deep Modules directly or omit that section/);
+    assert.match(contents, /use the defined business scope plus `docs\/deep-module-map\.md` to identify the existing modules during technical clarification/);
     assert.match(contents, /## Quality Strategy/);
     assert.match(contents, /planned verification intent, not a post-implementation command log/i);
     assert.match(contents, /unit tests/i);
@@ -288,8 +288,8 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     assert.match(contents, /mutation/i);
     assert.match(contents, /manual QA/i);
     assert.match(contents, /Keep this distinct from the planned quality strategy above/i);
-    assert.doesNotMatch(contents, /Require the feature brief to name one or more existing Deep Modules/);
-    assert.doesNotMatch(contents, /the feature brief, including its `## Deep Module` section/);
+    assert.doesNotMatch(contents, /Require the BRD to name one or more existing Deep Modules/);
+    assert.doesNotMatch(contents, /the BRD, including its `## Deep Module` section/);
   });
 
 
@@ -297,7 +297,7 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const contents = readTemplate('skills/scrum-master-planner/SKILL.md');
 
     assert.match(contents, /## Verification Expectations/);
-    assert.match(contents, /feature brief, the technical design quality strategy, and optional diagram companion context/i);
+    assert.match(contents, /BRD, the technical design quality strategy, and optional diagram companion context/i);
     assert.match(contents, /Acceptance Criteria stay behavior-focused/i);
     assert.match(contents, /Verification Expectations stay evidence-focused/i);
     assert.match(contents, /Validation stays command\/check-focused/i);
@@ -313,7 +313,7 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const contents = readTemplate(templatePath);
 
     assertVersionMetadata(templateMetadata?.version, templatePath);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /story-level verification expectations/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
     assert.doesNotMatch(contents, /GitHub export gate outcome/i);
     assert.doesNotMatch(contents, /Create GitHub Issues for these Epics and User Stories/i);
@@ -396,7 +396,7 @@ describe('template catalog source templates', () => {
   it('returns manifest-backed template versions', () => {
     const manifest = readTemplateManifest();
 
-    assert.equal(getTemplateVersion(manifest, 'skills/business-domain-model-writer/SKILL.md'), '8');
+    assert.equal(getTemplateVersion(manifest, 'skills/business-domain-model-writer/SKILL.md'), '9');
   });
 
   it('preserves the missing manifest entry error', () => {

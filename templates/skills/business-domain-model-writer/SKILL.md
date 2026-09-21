@@ -1,6 +1,6 @@
 ---
 name: business-domain-model-writer
-description: Create or update docs/business-domain-model.md from Product Vision plus assistant-led discovery, extracting likely business language, concepts, rules, lifecycles, workflows, events, boundaries, and hard parts before Deep Module Map or Feature Brief work.
+description: Create or update docs/business-domain-model.md from Product Vision plus assistant-led discovery, extracting likely business language, concepts, rules, lifecycles, workflows, events, boundaries, and hard parts before Deep Module Map or BRD work.
 ---
 
 # Business Domain Model Writer
@@ -13,7 +13,7 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 Create or update `docs/business-domain-model.md`, a project-owned Business Domain Model that captures the product's business language and rules before downstream planning starts.
 
-This skill owns the Business Domain Model only. It does not own Product Vision, Deep Module Maps, feature briefs, UX specs, technical designs, Epics, User Stories, implementation plans, production code, or Sibu template changes.
+This skill owns the Business Domain Model only. It does not own Product Vision, Deep Module Maps, BRDs, UX specs, technical designs, Epics, User Stories, implementation plans, production code, or Sibu template changes.
 
 ## Pipeline Contract
 
@@ -32,12 +32,12 @@ This is generated project-owned content. It is not a Sibu-managed workflow templ
 ### When this skill stops
 
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
-- The request belongs to another pipeline stage, such as Product Vision, Deep Module Map, feature brief, UX design, technical design, Scrum planning, implementation planning, or implementation execution.
+- The request belongs to another pipeline stage, such as Product Vision, Deep Module Map, BRD, UX design, technical design, Scrum planning, implementation planning, or implementation execution.
 - Product Vision plus user review still leave material ambiguity about domain language, concepts, bounded contexts, subdomains, relationships, rules, lifecycles, workflows, events, boundaries, or hard parts; ask one focused review question instead of drafting.
 
 ### What this skill must not do
 
-- Do not create Product Vision, Deep Module Maps, feature briefs, UX specs, technical designs, Epics, User Stories, implementation plans, or production code.
+- Do not create Product Vision, Deep Module Maps, BRDs, UX specs, technical designs, Epics, User Stories, implementation plans, or production code.
 - Do not inspect implementation code or derive domain truth from existing architecture, folder names, database tables, commands, screens, or APIs by default.
 - Do not use existing implementation code as the source of truth for business concepts, rules, or boundaries.
 - Do not make the user invent the Business Domain Model from scratch. The assistant must first mine Product Vision for likely concepts, rules, workflows, lifecycles, and boundaries, then ask the user to confirm or correct its interpretation.
@@ -289,7 +289,7 @@ Keep the document as concise as the product allows. Simple projects may have sho
 ## Writing guidance
 
 - Use the user's natural business language when it is clear and consistent.
-- Make domain boundaries and subdomains explicit enough that downstream Deep Module Map and Feature Brief work can tell what domain each concern belongs to. Use the Mermaid context map to make subdomain groups and inside/outside ownership boundaries visually obvious.
+- Make domain boundaries and subdomains explicit enough that downstream Deep Module Map and BRD work can tell what domain each concern belongs to. Use the Mermaid context map to make subdomain groups and inside/outside ownership boundaries visually obvious.
 - Prefer concrete definitions, examples, and rules over generic taxonomy.
 - Name concepts for business meaning, not implementation shape.
 - Describe relationships and cardinality in business language when they matter.

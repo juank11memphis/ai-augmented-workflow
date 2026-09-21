@@ -70,11 +70,11 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
-    templateRelativePath: 'skills/feature-brief-writer/SKILL.md',
+    templateRelativePath: 'skills/business-requirements-writer/SKILL.md',
     targetRelativePathsByAgent: {
-      codex: '.agents/skills/feature-brief-writer/SKILL.md',
-      gemini: '.agents/skills/feature-brief-writer/SKILL.md',
-      claude: '.agents/skills/feature-brief-writer/SKILL.md',
+      codex: '.agents/skills/business-requirements-writer/SKILL.md',
+      gemini: '.agents/skills/business-requirements-writer/SKILL.md',
+      claude: '.agents/skills/business-requirements-writer/SKILL.md',
     },
   },
   {

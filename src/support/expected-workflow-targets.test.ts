@@ -183,7 +183,7 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/business-domain-model-writer/SKILL.md',
       '.agents/skills/capabilities-map-writer/SKILL.md',
       '.agents/skills/deep-module-map-writer/SKILL.md',
-      '.agents/skills/feature-brief-writer/SKILL.md',
+      '.agents/skills/business-requirements-writer/SKILL.md',
       '.agents/skills/technical-design-writer/SKILL.md',
       '.agents/skills/scrum-master-planner/SKILL.md',
       '.agents/skills/ai-implementation-planner/SKILL.md',

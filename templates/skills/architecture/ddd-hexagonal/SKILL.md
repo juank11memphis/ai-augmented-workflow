@@ -56,7 +56,7 @@ Reviewers should check that use cases and domain concepts were designed before a
 
 Deep Modules answer “where does this implementation work belong?” DDD + Hexagonal answers “how is that module structured internally?”
 
-When `docs/deep-module-map.md`, a feature brief, or a technical design names Deep Modules, treat each selected Deep Module as the default top-level implementation boundary before choosing domain/application/infra placement. Prefer placing domain concepts, use cases, ports, and adapters under the selected module's ownership. If work crosses modules, name the owning module for each part and keep dependencies explicit.
+When `docs/deep-module-map.md`, a BRD, or a technical design names Deep Modules, treat each selected Deep Module as the default top-level implementation boundary before choosing domain/application/infra placement. Prefer placing domain concepts, use cases, ports, and adapters under the selected module's ownership. If work crosses modules, name the owning module for each part and keep dependencies explicit.
 
 A Deep Module may contain `domain`, `application`, and `infra`/adapter concerns, but it is not automatically a DDD Bounded Context, service, package, database boundary, or team boundary. Projects that already use DDD Bounded Contexts may align a Bounded Context one-to-one with a Deep Module when that preserves the model and language.
 

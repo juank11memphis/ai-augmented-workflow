@@ -39,7 +39,7 @@ Reviewers should check that every operation has an explicit Command, focused Han
 
 Deep Modules answer “where does this implementation work belong?” Command Pattern guidance answers “how is that work structured as command-oriented vertical slices inside the selected module?”
 
-When `docs/deep-module-map.md`, a feature brief, or a technical design names Deep Modules, place each vertical slice inside the relevant Deep Module. The feature-local Command, Handler, Port, Adapter, and Result guidance still applies inside that module boundary.
+When `docs/deep-module-map.md`, a BRD, or a technical design names Deep Modules, place each vertical slice inside the relevant Deep Module. The feature-local Command, Handler, Port, Adapter, and Result guidance still applies inside that module boundary.
 
 Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `deep-module-map-writer` workflow.
 

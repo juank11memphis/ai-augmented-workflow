@@ -2,7 +2,7 @@
   "sibuVersion": "0.25.0",
   "templateVersion": "151",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-08-12T21:36:21.429Z",
+  "updatedAt": "2026-09-07T17:53:16.171Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -20,15 +20,7 @@
     "ux-expert"
   ],
   "selectedDatabaseSkills": [],
-  "selectedMcpServers": [
-    "github",
-    "notion"
-  ],
-  "mcpServerConfigs": {
-    "notion": {
-      "docsParentPage": "https://www.notion.so/Projects-35e6bde72ad2807d957ae1baf332a4c4"
-    }
-  },
+  "selectedMcpServers": [],
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
@@ -39,7 +31,7 @@
     ".codex/config.toml": {
       "template": ".codex/config.toml",
       "templateVersion": "3",
-      "sha256": "fa99c0a2b47f24e61d440b0a14de747928ceec1420246689e190b1b7df16fc58",
+      "sha256": "ad6c7dcde6649a2232ee7113ad412ac9dd1df88c0101ec3729fa30833fcde909",
       "status": "managed"
     },
     "GEMINI.md": {
@@ -263,7 +255,7 @@
     ".gemini/settings.json": {
       "template": ".gemini/settings.json",
       "templateVersion": "1",
-      "sha256": "9d5dbde389da7c8428aebc7d861e6d93dd1c3cd565d334e8ef8c4dda961d456e",
+      "sha256": "1c37d2542f2d8de611d3a6dfd3037b69f98552311de3130f5473473cd79e4e28",
       "status": "managed"
     },
     ".claude/settings.json": {
@@ -275,8 +267,9 @@
     ".mcp.json": {
       "template": "mcp/claude/.mcp.json",
       "templateVersion": "2",
-      "sha256": "71a795e6514e5aa495e39fb763cdc2f86e83579d9b8ca772faf7a024e0636f31",
-      "status": "managed"
+      "sha256": "ef5f7e5aac1cbe00e866ab72e472dcd349535a5d14852e4bbfac0dfa5de78085",
+      "status": "unmanaged",
+      "reason": "Stopped by `sibu mcp stop`."
     },
     ".agents/skills/eval-authoring/SKILL.md": {
       "template": "skills/eval-authoring/SKILL.md",

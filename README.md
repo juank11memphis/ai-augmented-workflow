@@ -123,7 +123,7 @@ Sibu works best when AI collaboration stays small, explicit, and reviewable. The
 
 ```mermaid
 flowchart LR
-  orient["1. Orient<br/>Product vision + domain model + capabilities + module map"] --> design["2. Design<br/>Feature brief + technical design"]
+  orient["1. Orient<br/>Product vision + domain model + capabilities + module map"] --> design["2. Design<br/>BRD + technical design"]
   design --> plan["3. Plan<br/>Epics, stories + implementation steps"]
   plan --> build["4. Build<br/>Small AI-assisted changes"]
   build --> validate["5. Validate<br/>Tests, checks + human review"]
@@ -155,7 +155,7 @@ flowchart TB
   product --> businessDomainModel["business-domain-model-writer"]
   product --> capabilitiesMap["capabilities-map-writer"]
   product --> deepModuleMap["deep-module-map-writer"]
-  product --> featureBrief["feature-brief-writer"]
+  product --> featureBrief["business-requirements-writer"]
   product --> featureIdea["feature-idea-capture"]
   product --> scrumPlanner["scrum-master-planner"]
 ```
@@ -200,11 +200,11 @@ flowchart TB
 | `business-domain-model-writer` | Domain language and rules | Installed here | You need to clarify business concepts, subdomains, workflows, lifecycle rules, domain events, or boundaries. |
 | `capabilities-map-writer` | Business/product capability map | Installed here | You need to map the product abilities each subdomain must provide before module or feature planning. |
 | `deep-module-map-writer` | Deep implementation boundaries | Installed here | You need to map durable modules from the product vision, domain model, and capabilities map before feature work. |
-| `feature-brief-writer` | Business-level feature definition | Installed here | You need a scoped feature brief grounded in the product vision, Business Domain Model, and Capabilities Map. |
+| `business-requirements-writer` | Business-level feature definition | Installed here | You need a scoped BRD grounded in the product vision, Business Domain Model, and Capabilities Map. |
 | `feature-idea-capture` | Rough future ideas | Installed here | You want to save a feature, product, workflow, or improvement idea without turning it into planned work yet. |
-| `scrum-master-planner` | Epics and user stories | Installed here | You need to split an approved feature brief and technical design into pragmatic delivery slices. |
+| `scrum-master-planner` | Epics and user stories | Installed here | You need to split a sufficiently clear BRD and technical design into pragmatic delivery slices. |
 | `ux-expert` | UX design guidance | Bundled optional | You need UX design, interaction, flow, layout, or experience guidance. |
-| `technical-design-writer` | Implementation-oriented design | Installed here | You have an approved feature brief and need a concise technical direction before planning stories. |
+| `technical-design-writer` | Implementation-oriented design | Installed here | You have a sufficiently clear BRD and need a concise technical direction before planning stories. |
 | `ai-implementation-planner` | Story implementation steps | Installed here | You need an approved user story turned into small, executable implementation-plan files. |
 | `ai-implementation-planner-toolbox` | Planner sub-agent rules | Installed here | A Sibu implementation planner worker needs worker-only rules for creating a story-local implementation plan. |
 | `ai-implementation-plan-executor` | Plan execution | Installed here | You want an agent to execute a story implementation plan, stop for review, then commit after approval. |
@@ -220,7 +220,7 @@ flowchart TB
 | `layered-architecture` | Layered architecture | Bundled optional | Work needs presentation, application, domain, and infrastructure layering guidance. |
 | `ai-prompt-engineer-master` | Prompt and template quality | Installed here | You are creating, rewriting, compressing, or evaluating prompts or reusable AI instructions. |
 | `export-to-github` | GitHub issue export | Installed here | You need to export a feature's Epics and User Stories to GitHub issues and sub-issues. |
-| `export-to-notion` | Notion documentation export | Installed here | You need to export local feature briefs, UX designs, or technical designs to Notion. |
+| `export-to-notion` | Notion documentation export | Installed here | You need to export local BRDs, UX designs, or technical designs to Notion. |
 | `sibu-template-change` | Sibu template maintenance | Installed here | You change files under `templates/` or template manifest metadata and need safe lifecycle validation. |
 
 The point is not to make agents magical. The point is to give them the right job, the right context, and a tight enough boundary that a human can trust the result.
@@ -314,7 +314,9 @@ When Notion is selected, Sibu asks for a Notion docs destination parent page URL
 
 Sibu configures supported agent MCP files for Notion, but it does not manage Notion OAuth login, workspace selection, integration installation, page permissions, credentials, or live connectivity. Your Notion MCP connection must be authenticated separately and must have access to the configured parent page. For provider setup details, use Notion's MCP documentation: <https://developers.notion.com/guides/mcp/get-started-with-mcp>.
 
-Feature briefs, technical designs, and UX docs are still written to local Markdown first. Notion is an optional export destination, not Sibu's source of truth.
+Business Requirements Documents (BRDs) are authored by `business-requirements-writer` at `docs/features/<feature-slug>/brd.md`. They connect business objectives, typed requirements, rules, and acceptance criteria with stable feature-local IDs. Downstream artifacts reference those IDs; sufficient context and a user request—not BRD approval metadata—drive progression. This replaces the previous business-definition workflow without aliases, fallback, or migration; existing project-owned files remain protected by normal Sibu maintenance.
+
+BRDs, technical designs, and UX docs are still written to local Markdown first. Notion is an optional export destination, not Sibu's source of truth.
 
 For Codex with the hosted Notion MCP server, you may need to run the agent-specific MCP login flow after Sibu writes config, such as:
 

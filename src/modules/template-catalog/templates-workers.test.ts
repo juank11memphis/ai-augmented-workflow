@@ -34,8 +34,8 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '38');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Routes Sibu eval artifact authoring/i);
+    assert.equal(templateMetadata?.version, '39');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -77,16 +77,16 @@ describe('AGENTS.md template', () => {
 
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
-    assert.match(contents, /product vision -> business domain model -> capabilities map -> deep module map \/ feature brief -> UX when the feature has UI impact -> technical design -> epics\/stories -> AI executor/);
+    assert.match(contents, /product vision -> business domain model -> capabilities map -> deep module map \/ BRD -> UX when the feature has UI impact -> technical design -> epics\/stories -> AI executor/);
     assert.match(contents, /Business Domain Model work sits after Product Vision and before the Capabilities Map/);
-    assert.match(contents, /Deep Module Map and Feature Brief work are sibling downstream artifacts from Product Vision, Business Domain Model, and Capabilities Map/);
+    assert.match(contents, /Deep Module Map and BRD work are sibling downstream artifacts from Product Vision, Business Domain Model, and Capabilities Map/);
     assert.match(contents, /UX is optional overall but required before Technical Design when the feature has UI impact/);
-    assert.match(contents, /Technical Design remains downstream of Feature Brief, Deep Module Map, and required UX/);
+    assert.match(contents, /Technical Design remains downstream of BRD, Deep Module Map, and required UX/);
     assert.match(contents, /Scrum planning and AI executor flows after Technical Design/);
     assert.match(contents, /Business Domain Model, `docs\/business-domain-model\.md`.*use `business-domain-model-writer`/);
     assert.match(contents, /Capabilities Map, product\/business capabilities, capability coverage by subdomain, `docs\/capabilities-map\.md`, missing capability checks, or capability gaps, use `capabilities-map-writer`/);
-    assert.match(contents, /business-level feature brief, feature definition, feature scope, MVP feature boundaries, business acceptance criteria, capability coverage, or product-level feature rationale, use `feature-brief-writer`/);
-    assert.doesNotMatch(contents, /feature brief after Deep Module Map work/);
+    assert.match(contents, /business-level BRD, feature definition, feature scope, MVP feature boundaries, business acceptance criteria, capability coverage, or product-level feature rationale, use `business-requirements-writer`/);
+    assert.doesNotMatch(contents, /BRD after Deep Module Map work/);
 
     for (const routingTerm of routingTerms) {
       assert.match(contents, new RegExp(routingTerm.replaceAll('/', '\\/'), 'i'));
@@ -123,7 +123,7 @@ describe('worker toolbox routing profiles', () => {
     assert.match(contents, /unmapped language, framework, database, or architecture pattern/);
     assert.match(contents, /plan risk/);
     assert.doesNotMatch(contents, /product vision/i);
-    assert.doesNotMatch(contents, /feature brief writer/i);
+    assert.doesNotMatch(contents, /BRD writer/i);
     assert.doesNotMatch(contents, /export-to-github/);
     assert.doesNotMatch(contents, /export-to-notion/);
     assert.doesNotMatch(contents, /GitHub\/Notion/);
@@ -196,10 +196,10 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '21');
+    assert.equal(templateMetadata?.version, '22');
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /verification expectations/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /quality strategy/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /technical-design-writer/);
@@ -238,10 +238,10 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '6');
+    assert.equal(templateMetadata?.version, '7');
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /source-file size validation/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /cohesive refactoring/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -313,9 +313,9 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '29');
+    assert.equal(templateMetadata?.version, '30');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /validation evidence requirements/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -361,9 +361,9 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '7');
+    assert.equal(templateMetadata?.version, '8');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /touched source-file size checker/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);

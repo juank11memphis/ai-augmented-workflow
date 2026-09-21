@@ -92,7 +92,7 @@ describe('structured logging routing hooks', () => {
     const expectations = [
       { path: 'skills/typescript/SKILL.md', version: '3', hook: /When TypeScript changes affect logs/ },
       { path: 'skills/golang/SKILL.md', version: '3', hook: /When Go changes affect logs/ },
-      { path: 'skills/architecture/command-pattern/SKILL.md', version: '9', hook: /Operational Behavior Uses Structured Logging/ },
+      { path: 'skills/architecture/command-pattern/SKILL.md', version: '10', hook: /Operational Behavior Uses Structured Logging/ },
     ];
 
     for (const expectation of expectations) {
@@ -100,7 +100,7 @@ describe('structured logging routing hooks', () => {
       const templateMetadata = manifest.templates[expectation.path];
 
       assert.equal(templateMetadata?.version, expectation.version);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', expectation.path.includes('command-pattern') ? /BRD/i : /concise conversational response guidance/i);
       assert.match(contents, /`structured-logging`/);
       assert.match(contents, expectation.hook);
       assert.doesNotMatch(contents, /secrets, credentials, tokens/);
@@ -122,7 +122,7 @@ describe('architecture downstream handoff templates', () => {
       const contents = readTemplate(skill.templateRelativePath);
       const templateMetadata = manifest.templates[skill.templateRelativePath];
 
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', skill.id === 'layered-architecture' ? /concise conversational response guidance/i : /BRD/i);
       assert.match(contents, /## Downstream Sibu workflow handoff/);
       assert.match(contents, /### Technical design/);
       assert.match(contents, /### Implementation planning/);
@@ -190,9 +190,9 @@ describe('layered architecture template', () => {
 });
 
 
-describe('feature brief writer raw idea source guidance', () => {
+describe('BRD writer raw idea source guidance', () => {
   it('keeps docs/feature-ideas.md ideas from bypassing the interview flow', () => {
-    const templatePath = 'skills/feature-brief-writer/SKILL.md';
+    const templatePath = 'skills/business-requirements-writer/SKILL.md';
     const contents = readTemplate(templatePath);
     assert.match(contents, /docs\/feature-ideas\.md/);
     assert.match(contents, /raw\/vague input/i);
@@ -201,35 +201,35 @@ describe('feature brief writer raw idea source guidance', () => {
       contents,
       /problem, target user\/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Capability Coverage/,
     );
-    assert.match(contents, /After the local `docs\/features\/<feature-slug>\/feature_brief\.md` file is successfully written, remove the promoted idea from `docs\/feature-ideas\.md`/);
-    assert.match(contents, /Do not delete the idea before the feature brief file exists/);
+    assert.match(contents, /After the local `docs\/features\/<feature-slug>\/brd\.md` file is successfully written, remove the promoted idea from `docs\/feature-ideas\.md`/);
+    assert.match(contents, /Do not delete the idea before the BRD file exists/);
   });
 });
 
-describe('feature brief writer upstream coverage grounding', () => {
-  it('requires Capabilities Map context and routes upstream gaps before feature brief work', () => {
-    const templatePath = 'skills/feature-brief-writer/SKILL.md';
+describe('BRD writer upstream coverage grounding', () => {
+  it('requires Capabilities Map context and routes upstream gaps before BRD work', () => {
+    const templatePath = 'skills/business-requirements-writer/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
     assertVersionMetadata(manifest.templateVersion, 'global template');
-    assert.equal(templateMetadata?.version, '17');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.equal(templateMetadata?.version, '1');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 
     assert.match(contents, /docs\/product-vision\.md/);
     assert.match(contents, /docs\/business-domain-model\.md/);
     assert.match(contents, /docs\/capabilities-map\.md/);
-    assert.doesNotMatch(contents, /feature brief requires `docs\/deep-module-map\.md`/);
-    assert.doesNotMatch(contents, /Do not start a feature brief if .*docs\/deep-module-map\.md/s);
+    assert.doesNotMatch(contents, /BRD requires `docs\/deep-module-map\.md`/);
+    assert.doesNotMatch(contents, /Do not start a BRD if .*docs\/deep-module-map\.md/s);
 
     assert.match(contents, /product-vision-writer/);
     assert.match(contents, /business-domain-model-writer/);
     assert.match(contents, /capabilities-map-writer/);
-    assert.match(contents, /feature brief requires `docs\/business-domain-model\.md`/);
-    assert.match(contents, /feature brief requires `docs\/capabilities-map\.md`/);
+    assert.match(contents, /BRD requires `docs\/business-domain-model\.md`/);
+    assert.match(contents, /BRD requires `docs\/capabilities-map\.md`/);
     assert.match(contents, /business language, domain concepts, relationships, rules, states, workflows, events, and boundaries/i);
     assert.match(contents, /Capabilities Map as the source of truth for business\/product capability coverage by subdomain/i);
     assert.match(contents, /stretch or change the Product Vision's direction, target users, boundaries, principles, trust expectations, or success signals/i);
@@ -240,7 +240,7 @@ describe('feature brief writer upstream coverage grounding', () => {
     assert.match(contents, /Use capabilities-map-writer to revise docs\/capabilities-map\.md for this feature request: <feature summary>/);
     assert.match(contents, /## Capability Coverage/);
     assert.match(contents, /Existing subdomain capabilities from docs\/capabilities-map\.md that support this feature/i);
-    assert.match(contents, /Do not silently invent missing upstream foundations in the final brief/i);
+    assert.match(contents, /Do not silently invent missing upstream foundations in the final BRD/i);
   });
 });
 
@@ -252,16 +252,16 @@ describe('UX expert Business Domain Model grounding', () => {
     const contents = readTemplate(templatePath);
     const groundingTerms = ['domain language', 'user-facing concepts', 'rules', 'states', 'workflows', 'boundaries'];
 
-    assert.equal(templateMetadata?.version, '14');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.equal(templateMetadata?.version, '15');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     assert.match(contents, /docs\/product-vision\.md/);
     assert.match(contents, /docs\/business-domain-model\.md/);
-    assert.match(contents, /docs\/features\/<feature-slug>\/feature_brief\.md/);
+    assert.match(contents, /docs\/features\/<feature-slug>\/brd\.md/);
     assert.match(contents, /business-domain-model-writer/);
-    assert.match(contents, /Read product vision, Business Domain Model, and feature brief/i);
-    assert.match(contents, /product artifact such as `docs\/features\/<feature-slug>\/feature_brief\.md` that defines goals, scope, and acceptance criteria/i);
+    assert.match(contents, /Read product vision, Business Domain Model, and BRD/i);
+    assert.match(contents, /product artifact such as `docs\/features\/<feature-slug>\/brd\.md` that defines goals, scope, and acceptance criteria/i);
     assert.doesNotMatch(contents, /implementation code/i);
 
     for (const groundingTerm of groundingTerms) {
@@ -276,9 +276,9 @@ describe('feature idea capture template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '2');
+    assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /Mandatory feature idea capture/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.equal(manifest.templates['docs/feature-ideas.md'], undefined);
 
     const contents = readTemplate(templatePath);
@@ -301,9 +301,9 @@ describe('capabilities map writer template', () => {
     const contents = readTemplate(templatePath);
 
     assertVersionMetadata(manifest.templateVersion, 'global template');
-    assert.equal(templateMetadata?.version, '3');
+    assert.equal(templateMetadata?.version, '4');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 
     assert.match(contents, /name: capabilities-map-writer/);
@@ -334,9 +334,9 @@ describe('business domain model writer template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
 
-    assert.equal(templateMetadata?.version, '8');
+    assert.equal(templateMetadata?.version, '9');
     assert.match(templateMetadata?.description ?? '', /Mandatory Business Domain Model writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     const contents = readTemplate(templatePath);
@@ -403,8 +403,8 @@ describe('deep module map writer template', () => {
       'business/product abilities',
     ];
 
-    assert.equal(templateMetadata?.version, '8');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.equal(templateMetadata?.version, '9');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
     assert.equal(manifest.templates['docs/deep-module-map.md'], undefined);

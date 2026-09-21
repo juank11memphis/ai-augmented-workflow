@@ -13,16 +13,5 @@
         ]
       }
     ]
-  },
-  "mcpServers": {
-    "github": {
-      "httpUrl": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
-    },
-    "notion": {
-      "url": "https://mcp.notion.com/mcp"
-    }
   }
 }

@@ -21,7 +21,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 
 - Exactly one User Story file at `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`.
 - The story's `epic_brief.md`.
-- The feature's `feature_brief.md`.
+- The feature's `brd.md`.
 - The feature's `technical_design.md` as the authoritative technical design artifact, including any feature-level quality strategy.
 - The feature's `tech_design_diagrams.md` when present, as optional companion context that never blocks planning when absent.
 - The story's verification expectations and any technical-design quality strategy needed to plan validation steps.
@@ -45,10 +45,10 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 
 ### What this skill must not do
 
-- Do not create or update product visions, Deep Module Maps, feature briefs, technical designs, UX specs, Epics, User Stories, or production code.
+- Do not create or update product visions, Deep Module Maps, BRDs, technical designs, UX specs, Epics, User Stories, or production code.
 - Do not modify prior-stage artifacts.
 - Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
-- Do not infer implementation scope from an Epic brief, feature brief, or technical design without exactly one User Story.
+- Do not infer implementation scope from an Epic brief, BRD, or technical design without exactly one User Story.
 - Do not ask for a plan-approval gate before executor handoff unless the user explicitly requested planning-only.
 - Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
 
@@ -67,7 +67,7 @@ The user must provide or clearly identify exactly one User Story file:
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 ```
 
-Do not create an implementation plan from a vague request, Epic brief, feature brief, or technical design alone.
+Do not create an implementation plan from a vague request, Epic brief, BRD, or technical design alone.
 
 ## Required source context gate
 
@@ -76,7 +76,7 @@ Before delegating or planning inline, verify these paths exist and are coherent:
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
-docs/features/<feature-slug>/feature_brief.md
+docs/features/<feature-slug>/brd.md
 docs/features/<feature-slug>/technical_design.md
 docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; verify/pass when present and never hard-stop when absent
 docs/features/<feature-slug>/ux.md  # when the story or feature has UI impact
@@ -90,7 +90,7 @@ If the technical design is missing, stop and ask the user to create it with `tec
 
 If `docs/features/<feature-slug>/tech_design_diagrams.md` exists, verify and pass its path to the planner worker as optional companion context. Missing diagrams are allowed for older features and must not block implementation planning. Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design.md`.
 
-When the feature brief or technical design includes Deep Module guidance, treat it as required planning context. Deep Modules answer “where does this implementation work belong?” Implementation steps must preserve approved module boundaries.
+When the BRD or technical design includes Deep Module guidance, treat it as required planning context. Deep Modules answer “where does this implementation work belong?” Implementation steps must preserve approved module boundaries.
 
 ## Required sub-agent planning path
 
@@ -99,7 +99,7 @@ When the host exposes any usable sub-agent spawn capability and `sibu-implementa
 Build a narrow planner packet for the worker. The packet must include:
 
 - exactly one User Story path
-- Epic brief, feature brief, technical design, optional tech design diagrams path when present, and UX path when relevant
+- Epic brief, BRD, technical design, optional tech design diagrams path when present, and UX path when relevant
 - story verification expectations and any technical design quality strategy context needed to plan validation steps
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
@@ -171,7 +171,7 @@ Every step file must use this structure:
 - <Relevant compile, test, lint, build, or manual validation passes>
 ```
 
-Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, feature brief, or technical design. Validation steps should sit close to the behavior they prove; under command-pattern guidance, handler/domain validation generally precedes adapter or transport validation. Done conditions should make expected validation evidence and residual risks reviewable.
+Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, BRD, or technical design. Validation steps should sit close to the behavior they prove; under command-pattern guidance, handler/domain validation generally precedes adapter or transport validation. Done conditions should make expected validation evidence and residual risks reviewable.
 
 ## Plan quality gate
 
@@ -197,3 +197,11 @@ If the user explicitly asked for planning-only, said not to implement, or asked 
 - that no separate plan approval is required before a later executor run
 
 Do not paste step-file bodies, excerpts, outlines, task text, done conditions, or section summaries unless the user explicitly asks for inline review.
+
+## BRD handoff
+
+Preserve source BRD IDs carried by the story and technical design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
+
+Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
+
+Require sufficient BRD context, not approval fields, signatures, draft/approved status, or a sign-off ceremony. A user request selects the next stage; do not automatically execute later stages. Missing or conflicting decisions still require clarification. Preserve stage prerequisites, required UX, code-change permissions, and story-level implementation review.

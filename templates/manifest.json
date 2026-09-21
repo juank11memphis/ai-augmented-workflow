@@ -1,11 +1,11 @@
 {
-  "templateVersion": "151",
+  "templateVersion": "152",
   "templates": {
     "AGENTS.md": {
-      "version": "38",
+      "version": "39",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes Sibu eval artifact authoring requests to the mandatory eval-authoring skill."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     ".codex/config.toml": {
@@ -58,45 +58,38 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/business-domain-model-writer/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory Business Domain Model writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/capabilities-map-writer/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory Capabilities Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/deep-module-map-writer/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
-      ]
-    },
-    "skills/feature-brief-writer/SKILL.md": {
-      "version": "17",
-      "description": "Mandatory feature brief writer skill installed once at the shared .agents/skills workspace path.",
-      "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/technical-design-writer/SKILL.md": {
-      "version": "27",
+      "version": "28",
       "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Adds Mermaid safety preflight and quality strategy guidance for verification intent before downstream planning and implementation."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -121,17 +114,17 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/nextjs/SKILL.md": {
@@ -149,46 +142,45 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "15",
-      "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from approved feature and technical design docs.",
+      "version": "16",
+      "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and technical design docs.",
       "changes": [
-        "Adds story-level verification expectations so generated User Stories describe reviewable evidence derived from the feature brief, technical design quality strategy, and optional diagram context."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "21",
+      "version": "22",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Preserves story verification expectations and technical design quality strategy in planner packets so implementation plans include concrete validation steps."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Requires code-changing implementation plans to include touched source-file size validation and plan cohesive refactoring when files are near or over 500 lines."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "29",
+      "version": "30",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Passes verification expectations, technical design quality strategy context, implementation-plan validation steps, and validation evidence requirements to executor workers.",
-        "Clarifies that non-trivial story reviews need evidence beyond \u201ctests passed,\u201d including acceptance criteria, edge/failure coverage, skipped deeper checks, and residual risks."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Requires executors to run the touched source-file size checker before review, refactor on failure, and report the result in Validation Evidence."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory feature idea capture skill for storing rough future ideas in docs/feature-ideas.md only when the skill is used.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/ai-prompt-engineer-master/SKILL.md": {
@@ -199,10 +191,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "14",
+      "version": "15",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
@@ -220,10 +212,10 @@
       ]
     },
     "skills/export-to-notion/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     ".codex/agents/github-exporter.toml": {
@@ -234,10 +226,10 @@
       ]
     },
     ".codex/agents/notion-exporter.toml": {
-      "version": "4",
+      "version": "5",
       "description": "Codex Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     ".claude/agents/github-exporter.md": {
@@ -248,10 +240,10 @@
       ]
     },
     ".claude/agents/notion-exporter.md": {
-      "version": "2",
+      "version": "3",
       "description": "Claude Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     ".gemini/agents/github-exporter.md": {
@@ -262,10 +254,10 @@
       ]
     },
     ".gemini/agents/notion-exporter.md": {
-      "version": "2",
+      "version": "3",
       "description": "Gemini Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
+        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
       ]
     },
     ".codex/agents/sibu-implementation-planner.toml": {
@@ -343,6 +335,13 @@
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
         "Adds mandatory eval-authoring guidance for Sibu-format suites, cases, fixtures, assertions, graders, and boundaries."
+      ]
+    },
+    "skills/business-requirements-writer/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory Business Requirements Document authoring skill.",
+      "changes": [
+        "Replaces feature briefs with BRDs, adaptive discovery, and stable objective and requirement references."
       ]
     }
   }

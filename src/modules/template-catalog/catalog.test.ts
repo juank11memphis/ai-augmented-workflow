@@ -60,6 +60,7 @@ describe('resolveSelectableSkillById', () => {
     assertUnknownSkill('clean-code');
     assertUnknownSkill('structured-logging');
     assertUnknownSkill('business-domain-model-writer');
+    assertUnknownSkill('business-requirements-writer');
     assertUnknownSkill('eval-authoring');
     assertUnknownSkill('feature-idea-capture');
   });
