@@ -37,7 +37,7 @@ This toolbox is for `sibu-implementation-planner` workers only. It is not a norm
 Use only the narrow packet from the main agent. The packet must include:
 
 - exactly one User Story path
-- required source artifact paths: Epic brief, feature brief, technical design, optional tech design diagrams when present, and UX spec when the story or feature has UI impact
+- required source artifact paths: Epic brief, BRD, technical design, optional tech design diagrams when present, and UX spec when the story or feature has UI impact
 - this toolbox skill path
 - selected architecture skill path and distilled architecture constraints
 - required skill paths, including `clean-code`
@@ -65,7 +65,7 @@ If a required source artifact or required skill path is missing, stop and report
 - Use context-sensitive validation vocabulary: unit, acceptance/integration, edge/failure, regression, and deeper property/invariant, torture/fuzz, mutation, or manual QA checks when story risk justifies them. Include a short skip rationale and residual risks when a relevant deeper check is omitted.
 - Create ordered story-local implementation step files under `<story-slug>.impl_plan/*.md`.
 - Never write production code, tests, templates, or unrelated documentation.
-- Never create or change product vision, Deep Module Map, feature brief, technical design, `tech_design_diagrams.md`, UX, Epic, or User Story artifacts.
+- Never create or change product vision, Deep Module Map, BRD, technical design, `tech_design_diagrams.md`, UX, Epic, or User Story artifacts.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a plan risk.
 
 ## Step file format
@@ -109,3 +109,11 @@ Return a compact planning result with:
 - step files created or updated
 - source artifacts and skills used
 - plan risks or blockers, if any
+
+## BRD handoff
+
+Preserve source BRD IDs carried by the story and technical design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
+
+Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
+
+Require sufficient BRD context, not approval fields, signatures, draft/approved status, or a sign-off ceremony. A user request selects the next stage; do not automatically execute later stages. Missing or conflicting decisions still require clarification. Preserve stage prerequisites, required UX, code-change permissions, and story-level implementation review.

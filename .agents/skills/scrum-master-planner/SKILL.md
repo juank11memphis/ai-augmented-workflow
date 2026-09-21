@@ -1,6 +1,6 @@
 ---
 name: scrum-master-planner
-description: Create pragmatic Epics and User Stories from an approved feature brief and technical design. Use when asked to plan delivery, create epics, write user stories, split a feature into backlog work, or turn a feature brief plus technical design under docs/features into Scrum planning artifacts.
+description: Create pragmatic Epics and User Stories from a sufficiently clear BRD and technical design. Use when asked to plan delivery, create epics, write user stories, split a feature into backlog work, or turn a BRD plus technical design under docs/features into Scrum planning artifacts.
 ---
 
 # Scrum Master Planner
@@ -11,7 +11,7 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 ## Purpose
 
-Turn an approved feature brief and technical design into the smallest useful Scrum planning structure: Epics and User Stories that are clear enough for a team to implement and validate.
+Turn a sufficiently clear BRD and technical design into the smallest useful Scrum planning structure: Epics and User Stories that are clear enough for a team to implement and validate.
 
 This skill owns delivery planning artifacts. It does not own product vision, feature definition, technical design, code implementation, or project-management tool automation.
 
@@ -19,7 +19,7 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 
 ### What this skill needs
 
-- `docs/features/<feature-slug>/feature_brief.md`.
+- `docs/features/<feature-slug>/brd.md`.
 - `docs/features/<feature-slug>/technical_design.md`.
 - `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
 - Enough source-artifact detail to create delivery slices without inventing product scope or implementation boundaries.
@@ -32,24 +32,24 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 
 ### When this skill stops
 
-- The feature brief or technical design is missing; direct the user to the owning prior stage.
+- The BRD or technical design is missing; direct the user to the owning prior stage.
 - The feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - A prior artifact is obviously incomplete or invalid in a way its owning stage should repair.
 - The request belongs to another pipeline stage, such as product definition, technical design, UX design, implementation planning, or implementation execution.
 
 ### What this skill must not do
 
-- Do not create or update product visions, Deep Module Maps, feature briefs, technical designs, UX specs, implementation plans, or production code.
+- Do not create or update product visions, Deep Module Maps, BRDs, technical designs, UX specs, implementation plans, or production code.
 - Do not modify prior-stage artifacts.
 - Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
-- Do not add product scope or architecture decisions absent from the feature brief and technical design.
+- Do not add product scope or architecture decisions absent from the BRD and technical design.
 
 ## Required inputs
 
 Before planning, read:
 
 ```txt
-docs/features/<feature-slug>/feature_brief.md
+docs/features/<feature-slug>/brd.md
 docs/features/<feature-slug>/technical_design.md
 docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; read when present and never hard-stop when absent
 docs/features/<feature-slug>/ux.md  # when the feature has UI impact
@@ -65,7 +65,7 @@ When `ux.md` includes mockups, treat them as binding UI goals. Epics and Stories
 
 ## Hard start rule
 
-Do not create Epics or User Stories if either the feature brief or technical design is missing.
+Do not create Epics or User Stories if either the BRD or technical design is missing.
 
 If an input is missing:
 
@@ -79,7 +79,7 @@ If an input is missing:
 For a feature at:
 
 ```txt
-docs/features/<feature-slug>/feature_brief.md
+docs/features/<feature-slug>/brd.md
 ```
 
 write Epics and User Stories under:
@@ -106,7 +106,7 @@ Create the smallest useful planning structure. Use one Epic and one User Story w
 
 ### 1. Read source artifacts
 
-Identify from the feature brief:
+Identify from the BRD:
 
 - user/customer problem
 - MVP scope
@@ -148,7 +148,7 @@ Each `epic_brief.md` should use this structure:
 <What outcome this Epic delivers and why it matters.>
 
 ## Source Context
-- Feature brief: <relative path>
+- BRD: <relative path>
 - Technical design: <relative path>
 
 ## Scope
@@ -215,7 +215,7 @@ Keep Stories concrete, but do not turn them into implementation plans or task ch
 Keep `## Acceptance Criteria`, `## Verification Expectations`, and `## Validation` distinct:
 
 - Acceptance Criteria stay behavior-focused: observable product, workflow, or artifact outcomes that must be true.
-- Verification Expectations stay evidence-focused: the confidence reviewers should expect from tests, focused review, manual checks, or justified omissions. Derive them from the feature brief, the technical design quality strategy, and optional diagram companion context when present.
+- Verification Expectations stay evidence-focused: the confidence reviewers should expect from tests, focused review, manual checks, or justified omissions. Derive them from the BRD, the technical design quality strategy, and optional diagram companion context when present.
 - Validation stays command/check-focused: likely checks the implementer can run, without duplicating implementation-plan steps.
 
 Verification expectations should name the smallest useful evidence for the story risk. Consider unit, acceptance/integration, edge/failure, and regression checks by default. Mention property/invariant, torture/fuzz, mutation, or manual QA only when the source artifacts or risk profile make them valuable; do not require every verification type for every story. Do not create dedicated test-only stories by default unless the source artifacts explicitly call for them or the risk justifies a separate validation slice.
@@ -224,13 +224,13 @@ Verification expectations should name the smallest useful evidence for the story
 
 Before finishing, verify:
 
-- every MVP scope item from the feature brief is covered by at least one Epic or Story, or intentionally left out with a reason
+- every MVP scope item from the BRD is covered by at least one Epic or Story, or intentionally left out with a reason
 - every Story belongs to exactly one Epic
 - every Story filename includes a two-digit execution order prefix
 - Stories with the same order number are actually parallelizable
 - every Story can be merged and deployed safely on its own, even if its user-facing value is gated or incomplete until the Epic is done
 - Story count is pragmatic, not inflated
-- no Story adds scope that is absent from the feature brief or technical design
+- no Story adds scope that is absent from the BRD or technical design
 - acceptance criteria are testable enough for a reviewer
 
 ## Final response behavior
@@ -242,3 +242,11 @@ After writing files, final-answer with only:
 - any source-scope items intentionally left unresolved or captured as risks
 
 Do not paste artifact bodies, excerpts, outlines, story text, acceptance criteria, or section summaries. Only include generated artifacts when the user explicitly asks for inline review in the current request.
+
+## BRD handoff
+
+Reference covered source BRD requirement IDs in Epics, Stories, and their acceptance criteria.
+
+Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
+
+Require sufficient BRD context, not approval fields, signatures, draft/approved status, or a sign-off ceremony. A user request selects the next stage; do not automatically execute later stages. Missing or conflicting decisions still require clarification. Preserve stage prerequisites, required UX, code-change permissions, and story-level implementation review.

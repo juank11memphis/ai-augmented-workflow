@@ -21,7 +21,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 
 - Exactly one User Story file or one story-local `.impl_plan/` folder.
 - Ordered implementation step files in that `.impl_plan/` folder, creating them through the planner route when missing.
-- The story, Epic brief, feature brief, and `technical_design.md` as the authoritative technical design artifact for the selected plan.
+- The story, Epic brief, BRD, and `technical_design.md` as the authoritative technical design artifact for the selected plan.
 - `docs/features/<feature-slug>/tech_design_diagrams.md` when present, as optional companion context that never blocks execution when absent.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
 - The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when sub-agent spawning is available.
@@ -42,11 +42,11 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - The story, any step, or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - Selected architecture guidance is missing, unavailable, or ambiguous; stop and tell the user to run `sibu sync` to repair workflow configuration before implementation execution. Do not choose, infer, or substitute architecture guidance yourself.
 - Validation fails and the fix is ambiguous, risky, or would exceed the approved plan.
-- A step conflicts with the story, Epic, feature brief, technical design, UX spec, or approved Deep Module boundaries.
+- A step conflicts with the story, Epic, BRD, technical design, UX spec, or approved Deep Module boundaries.
 
 ### What this skill must not do
 
-- Do not create product visions, Deep Module Maps, feature briefs, technical designs, UX specs, Epics, or User Stories.
+- Do not create product visions, Deep Module Maps, BRDs, technical designs, UX specs, Epics, or User Stories.
 - Do not modify prior-stage artifacts except for approval metadata in implementation step files after explicit story-level approval.
 - Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
 - Do not mark any step approved before explicit story-level user approval.
@@ -81,7 +81,7 @@ Before execution, verify these paths exist and are coherent:
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/*.md
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
-docs/features/<feature-slug>/feature_brief.md
+docs/features/<feature-slug>/brd.md
 docs/features/<feature-slug>/technical_design.md
 docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; verify/pass when present and never hard-stop when absent
 docs/features/<feature-slug>/ux.md  # when the story, any step, or feature has UI impact
@@ -100,7 +100,7 @@ When the host exposes any usable sub-agent spawn capability and `sibu-implementa
 Build a narrow executor packet for the worker. The packet must include:
 
 - exactly one User Story path or story-local `.impl_plan/` folder
-- story, Epic brief, feature brief, technical design, optional tech design diagrams path when present, and UX path when relevant
+- story, Epic brief, BRD, technical design, optional tech design diagrams path when present, and UX path when relevant
 - executor toolbox path: `.agents/skills/ai-implementation-executor-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - selected architecture skill path as required architecture context
@@ -201,3 +201,11 @@ After implementing all unapproved steps in one story, briefly report:
 - that you are waiting for story approval before marking steps approved, committing eligible non-ignored changes, and continuing
 
 After approving and committing a story implementation, briefly report the commit hash or why no commit was created, then continue to the next story/Epic according to the feature continuation check.
+
+## BRD handoff
+
+Preserve source BRD IDs carried by the story and technical design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
+
+Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
+
+Require sufficient BRD context, not approval fields, signatures, draft/approved status, or a sign-off ceremony. A user request selects the next stage; do not automatically execute later stages. Missing or conflicting decisions still require clarification. Preserve stage prerequisites, required UX, code-change permissions, and story-level implementation review.

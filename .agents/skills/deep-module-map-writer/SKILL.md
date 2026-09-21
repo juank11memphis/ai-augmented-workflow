@@ -15,7 +15,7 @@ Create or update `docs/deep-module-map.md`, a technical design map of deep imple
 
 A Deep Module is primarily a technical design concept from software architecture: a module with a small, simple interface and a larger, more complex implementation hidden behind it. In this artifact, Deep Modules are derived from product purpose, reviewed domain understanding, and capability coverage: domain concepts, relationships, lifecycles, business rules, workflows, domain events, boundaries, hard parts, and business/product abilities that need durable implementation boundaries. Their depth comes from technical abstraction and complexity hiding, not from being a product category, command, folder, service, or team boundary.
 
-This skill owns the Deep Module Map only. It does not own feature briefs, technical designs, user stories, implementation plans, production code, or the internal architecture used inside each module.
+This skill owns the Deep Module Map only. It does not own BRDs, technical designs, user stories, implementation plans, production code, or the internal architecture used inside each module.
 
 ## Pipeline Contract
 
@@ -36,12 +36,12 @@ This skill owns the Deep Module Map only. It does not own feature briefs, techni
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
 - `docs/business-domain-model.md` is missing; tell the user to create it first with `business-domain-model-writer`.
 - `docs/capabilities-map.md` is missing; tell the user to create it first with `capabilities-map-writer`.
-- The request belongs to another pipeline stage, such as feature brief, technical design, UX design, Scrum planning, implementation planning, or implementation execution.
+- The request belongs to another pipeline stage, such as BRD, technical design, UX design, Scrum planning, implementation planning, or implementation execution.
 - User answers are still too vague to defend module depth, interfaces, hidden complexity, or boundaries; ask one focused question instead of drafting.
 
 ### What this skill must not do
 
-- Do not create feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not create BRDs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not choose a specific internal architecture, service split, database model, framework, or team ownership structure.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not invent Deep Modules without grounding them in the product vision, Business Domain Model, Capabilities Map, and user interview.
@@ -271,7 +271,7 @@ Deep Modules should be:
 - deep enough that callers do not need to understand internal orchestration, edge cases, or policies
 - technical design boundaries first, derived from product purpose and reviewed domain understanding rather than accidental implementation structure
 - durable enough to absorb related technical and product changes over time
-- named in language useful across technical design, implementation planning, feature briefs, and code organization
+- named in language useful across technical design, implementation planning, BRDs, and code organization
 - flexible internally so different projects can use layered, DDD, Hexagonal, command-oriented, MVC, functional, or other architectures inside them
 
 Avoid shallow modules based on one feature, screen, command, workflow step, database table, generic helper folder, technical layer, or thin wrapper around an obvious operation.
@@ -293,7 +293,7 @@ Avoid shallow modules based on one feature, screen, command, workflow step, data
 # Deep Module Map
 
 ## Purpose
-<How this map guides technical design, feature briefs, and implementation boundaries.>
+<How this map guides technical design, BRDs, and implementation boundaries.>
 
 ## Modules
 

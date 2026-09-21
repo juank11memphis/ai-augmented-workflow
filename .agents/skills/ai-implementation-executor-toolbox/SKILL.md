@@ -38,7 +38,7 @@ This toolbox is for `sibu-implementation-executor` workers only. It is not a nor
 Use only the narrow packet from the main agent. The packet must include:
 
 - exactly one User Story path or one story-local `.impl_plan/` folder
-- required source artifact paths: story, Epic brief, feature brief, technical design, optional tech design diagrams when present, and UX spec when the story, plan, or feature has UI impact
+- required source artifact paths: story, Epic brief, BRD, technical design, optional tech design diagrams when present, and UX spec when the story, plan, or feature has UI impact
 - this toolbox skill path
 - selected architecture skill path and distilled architecture constraints
 - required skill paths, including `clean-code` and `structured-logging` when the story touches observability-relevant code
@@ -108,3 +108,11 @@ If the user gives feedback, apply it in the same worker session when the host su
 ## Final result
 
 Return a compact completion summary only after explicit approval, or return blockers if approval cannot be reached. Include changed files, validations, Validation Evidence including the file-size gate result for code-changing work, risks, and whether user approval was received. Do not commit.
+
+## BRD handoff
+
+Preserve source BRD IDs carried by the story and technical design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
+
+Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
+
+Require sufficient BRD context, not approval fields, signatures, draft/approved status, or a sign-off ceremony. A user request selects the next stage; do not automatically execute later stages. Missing or conflicting decisions still require clarification. Preserve stage prerequisites, required UX, code-change permissions, and story-level implementation review.

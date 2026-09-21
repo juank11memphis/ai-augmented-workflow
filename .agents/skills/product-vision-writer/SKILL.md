@@ -32,11 +32,11 @@ Default output path: `docs/product-vision.md`.
 
 - The user's intent is too unclear to ask a useful discovery question.
 - Writing would overwrite an existing vision when the user appears to want a separate new vision.
-- The request is for a downstream artifact such as a Deep Module Map, feature brief, technical design, UX spec, stories, implementation plan, or implementation work.
+- The request is for a downstream artifact such as a Deep Module Map, BRD, technical design, UX spec, stories, implementation plan, or implementation work.
 
 ### What this skill must not do
 
-- Do not create Deep Module Maps, feature briefs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not create Deep Module Maps, BRDs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not leave material strategy questions unresolved in the final document; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
