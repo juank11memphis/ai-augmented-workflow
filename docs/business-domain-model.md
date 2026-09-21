@@ -113,7 +113,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 #### Supporting Subdomains
 
 - **Template Catalog**: provides Sibu-managed source templates for workflow files and skills.
-- **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, deep module mapping, feature briefs, technical design, Scrum planning, implementation planning, execution, selected architecture guidance, and eval authoring.
+- **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, deep module mapping, BRDs, technical design, Scrum planning, implementation planning, execution, selected architecture guidance, and eval authoring.
 - **Agent Support Selection**: helps choose which agent support files and configurations belong in a project.
 - **MCP / Tool Configuration Support**: helps users select optional MCP servers, renders agent-specific configuration, and keeps external tool access separate from stored credentials.
 
@@ -133,57 +133,43 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 
 ```mermaid
 flowchart TB
-  subgraph SibuDomain["Sibu Domain"]
+  subgraph SibuDomain ["Sibu Domain"]
     direction TB
 
-    subgraph Core["Core Subdomains"]
-      Adoption["Workflow Adoption
-& State Tracking"]
-      Configuration["Workflow Configuration
-Management"]
-      Maintenance["Workflow Maintenance
-& Sync Review"]
-      Pipeline["AI-Augmented
-Development Pipeline"]
-      LocalEvals["Local Evals
-Workbench"]
-      ReleaseSupport["Maintainer Release
-Support"]
+    subgraph Core ["Core Subdomains"]
+      Adoption["Workflow Adoption and State Tracking"]
+      Configuration["Workflow Configuration Management"]
+      Maintenance["Workflow Maintenance and Sync Review"]
+      Pipeline["AI-Augmented Development Pipeline"]
+      LocalEvals["Local Evals Workbench"]
+      ReleaseSupport["Maintainer Release Support"]
     end
 
-    subgraph Supporting["Supporting Subdomains"]
+    subgraph Supporting ["Supporting Subdomains"]
       Templates["Template Catalog"]
       Skills["Skill Guidance"]
-      AgentSupport["Agent Support
-Selection"]
-      McpConfig["MCP / Tool
-Configuration Support"]
+      AgentSupport["Agent Support Selection"]
+      McpConfig["MCP / Tool Configuration Support"]
     end
   end
 
-  subgraph ProjectOwned["Project-Owned Outputs"]
+  subgraph ProjectOwned ["Project-Owned Outputs"]
     WorkflowFiles["Workflow Files"]
     Artifacts["Pipeline Artifacts"]
     State["Sibu State Metadata"]
-    ArchitectureGuidance["Selected Architecture
-Skill Guidance"]
-    LocalChoices["Customizations /
-Unmanaged Files"]
-    ReleaseArtifacts["Release Notes /
-Package Metadata"]
-    EvalArtifacts["Eval Definitions /
-Fixtures / Run Results"]
-    ProjectFiles["Approved Repair
-Target Files"]
+    ArchitectureGuidance["Selected Architecture Skill Guidance"]
+    LocalChoices["Customizations / Unmanaged Files"]
+    ReleaseArtifacts["Release Notes / Package Metadata"]
+    EvalArtifacts["Eval Definitions / Fixtures / Run Results"]
+    ProjectFiles["Approved Repair Target Files"]
   end
 
-  subgraph External["External / Generic Domains"]
+  subgraph External ["External / Generic Domains"]
     McpServers["MCP Servers"]
     AiAgents["AI Agents / Models"]
     ModelProviders["LLM Provider APIs"]
     Editors["Editors / IDEs"]
-    Tools["GitHub / Notion
-Other Tools"]
+    Tools["GitHub / Notion Other Tools"]
   end
 
   Adoption --> State
@@ -199,23 +185,23 @@ Other Tools"]
   LocalEvals --> ProjectFiles
   ArchitectureGuidance --> Artifacts
   ReleaseSupport --> ReleaseArtifacts
-  Adoption -. governed by user control & trust .-> WorkflowFiles
-  Configuration -. governed by user control & trust .-> WorkflowFiles
-  Maintenance -. governed by user control & trust .-> LocalChoices
-  Pipeline -. governed by user control & trust .-> Artifacts
-  LocalEvals -. approval required before mutation .-> ProjectFiles
-  ReleaseSupport -. governed by maintainer control & trust .-> ReleaseArtifacts
+  Adoption -. "governed by user control and trust" .-> WorkflowFiles
+  Configuration -. "governed by user control and trust" .-> WorkflowFiles
+  Maintenance -. "governed by user control and trust" .-> LocalChoices
+  Pipeline -. "governed by user control and trust" .-> Artifacts
+  LocalEvals -. "approval required before mutation" .-> ProjectFiles
+  ReleaseSupport -. "governed by maintainer control and trust" .-> ReleaseArtifacts
 
   Templates --> WorkflowFiles
   Skills --> Artifacts
   Skills --> ArchitectureGuidance
   AgentSupport --> AiAgents
   McpConfig --> McpServers
-  LocalEvals -. uses but does not own .-> ModelProviders
+  LocalEvals -. "uses but does not own" .-> ModelProviders
   McpServers --> Tools
 
-  SibuDomain -. guides but does not own .-> External
-  ProjectOwned -. owned by developer / team .-> SibuDomain
+  SibuDomain -. "guides but does not own" .-> External
+  ProjectOwned -. "owned by developer / team" .-> SibuDomain
 ```
 
 This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. Architecture skill selection is required at adoption time, and architecture skill replacement is a high-impact configuration change rather than ordinary drift repair. Maintainer Release Support is also core, but maintainer-facing: it protects Sibu's own release process rather than a consumer project's installed workflow. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
@@ -286,7 +272,11 @@ An external tool-access endpoint selected by the user and configured for support
 
 #### Artifact
 
-A project-owned output created or updated by a skill. Examples include Product Vision, Business Domain Model, Deep Module Map, Feature Brief, Technical Design, Epics, User Stories, and implementation plans.
+A project-owned output created or updated by a skill. Examples include Product Vision, Business Domain Model, Deep Module Map, Business Requirements Document (BRD), Technical Design, Epics, User Stories, and implementation plans.
+
+#### Business Requirements Document (BRD)
+
+The per-feature business-definition artifact at `docs/features/<feature-slug>/brd.md`, authored through `business-requirements-writer`. It captures business need, objectives, stakeholder needs, scope, typed requirements, business rules, and acceptance criteria. Stable feature-local IDs link requirements to objectives and downstream work without a separate tracking system. Discovery remains conversational; the user decides when to continue, without a BRD approval chain.
 
 #### Maintainer Release
 
@@ -299,9 +289,10 @@ The ordered artifact chain used for planned feature/product work:
 ```text
 Product Vision
 → Business Domain Model
-→ Deep Module Map / Feature Brief
+→ Capabilities Map
+→ Deep Module Map / BRD
+→ UX when the feature has UI impact
 → Technical Design
-→ optional UX
 → Epics / User Stories
 → AI Implementation Planning / Execution
 ```
@@ -518,7 +509,7 @@ define focused task
 2. **Skill Invoked**: the appropriate skill is triggered for the requested work.
 3. **Hard-Stop Check**: the skill verifies required inputs before proceeding.
 4. **Artifact Created or Updated**: the skill produces its owned artifact.
-5. **Artifact Reviewed / Approved**: the user confirms or corrects the artifact as needed.
+5. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. A sufficiently clear BRD needs no approval status, signature, or sign-off gate; implementation review and mutation safeguards remain in force.
 6. **Downstream Input**: the artifact becomes the basis for the next pipeline stage.
 
 ### Domain Events

@@ -2,7 +2,7 @@
 
 ## Input Product Artifact
 
-- `docs/features/sibu-local-evals-dashboard/feature_brief.md`
+- `docs/features/sibu-local-evals-dashboard/brd.md`
 - Baseline UI: rpgizer local eval matrix route (`/evals`) with suite navigation, run controls, filters, responsive result list/table, and cell detail drawer.
 - External eval terminology grounding:
   - OpenAI Evals API: evals define testing criteria and data source schema; eval runs produce output items with input/output samples and grader results.

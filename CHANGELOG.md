@@ -122,7 +122,7 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 
 ### Added
 - route planning through capability coverage
-- detect upstream feature brief gaps
+- detect upstream BRD gaps
 - add capabilities map writer skill
 - add business domain model workflow
 - require domain model for feature and ux planning
@@ -204,7 +204,7 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 - remove promoted feature ideas after briefing
 
 ### Fixed
-- preserve feature brief interviews for captured ideas
+- preserve BRD interviews for captured ideas
 
 ## 0.13.2 - 2026-05-18
 
@@ -386,7 +386,7 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 - update adjacent module map wording
 - update planning module boundaries
 - update technical design module guidance
-- update feature brief module guidance
+- update BRD module guidance
 - record architecture guidance manifest
 - sync local command pattern guidance
 - update ddd hexagonal module guidance
@@ -410,7 +410,7 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 - align command pattern with product contexts
 - align ddd hexagonal with product contexts
 - preserve product contexts in technical designs
-- make feature briefs require product contexts
+- make BRDs require product contexts
 - add product context map writer workflow
 
 ### Changed

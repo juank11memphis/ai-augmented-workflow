@@ -6,7 +6,7 @@
 - Business Domain Model: `docs/business-domain-model.md`
 - Capabilities Map: `docs/capabilities-map.md`
 - Deep Module Map: `docs/deep-module-map.md`
-- Feature brief: `docs/features/sibu-local-evals-dashboard/feature_brief.md`
+- BRD: `docs/features/sibu-local-evals-dashboard/brd.md`
 - UX spec: `docs/features/sibu-local-evals-dashboard/ux.md`
 - Selected Deep Module: `local-evals-workbench`
 - Delegated skills: `command-pattern`, `clean-code`, `typescript`, `structured-logging`

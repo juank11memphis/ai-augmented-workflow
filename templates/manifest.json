@@ -341,7 +341,7 @@
       "version": "1",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Replaces feature briefs with BRDs, adaptive discovery, and stable objective and requirement references."
+        "Provides BRDs with adaptive discovery and stable objective and requirement references."
       ]
     }
   }

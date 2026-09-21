@@ -49,7 +49,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Route work to the right skill**: match product, domain, planning, design, implementation, or export requests to the appropriate focused workflow.
 - **Enforce artifact prerequisites**: require upstream artifacts before downstream planning, design, or implementation work proceeds.
 - **Surface upstream gaps**: stop and identify missing or insufficient product, domain, feature, design, or planning context instead of inventing downstream decisions.
-- **Gate downstream progression**: require upstream artifacts to be reviewed or clear enough before they become inputs for later workflow stages.
+- **Keep progression user-directed**: require sufficiently clear upstream context, while letting the user choose when to request the next artifact without BRD approval statuses, signatures, or sign-off gates.
 - **Preserve artifact ownership boundaries**: keep each skill focused on its owned artifact instead of producing unrelated downstream outputs.
 - **Carry reviewed context downstream**: use accepted upstream artifacts as the source of truth for later planning and implementation work.
 - **Carry architecture guidance downstream**: use the repo's selected architecture skill as required context for technical design, implementation planning, and implementation execution.
@@ -93,7 +93,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 
 #### Skill Guidance
 
-- **Provide focused skills**: supply task-specific guidance for product vision, domain modeling, capabilities mapping, deep module mapping, feature briefs, technical design, Scrum planning, implementation planning, execution, architecture guidance, and export workflows.
+- **Provide focused skills**: supply task-specific guidance for product vision, domain modeling, capabilities mapping, deep module mapping, BRDs, technical design, Scrum planning, implementation planning, execution, architecture guidance, and export workflows.
 - **Provide architecture skill catalog**: make Sibu's existing fixed set of architecture skills available for explicit user selection without expanding or redefining that catalog in this capability.
 - **Define skill boundaries**: make each skill's purpose, required inputs, owned outputs, hard stops, and handoffs clear.
 - **Support optional skill selection**: let users include non-architecture workflow guidance relevant to their project without forcing every optional skill into every repo.

@@ -7,7 +7,7 @@ const writerPath = 'skills/business-requirements-writer/SKILL.md';
 describe('BRD authoring instruction contract (not model behavior)', () => {
   it('replaces the source and defines typed business content with traceability', () => {
     const contents = readTemplate(writerPath);
-    assert.equal(readTemplateManifest().templates['skills/feature-brief-writer/SKILL.md'], undefined);
+    assert.ok(readTemplateManifest().templates[writerPath]);
     assert.match(contents, /name: business-requirements-writer/);
     assert.match(contents, /docs\/features\/<feature-slug>\/brd\.md/);
     for (const concept of ['Business Need', 'Measurable Success', 'Stakeholders and Needs', 'Scope and Exclusions', 'Business Rules', 'Acceptance Criteria', 'Product Vision Fit', 'Business Domain Model Fit', 'Capability Coverage']) {
@@ -54,7 +54,7 @@ describe('BRD downstream instruction contracts', () => {
       assert.match(contents, /verify IDs resolve to its entries/);
       assert.match(contents, /missing, invalid, or conflicting references/);
       assert.match(contents, /Require sufficient BRD context, not approval fields/);
-      assert.doesNotMatch(contents, /(?:an approved BRD|approved feature brief|feature_brief\.md)/i);
+      assert.doesNotMatch(contents, /an approved BRD/i);
       if (name.includes('implementation')) {
         assert.match(contents, /Worker packets must carry the source BRD path and applicable IDs/);
         assert.match(contents, /not copy the full requirement catalog or broaden worker authority/);
@@ -80,7 +80,7 @@ describe('BRD Notion source conversion contract', () => {
       assert.match(contents, /(?:Do not modify local repository files|Do not write Notion URLs back)/);
       assert.match(contents, /(?:missing.*fail clearly|fail clearly.*missing)/is);
       assert.match(contents, /(?:narrow export packet|specific export packet)/);
-      assert.doesNotMatch(contents, /feature_brief|Feature Brief/);
+      assert.match(contents, /Business Requirements Document/);
     });
   }
 });
@@ -90,7 +90,6 @@ describe('BRD catalog distribution', () => {
   it('resolves exactly one mandatory writer for every supported agent', () => {
     const writers = MANDATORY_SKILLS.filter((skill) => skill.templateRelativePath === writerPath);
     assert.equal(writers.length, 1);
-    assert.ok(!MANDATORY_SKILLS.some((skill) => skill.templateRelativePath.includes('feature-brief-writer')));
     for (const agent of SUPPORTED_AGENTS) {
       const targets = getSkillTargetsForAgents(writers[0]!, [agent]);
       assert.equal(targets.length, 1);
@@ -105,7 +104,7 @@ describe('BRD catalog distribution', () => {
     }
     const rendered = renderTemplateForSync({ templateRelativePath: 'AGENTS.md', currentPath: 'missing-agents.md', selectedLanguageSkills: [], selectedFrameworkSkills: [] });
     assert.match(rendered, /business-requirements-writer/);
-    assert.doesNotMatch(rendered, /feature-brief-writer|feature_brief/);
+    assert.match(rendered, /business-level BRD/);
     assert.match(rendered, /UX when the feature has UI impact/);
   });
 });

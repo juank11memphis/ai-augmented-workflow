@@ -4,7 +4,7 @@
 
 This Deep Module Map identifies Sibu's durable implementation boundaries: modules with small outside promises that hide meaningful internal complexity.
 
-The map is derived from the Product Vision, Business Domain Model, and Capabilities Map. It should guide future feature briefs, technical designs, and implementation plans by clarifying where behavior belongs without prescribing internal architecture, framework structure, database design, or command layout. Sibu's selected architecture skill is repo-level workflow guidance handled across the existing workflow modules, not a standalone deep module.
+The map is derived from the Product Vision, Business Domain Model, and Capabilities Map. It should guide future BRDs, technical designs, and implementation plans by clarifying where behavior belongs without prescribing internal architecture, framework structure, database design, or command layout. Sibu's selected architecture skill is repo-level workflow guidance handled across the existing workflow modules, not a standalone deep module.
 
 User Control & Trust is a cross-module rule, not a standalone module. Each module must preserve project ownership, avoid silent destructive behavior, and keep Sibu's actions understandable and reviewable. Local eval repair follows the same rule: analysis and proposals are allowed, but project file mutation requires explicit approval.
 
