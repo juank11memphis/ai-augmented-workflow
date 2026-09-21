@@ -4,6 +4,39 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 1.0.0 - 2026-09-21
+
+### Added
+- replace architecture and feature design workflows with SAD and SDD
+- replace feature briefs with BRD workflow
+- group eval model options by family
+- add local eval prompt suites and selectors
+- add eval authoring guidance template
+- report applied repair rerun guidance
+- apply approved eval repairs safely
+- draft eval repair proposals
+- analyze failed assertions
+- focus failed assertion conversations
+- show local eval result details
+- render local eval result matrix
+- show local eval suite controls
+- run local eval scopes
+- discover local eval suites
+- start local evals workbench
+
+### Changed
+- establish project software architecture
+- finish BRD terminology cleanup and repair domain diagram
+- sync local BRD workflow guidance
+- sync sibu workflow templates
+
+### Removed
+- align architecture workflow and remove obsolete design artifacts
+- remove obsolete installed feature brief skill
+
+### Fixed
+- prefer configured eval workbench model
+
 ## 0.26.0 - 2026-08-10
 
 ### Added
