@@ -49,12 +49,16 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Route work to the right skill**: match product, domain, planning, design, implementation, or export requests to the appropriate focused workflow.
 - **Enforce artifact prerequisites**: require upstream artifacts before downstream planning, design, or implementation work proceeds.
 - **Surface upstream gaps**: stop and identify missing or insufficient product, domain, feature, design, or planning context instead of inventing downstream decisions.
-- **Keep progression user-directed**: require sufficiently clear upstream context, while letting the user choose when to request the next artifact without BRD approval statuses, signatures, or sign-off gates.
+- **Keep progression user-directed**: require sufficiently clear upstream context, while letting the user choose when to request the next artifact without BRD, SAD, or SDD approval statuses, signatures, or sign-off gates.
 - **Preserve artifact ownership boundaries**: keep each skill focused on its owned artifact instead of producing unrelated downstream outputs.
 - **Carry reviewed context downstream**: use accepted upstream artifacts as the source of truth for later planning and implementation work.
-- **Carry architecture guidance downstream**: use the repo's selected architecture skill as required context for technical design, implementation planning, and implementation execution.
+- **Carry architecture guidance downstream**: use the repo's selected architecture skill as required context for project SAD authoring, feature SDD authoring, implementation planning, and implementation execution.
 - **Hard-stop on missing architecture guidance**: refuse downstream technical or implementation work when the repo has no selected architecture skill, directing the user to repair workflow configuration instead of inventing guidance.
 - **Keep narrow fixes lightweight**: avoid forcing the full product pipeline for small code, documentation, or maintenance tasks when direction and ownership are already clear.
+- **Maintain project architecture context**: provide a project-level SAD after the Capabilities Map, preserving deep-module guidance and applying the selected architecture skill without making the SAD a prerequisite for business-level BRDs.
+- **Ground feature designs in shared architecture**: use each feature's BRD, the project SAD, selected architecture guidance, and required UX to produce an SDD with requirement traceability and existing module ownership.
+- **Explain feature behavior visually**: include a main-flow Mermaid sequence diagram in each SDD, allowing a justified alternative for changes without meaningful interaction flow.
+- **Route architectural changes upstream**: pause SDD work that changes module boundaries or system-wide decisions and direct the user to update the SAD first; keep architecture-compatible details in the SDD.
 - **Keep AI work reviewable**: guide work into small, explicit, validated chunks that preserve engineer judgment and accountability.
 
 #### Local Evals Workbench
@@ -93,7 +97,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 
 #### Skill Guidance
 
-- **Provide focused skills**: supply task-specific guidance for product vision, domain modeling, capabilities mapping, deep module mapping, BRDs, technical design, Scrum planning, implementation planning, execution, architecture guidance, and export workflows.
+- **Provide focused skills**: supply task-specific guidance for product vision, domain modeling, capabilities mapping, project SADs including deep-module boundaries, BRDs, per-feature SDDs, Scrum planning, implementation planning, execution, architecture guidance, and export workflows.
 - **Provide architecture skill catalog**: make Sibu's existing fixed set of architecture skills available for explicit user selection without expanding or redefining that catalog in this capability.
 - **Define skill boundaries**: make each skill's purpose, required inputs, owned outputs, hard stops, and handoffs clear.
 - **Support optional skill selection**: let users include non-architecture workflow guidance relevant to their project without forcing every optional skill into every repo.
@@ -132,7 +136,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Workflow Configuration Management** depends on **Template Catalog** for selectable skills and workflow templates, **Skill Guidance** for selected architecture guidance, **MCP / Tool Configuration Support** for safe tool configuration rendering, and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
 - **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes, and on **Skill Guidance** to repair missing or unsupported architecture skill selections.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
-- **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before technical design, implementation planning, or implementation execution proceeds.
+- **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
 - **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while project-specific eval suites and target files remain project-owned.
 - **Local Evals Workbench** depends on external **LLM provider APIs** only for analysis and proposal drafting; eval result inspection should still work without provider credentials.
 - **Local Evals Workbench** depends on **User Control & Trust** constraints before applying any repair proposal to project files.
@@ -140,6 +144,8 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **User Control & Trust** is not sequenced as a separate stage; it constrains every capability where Sibu creates, changes, exports, publishes, or asks AI to act on project-owned work.
 
 ## Known Gaps / Evolution Notes
+
+- **SAD/SDD rollout**: these capabilities describe the agreed replacement direction. Renamed authoring skills and updated distribution/consumer contracts still need implementation; the old standalone map and design artifacts are not additional permanent pipeline stages.
 
 - **Initial setup breadth**: Sibu may need to decide how much `init` should configure up front versus defer to later `sync` or setup flows.
 - **Workflow configuration breadth**: post-init configuration now has a first-class capability boundary; future work should decide which options beyond skills, architecture guidance, and MCP servers belong there.

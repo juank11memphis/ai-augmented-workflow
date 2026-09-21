@@ -58,7 +58,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Template Update**: a newer Sibu-provided version of a managed template.
 - **Sync Review**: the user-controlled maintenance process for deciding how to handle drift, missing files, local edits, and template updates.
 - **Skill**: focused AI workflow guidance for a specific kind of work or artifact.
-- **Architecture Skill**: a focused skill from Sibu's fixed architecture catalog that gives architecture-specific guidance for how planned technical design, implementation planning, and execution should be shaped.
+- **Architecture Skill**: a focused skill from Sibu's fixed architecture catalog that gives architecture-specific guidance for how project architecture, feature design, implementation planning, and execution should be shaped.
 - **Selected Architecture Skill**: the one repo-level architecture skill the user explicitly chooses during workflow adoption. It is recorded in Sibu state, installed as workflow guidance, and carried into downstream technical and implementation work.
 - **Architecture Skill Replacement**: an intentional high-impact workflow configuration change where the user replaces the selected architecture skill with a different catalog option after initialization.
 - **MCP Server**: an external tool-connection endpoint that lets an AI agent access capabilities such as GitHub, Notion, Gmail, or other services.
@@ -113,7 +113,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 #### Supporting Subdomains
 
 - **Template Catalog**: provides Sibu-managed source templates for workflow files and skills.
-- **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, deep module mapping, BRDs, technical design, Scrum planning, implementation planning, execution, selected architecture guidance, and eval authoring.
+- **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, project-level software architecture documents, BRDs, per-feature software design documents, Scrum planning, implementation planning, execution, selected architecture guidance, and eval authoring.
 - **Agent Support Selection**: helps choose which agent support files and configurations belong in a project.
 - **MCP / Tool Configuration Support**: helps users select optional MCP servers, renders agent-specific configuration, and keeps external tool access separate from stored credentials.
 
@@ -260,7 +260,7 @@ A selected unit of architecture-specific workflow guidance from Sibu's fixed cat
 
 #### Selected Architecture Skill
 
-The repo-level architecture skill chosen by the user during `sibu init`. A healthy initialized workflow should have exactly one selected architecture skill. Downstream technical design, implementation planning, and implementation execution treat it as binding workflow context unless the user intentionally replaces it.
+The repo-level architecture skill chosen by the user during `sibu init`. A healthy initialized workflow should have exactly one selected architecture skill. SAD authoring, SDD authoring, implementation planning, and implementation execution treat it as binding workflow context unless the user intentionally replaces it.
 
 #### Architecture Skill Replacement
 
@@ -272,11 +272,23 @@ An external tool-access endpoint selected by the user and configured for support
 
 #### Artifact
 
-A project-owned output created or updated by a skill. Examples include Product Vision, Business Domain Model, Deep Module Map, Business Requirements Document (BRD), Technical Design, Epics, User Stories, and implementation plans.
+A project-owned output created or updated by a skill. Examples include Product Vision, Business Domain Model, Software Architecture Document (SAD), Business Requirements Document (BRD), Software Design Document (SDD), Epics, User Stories, and implementation plans.
 
 #### Business Requirements Document (BRD)
 
 The per-feature business-definition artifact at `docs/features/<feature-slug>/brd.md`, authored through `business-requirements-writer`. It captures business need, objectives, stakeholder needs, scope, typed requirements, business rules, and acceptance criteria. Stable feature-local IDs link requirements to objectives and downstream work without a separate tracking system. Discovery remains conversational; the user decides when to continue, without a BRD approval chain.
+
+#### Software Architecture Document (SAD)
+
+The project-level architectural source of truth at `docs/architecture.md`. It replaces the standalone Deep Module Map and retains its deep-module responsibilities, interfaces, boundaries, and hidden complexity within the building-block view. A lean arc42-based structure and C4 views communicate context, structure, key runtime interactions, deployment, cross-cutting concerns, quality goals, decisions, and risks. It applies the selected architecture skill rather than selecting a competing style.
+
+#### Software Design Document (SDD)
+
+The per-feature implementation-oriented design at `docs/features/<feature-slug>/sdd.md`. It uses the feature BRD, project SAD, selected architecture skill, and required UX context to explain how the feature works internally. It references BRD requirement IDs and existing SAD modules instead of redefining system architecture. At least one Mermaid diagram explains the main flow: a sequence diagram by default, or a justified alternative when no meaningful interaction flow exists. Implementation checklists remain separate.
+
+#### Architectural Change Boundary
+
+A feature that requires a change to module boundaries or system-wide architectural decisions must pause SDD authoring and route to SAD authoring first. Once the SAD reflects the intended change, the user can resume the SDD. Details that fit the SAD remain feature-local. This protects context consistency, not an approval chain; neither SAD nor SDD requires sign-off metadata.
 
 #### Maintainer Release
 
@@ -290,12 +302,14 @@ The ordered artifact chain used for planned feature/product work:
 Product Vision
 → Business Domain Model
 → Capabilities Map
-→ Deep Module Map / BRD
-→ UX when the feature has UI impact
-→ Technical Design
+→ Project SAD and independent per-feature BRD
+→ UX from the BRD when the feature has UI impact
+→ Per-feature SDD using SAD + BRD + required UX
 → Epics / User Stories
 → AI Implementation Planning / Execution
 ```
+
+The SAD follows the Capabilities Map; BRD authoring does not require a SAD. The selected architecture skill is binding for both SAD and SDD authoring. The SAD/SDD replacement is agreed product direction; distribution through renamed skills and updated consumers remains implementation work.
 
 #### Local Evals Workbench
 
@@ -417,7 +431,7 @@ define focused task
 - Sibu must not commit, store, or embed secrets in generated MCP configuration.
 - Feature/product planning work must follow the enforced artifact pipeline when it triggers the relevant skills.
 - Technical design, implementation planning, and implementation execution should apply the selected architecture skill as binding guidance when shaping technical decisions.
-- Each pipeline skill owns a specific artifact and should not write unrelated downstream artifacts.
+- Each pipeline skill owns a specific artifact and should not write unrelated downstream artifacts. SDD authors route architectural changes to the SAD writer rather than silently editing the SAD or inventing new boundaries.
 - Each pipeline skill must hard-stop when required upstream artifacts are missing or insufficient.
 - Narrow fixes and normal repo work do not require the full product pipeline unless the work creates product, domain, feature, architecture, planning, or implementation-plan ambiguity.
 - AI-assisted work should be small, explicit, validated where possible, and reviewable by the engineer.
@@ -509,7 +523,7 @@ define focused task
 2. **Skill Invoked**: the appropriate skill is triggered for the requested work.
 3. **Hard-Stop Check**: the skill verifies required inputs before proceeding.
 4. **Artifact Created or Updated**: the skill produces its owned artifact.
-5. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. A sufficiently clear BRD needs no approval status, signature, or sign-off gate; implementation review and mutation safeguards remain in force.
+5. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. Sufficiently clear BRDs, SADs, and SDDs need no approval status, signature, or sign-off gate; implementation review and mutation safeguards remain in force.
 6. **Downstream Input**: the artifact becomes the basis for the next pipeline stage.
 
 ### Domain Events
