@@ -278,6 +278,39 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
 });
 
 describe('template catalog source templates', () => {
+  it('exports every specialist reviewer source through manifest-backed rendering', () => {
+    const manifest = readTemplateManifest();
+    const reviewerTemplatePaths = [
+      'skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
+      'skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
+      '.codex/agents/sibu-architecture-reviewer.toml',
+      '.codex/agents/sibu-technical-lead-reviewer.toml',
+      '.claude/agents/sibu-architecture-reviewer.md',
+      '.claude/agents/sibu-technical-lead-reviewer.md',
+      '.gemini/agents/sibu-architecture-reviewer.md',
+      '.gemini/agents/sibu-technical-lead-reviewer.md',
+    ];
+
+    assert.equal(manifest.templateVersion, '154');
+
+    for (const templatePath of reviewerTemplatePaths) {
+      assert.equal(manifest.templates[templatePath]?.version, '1');
+      assert.doesNotThrow(() => readTemplate(templatePath));
+
+      const renderedContents = renderTemplateForSync({
+        templateRelativePath: templatePath,
+        currentPath: 'missing-agents.md',
+        selectedLanguageSkills: [selectedTypescriptSkill],
+        selectedFrameworkSkills: [selectedReactSkill],
+        selectedArchitectureSkill: selectedCommandPatternSkill,
+        selectedWorkflowSkills: [selectedPromptEngineeringSkill],
+      });
+
+      assert.ok(renderedContents.length > 0, `${templatePath} should render from its packaged source`);
+      assert.doesNotMatch(renderedContents, /\{\{[^}]+\}\}/, `${templatePath} should not leave unresolved placeholders`);
+    }
+  });
+
   it('registers stricter React component file-boundary guidance', () => {
     const templatePath = 'skills/react/SKILL.md';
     const manifest = readTemplateManifest();
