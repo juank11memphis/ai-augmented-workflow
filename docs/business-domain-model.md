@@ -280,7 +280,7 @@ The per-feature business-definition artifact at `docs/features/<feature-slug>/br
 
 #### Software Architecture Document (SAD)
 
-The project-level architectural source of truth at `docs/architecture.md`. It replaces the standalone Deep Module Map and retains its deep-module responsibilities, interfaces, boundaries, and hidden complexity within the building-block view. A lean arc42-based structure and C4 views communicate context, structure, key runtime interactions, deployment, cross-cutting concerns, quality goals, decisions, and risks. It applies the selected architecture skill rather than selecting a competing style.
+The project-level architectural source of truth at `docs/architecture.md`. Its building-block view defines deep-module responsibilities, interfaces, boundaries, and hidden complexity. A lean arc42-based structure and C4 views communicate context, structure, key runtime interactions, deployment, cross-cutting concerns, quality goals, decisions, and risks. It applies the selected architecture skill rather than selecting a competing style.
 
 #### Software Design Document (SDD)
 
