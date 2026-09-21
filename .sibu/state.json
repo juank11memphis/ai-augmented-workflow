@@ -89,12 +89,6 @@
       "sha256": "568506f7eabe90b11ea8529b0fade19c9ef0a08fb36c4c01d59a1ef30d8a1088",
       "status": "managed"
     },
-    ".agents/skills/feature-brief-writer/SKILL.md": {
-      "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "17",
-      "sha256": "d64be7a24cc788e1928ccaeb2f96384eb29e45dd68e83f52daae3c00608593ec",
-      "status": "managed"
-    },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
       "templateVersion": "28",
