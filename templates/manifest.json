@@ -1,11 +1,11 @@
 {
-  "templateVersion": "152",
+  "templateVersion": "153",
   "templates": {
     "AGENTS.md": {
-      "version": "39",
+      "version": "40",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     ".codex/config.toml": {
@@ -58,38 +58,24 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "11",
+      "version": "12",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/business-domain-model-writer/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory Business Domain Model writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/capabilities-map-writer/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory Capabilities Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
-      ]
-    },
-    "skills/deep-module-map-writer/SKILL.md": {
-      "version": "9",
-      "description": "Mandatory Deep Module Map writer skill installed once at the shared .agents/skills workspace path.",
-      "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
-      ]
-    },
-    "skills/technical-design-writer/SKILL.md": {
-      "version": "28",
-      "description": "Mandatory technical design writer skill installed once at the shared .agents/skills workspace path.",
-      "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -114,24 +100,24 @@
       ]
     },
     "skills/architecture/ddd-hexagonal/SKILL.md": {
-      "version": "11",
+      "version": "12",
       "description": "Selectable back-end architecture skill for DDD and Hexagonal Architecture.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/architecture/command-pattern/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Selectable architecture skill for command-oriented vertical slices using Command Pattern, Hexagonal Architecture, and DDD principles.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/nextjs/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Selectable framework skill for Next.js App Router and framework-specific behavior.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/react/SKILL.md": {
@@ -142,38 +128,38 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "16",
-      "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and technical design docs.",
+      "version": "17",
+      "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "22",
+      "version": "23",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "30",
+      "version": "31",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -191,17 +177,17 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "15",
+      "version": "16",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Selectable lightweight architecture skill for pragmatic controllers, services, models, and repositories guidance.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     "skills/export-to-github/SKILL.md": {
@@ -212,10 +198,10 @@
       ]
     },
     "skills/export-to-notion/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     ".codex/agents/github-exporter.toml": {
@@ -226,10 +212,10 @@
       ]
     },
     ".codex/agents/notion-exporter.toml": {
-      "version": "5",
+      "version": "6",
       "description": "Codex Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     ".claude/agents/github-exporter.md": {
@@ -240,10 +226,10 @@
       ]
     },
     ".claude/agents/notion-exporter.md": {
-      "version": "3",
+      "version": "4",
       "description": "Claude Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     ".gemini/agents/github-exporter.md": {
@@ -254,10 +240,10 @@
       ]
     },
     ".gemini/agents/notion-exporter.md": {
-      "version": "3",
+      "version": "4",
       "description": "Gemini Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
-        "Uses BRD business context and requirement references while preserving stage and safety boundaries."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
     ".codex/agents/sibu-implementation-planner.toml": {
@@ -338,10 +324,24 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Provides BRDs with adaptive discovery and stable objective and requirement references."
+        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+      ]
+    },
+    "skills/software-architecture-writer/SKILL.md": {
+      "version": "1",
+      "description": "Authors the project SAD at docs/architecture.md.",
+      "changes": [
+        "Replaces the former writer with project SAD at docs/architecture.md; use sync for adoption and retire obsolete local copies/records only after ownership review."
+      ]
+    },
+    "skills/software-design-writer/SKILL.md": {
+      "version": "1",
+      "description": "Authors the feature SDD at sdd.md.",
+      "changes": [
+        "Replaces the former writer with feature SDD at sdd.md; use sync for adoption and retire obsolete local copies/records only after ownership review."
       ]
     }
   }

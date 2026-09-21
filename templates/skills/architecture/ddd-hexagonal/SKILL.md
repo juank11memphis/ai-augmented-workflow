@@ -34,7 +34,7 @@ If a simpler structure preserves clear boundaries, prefer the simpler structure.
 
 ## Downstream Sibu workflow handoff
 
-Use this selected architecture model as binding guidance for technical design, implementation planning, execution, and review. Keep the guidance concise in downstream artifacts, but make the boundary decisions explicit.
+Use this selected architecture model as binding guidance for software design, implementation planning, execution, and review. Keep the guidance concise in downstream artifacts, but make the boundary decisions explicit.
 
 ### Technical design
 
@@ -56,11 +56,11 @@ Reviewers should check that use cases and domain concepts were designed before a
 
 Deep Modules answer “where does this implementation work belong?” DDD + Hexagonal answers “how is that module structured internally?”
 
-When `docs/deep-module-map.md`, a BRD, or a technical design names Deep Modules, treat each selected Deep Module as the default top-level implementation boundary before choosing domain/application/infra placement. Prefer placing domain concepts, use cases, ports, and adapters under the selected module's ownership. If work crosses modules, name the owning module for each part and keep dependencies explicit.
+When `docs/architecture.md`, a BRD, or a software design names Deep Modules, treat each selected Deep Module as the default top-level implementation boundary before choosing domain/application/infra placement. Prefer placing domain concepts, use cases, ports, and adapters under the selected module's ownership. If work crosses modules, name the owning module for each part and keep dependencies explicit.
 
 A Deep Module may contain `domain`, `application`, and `infra`/adapter concerns, but it is not automatically a DDD Bounded Context, service, package, database boundary, or team boundary. Projects that already use DDD Bounded Contexts may align a Bounded Context one-to-one with a Deep Module when that preserves the model and language.
 
-Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `deep-module-map-writer` workflow.
+Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `software-architecture-writer` workflow.
 
 Do not treat shallow technical buckets such as `utils`, `api`, `db`, or `services` as Deep Modules. A Deep Module should expose a small, stable interface while hiding meaningful implementation complexity; product alignment can help explain why work changes together, but product category alone does not make a module deep.
 
@@ -349,3 +349,7 @@ When unsure, prefer:
 3. explicit orchestration
 4. minimal necessary abstraction
 5. business concepts over technical leakage
+
+## SAD and SDD ownership
+
+Apply this selected architecture to project SAD and feature SDD authoring. The SAD at `docs/architecture.md` owns module boundaries and system-wide decisions; the SDD at `docs/features/<feature-slug>/sdd.md` owns compatible feature details and embedded diagrams. Missing or changed module/system decisions route to `software-architecture-writer`; never silently redefine them in an SDD.

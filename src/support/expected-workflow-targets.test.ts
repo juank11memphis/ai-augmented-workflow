@@ -63,11 +63,11 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
-    assert.equal(targetPaths.includes('.agents/skills/deep-module-map-writer/SKILL.md'), true);
+    assert.equal(targetPaths.includes('.agents/skills/software-architecture-writer/SKILL.md'), true);
     assert.equal(targetPaths.includes('.agents/skills/feature-idea-capture/SKILL.md'), true);
     assert.equal(targetPaths.includes('docs/business-domain-model.md'), false);
     assert.equal(targetPaths.includes('docs/capabilities-map.md'), false);
-    assert.equal(targetPaths.includes('docs/deep-module-map.md'), false);
+    assert.equal(targetPaths.includes('docs/architecture.md'), false);
     assert.equal(targetPaths.includes('docs/feature-ideas.md'), false);
     assertNoInvalidTargets(targets);
   });
@@ -182,9 +182,9 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/product-vision-writer/SKILL.md',
       '.agents/skills/business-domain-model-writer/SKILL.md',
       '.agents/skills/capabilities-map-writer/SKILL.md',
-      '.agents/skills/deep-module-map-writer/SKILL.md',
+      '.agents/skills/software-architecture-writer/SKILL.md',
       '.agents/skills/business-requirements-writer/SKILL.md',
-      '.agents/skills/technical-design-writer/SKILL.md',
+      '.agents/skills/software-design-writer/SKILL.md',
       '.agents/skills/scrum-master-planner/SKILL.md',
       '.agents/skills/ai-implementation-planner/SKILL.md',
       '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',

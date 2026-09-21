@@ -62,11 +62,11 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
-    templateRelativePath: 'skills/deep-module-map-writer/SKILL.md',
+    templateRelativePath: 'skills/software-architecture-writer/SKILL.md',
     targetRelativePathsByAgent: {
-      codex: '.agents/skills/deep-module-map-writer/SKILL.md',
-      gemini: '.agents/skills/deep-module-map-writer/SKILL.md',
-      claude: '.agents/skills/deep-module-map-writer/SKILL.md',
+      codex: '.agents/skills/software-architecture-writer/SKILL.md',
+      gemini: '.agents/skills/software-architecture-writer/SKILL.md',
+      claude: '.agents/skills/software-architecture-writer/SKILL.md',
     },
   },
   {
@@ -78,11 +78,11 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
-    templateRelativePath: 'skills/technical-design-writer/SKILL.md',
+    templateRelativePath: 'skills/software-design-writer/SKILL.md',
     targetRelativePathsByAgent: {
-      codex: '.agents/skills/technical-design-writer/SKILL.md',
-      gemini: '.agents/skills/technical-design-writer/SKILL.md',
-      claude: '.agents/skills/technical-design-writer/SKILL.md',
+      codex: '.agents/skills/software-design-writer/SKILL.md',
+      gemini: '.agents/skills/software-design-writer/SKILL.md',
+      claude: '.agents/skills/software-design-writer/SKILL.md',
     },
   },
   {

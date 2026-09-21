@@ -1,6 +1,6 @@
 ---
 name: capabilities-map-writer
-description: Create or update docs/capabilities-map.md from Product Vision and Business Domain Model, mapping business/product capabilities by subdomain before Deep Module Map or BRD work.
+description: Create or update docs/capabilities-map.md from Product Vision and Business Domain Model, mapping business/product capabilities by subdomain before Software Architecture Document or BRD work.
 ---
 
 # Capabilities Map Writer
@@ -13,7 +13,7 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 Create or update `docs/capabilities-map.md`, a project-owned Capabilities Map that translates Product Vision and Business Domain Model context into clear business/product abilities organized by subdomain.
 
-This skill owns the Capabilities Map only. It does not own Product Vision, Business Domain Models, Deep Module Maps, BRDs, UX specs, technical designs, Epics, User Stories, implementation plans, production code, or Sibu template changes.
+This skill owns the Capabilities Map only. It does not own Product Vision, Business Domain Models, Software Architecture Documents, BRDs, UX specs, software designs, Epics, User Stories, implementation plans, production code, or Sibu template changes.
 
 ## Pipeline Contract
 
@@ -34,14 +34,14 @@ This is generated project-owned content. It is not a Sibu-managed workflow templ
 
 - `docs/product-vision.md` is missing; tell the user to create it first with `product-vision-writer`.
 - `docs/business-domain-model.md` is missing; tell the user to create it first with `business-domain-model-writer`.
-- The request belongs to another pipeline stage, such as Product Vision, Business Domain Model, Deep Module Map, BRD, UX design, technical design, Scrum planning, implementation planning, or implementation execution.
+- The request belongs to another pipeline stage, such as Product Vision, Business Domain Model, Software Architecture Document, BRD, UX design, software design, Scrum planning, implementation planning, or implementation execution.
 - Product Vision appears to need new or changed product direction, target user, boundaries, principles, trust expectations, or success signals; stop with a ready-to-paste `product-vision-writer` repair prompt.
 - Business Domain Model appears to need new or changed subdomains, concepts, relationships, rules, workflows, lifecycles, events, boundaries, or hard parts; stop with a ready-to-paste `business-domain-model-writer` repair prompt.
 - Product Vision, Business Domain Model, and user review still leave material ambiguity about core, supporting, generic, or external capabilities; ask one focused review question instead of drafting.
 
 ### What this skill must not do
 
-- Do not create Product Vision, Business Domain Models, Deep Module Maps, BRDs, UX specs, technical designs, Epics, User Stories, implementation plans, or production code.
+- Do not create Product Vision, Business Domain Models, Software Architecture Documents, BRDs, UX specs, software designs, Epics, User Stories, implementation plans, or production code.
 - Do not turn modules, commands, services, APIs, database tables, files, classes, packages, screens, jobs, queues, deployment units, or other implementation structure into primary capabilities.
 - Do not inspect implementation code or derive capabilities from current architecture, folder names, database schemas, commands, screens, APIs, or tests by default.
 - Do not skip the user review/correction pass or the final “I am clear; are you good?” check-in before writing.
@@ -273,3 +273,7 @@ If the user explicitly requests a different path, use that path instead.
 After writing the file, final-answer with only the path created or updated. Do not paste the document body, excerpt, outline, or section summaries.
 
 Only include the full document when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/capabilities-map.md`.
+
+## SAD and SDD handoff
+
+After the business foundations, project SAD and feature BRD are independent branches. BRD authoring does not require `docs/architecture.md`. SAD authoring uses `software-architecture-writer`; feature SDD authoring uses `software-design-writer` and requires SAD + BRD + selected architecture guidance + UX when UI-changing. Never automatically execute a downstream stage.

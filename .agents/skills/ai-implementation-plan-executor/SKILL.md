@@ -21,8 +21,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 
 - Exactly one User Story file or one story-local `.impl_plan/` folder.
 - Ordered implementation step files in that `.impl_plan/` folder, creating them through the planner route when missing.
-- The story, Epic brief, BRD, and `technical_design.md` as the authoritative technical design artifact for the selected plan.
-- `docs/features/<feature-slug>/tech_design_diagrams.md` when present, as optional companion context that never blocks execution when absent.
+- The story, Epic brief, BRD, and `sdd.md` as the authoritative software design artifact for the selected plan.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
 - The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when sub-agent spawning is available.
 - Selected architecture guidance for the workflow.
@@ -42,13 +41,13 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - The story, any step, or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - Selected architecture guidance is missing, unavailable, or ambiguous; stop and tell the user to run `sibu sync` to repair workflow configuration before implementation execution. Do not choose, infer, or substitute architecture guidance yourself.
 - Validation fails and the fix is ambiguous, risky, or would exceed the approved plan.
-- A step conflicts with the story, Epic, BRD, technical design, UX spec, or approved Deep Module boundaries.
+- A step conflicts with the story, Epic, BRD, software design, UX spec, or approved Deep Module boundaries.
 
 ### What this skill must not do
 
-- Do not create product visions, Deep Module Maps, BRDs, technical designs, UX specs, Epics, or User Stories.
+- Do not create product visions, Software Architecture Documents, BRDs, software designs, UX specs, Epics, or User Stories.
 - Do not modify prior-stage artifacts except for approval metadata in implementation step files after explicit story-level approval.
-- Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
+- Do not reread `docs/architecture.md` by default; trust `sdd.md` for Deep Module implementation boundaries.
 - Do not mark any step approved before explicit story-level user approval.
 - Do not commit story implementation changes before explicit story-level user approval.
 - Do not let the executor worker write approval metadata or run `git commit`, `git stash`, or `git reset`.
@@ -82,8 +81,7 @@ docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/*.md
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
 docs/features/<feature-slug>/brd.md
-docs/features/<feature-slug>/technical_design.md
-docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; verify/pass when present and never hard-stop when absent
+docs/features/<feature-slug>/sdd.md
 docs/features/<feature-slug>/ux.md  # when the story, any step, or feature has UI impact
 ```
 
@@ -91,7 +89,7 @@ If the initial User Story has no matching `.impl_plan/`, or the initial `.impl_p
 
 If required source context is missing, stop and ask the user to create or restore the missing artifact first. Do not delegate incomplete execution work to the worker.
 
-If `docs/features/<feature-slug>/tech_design_diagrams.md` exists, verify and pass its path to the executor worker as optional companion context. Missing diagrams are allowed for older features and must not block implementation execution. Do not create, regenerate, require, export, render, sync, or treat diagrams as a replacement for `technical_design.md`.
+Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, data/state implications, and verification-relevant risks. The SDD is authoritative; do not create a separate companion.
 
 ## Required sub-agent execution path
 
@@ -100,12 +98,12 @@ When the host exposes any usable sub-agent spawn capability and `sibu-implementa
 Build a narrow executor packet for the worker. The packet must include:
 
 - exactly one User Story path or story-local `.impl_plan/` folder
-- story, Epic brief, BRD, technical design, optional tech design diagrams path when present, and UX path when relevant
+- story, Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
 - executor toolbox path: `.agents/skills/ai-implementation-executor-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, including story scope, verification expectations, quality strategy context from the technical design when relevant, validation steps from the implementation plan, Deep Module boundaries, selected architecture constraints, optional diagram constraints to preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
+- distilled skill constraints, including story scope, verification expectations, quality strategy context from the software design when relevant, validation steps from the implementation plan, Deep Module boundaries, selected architecture constraints, embedded diagram constraints to preserve diagram-stated boundaries, flows, and data/state implications without replacing `sdd.md`, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
 - validation evidence requirements: completion must show tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
 - approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
 - expected output format: changed files, completed steps, validation commands/results, compact validation evidence, risks, follow-up questions, and approval state
@@ -204,7 +202,7 @@ After approving and committing a story implementation, briefly report the commit
 
 ## BRD handoff
 
-Preserve source BRD IDs carried by the story and technical design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
+Preserve source BRD IDs carried by the story and software design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
 
 Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
 

@@ -228,10 +228,10 @@ describe('writeSibuState', () => {
       sha256: state.managedFiles['.agents/skills/capabilities-map-writer/SKILL.md']?.sha256,
       status: 'managed',
     });
-    assert.deepEqual(state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md'], {
-      template: 'skills/deep-module-map-writer/SKILL.md',
-      templateVersion: readTemplateManifest().templates['skills/deep-module-map-writer/SKILL.md']?.version,
-      sha256: state.managedFiles['.agents/skills/deep-module-map-writer/SKILL.md']?.sha256,
+    assert.deepEqual(state.managedFiles['.agents/skills/software-architecture-writer/SKILL.md'], {
+      template: 'skills/software-architecture-writer/SKILL.md',
+      templateVersion: readTemplateManifest().templates['skills/software-architecture-writer/SKILL.md']?.version,
+      sha256: state.managedFiles['.agents/skills/software-architecture-writer/SKILL.md']?.sha256,
       status: 'managed',
     });
     assert.ok(state.managedFiles['.agents/skills/feature-idea-capture/SKILL.md']);
@@ -242,7 +242,7 @@ describe('writeSibuState', () => {
     assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
     assert.equal(state.managedFiles['docs/business-domain-model.md'], undefined);
     assert.equal(state.managedFiles['docs/capabilities-map.md'], undefined);
-    assert.equal(state.managedFiles['docs/deep-module-map.md'], undefined);
+    assert.equal(state.managedFiles['docs/architecture.md'], undefined);
     assert.equal(state.managedFiles['docs/feature-ideas.md'], undefined);
     assert.equal(fs.existsSync(path.join(rootPath, 'docs/business-domain-model.md')), false);
     assert.equal(fs.existsSync(path.join(rootPath, 'docs/capabilities-map.md')), false);

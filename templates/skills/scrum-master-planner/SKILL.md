@@ -1,6 +1,6 @@
 ---
 name: scrum-master-planner
-description: Create pragmatic Epics and User Stories from a sufficiently clear BRD and technical design. Use when asked to plan delivery, create epics, write user stories, split a feature into backlog work, or turn a BRD plus technical design under docs/features into Scrum planning artifacts.
+description: Create pragmatic Epics and User Stories from a sufficiently clear BRD and software design. Use when asked to plan delivery, create epics, write user stories, split a feature into backlog work, or turn a BRD plus software design under docs/features into Scrum planning artifacts.
 ---
 
 # Scrum Master Planner
@@ -11,16 +11,16 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 ## Purpose
 
-Turn a sufficiently clear BRD and technical design into the smallest useful Scrum planning structure: Epics and User Stories that are clear enough for a team to implement and validate.
+Turn a sufficiently clear BRD and software design into the smallest useful Scrum planning structure: Epics and User Stories that are clear enough for a team to implement and validate.
 
-This skill owns delivery planning artifacts. It does not own product vision, feature definition, technical design, code implementation, or project-management tool automation.
+This skill owns delivery planning artifacts. It does not own product vision, feature definition, software design, code implementation, or project-management tool automation.
 
 ## Pipeline Contract
 
 ### What this skill needs
 
 - `docs/features/<feature-slug>/brd.md`.
-- `docs/features/<feature-slug>/technical_design.md`.
+- `docs/features/<feature-slug>/sdd.md`.
 - `docs/features/<feature-slug>/ux.md` only when the feature has UI impact.
 - Enough source-artifact detail to create delivery slices without inventing product scope or implementation boundaries.
 
@@ -32,17 +32,17 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 
 ### When this skill stops
 
-- The BRD or technical design is missing; direct the user to the owning prior stage.
+- The BRD or software design is missing; direct the user to the owning prior stage.
 - The feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - A prior artifact is obviously incomplete or invalid in a way its owning stage should repair.
-- The request belongs to another pipeline stage, such as product definition, technical design, UX design, implementation planning, or implementation execution.
+- The request belongs to another pipeline stage, such as product definition, software design, UX design, implementation planning, or implementation execution.
 
 ### What this skill must not do
 
-- Do not create or update product visions, Deep Module Maps, BRDs, technical designs, UX specs, implementation plans, or production code.
+- Do not create or update product visions, Software Architecture Documents, BRDs, software designs, UX specs, implementation plans, or production code.
 - Do not modify prior-stage artifacts.
-- Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
-- Do not add product scope or architecture decisions absent from the BRD and technical design.
+- Do not reread `docs/architecture.md` by default; trust `sdd.md` for Deep Module implementation boundaries.
+- Do not add product scope or architecture decisions absent from the BRD and software design.
 
 ## Required inputs
 
@@ -50,14 +50,13 @@ Before planning, read:
 
 ```txt
 docs/features/<feature-slug>/brd.md
-docs/features/<feature-slug>/technical_design.md
-docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; read when present and never hard-stop when absent
+docs/features/<feature-slug>/sdd.md
 docs/features/<feature-slug>/ux.md  # when the feature has UI impact
 ```
 
 Also read `docs/product-vision.md` when it exists and the planning decision depends on product fit, scope boundaries, user value, or success signals.
 
-If `docs/features/<feature-slug>/tech_design_diagrams.md` exists, read it as companion context that clarifies design intent. Preserve diagram-stated implementation boundaries, runtime flows, and data/state implications in Epics and Stories. Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design.md`.
+Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, data/state implications, and verification-relevant risks. The SDD is authoritative; do not create a separate companion.
 
 If the feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before Scrum planning.
 
@@ -65,7 +64,7 @@ When `ux.md` includes mockups, treat them as binding UI goals. Epics and Stories
 
 ## Hard start rule
 
-Do not create Epics or User Stories if either the BRD or technical design is missing.
+Do not create Epics or User Stories if either the BRD or software design is missing.
 
 If an input is missing:
 
@@ -114,14 +113,14 @@ Identify from the BRD:
 - success signals
 - business-level acceptance criteria
 
-Identify from the technical design:
+Identify from the software design:
 
 - implementation slices
 - affected commands, files, modules, integrations, or docs
 - quality strategy and validation expectations
 - meaningful risks or unresolved decisions
 
-When optional `tech_design_diagrams.md` context exists, use it only to preserve diagram-stated boundaries, flows, data/state implications, and verification-relevant risks; keep `technical_design.md` authoritative for technical design decisions.
+Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, data/state implications, and verification-relevant risks. The SDD is authoritative; do not create a separate companion.
 
 ### 2. Choose Epic boundaries
 
@@ -204,18 +203,18 @@ As a <user or contributor>, I want <capability or outcome>, so that <value or re
 - <Reviewable evidence expected for this story, proportionate to risk.>
 
 ## Validation
-- <Likely manual or automated checks from the technical design.>
+- <Likely manual or automated checks from the software design.>
 
 ## Notes
 - <Optional implementation, sequencing, or risk notes. Omit if not useful.>
 ```
 
-Keep Stories concrete, but do not turn them into implementation plans or task checklists. If detailed implementation guidance is needed, point to the technical design instead of restating it.
+Keep Stories concrete, but do not turn them into implementation plans or task checklists. If detailed implementation guidance is needed, point to the software design instead of restating it.
 
 Keep `## Acceptance Criteria`, `## Verification Expectations`, and `## Validation` distinct:
 
 - Acceptance Criteria stay behavior-focused: observable product, workflow, or artifact outcomes that must be true.
-- Verification Expectations stay evidence-focused: the confidence reviewers should expect from tests, focused review, manual checks, or justified omissions. Derive them from the BRD, the technical design quality strategy, and optional diagram companion context when present.
+- Verification Expectations stay evidence-focused: the confidence reviewers should expect from tests, focused review, manual checks, or justified omissions. Derive them from the BRD, the software design quality strategy, and embedded SDD diagrams.
 - Validation stays command/check-focused: likely checks the implementer can run, without duplicating implementation-plan steps.
 
 Verification expectations should name the smallest useful evidence for the story risk. Consider unit, acceptance/integration, edge/failure, and regression checks by default. Mention property/invariant, torture/fuzz, mutation, or manual QA only when the source artifacts or risk profile make them valuable; do not require every verification type for every story. Do not create dedicated test-only stories by default unless the source artifacts explicitly call for them or the risk justifies a separate validation slice.
@@ -230,7 +229,7 @@ Before finishing, verify:
 - Stories with the same order number are actually parallelizable
 - every Story can be merged and deployed safely on its own, even if its user-facing value is gated or incomplete until the Epic is done
 - Story count is pragmatic, not inflated
-- no Story adds scope that is absent from the BRD or technical design
+- no Story adds scope that is absent from the BRD or software design
 - acceptance criteria are testable enough for a reviewer
 
 ## Final response behavior

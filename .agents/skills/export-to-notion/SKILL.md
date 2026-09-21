@@ -1,6 +1,6 @@
 ---
 name: export-to-notion
-description: Export a named feature's local BRD, UX design, and technical design Markdown files to Notion using configured Notion MCP capabilities.
+description: Export a named feature's local BRD, UX design, and software design Markdown files to Notion using configured Notion MCP capabilities.
 ---
 
 # Export to Notion
@@ -52,10 +52,10 @@ Export only these local Markdown files when present:
 ```txt
 docs/features/<feature-slug>/brd.md
 docs/features/<feature-slug>/ux.md
-docs/features/<feature-slug>/technical_design.md
+docs/features/<feature-slug>/sdd.md
 ```
 
-Do not export Epics, User Stories, implementation plans, product vision, Deep Module Maps, or arbitrary docs with this skill.
+Do not export Epics, User Stories, implementation plans, product vision, Software Architecture Documents, or arbitrary docs with this skill.
 
 ## Notion destination
 
@@ -68,7 +68,7 @@ Use this organization under the configured Notion docs parent page:
         └── <feature name>
             ├── Business Requirements Document
             ├── UX Design
-            └── Technical Design
+            └── Software Design Document
 ```
 
 ## Workflow
@@ -112,3 +112,5 @@ Before finalizing, verify:
 - If Notion MCP capabilities or destination configuration are unavailable, fail clearly and explain what is missing.
 
 Export `docs/features/<feature-slug>/brd.md` under the page title `Business Requirements Document`. Preserve requirement IDs, objective links, business rules, and acceptance content during Markdown conversion; do not silently drop or relabel their business meaning. No BRD approval status is required; explicit opt-in for external mutation remains required. Do not match legacy pages, rename old pages, or perform cleanup.
+
+Export `docs/features/<feature-slug>/sdd.md` under “Software Design Document”. Preserve source-qualified requirements, explanatory content, and embedded Mermaid source as supported fenced/code content, labeled Mermaid when available. Do not silently discard diagrams or promise native rendering. Project SAD export is outside scope; retain BRD/UX scope, destination checks, explicit mutation opt-in, and no-local-write rules.

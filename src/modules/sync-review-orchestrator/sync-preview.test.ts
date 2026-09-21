@@ -12,9 +12,9 @@ import { applySyncAction } from './apply-action.js';
 import { getSyncPreviews } from './sync-preview.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 
-const DEEP_MODULE_SKILL_PATH = '.agents/skills/deep-module-map-writer/SKILL.md';
-const DEEP_MODULE_TEMPLATE_PATH = 'skills/deep-module-map-writer/SKILL.md';
-const DEEP_MODULE_MAP_PATH = 'docs/deep-module-map.md';
+const SAD_SKILL_PATH = '.agents/skills/software-architecture-writer/SKILL.md';
+const SAD_TEMPLATE_PATH = 'skills/software-architecture-writer/SKILL.md';
+const SAD_DOCUMENT_PATH = 'docs/architecture.md';
 const temporaryRoots: string[] = [];
 
 afterEach(() => {
@@ -24,40 +24,40 @@ afterEach(() => {
 });
 
 describe('getSyncPreviews', () => {
-  it('reports the required Deep Module Map writer as a new managed template for older state', () => {
+  it('reports the required Software Architecture Document writer as a new managed template for older state', () => {
     const rootPath = createCleanInitializedRepo();
     const statePath = path.join(rootPath, '.sibu/state.json');
     const state = readState(rootPath);
-    delete state.managedFiles[DEEP_MODULE_SKILL_PATH];
+    delete state.managedFiles[SAD_SKILL_PATH];
     fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 
     const preview = getProductContextSkillPreview(rootPath, state);
 
     assert.equal(preview.status, 'new-template');
-    assert.equal(preview.managedFile.template, DEEP_MODULE_TEMPLATE_PATH);
+    assert.equal(preview.managedFile.template, SAD_TEMPLATE_PATH);
     assert.equal(preview.hasLocalFile, true);
-    assert.deepEqual(preview.changes, readTemplateManifest().templates[DEEP_MODULE_TEMPLATE_PATH]?.changes);
+    assert.deepEqual(preview.changes, readTemplateManifest().templates[SAD_TEMPLATE_PATH]?.changes);
   });
 
-  it('reports the required Deep Module Map writer as missing when the managed file is removed', () => {
+  it('reports the required Software Architecture Document writer as missing when the managed file is removed', () => {
     const rootPath = createCleanInitializedRepo();
-    fs.rmSync(path.join(rootPath, DEEP_MODULE_SKILL_PATH));
+    fs.rmSync(path.join(rootPath, SAD_SKILL_PATH));
 
     const preview = getProductContextSkillPreview(rootPath, readState(rootPath));
 
     assert.equal(preview.status, 'missing');
-    assert.equal(preview.managedFile.template, DEEP_MODULE_TEMPLATE_PATH);
+    assert.equal(preview.managedFile.template, SAD_TEMPLATE_PATH);
     assert.equal(preview.hasLocalFile, false);
   });
 
-  it('reports the required Deep Module Map writer as modified when the managed file has local edits', () => {
+  it('reports the required Software Architecture Document writer as modified when the managed file has local edits', () => {
     const rootPath = createCleanInitializedRepo();
-    fs.appendFileSync(path.join(rootPath, DEEP_MODULE_SKILL_PATH), '\nLocal edit.\n', 'utf8');
+    fs.appendFileSync(path.join(rootPath, SAD_SKILL_PATH), '\nLocal edit.\n', 'utf8');
 
     const preview = getProductContextSkillPreview(rootPath, readState(rootPath));
 
     assert.equal(preview.status, 'modified');
-    assert.equal(preview.managedFile.template, DEEP_MODULE_TEMPLATE_PATH);
+    assert.equal(preview.managedFile.template, SAD_TEMPLATE_PATH);
     assert.equal(preview.hasLocalFile, true);
   });
 
@@ -337,10 +337,10 @@ function createCleanInitializedRepoWithSelectedMcpServers(selectedMcpServerIds: 
 }
 
 function getProductContextSkillPreview(rootPath: string, state: SibuState) {
-  const preview = getSyncPreview(rootPath, state, DEEP_MODULE_SKILL_PATH);
+  const preview = getSyncPreview(rootPath, state, SAD_SKILL_PATH);
 
   const previews = getSyncPreviews({ rootPath, state, manifest: readTemplateManifest() });
-  assert.equal(previews.some((syncPreview) => syncPreview.relativePath === DEEP_MODULE_MAP_PATH), false);
+  assert.equal(previews.some((syncPreview) => syncPreview.relativePath === SAD_DOCUMENT_PATH), false);
 
   return preview;
 }

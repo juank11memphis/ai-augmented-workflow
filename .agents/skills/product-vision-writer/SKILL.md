@@ -32,11 +32,11 @@ Default output path: `docs/product-vision.md`.
 
 - The user's intent is too unclear to ask a useful discovery question.
 - Writing would overwrite an existing vision when the user appears to want a separate new vision.
-- The request is for a downstream artifact such as a Deep Module Map, BRD, technical design, UX spec, stories, implementation plan, or implementation work.
+- The request is for a downstream artifact such as a Software Architecture Document, BRD, software design, UX spec, stories, implementation plan, or implementation work.
 
 ### What this skill must not do
 
-- Do not create Deep Module Maps, BRDs, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not create Software Architecture Documents, BRDs, software designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not leave material strategy questions unresolved in the final document; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
@@ -149,3 +149,7 @@ If the user explicitly requests a different path, use that path instead.
 After writing the file, final-answer with only the path created or updated. Do not paste the document body, excerpt, outline, or section summaries.
 
 Only include the full document when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/product-vision.md`.
+
+## SAD and SDD handoff
+
+After the business foundations, project SAD and feature BRD are independent branches. BRD authoring does not require `docs/architecture.md`. SAD authoring uses `software-architecture-writer`; feature SDD authoring uses `software-design-writer` and requires SAD + BRD + selected architecture guidance + UX when UI-changing. Never automatically execute a downstream stage.

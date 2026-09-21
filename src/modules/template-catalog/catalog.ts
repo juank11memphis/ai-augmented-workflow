@@ -192,9 +192,9 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
   {
     id: 'export-to-notion',
     name: 'Export to Notion',
-    description: "Install guidance for exporting a named feature's BRD, UX design, and technical design to Notion using the configured Notion MCP server",
+    description: "Install guidance for exporting a named feature's BRD, UX design, and software design to Notion using the configured Notion MCP server",
     routingInstruction:
-      "For exporting a feature's BRD, UX design, or technical design to Notion, use `export-to-notion`.",
+      "For exporting a feature's BRD, UX design, or software design to Notion, use `export-to-notion`.",
     templateRelativePath: 'skills/export-to-notion/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/export-to-notion/SKILL.md',

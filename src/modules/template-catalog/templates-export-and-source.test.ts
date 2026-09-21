@@ -59,9 +59,9 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '7');
+    assert.equal(templateMetadata?.version, '8');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
     assert.match(contents, /name: export-to-notion/);
     assert.match(contents, /notion-exporter/);
     assert.match(contents, /clean, narrow export packet/);
@@ -73,8 +73,8 @@ describe('dedicated exporter skill templates', () => {
     assert.match(contents, /feature name/i);
     assert.match(contents, /brd\.md/);
     assert.match(contents, /ux\.md/);
-    assert.match(contents, /technical_design\.md/);
-    assert.match(contents, /Do not export Epics, User Stories, implementation plans, product vision, Deep Module Maps, or arbitrary docs/i);
+    assert.match(contents, /sdd\.md/);
+    assert.match(contents, /Do not export Epics, User Stories, implementation plans, product vision, Software Architecture Documents, or arbitrary docs/i);
     assert.match(contents, /Do not write Notion URLs back into local Markdown/i);
   });
 
@@ -94,9 +94,9 @@ describe('dedicated exporter skill templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, templatePath.includes('notion-exporter') ? (isCodexAgentTemplate ? '5' : '3') : (isCodexAgentTemplate ? '4' : '2'));
+      assert.equal(templateMetadata?.version, templatePath.includes('notion-exporter') ? (isCodexAgentTemplate ? '6' : '4') : (isCodexAgentTemplate ? '4' : '2'));
       assert.match(templateMetadata?.description ?? '', /exporter sub-agent/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', templatePath.includes('notion-exporter') ? /BRD/i : /concise reporting guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', templatePath.includes('notion-exporter') ? /SAD|SDD/i : /concise reporting guidance/i);
       assert.match(contents, /sub-agent/i);
       assert.match(contents, /full conversation context/i);
       assert.match(contents, /Do not modify local repository files/i);
@@ -140,8 +140,8 @@ describe('framework skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '5');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.equal(templateMetadata?.version, '6');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
     assert.match(contents, /name: nextjs/);
     assert.match(contents, /also use `react` when that skill is installed/);
     assert.match(contents, /component responsibility, props, state ownership, or component boundaries/);
@@ -151,7 +151,7 @@ describe('framework skill templates', () => {
 describe('downstream selected architecture guidance gates', () => {
   it('requires downstream skill templates to hard-stop and route missing architecture repair to sibu sync', () => {
     const templatePaths = [
-      'skills/technical-design-writer/SKILL.md',
+      'skills/software-design-writer/SKILL.md',
       'skills/ai-implementation-planner/SKILL.md',
       'skills/ai-implementation-plan-executor/SKILL.md',
       'skills/ai-implementation-planner-toolbox/SKILL.md',
@@ -171,8 +171,8 @@ describe('downstream selected architecture guidance gates', () => {
   it('requires downstream templates to read and apply selected architecture guidance when present', () => {
     const expectations = [
       {
-        path: 'skills/technical-design-writer/SKILL.md',
-        patterns: [/read its installed guidance/i, /design order, module\/layer boundaries, dependency direction, and concrete implementation boundaries/i],
+        path: 'skills/software-design-writer/SKILL.md',
+        patterns: [/identify and read the workflow's selected architecture skill/i, /Selected guidance and SAD boundaries are binding/i],
       },
       {
         path: 'skills/ai-implementation-planner/SKILL.md',
@@ -207,7 +207,7 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const manifest = readTemplateManifest();
     const authoringTemplatePaths = [
       'skills/business-requirements-writer/SKILL.md',
-      'skills/technical-design-writer/SKILL.md',
+      'skills/software-design-writer/SKILL.md',
       'skills/ux-expert/SKILL.md',
     ];
 
@@ -221,83 +221,37 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
 
   });
 
-  it('requires technical design writer to create a Mermaid diagram companion', () => {
-    const contents = readTemplate('skills/technical-design-writer/SKILL.md');
-
-    assert.match(contents, /docs\/features\/<feature-slug>\/technical_design\.md/);
-    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md/);
-    assert.match(contents, /Always create or update `docs\/features\/<feature-slug>\/tech_design_diagrams\.md` whenever creating or updating `technical_design\.md`/);
-    assert.match(contents, /Mermaid only/i);
-    assert.match(contents, /Do not create deployment diagrams/i);
-    assert.match(contents, /non-Mermaid formats/i);
-    assert.match(contents, /clarify design intent for downstream story planning and implementation/i);
-    assert.match(contents, /implementation boundaries, runtime flow, and data\/state implications/i);
-    assert.match(contents, /sparse, reviewable diagrams over exhaustive diagrams/i);
-    assert.match(contents, /one-sentence skip rationale instead of forcing diagram theater/i);
-    assert.match(contents, /High-Level Architecture Diagram/i);
-    assert.match(contents, /C4 Level 2 \/ Container-style/i);
-    assert.match(contents, /app\/module\/component ownership boundaries, data stores, external systems, key dependencies, and directional protocol\/payload labels/i);
-    assert.match(contents, /deployment topology, hosts, replicas, and infrastructure placement out of scope/i);
-    assert.match(contents, /Sequence Diagram/i);
-    assert.match(contents, /sequenceDiagram/);
-    assert.match(contents, /actors, command\/handler\/module calls, persistence or external calls, the main success path, and important error\/fallback branches/i);
-    assert.match(contents, /Prefer one clear sequence unless multiple materially different workflows are required/i);
-    assert.match(contents, /Data Model \/ State Diagram/i);
-    assert.match(contents, /erDiagram/);
-    assert.match(contents, /stateDiagram/i);
-    assert.match(contents, /Use an ERD when entities, relationships, persistence, or ownership change/i);
-    assert.match(contents, /use a state diagram when lifecycle\/status transitions matter more than schema/i);
-    assert.match(contents, /core entities\/states, keys or identifiers, meaningful relationships, and meaningful transitions/i);
-    assert.match(contents, /short skip rationale/i);
-    assert.match(contents, /same grounding artifacts and hard stops/i);
-    assert.match(contents, /ask or stop rather than inventing missing architecture, workflow, data, or state details/i);
+  it('requires embedded Mermaid without a companion output', () => {
+    const contents = readTemplate('skills/software-design-writer/SKILL.md');
+    assert.match(contents, /Every SDD embeds at least one explanatory Mermaid diagram/);
+    assert.match(contents, /main-flow sequence diagram/);
+    assert.match(contents, /explain why a sequence would misrepresent/);
+    assert.doesNotMatch(contents, /tech_design_diagrams/);
   });
 
-  it('keeps technical design from directly requiring the Business Domain Model', () => {
-    const contents = readTemplate('skills/technical-design-writer/SKILL.md');
+  it('keeps software design from directly requiring the Business Domain Model', () => {
+    const contents = readTemplate('skills/software-design-writer/SKILL.md');
 
     assert.doesNotMatch(contents, /docs\/business-domain-model\.md/);
     assert.doesNotMatch(contents, /business-domain-model-writer/);
   });
 
 
-  it('joins BRD and Deep Module Map as sibling technical design inputs', () => {
-    const templatePath = 'skills/technical-design-writer/SKILL.md';
-    const manifest = readTemplateManifest();
-    const templateMetadata = manifest.templates[templatePath];
-    const contents = readTemplate(templatePath);
-
-    assertVersionMetadata(templateMetadata?.version, templatePath);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
-    assert.match(contents, /A Markdown BRD at `docs\/features\/<feature-slug>\/brd\.md`/);
-    assert.match(contents, /`docs\/deep-module-map\.md`/);
-    assert.match(contents, /language skills, framework skills, or database skills/);
-    assert.match(contents, /any selected language, framework, or database skills that apply/);
-    assert.match(contents, /Treat the BRD and Deep Module Map as sibling upstream inputs/);
-    assert.match(contents, /A BRD may name selected Deep Modules directly or omit that section/);
-    assert.match(contents, /use the defined business scope plus `docs\/deep-module-map\.md` to identify the existing modules during technical clarification/);
-    assert.match(contents, /## Quality Strategy/);
-    assert.match(contents, /planned verification intent, not a post-implementation command log/i);
-    assert.match(contents, /unit tests/i);
-    assert.match(contents, /acceptance\/integration tests/i);
-    assert.match(contents, /edge\/failure tests/i);
-    assert.match(contents, /regression tests/i);
-    assert.match(contents, /property\/invariant/i);
-    assert.match(contents, /torture\/fuzz/i);
-    assert.match(contents, /mutation/i);
-    assert.match(contents, /manual QA/i);
-    assert.match(contents, /Keep this distinct from the planned quality strategy above/i);
-    assert.doesNotMatch(contents, /Require the BRD to name one or more existing Deep Modules/);
-    assert.doesNotMatch(contents, /the BRD, including its `## Deep Module` section/);
+  it('grounds SDD in SAD and BRD with planned verification', () => {
+    const contents = readTemplate('skills/software-design-writer/SKILL.md');
+    assert.match(contents, /docs\/architecture\.md/);
+    assert.match(contents, /docs\/features\/<feature-slug>\/brd\.md/);
+    assert.match(contents, /source BRD requirement IDs/);
+    assert.match(contents, /Separate planned verification from commands actually run/);
+    assert.match(contents, /quality strategy and concrete verification/);
+    assert.match(contents, /without copying the entire SAD/);
   });
-
 
   it('adds verification expectations to Scrum planner stories without turning them into implementation plans', () => {
     const contents = readTemplate('skills/scrum-master-planner/SKILL.md');
 
     assert.match(contents, /## Verification Expectations/);
-    assert.match(contents, /BRD, the technical design quality strategy, and optional diagram companion context/i);
+    assert.match(contents, /BRD, the software design quality strategy, and embedded SDD diagrams/i);
     assert.match(contents, /Acceptance Criteria stay behavior-focused/i);
     assert.match(contents, /Verification Expectations stay evidence-focused/i);
     assert.match(contents, /Validation stays command\/check-focused/i);
@@ -313,7 +267,7 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const contents = readTemplate(templatePath);
 
     assertVersionMetadata(templateMetadata?.version, templatePath);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
     assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
     assert.doesNotMatch(contents, /GitHub export gate outcome/i);
     assert.doesNotMatch(contents, /Create GitHub Issues for these Epics and User Stories/i);
@@ -322,58 +276,6 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     assert.match(contents, /the number of Epics and User Stories/i);
   });
 });
-
-describe('downstream technical design diagram companion consumption', () => {
-  it('lets Scrum planning read optional diagram companion context without replacing technical design', () => {
-    const contents = readTemplate('skills/scrum-master-planner/SKILL.md');
-
-    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md\s+# optional companion context; read when present and never hard-stop when absent/i);
-    assert.match(contents, /If `docs\/features\/<feature-slug>\/tech_design_diagrams\.md` exists, read it as companion context/i);
-    assert.match(contents, /Preserve diagram-stated implementation boundaries, runtime flows, and data\/state implications/i);
-    assert.match(contents, /Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design\.md`/);
-    assert.match(contents, /keep `technical_design\.md` authoritative/i);
-  });
-
-  it('passes optional diagram companion context to implementation planner workers when present', () => {
-    const contents = readTemplate('skills/ai-implementation-planner/SKILL.md');
-
-    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md\s+# optional companion context; verify\/pass when present and never hard-stop when absent/i);
-    assert.match(contents, /verify and pass its path to the planner worker as optional companion context/i);
-    assert.match(contents, /Missing diagrams are allowed for older features and must not block implementation planning/i);
-    assert.match(contents, /optional tech design diagrams path when present/i);
-    assert.match(contents, /preserve diagram-stated boundaries, flows, and data\/state implications without replacing `technical_design\.md`/i);
-    assert.match(contents, /Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design\.md`/);
-  });
-
-  it('passes optional diagram companion context to implementation executor workers when present', () => {
-    const contents = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
-
-    assert.match(contents, /docs\/features\/<feature-slug>\/tech_design_diagrams\.md\s+# optional companion context; verify\/pass when present and never hard-stop when absent/i);
-    assert.match(contents, /verify and pass its path to the executor worker as optional companion context/i);
-    assert.match(contents, /Missing diagrams are allowed for older features and must not block implementation execution/i);
-    assert.match(contents, /optional tech design diagrams path when present/i);
-    assert.match(contents, /preserve diagram-stated boundaries, flows, and data\/state implications without replacing `technical_design\.md`/i);
-    assert.match(contents, /Do not create, regenerate, require, export, render, sync, or treat diagrams as a replacement for `technical_design\.md`/);
-  });
-
-  it('tells planner and executor workers to consume included diagrams as companion context only', () => {
-    const plannerToolbox = readTemplate('skills/ai-implementation-planner-toolbox/SKILL.md');
-    const executorToolbox = readTemplate('skills/ai-implementation-executor-toolbox/SKILL.md');
-
-    for (const contents of [plannerToolbox, executorToolbox]) {
-      assert.match(contents, /optional tech design diagrams when present/i);
-      assert.match(contents, /Optional `tech_design_diagrams\.md` context may be included when present; its absence must not block older features/i);
-      assert.match(contents, /Read included `tech_design_diagrams\.md` context when the packet provides it/i);
-      assert.match(contents, /Treat included diagrams as companion context/i);
-      assert.match(contents, /preserve diagram-stated boundaries, flows, and data\/state implications/i);
-      assert.match(contents, /`technical_design\.md` as the authoritative technical design artifact/i);
-    }
-
-    assert.match(plannerToolbox, /Never create or change .*`tech_design_diagrams\.md`/);
-    assert.match(executorToolbox, /Never create, regenerate, export, render, sync, or replace `tech_design_diagrams\.md`/);
-  });
-});
-
 
 describe('template catalog source templates', () => {
   it('registers stricter React component file-boundary guidance', () => {
@@ -396,7 +298,7 @@ describe('template catalog source templates', () => {
   it('returns manifest-backed template versions', () => {
     const manifest = readTemplateManifest();
 
-    assert.equal(getTemplateVersion(manifest, 'skills/business-domain-model-writer/SKILL.md'), '9');
+    assert.equal(getTemplateVersion(manifest, 'skills/business-domain-model-writer/SKILL.md'), '10');
   });
 
   it('preserves the missing manifest entry error', () => {

@@ -32,11 +32,11 @@ Act as a senior UX/UI designer. Turn a sufficiently clear BRD into usable, simpl
 - `docs/business-domain-model.md` is missing; direct the user to `business-domain-model-writer` first.
 - The product artifact is missing, unclear, or lacks goals, scope, and acceptance criteria.
 - The feature or request has no UI impact; say so and do not invent UI work.
-- The request belongs to another pipeline stage, such as product definition, technical design, Scrum planning, implementation planning, or implementation execution.
+- The request belongs to another pipeline stage, such as product definition, software design, Scrum planning, implementation planning, or implementation execution.
 
 ### What this skill must not do
 
-- Do not create or update product visions, Deep Module Maps, BRDs, technical designs, Epics, User Stories, implementation plans, or production code.
+- Do not create or update product visions, Software Architecture Documents, BRDs, software designs, Epics, User Stories, implementation plans, or production code.
 - Do not make architecture, framework, API, data model, or file-path decisions.
 - Do not treat UX work as optional for UI-changing features; concrete mockups are required.
 - Do not skip the interview or final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
@@ -98,7 +98,7 @@ This interview is mandatory and non-skippable. Even when product artifacts, exis
 
 ## Mockup authority rule
 
-For UI-changing features, the UX artifact must include concrete mockups for affected screens, states, and breakpoints. Mockups are the source of truth for structure, hierarchy, visible content, dominant interactions, and major visual emphasis; downstream technical design, stories, implementation plans, and implementation must follow them unless this UX spec is revised. UX work is incomplete if a materially affected state/breakpoint lacks a mockup.
+For UI-changing features, the UX artifact must include concrete mockups for affected screens, states, and breakpoints. Mockups are the source of truth for structure, hierarchy, visible content, dominant interactions, and major visual emphasis; downstream software design, stories, implementation plans, and implementation must follow them unless this UX spec is revised. UX work is incomplete if a materially affected state/breakpoint lacks a mockup.
 
 ## Confirmation behavior
 
@@ -130,7 +130,7 @@ Responsive guidance:
 
 ## Output location
 
-Write to `docs/features/<feature-slug>/ux.md` using the feature artifact slug. Keep same-feature artifacts together; do not write UX specs in product, technical design, story, or implementation-plan files.
+Write to `docs/features/<feature-slug>/ux.md` using the feature artifact slug. Keep same-feature artifacts together; do not write UX specs in product, software design, story, or implementation-plan files.
 
 ## Mockup requirements
 

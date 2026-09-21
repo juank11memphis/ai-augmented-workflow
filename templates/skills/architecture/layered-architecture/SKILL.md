@@ -22,7 +22,7 @@ Keep the layers useful, not ceremonial. If splitting a small function across lay
 
 ## Downstream Sibu workflow handoff
 
-Use this selected architecture model as binding guidance for technical design, implementation planning, execution, and review. Keep the design lightweight, but make layer ownership and dependency direction clear.
+Use this selected architecture model as binding guidance for software design, implementation planning, execution, and review. Keep the design lightweight, but make layer ownership and dependency direction clear.
 
 ### Technical design
 

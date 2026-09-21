@@ -43,7 +43,7 @@ describe('BRD authoring instruction contract (not model behavior)', () => {
   });
 });
 
-const consumers = ['ux-expert', 'technical-design-writer', 'scrum-master-planner', 'ai-implementation-planner', 'ai-implementation-plan-executor', 'ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox'];
+const consumers = ['ux-expert', 'software-design-writer', 'scrum-master-planner', 'ai-implementation-planner', 'ai-implementation-plan-executor', 'ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox'];
 
 describe('BRD downstream instruction contracts', () => {
   for (const name of consumers) {
@@ -64,8 +64,8 @@ describe('BRD downstream instruction contracts', () => {
   it('retains unrelated review and mutation safeguards', () => {
     assert.match(readTemplate('AGENTS.md'), /propose a brief plan and wait for user confirmation/);
     assert.match(readTemplate('skills/ai-implementation-executor-toolbox/SKILL.md'), /Never approve your own work/);
-    assert.match(readTemplate('skills/technical-design-writer/SKILL.md'), /docs\/deep-module-map\.md.*missing/);
-    assert.match(readTemplate('skills/scrum-master-planner/SKILL.md'), /BRD or technical design is missing/);
+    assert.match(readTemplate('skills/software-design-writer/SKILL.md'), /docs\/architecture\.md.*missing/);
+    assert.match(readTemplate('skills/scrum-master-planner/SKILL.md'), /BRD or software design is missing/);
   });
 });
 

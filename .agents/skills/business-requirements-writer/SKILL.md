@@ -1,6 +1,6 @@
 ---
 name: business-requirements-writer
-description: Use this skill to define business-level BRDs that stay loyal to docs/product-vision.md, docs/business-domain-model.md, and docs/capabilities-map.md before UX, technical design, or implementation work.
+description: Use this skill to define business-level BRDs that stay loyal to docs/product-vision.md, docs/business-domain-model.md, and docs/capabilities-map.md before UX, software design, or implementation work.
 ---
 
 # Business Requirements Writer
@@ -37,12 +37,12 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 - The feature appears to stretch or change the Product Vision; hard-stop with a ready prompt for `product-vision-writer`.
 - The feature introduces missing or changed domain concepts, rules, workflows, lifecycles, events, boundaries, or core/supporting subdomains; hard-stop with a ready prompt for `business-domain-model-writer`.
 - The feature fits an existing subdomain but needs missing capability coverage; hard-stop with a ready prompt for `capabilities-map-writer`.
-- The request belongs to another pipeline stage, such as technical design, UX design, Scrum planning, implementation planning, or implementation execution.
+- The request belongs to another pipeline stage, such as software design, UX design, Scrum planning, implementation planning, or implementation execution.
 - Current-stage feature intent is unclear; ask one focused question at a time until enough information is available.
 
 ### What this skill must not do
 
-- Do not create or update Product Vision, Business Domain Model, Capabilities Map, Deep Module Maps, technical designs, UX specs, Epics, User Stories, implementation plans, or production code.
+- Do not create or update Product Vision, Business Domain Model, Capabilities Map, Software Architecture Documents, software designs, UX specs, Epics, User Stories, implementation plans, or production code.
 - Do not invent missing product direction, domain model coverage, subdomains, or capabilities in the final BRD.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not duplicate or rewrite the product vision; apply only the relevant implications to the feature.
@@ -111,7 +111,7 @@ docs/features/<feature-slug>/brd.md
 
 Use a short kebab-case feature slug that matches the feature name. Keep all artifacts for the same feature together under `docs/features/<feature-slug>/`.
 
-Do not write the BRD to technical design, UX, user story, implementation plan, or backlog files unless the user explicitly asks for a separate artifact after the BRD exists.
+Do not write the BRD to software design, UX, user story, implementation plan, or backlog files unless the user explicitly asks for a separate artifact after the BRD exists.
 
 ## Raw idea sources
 
@@ -348,3 +348,7 @@ When shaping a BRD, prefer:
 After writing the file, final-answer with only the path created or updated. Do not paste the BRD body, excerpt, outline, or section summaries.
 
 Only include the full BRD when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/features/<feature-slug>/brd.md`.
+
+## SAD and SDD handoff
+
+After the business foundations, project SAD and feature BRD are independent branches. BRD authoring does not require `docs/architecture.md`. SAD authoring uses `software-architecture-writer`; feature SDD authoring uses `software-design-writer` and requires SAD + BRD + selected architecture guidance + UX when UI-changing. Never automatically execute a downstream stage.

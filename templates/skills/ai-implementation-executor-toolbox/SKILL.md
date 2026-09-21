@@ -20,7 +20,7 @@ This toolbox is for `sibu-implementation-executor` workers only. It is not a nor
 Use only the narrow packet from the main agent. The packet must include:
 
 - exactly one User Story path or one story-local `.impl_plan/` folder
-- required source artifact paths: story, Epic brief, BRD, technical design, optional tech design diagrams when present, and UX spec when the story, plan, or feature has UI impact
+- required source artifact paths: story, Epic brief, BRD, software design with embedded diagrams, and UX spec when the story, plan, or feature has UI impact
 - this toolbox skill path
 - selected architecture skill path and distilled architecture constraints
 - required skill paths, including `clean-code` and `structured-logging` when the story touches observability-relevant code
@@ -34,17 +34,17 @@ If the packet names multiple stories, multiple plans, an Epic without one select
 
 If selected architecture guidance is missing from the packet or unavailable to read, stop and tell the main agent to direct the user to run `sibu sync`; do not choose, infer, or substitute architecture guidance.
 
-If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context. Optional `tech_design_diagrams.md` context may be included when present; its absence must not block older features.
+If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context. Read the SDD with its embedded diagrams.
 
 ## Execution rules
 
-- Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill, and relevant optional installed skills before execution. Read included `tech_design_diagrams.md` context when the packet provides it.
+- Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill, and relevant optional installed skills before execution. Read its embedded diagrams.
 - If `structured-logging` is provided in the packet, apply it only to observability-relevant code paths and do not duplicate its policy in other skill guidance.
-- Apply selected architecture guidance during implementation and review, including boundaries, dependency direction, sequencing, and architecture-specific risks. Treat included diagrams as companion context, keep `technical_design.md` as the authoritative technical design artifact, and preserve diagram-stated boundaries, flows, and data/state implications during implementation and review.
+- Apply selected architecture guidance during implementation and review, including boundaries, dependency direction, sequencing, and architecture-specific risks. Treat embedded diagrams as authoritative SDD context, keep `sdd.md` as the authoritative software design artifact, and preserve diagram-stated boundaries, flows, and data/state implications during implementation and review.
 - Execute all unapproved step files in filename order.
-- Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, diagram-stated implications when included, and distilled constraints. Never create, regenerate, export, render, sync, or replace `tech_design_diagrams.md`.
+- Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, diagram-stated implications when included, and distilled constraints. Do not modify the SDD or create a separate diagram companion.
 - Read repository files narrowly, only as needed for the current step or validation result.
-- Run focused validation named by the step files or technical design when practical, and collect compact evidence against the story verification expectations and validation steps.
+- Run focused validation named by the step files or software design when practical, and collect compact evidence against the story verification expectations and validation steps.
 - For code-changing work, run `node .agents/scripts/check-touched-source-file-lines.mjs` before presenting a review packet. If it fails, refactor touched oversized source files into cohesive focused files and re-run the checker successfully before review.
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a Review Gate risk.
@@ -93,7 +93,7 @@ Return a compact completion summary only after explicit approval, or return bloc
 
 ## BRD handoff
 
-Preserve source BRD IDs carried by the story and technical design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
+Preserve source BRD IDs carried by the story and software design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
 
 Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
 

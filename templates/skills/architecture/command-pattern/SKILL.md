@@ -17,7 +17,7 @@ Use this skill to design and implement software features as independent, end-to-
 
 ## Downstream Sibu workflow handoff
 
-Use this selected architecture model as binding guidance for technical design, implementation planning, execution, and review. Downstream artifacts should make the command boundary and execution flow explicit without adding ceremony that does not protect the slice.
+Use this selected architecture model as binding guidance for software design, implementation planning, execution, and review. Downstream artifacts should make the command boundary and execution flow explicit without adding ceremony that does not protect the slice.
 
 ### Technical design
 
@@ -39,9 +39,9 @@ Reviewers should check that every operation has an explicit Command, focused Han
 
 Deep Modules answer “where does this implementation work belong?” Command Pattern guidance answers “how is that work structured as command-oriented vertical slices inside the selected module?”
 
-When `docs/deep-module-map.md`, a BRD, or a technical design names Deep Modules, place each vertical slice inside the relevant Deep Module. The feature-local Command, Handler, Port, Adapter, and Result guidance still applies inside that module boundary.
+When `docs/architecture.md`, a BRD, or a software design names Deep Modules, place each vertical slice inside the relevant Deep Module. The feature-local Command, Handler, Port, Adapter, and Result guidance still applies inside that module boundary.
 
-Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `deep-module-map-writer` workflow.
+Do not invent new Deep Modules during design or implementation. If work does not fit the approved modules, stop and route the decision back to the `software-architecture-writer` workflow.
 
 Do not treat shallow technical buckets such as `utils`, `api`, `db`, or `services` as Deep Modules. A Deep Module should expose a small, stable interface while hiding meaningful implementation complexity; product alignment can help explain why work changes together, but product category alone does not make a module deep.
 
@@ -66,7 +66,7 @@ Organize by Capability (what the system does) rather than Technical Layer (what 
 /src
   ├── /entrypoints                  # Driving Adapters (The "Edges")
   │    └── /cli                     # Parses flags/args -> creates Command -> calls Handler
-  ├── /modules                      # Deep Modules from docs/deep-module-map.md
+  ├── /modules                      # Deep Modules from docs/architecture.md
   │    └── /module-slug             # e.g., "workflow-adoption"
   │         └── /feature-slice      # e.g., "archive-project"
   │              ├── command        # The Input DTO
@@ -156,3 +156,7 @@ When workflows, command handlers, entrypoints, jobs, external calls, retries, st
 - [ ] Interface-Driven: Does the Handler depend on a concrete Database class or an Interface (Port)?
 - [ ] Folder Integrity: Does the Deep Module feature-slice folder contain the Command, Handler, and Ports?
 - [ ] Dependency Direction: Does the infrastructure layer depend on the feature ports, and not the other way around?
+
+## SAD and SDD ownership
+
+Apply this selected architecture to project SAD and feature SDD authoring. The SAD at `docs/architecture.md` owns module boundaries and system-wide decisions; the SDD at `docs/features/<feature-slug>/sdd.md` owns compatible feature details and embedded diagrams. Missing or changed module/system decisions route to `software-architecture-writer`; never silently redefine them in an SDD.

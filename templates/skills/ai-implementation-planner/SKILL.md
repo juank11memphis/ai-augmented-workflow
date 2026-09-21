@@ -22,8 +22,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - Exactly one User Story file at `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`.
 - The story's `epic_brief.md`.
 - The feature's `brd.md`.
-- The feature's `technical_design.md` as the authoritative technical design artifact, including any feature-level quality strategy.
-- The feature's `tech_design_diagrams.md` when present, as optional companion context that never blocks planning when absent.
+- The feature's `sdd.md` as the authoritative software design artifact, including any feature-level quality strategy.
 - The story's verification expectations and any technical-design quality strategy needed to plan validation steps.
 - `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
 - The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when sub-agent spawning is available.
@@ -45,10 +44,10 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 
 ### What this skill must not do
 
-- Do not create or update product visions, Deep Module Maps, BRDs, technical designs, UX specs, Epics, User Stories, or production code.
+- Do not create or update product visions, Software Architecture Documents, BRDs, software designs, UX specs, Epics, User Stories, or production code.
 - Do not modify prior-stage artifacts.
-- Do not reread `docs/deep-module-map.md` by default; trust `technical_design.md` for Deep Module implementation boundaries.
-- Do not infer implementation scope from an Epic brief, BRD, or technical design without exactly one User Story.
+- Do not reread `docs/architecture.md` by default; trust `sdd.md` for Deep Module implementation boundaries.
+- Do not infer implementation scope from an Epic brief, BRD, or software design without exactly one User Story.
 - Do not ask for a plan-approval gate before executor handoff unless the user explicitly requested planning-only.
 - Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
 
@@ -57,7 +56,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 
 Before delegating or planning inline, identify and read the workflow's selected architecture skill. If selected architecture guidance is missing, unavailable, or ambiguous, hard-stop and tell the user to run `sibu sync` to repair Sibu workflow configuration. Do not choose architecture guidance, infer it from repository structure, or continue with generic architecture assumptions.
 
-When selected architecture guidance is present, treat it as binding planning context. Apply it to story-local implementation step sequencing, boundaries, dependency direction, and reviewable constraints while still trusting `technical_design.md` for feature-specific Deep Module boundaries.
+When selected architecture guidance is present, treat it as binding planning context. Apply it to story-local implementation step sequencing, boundaries, dependency direction, and reviewable constraints while still trusting `sdd.md` for feature-specific Deep Module boundaries.
 
 ## Required input
 
@@ -67,7 +66,7 @@ The user must provide or clearly identify exactly one User Story file:
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 ```
 
-Do not create an implementation plan from a vague request, Epic brief, BRD, or technical design alone.
+Do not create an implementation plan from a vague request, Epic brief, BRD, or software design alone.
 
 ## Required source context gate
 
@@ -77,8 +76,7 @@ Before delegating or planning inline, verify these paths exist and are coherent:
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
 docs/features/<feature-slug>/brd.md
-docs/features/<feature-slug>/technical_design.md
-docs/features/<feature-slug>/tech_design_diagrams.md  # optional companion context; verify/pass when present and never hard-stop when absent
+docs/features/<feature-slug>/sdd.md
 docs/features/<feature-slug>/ux.md  # when the story or feature has UI impact
 ```
 
@@ -86,11 +84,11 @@ Also read `docs/product-vision.md` only when product fit, target user, scope bou
 
 If the story or feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before implementation planning.
 
-If the technical design is missing, stop and ask the user to create it with `technical-design-writer`. Do not delegate incomplete planning work to the worker.
+If the software design is missing, stop and ask the user to create it with `software-design-writer`. Do not delegate incomplete planning work to the worker.
 
-If `docs/features/<feature-slug>/tech_design_diagrams.md` exists, verify and pass its path to the planner worker as optional companion context. Missing diagrams are allowed for older features and must not block implementation planning. Do not create, regenerate, require, export, render, or treat diagrams as a replacement for `technical_design.md`.
+Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, data/state implications, and verification-relevant risks. The SDD is authoritative; do not create a separate companion.
 
-When the BRD or technical design includes Deep Module guidance, treat it as required planning context. Deep Modules answer “where does this implementation work belong?” Implementation steps must preserve approved module boundaries.
+When the BRD or software design includes Deep Module guidance, treat it as required planning context. Deep Modules answer “where does this implementation work belong?” Implementation steps must preserve approved module boundaries.
 
 ## Required sub-agent planning path
 
@@ -99,13 +97,13 @@ When the host exposes any usable sub-agent spawn capability and `sibu-implementa
 Build a narrow planner packet for the worker. The packet must include:
 
 - exactly one User Story path
-- Epic brief, BRD, technical design, optional tech design diagrams path when present, and UX path when relevant
-- story verification expectations and any technical design quality strategy context needed to plan validation steps
+- Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
+- story verification expectations and any software design quality strategy context needed to plan validation steps
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “read included diagrams and preserve diagram-stated boundaries, flows, and data/state implications without replacing `technical_design.md`,” “turn verification expectations into concrete validation steps,” “include short skip rationale for deeper checks when story risk makes the skip relevant,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
+- distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “read included diagrams and preserve diagram-stated boundaries, flows, and data/state implications without replacing `sdd.md`,” “turn verification expectations into concrete validation steps,” “include short skip rationale for deeper checks when story risk makes the skip relevant,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
 - expected output format: plan folder, ordered step files created or updated, source artifacts and skills used, and risks/blockers
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the planner packet.
@@ -171,7 +169,7 @@ Every step file must use this structure:
 - <Relevant compile, test, lint, build, or manual validation passes>
 ```
 
-Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, BRD, or technical design. Validation steps should sit close to the behavior they prove; under command-pattern guidance, handler/domain validation generally precedes adapter or transport validation. Done conditions should make expected validation evidence and residual risks reviewable.
+Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, BRD, or software design. Validation steps should sit close to the behavior they prove; under command-pattern guidance, handler/domain validation generally precedes adapter or transport validation. Done conditions should make expected validation evidence and residual risks reviewable.
 
 ## Plan quality gate
 
@@ -200,7 +198,7 @@ Do not paste step-file bodies, excerpts, outlines, task text, done conditions, o
 
 ## BRD handoff
 
-Preserve source BRD IDs carried by the story and technical design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
+Preserve source BRD IDs carried by the story and software design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.
 
 Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
 

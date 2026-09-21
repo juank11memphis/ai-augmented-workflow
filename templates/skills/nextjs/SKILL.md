@@ -49,7 +49,7 @@ Prefer isolating the smallest interactive subtree into a Client Component rather
 
 ### 4. Keep `src/app/**` thin
 - Treat `src/app/**` as a framework adapter boundary.
-- When an architecture skill or technical design defines an orchestration/application boundary, App Router files may call only that boundary.
+- When an architecture skill or software design defines an orchestration/application boundary, App Router files may call only that boundary.
 - Pages, layouts, route handlers, Server Actions, and metadata functions must not bypass the selected architecture's dependency rules.
 - Keep request parsing, response formatting, redirects, rendering decisions, and framework concerns in `src/app/**`.
 - Move reusable business behavior out of App Router files.
