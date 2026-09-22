@@ -71,8 +71,13 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 #### Local Evals Workbench
 
 - **Discover local eval suites**: find valid eval suites from the repo's conventional eval workspace without requiring dashboard-specific configuration.
+- **Select compatible evaluation models**: let users choose one compatible Model Under Evaluation per run and a separate Judge Model when rubric-based grading requires one.
 - **Run focused eval scope**: let users run either all test cases in a suite or one selected test case so repairs can be validated in small loops.
+- **Execute real AI behavior**: exercise the Evaluation Target with suite inputs so results come from actual single-turn, multi-turn, and mocked-tool behavior rather than predefined outputs.
+- **Repeat nondeterministic cases**: let users optionally repeat a case to expose unstable behavior while keeping one execution as the default.
+- **Preview run consumption**: show expected model-call volume and estimated cost before the user starts a run.
 - **Show eval result status**: make suite, test case, and assertion/grader outcomes visible through a local matrix/list result experience.
+- **Preserve isolated run evidence**: retain local outputs, scores, tool traces, and diagnostics across dashboard sessions without allowing run artifacts into normal source-control tracking or ordinary LLM context.
 - **Inspect failure evidence**: show the exact output or excerpt, failed assertion/grader, expected/reference context, diagnostics, and raw artifacts needed to understand a failure.
 - **Analyze one failed assertion at a time**: support conversational LLM analysis focused on a single selected failed assertion, even when a cell has multiple failures.
 - **Classify likely failure cause**: help distinguish prompt issues, assertion/grader issues, fixture/input issues, model nondeterminism, and unclear expectations with explicit uncertainty.
@@ -111,6 +116,12 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Preserve skill handoffs**: ensure skills pass the right reviewed context downstream while avoiding responsibility for artifacts outside their scope.
 - **Guide specialist implementation reviews**: provide focused architecture-review and technical-lead-review guidance with distinct responsibilities, evidence standards, severity rules, snapshot-bound outcomes, and read-only reviewer authority.
 - **Guide eval authoring**: provide focused guidance so agents create and maintain eval suites, test cases, assertions/graders, fixtures, and expected/reference artifacts in Sibu's expected format.
+- **Discover evaluation targets**: help agents identify likely repo-local generative-AI integrations, agents, prompts, and workflows, then ask the user to confirm which targets need evals.
+- **Propose deep eval coverage**: analyze each confirmed target across applicable happy-path, edge, failure, abuse, safety, multi-turn, tool-interaction, malformed-input, ambiguous-input, adversarial-input, and nondeterminism scenarios before files are generated.
+- **Expose coverage gaps**: distinguish systematic risk-based coverage from exhaustive claims by documenting applicable categories and reasons for any omissions.
+- **Require coverage review**: present targets, scenarios, grader approaches, tool behavior, and gaps for user approval before generating suite artifacts.
+- **Generate runnable eval suites**: create project-owned suites, synthetic or redacted fixtures, deterministic assertions, rubrics, mocked-tool scenarios, and test-support artifacts without changing production behavior.
+- **Clarify expected behavior**: ground pass/fail expectations in repo code, prompts, tests, and documentation, and stop for user clarification when those sources are materially ambiguous.
 
 #### Agent Support Selection
 
@@ -149,8 +160,9 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Repair routing** depends on both reviewer outcomes for the same snapshot; parallel execution is preferred when supported, but shared-snapshot consistency is required regardless of scheduling.
 - **Fresh repair execution** depends on a narrow handoff containing the original story and plan, authoritative sources and skills, current snapshot identity and changed files, combined findings, and prior validation evidence.
 - **Human story approval** follows automated specialist approval or review escalation and remains required before approval metadata, commit, or feature continuation.
-- **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while project-specific eval suites and target files remain project-owned.
-- **Local Evals Workbench** depends on external **LLM provider APIs** only for analysis and proposal drafting; eval result inspection should still work without provider credentials.
+- **Skill Guidance** must discover and confirm Evaluation Targets, obtain approval for the Eval Coverage Plan, and generate runnable suites before the **Local Evals Workbench** can execute them.
+- **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while Evaluation Targets, suite definitions, fixtures, and test-support files remain project-owned.
+- **Local Evals Workbench** depends on external **LLM provider APIs** for target execution, rubric judging, analysis, and proposal drafting; non-LLM result inspection should remain available when provider credentials are unavailable.
 - **Local Evals Workbench** depends on **User Control & Trust** constraints before applying any repair proposal to project files.
 - **Maintainer Release Support** depends on source control history, package metadata, npm publishing, GitHub Releases, and validation scripts, but those external systems remain outside Sibu's owned domain.
 - **User Control & Trust** is not sequenced as a separate stage; it constrains every capability where Sibu creates, changes, exports, publishes, or asks AI to act on project-owned work.
@@ -170,5 +182,8 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Release workflow scope**: maintainer release support should stay focused on Sibu's own publication process unless the product explicitly expands into release management for consumer projects.
 
 - **Local eval format maturity**: the first eval format should be conventional and narrow, but may need migration/versioning once real projects create many suites.
+- **Coverage depth without false completeness**: target discovery and coverage analysis should systematically explore applicable risk categories while making omissions and uncertainty visible.
+- **Local-first execution scope**: initial execution is dashboard-only, uses one Model Under Evaluation per run, and mocks external tools; headless CI, multi-model comparison, and real external-tool calls remain future evolution.
+- **Run artifact isolation**: persisted local evidence must stay useful for regression review without entering Git or routine LLM context accidentally.
 - **Repair safety breadth**: approved eval repairs may target any project file, so future work should strengthen diff preview, sensitive-file protection, and recovery behavior before broad automation.
 - **Provider configuration**: MVP can standardize on `OPENAI_API_KEY` and `SIBU_EVALS_MODEL`, while future work may need multi-provider configuration without leaking credentials into project files.

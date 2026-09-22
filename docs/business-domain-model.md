@@ -18,7 +18,7 @@ Inside this domain:
 
 - repo-local workflow adoption and maintenance
 - managed workflow files, templates, drift, and sync review
-- repo-local eval discovery, execution, failure analysis, repair proposal review, and approval-gated project file mutation
+- repo-local AI integration discovery, eval coverage planning, suite authoring, execution, failure analysis, repair proposal review, and approval-gated project file mutation
 - skill selection and focused AI workflow guidance
 - required architecture skill selection from Sibu's fixed catalog
 - the AI-Augmented Development Pipeline for planned feature work
@@ -66,10 +66,16 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **MCP Configuration**: repo-local agent configuration that tells an agent how to connect to selected MCP servers without embedding secrets.
 - **Artifact**: a project-owned document or plan produced by a skill and used as input for later work.
 - **Local Eval Artifact**: a project-owned eval definition, test case, fixture, prompt reference, assertion, grader, expected/reference output, or run result used by the Local Evals Workbench.
+- **Evaluation Target**: a repo-local generative-AI integration, agent, prompt, or AI-assisted workflow whose behavior the user wants to evaluate.
+- **Eval Coverage Plan**: a user-reviewed proposal describing which confirmed Evaluation Targets, behavior categories, risks, and scenarios an eval suite will cover before suite artifacts are generated.
+- **Coverage Gap**: an applicable behavior category, risk, or scenario that is not covered, together with the reason it remains uncovered.
 - **Eval Suite**: a repo-local collection of related eval test cases, assertions/graders, fixtures, and run behavior discovered through Sibu's eval conventions.
-- **Eval Test Case**: one input example or scenario inside an eval suite that can be run by itself or as part of the whole suite.
+- **Eval Test Case**: one single-turn or multi-turn scenario inside an eval suite that can be run by itself or as part of the whole suite.
+- **Tool Interaction Expectation**: the expected tool selection, arguments, sequence, result handling, or failure behavior for an Evaluation Target, evaluated without invoking real external side effects in the initial scope.
+- **Model Under Evaluation**: the single compatible model selected by the user to produce behavior during an Eval Run.
+- **Judge Model**: the separately selected model that evaluates rubric-based criteria when deterministic assertions are insufficient.
 - **Assertion / Grader**: the rule, rubric, or evaluator that judges a test case output. Assertions are deterministic or declared checks; graders may include rubric or LLM-judged checks.
-- **Eval Run**: one execution of an eval suite or one selected eval test case against selected model/runtime inputs.
+- **Eval Run**: one execution of an eval suite or one selected eval test case against a single Model Under Evaluation, optionally repeating cases to expose nondeterministic behavior.
 - **Eval Result**: the output, assertion/grader outcomes, diagnostics, metrics, and artifacts produced by an eval run.
 - **Failed Assertion**: one assertion or grader outcome that did not pass for a specific test case result.
 - **Failure Analysis**: a user-requested LLM explanation of one failed assertion at a time, grounded in the exact output, expected/reference context, and assertion/grader evidence.
@@ -97,6 +103,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Workflow vs Pipeline**: workflow is the overall repo-local AI collaboration setup. Pipeline is the ordered artifact chain used for planned product/feature work.
 - **Skill vs Artifact**: a skill is the guidance/process; an artifact is the project-owned output produced by that skill.
 - **Eval Suite vs Eval Run**: a suite defines what can be evaluated; a run is one execution of that suite or one test case from it.
+- **Model Under Evaluation vs Judge Model**: the Model Under Evaluation produces the behavior being tested; the Judge Model scores rubric-based behavior and must remain distinguishable in results.
 - **Assertion vs Grader**: assertion is the familiar UI term for checks; grader is the broader eval term for rubric or model-judged evaluation.
 - **Analysis vs Proposal vs Mutation**: analysis explains evidence, a proposal previews a concrete change, and mutation changes project files only after explicit user approval.
 - **Review vs Repair**: reviewers inspect an immutable snapshot and report findings; only an executor role modifies implementation work.
@@ -119,7 +126,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Workflow Configuration Management**: lets users intentionally change selected workflow guidance, architecture guidance, and tool integrations after initialization while preserving safety and state consistency.
 - **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
 - **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions, including the repo's selected architecture skill for technical and implementation stages and bounded specialist review before human approval of code-changing stories.
-- **Local Evals Workbench**: lets users discover repo-local eval suites, run all or one test case, inspect results, analyze one failed assertion at a time, review concrete repair proposals, approve project file mutations, and rerun eval scope.
+- **Local Evals Workbench**: helps users discover Evaluation Targets, approve deep risk-based coverage, create repo-local eval suites, run all or one test case against a selected compatible model, inspect results, analyze one failed assertion at a time, review concrete repair proposals, approve project file mutations, and rerun eval scope.
 - **Maintainer Release Support**: helps Sibu maintainers prepare, validate, publish, and recover Sibu releases without turning release automation into an end-user workflow.
 
 #### Supporting Subdomains
@@ -172,7 +179,7 @@ flowchart TB
     ArchitectureGuidance["Selected Architecture Skill Guidance"]
     LocalChoices["Customizations / Unmanaged Files"]
     ReleaseArtifacts["Release Notes / Package Metadata"]
-    EvalArtifacts["Eval Definitions / Fixtures / Run Results"]
+    EvalArtifacts["Coverage Plans / Eval Definitions / Fixtures / Run Results"]
     ProjectFiles["Approved Repair Target Files"]
   end
 
@@ -357,7 +364,15 @@ The review packet presented to the user when a material decision is required or 
 
 #### Local Evals Workbench
 
-The repo-local evaluation loop for improving AI workflow behavior with evidence. It discovers project-owned eval suites, runs all test cases or one selected test case, captures results, and helps the user work through one failed assertion at a time before approving any project file mutation.
+The repo-local evaluation loop for improving AI behavior with evidence. It discovers likely Evaluation Targets, lets the user confirm targets and approve an Eval Coverage Plan, creates project-owned eval suites, runs all test cases or one selected test case, captures results, and helps the user work through one failed assertion at a time before approving any project file mutation.
+
+#### Evaluation Target
+
+A repo-local generative-AI integration, agent, prompt, or AI-assisted workflow selected for evaluation. Discovery proposes likely targets, but the user confirms which targets belong in scope.
+
+#### Eval Coverage Plan
+
+A reviewable proposal that maps each confirmed Evaluation Target to applicable happy-path, edge, failure, abuse, safety, multi-turn, tool-interaction, malformed-input, ambiguous-input, adversarial-input, and nondeterminism scenarios. It must identify Coverage Gaps instead of claiming exhaustive coverage.
 
 #### Eval Suite
 
@@ -365,7 +380,15 @@ A project-owned group of related test cases, fixtures, assertions/graders, and r
 
 #### Eval Test Case
 
-One runnable example or scenario inside a suite. A test case can be run independently so users can validate a focused repair before running the whole suite.
+One runnable single-turn or multi-turn scenario inside a suite. A test case can include expected tool interactions and can be run independently so users can validate a focused repair before running the whole suite.
+
+#### Model Under Evaluation
+
+The single compatible model selected by the user for an Eval Run. The initial scope supports one model per run rather than cross-model comparison.
+
+#### Judge Model
+
+A separately selected model used only where a rubric requires qualitative judgment. Deterministic assertions remain preferred for exact outputs, structures, and tool interactions.
 
 #### Assertion / Grader
 
@@ -419,8 +442,11 @@ define focused task
 - A **Review Finding** has a stable identifier, severity, location, governing rule or expectation, evidence, impact, required outcome, and disposition.
 - A **Repair Round** has a triggering combined packet, one fresh repair executor, executor changes, validation result, resulting snapshot, and ordinal within the shared limit.
 - A **Local Eval Artifact** has a project path, purpose, eval scope, expected/reference context, ownership status, and relationship to one or more suites or test cases.
-- An **Eval Suite** has an identifier, name, purpose, test cases, assertions/graders, fixtures, model/run configuration, and run artifact location.
-- An **Eval Test Case** has an identifier, name, input variables or fixture reference, expected/reference context, and assertion/grader outcomes after a run.
+- An **Evaluation Target** has a repo location, purpose, provider or runtime compatibility, observable behavior, and sources of expected behavior.
+- An **Eval Coverage Plan** has confirmed targets, applicable coverage categories, proposed scenarios, grader approaches, Coverage Gaps, and user approval state.
+- An **Eval Suite** has an identifier, name, purpose, Evaluation Target, test cases, assertions/graders, fixtures, coverage summary, model/run configuration, and run artifact location.
+- An **Eval Test Case** has an identifier, name, one or more interaction turns, input variables or fixture reference, expected/reference context, applicable tool expectations, and assertion/grader outcomes after a run.
+- An **Eval Run** has one Model Under Evaluation, an optional Judge Model, selected scope, repeat count, estimated call volume and cost, and retained results.
 - A **Failure Analysis** has one active failed assertion, evidence, likely cause classification, confidence/uncertainty, conversation history, and source eval result.
 - A **Repair Proposal** has affected project file paths, proposed change summary, rationale, expected eval impact, approval state, and mutation result.
 - A **Maintainer Release** has a git range, proposed version, changelog section, package metadata update, validation result, tag, publish result, and recovery state.
@@ -445,8 +471,12 @@ define focused task
 - A **Skill** may guide use of an MCP-provided tool, but the MCP server remains an external integration.
 - An **Artifact** can be required by one or more downstream **Skills**.
 - A **Project / Repo** can contain many **Eval Suites**.
+- A **Project / Repo** can contain many discovered **Evaluation Targets**, of which the user confirms zero or more for coverage.
+- One approved **Eval Coverage Plan** covers one or more confirmed **Evaluation Targets** and identifies zero or more **Coverage Gaps**.
+- An **Evaluation Target** may have one or more **Eval Suites**.
 - An **Eval Suite** contains many **Eval Test Cases**.
 - An **Eval Run** executes one **Eval Suite** or one selected **Eval Test Case**.
+- An **Eval Run** uses exactly one **Model Under Evaluation** and may use one separate **Judge Model**.
 - An **Eval Result** contains many assertion/grader outcomes.
 - A **Failure Analysis** focuses on exactly one **Failed Assertion** at a time.
 - A **Repair Proposal** may target one or more project files, but only within the project root and only after explicit approval.
@@ -497,6 +527,12 @@ define focused task
 - Automated reviewer approval must not replace explicit human story approval, approval metadata control, or commit control.
 - Material decisions must leave AFK execution and escalate to the user rather than being inferred by reviewers or the executor.
 - Local eval repair must focus the user and LLM on one failed assertion at a time.
+- Sibu must not claim exhaustive eval coverage; it must use systematic risk-based coverage and disclose known Coverage Gaps.
+- Suite generation must not invent expected behavior. Repo code, prompts, tests, and documentation provide evidence, and the user resolves material ambiguity.
+- Generated eval fixtures must use synthetic or appropriately redacted data and must not contain secrets or raw production data.
+- Initial suite generation must remain within eval and test-support artifacts; production behavior changes belong only to the approval-gated repair workflow.
+- Initial tool-interaction evaluation must avoid real external side effects.
+- Run artifacts must be excluded from normal source-control tracking and normal LLM context; assistance should load only bounded evidence selected for the active failure.
 - Sibu must not mutate prompts, assertions, fixtures, eval definitions, workflow artifacts, or other project files from eval repair until the user approves a concrete proposal.
 - Approved eval repairs may mutate files inside the project root, but must not write outside the project or modify secrets/credentials.
 - The browser-facing eval dashboard must not expose provider API keys or secrets.
@@ -528,7 +564,13 @@ define focused task
 - When reviewer recommendations conflict, authoritative artifacts conflict, or a repair requires a material decision, the main agent should stop AFK processing and escalate the evidence to the user.
 - When the third repair round completes, Sibu should allow one final synchronized review and then either advance an approved shared snapshot or escalate unresolved blocking and major findings without further automated mutation.
 - When a project has a conventional evals folder, Sibu should discover valid eval suites without manual dashboard configuration.
+- When a user requests eval creation without naming targets, Sibu should discover likely Evaluation Targets and ask the user to confirm them before coverage planning.
+- When confirmed targets need evals, Sibu should propose deep risk-based coverage for user approval before generating suite artifacts.
+- When expected behavior is materially ambiguous, suite creation should stop for focused clarification rather than inventing pass/fail criteria.
+- When a suite is generated, Sibu should document applicable coverage categories and any known Coverage Gaps.
 - When a user runs evals, Sibu should support both all-test-case and single-test-case scope.
+- When a user prepares an Eval Run, Sibu should offer compatible models, require one Model Under Evaluation, allow a separate Judge Model for rubrics, and show expected model-call volume and estimated cost before execution.
+- When nondeterminism matters, the user should be able to repeat a case while retaining one run as the default.
 - When an eval result has multiple failed assertions, the Failure Workbench should analyze and discuss only one selected failed assertion at a time.
 - When LLM-backed analysis is requested, Sibu should use server-side credentials from the project or shell environment, including `OPENAI_API_KEY`, and use `SIBU_EVALS_MODEL` when provided.
 - When credentials are missing, Sibu should keep non-LLM eval inspection available and explain why analysis/proposal drafting is unavailable.
@@ -554,15 +596,21 @@ define focused task
 
 #### Local Evals Workbench Lifecycle
 
-1. **Eval Workspace Discovered**: Sibu finds project-owned eval suites in the conventional evals area.
-2. **Eval Scope Selected**: the user chooses a suite and either all test cases or one test case.
-3. **Eval Run Completed**: Sibu records output, assertion/grader results, diagnostics, metrics, and run artifacts.
-4. **Failure Selected**: the user opens one failed result and selects one failed assertion as the active work item.
-5. **Failure Analyzed**: LLM assistance explains the active failure with evidence and uncertainty.
-6. **Repair Proposed**: a concrete project file mutation is drafted but not applied.
-7. **Repair Approved or Rejected**: the user decides whether Sibu may mutate the named file(s).
-8. **Approved Repair Applied**: Sibu mutates only approved project files and reports the change.
-9. **Eval Rerun Suggested**: the workbench offers the focused rerun path for validation.
+1. **Evaluation Targets Discovered**: Sibu proposes likely repo-local AI integrations, agents, prompts, and workflows.
+2. **Evaluation Targets Confirmed**: the user chooses which discovered or directly named targets belong in scope.
+3. **Coverage Proposed**: Sibu proposes deep risk-based scenarios, grader approaches, and visible Coverage Gaps.
+4. **Coverage Approved**: the user accepts the plan before suite artifacts are generated.
+5. **Eval Suites Generated**: Sibu creates immediately runnable project-owned suites and test-support artifacts without changing production behavior.
+6. **Eval Workspace Discovered**: Sibu finds project-owned eval suites in the conventional evals area.
+7. **Eval Scope and Models Selected**: the user chooses a suite, all cases or one case, one compatible Model Under Evaluation, an optional Judge Model, and any repeat count.
+8. **Run Previewed**: Sibu shows expected model-call volume and estimated cost.
+9. **Eval Run Completed**: Sibu records output, assertion/grader results, diagnostics, metrics, tool interactions, and run artifacts.
+10. **Failure Selected**: the user opens one failed result and selects one failed assertion as the active work item.
+11. **Failure Analyzed**: LLM assistance explains the active failure with evidence and uncertainty.
+12. **Repair Proposed**: a concrete project file mutation is drafted but not applied.
+13. **Repair Approved or Rejected**: the user decides whether Sibu may mutate the named file(s).
+14. **Approved Repair Applied**: Sibu mutates only approved project files and reports the change.
+15. **Eval Rerun Suggested**: the workbench offers the focused rerun path for validation.
 
 #### Workflow File Lifecycle
 
@@ -642,6 +690,11 @@ define focused task
 - **Automated Review Approved**: both specialist reviewers approve the same snapshot.
 - **Implementation Review Escalated**: a material decision or exhausted repair budget returns unresolved evidence to the user.
 - **Eval Workspace Discovered**: Sibu finds repo-local eval suites.
+- **Evaluation Targets Discovered**: Sibu proposes likely repo-local AI integrations, agents, prompts, and workflows for user confirmation.
+- **Evaluation Targets Confirmed**: the user selects which proposed or directly named targets require eval coverage.
+- **Eval Coverage Proposed**: Sibu presents systematic risk-based coverage and known gaps before generating files.
+- **Eval Coverage Approved**: the user authorizes suite generation from the reviewed coverage plan.
+- **Eval Suites Generated**: immediately runnable project-owned suites and test-support artifacts are created without changing production behavior.
 - **Eval Run Started**: the user starts all test cases or one selected test case.
 - **Eval Run Completed**: Sibu captures result status, output, assertion/grader outcomes, diagnostics, and metrics.
 - **Failed Assertion Selected**: the user chooses one failed assertion for focused analysis.
@@ -659,6 +712,8 @@ define focused task
 
 - Sibu is primarily a CLI companion for engineers and teams working inside software repositories.
 - Local evals are project-owned artifacts that Sibu can discover, run, inspect, and help improve without becoming a hosted eval platform.
+- Evaluation Targets remain project-owned behavior; Sibu helps discover and evaluate them but does not define their intended product behavior.
+- Local dashboard execution is in initial scope; headless CI execution, multi-model comparison, and real external-tool calls are deferred.
 - Sibu's strongest product value comes from reliable workflow setup, maintenance, and responsible AI collaboration patterns.
 - The AI-Augmented Development Pipeline is enforced for planned product/feature work when the relevant skills are triggered.
 - Normal repo work and narrow fixes should stay lightweight and do not require the full pipeline by default.
@@ -682,5 +737,7 @@ define focused task
 - **Specialist depth vs review churn**: independent architecture and implementation-quality review improves scrutiny, but synchronized snapshots, combined findings, and one shared repair budget are required to prevent reviewer ping-pong.
 - **AFK progress vs human judgment**: bounded automated repair should remove routine review toil, while material decisions and final story approval remain explicitly human.
 - **Dependency reuse vs dependency cost**: established libraries can be simpler than custom code, but production dependencies introduce maintenance, security, licensing, and footprint consequences that require human judgment.
+- **Deep coverage vs exhaustive claims**: Sibu should systematically explore applicable risks and edge cases while remaining explicit that open-ended AI behavior cannot be exhaustively enumerated.
+- **Artifact isolation vs deliberate override**: Sibu should prevent accidental source-control and LLM-context pollution from run artifacts, while recognizing that a user can deliberately override local safeguards.
 - **Skill boundaries**: each skill must stay focused on its owned artifact while still handing off enough context to downstream skills.
 - **External tool evolution**: agents, models, editors, MCP servers, and collaboration tools will keep changing, so Sibu must avoid hard-coding its business identity around any single external tool.
