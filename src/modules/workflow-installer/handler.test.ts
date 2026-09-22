@@ -35,10 +35,12 @@ describe('handleInitProject', () => {
     assert.ok(state.managedFiles['AGENTS.md']);
     assert.ok(state.managedFiles['.codex/config.toml']);
     assert.equal(state.managedFiles['.agents/skills/ddd-hexagonal/SKILL.md']?.template, 'skills/architecture/ddd-hexagonal/SKILL.md');
+    assert.equal(state.managedFiles['.agents/scripts/implementation-phase-timing.mjs']?.template, 'scripts/implementation-phase-timing.mjs');
     assert.equal(state.managedFiles['.codex/hooks.json']?.template, '.codex/hooks.json');
     assert.equal(state.managedFiles['.mcp.json'], undefined);
     assert.equal(state.managedFiles['.gemini/settings.json'], undefined);
     assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/ddd-hexagonal/SKILL.md')), true);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/scripts/implementation-phase-timing.mjs')), true);
     assert.equal(fs.existsSync(path.join(rootPath, '.codex/hooks.json')), true);
     assert.equal(fs.existsSync(path.join(rootPath, '.mcp.json')), false);
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), false);

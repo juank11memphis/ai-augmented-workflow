@@ -143,6 +143,10 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     supplementalTargetsByAgent: {
       codex: [
         {
+          templateRelativePath: 'scripts/implementation-phase-timing.mjs',
+          targetRelativePath: '.agents/scripts/implementation-phase-timing.mjs',
+        },
+        {
           templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
           targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
         },
@@ -169,6 +173,10 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       ],
       gemini: [
         {
+          templateRelativePath: 'scripts/implementation-phase-timing.mjs',
+          targetRelativePath: '.agents/scripts/implementation-phase-timing.mjs',
+        },
+        {
           templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
           targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
         },
@@ -194,6 +202,10 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
         },
       ],
       claude: [
+        {
+          templateRelativePath: 'scripts/implementation-phase-timing.mjs',
+          targetRelativePath: '.agents/scripts/implementation-phase-timing.mjs',
+        },
         {
           templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
           targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
@@ -256,4 +268,3 @@ export const SESSION_START_HOOKS: SessionStartHookTemplate[] = [
     targetRelativePath: '.claude/settings.json',
   },
 ];
-

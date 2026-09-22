@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
@@ -28,6 +29,24 @@ const assertVersionMetadata = (version: string | undefined, label: string): void
   assert.equal(typeof version, 'string', `${label} version should be a string`);
   assert.match(version ?? '', /^\d+$/, `${label} version should be numeric metadata`);
 };
+
+describe('implementation phase timing helper template', () => {
+  it('is manifest-backed, dependency-free, and byte-identical to the managed installed copy', () => {
+    const templatePath = 'scripts/implementation-phase-timing.mjs';
+    const manifest = readTemplateManifest();
+    const metadata = manifest.templates[templatePath];
+    const source = readTemplate(templatePath);
+    const installed = fs.readFileSync('.agents/scripts/implementation-phase-timing.mjs', 'utf8');
+
+    assert.equal(metadata?.version, '3');
+    assert.match(metadata?.description ?? '', /dependency-free helper/i);
+    assert.match(metadata?.changes.join('\n') ?? '', /empty phase intervals.*non-overlapping/i);
+    assert.equal(source, installed);
+    assert.doesNotMatch(source, /\b(?:import|require)\b/);
+    assert.doesNotMatch(source, /node:(fs|path|http|https|net)|process\.env|fetch\s*\(|git\s/);
+  });
+});
+
 describe('dedicated exporter skill templates', () => {
   it('registers and renders the GitHub exporter skill', () => {
     const templatePath = 'skills/export-to-github/SKILL.md';
@@ -291,7 +310,7 @@ describe('template catalog source templates', () => {
       '.gemini/agents/sibu-technical-lead-reviewer.md',
     ];
 
-    assert.equal(manifest.templateVersion, '155');
+    assert.equal(manifest.templateVersion, '158');
 
     for (const templatePath of reviewerTemplatePaths) {
       assert.equal(manifest.templates[templatePath]?.version, '1');

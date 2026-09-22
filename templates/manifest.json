@@ -1,5 +1,5 @@
 {
-  "templateVersion": "155",
+  "templateVersion": "158",
   "templates": {
     "AGENTS.md": {
       "version": "40",
@@ -398,6 +398,13 @@
       "description": "Gemini worker definition for read-only Sibu technical-lead review.",
       "changes": [
         "Installs a thin Gemini technical-lead-reviewer wrapper backed by the shared reviewer toolbox."
+      ]
+    },
+    "scripts/implementation-phase-timing.mjs": {
+      "version": "3",
+      "description": "Managed dependency-free helper for fallback workflow clocks and deterministic phase timing reconciliation.",
+      "changes": [
+        "Treats empty phase intervals consistently as non-overlapping while preserving deterministic timing reconciliation."
       ]
     }
   }

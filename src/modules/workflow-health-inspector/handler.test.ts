@@ -12,6 +12,7 @@ import { diagnoseState, getDoctorSyncNextStepLines, getNpmVersionAdvisoryLines }
 
 const SAD_SKILL_PATH = '.agents/skills/software-architecture-writer/SKILL.md';
 const SAD_DOCUMENT_PATH = 'docs/architecture.md';
+const TIMING_HELPER_PATH = '.agents/scripts/implementation-phase-timing.mjs';
 const temporaryRoots: string[] = [];
 
 afterEach(() => {
@@ -94,6 +95,21 @@ test('diagnoses modified Software Architecture Document writer through managed-f
     true
   );
   assert.equal(issues.some((issue) => issue.message.includes(SAD_DOCUMENT_PATH)), false);
+});
+
+test('recognizes the managed timing helper as healthy and diagnoses it when missing', () => {
+  const rootPath = createCleanInitializedRepo();
+  const state = readState(rootPath);
+
+  assert.equal(diagnoseState({ rootPath, state }).some((issue) => issue.message.includes(TIMING_HELPER_PATH)), false);
+
+  fs.rmSync(path.join(rootPath, TIMING_HELPER_PATH));
+  assert.equal(
+    diagnoseState({ rootPath, state }).some(
+      (issue) => issue.severity === 'error' && issue.message === `${TIMING_HELPER_PATH} is missing.`
+    ),
+    true
+  );
 });
 
 test('does not manage the generated Software Architecture Document artifact', () => {
