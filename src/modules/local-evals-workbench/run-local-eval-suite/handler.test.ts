@@ -5,6 +5,7 @@ import { runLocalEvalSuite, type RunLocalEvalSuiteDependencies } from './handler
 import type { EvalRunnerOutcome, RunLocalEvalSuiteLogEvent, RunnableEvalSuite } from './ports.js';
 
 const suite: RunnableEvalSuite = {
+  version: 2,
   id: 'skill-authoring',
   name: 'Skill authoring checks',
   modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
@@ -42,6 +43,17 @@ describe('runLocalEvalSuite', () => {
     assertBlockedReason(await runLocalEvalSuite(command({ suiteId: 'missing' }), dependencies({ suiteOverride: null })), 'invalid-suite-id');
     assertBlockedReason(await runLocalEvalSuite(command({ scope: { type: 'test_case', testCaseId: 'missing' } }), dependencies()), 'invalid-test-case-id');
     assertBlockedReason(await runLocalEvalSuite(command({ evalRunModel: 'unsupported' }), dependencies()), 'unsupported-model');
+  });
+
+  it('blocks a directly supplied version-1 suite before runner execution', async () => {
+    const calls: string[][] = [];
+    const legacySuite = { ...suite, version: 1 } as unknown as RunnableEvalSuite;
+
+    const result = await runLocalEvalSuite(command(), dependencies({ calls, suiteOverride: legacySuite }));
+
+    assertBlockedReason(result, 'unsupported-suite-version');
+    assert.deepEqual(calls, []);
+    assert.match(JSON.stringify(result), /Regenerate.*version 2/i);
   });
 
   it('maps runner blocked outcomes into blocked results with diagnostics', async () => {

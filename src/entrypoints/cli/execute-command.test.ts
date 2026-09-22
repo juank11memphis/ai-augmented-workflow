@@ -33,7 +33,7 @@ describe('local evals CLI handler', () => {
         workflowStateReader: { readWorkflowState: () => ({ status: 'valid' }) },
         serverStarter: { startServer: async () => ({ url: 'http://127.0.0.1:1234/', host: '127.0.0.1', port: 1234 }) },
         suiteDiscovery: {
-          discover: async () => ({ status: 'ready', suites: [], diagnostics: [] }),
+          discover: async () => ({ status: 'ready', suites: [], definitions: [], diagnostics: [] }),
         },
         logger: noopLogger,
         writeLine: (message) => lines.push(message),

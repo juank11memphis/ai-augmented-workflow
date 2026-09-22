@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import type { EvalSuiteDiscoveryResult, InternalEvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
 import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
 import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-proposal/index.js';
@@ -36,7 +36,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.match(response.body, /Pass rate/);
       assert.match(response.body, /0\/2 complete/);
       assert.equal(response.headers['cache-control'], 'no-store');
-      assert.doesNotMatch(response.body, /openai-secret-for-test|model-secret-for-test|OPENAI_API_KEY|SIBU_EVALS_MODEL|process\.env|mutation|mutate|\/repo/);
+      assert.doesNotMatch(response.body, /openai-secret-for-test|model-secret-for-test|OPENAI_API_KEY|SIBU_EVALS_MODEL|PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|process\.env|mutation|mutate|\/repo/);
     } finally {
       await result.stop?.();
       delete process.env.OPENAI_API_KEY;
@@ -62,7 +62,8 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.equal(payload.suites[0]?.readyTestCaseCount, 2);
       assert.equal(payload.suites[0]?.testCases[0]?.id, 'names-artifact');
       assert.equal(payload.suites[0]?.modelOptions[0]?.id, 'gpt-5-mini');
-      assert.doesNotMatch(response.body, /\/repo|OPENAI_API_KEY|secret/);
+      assert.equal('definitions' in payload, false);
+      assert.doesNotMatch(response.body, /\/repo|OPENAI_API_KEY|PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|secret/);
     } finally {
       await result.stop?.();
     }
@@ -295,9 +296,10 @@ describe('NodeLocalWorkbenchServerStarter', () => {
 
 });
 
-function readyDiscovery(): EvalSuiteDiscoveryResult {
+function readyDiscovery(): InternalEvalSuiteDiscoveryResult {
   return {
     status: 'ready',
+    definitions: [],
     suites: [{
       id: 'skill-authoring',
       name: 'Skill authoring checks',
@@ -310,13 +312,14 @@ function readyDiscovery(): EvalSuiteDiscoveryResult {
   };
 }
 
-function blockedDiscovery(): EvalSuiteDiscoveryResult {
+function blockedDiscovery(): InternalEvalSuiteDiscoveryResult {
   return {
     status: 'blocked',
     reason: 'missing-evals-folder',
     message: 'No conventional evals folder was found.',
     guidance: ['Add Sibu eval suite JSON files under the project root evals/ folder.'],
     suites: [],
+    definitions: [],
     diagnostics: [{ code: 'evals-folder-missing', severity: 'info', location: 'evals', message: 'Project does not contain a root evals/ folder.' }],
   };
 }
@@ -325,6 +328,7 @@ function blockedDiscovery(): EvalSuiteDiscoveryResult {
 
 function runDependencies(calls: string[][], options: { readonly throws?: boolean } = {}): RunLocalEvalSuiteDependencies {
   const suite = {
+    version: 2 as const,
     id: 'skill-authoring',
     name: 'Skill authoring checks',
     modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],

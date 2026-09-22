@@ -1,4 +1,4 @@
-import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import type { InternalEvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { LocalWorkbenchHost } from './result.js';
 
 export type WorkflowStateStatus =
@@ -11,12 +11,12 @@ export type WorkflowStateReaderPort = {
 };
 
 export type EvalSuiteDiscoveryPort = {
-  discover(projectRoot: string): Promise<EvalSuiteDiscoveryResult>;
+  discover(projectRoot: string): Promise<InternalEvalSuiteDiscoveryResult>;
 };
 
 export type LocalWorkbenchServerStartRequest = {
   readonly projectRoot: string;
-  readonly initialDiscoveryResult: EvalSuiteDiscoveryResult;
+  readonly initialDiscoveryResult: InternalEvalSuiteDiscoveryResult;
 };
 
 export type LocalWorkbenchServerStartResult = {

@@ -1,4 +1,5 @@
 import type { EvalSuiteDiscoveryDiagnostic } from './result.js';
+import type { NormalizedEvalSuite } from './suite-contract.js';
 
 export type RawEvalSuiteDefinition = {
   readonly source: string;
@@ -6,8 +7,13 @@ export type RawEvalSuiteDefinition = {
   readonly diagnostics: readonly EvalSuiteDiscoveryDiagnostic[];
 };
 
+export type DeclaredInputInspectionResult =
+  | { readonly status: 'safe' }
+  | { readonly status: 'blocked'; readonly diagnostics: readonly EvalSuiteDiscoveryDiagnostic[] };
+
 export type EvalSuiteDiscoveryReaderPort = {
   readConventionalEvalSuites(projectRoot: string): Promise<readonly RawEvalSuiteDefinition[]>;
+  inspectDeclaredInputs(projectRoot: string, source: string, suite: NormalizedEvalSuite): Promise<DeclaredInputInspectionResult>;
 };
 
 export type EvalSuiteDiscoveryLogEvent =
@@ -18,6 +24,7 @@ export type EvalSuiteDiscoveryLogEvent =
       readonly suiteCount: number;
       readonly diagnosticCount: number;
       readonly unsupportedCount: number;
+      readonly reasonCodes: readonly string[];
       readonly durationMs: number;
     };
 

@@ -19,5 +19,39 @@ export class SafeConsoleLocalEvalsLogger implements LocalEvalsWorkbenchLoggerPor
 }
 
 function writeLog(level: LogLevel, event: SafeLogEvent): void {
-  console.error(JSON.stringify({ level, ...event }));
+  console.error(JSON.stringify({ level, ...safeEvent(event) }));
+}
+
+function safeEvent(event: SafeLogEvent): SafeLogEvent {
+  switch (event.event) {
+    case 'eval_suite_discovery_started':
+    case 'local_evals_workbench_start_requested':
+      return { event: event.event };
+    case 'eval_suite_discovery_completed':
+      return {
+        event: event.event,
+        outcome: event.outcome,
+        suiteCount: safeCount(event.suiteCount),
+        diagnosticCount: safeCount(event.diagnosticCount),
+        unsupportedCount: safeCount(event.unsupportedCount),
+        reasonCodes: event.reasonCodes.filter((reason) => /^[a-z0-9-]+$/.test(reason)).slice(0, 50),
+        durationMs: safeCount(event.durationMs),
+      };
+    case 'local_evals_workbench_state_blocked':
+      return { event: event.event, reason: event.reason };
+    case 'local_evals_workbench_start_failed':
+      return { event: event.event, reason: event.reason };
+    case 'local_evals_workbench_started':
+      return {
+        event: event.event,
+        host: event.host,
+        port: safeCount(event.port),
+        suiteCount: safeCount(event.suiteCount),
+        discoveryStatus: event.discoveryStatus,
+      };
+  }
+}
+
+function safeCount(value: number): number {
+  return Number.isFinite(value) && value >= 0 ? value : 0;
 }

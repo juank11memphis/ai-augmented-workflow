@@ -1,1 +1,1 @@
-{ "version": 1, "kind": "sibu-eval-suite", "id": 42, "name": "Bad", "description": "Bad", "modelOptions": [], "testCases": [] }
+{ "version": 2, "kind": "sibu-eval-suite", "id": 42, "name": "Bad", "description": "Malformed", "target": null, "coverage": [], "runner": null, "testCases": [] }

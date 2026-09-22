@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "kind": "sibu-eval-suite",
+  "id": "support-agent",
+  "name": "Support agent",
+  "description": "Checks support behavior.",
+  "target": { "id": "support-agent", "kind": "agent", "path": "src/support-agent.ts" },
+  "coverage": { "categories": [{ "id": "happy-path", "status": "covered" }, { "id": "adversarial", "status": "partly-covered", "reason": "Bounded adversarial scenarios." }], "gaps": [{ "id": "live-outage", "reason": "Real tools are excluded." }] },
+  "runner": { "command": ["node", "evals/runners/support-agent.mjs"], "requiredEnvironment": ["OPENAI_API_KEY"] },
+  "testCases": [
+    { "id": "single-turn", "name": "Single turn", "turns": [{ "role": "user", "content": "Help with order 123." }], "fixture": { "type": "file", "path": "fixtures/safe-input.json" }, "toolMocks": [{ "id": "lookup", "tool": "lookupOrder", "input": { "id": 123 }, "outcome": { "type": "result", "value": { "state": "open" } } }], "assertions": [{ "id": "helpful", "type": "output-contains", "expected": "help" }], "graders": [{ "id": "quality", "type": "rubric", "rubric": { "type": "file", "path": "references/safe-rubric.md" }, "threshold": 0.8 }] },
+    { "id": "multi-turn", "name": "Multi turn", "turns": [{ "role": "user", "content": "I need a refund." }, { "role": "assistant", "content": "Please verify ownership." }], "assertions": [{ "id": "turn-count", "type": "turn-count", "expected": 2 }], "graders": [] }
+  ]
+}

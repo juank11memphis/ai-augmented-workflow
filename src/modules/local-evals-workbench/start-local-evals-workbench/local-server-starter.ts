@@ -1,8 +1,8 @@
 import http from 'node:http';
 
-import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import { toPublicEvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import { createWorkbenchViewModel, renderWorkbenchShell, WORKBENCH_CLIENT_SCRIPT } from '../workbench-ui/index.js';
-import { InMemoryRunArtifactStore, JsonEvalSuiteRegistry, JsonEvalSuiteRunnerAdapter, parseEvalRunRequest, runLocalEvalSuite } from '../run-local-eval-suite/index.js';
+import { DiscoveredEvalSuiteRegistry, InMemoryRunArtifactStore, parseEvalRunRequest, runLocalEvalSuite, UnavailableVersion2EvalSuiteRunner } from '../run-local-eval-suite/index.js';
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
 import { analyzeFailedAssertion, EnvironmentAssistanceConfig, OpenAiFailureAnalysisAdapter, parseAnalyzeFailedAssertionRequest } from '../analyze-failed-assertion/index.js';
 import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
@@ -78,8 +78,9 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
 type LocalWorkbenchRuntimeDependencies = { readonly run: RunLocalEvalSuiteDependencies; readonly analysis: AnalyzeFailedAssertionDependencies; readonly proposal: DraftEvalRepairProposalDependencies; readonly applyRepair: ApplyApprovedEvalRepairDependencies };
 
 async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies): Promise<void> {
+  const publicDiscoveryResult = toPublicEvalSuiteDiscoveryResult(startRequest.initialDiscoveryResult);
   if (request.url === '/api/eval-suites') {
-    writeJson(response, 200, startRequest.initialDiscoveryResult);
+    writeJson(response, 200, publicDiscoveryResult);
     return;
   }
 
@@ -104,7 +105,7 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
   }
 
   const preferredEvalRunModel = dependencies.analysis.assistanceConfig.getConfig().assistanceModelLabel;
-  writeHtml(response, renderWorkbenchShell(createWorkbenchViewModel({ discovery: startRequest.initialDiscoveryResult, preferredEvalRunModel }), WORKBENCH_CLIENT_SCRIPT));
+  writeHtml(response, renderWorkbenchShell(createWorkbenchViewModel({ discovery: publicDiscoveryResult, preferredEvalRunModel }), WORKBENCH_CLIENT_SCRIPT));
 }
 
 async function handleEvalRunRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: RunLocalEvalSuiteDependencies): Promise<void> {
@@ -179,7 +180,7 @@ function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer
   return http.createServer((request, response) => handler(request, response));
 }
 
-function defaultRuntimeDependencies(_request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
+function defaultRuntimeDependencies(request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
   const artifactStore = new InMemoryRunArtifactStore();
   const logger = { info: console.info, warn: console.warn, error: console.error };
   const assistanceConfig = new EnvironmentAssistanceConfig();
@@ -188,8 +189,8 @@ function defaultRuntimeDependencies(_request: LocalWorkbenchServerStartRequest):
   const fileMutator = new NodeSafeProjectFileMutator();
   return {
     run: {
-      suiteRegistry: new JsonEvalSuiteRegistry(),
-      evalRunner: new JsonEvalSuiteRunnerAdapter(),
+      suiteRegistry: new DiscoveredEvalSuiteRegistry(request.initialDiscoveryResult.definitions),
+      evalRunner: new UnavailableVersion2EvalSuiteRunner(),
       artifactStore,
       logger,
     },

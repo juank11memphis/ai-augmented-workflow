@@ -2,6 +2,7 @@ import type { EvalRunScope } from './command.js';
 import type { EvalArtifact, EvalDiagnostic, EvalMetric, EvalRunStatus, EvalMatrix } from './result.js';
 
 export type RunnableEvalSuite = {
+  readonly version: 2;
   readonly id: string;
   readonly name: string;
   readonly testCases: readonly RunnableEvalTestCase[];

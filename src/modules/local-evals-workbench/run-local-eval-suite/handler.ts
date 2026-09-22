@@ -23,6 +23,10 @@ export async function runLocalEvalSuite(command: RunLocalEvalSuiteCommand, depen
     return blocked('invalid-suite-id', 'Eval suite was not found.', [diagnostic('invalid-suite-id', 'error', 'Select a discovered eval suite.')], command, dependencies, startedAt);
   }
 
+  if (suite.version !== 2) {
+    return blocked('unsupported-suite-version', 'Version-1 eval suites are not runnable.', [diagnostic('unsupported-suite-version', 'error', 'Regenerate this suite using Sibu eval suite version 2.')], command, dependencies, startedAt);
+  }
+
   if (!model) {
     return blocked('unsupported-model', 'Selected eval-run model is not supported by this suite.', [diagnostic('unsupported-model', 'error', 'Choose one of the suite model options.')], command, dependencies, startedAt);
   }
@@ -59,7 +63,7 @@ function selectTestCases(suite: RunnableEvalSuite, command: RunLocalEvalSuiteCom
   return suite.testCases.filter((testCase) => testCase.id === scope.testCaseId);
 }
 
-function blocked(reason: 'invalid-suite-id' | 'invalid-test-case-id' | 'unsupported-model', message: string, diagnostics: readonly EvalDiagnostic[], command: RunLocalEvalSuiteCommand, dependencies: RunLocalEvalSuiteDependencies, startedAt: number): RunLocalEvalSuiteResult {
+function blocked(reason: 'invalid-suite-id' | 'invalid-test-case-id' | 'unsupported-model' | 'unsupported-suite-version', message: string, diagnostics: readonly EvalDiagnostic[], command: RunLocalEvalSuiteCommand, dependencies: RunLocalEvalSuiteDependencies, startedAt: number): RunLocalEvalSuiteResult {
   dependencies.logger.warn({ event: 'local_eval_run_blocked', suiteId: command.suiteId, modelId: command.evalRunModel, reason, durationMs: elapsed(startedAt, dependencies), ...scopeLogMetadata(command) });
   return { status: 'blocked', reason, message, diagnostics };
 }

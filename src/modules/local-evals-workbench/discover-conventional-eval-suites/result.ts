@@ -1,4 +1,9 @@
+import type { NormalizedEvalSuite } from './suite-contract.js';
+
 export type EvalSuiteDiscoveryResult = EvalSuiteDiscoveryReadyResult | EvalSuiteDiscoveryBlockedResult;
+export type InternalEvalSuiteDiscoveryResult =
+  | (EvalSuiteDiscoveryReadyResult & { readonly definitions: readonly NormalizedEvalSuite[] })
+  | (EvalSuiteDiscoveryBlockedResult & { readonly definitions: readonly NormalizedEvalSuite[] });
 
 export type EvalSuiteDiscoveryReadyResult = {
   readonly status: 'ready';
@@ -21,13 +26,11 @@ export type EvalSuiteSummary = {
   readonly description: string;
   readonly readyTestCaseCount: number;
   readonly testCases: readonly EvalSuiteTestCaseSummary[];
+  /** Model discovery belongs to the future runner describe slice. */
   readonly modelOptions: readonly EvalSuiteModelOption[];
 };
 
-export type EvalSuiteTestCaseSummary = {
-  readonly id: string;
-  readonly name: string;
-};
+export type EvalSuiteTestCaseSummary = { readonly id: string; readonly name: string };
 
 export type EvalSuiteModelOption = {
   readonly id: string;
@@ -36,16 +39,28 @@ export type EvalSuiteModelOption = {
   readonly priceEstimate?: string;
 };
 
+export type EvalSuiteDiscoveryDiagnosticCode =
+  | 'evals-folder-missing'
+  | 'suite-file-read-failed'
+  | 'suite-definition-malformed'
+  | 'suite-definition-unsupported'
+  | 'suite-id-duplicate'
+  | 'declared-path-invalid'
+  | 'declared-path-unsafe'
+  | 'declared-file-missing'
+  | 'declared-file-unreadable'
+  | 'sensitive-content-detected';
+
 export type EvalSuiteDiscoveryDiagnostic = {
-  readonly code:
-    | 'evals-folder-missing'
-    | 'suite-file-read-failed'
-    | 'suite-definition-malformed'
-    | 'suite-definition-unsupported'
-    | 'fixture-reference-invalid'
-    | 'fixture-reference-unsafe'
-    | 'fixture-read-failed';
+  readonly code: EvalSuiteDiscoveryDiagnosticCode;
+  readonly reason?: string;
   readonly severity: 'info' | 'warning' | 'error';
   readonly location: string;
   readonly message: string;
+  readonly guidance?: readonly string[];
 };
+
+export function toPublicEvalSuiteDiscoveryResult(result: InternalEvalSuiteDiscoveryResult): EvalSuiteDiscoveryResult {
+  const { definitions: _definitions, ...publicResult } = result;
+  return publicResult;
+}

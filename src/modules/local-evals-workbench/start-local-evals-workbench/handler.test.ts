@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { startLocalEvalsWorkbench } from './handler.js';
-import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import type { InternalEvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { EvalSuiteDiscoveryPort, LocalEvalsWorkbenchLogEvent, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStarterPort, WorkflowStateReaderPort } from './ports.js';
 
 const projectRoot = '/repo';
@@ -77,13 +77,14 @@ describe('startLocalEvalsWorkbench', () => {
 });
 
 
-function suiteDiscovery(result: EvalSuiteDiscoveryResult): EvalSuiteDiscoveryPort {
+function suiteDiscovery(result: InternalEvalSuiteDiscoveryResult): EvalSuiteDiscoveryPort {
   return { discover: async () => result };
 }
 
-function readyDiscovery(): EvalSuiteDiscoveryResult {
+function readyDiscovery(): InternalEvalSuiteDiscoveryResult {
   return {
     status: 'ready',
+    definitions: [],
     suites: [{ id: 'skill-authoring', name: 'Skill authoring checks', description: 'Checks generated skills.', readyTestCaseCount: 2, testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }], modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }] }],
     diagnostics: [],
   };

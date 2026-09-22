@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { normalizeEvalRunOutcome } from './result-normalizer.js';
 
 const suite = {
+  version: 2 as const,
   id: 'skill-authoring',
   name: 'Skill authoring checks',
   modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],

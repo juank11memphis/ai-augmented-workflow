@@ -79,7 +79,7 @@ export type RunLocalEvalSuiteCompletedResult = {
 
 export type RunLocalEvalSuiteBlockedResult = {
   readonly status: 'blocked';
-  readonly reason: 'invalid-suite-id' | 'invalid-test-case-id' | 'unsupported-model' | 'runner-blocked';
+  readonly reason: 'invalid-suite-id' | 'invalid-test-case-id' | 'unsupported-model' | 'unsupported-suite-version' | 'runner-blocked';
   readonly message: string;
   readonly diagnostics: readonly EvalDiagnostic[];
   readonly matrix?: EvalMatrix;
