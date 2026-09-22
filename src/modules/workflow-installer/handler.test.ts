@@ -43,6 +43,9 @@ describe('handleInitProject', () => {
     assert.equal(fs.existsSync(path.join(rootPath, '.mcp.json')), false);
     assert.equal(fs.existsSync(path.join(rootPath, '.gemini/settings.json')), false);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ddd-hexagonal`/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.agents/skills/ai-implementation-plan-executor/SKILL.md'), 'utf8'), /Automated implementation review loop/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.agents/skills/ai-implementation-executor-toolbox/SKILL.md'), 'utf8'), /exactly one explicit executor mode/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/agents/sibu-implementation-executor.toml'), 'utf8'), /one explicit `implementation` or `repair` mode/);
   });
 
   it('does not ask for a Notion parent page when Notion is not selected', async () => {
@@ -163,6 +166,8 @@ describe('handleInitProject', () => {
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /SessionStart/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.gemini/settings.json'), 'utf8'), /mcp\.notion\.com\/mcp/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.claude/agents/sibu-implementation-executor.md'), 'utf8'), /one explicit `implementation` or `repair` mode/);
+    assert.match(fs.readFileSync(path.join(rootPath, '.gemini/agents/sibu-implementation-executor.md'), 'utf8'), /one explicit `implementation` or `repair` mode/);
   });
 
 

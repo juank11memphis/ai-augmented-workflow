@@ -107,6 +107,7 @@ Build a narrow executor packet for the worker. The packet must include:
 - validation evidence requirements: completion must show tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
 - approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
 - expected output format: changed files, completed steps, validation commands/results, compact validation evidence, risks, follow-up questions, and approval state
+- executor mode: `implementation` for the initial story execution or `repair` for one combined review packet
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
 
@@ -121,6 +122,14 @@ Use host capability metadata from workflow target planning guidance to choose th
 3. **Inline compressed-context fallback:** only if spawning/resuming the worker is unavailable or host/tool policy blocks it, the main agent executes the story inline using compressed context, the same source gates, and the same toolbox/packet constraints.
 
 Fallback must be graceful. If spawning is available but the worker reports a task blocker, do not inline around it; surface the blocker or ask for the missing input. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
+
+## Validation efficiency
+
+- During implementation or repair, run focused checks that give fast feedback on the files being changed.
+- After changes stabilize, run one aggregate `pnpm verify` pass when the repository provides it. Do not also run standalone build, check, or full-test commands already covered by that aggregate pass.
+- Run packed-runtime validation once at the end only when managed runtime/template assets are relevant.
+- Rerun expensive aggregate or packed-runtime checks only after subsequent relevant changes make evidence stale or when diagnosing a failure.
+- A repair must return fresh post-repair validation evidence; pre-repair evidence cannot support the repaired local changes.
 
 ## Story execution model
 
@@ -138,13 +147,42 @@ For unapproved steps:
 2. Implement unapproved steps in order.
 3. Run focused validation named in each step when practical.
 4. Stop for ambiguity, missing required files, conflicting scope, failed validation that cannot be safely fixed, or material risk.
-5. After the final unapproved step is implemented and validated, present the story review packet and wait for explicit story-level approval.
+5. After the final unapproved step is implemented and validated, the implementation executor returns its changed-file and validation summary to the main agent. It does not ask the user for approval.
 
-Do not mark steps approved, commit changes, move to the next story, or move to the next Epic until the user explicitly approves the completed story implementation.
+Do not mark steps approved, commit changes, move to the next story, or move to the next Epic until automated review has completed or transparently escalated and the user explicitly approves the completed story implementation.
+
+## Automated implementation review loop
+
+The main agent owns this message-only orchestration in its active context. Do not persist snapshots or reviewer packets, add hashing helpers, or introduce a runtime workflow module.
+
+### Applicability and synchronized review
+
+1. Classify the executor's changed-file report. Documentation-only changes bypass specialist review and proceed to the human story review gate. Changes to source code, tests, dependencies, schemas, or runtime configuration require specialist review.
+2. For each applicable review round, identify one review snapshot with the round number, current changed-file list, current local diff, and fresh validation summary. Capture the current Git status/diff before spawning reviewers; the snapshot is an unchanged-local-change invariant, not a persisted hash.
+3. Give fresh `sibu-architecture-reviewer` and `sibu-technical-lead-reviewer` instances the same story and plan paths, authoritative artifacts and skills, review-round number, changed-file list, local-change scope, validation summary, and access to the actual current diff.
+4. Spawn both read-only reviewers concurrently when supported. Otherwise run them sequentially without allowing any writer between them. Never run an implementation or repair executor while a reviewer is active.
+5. Before aggregating, compare Git status/diff with the captured local-change scope. If any unexpected mutation occurred, discard both outcomes and ask the user how to handle it; do not consume a repair round.
+
+If reviewer spawning is unavailable, disclose that independent automated approval is unavailable and proceed to the human gate with implementation evidence and any completed reviewer packet as advisory evidence. Never simulate an independent specialist review inline.
+
+### Packet validation and aggregation
+
+Accept only the Story 01 reviewer packet contract: `approved | changes_required | human_decision_required` verdict; stable role-prefixed finding IDs; blocker/major findings with severity, file/location, evidence, violated expectation, and required outcome; minor notes; and unresolved risks. Associate the specialist role and review round from the spawn packet and orchestration context rather than requiring reviewers to echo them. Retry a malformed or incomplete packet once with a focused format request; if it still fails, treat that reviewer as unavailable.
+
+Aggregate only packets for the same unchanged snapshot. Deduplicate overlapping findings by required outcome while preserving every source finding ID, original severity, specialist ownership, and conclusion; never downgrade severity. Minor notes remain visible but do not trigger repair. Do not merge away substantive contradictions. Escalate with evidence when reviewers conflict, authoritative sources disagree, or a finding requires a material decision such as scope expansion, an unplanned public contract or persisted-data change, a new production dependency, a security/privacy consequence, a destructive migration, or an alternative architecture direction.
+
+### Bounded fresh repair
+
+- Initial review is repair count zero. Count a repair only after a fresh repair executor mutates the implementation in response to one combined packet.
+- When compatible blocker or major findings remain and fewer than three repairs have completed, spawn a fresh existing `sibu-implementation-executor` in `repair` mode. Provide exactly one combined packet, the current snapshot identity and changed files, prior validation evidence, the story and plan paths, authoritative artifacts, and applicable skills.
+- Repair mode must not replan, replay implementation steps, broaden scope, or resolve a material decision. It returns current changed files and fresh proportionate validation evidence to the main agent.
+- Any repair mutation invalidates all prior automated approvals. Increment the shared repair count, establish a new local-change snapshot, and run both fresh specialist reviews again.
+- After the third repair, run one final synchronized review. If blocker or major findings remain, escalate them at the human gate; never start a fourth repair.
+- Matching specialist approvals, or minor-only outcomes, terminate automated review and advance only to the human story review gate. Automated outcomes never authorize approval metadata, commits, or feature continuation.
 
 ## Story review gate
 
-After implementation and validation, report that the full story implementation is ready for review and that you are waiting for story-level approval before marking steps approved, committing eligible non-ignored changes, and continuing the Epic.
+After implementation, validation, and any applicable automated review/repair loop, report that the full story implementation is ready for human review and that you are waiting for story-level approval before marking steps approved, committing eligible non-ignored changes, and continuing the Epic.
 
 The review packet should include:
 
@@ -153,7 +191,12 @@ The review packet should include:
 - completed steps
 - validation commands and results
 - validation evidence covering tests added or updated, acceptance criteria verified, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
+- specialist-review applicability and repair rounds used
+- architecture and technical-lead verdicts, remaining minor notes, and any unavailable-review warning
+- unresolved blocker/major findings and escalation evidence when automated review could not approve
 - risks or follow-up questions
+
+Use only the current changed files and fresh validation summary. Reviewer packets remain workflow messages and are summarized here rather than persisted.
 
 For non-trivial stories, “tests passed” alone is not enough. Use context-sensitive judgment for simple or documentation-only changes, but require enough validation evidence to review the story against its verification expectations and planned validation steps.
 

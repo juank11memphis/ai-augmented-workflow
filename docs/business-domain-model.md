@@ -76,6 +76,15 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Repair Proposal**: a concrete suggested project file mutation intended to address a failed assertion, including affected file(s), rationale, and expected eval impact.
 - **Approved Eval Repair**: a repair proposal the user explicitly accepts before Sibu mutates any project file.
 - **AI-Augmented Development Pipeline**: the ordered artifact chain used for planned product and feature work.
+- **Implementation Review Cycle**: the bounded automated quality review that follows implementation and validation for code-changing stories and precedes the final human review gate.
+- **Review Snapshot**: the exact implementation diff examined by both automated reviewers in one synchronized review round.
+- **Architecture Review**: an independent assessment of a review snapshot against the project SAD, feature SDD, selected architecture guidance, module boundaries, contracts, and simplicity expectations.
+- **Technical-Lead Review**: an independent assessment of the same review snapshot for correctness, tests, clean code, readability, maintainability, single responsibility, and applicable language or framework practices.
+- **Review Packet**: the structured, evidence-based findings and approval outcome returned by an automated reviewer for one review snapshot.
+- **Combined Review Packet**: the main agent's deduplicated set of blocking and non-blocking findings from both reviewer packets for the same snapshot.
+- **Repair Executor**: a fresh, narrowly briefed executor spawned for one repair round to address a combined review packet without replanning or broadening the story.
+- **Repair Round**: one fresh repair-executor change cycle responding to a combined review packet, followed by validation and a new synchronized review snapshot.
+- **Review Escalation**: the handoff to the user when automated repair is exhausted or a material decision must not be made autonomously.
 - **Hard Stop**: a skill refusal to proceed when required prerequisite artifacts or decisions are missing.
 - **Small Work Loop**: Sibu's preferred development behavior: define a focused task, inspect context, plan, confirm scope, change, validate, and review.
 - **User Control**: the invariant that the user chooses whether to accept, reject, customize, or unmanage Sibu-guided changes.
@@ -90,6 +99,9 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Eval Suite vs Eval Run**: a suite defines what can be evaluated; a run is one execution of that suite or one test case from it.
 - **Assertion vs Grader**: assertion is the familiar UI term for checks; grader is the broader eval term for rubric or model-judged evaluation.
 - **Analysis vs Proposal vs Mutation**: analysis explains evidence, a proposal previews a concrete change, and mutation changes project files only after explicit user approval.
+- **Review vs Repair**: reviewers inspect an immutable snapshot and report findings; only an executor role modifies implementation work.
+- **Review Round vs Repair Round**: a review round inspects one snapshot; a repair round is consumed only when a fresh repair executor changes the implementation in response to review findings.
+- **Automated Approval vs Human Approval**: automated approval confirms that both specialist reviewers accept the same snapshot; it does not replace the user's final story-level approval.
 - **Architecture Skill vs Architecture Model**: users may think in terms of an architecture model, but Sibu expresses that choice as a selected architecture skill from its fixed catalog. This feature does not define or expand the catalog.
 - **Required Selection vs Default Choice**: requiring a user to choose an architecture skill is not the same as Sibu choosing one by default. The user must make the explicit choice.
 - **MCP Server vs Skill**: an MCP server provides external tool access; a skill provides workflow guidance. A skill may tell an agent when or how to use a tool, but it is not the tool itself.
@@ -106,7 +118,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages, including the required selected architecture skill.
 - **Workflow Configuration Management**: lets users intentionally change selected workflow guidance, architecture guidance, and tool integrations after initialization while preserving safety and state consistency.
 - **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
-- **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions, including the repo's selected architecture skill for technical and implementation stages.
+- **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions, including the repo's selected architecture skill for technical and implementation stages and bounded specialist review before human approval of code-changing stories.
 - **Local Evals Workbench**: lets users discover repo-local eval suites, run all or one test case, inspect results, analyze one failed assertion at a time, review concrete repair proposals, approve project file mutations, and rerun eval scope.
 - **Maintainer Release Support**: helps Sibu maintainers prepare, validate, publish, and recover Sibu releases without turning release automation into an end-user workflow.
 
@@ -127,7 +139,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 
 #### Cross-Cutting Principle
 
-- **User Control & Trust**: not a standalone subdomain, but a governing product principle expressed through concrete capabilities in each subdomain. Adoption must make project ownership clear. Maintenance must protect local edits and require sync review decisions. The pipeline must preserve artifact review gates, hard-stop on missing context, and apply the selected architecture skill where technical design or implementation work depends on architecture guidance. Local eval repair must separate analysis, proposal, approval, mutation, and rerun. Tool configuration must avoid storing secrets. Across the domain, Sibu keeps the engineer responsible for direction and judgment.
+- **User Control & Trust**: not a standalone subdomain, but a governing product principle expressed through concrete capabilities in each subdomain. Adoption must make project ownership clear. Maintenance must protect local edits and require sync review decisions. The pipeline must preserve artifact review gates, hard-stop on missing context, apply the selected architecture skill where technical design or implementation work depends on architecture guidance, bound automated implementation repair, and retain final human approval. Local eval repair must separate analysis, proposal, approval, mutation, and rerun. Tool configuration must avoid storing secrets. Across the domain, Sibu keeps the engineer responsible for direction and judgment.
 
 ### Context Map
 
@@ -307,9 +319,41 @@ Product Vision
 → Per-feature SDD using SAD + BRD + required UX
 → Epics / User Stories
 → AI Implementation Planning / Execution
+→ Automated Implementation Review for code-changing stories
+→ Human Story Review
 ```
 
-The SAD follows the Capabilities Map; BRD authoring does not require a SAD. The selected architecture skill is binding for both SAD and SDD authoring. The SAD/SDD replacement is agreed product direction; distribution through renamed skills and updated consumers remains implementation work.
+The SAD follows the Capabilities Map; BRD authoring does not require a SAD. The selected architecture skill is binding for SAD authoring, SDD authoring, implementation, and architecture review. Documentation-only stories retain validation and human review without the automated specialist-review cycle. The SAD/SDD replacement is agreed product direction; distribution through renamed skills and updated consumers remains implementation work.
+
+#### Implementation Review Cycle
+
+The bounded AFK review-and-repair workflow for a code-changing story after its implementation executor has completed and validated the plan. Architecture and technical-lead reviewers independently inspect the same immutable review snapshot, preferably concurrently. The main agent combines and deduplicates their evidence-based findings, then spawns a fresh repair executor with the original narrow story context and combined packet. A repair creates a new snapshot that both reviewers assess together. After no more than three repair rounds, one final synchronized review either advances the shared snapshot to human review or escalates unresolved findings.
+
+The cycle pauses immediately when a repair requires a material human decision, including conflicting authoritative artifacts, unplanned public-contract or persisted-data changes, a new production dependency, security or privacy consequences, destructive migration, story-scope expansion, plan or acceptance-criteria changes, or materially different architectural solutions.
+
+#### Review Snapshot
+
+The exact story implementation diff reviewed in one synchronized round. Both automated approvals apply only to that snapshot and are invalidated when the executor changes it.
+
+#### Architecture Review
+
+A specialist review of whether the snapshot preserves the project SAD, feature SDD and diagrams, selected architecture guidance, dependency direction, module and layer ownership, and contracts. It also challenges unnecessary complexity, premature optimization, reinvention, and unusual solutions when a simpler proven approach fits. It may consider an established third-party library, but a new production dependency remains a material human decision rather than an automatic repair.
+
+#### Technical-Lead Review
+
+A separate specialist review of implementation correctness and maintainability using clean-code guidance and applicable language or framework skills. It checks test sufficiency and level, readability, cohesion, single responsibility, framework conventions, and unnecessary implementation complexity. It does not duplicate architecture review. If it incidentally encounters a possible architectural concern, it flags that architecture review is required rather than judging or prescribing the architectural outcome.
+
+#### Review Packet
+
+A reviewer outcome tied to one review snapshot. Each finding has a stable identifier, severity, evidence and location, the violated rule or expectation, impact, and required outcome. Blocking and major findings prevent automated approval; minor findings remain visible but do not prolong repair by themselves.
+
+#### Repair Round
+
+One mutation by a fresh repair executor in response to the combined findings from both reviewers, followed by validation and a new synchronized review. Its narrow packet includes the story and plan paths, authoritative source artifacts and skills, current snapshot identity and changed files, combined findings, prior validation evidence, and instructions to repair without replanning or broadening scope. Initial review does not consume the shared limit. After the third repair, reviewers may inspect the resulting snapshot once more, but the workflow must not start a fourth automated repair.
+
+#### Review Escalation
+
+The review packet presented to the user when a material decision is required or the final post-repair review still has unresolved blocking or major findings. Escalation preserves completed work and evidence without marking the story approved or committing it.
 
 #### Local Evals Workbench
 
@@ -369,6 +413,11 @@ define focused task
 - A **Workflow Configuration Change** has a user intent, selected option, affected workflow files, readiness checks, and resulting state updates.
 - An **MCP Configuration** has a selected server, target agent, connection metadata, and references to credential environment variables when needed.
 - An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
+- An **Implementation Review Cycle** has one story, one implementation executor result, two specialist reviewer roles, zero to three fresh repair executors, a current review snapshot, a shared repair count, reviewer outcomes, and an escalation or approval outcome.
+- A **Review Snapshot** has a diff identity, changed files, validation evidence, and the reviewer outcomes that apply to it.
+- A **Review Packet** has a reviewer role, snapshot identity, findings, evidence, approval outcome, and unresolved risks.
+- A **Review Finding** has a stable identifier, severity, location, governing rule or expectation, evidence, impact, required outcome, and disposition.
+- A **Repair Round** has a triggering combined packet, one fresh repair executor, executor changes, validation result, resulting snapshot, and ordinal within the shared limit.
 - A **Local Eval Artifact** has a project path, purpose, eval scope, expected/reference context, ownership status, and relationship to one or more suites or test cases.
 - An **Eval Suite** has an identifier, name, purpose, test cases, assertions/graders, fixtures, model/run configuration, and run artifact location.
 - An **Eval Test Case** has an identifier, name, input variables or fixture reference, expected/reference context, and assertion/grader outcomes after a run.
@@ -405,6 +454,11 @@ define focused task
 - A **Maintainer Release** produces or updates release notes, package metadata, git tags, npm publication state, and GitHub Release notes.
 - The **AI-Augmented Development Pipeline** orders many artifacts so each layer of decision-making supports the next.
 - The **AI-Augmented Development Pipeline** uses the **Selected Architecture Skill** as downstream context for technical design, implementation planning, and execution.
+- A code-changing story has at most one active **Implementation Review Cycle** before its human story review.
+- One **Implementation Review Cycle** assesses one current **Review Snapshot** at a time through one architecture review and one technical-lead review.
+- Both automated reviewer approvals must refer to the same **Review Snapshot**.
+- One **Repair Round** responds to one **Combined Review Packet** and produces one new **Review Snapshot**.
+- An **Implementation Review Cycle** may perform no more than three **Repair Rounds** before final automated review and possible escalation.
 - A **Hard Stop** belongs to a skill and protects one or more prerequisite requirements.
 
 ## Domain Invariants & Business Rules
@@ -435,6 +489,13 @@ define focused task
 - Each pipeline skill must hard-stop when required upstream artifacts are missing or insufficient.
 - Narrow fixes and normal repo work do not require the full product pipeline unless the work creates product, domain, feature, architecture, planning, or implementation-plan ambiguity.
 - AI-assisted work should be small, explicit, validated where possible, and reviewable by the engineer.
+- Code-changing story implementations must complete automated architecture and technical-lead review against the same snapshot before reaching the final human story-review gate.
+- Automated reviewers must remain independent and read-only; a fresh repair executor applies each implementation repair.
+- Review findings must be evidence-based and scoped to the story snapshot. Minor findings alone must not prolong automated repair.
+- Any executor repair invalidates automated approvals for the prior snapshot.
+- Automated implementation review must never perform more than three repair rounds. A final review may follow the third repair, but a fourth automated repair is forbidden.
+- Automated reviewer approval must not replace explicit human story approval, approval metadata control, or commit control.
+- Material decisions must leave AFK execution and escalate to the user rather than being inferred by reviewers or the executor.
 - Local eval repair must focus the user and LLM on one failed assertion at a time.
 - Sibu must not mutate prompts, assertions, fixtures, eval definitions, workflow artifacts, or other project files from eval repair until the user approves a concrete proposal.
 - Approved eval repairs may mutate files inside the project root, but must not write outside the project or modify secrets/credentials.
@@ -460,6 +521,12 @@ define focused task
 - When technical design, implementation planning, or implementation execution starts, the selected architecture skill should be carried into the work as repo-level workflow context.
 - When a skill produces an artifact, that artifact should clarify one layer of decision-making before downstream work starts.
 - When a user requests a narrow fix, Sibu guidance should avoid unnecessary pipeline ceremony unless scope or ownership is unclear.
+- When a completed story changes source code, tests, dependencies, schemas, or runtime configuration, Sibu should run synchronized architecture and technical-lead reviews before requesting human story approval.
+- When a completed story changes documentation only, Sibu should retain its existing validation and human review gate without invoking specialist implementation reviewers.
+- When synchronized reviewer packets contain blocking or major findings, the main agent should deduplicate them into one combined packet and spawn a fresh, narrowly briefed repair executor without creating a new implementation plan.
+- When a fresh repair executor addresses review findings, it should receive the original story context, current snapshot identity, combined findings, and prior validation evidence; it should revalidate the story before both reviewers assess the resulting shared snapshot.
+- When reviewer recommendations conflict, authoritative artifacts conflict, or a repair requires a material decision, the main agent should stop AFK processing and escalate the evidence to the user.
+- When the third repair round completes, Sibu should allow one final synchronized review and then either advance an approved shared snapshot or escalate unresolved blocking and major findings without further automated mutation.
 - When a project has a conventional evals folder, Sibu should discover valid eval suites without manual dashboard configuration.
 - When a user runs evals, Sibu should support both all-test-case and single-test-case scope.
 - When an eval result has multiple failed assertions, the Failure Workbench should analyze and discuss only one selected failed assertion at a time.
@@ -526,6 +593,20 @@ define focused task
 5. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. Sufficiently clear BRDs, SADs, and SDDs need no approval status, signature, or sign-off gate; implementation review and mutation safeguards remain in force.
 6. **Downstream Input**: the artifact becomes the basis for the next pipeline stage.
 
+#### Implementation Review Lifecycle
+
+1. **Implementation Validated**: the executor completes the story plan and returns implementation and validation evidence.
+2. **Applicability Determined**: documentation-only work proceeds to human review; code, test, dependency, schema, or runtime-configuration changes enter automated review.
+3. **Review Snapshot Frozen**: the main agent identifies the exact diff both reviewers will assess.
+4. **Synchronized Reviews Completed**: architecture and technical-lead reviewers independently return packets for the same snapshot.
+5. **Review Outcomes Combined**: the main agent deduplicates findings and checks for conflicts or material decisions.
+6. **Snapshot Approved or Repair Requested**: matching approvals advance to human review; blocking or major findings produce one combined repair packet.
+7. **Fresh Repair Executor Spawned**: a new executor receives the original narrow story context, current snapshot identity, combined findings, and prior validation evidence without authority to replan or broaden scope.
+8. **Repair Applied and Validated**: the repair executor changes the implementation, validates it, and produces the next snapshot. This consumes one shared repair round.
+9. **Review Repeated**: both reviewers assess the new snapshot. The repair path may repeat up to three times in total, using a fresh repair executor each time.
+10. **Final Automated Outcome**: after the third repair, one final review either approves the shared snapshot or escalates unresolved findings without a fourth repair.
+11. **Human Story Review**: the user receives the implementation evidence and automated review outcomes and retains final approval authority.
+
 ### Domain Events
 
 - **Workflow Initialized**: a repo adopts Sibu and records initial workflow metadata.
@@ -550,6 +631,16 @@ define focused task
 - **Artifact Updated**: a skill revises its owned artifact.
 - **Artifact Accepted for Downstream Work**: an artifact is clear enough to serve as input for the next pipeline stage.
 - **Implementation Plan Ready**: a user story has enough planning detail and selected architecture guidance for AI-assisted execution.
+- **Implementation Validated**: the executor completes a story implementation and its planned validation.
+- **Review Snapshot Created**: the main agent identifies the exact implementation diff for synchronized specialist review.
+- **Architecture Review Completed**: the architecture reviewer returns an evidence-based packet for the current snapshot.
+- **Technical-Lead Review Completed**: the technical-lead reviewer returns an evidence-based packet for the same snapshot.
+- **Review Findings Combined**: the main agent deduplicates reviewer findings into one repair packet.
+- **Implementation Repair Requested**: blocking or major findings are consolidated for a fresh repair executor without replanning.
+- **Repair Executor Spawned**: a new executor receives the narrow repair context for one repair round.
+- **Implementation Repaired**: the repair executor applies the combined outcomes and validates the resulting snapshot.
+- **Automated Review Approved**: both specialist reviewers approve the same snapshot.
+- **Implementation Review Escalated**: a material decision or exhausted repair budget returns unresolved evidence to the user.
 - **Eval Workspace Discovered**: Sibu finds repo-local eval suites.
 - **Eval Run Started**: the user starts all test cases or one selected test case.
 - **Eval Run Completed**: Sibu captures result status, output, assertion/grader outcomes, diagnostics, and metrics.
@@ -588,5 +679,8 @@ define focused task
 - **Pipeline enforcement vs developer flow**: feature work should follow the artifact chain, but narrow fixes should not be burdened with unnecessary process.
 - **Template freshness vs local edits**: newer templates may be valuable, but customized local files require careful review and protection.
 - **AI speed vs engineering pride**: Sibu should help users move faster while preserving clean code, maintainability, reviewability, and human ownership.
+- **Specialist depth vs review churn**: independent architecture and implementation-quality review improves scrutiny, but synchronized snapshots, combined findings, and one shared repair budget are required to prevent reviewer ping-pong.
+- **AFK progress vs human judgment**: bounded automated repair should remove routine review toil, while material decisions and final story approval remain explicitly human.
+- **Dependency reuse vs dependency cost**: established libraries can be simpler than custom code, but production dependencies introduce maintenance, security, licensing, and footprint consequences that require human judgment.
 - **Skill boundaries**: each skill must stay focused on its owned artifact while still handing off enough context to downstream skills.
 - **External tool evolution**: agents, models, editors, MCP servers, and collaboration tools will keep changing, so Sibu must avoid hard-coding its business identity around any single external tool.

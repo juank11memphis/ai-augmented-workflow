@@ -19,6 +19,7 @@ This toolbox is for `sibu-implementation-executor` workers only. It is not a nor
 
 Use only the narrow packet from the main agent. The packet must include:
 
+- exactly one explicit executor mode: `implementation` or `repair`
 - exactly one User Story path or one story-local `.impl_plan/` folder
 - required source artifact paths: story, Epic brief, BRD, software design with embedded diagrams, and UX spec when the story, plan, or feature has UI impact
 - this toolbox skill path
@@ -30,24 +31,48 @@ Use only the narrow packet from the main agent. The packet must include:
 - approval and commit rules from the main executor workflow
 - expected final output format
 
+An `implementation` packet includes the ordered plan steps. A `repair` packet additionally includes exactly one combined review packet, current snapshot identity and changed-file scope, and prior validation evidence. A repair packet must not contain a replacement plan or authorize scope expansion.
+
 If the packet names multiple stories, multiple plans, an Epic without one selected story, or no executable target, stop and ask the main agent for exactly one story or `.impl_plan/` path.
 
 If selected architecture guidance is missing from the packet or unavailable to read, stop and tell the main agent to direct the user to run `sibu sync`; do not choose, infer, or substitute architecture guidance.
 
 If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context. Read the SDD with its embedded diagrams.
 
+## Mode behavior
+
+### Implementation mode
+
+- Execute all unapproved step files in filename order, once.
+- Return completion evidence to the main agent before human review. Do not present or own the human approval gate.
+
+### Repair mode
+
+- Inspect the actual current local changes and preserve valid implementation work.
+- Address only blocker and major findings in the one combined packet. Do not restart or replay the implementation plan, replan the story, broaden scope, or edit plan/upstream artifacts.
+- Reject and return a blocker with evidence for contradictions, material decisions, unrelated-file changes, scope expansion, new production dependencies, or changes that conflict with authoritative artifacts.
+- Perform proportionate focused validation and return fresh post-repair validation evidence. Never reuse a pre-repair approval or validation claim as evidence for changed work.
+
 ## Execution rules
 
 - Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill, and relevant optional installed skills before execution. Read its embedded diagrams.
 - If `structured-logging` is provided in the packet, apply it only to observability-relevant code paths and do not duplicate its policy in other skill guidance.
 - Apply selected architecture guidance during implementation and review, including boundaries, dependency direction, sequencing, and architecture-specific risks. Treat embedded diagrams as authoritative SDD context, keep `sdd.md` as the authoritative software design artifact, and preserve diagram-stated boundaries, flows, and data/state implications during implementation and review.
-- Execute all unapproved step files in filename order.
+- Follow only the selected mode; repair mode does not execute plan steps.
 - Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, diagram-stated implications when included, and distilled constraints. Do not modify the SDD or create a separate diagram companion.
 - Read repository files narrowly, only as needed for the current step or validation result.
 - Run focused validation named by the step files or software design when practical, and collect compact evidence against the story verification expectations and validation steps.
 - For code-changing work, run `node .agents/scripts/check-touched-source-file-lines.mjs` before presenting a review packet. If it fails, refactor touched oversized source files into cohesive focused files and re-run the checker successfully before review.
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a Review Gate risk.
+
+## Validation efficiency
+
+- Run focused checks while implementation or repair work is changing.
+- After changes stabilize, run one aggregate `pnpm verify` when available; do not redundantly run standalone build, check, or full-test commands already covered by it.
+- Run packed-runtime validation once at the end only when relevant to the changed assets.
+- Rerun expensive checks only after subsequent relevant changes make evidence stale or to diagnose a failure.
+- Every repair that changes work must produce fresh validation evidence for the resulting local changes.
 
 ## Git and approval safety
 
@@ -69,9 +94,9 @@ Never write approval metadata such as:
 
 Never approve your own work. Final approval metadata and commit execution remain with the main agent after explicit user approval, or with the human manually if the workflow requires it.
 
-## Interactive Review Gate
+## Completion handoff
 
-After implementing and validating all unapproved steps, pause and present a review packet. Wait for explicit user approval such as “approve” or “LGTM.”
+After implementing or repairing and validating, return the completion packet to the main agent. Do not wait for or request human approval inside the worker.
 
 The review packet must include:
 
@@ -85,11 +110,9 @@ The review packet must include:
 
 For non-trivial stories, do not present “tests passed” as the only completion evidence. Keep validation evidence proportional to story risk: deeper techniques such as property, torture/fuzz, mutation, or manual QA are not universal requirements, but explain skips briefly when those checks are relevant and intentionally omitted.
 
-If the user gives feedback, apply it in the same worker session when the host supports foreground or resumable interaction, then present an updated review packet. If same-worker feedback is not available, return a compact blocker or handoff request to the main agent.
-
 ## Final result
 
-Return a compact completion summary only after explicit approval, or return blockers if approval cannot be reached. Include changed files, validations, Validation Evidence including the file-size gate result for code-changing work, risks, and whether user approval was received. Do not commit.
+Return a compact completion summary or blocker directly to the main agent. Include the mode, changed files, validations, Validation Evidence including the file-size gate result for code-changing work, risks, follow-up questions, and `approval state: not requested by worker`. Do not commit.
 
 ## BRD handoff
 

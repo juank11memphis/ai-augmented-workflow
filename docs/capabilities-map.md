@@ -60,6 +60,13 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Explain feature behavior visually**: include a main-flow Mermaid sequence diagram in each SDD, allowing a justified alternative for changes without meaningful interaction flow.
 - **Route architectural changes upstream**: pause SDD work that changes module boundaries or system-wide decisions and direct the user to update the SAD first; keep architecture-compatible details in the SDD.
 - **Keep AI work reviewable**: guide work into small, explicit, validated chunks that preserve engineer judgment and accountability.
+- **Determine specialist-review applicability**: send stories that change source code, tests, dependencies, schemas, or runtime configuration through automated implementation review while keeping documentation-only work on the existing validation and human-review path.
+- **Establish a shared review snapshot**: give architecture and technical-lead reviewers the same immutable story diff and validation evidence so their outcomes apply to one identifiable implementation state.
+- **Coordinate specialist implementation review**: obtain independent architecture and technical-lead assessments concurrently when the host supports it, or sequentially against the unchanged snapshot when concurrency is unavailable.
+- **Consolidate review findings**: combine and deduplicate evidence-based reviewer findings into one coherent repair packet without blurring specialist ownership.
+- **Route bounded implementation repair**: give each blocking-or-major combined packet to a fresh, narrowly briefed repair executor without replanning, require revalidation, invalidate approvals for earlier snapshots, and allow at most three shared repair rounds plus one final review.
+- **Escalate material review decisions**: stop unattended repair when authoritative sources conflict, the repair budget is exhausted, or a change requires significant product, architecture, dependency, data, security, privacy, migration, or scope judgment.
+- **Preserve final human story approval**: treat automated specialist approval as evidence for the user rather than permission to mark steps approved, commit changes, or continue delivery autonomously.
 
 #### Local Evals Workbench
 
@@ -102,6 +109,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Define skill boundaries**: make each skill's purpose, required inputs, owned outputs, hard stops, and handoffs clear.
 - **Support optional skill selection**: let users include non-architecture workflow guidance relevant to their project without forcing every optional skill into every repo.
 - **Preserve skill handoffs**: ensure skills pass the right reviewed context downstream while avoiding responsibility for artifacts outside their scope.
+- **Guide specialist implementation reviews**: provide focused architecture-review and technical-lead-review guidance with distinct responsibilities, evidence standards, severity rules, snapshot-bound outcomes, and read-only reviewer authority.
 - **Guide eval authoring**: provide focused guidance so agents create and maintain eval suites, test cases, assertions/graders, fixtures, and expected/reference artifacts in Sibu's expected format.
 
 #### Agent Support Selection
@@ -137,6 +145,10 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes, and on **Skill Guidance** to repair missing or unsupported architecture skill selections.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
+- **Specialist implementation review** depends on a validated story implementation, a stable shared snapshot, the project SAD, feature SDD, selected architecture guidance, clean-code guidance, and applicable language or framework guidance.
+- **Repair routing** depends on both reviewer outcomes for the same snapshot; parallel execution is preferred when supported, but shared-snapshot consistency is required regardless of scheduling.
+- **Fresh repair execution** depends on a narrow handoff containing the original story and plan, authoritative sources and skills, current snapshot identity and changed files, combined findings, and prior validation evidence.
+- **Human story approval** follows automated specialist approval or review escalation and remains required before approval metadata, commit, or feature continuation.
 - **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while project-specific eval suites and target files remain project-owned.
 - **Local Evals Workbench** depends on external **LLM provider APIs** only for analysis and proposal drafting; eval result inspection should still work without provider credentials.
 - **Local Evals Workbench** depends on **User Control & Trust** constraints before applying any repair proposal to project files.
@@ -154,6 +166,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.
 - **Pipeline strictness**: Sibu must balance enforcing artifact prerequisites and required architecture guidance with staying lightweight for narrow fixes.
+- **Reviewer host compatibility**: supported agents may differ in sub-agent concurrency, so the workflow must prefer parallel specialist review without making simultaneous execution a correctness requirement.
 - **Release workflow scope**: maintainer release support should stay focused on Sibu's own publication process unless the product explicitly expands into release management for consumer projects.
 
 - **Local eval format maturity**: the first eval format should be conventional and narrow, but may need migration/versioning once real projects create many suites.

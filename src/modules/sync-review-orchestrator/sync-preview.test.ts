@@ -145,6 +145,33 @@ describe('getSyncPreviews', () => {
     assert.deepEqual(preview.changes, ['Refreshes the managed Codex SessionStart hook.']);
   });
 
+  it('previews executor contract update notes and preserves reviewed customization', () => {
+    const rootPath = createCleanInitializedRepo();
+    const state = readState(rootPath);
+    const manifest = readTemplateManifest();
+    const relativePath = '.agents/skills/ai-implementation-plan-executor/SKILL.md';
+    const targetPath = path.join(rootPath, relativePath);
+    const localCustomization = '\nLocal executor customization.\n';
+    fs.appendFileSync(targetPath, localCustomization, 'utf8');
+    manifest.templates['skills/ai-implementation-plan-executor/SKILL.md'] = {
+      ...manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']!,
+      version: '999',
+      changes: ['Adds synchronized specialist review and bounded fresh repair.'],
+    };
+
+    const preview = getSyncPreview(rootPath, state, relativePath, manifest);
+
+    assert.equal(preview.status, 'modified-with-update');
+    assert.deepEqual(preview.changes, ['Adds synchronized specialist review and bounded fresh repair.']);
+
+    const reviewed = applySyncAction({ rootPath, state, manifest, preview, action: 'mark-reviewed' });
+
+    assert.equal(reviewed.changedFiles, false);
+    assert.equal(reviewed.state.managedFiles[relativePath]?.status, 'customized');
+    assert.equal(reviewed.state.managedFiles[relativePath]?.lastReviewedTemplateVersion, '999');
+    assert.match(fs.readFileSync(targetPath, 'utf8'), /Local executor customization/);
+  });
+
   it('offers Export to GitHub adoption when GitHub MCP is already selected', () => {
     const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
     const state = readState(rootPath);

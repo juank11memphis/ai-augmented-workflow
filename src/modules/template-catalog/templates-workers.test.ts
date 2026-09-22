@@ -313,9 +313,9 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '31');
+    assert.equal(templateMetadata?.version, '32');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /synchronized specialist review/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -361,9 +361,9 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
 
-    assert.equal(templateMetadata?.version, '9');
+    assert.equal(templateMetadata?.version, '10');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /implementation and repair modes/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
@@ -391,7 +391,9 @@ describe('Sibu executor worker templates', () => {
     assert.doesNotMatch(renderedContents, /export-to-github/);
     assert.doesNotMatch(renderedContents, /export-to-notion/);
     assert.match(renderedContents, /unapproved step files in filename order/i);
-    assert.match(renderedContents, /Interactive Review Gate/);
+    assert.match(renderedContents, /Completion handoff/);
+    assert.match(renderedContents, /implementation.*repair/i);
+    assert.match(renderedContents, /exactly one combined review packet/i);
     assert.match(renderedContents, /Review Gate risk/);
     assert.match(renderedContents, /git commit/);
     assert.match(renderedContents, /git stash/);
@@ -413,16 +415,18 @@ describe('Sibu executor worker templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
 
-      assert.equal(templateMetadata?.version, '3');
+      assert.equal(templateMetadata?.version, '4');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation executor worker/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /concise reporting guidance/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /implementation and one-packet repair modes/i);
       assert.match(contents, /sibu-implementation-executor/);
       assert.match(contents, /narrow executor packet/);
       assert.match(contents, /executor toolbox skill/);
       assert.match(contents, /required and optional skill paths/);
       assert.match(contents, /distilled constraints/);
       assert.match(contents, /full conversation context/);
-      assert.match(contents, /Execute exactly one story plan/);
+      assert.match(contents, /implementation.*repair/i);
+      assert.match(contents, /exactly one combined review packet/i);
+      assert.match(contents, /without replanning, replaying the plan, broadening scope/i);
       assert.match(contents, /Light verbose mode/);
       assert.match(contents, /Show the plan once at the beginning/);
       assert.match(contents, /Show only test failures and final test results/);
@@ -439,4 +443,3 @@ describe('Sibu executor worker templates', () => {
     }
   });
 });
-

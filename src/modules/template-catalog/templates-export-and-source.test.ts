@@ -291,7 +291,7 @@ describe('template catalog source templates', () => {
       '.gemini/agents/sibu-technical-lead-reviewer.md',
     ];
 
-    assert.equal(manifest.templateVersion, '154');
+    assert.equal(manifest.templateVersion, '155');
 
     for (const templatePath of reviewerTemplatePaths) {
       assert.equal(manifest.templates[templatePath]?.version, '1');
