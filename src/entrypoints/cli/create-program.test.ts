@@ -4,6 +4,11 @@ import { describe, it } from 'node:test';
 import { createProgram } from './create-program.js';
 
 describe('createProgram', () => {
+  it('registers machine-readable model route operations', () => {
+    const models = createProgram().commands.find((command) => command.name() === 'models');
+    assert.ok(models);
+    assert.deepEqual(models.commands.map((command) => command.name()), ['resolve', 'set']);
+  });
   it('registers the evals command', () => {
     const program = createProgram();
     const evalsCommand = program.commands.find((command) => command.name() === 'evals');

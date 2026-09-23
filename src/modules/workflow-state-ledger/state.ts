@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { STATE_RELATIVE_PATH } from './state-path.js';
 import { isModelRoutes } from './model-routes.js';
+import { mutateStateFile } from './state-mutation.js';
 import { sha256 } from '../../shared/hash.js';
 import { removeUndefinedFields } from '../../shared/object.js';
 import type {
@@ -55,8 +56,10 @@ export function readExistingState(statePath: string): SibuState | undefined {
 }
 
 export function writeStateFile(statePath: string, state: SibuState): void {
-  fs.mkdirSync(path.dirname(statePath), { recursive: true });
-  fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+  mutateStateFile(statePath, (current) => ({
+    state: { ...state, ...(current?.state.modelRoutes !== undefined ? { modelRoutes: current.state.modelRoutes } : {}) },
+    result: undefined,
+  }));
 }
 
 export function cloneState(state: SibuState): SibuState {
@@ -92,47 +95,48 @@ export function writeSibuState({
   mcpServerConfigs?: McpServerConfigs;
   targets: WorkflowTarget[];
 }): void {
-  const previousState = readExistingState(statePath);
-  const now = new Date().toISOString();
-  const manifest = readTemplateManifest();
-  const state: SibuState = {
-    sibuVersion: SIBU_VERSION,
-    templateVersion: manifest.templateVersion,
-    generatedAt: previousState?.generatedAt ?? now,
-    updatedAt: now,
-    selectedAgents: selectedAgents.map((agent) => agent.id),
-    selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
-    selectedFrameworkSkills: selectedFrameworkSkills.map((skill) => skill.id),
-    selectedArchitectureSkill: selectedArchitectureSkill?.id,
-    selectedWorkflowSkills: selectedWorkflowSkills.map((skill) => skill.id),
-    selectedDatabaseSkills: selectedDatabaseSkills.map((skill) => skill.id),
-    ...(selectedMcpServers !== undefined ? { selectedMcpServers: selectedMcpServers.map((server) => server.id) } : {}),
-    ...(mcpServerConfigs ?? previousState?.mcpServerConfigs ? { mcpServerConfigs: mcpServerConfigs ?? previousState?.mcpServerConfigs } : {}),
-    ...(previousState?.modelRoutes !== undefined ? { modelRoutes: previousState.modelRoutes } : {}),
-    managedFiles: Object.fromEntries(
-      targets
-        .filter((target) => fs.existsSync(target.targetPath))
-        .map((target) => {
-          const relativePath = path.relative(rootPath, target.targetPath);
-          const previousManagedFile = previousState?.managedFiles[relativePath];
-          const nextManagedFile: ManagedFileState = {
-            template: target.templateRelativePath,
-            templateVersion: getTemplateVersion(manifest, target.templateRelativePath),
-            sha256: sha256(fs.readFileSync(target.targetPath, 'utf8')),
-            status: previousManagedFile?.status ?? 'managed',
-            lastReviewedTemplateVersion: previousManagedFile?.lastReviewedTemplateVersion,
-            reason: previousManagedFile?.reason,
-          };
+  mutateStateFile(statePath, (current) => {
+    const previousState = current?.state;
+    const now = new Date().toISOString();
+    const manifest = readTemplateManifest();
+    const state: SibuState = {
+      sibuVersion: SIBU_VERSION,
+      templateVersion: manifest.templateVersion,
+      generatedAt: previousState?.generatedAt ?? now,
+      updatedAt: now,
+      selectedAgents: selectedAgents.map((agent) => agent.id),
+      selectedLanguageSkills: selectedLanguageSkills.map((skill) => skill.id),
+      selectedFrameworkSkills: selectedFrameworkSkills.map((skill) => skill.id),
+      selectedArchitectureSkill: selectedArchitectureSkill?.id,
+      selectedWorkflowSkills: selectedWorkflowSkills.map((skill) => skill.id),
+      selectedDatabaseSkills: selectedDatabaseSkills.map((skill) => skill.id),
+      ...(selectedMcpServers !== undefined ? { selectedMcpServers: selectedMcpServers.map((server) => server.id) } : {}),
+      ...(mcpServerConfigs ?? previousState?.mcpServerConfigs ? { mcpServerConfigs: mcpServerConfigs ?? previousState?.mcpServerConfigs } : {}),
+      ...(previousState?.modelRoutes !== undefined ? { modelRoutes: previousState.modelRoutes } : {}),
+      managedFiles: Object.fromEntries(
+        targets
+          .filter((target) => fs.existsSync(target.targetPath))
+          .map((target) => {
+            const relativePath = path.relative(rootPath, target.targetPath);
+            const previousManagedFile = previousState?.managedFiles[relativePath];
+            const nextManagedFile: ManagedFileState = {
+              template: target.templateRelativePath,
+              templateVersion: getTemplateVersion(manifest, target.templateRelativePath),
+              sha256: sha256(fs.readFileSync(target.targetPath, 'utf8')),
+              status: previousManagedFile?.status ?? 'managed',
+              lastReviewedTemplateVersion: previousManagedFile?.lastReviewedTemplateVersion,
+              reason: previousManagedFile?.reason,
+            };
 
-          return [relativePath, removeUndefinedFields(nextManagedFile)];
-        })
-    ),
-  };
-
-  writeStateFile(statePath, state);
+            return [relativePath, removeUndefinedFields(nextManagedFile)];
+          })
+      ),
+    };
+    return { state, result: undefined };
+  });
 }
 
-function isSibuState(value: unknown): value is SibuState {
+export function isSibuState(value: unknown): value is SibuState {
   if (!value || typeof value !== 'object') {
     return false;
   }

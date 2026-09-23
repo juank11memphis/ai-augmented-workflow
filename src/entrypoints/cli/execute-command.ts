@@ -8,9 +8,12 @@ import {
   handleStopMcpServer,
   handleUseMcpServer,
   handleUseSkill,
+  resolveProjectModelRoute,
+  setProjectModelRoute,
 } from '../../modules/workflow-configuration-manager/index.js';
 import { handleSyncProject } from '../../modules/sync-review-orchestrator/index.js';
 import type { SibuCliCommand } from './command.js';
+import { serializeModelRouteResult } from './model-route-json.js';
 
 export async function executeCliCommand(command: SibuCliCommand): Promise<void> {
   switch (command.type) {
@@ -44,5 +47,19 @@ export async function executeCliCommand(command: SibuCliCommand): Promise<void> 
     case 'evals':
       await handleStartLocalEvalsWorkbenchCommand(command);
       return;
+    case 'models:resolve':
+    case 'models:set': {
+      try {
+        const result = command.type === 'models:resolve'
+          ? resolveProjectModelRoute(command, process.cwd())
+          : setProjectModelRoute(command, process.cwd());
+        process.stdout.write(`${serializeModelRouteResult(result)}\n`);
+        if (command.type === 'models:set' && result.status !== 'saved') process.exitCode = 1;
+      } catch {
+        process.stderr.write('Sibu model route operation failed. Retry or run sibu doctor.\n');
+        process.exitCode = 1;
+      }
+      return;
+    }
   }
 }

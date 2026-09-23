@@ -8,6 +8,8 @@ import type {
   StopMcpServerCommand,
   UseMcpServerCommand,
   UseSkillCommand,
+  ResolveModelRouteCommand,
+  SetModelRouteCommand,
 } from '../../modules/workflow-configuration-manager/index.js';
 import type { SyncProjectCommand } from '../../modules/sync-review-orchestrator/index.js';
 
@@ -21,4 +23,6 @@ export type SibuCliCommand =
   | ListMcpServersCommand
   | UseMcpServerCommand
   | StopMcpServerCommand
-  | StartLocalEvalsWorkbenchCommand;
+  | StartLocalEvalsWorkbenchCommand
+  | ResolveModelRouteCommand
+  | SetModelRouteCommand;

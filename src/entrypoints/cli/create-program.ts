@@ -63,5 +63,28 @@ export function createProgram(): CommanderCommand {
     .description('Stop managing one selected MCP server')
     .action((serverId: string) => executeCliCommand({ type: 'mcp:stop', serverId }));
 
+  const models = cli.command('models').description('Resolve or save explicit model routes');
+  models.command('resolve')
+    .requiredOption('--agent <environment>')
+    .requiredOption('--role <role>')
+    .requiredOption('--workload <class>')
+    .requiredOption('--json')
+    .action((options: { agent: string; role: string; workload: string }) => executeCliCommand({
+      type: 'models:resolve', agentEnvironment: options.agent, role: options.role, workloadClass: options.workload,
+    }));
+  models.command('set')
+    .requiredOption('--agent <environment>')
+    .requiredOption('--role <role>')
+    .requiredOption('--workload <class>')
+    .requiredOption('--model <model>')
+    .requiredOption('--reasoning <effort>')
+    .requiredOption('--catalog-version <version>')
+    .requiredOption('--state-basis <token>')
+    .requiredOption('--json')
+    .action((options: { agent: string; role: string; workload: string; model: string; reasoning: string; catalogVersion: string; stateBasis: string }) => executeCliCommand({
+      type: 'models:set', agentEnvironment: options.agent, role: options.role, workloadClass: options.workload,
+      model: options.model, reasoningEffort: options.reasoning, catalogVersion: options.catalogVersion, stateBasis: options.stateBasis,
+    }));
+
   return cli;
 }

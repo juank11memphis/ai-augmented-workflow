@@ -62,6 +62,19 @@ async function main() {
       throw new Error('Packed-runtime fixture must remain free of implicit model route selections.');
     }
 
+    const routeFlags = ['--agent', 'codex', '--role', 'implementation-executor', '--workload', 'bounded', '--json'];
+    const missing = JSON.parse(runInstalledSibu(installedExecutable, ['models', 'resolve', ...routeFlags], npmBinPath, fixtureProjectPath));
+    if (missing.schemaVersion !== 1 || missing.status !== 'missing') throw new Error('Installed route resolve did not return a versioned missing result.');
+    const saved = JSON.parse(runInstalledSibu(installedExecutable, [
+      'models', 'set', ...routeFlags, '--model', 'packed-external-model', '--reasoning', 'high',
+      '--catalog-version', missing.catalog.catalogVersion, '--state-basis', missing.stateBasis,
+    ], npmBinPath, fixtureProjectPath));
+    if (saved.status !== 'saved') throw new Error('Installed route set did not save the explicit choice.');
+    const configured = JSON.parse(runInstalledSibu(installedExecutable, ['models', 'resolve', ...routeFlags], npmBinPath, fixtureProjectPath));
+    if (configured.status !== 'configured' || configured.route.model !== 'packed-external-model' || configured.route.reasoningEffort !== 'high') {
+      throw new Error('Installed route resolve did not return the explicit saved choice.');
+    }
+
     console.log(`Packed runtime install is isolated and ready: ${installedExecutable}`);
     console.log(`Packed runtime doctor smoke test passed in ${fixtureProjectPath}`);
   } finally {

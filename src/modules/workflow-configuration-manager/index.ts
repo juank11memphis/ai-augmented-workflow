@@ -11,3 +11,8 @@ export { getNextMcpSelection, handleUseMcpServer } from './use-mcp-server/handle
 export type { UseMcpServerCommand } from './use-mcp-server/command.js';
 export { applyStoppedMcpFileDeleteDecision, getNextStoppedMcpSelection, handleStopMcpServer, stopSelectedMcpServer } from './stop-mcp-server/handler.js';
 export type { StopMcpServerCommand } from './stop-mcp-server/command.js';
+export { handleResolveModelRoute } from './resolve-model-route/handler.js';
+export type { ResolveModelRouteCommand } from './resolve-model-route/command.js';
+export { handleSetModelRoute } from './set-model-route/handler.js';
+export type { SetModelRouteCommand } from './set-model-route/command.js';
+export { resolveProjectModelRoute, setProjectModelRoute } from './model-route-adapters.js';
