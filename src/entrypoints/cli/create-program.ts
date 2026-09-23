@@ -64,6 +64,7 @@ export function createProgram(): CommanderCommand {
     .action((serverId: string) => executeCliCommand({ type: 'mcp:stop', serverId }));
 
   const models = cli.command('models').description('Resolve or save explicit model routes');
+  models.action(() => executeCliCommand({ type: 'models:guided' }));
   models.command('resolve')
     .requiredOption('--agent <environment>')
     .requiredOption('--role <role>')

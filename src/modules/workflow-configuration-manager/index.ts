@@ -16,3 +16,8 @@ export type { ResolveModelRouteCommand } from './resolve-model-route/command.js'
 export { handleSetModelRoute } from './set-model-route/handler.js';
 export type { SetModelRouteCommand } from './set-model-route/command.js';
 export { resolveProjectModelRoute, setProjectModelRoute } from './model-route-adapters.js';
+export { handleListModelRoutes } from './list-model-routes/handler.js';
+export type { ListModelRoutesCommand } from './list-model-routes/command.js';
+export { handleResetModelRoutes } from './reset-model-routes/handler.js';
+export type { ResetModelRoutesCommand } from './reset-model-routes/command.js';
+export { listProjectModelRoutes, resetProjectModelRoutes } from './model-route-adapters.js';

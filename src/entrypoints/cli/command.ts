@@ -25,4 +25,5 @@ export type SibuCliCommand =
   | StopMcpServerCommand
   | StartLocalEvalsWorkbenchCommand
   | ResolveModelRouteCommand
-  | SetModelRouteCommand;
+  | SetModelRouteCommand
+  | { type: 'models:guided' };

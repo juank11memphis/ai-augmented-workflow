@@ -10,10 +10,13 @@ import {
   handleUseSkill,
   resolveProjectModelRoute,
   setProjectModelRoute,
+  listProjectModelRoutes,
+  resetProjectModelRoutes,
 } from '../../modules/workflow-configuration-manager/index.js';
 import { handleSyncProject } from '../../modules/sync-review-orchestrator/index.js';
 import type { SibuCliCommand } from './command.js';
 import { serializeModelRouteResult } from './model-route-json.js';
+import { runModelsGuidedFlow, createModelsTerminal } from './models-guided-flow.js';
 
 export async function executeCliCommand(command: SibuCliCommand): Promise<void> {
   switch (command.type) {
@@ -57,6 +60,20 @@ export async function executeCliCommand(command: SibuCliCommand): Promise<void> 
         if (command.type === 'models:set' && result.status !== 'saved') process.exitCode = 1;
       } catch {
         process.stderr.write('Sibu model route operation failed. Retry or run sibu doctor.\n');
+        process.exitCode = 1;
+      }
+      return;
+    }
+    case 'models:guided': {
+      const root = process.cwd();
+      try {
+        await runModelsGuidedFlow(createModelsTerminal(), {
+          list: () => listProjectModelRoutes(root),
+          set: (selection) => setProjectModelRoute(selection, root),
+          reset: (selection) => resetProjectModelRoutes(selection, root),
+        });
+      } catch {
+        process.stderr.write('Could not manage model routes. Run sibu doctor and retry.\n');
         process.exitCode = 1;
       }
       return;

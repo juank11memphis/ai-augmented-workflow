@@ -74,6 +74,14 @@ async function main() {
     if (configured.status !== 'configured' || configured.route.model !== 'packed-external-model' || configured.route.reasoningEffort !== 'high') {
       throw new Error('Installed route resolve did not return the explicit saved choice.');
     }
+    const guided = runInstalledSibu(installedExecutable, ['models'], npmBinPath, fixtureProjectPath, '4\n3\n20\n');
+    if (!guided.includes('Model routes') || !guided.includes('Reset to current recommendation') || !guided.includes('Completed: 1 route.')) {
+      throw new Error('Installed guided route review/reset did not complete.');
+    }
+    const reset = JSON.parse(runInstalledSibu(installedExecutable, ['models', 'resolve', ...routeFlags], npmBinPath, fixtureProjectPath));
+    if (reset.status !== 'configured' || reset.origin !== 'recommended') {
+      throw new Error('Installed guided reset did not persist the current recommendation.');
+    }
 
     console.log(`Packed runtime install is isolated and ready: ${installedExecutable}`);
     console.log(`Packed runtime doctor smoke test passed in ${fixtureProjectPath}`);
@@ -240,13 +248,14 @@ function resolveExecutable(command, npmBinPath) {
   return firstMatch;
 }
 
-function runInstalledSibu(installedExecutable, args, npmBinPath, cwd = getRepoRoot()) {
+function runInstalledSibu(installedExecutable, args, npmBinPath, cwd = getRepoRoot(), input) {
   logStep(`Running ${path.basename(installedExecutable)} ${args.join(' ')} in ${cwd}`);
   return execFileSync(installedExecutable, args, {
     cwd,
     encoding: 'utf8',
     env: buildChildEnv({ PATH: buildPath(npmBinPath) }),
-    stdio: ['ignore', 'pipe', 'inherit'],
+    stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'inherit'],
+    input,
   }).trim();
 }
 

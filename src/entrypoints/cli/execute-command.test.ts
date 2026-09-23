@@ -83,6 +83,20 @@ describe('local evals CLI handler', () => {
 describe('model route CLI', () => {
   const executable = path.resolve('bin/sibu.js');
   const keyFlags = ['--agent', 'codex', '--role', 'implementation-executor', '--workload', 'bounded', '--json'];
+  it('runs bare guided models with keyboard input without changing routes on exit', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-model-guided-'));
+    const statePath = path.join(root, '.sibu', 'state.json');
+    fs.mkdirSync(path.dirname(statePath));
+    fs.writeFileSync(statePath, JSON.stringify({ sibuVersion: '1', templateVersion: '1', generatedAt: 'old', updatedAt: 'old', selectedAgents: [], managedFiles: {} }));
+    try {
+      const before = fs.readFileSync(statePath, 'utf8');
+      const run = spawnSync(process.execPath, [executable, 'models'], { cwd: root, encoding: 'utf8', input: '20\n' });
+      assert.equal(run.status, 0);
+      assert.match(run.stdout, /Model routes/);
+      assert.match(run.stdout, /19\. Reset routes\n20\. Exit/);
+      assert.equal(fs.readFileSync(statePath, 'utf8'), before);
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
   it('emits one JSON object, persists explicit choice, and detects conflict', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-model-cli-'));
     const statePath = path.join(root, '.sibu', 'state.json');
