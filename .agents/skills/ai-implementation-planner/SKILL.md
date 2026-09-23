@@ -130,6 +130,17 @@ If a required skill path is missing, stop and report the blocker. If an optional
 
 Inline plans must preserve the same verification expectations given to planner workers. Turn the story's verification expectations and technical-design quality strategy into concrete validation steps, not only a generic final test command. Consider unit, acceptance/integration, edge/failure, and regression checks by default, and property/invariant, torture/fuzz, mutation, or manual QA only when the story risk justifies them. When a deeper check is relevant but omitted, include a short skip rationale and any residual risks.
 
+## Repository-aware validation policy
+
+Before writing validation steps, narrowly inspect repository-owned definitions and guidance to establish available focused checks, whether a canonical aggregate verification exists, the distinct responsibilities it covers, and whether anticipated changed assets affect packaged or runtime-distributed behavior. Do not infer coverage from a check's name.
+
+- Place proportionate focused checks beside the changing work they support; they provide fast feedback but do not replace final confidence.
+- Define exactly one final validation strategy after stabilization. When a canonical aggregate exists, select it once and omit standalone checks whose responsibilities it already covers.
+- When no canonical aggregate exists, select the smallest sufficient non-overlapping set of existing repository checks. Do not invent or rename checks.
+- Include a distinct packaging or runtime check only when changed assets can affect packaged output, installed behavior, generated runtime resources, or distribution semantics. If material relevance or coverage is uncertain, retain the distinct check and record the conservative rationale.
+- Generated repository-specific plans may record concrete checks discovered from that repository; this reusable policy must remain technology-, ecosystem-, tool-, and concrete-command-neutral.
+- Preserve failure handling and all review, repair, approval, commit, and continuation controls.
+
 ## Output location
 
 Write one Markdown file per implementation step under a story-local implementation plan folder:

@@ -92,7 +92,8 @@ describe('implementation workflow timing contract', () => {
     assert.match(executor, /Automated outcomes never authorize approval metadata, commits, or feature continuation/);
     assert.match(executor, /Never run an implementation or repair executor while a reviewer is active/);
     assert.match(executor, /After the third repair[\s\S]*never start a fourth repair/);
-    assert.match(executor, /one aggregate `pnpm verify` pass/);
+    assert.match(executor, /exactly one final validation strategy/);
+    assert.match(executor, /do not separately repeat standalone checks whose responsibilities it covers/i);
     assert.match(executor, /human story review/i);
     assert.match(executor, /All implementation and repair execution stays in the foreground/);
     assert.match(executor, /Completion-only worker:[\s\S]*spawn the usable worker/);

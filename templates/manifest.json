@@ -1,5 +1,5 @@
 {
-  "templateVersion": "162",
+  "templateVersion": "163",
   "templates": {
     "AGENTS.md": {
       "version": "40",
@@ -135,31 +135,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "23",
+      "version": "24",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Adds repository-aware validation planning with focused checks, one non-duplicative final strategy, and conditional packaging coverage."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Nests optional planner timing beneath the main-owned planning phase to prevent duplicate top-level timing."
+        "Adds repository-aware validation planning with focused checks, one non-duplicative final strategy, and conditional packaging coverage."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "36",
+      "version": "37",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Keeps worker delegation unchanged when timing progress is completion-only and clarifies main-owned planning boundaries."
+        "Runs repository-owned focused checks during change and one non-duplicative final strategy after stabilization."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "14",
+      "version": "15",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Supports completion-only timing evidence without blocking or replacing normal worker delegation."
+        "Runs repository-owned focused checks during change and one non-duplicative final strategy after stabilization."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

@@ -169,13 +169,17 @@ Use host capability metadata from workflow target planning guidance to choose th
 
 All implementation and repair execution stays in the foreground; never detach it or continue it as background work. Fallback must be graceful. If a foreground worker is available but reports a task blocker, do not inline around it; surface the blocker or ask for the missing input. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
 
-## Validation efficiency
+## Repository-aware validation policy
 
-- During implementation or repair, run focused checks that give fast feedback on the files being changed.
-- After changes stabilize, run one aggregate `pnpm verify` pass when the repository provides it. Do not also run standalone build, check, or full-test commands already covered by that aggregate pass.
-- Run packed-runtime validation once at the end only when managed runtime/template assets are relevant.
-- Rerun expensive aggregate or packed-runtime checks only after subsequent relevant changes make evidence stale or when diagnosing a failure.
-- A repair must return fresh post-repair validation evidence; pre-repair evidence cannot support the repaired local changes.
+Narrowly inspect repository-owned definitions and guidance to establish available focused checks, whether a canonical aggregate verification exists, the distinct responsibilities it covers, and whether changed assets affect packaged or runtime-distributed behavior. Do not infer coverage from a check's name.
+
+- During implementation or repair, run proportionate focused checks for the changing work; they provide fast feedback but do not replace final confidence.
+- After stabilization, execute exactly one final validation strategy. When a canonical aggregate exists, run it once and do not separately repeat standalone checks whose responsibilities it covers.
+- When no canonical aggregate exists, run the smallest sufficient non-overlapping set of existing repository checks. Do not invent or rename checks.
+- Run a distinct packaging or runtime check only when changed assets can affect packaged output, installed behavior, generated runtime resources, or distribution semantics. If material relevance or coverage is uncertain, retain the distinct check and record the conservative rationale.
+- Rerun an expensive final check only after a later relevant mutation makes its evidence stale or when diagnosing a failure. Every repair mutation requires fresh validation evidence for the resulting work.
+- Repository-specific plans may name concrete checks discovered from that repository; this reusable policy must remain technology-, ecosystem-, tool-, and concrete-command-neutral.
+- A required validation failure blocks unsupported success or progression. Preserve review snapshots, repair limits, human approval, commit control, and continuation authority.
 
 ## Story execution model
 

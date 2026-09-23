@@ -68,13 +68,17 @@ If a required source artifact or required skill path is missing, stop and report
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a Review Gate risk.
 
-## Validation efficiency
+## Repository-aware validation policy
 
-- Run focused checks while implementation or repair work is changing.
-- After changes stabilize, run one aggregate `pnpm verify` when available; do not redundantly run standalone build, check, or full-test commands already covered by it.
-- Run packed-runtime validation once at the end only when relevant to the changed assets.
-- Rerun expensive checks only after subsequent relevant changes make evidence stale or to diagnose a failure.
-- Every repair that changes work must produce fresh validation evidence for the resulting local changes.
+Narrowly inspect repository-owned definitions and guidance to establish available focused checks, whether a canonical aggregate verification exists, the distinct responsibilities it covers, and whether changed assets affect packaged or runtime-distributed behavior. Do not infer coverage from a check's name.
+
+- During implementation or repair, run proportionate focused checks for the changing work; they provide fast feedback but do not replace final confidence.
+- After stabilization, execute exactly one final validation strategy. When a canonical aggregate exists, run it once and do not separately repeat standalone checks whose responsibilities it covers.
+- When no canonical aggregate exists, run the smallest sufficient non-overlapping set of existing repository checks. Do not invent or rename checks.
+- Run a distinct packaging or runtime check only when changed assets can affect packaged output, installed behavior, generated runtime resources, or distribution semantics. If material relevance or coverage is uncertain, retain the distinct check and record the conservative rationale.
+- Rerun an expensive final check only after a later relevant mutation makes its evidence stale or when diagnosing a failure. Every repair mutation requires fresh validation evidence for the resulting work.
+- Repository-specific plans may name concrete checks discovered from that repository; this reusable policy must remain technology-, ecosystem-, tool-, and concrete-command-neutral.
+- A required validation failure blocks unsupported success or progression. Preserve review snapshots, repair limits, human approval, commit control, and continuation authority.
 
 ## Git and approval safety
 

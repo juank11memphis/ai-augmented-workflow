@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.25.0",
-  "templateVersion": "162",
+  "templateVersion": "163",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-22T20:13:58-06:00",
+  "updatedAt": "2026-09-23T16:52:17.103Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -91,14 +91,14 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "23",
-      "sha256": "d7893a3bf7047550bfcf575d341d5f60cc926d37736c9f5af140ae95cc5c04ce",
+      "templateVersion": "24",
+      "sha256": "f611dfd4867dd5114bbb1d6a1279b07bb918f14becece367d4042a28e32add9f",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
-      "templateVersion": "10",
-      "sha256": "771a15e175fdf4305f1de28d1448a8bdd8ec5d81fbd89395c4c0e0eaab950de6",
+      "templateVersion": "11",
+      "sha256": "0bbcdcaf616339f75a6381d81f1e66d28ac036c08cfc0499be6574793cb701f8",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
@@ -109,14 +109,14 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "36",
-      "sha256": "4552bf6c4ef953593b95ec78a7132e43db2abfbe946571f96790844c41d078fe",
+      "templateVersion": "37",
+      "sha256": "3ff5aee5c961a73585014a55bba33542c2e5acd62441eeb452cba169fd29f398",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
-      "templateVersion": "14",
-      "sha256": "c6881bb35e4650523a91ffcc5dac57c77ad5277245204b202e29f3c6d22f5ee3",
+      "templateVersion": "15",
+      "sha256": "1ad2461551ba824961ea10645e3a3886bd68263ce06adedfb2d6bf7704cb537d",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-executor.toml": {

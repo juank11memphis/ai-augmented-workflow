@@ -95,7 +95,7 @@ describe('automated implementation review orchestration', () => {
   });
 });
 
-describe('implementation executor modes and validation efficiency', () => {
+describe('implementation executor modes and workflow controls', () => {
   it('defines distinct implementation and one-packet repair modes', () => {
     const contents = renderExecutorToolbox();
 
@@ -111,14 +111,15 @@ describe('implementation executor modes and validation efficiency', () => {
     assert.doesNotMatch(contents, /Interactive Review Gate/);
   });
 
-  it('requires efficient aggregate validation and fresh repair evidence in both contracts', () => {
+  it('keeps failure handling and fresh repair evidence subordinate to workflow controls', () => {
     for (const contents of [readTemplate(mainExecutorPath), renderExecutorToolbox()]) {
-      assert.match(contents, /focused checks/i);
-      assert.match(contents, /one aggregate `pnpm verify`/i);
-      assert.match(contents, /Do not.*standalone build, check, or full-test commands/is);
-      assert.match(contents, /packed-runtime validation once at the end only when/i);
-      assert.match(contents, /Rerun expensive.*only after.*changes.*stale.*or.*diagnos/is);
-      assert.match(contents, /fresh post-repair validation evidence/i);
+      assert.match(contents, /required validation failure blocks unsupported success or progression/i);
+      assert.match(contents, /fresh validation evidence/i);
+      assert.match(contents, /review snapshots/i);
+      assert.match(contents, /repair limits/i);
+      assert.match(contents, /human approval/i);
+      assert.match(contents, /commit control/i);
+      assert.match(contents, /continuation authority/i);
     }
   });
 });
