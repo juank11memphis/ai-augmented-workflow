@@ -5,9 +5,9 @@ import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-function main() {
+async function main() {
   const workspace = mkdtempSync(path.join(os.tmpdir(), 'sibu-packed-runtime-'));
   const packDir = path.join(workspace, 'pack');
   const npmPrefix = path.join(workspace, 'prefix');
@@ -47,6 +47,7 @@ function main() {
     runInstalledSibu(installedExecutable, ['--help'], npmBinPath);
 
     const installedPackageRoot = getInstalledPackageRoot({ npmCache, npmPrefix });
+    await validateInstalledModelCatalog(installedPackageRoot);
     runInstalledNodeScript(installedPackageRoot, ['bin/admin/changelog.js', '--help']);
     runInstalledNodeScript(installedPackageRoot, ['bin/admin/release.js', '--help']);
 
@@ -55,6 +56,10 @@ function main() {
     const doctorOutput = runInstalledSibu(installedExecutable, ['doctor'], npmBinPath, fixtureProjectPath);
     if (!doctorOutput.includes('Workflow is healthy. No drift detected.')) {
       throw new Error(`Expected healthy doctor output from packed runtime, got:\n${doctorOutput}`);
+    }
+    const fixtureState = JSON.parse(readFileSync(path.join(fixtureProjectPath, '.sibu', 'state.json'), 'utf8'));
+    if ('modelRoutes' in fixtureState) {
+      throw new Error('Packed-runtime fixture must remain free of implicit model route selections.');
     }
 
     console.log(`Packed runtime install is isolated and ready: ${installedExecutable}`);
@@ -67,6 +72,41 @@ function main() {
 
     rmSync(workspace, { recursive: true, force: true });
   }
+}
+
+async function validateInstalledModelCatalog(installedPackageRoot) {
+  const catalogAsset = path.join(installedPackageRoot, 'bin', 'modules', 'template-catalog', 'model-recommendations.json');
+  if (!existsSync(catalogAsset)) {
+    throw new Error(`Expected installed model recommendation catalog at ${catalogAsset}.`);
+  }
+
+  const catalogModule = await import(pathToFileURL(path.join(installedPackageRoot, 'bin', 'modules', 'template-catalog', 'index.js')).href);
+  const catalog = catalogModule.loadModelRecommendationCatalog();
+  const bounded = catalogModule.resolveModelRecommendation(catalog, {
+    agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded',
+  });
+  const demanding = catalogModule.resolveModelRecommendation(catalog, {
+    agentEnvironment: 'codex', role: 'implementation-planner', workloadClass: 'demanding',
+  });
+  const highRisk = catalogModule.resolveModelRecommendation(catalog, {
+    agentEnvironment: 'codex', role: 'architecture-reviewer', workloadClass: 'high-risk',
+  });
+  if (catalog.catalogVersion !== '2026-09-23.2' || catalog.reviewedAt !== '2026-09-23T00:00:00.000Z') {
+    throw new Error(`Unexpected installed model catalog metadata: ${catalog.catalogVersion}/${catalog.reviewedAt}.`);
+  }
+  if (bounded.model !== 'gpt-6-luna' || bounded.reasoningEffort !== 'low') {
+    throw new Error(`Expected installed bounded recommendation to be GPT-6 Luna/low, got ${bounded.model}/${bounded.reasoningEffort}.`);
+  }
+  if (demanding.model !== 'gpt-6-sol' || demanding.reasoningEffort !== 'medium') {
+    throw new Error(`Expected installed demanding recommendation to be GPT-6 Sol/medium, got ${demanding.model}/${demanding.reasoningEffort}.`);
+  }
+  if (highRisk.model !== 'gpt-6-astra' || highRisk.reasoningEffort !== 'high') {
+    throw new Error(`Expected installed high-risk recommendation to be GPT-6 Astra/high, got ${highRisk.model}/${highRisk.reasoningEffort}.`);
+  }
+  if (catalog.recommendations.some((entry) => entry.workloadClass !== 'high-risk' && entry.model === 'gpt-6-astra')) {
+    throw new Error('Installed catalog must not recommend GPT-6 Astra for bounded or demanding work.');
+  }
+  logStep('Installed model recommendation catalog resolved all three workload classes.');
 }
 
 function getRepoRoot() {
@@ -254,4 +294,4 @@ function logStep(message) {
   console.log(`[validate-packed-runtime] ${message}`);
 }
 
-main();
+await main();

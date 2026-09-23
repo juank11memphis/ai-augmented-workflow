@@ -32,6 +32,7 @@ describe('handleInitProject', () => {
     assert.deepEqual(state.selectedAgents, ['codex']);
     assert.equal(state.selectedArchitectureSkill, getArchitectureSkill('ddd-hexagonal').id);
     assert.deepEqual(state.selectedMcpServers, []);
+    assert.equal(state.modelRoutes, undefined);
     assert.ok(state.managedFiles['AGENTS.md']);
     assert.ok(state.managedFiles['.codex/config.toml']);
     assert.equal(state.managedFiles['.agents/skills/ddd-hexagonal/SKILL.md']?.template, 'skills/architecture/ddd-hexagonal/SKILL.md');
@@ -183,6 +184,7 @@ describe('handleInitProject', () => {
 
     assert.equal(process.exitCode, undefined);
     assert.deepEqual(readState(rootPath).selectedAgents, ['codex']);
+    assert.equal(readState(rootPath).modelRoutes, undefined);
   });
 
   it('refuses to overwrite an invalid existing state file', async () => {

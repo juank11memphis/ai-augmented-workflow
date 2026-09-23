@@ -11,6 +11,23 @@ export {
 } from './templates.js';
 export type { WorkerToolboxRoutingProfile } from './templates.js';
 export {
+  MODEL_REASONING_EFFORTS,
+  MODEL_WORKLOAD_CLASSES,
+  RECOMMENDATION_AGENT_ENVIRONMENTS,
+  SIBU_MODEL_ROLES,
+  loadModelRecommendationCatalog,
+  parseModelRecommendationCatalog,
+  resolveModelRecommendation,
+} from './model-routing.js';
+export type {
+  ModelReasoningEffort,
+  ModelRecommendation,
+  ModelRecommendationCatalog,
+  ModelWorkloadClass,
+  RecommendationAgentEnvironment,
+  SibuModelRole,
+} from './model-routing.js';
+export {
   MANDATORY_SKILLS,
   SELECTABLE_ARCHITECTURE_SKILLS,
   SELECTABLE_DATABASE_SKILLS,

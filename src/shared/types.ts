@@ -8,6 +8,28 @@ export type McpServerId = 'github' | 'notion';
 export type NpmVersionLookupMode = 'live' | 'offline';
 export type NpmVersionResultSource = 'cache' | 'live' | 'override';
 export type NpmVersionUnavailableReason = 'invalid-response' | 'network-error' | 'override';
+export type SibuModelRole =
+  | 'implementation-planner'
+  | 'implementation-executor'
+  | 'architecture-reviewer'
+  | 'technical-lead-reviewer'
+  | 'github-exporter'
+  | 'notion-exporter';
+export type ModelWorkloadClass = 'bounded' | 'demanding' | 'high-risk';
+export type ModelRouteAgentEnvironment = 'codex';
+export type ModelReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra';
+export type ModelRouteOrigin = 'recommended' | 'user-selected';
+
+export type ModelRoute = {
+  agentEnvironment: ModelRouteAgentEnvironment;
+  role: SibuModelRole;
+  workloadClass: ModelWorkloadClass;
+  model: string;
+  reasoningEffort: ModelReasoningEffort;
+  origin: ModelRouteOrigin;
+  catalogVersionAtSelection: string;
+  selectedAt: string;
+};
 
 export type SupportedAgent = {
   id: AgentId;
@@ -127,6 +149,7 @@ export type SibuState = {
   selectedMcpServers?: McpServerId[];
   mcpServerConfigs?: McpServerConfigs;
   reviewedArchitectureSkills?: ArchitectureSkillId[];
+  modelRoutes?: ModelRoute[];
   managedFiles: Record<string, ManagedFileState>;
 };
 
