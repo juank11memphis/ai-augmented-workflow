@@ -1,5 +1,5 @@
 {
-  "templateVersion": "158",
+  "templateVersion": "162",
   "templates": {
     "AGENTS.md": {
       "version": "40",
@@ -142,24 +142,24 @@
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "8",
+      "version": "10",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Nests optional planner timing beneath the main-owned planning phase to prevent duplicate top-level timing."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "32",
+      "version": "36",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Adds synchronized specialist review, three-round fresh repair orchestration, escalation, efficient validation, and the final human gate."
+        "Keeps worker delegation unchanged when timing progress is completion-only and clarifies main-owned planning boundaries."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "10",
+      "version": "14",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Adds explicit implementation and repair modes, main-agent handoff, fresh repair evidence, and efficient validation guidance."
+        "Supports completion-only timing evidence without blocking or replacing normal worker delegation."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

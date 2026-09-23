@@ -27,6 +27,8 @@ Use only the narrow packet from the main agent. The packet must include:
 - required skill paths, including `clean-code` and `structured-logging` when the story touches observability-relevant code
 - optional installed skill paths relevant to the story
 - distilled skill constraints that are binding for this execution task
+- selected transition-delivery route: `direct foreground`, `main-mediated foreground`, or `completion-only evidence`, with exactly one owner for any available user-visible delivery
+- main-owned occurrence assignment context: the next reserved run-level occurrence number for every applicable worker-owned phase and any delivered transition keys that must not be replayed
 - verification expectations, relevant quality strategy context, implementation-plan validation steps, and validation evidence requirements
 - approval and commit rules from the main executor workflow
 - expected final output format
@@ -107,6 +109,18 @@ The review packet must include:
 - `Validation Evidence` or a clearly equivalent compact structure covering tests added or updated, acceptance criteria verified, commands run, file-size gate result for code-changing work, edge/failure coverage, deeper checks performed or skipped with rationale when relevant, and residual risks or known gaps
 - risks, including missing optional skills or unmapped patterns
 - follow-up questions, if any
+
+### Timing evidence
+
+Own the boundaries and evidence for each applicable worker phase. The main-agent packet selects one delivery route for each occurrence: emit concise start and finish transitions directly to the user, send each transition once through the host's foreground progress channel for the main agent to forward, or return evidence only in the completion packet when live progress is unavailable. Never emit both ways, refresh timers, detach work, or run in the background. Completion-only timing must not block delegation or change who executes the work. Return a blocker before editing only when the packet omits a route entirely or names an unsupported route.
+
+Return ordered, timing-only occurrences for `implementation`, `focused_validation`, and `aggregate_validation`, or for `repair` followed by its `focused_validation` or `aggregate_validation` revalidation occurrences in repair mode. The main executor owns run-level occurrence identity. For each phase, map the first worker-local occurrence to the packet's reserved run-level number and increment later local occurrences from that base; never reset a fresh worker's run-level number to one. If an unanticipated occurrence has no reserved number, return its phase and local order to the main agent for remapping before user-visible delivery or reconciliation. Each occurrence contains only `phase`, `occurrence`, `startedAtEpochMs`, `finishedAtEpochMs`, and `outcome`; do not add a worker label because the helper accepts worker labels only on child evidence. Validation intervals are exclusive: pause implementation or repair timing while focused or aggregate validation is active. The handoff is reconciliation evidence, not permission to replay user-visible transitions.
+
+Treat `(phase, assigned run-level occurrence, edge)` as the transition key, with `edge` equal to `start` or `finish`. Honor the packet's delivered-key set and emit or mediate no duplicate. Return local order alongside an unmapped transition only through the foreground main-agent channel; local order is mapping context, not helper evidence or user-visible timing output.
+
+The allowed outcomes are `completed`, `failed`, `blocked`, `interrupted`, `cancelled`, and `incomplete`. Prefer suitable host-native absolute boundaries, then `.agents/scripts/implementation-phase-timing.mjs clock`. If comparable boundaries are unavailable, omit the nested occurrence; never estimate, normalize reversed evidence, or block work because timing is missing or invalid.
+
+Keep timing evidence in the handoff message only. Never add source, provenance, or availability fields. Do not persist it or include prompts, source content, commands, paths, secrets, environment values, model identifiers, tokens, or costs. A blocker or failure returns valid completed occurrences plus an `incomplete` active occurrence only when both boundaries are known.
 
 For non-trivial stories, do not present “tests passed” as the only completion evidence. Keep validation evidence proportional to story risk: deeper techniques such as property, torture/fuzz, mutation, or manual QA are not universal requirements, but explain skips briefly when those checks are relevant and intentionally omitted.
 

@@ -93,7 +93,7 @@ Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, dat
 
 ## Required sub-agent execution path
 
-When the host exposes any usable sub-agent spawn capability and `sibu-implementation-executor` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu executor worker, subject to host tool policy. Do not choose inline execution merely because it is simpler or faster.
+When the host exposes any usable sub-agent spawn capability and `sibu-implementation-executor` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu executor worker, subject to host tool policy. Do not choose inline execution merely because worker progress is completion-only, or because inline execution is simpler or faster.
 
 Build a narrow executor packet for the worker. The packet must include:
 
@@ -108,20 +108,66 @@ Build a narrow executor packet for the worker. The packet must include:
 - approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
 - expected output format: changed files, completed steps, validation commands/results, compact validation evidence, risks, follow-up questions, and approval state
 - executor mode: `implementation` for the initial story execution or `repair` for one combined review packet
+- selected transition-delivery route: `direct foreground`, `main-mediated foreground`, or `completion-only evidence`, including which actor owns any available user-visible delivery
+- main-owned occurrence assignment context: the next reserved run-level occurrence number for every applicable worker-owned phase and the already-delivered transition keys the worker must not replay
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
 
 The worker must use only the packet, the toolbox, listed skill files including the selected architecture skill, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 
+## Automated-run timing contract
+
+Timing is advisory, message-only observation. It must never change execution order, validation, reviewer availability handling, the three-repair limit, escalation, approval, commit, or continuation authority.
+
+### Boundary, ledger, and sources
+
+- Start one ephemeral run ledger immediately after accepting one story or plan target and before `preparation_context`. Finish it immediately before presenting the human story-review packet. Human reading, approval metadata, commit, and continuation are outside the run.
+- Record ordered, non-overlapping top-level occurrences using only `preparation_context`, `planning`, `implementation`, `focused_validation`, `aggregate_validation`, `specialist_review`, and `repair`. Omit phases that do not occur. `orchestration_overhead` is uncovered run time calculated by the helper, never a worker interval.
+- An occurrence contains its stable phase label, occurrence number, absolute start and finish boundaries when known, and outcome. Concurrent child evidence adds only a stable role label, boundaries or elapsed duration, and outcome.
+- At each boundary prefer a suitable host-native absolute timestamp. Otherwise run `.agents/scripts/implementation-phase-timing.mjs clock`. Never estimate missing timing. Use the helper's `reconcile` operation for interval arithmetic and final output.
+- Keep the ledger only in active context and timing handoff messages. Never write it to repository files, Sibu state, logs, caches, or analytics.
+
+Map handoffs into the Story 01 helper contract exactly:
+
+- The main executor's `planning` occurrence is the sole authoritative top-level planning boundary. Optional planner-worker evidence is a child labeled `implementation-planner` under that occurrence; never accept a second top-level planning occurrence from the worker. Implementation evidence uses top-level `implementation`, `focused_validation`, and `aggregate_validation` occurrences. Repair evidence uses a top-level `repair` occurrence followed by any top-level `focused_validation` or `aggregate_validation` revalidation occurrences.
+- Every top-level occurrence contains only `phase`, `occurrence`, `startedAtEpochMs`, `finishedAtEpochMs`, and `outcome`, plus `children` only for enclosing `planning` and `specialist_review` occurrences. Do not add a worker label to a top-level occurrence.
+- Planner and reviewer evidence is a child containing only `workerLabel`, `outcome`, and either `startedAtEpochMs` plus `finishedAtEpochMs`, or `elapsedMs`. Children never contain `phase` or `occurrence`. The main executor places planner evidence under its enclosing `planning` occurrence and reviewer evidence under its enclosing `specialist_review` occurrence.
+- The only allowed run, phase, and child outcomes are `completed`, `failed`, `blocked`, `interrupted`, `cancelled`, and `incomplete`.
+
+The main executor owns run-level occurrence identity across every fresh planner, implementation, repair, and revalidation worker. Keep a per-phase next-occurrence counter in the ephemeral ledger. Before delegating, reserve and pass the next run-level number for every applicable worker-owned phase. Within one worker handoff, the first local occurrence of a phase uses that reserved number and each later local occurrence increments it; after accepting the handoff, advance the main counter past the highest assigned number before starting another fresh worker. Never accept a fresh worker's reset local occurrence numbering as run-level identity. If an unanticipated occurrence cannot use a reserved number, the worker returns its phase and local order to the main agent for remapping before any user-visible transition or reconciliation.
+
+The exactly-once transition identity is `(phase, run-level occurrence, edge)`, where `edge` is `start` or `finish`. The main ledger, not worker instance identity, decides whether that key has already been delivered. This preserves unique ordered keys through multiple fresh repair and revalidation rounds even though every worker may begin its local ordering at one.
+
+Separate boundary ownership from user-visible delivery. The main executor owns boundaries for `preparation_context`, `planning`, `specialist_review`, and the whole run; the implementation worker owns boundaries and evidence for its `implementation`, validation, and `repair` occurrences. Before starting a worker occurrence, select exactly one foreground delivery route and keep it for that occurrence:
+
+- **Direct foreground progress:** when worker progress is directly user-visible, the worker is the sole delivery owner and emits each start and finish transition once. The main records returned evidence but never repeats those transitions.
+- **Main-mediated foreground progress:** when worker progress reaches the main agent before completion but is not directly user-visible, the worker sends each transition once through that foreground progress channel and the main is the sole user-visible delivery owner, forwarding it once without adding a second transition.
+- **Completion-only evidence:** when a usable worker can return only a completion packet, delegate normally. The worker returns timing evidence with that packet, the main does not replay stale start or finish transitions, and the final summary discloses incomplete live timing without changing execution ownership.
+- **Inline fallback:** only when spawning or resuming is unavailable or blocked by host/tool policy, the main executes inline under the worker toolbox constraints and becomes its sole boundary and delivery owner.
+
+Every applicable occurrence on a direct or mediated foreground route must have one user-visible start and finish transition, with no refreshes. Completion-only delivery may omit those live transitions and must not change who executes the work. Track delivered `(phase, occurrence, edge)` keys in the ephemeral ledger so a returned completion packet or delayed progress event cannot cause a duplicate. A phase finish reports its outcome and elapsed time when available. Timing evidence remains authoritative for reconciliation, but it is not a substitute for live transition delivery.
+
+Timing evidence and user-visible summaries may contain only stable phase or worker labels, boundaries or elapsed durations, occurrence numbers where the helper accepts them, and allowed outcomes. Timing-source selection is private orchestration detail: never add source, provenance, or availability fields to helper payloads, worker evidence, or summaries. Exclude prompts, source content, commands, paths, secrets, credentials, environment values, model identifiers, tokens, costs, comparisons, and causal claims.
+
+### Review, repair, and reconciliation
+
+- Measure one enclosing `specialist_review` occurrence from the first reviewer start until the last reviewer finishes. Record `architecture-reviewer` and `technical-lead-reviewer` durations as children; never add child durations to the run total. With sequential fallback, record ordered specialist-review occurrences.
+- Record every repair and revalidation occurrence in order. Pause implementation or repair timing while focused or aggregate validation is active. Timing does not alter immutable review snapshots or permit a fourth repair.
+- Treat invalid, reversed, privacy-unsafe, or missing nested evidence as an internal reconciliation limitation. Retain valid enclosing boundaries and continue the workflow without heuristic repair or extra evidence fields.
+- A worker blocker, validation failure, unavailable reviewer, interruption, or cancellation closes the last observable boundary when control returns. Abrupt host termination may prevent any partial report.
+
+For a completed run, reconcile immediately before the human gate and report total wall-clock duration; each applicable exclusive phase's aggregate duration and outcomes; computed orchestration overhead; dominant or tied phases; and concurrent child durations. For `failed`, `blocked`, `interrupted`, or `cancelled`, report known evidence, the incomplete outcome, and last active phase. Every completed or partial summary must also show an explicit privacy-safe warning when any expected evidence is unavailable, incomplete, invalid, or rejected; say only that timing evidence is incomplete and some durations are unavailable, without naming its source or echoing payload content. The warning and the underlying evidence limitation never block or alter the workflow. The reconciled summary is authoritative when live delivery was delayed.
+
 ## Fallback matrix
 
 Use host capability metadata from workflow target planning guidance to choose the safest execution path. This order is mandatory:
 
-1. **Sub-agent worker:** spawn `sibu-implementation-executor` when any compatible sub-agent capability is available.
-2. **Mediated feedback:** if direct foreground review is unavailable but the spawned worker is resumable, the main agent mediates user feedback back to the same worker.
-3. **Inline compressed-context fallback:** only if spawning/resuming the worker is unavailable or host/tool policy blocks it, the main agent executes the story inline using compressed context, the same source gates, and the same toolbox/packet constraints.
+1. **Direct foreground worker:** spawn `sibu-implementation-executor` when the host makes its progress directly user-visible; the worker owns delivery for its phases.
+2. **Mediated foreground worker:** otherwise spawn when the host relays worker progress to the main agent before completion; the main forwards those phase transitions and can mediate user feedback back to the same resumable worker.
+3. **Completion-only worker:** otherwise spawn the usable worker and accept timing evidence in its completion packet. Do not replay stale live transitions; disclose incomplete live timing in the final summary.
+4. **Inline compressed-context fallback:** only when spawning or resuming is unavailable or blocked by host/tool policy, the main agent executes the story inline using compressed context, the same source gates, and the same toolbox/packet constraints.
 
-Fallback must be graceful. If spawning is available but the worker reports a task blocker, do not inline around it; surface the blocker or ask for the missing input. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
+All implementation and repair execution stays in the foreground; never detach it or continue it as background work. Fallback must be graceful. If a foreground worker is available but reports a task blocker, do not inline around it; surface the blocker or ask for the missing input. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
 
 ## Validation efficiency
 
