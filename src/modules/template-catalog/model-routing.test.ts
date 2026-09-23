@@ -7,6 +7,7 @@ import {
   loadModelRecommendationCatalog,
   parseModelRecommendationCatalog,
   resolveModelRecommendation,
+  reviewRecommendationSince,
 } from './model-routing.js';
 
 function mutableCatalog(): Record<string, unknown> {
@@ -18,6 +19,119 @@ function recommendations(catalog: Record<string, unknown>): Array<Record<string,
 }
 
 describe('model recommendation catalog', () => {
+  it('orders numeric revisions across .9 to .10 when validating and reviewing releases', () => {
+    const draft = mutableCatalog();
+    const selected = recommendations(draft)[0];
+    const before = { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale };
+    selected.model = 'gpt-6-sol';
+    selected.reasoningEffort = 'medium';
+    draft.catalogVersion = '2026-09-23.10';
+    draft.releases = Array.from({ length: 8 }, (_, index) => ({
+      version: `2026-09-23.${index + 3}`,
+      changes: index === 7 ? [{ agentEnvironment: selected.agentEnvironment, role: selected.role,
+        workloadClass: selected.workloadClass, before,
+        after: { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale },
+        reason: 'Updated expected-cost guidance.' }] : [],
+    }));
+    const catalog = parseModelRecommendationCatalog(draft);
+    const key = { agentEnvironment: 'codex' as const, role: 'implementation-planner' as const, workloadClass: 'bounded' as const };
+    assert.equal(reviewRecommendationSince(catalog, key, '2026-09-23.9').status, 'changed');
+    assert.equal(reviewRecommendationSince(catalog, key, '2026-09-23.10').status, 'unchanged');
+    assert.equal(reviewRecommendationSince(catalog, key, '2026-09-23.11').status, 'unavailable');
+    draft.historyBaseVersion = '2026-09-23.11';
+    assert.throws(() => parseModelRecommendationCatalog(draft), /history is invalid/);
+    draft.historyBaseVersion = '2026-09-23.2';
+    (draft.releases as Array<{ version: string }>)[7].version = '2026-09-23.9';
+    assert.throws(() => parseModelRecommendationCatalog(draft), /ordered/);
+  });
+  it('reviews only documented route-scoped changes across releases', () => {
+    const draft = mutableCatalog();
+    const entries = recommendations(draft);
+    const selected = entries.find((entry) => entry.role === 'implementation-executor' && entry.workloadClass === 'bounded')!;
+    const before = { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale };
+    selected.model = 'gpt-6-sol'; selected.reasoningEffort = 'medium';
+    const after = { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale };
+    draft.catalogVersion = '2026-09-23.4';
+    draft.releases = [
+      { version: '2026-09-23.3', changes: [{ agentEnvironment: 'codex', role: selected.role,
+        workloadClass: selected.workloadClass, before, after, reason: 'Similar expected fit with revised cost guidance.' }] },
+      { version: '2026-09-23.4', changes: [] },
+    ];
+    const catalog = parseModelRecommendationCatalog(draft);
+    assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' }, '2026-09-23.2').status, 'changed');
+    assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-planner', workloadClass: 'bounded' }, '2026-09-23.2').status, 'unchanged');
+    assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' }, '2026-09-23.3').status, 'unchanged');
+    assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' }, '2026-09-23.1').status, 'unavailable');
+    (draft.releases as Array<{ version: string }>)[0].version = '2026-09-23.4';
+    assert.throws(() => parseModelRecommendationCatalog(draft), /ordered|gap/);
+    (draft.releases as Array<{ version: string }>)[0].version = '2026-09-23.3';
+    (draft.releases as Array<{ version: string }>)[1].version = '2026-09-23.5';
+    draft.catalogVersion = '2026-09-23.5';
+    assert.throws(() => parseModelRecommendationCatalog(draft), /gap/);
+    (draft.releases as Array<{ version: string }>)[1].version = '2026-09-23.4';
+    draft.catalogVersion = '2026-09-23.4';
+    ((draft.releases as Array<{ changes: Array<{ reason: string }> }>)[0].changes[0]).reason = ' ';
+    assert.throws(() => parseModelRecommendationCatalog(draft), /note/);
+  });
+  it('does not treat unrecorded same-day or cross-day versions as reviewable history', () => {
+    const draft = mutableCatalog();
+    draft.catalogVersion = '2026-09-25.1';
+    draft.releases = [
+      { version: '2026-09-24.1', changes: [] },
+      { version: '2026-09-25.1', changes: [] },
+    ];
+    const catalog = parseModelRecommendationCatalog(draft);
+    const key = { agentEnvironment: 'codex' as const, role: 'implementation-executor' as const, workloadClass: 'bounded' as const };
+    for (const version of ['2026-09-23.3', '2026-09-24.2']) {
+      assert.equal(reviewRecommendationSince(catalog, key, version).status, 'unavailable');
+    }
+    for (const version of ['2026-09-23.2', '2026-09-24.1', '2026-09-25.1']) {
+      assert.equal(reviewRecommendationSince(catalog, key, version).status, 'unchanged');
+    }
+  });
+  it('rejects changed current guidance without a route-scoped release record', () => {
+    const draft = mutableCatalog();
+    recommendations(draft)[0].model = 'gpt-6-sol';
+    assert.throws(() => parseModelRecommendationCatalog(draft), /does not match current guidance/);
+
+    draft.catalogVersion = '2026-09-23.3';
+    draft.releases = [{ version: '2026-09-23.3', changes: [] }];
+    assert.throws(() => parseModelRecommendationCatalog(draft), /does not match current guidance/);
+  });
+  it('validates the history base and the first release against every route', () => {
+    const missing = mutableCatalog();
+    delete missing.historyBaseRecommendations;
+    assert.throws(() => parseModelRecommendationCatalog(missing), /history base/);
+
+    const incomplete = mutableCatalog();
+    (incomplete.historyBaseRecommendations as unknown[]).pop();
+    assert.throws(() => parseModelRecommendationCatalog(incomplete), /history base.*incomplete/);
+
+    const duplicate = mutableCatalog();
+    const base = duplicate.historyBaseRecommendations as unknown[];
+    base[1] = structuredClone(base[0]);
+    assert.throws(() => parseModelRecommendationCatalog(duplicate), /history base.*duplicate/);
+
+    const malformed = mutableCatalog();
+    (malformed.historyBaseRecommendations as Array<Record<string, unknown>>)[0].model = '';
+    assert.throws(() => parseModelRecommendationCatalog(malformed), /model must be non-empty/);
+
+    const rewrittenBase = mutableCatalog();
+    (rewrittenBase.historyBaseRecommendations as Array<Record<string, unknown>>)[0].model = 'gpt-6-sol';
+    recommendations(rewrittenBase)[0].model = 'gpt-6-sol';
+    assert.throws(() => parseModelRecommendationCatalog(rewrittenBase), /history base must remain fixed/);
+
+    const mismatchedFirstChange = mutableCatalog();
+    const current = recommendations(mismatchedFirstChange)[0];
+    const before = { model: 'gpt-6-sol', reasoningEffort: 'medium', rationale: current.rationale };
+    const after = { model: 'gpt-6-sol', reasoningEffort: 'low', rationale: current.rationale };
+    current.model = after.model;
+    current.reasoningEffort = after.reasoningEffort;
+    mismatchedFirstChange.catalogVersion = '2026-09-23.3';
+    mismatchedFirstChange.releases = [{ version: '2026-09-23.3', changes: [{ agentEnvironment: current.agentEnvironment,
+      role: current.role, workloadClass: current.workloadClass, before, after, reason: 'Revised task-fit guidance.' }] }];
+    assert.throws(() => parseModelRecommendationCatalog(mismatchedFirstChange), /change chain is inconsistent/);
+  });
   it('contains an independently addressable Codex recommendation for every role and workload', () => {
     const catalog = loadModelRecommendationCatalog();
 
@@ -59,6 +173,8 @@ describe('model recommendation catalog', () => {
     assert.equal(Object.isFrozen(catalog.recommendations), true);
     assert.equal(Object.isFrozen(catalog.recommendations[0]), true);
     assert.equal(Object.isFrozen(catalog.recommendations[0].rationale), true);
+    assert.equal(Object.isFrozen(catalog.historyBaseRecommendations), true);
+    assert.equal(Object.isFrozen(catalog.historyBaseRecommendations[0]), true);
   });
 
   it('allows optional official source links to be omitted', () => {

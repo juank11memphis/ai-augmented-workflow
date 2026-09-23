@@ -1,6 +1,7 @@
 import type {
   ModelReasoningEffort,
   ModelRoute,
+  ModelRouteReview,
   ModelRouteAgentEnvironment,
   ModelRouteOrigin,
   ModelWorkloadClass,
@@ -31,6 +32,15 @@ export function isModelRoutes(value: unknown): value is ModelRoute[] {
   return new Set(keys).size === keys.length;
 }
 
+export function isModelRouteReviews(value: unknown): value is ModelRouteReview[] {
+  if (!Array.isArray(value) || !value.every((review) =>
+    !!review && typeof review === 'object' &&
+    isIncluded(AGENT_ENVIRONMENTS, review.agentEnvironment) &&
+    isIncluded(SIBU_ROLES, review.role) && isIncluded(WORKLOAD_CLASSES, review.workloadClass) &&
+    isIsoTimestamp(review.routeSelectedAt) && isCatalogVersion(review.catalogVersion))) return false;
+  return new Set(value.map(routeKey)).size === value.length;
+}
+
 function isModelRoute(value: unknown): value is ModelRoute {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const route = value as Partial<ModelRoute>;
@@ -47,7 +57,7 @@ function isModelRoute(value: unknown): value is ModelRoute {
   );
 }
 
-function routeKey(route: ModelRoute): string {
+function routeKey(route: ModelRoute | ModelRouteReview): string {
   return `${route.agentEnvironment}:${route.role}:${route.workloadClass}`;
 }
 

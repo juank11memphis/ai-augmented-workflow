@@ -240,5 +240,243 @@
         "nonGuarantee": "This recommendation is guidance, not a guarantee."
       }
     }
-  ]
+  ],
+  "historyBaseVersion": "2026-09-23.2",
+  "historyBaseRecommendations": [
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-planner",
+      "workloadClass": "bounded",
+      "model": "gpt-6-luna",
+      "reasoningEffort": "low",
+      "rationale": {
+        "expectedFit": "Best expected fit for bounded planning work based on current maintainer research.",
+        "relativeCost": "Lower expected cost than the broader-reasoning recommendation.",
+        "relativeSpeed": "Faster expected response for the bounded scope.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-planner",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "rationale": {
+        "expectedFit": "Best expected fit for demanding planning work based on current maintainer research.",
+        "relativeCost": "Higher expected cost is justified by the broader reasoning needs.",
+        "relativeSpeed": "Slower expected response is acceptable for the added reasoning depth.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-planner",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "rationale": {
+        "expectedFit": "Best expected fit for high-risk planning work based on current maintainer research.",
+        "relativeCost": "Higher expected cost than Luna or Sol is justified only for consequential high-risk work.",
+        "relativeSpeed": "Slower expected response is acceptable when deeper reasoning protects consequential work.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-executor",
+      "workloadClass": "bounded",
+      "model": "gpt-6-luna",
+      "reasoningEffort": "low",
+      "rationale": {
+        "expectedFit": "Best expected fit for bounded implementation work based on current maintainer research.",
+        "relativeCost": "Lower expected cost than the broader-reasoning recommendation.",
+        "relativeSpeed": "Faster expected response for the bounded scope.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-executor",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "rationale": {
+        "expectedFit": "Best expected fit for demanding implementation work based on current maintainer research.",
+        "relativeCost": "Higher expected cost is justified by the broader reasoning needs.",
+        "relativeSpeed": "Slower expected response is acceptable for the added reasoning depth.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-executor",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "rationale": {
+        "expectedFit": "Best expected fit for high-risk implementation work based on current maintainer research.",
+        "relativeCost": "Higher expected cost than Luna or Sol is justified only for consequential high-risk work.",
+        "relativeSpeed": "Slower expected response is acceptable when deeper reasoning protects consequential work.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "architecture-reviewer",
+      "workloadClass": "bounded",
+      "model": "gpt-6-luna",
+      "reasoningEffort": "low",
+      "rationale": {
+        "expectedFit": "Best expected fit for bounded architecture review work based on current maintainer research.",
+        "relativeCost": "Lower expected cost than the broader-reasoning recommendation.",
+        "relativeSpeed": "Faster expected response for the bounded scope.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "architecture-reviewer",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "rationale": {
+        "expectedFit": "Best expected fit for demanding architecture review work based on current maintainer research.",
+        "relativeCost": "Higher expected cost is justified by the broader reasoning needs.",
+        "relativeSpeed": "Slower expected response is acceptable for the added reasoning depth.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "architecture-reviewer",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "rationale": {
+        "expectedFit": "Best expected fit for high-risk architecture review work based on current maintainer research.",
+        "relativeCost": "Higher expected cost than Luna or Sol is justified only for consequential high-risk work.",
+        "relativeSpeed": "Slower expected response is acceptable when deeper reasoning protects consequential work.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "technical-lead-reviewer",
+      "workloadClass": "bounded",
+      "model": "gpt-6-luna",
+      "reasoningEffort": "low",
+      "rationale": {
+        "expectedFit": "Best expected fit for bounded technical review work based on current maintainer research.",
+        "relativeCost": "Lower expected cost than the broader-reasoning recommendation.",
+        "relativeSpeed": "Faster expected response for the bounded scope.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "technical-lead-reviewer",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "rationale": {
+        "expectedFit": "Best expected fit for demanding technical review work based on current maintainer research.",
+        "relativeCost": "Higher expected cost is justified by the broader reasoning needs.",
+        "relativeSpeed": "Slower expected response is acceptable for the added reasoning depth.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "technical-lead-reviewer",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "rationale": {
+        "expectedFit": "Best expected fit for high-risk technical review work based on current maintainer research.",
+        "relativeCost": "Higher expected cost than Luna or Sol is justified only for consequential high-risk work.",
+        "relativeSpeed": "Slower expected response is acceptable when deeper reasoning protects consequential work.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "github-exporter",
+      "workloadClass": "bounded",
+      "model": "gpt-6-luna",
+      "reasoningEffort": "low",
+      "rationale": {
+        "expectedFit": "Best expected fit for bounded GitHub export work based on current maintainer research.",
+        "relativeCost": "Lower expected cost than the broader-reasoning recommendation.",
+        "relativeSpeed": "Faster expected response for the bounded scope.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "github-exporter",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "rationale": {
+        "expectedFit": "Best expected fit for demanding GitHub export work based on current maintainer research.",
+        "relativeCost": "Higher expected cost is justified by the broader reasoning needs.",
+        "relativeSpeed": "Slower expected response is acceptable for the added reasoning depth.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "github-exporter",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "rationale": {
+        "expectedFit": "Best expected fit for high-risk GitHub export work based on current maintainer research.",
+        "relativeCost": "Higher expected cost than Luna or Sol is justified only for consequential high-risk work.",
+        "relativeSpeed": "Slower expected response is acceptable when deeper reasoning protects consequential work.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "notion-exporter",
+      "workloadClass": "bounded",
+      "model": "gpt-6-luna",
+      "reasoningEffort": "low",
+      "rationale": {
+        "expectedFit": "Best expected fit for bounded Notion export work based on current maintainer research.",
+        "relativeCost": "Lower expected cost than the broader-reasoning recommendation.",
+        "relativeSpeed": "Faster expected response for the bounded scope.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "notion-exporter",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "rationale": {
+        "expectedFit": "Best expected fit for demanding Notion export work based on current maintainer research.",
+        "relativeCost": "Higher expected cost is justified by the broader reasoning needs.",
+        "relativeSpeed": "Slower expected response is acceptable for the added reasoning depth.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "notion-exporter",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "rationale": {
+        "expectedFit": "Best expected fit for high-risk Notion export work based on current maintainer research.",
+        "relativeCost": "Higher expected cost than Luna or Sol is justified only for consequential high-risk work.",
+        "relativeSpeed": "Slower expected response is acceptable when deeper reasoning protects consequential work.",
+        "nonGuarantee": "This recommendation is guidance, not a guarantee."
+      }
+    }
+  ],
+  "releases": []
 }

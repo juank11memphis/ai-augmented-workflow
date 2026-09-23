@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { sha256 } from '../../shared/hash.js';
-import type { ModelRoute, SibuState } from '../../shared/types.js';
+import type { ModelRoute, ModelRouteReview, SibuState } from '../../shared/types.js';
 import { isModelRoutes } from './model-routes.js';
 import { STATE_RELATIVE_PATH } from './state-path.js';
 import { isSibuState } from './state.js';
 import { mutateStateFile } from './state-mutation.js';
 
-export type LedgerRouteRead = { status: 'available'; snapshot: { routes: ModelRoute[]; stateBasis: string } } | { status: 'unavailable' };
+export type LedgerRouteRead = { status: 'available'; snapshot: { routes: ModelRoute[]; reviews: ModelRouteReview[]; stateBasis: string } } | { status: 'unavailable' };
 
 export function readModelRoutes(rootPath: string): LedgerRouteRead {
   const statePath = path.join(rootPath, STATE_RELATIVE_PATH);
@@ -16,10 +16,24 @@ export function readModelRoutes(rootPath: string): LedgerRouteRead {
     const bytes = fs.readFileSync(statePath, 'utf8');
     const state = JSON.parse(bytes) as unknown;
     if (!isSibuState(state)) return { status: 'unavailable' };
-    return { status: 'available', snapshot: { routes: state.modelRoutes ?? [], stateBasis: sha256(bytes) } };
+    return { status: 'available', snapshot: { routes: state.modelRoutes ?? [], reviews: state.modelRouteReviews ?? [], stateBasis: sha256(bytes) } };
   } catch {
     return { status: 'unavailable' };
   }
+}
+
+export function recordModelRouteReview(rootPath: string, review: ModelRouteReview, expectedBasis: string): 'saved' | 'conflict' | 'failed' {
+  try {
+    return mutateStateFile(path.join(rootPath, STATE_RELATIVE_PATH), (current) => {
+      if (!current) return { result: 'failed' as const };
+      if (sha256(current.bytes) !== expectedBasis) return { result: 'conflict' as const };
+      const route = current.state.modelRoutes?.find((item) => sameKey(item, review));
+      if (!route || route.selectedAt !== review.routeSelectedAt) return { result: 'conflict' as const };
+      const modelRouteReviews = [...(current.state.modelRouteReviews ?? []).filter((item) => !sameKey(item, review)), review];
+      const state: SibuState = { ...current.state, modelRouteReviews, updatedAt: new Date().toISOString() };
+      return { state, result: 'saved' as const };
+    });
+  } catch { return 'failed'; }
 }
 
 export function upsertModelRoute(rootPath: string, route: ModelRoute, expectedBasis: string): 'saved' | 'conflict' | 'failed' {
@@ -31,7 +45,9 @@ export function upsertModelRoute(rootPath: string, route: ModelRoute, expectedBa
       const routes = current.state.modelRoutes ?? [];
       const nextRoutes = [...routes.filter((item) => !sameKey(item, route)), route];
       if (!isModelRoutes(nextRoutes)) return { result: 'failed' as const };
-      const next: SibuState = { ...current.state, modelRoutes: nextRoutes, updatedAt: new Date().toISOString() };
+      const next: SibuState = { ...current.state, modelRoutes: nextRoutes,
+        modelRouteReviews: current.state.modelRouteReviews?.filter((item) => !sameKey(item, route)),
+        updatedAt: new Date().toISOString() };
       return { state: next, result: 'saved' as const };
     });
   } catch {
@@ -39,6 +55,6 @@ export function upsertModelRoute(rootPath: string, route: ModelRoute, expectedBa
   }
 }
 
-function sameKey(left: ModelRoute, right: ModelRoute): boolean {
+function sameKey(left: ModelRoute | ModelRouteReview, right: ModelRoute | ModelRouteReview): boolean {
   return left.agentEnvironment === right.agentEnvironment && left.role === right.role && left.workloadClass === right.workloadClass;
 }

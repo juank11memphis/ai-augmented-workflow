@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { ModelReasoningEffort, ModelWorkloadClass, SibuModelRole } from '../../shared/types.js';
 
@@ -16,6 +17,8 @@ export const MODEL_REASONING_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max',
 
 const CATALOG_VERSION_PATTERN = /^(\d{4}-\d{2}-\d{2})\.([1-9]\d*)$/;
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const HISTORY_BASE_VERSION = '2026-09-23.2';
+const HISTORY_BASE_SHA256 = '84efacb9fdf07ac86b0e71dc94b928dab8b3803812677b9d7bd03d9a57294eb3';
 
 export type RecommendationAgentEnvironment = (typeof RECOMMENDATION_AGENT_ENVIRONMENTS)[number];
 export type { ModelReasoningEffort, ModelWorkloadClass, SibuModelRole } from '../../shared/types.js';
@@ -40,7 +43,58 @@ export type ModelRecommendationCatalog = Readonly<{
   reviewedAt: string;
   sourceUrls?: readonly string[];
   recommendations: readonly ModelRecommendation[];
+  historyBaseVersion: string;
+  historyBaseRecommendations: readonly ModelRecommendation[];
+  releases: readonly RecommendationRelease[];
 }>;
+
+export type RecommendationRelease = Readonly<{
+  version: string;
+  changes: readonly RecommendationChange[];
+}>;
+
+export type RecommendationChange = Readonly<{
+  agentEnvironment: RecommendationAgentEnvironment;
+  role: SibuModelRole;
+  workloadClass: ModelWorkloadClass;
+  before: Readonly<Pick<ModelRecommendation, 'model' | 'reasoningEffort' | 'rationale'>>;
+  after: Readonly<Pick<ModelRecommendation, 'model' | 'reasoningEffort' | 'rationale'>>;
+  reason: string;
+}>;
+
+export type RecommendationReview =
+  | { status: 'unchanged' }
+  | { status: 'unavailable' }
+  | { status: 'changed'; recommendation: ModelRecommendation; reasons: readonly string[] };
+
+export function compareCatalogVersions(left: string, right: string): number {
+  if (!isCatalogVersion(left) || !isCatalogVersion(right)) throw new Error('Invalid model recommendation catalog version.');
+  const [leftDay, leftRevision] = left.split('.');
+  const [rightDay, rightRevision] = right.split('.');
+  if (leftDay !== rightDay) return leftDay < rightDay ? -1 : 1;
+  const leftNumber = BigInt(leftRevision);
+  const rightNumber = BigInt(rightRevision);
+  return leftNumber < rightNumber ? -1 : leftNumber > rightNumber ? 1 : 0;
+}
+
+export function reviewRecommendationSince(
+  catalog: ModelRecommendationCatalog,
+  key: Pick<ModelRecommendation, 'agentEnvironment' | 'role' | 'workloadClass'>,
+  savedVersion: string
+): RecommendationReview {
+  if (!isCatalogVersion(savedVersion) || compareCatalogVersions(savedVersion, catalog.historyBaseVersion) < 0 ||
+      compareCatalogVersions(savedVersion, catalog.catalogVersion) > 0 ||
+      (savedVersion !== catalog.historyBaseVersion && !catalog.releases.some((release) => release.version === savedVersion))) {
+    return { status: 'unavailable' };
+  }
+  const changes = catalog.releases
+    .filter((release) => compareCatalogVersions(release.version, savedVersion) > 0)
+    .flatMap((release) => release.changes.filter((change) => routeKey(change) === routeKey(key)));
+  if (changes.length === 0) return { status: 'unchanged' };
+  const recommendation = resolveModelRecommendation(catalog, key);
+  if (JSON.stringify(changes[0].before) === JSON.stringify(pickGuidance(recommendation))) return { status: 'unchanged' };
+  return { status: 'changed', recommendation, reasons: changes.map((change) => change.reason) };
+}
 
 const catalogPath = fileURLToPath(new URL('./model-recommendations.json', import.meta.url));
 
@@ -96,13 +150,95 @@ export function parseModelRecommendationCatalog(value: unknown): ModelRecommenda
     throw new Error(`Model recommendation catalog mappings are incomplete: ${missingKeys.join(', ') || 'unexpected entries'}.`);
   }
 
+  if (!isCatalogVersion(value.historyBaseVersion) || compareCatalogVersions(value.historyBaseVersion, value.catalogVersion) > 0 || !Array.isArray(value.releases)) {
+    throw new Error('Model recommendation catalog release history is invalid.');
+  }
+  if (!Array.isArray(value.historyBaseRecommendations)) {
+    throw new Error('Model recommendation history base must contain every route.');
+  }
+  const historyBaseRecommendations = value.historyBaseRecommendations.map(parseRecommendation);
+  const baseKeys = historyBaseRecommendations.map(routeKey);
+  if (new Set(baseKeys).size !== baseKeys.length || baseKeys.length !== expectedKeys.length ||
+      expectedKeys.some((key) => !baseKeys.includes(key))) {
+    throw new Error('Model recommendation history base has duplicate or incomplete route mappings.');
+  }
+  const baseDigest = createHash('sha256').update(JSON.stringify(historyBaseRecommendations)).digest('hex');
+  if (value.historyBaseVersion !== HISTORY_BASE_VERSION || baseDigest !== HISTORY_BASE_SHA256) {
+    throw new Error('Model recommendation history base must remain fixed across releases.');
+  }
+  const baseByKey = new Map(historyBaseRecommendations.map((entry) => [routeKey(entry), entry]));
+  const releases = value.releases.map(parseRelease);
+  let previousVersion = value.historyBaseVersion;
+  for (const release of releases) {
+    if (compareCatalogVersions(release.version, previousVersion) <= 0 ||
+        compareCatalogVersions(release.version, value.catalogVersion) > 0) throw new Error('Model recommendation releases must be ordered.');
+    const [previousDay, previousSequence] = previousVersion.split('.');
+    const [releaseDay, releaseSequence] = release.version.split('.');
+    if (releaseDay === previousDay && BigInt(releaseSequence) !== BigInt(previousSequence) + 1n) {
+      throw new Error('Model recommendation release history has a version gap.');
+    }
+    previousVersion = release.version;
+  }
+  if (previousVersion !== value.catalogVersion) throw new Error('Model recommendation release history does not reach the current catalog.');
+  for (const recommendation of recommendations) {
+    const base = baseByKey.get(routeKey(recommendation));
+    if (!base) throw new Error('Model recommendation history base is incomplete.');
+    const changes = releases.flatMap((release) => release.changes.filter((change) => routeKey(change) === routeKey(recommendation)));
+    let guidance = pickGuidance(base);
+    for (const change of changes) {
+      if (JSON.stringify(guidance) !== JSON.stringify(change.before)) throw new Error('Model recommendation change chain is inconsistent.');
+      guidance = change.after;
+    }
+    if (JSON.stringify(guidance) !== JSON.stringify(pickGuidance(recommendation))) {
+      throw new Error('Model recommendation release history does not match current guidance.');
+    }
+  }
+
   return Object.freeze({
     schemaVersion: 1,
     catalogVersion: value.catalogVersion,
     reviewedAt: value.reviewedAt,
     ...(value.sourceUrls !== undefined ? { sourceUrls: Object.freeze([...value.sourceUrls]) } : {}),
     recommendations: Object.freeze(recommendations),
+    historyBaseVersion: value.historyBaseVersion,
+    historyBaseRecommendations: Object.freeze(historyBaseRecommendations),
+    releases: Object.freeze(releases),
   });
+}
+
+function parseRelease(value: unknown): RecommendationRelease {
+  if (!isRecord(value) || !isCatalogVersion(value.version) || !Array.isArray(value.changes)) throw new Error('Invalid model recommendation release.');
+  const changes = value.changes.map(parseChange);
+  if (new Set(changes.map(routeKey)).size !== changes.length) throw new Error('Duplicate route change in release.');
+  return Object.freeze({ version: value.version, changes: Object.freeze(changes) });
+}
+
+function parseChange(value: unknown): RecommendationChange {
+  if (!isRecord(value) || !isIncluded(RECOMMENDATION_AGENT_ENVIRONMENTS, value.agentEnvironment) ||
+      !isIncluded(SIBU_MODEL_ROLES, value.role) || !isIncluded(MODEL_WORKLOAD_CLASSES, value.workloadClass) ||
+      !isNonEmptyString(value.reason)) throw new Error('Invalid route-scoped recommendation change note.');
+  const before = parseGuidance(value.before);
+  const after = parseGuidance(value.after);
+  if (JSON.stringify(before) === JSON.stringify(after)) throw new Error('Unchanged guidance must not be recorded as a route change.');
+  return Object.freeze({ agentEnvironment: value.agentEnvironment, role: value.role, workloadClass: value.workloadClass,
+    before, after, reason: value.reason });
+}
+
+function parseGuidance(value: unknown): RecommendationChange['before'] {
+  if (!isRecord(value) || !isNonEmptyString(value.model) || !isIncluded(MODEL_REASONING_EFFORTS, value.reasoningEffort) || !isRecord(value.rationale)) {
+    throw new Error('Invalid recommendation change guidance.');
+  }
+  const { expectedFit, relativeCost, relativeSpeed, nonGuarantee } = value.rationale;
+  if (![expectedFit, relativeCost, relativeSpeed, nonGuarantee].every(isNonEmptyString) || !/not (?:a )?guarantee/i.test(nonGuarantee as string)) {
+    throw new Error('Invalid recommendation change rationale.');
+  }
+  return { model: value.model, reasoningEffort: value.reasoningEffort,
+    rationale: { expectedFit: expectedFit as string, relativeCost: relativeCost as string,
+      relativeSpeed: relativeSpeed as string, nonGuarantee: nonGuarantee as string } };
+}
+
+function pickGuidance(value: ModelRecommendation): RecommendationChange['after'] {
+  return { model: value.model, reasoningEffort: value.reasoningEffort, rationale: value.rationale };
 }
 
 function parseRecommendation(value: unknown): ModelRecommendation {

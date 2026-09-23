@@ -8,7 +8,7 @@ import type { ModelRoute, SibuState } from '../../shared/types.js';
 import { handleUseSkill } from '../workflow-configuration-manager/use-skill/handler.js';
 import { applySyncAction } from '../sync-review-orchestrator/apply-action.js';
 import { getWorkflowTargets, readTemplateManifest, renderMissingWorkflowFiles, SUPPORTED_AGENTS } from '../template-catalog/index.js';
-import { cloneState, readStateForDoctor, writeSibuState, writeStateFile } from './index.js';
+import { cloneState, readModelRoutes, readStateForDoctor, recordModelRouteReview, writeSibuState, writeStateFile } from './index.js';
 
 const temporaryRoots: string[] = [];
 const originalCwd = process.cwd();
@@ -31,6 +31,23 @@ afterEach(() => {
 });
 
 describe('model route state preservation', () => {
+  it('records an atomic route review independently and preserves it through state rewrites', () => {
+    const root = createInitializedRepo();
+    const statePath = path.join(root, '.sibu/state.json');
+    writeStateFile(statePath, { ...readState(root), modelRoutes: routes });
+    const read = readModelRoutes(root);
+    if (read.status !== 'available') throw new Error('State unavailable');
+    const marker = { agentEnvironment: routes[0].agentEnvironment, role: routes[0].role,
+      workloadClass: routes[0].workloadClass, routeSelectedAt: routes[0].selectedAt, catalogVersion: '2026-09-23.2' };
+    assert.equal(recordModelRouteReview(root, marker, read.snapshot.stateBasis), 'saved');
+    assert.equal(recordModelRouteReview(root, marker, read.snapshot.stateBasis), 'conflict');
+    assert.deepEqual(readState(root).modelRoutes, routes);
+    assert.deepEqual(readState(root).modelRouteReviews, [marker]);
+    const selectedAgents = [SUPPORTED_AGENTS.find((agent) => agent.id === 'codex')!];
+    writeSibuState({ rootPath: root, statePath, selectedAgents, selectedLanguageSkills: [], selectedFrameworkSkills: [], targets: getWorkflowTargets(root, selectedAgents) });
+    assert.deepEqual(readState(root).modelRouteReviews, [marker]);
+    assert.deepEqual(readState(root).modelRoutes, routes);
+  });
   it('accepts legacy state and rejects malformed or duplicate routes', () => {
     const root = createInitializedRepo();
     const statePath = path.join(root, '.sibu/state.json');

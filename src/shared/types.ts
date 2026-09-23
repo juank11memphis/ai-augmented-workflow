@@ -31,6 +31,14 @@ export type ModelRoute = {
   selectedAt: string;
 };
 
+export type ModelRouteReview = {
+  agentEnvironment: ModelRouteAgentEnvironment;
+  role: SibuModelRole;
+  workloadClass: ModelWorkloadClass;
+  routeSelectedAt: string;
+  catalogVersion: string;
+};
+
 export type SupportedAgent = {
   id: AgentId;
   name: string;
@@ -150,6 +158,7 @@ export type SibuState = {
   mcpServerConfigs?: McpServerConfigs;
   reviewedArchitectureSkills?: ArchitectureSkillId[];
   modelRoutes?: ModelRoute[];
+  modelRouteReviews?: ModelRouteReview[];
   managedFiles: Record<string, ManagedFileState>;
 };
 

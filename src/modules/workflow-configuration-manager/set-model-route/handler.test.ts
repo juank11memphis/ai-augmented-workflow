@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 import { loadModelRecommendationCatalog, resolveModelRecommendation } from '../../template-catalog/model-routing.js';
 import { handleSetModelRoute } from './handler.js';
+import { validateModelRouteSelection } from '../model-route-selection.js';
 import type { SetModelRoutePorts } from './ports.js';
 
 const catalog = loadModelRecommendationCatalog();
-const key = { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' };
+const key = { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' } as const;
 const basis = 'a'.repeat(64);
 const command = { type: 'models:set' as const, ...key, model: 'gpt-6-luna', reasoningEffort: 'low', catalogVersion: catalog.catalogVersion, stateBasis: basis };
 const saved: { routes: unknown[] } = { routes: [] };
@@ -34,6 +35,25 @@ it('blocks invalid input and unavailable state, conflicts on stale basis or cata
   assert.equal(handleSetModelRoute({ ...command, stateBasis: 'b'.repeat(64) }, ports).status, 'conflict');
   assert.equal(handleSetModelRoute({ ...command, catalogVersion: 'old' }, ports).status, 'conflict');
   assert.equal(handleSetModelRoute(command, { ...ports, stateReader: { read: () => ({ status: 'unavailable' }) } }).status, 'blocked');
+});
+it('applies the same pure selection rules to both save and sync replacement inputs', () => {
+  const current = { catalogVersion: catalog.catalogVersion, recommendation: resolveModelRecommendation(catalog, key), stateBasis: basis };
+  for (const changes of [
+    { model: '' }, { model: ' invalid ' }, { model: 'a'.repeat(129) }, { reasoningEffort: 'impossible' },
+    { role: 'unknown' }, { catalogVersion: '' }, { stateBasis: 'invalid' },
+  ]) {
+    const candidate = { ...command, ...changes };
+    assert.equal(validateModelRouteSelection(candidate, current, ports.now()).status, 'blocked');
+    assert.equal(handleSetModelRoute(candidate, ports).status, 'blocked');
+  }
+  for (const changes of [{ catalogVersion: 'old' }, { stateBasis: 'b'.repeat(64) }]) {
+    const candidate = { ...command, ...changes };
+    assert.equal(validateModelRouteSelection(candidate, current, ports.now()).status, 'conflict');
+    assert.equal(handleSetModelRoute(candidate, ports).status, 'conflict');
+  }
+  const valid = validateModelRouteSelection(command, current, ports.now());
+  assert.equal(valid.status, 'valid');
+  if (valid.status === 'valid') assert.equal(valid.route.origin, 'recommended');
 });
 it('reports guarded writer conflict and failure honestly', () => {
   for (const outcome of ['conflict', 'failed'] as const) {

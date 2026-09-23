@@ -12,6 +12,9 @@ import type { SyncProjectCommand } from './command.js';
 import { logSyncPreview } from './log-preview.js';
 import { getSyncPreviews, isActionableSyncPreview, shouldAskForSyncAction } from './sync-preview.js';
 import { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
+import { reviewProjectModelRoutes } from './model-route-review-adapters.js';
+import { askForModelRouteReview, formatModelRouteReview } from './model-route-review-prompt.js';
+import type { ModelRouteReviewNotice, ModelRouteReviewResult } from './model-route-review-result.js';
 
 type SyncProjectDependencies = {
   renderIntro: typeof renderIntro;
@@ -20,6 +23,8 @@ type SyncProjectDependencies = {
   askForMissingFrameworkSkills: typeof askForMissingFrameworkSkills;
   askForNewArchitectureSkill: typeof askForNewArchitectureSkill;
   askForSyncAction: typeof askForSyncAction;
+  askForModelRouteReview: typeof askForModelRouteReview;
+  reviewProjectModelRoutes: typeof reviewProjectModelRoutes;
 };
 
 const defaultSyncProjectDependencies: SyncProjectDependencies = {
@@ -29,6 +34,8 @@ const defaultSyncProjectDependencies: SyncProjectDependencies = {
   askForMissingFrameworkSkills,
   askForNewArchitectureSkill,
   askForSyncAction,
+  askForModelRouteReview,
+  reviewProjectModelRoutes,
 };
 
 export async function handleSyncProject(_command: SyncProjectCommand, dependencies: Partial<SyncProjectDependencies> = {}): Promise<void> {
@@ -103,7 +110,7 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
   const actionablePreviews = previews.filter(isActionableSyncPreview);
 
   if (actionablePreviews.length === 0) {
-    log.success('No template updates or local changes need review.');
+    log.success('No template updates or local template changes need review.');
 
     if (state.templateVersion !== manifest.templateVersion ||
       languageSkillSelection.changedState ||
@@ -117,10 +124,12 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
       writeStateFile(statePath, state);
       log.success(`Updated ${STATE_RELATIVE_PATH}`);
     } else {
-      log.info('No files changed.');
+      log.info('No template files changed.');
     }
 
-    outro(chalk.green('Everything is already in sync.'));
+    const routesReviewed = await reviewRoutes(rootPath, syncDependencies);
+    outro(routesReviewed ? chalk.green('Sync complete.') : chalk.yellow('Sync review incomplete.'));
+    if (!routesReviewed) process.exitCode = 1;
     return;
   }
 
@@ -158,5 +167,46 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
     log.info('No files changed.');
   }
 
-  outro(chalk.green('Sync complete.'));
+  const routesReviewed = await reviewRoutes(rootPath, syncDependencies);
+  outro(routesReviewed ? chalk.green('Sync complete.') : chalk.yellow('Sync review incomplete.'));
+  if (!routesReviewed) process.exitCode = 1;
+}
+
+async function reviewRoutes(rootPath: string, dependencies: SyncProjectDependencies): Promise<boolean> {
+  let preview = dependencies.reviewProjectModelRoutes({ type: 'preview' }, rootPath);
+  if (preview.status !== 'preview') {
+    log.warn('Model recommendation review is unavailable. Saved routes were not changed.');
+    return false;
+  }
+  if (preview.reviewUnavailable) log.warn('Some older model guidance cannot be compared. Saved routes were not changed.');
+  let reviewUnavailable = preview.reviewUnavailable;
+  const reviewedKeys = new Set<string>();
+  const refreshedKeys = new Set<string>();
+  while (preview.status === 'preview') {
+    const notice: ModelRouteReviewNotice | undefined = preview.notices.find((item) =>
+      !reviewedKeys.has(`${item.route.agentEnvironment}:${item.route.role}:${item.route.workloadClass}`));
+    if (!notice) return !reviewUnavailable;
+    const key = `${notice.route.agentEnvironment}:${notice.route.role}:${notice.route.workloadClass}`;
+    reviewedKeys.add(key);
+    log.info(formatModelRouteReview(notice));
+    const choice = await dependencies.askForModelRouteReview(notice);
+    const result: ModelRouteReviewResult = dependencies.reviewProjectModelRoutes({ type: 'decide', choice,
+      route: notice.route, catalogVersion: notice.catalogVersion, stateBasis: notice.stateBasis }, rootPath);
+    if (result.status === 'retained') log.success('Saved route kept.');
+    else if (result.status === 'replaced') log.success('New recommendation saved.');
+    else if (result.status === 'later') log.info('Review later. Saved route unchanged.');
+    else if (result.status === 'conflict') {
+      log.warn('Route or catalog changed. Review the refreshed recommendation before deciding.');
+      if (refreshedKeys.has(key)) return false;
+      refreshedKeys.add(key);
+      reviewedKeys.delete(key);
+    }
+    else {
+      log.error('Could not save the route decision. Retry sync or review later; the saved route was not changed.');
+      return false;
+    }
+    preview = dependencies.reviewProjectModelRoutes({ type: 'preview' }, rootPath);
+    if (preview.status === 'preview') reviewUnavailable ||= preview.reviewUnavailable;
+  }
+  return false;
 }

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { STATE_RELATIVE_PATH } from './state-path.js';
-import { isModelRoutes } from './model-routes.js';
+import { isModelRouteReviews, isModelRoutes } from './model-routes.js';
 import { mutateStateFile } from './state-mutation.js';
 import { sha256 } from '../../shared/hash.js';
 import { removeUndefinedFields } from '../../shared/object.js';
@@ -57,7 +57,9 @@ export function readExistingState(statePath: string): SibuState | undefined {
 
 export function writeStateFile(statePath: string, state: SibuState): void {
   mutateStateFile(statePath, (current) => ({
-    state: { ...state, ...(current?.state.modelRoutes !== undefined ? { modelRoutes: current.state.modelRoutes } : {}) },
+    state: { ...state,
+      ...(current?.state.modelRoutes !== undefined ? { modelRoutes: current.state.modelRoutes } : {}),
+      ...(current?.state.modelRouteReviews !== undefined ? { modelRouteReviews: current.state.modelRouteReviews } : {}) },
     result: undefined,
   }));
 }
@@ -113,6 +115,7 @@ export function writeSibuState({
       ...(selectedMcpServers !== undefined ? { selectedMcpServers: selectedMcpServers.map((server) => server.id) } : {}),
       ...(mcpServerConfigs ?? previousState?.mcpServerConfigs ? { mcpServerConfigs: mcpServerConfigs ?? previousState?.mcpServerConfigs } : {}),
       ...(previousState?.modelRoutes !== undefined ? { modelRoutes: previousState.modelRoutes } : {}),
+      ...(previousState?.modelRouteReviews !== undefined ? { modelRouteReviews: previousState.modelRouteReviews } : {}),
       managedFiles: Object.fromEntries(
         targets
           .filter((target) => fs.existsSync(target.targetPath))
@@ -167,6 +170,7 @@ export function isSibuState(value: unknown): value is SibuState {
     (state.reviewedArchitectureSkills === undefined ||
       (Array.isArray(state.reviewedArchitectureSkills) && state.reviewedArchitectureSkills.every((skill) => typeof skill === 'string'))) &&
     (state.modelRoutes === undefined || isModelRoutes(state.modelRoutes)) &&
+    (state.modelRouteReviews === undefined || isModelRouteReviews(state.modelRouteReviews)) &&
     !!state.managedFiles &&
     typeof state.managedFiles === 'object' &&
     Object.values(state.managedFiles).every(isManagedFileState)

@@ -83,6 +83,81 @@ describe('handleSyncProject unsupported-agent cleanup', () => {
 });
 
 describe('handleSyncProject missing architecture repair', () => {
+  it('reports incomplete sync when route history is unavailable and no notices remain', async () => {
+    const rootPath = createCleanInitializedRepo(SELECTABLE_ARCHITECTURE_SKILLS[0]);
+    process.chdir(rootPath);
+    const before = fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8');
+    let prompted = false;
+    await handleSyncProject({ type: 'sync' }, {
+      renderIntro: async () => {},
+      askForNewLanguageSkills: async (state) => ({ state, changedState: false }),
+      askForMissingFrameworkSkills: async (state) => ({ state, changedState: false }),
+      askForNewArchitectureSkill: async (state) => ({ state, changedState: false }),
+      reviewProjectModelRoutes: (() => ({ status: 'preview', notices: [], reviewUnavailable: true })) as never,
+      askForModelRouteReview: async () => { prompted = true; return 'later'; },
+    });
+    assert.equal(prompted, false);
+    assert.equal(process.exitCode, 1);
+    assert.equal(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'), before);
+  });
+  it('reviews model changes even when no template update is actionable', async () => {
+    const rootPath = createCleanInitializedRepo(SELECTABLE_ARCHITECTURE_SKILLS[0]);
+    process.chdir(rootPath);
+    const before = fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8');
+    let prompted = false;
+    let decided = false;
+    await handleSyncProject({ type: 'sync' }, {
+      renderIntro: async () => {},
+      askForNewLanguageSkills: async (state) => ({ state, changedState: false }),
+      askForMissingFrameworkSkills: async (state) => ({ state, changedState: false }),
+      askForNewArchitectureSkill: async (state) => ({ state, changedState: false }),
+      reviewProjectModelRoutes: ((command: { type: string }) => {
+        if (command.type === 'preview') return { status: 'preview', notices: decided ? [] : [{
+          route: { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded', model: 'old',
+            reasoningEffort: 'low', origin: 'user-selected', selectedAt: '2026-09-23T00:00:00.000Z', catalogVersionAtSelection: '2026-09-23.2' },
+          recommendation: { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded', model: 'new',
+            reasoningEffort: 'medium', rationale: { expectedFit: 'Fit.', relativeCost: 'Cost.', relativeSpeed: 'Speed.', nonGuarantee: 'Not a guarantee.' } },
+          reasons: ['Revised cost guidance.'], catalogVersion: '2026-09-23.3', stateBasis: 'a'.repeat(64),
+        }], reviewUnavailable: false };
+        decided = true;
+        return { status: 'later' };
+      }) as never,
+      askForModelRouteReview: async () => { prompted = true; return 'later'; },
+    });
+    assert.equal(prompted, true);
+    assert.equal(decided, true);
+    assert.equal(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'), before);
+  });
+  it('keeps sync incomplete when the same route conflicts twice', async () => {
+    const rootPath = createCleanInitializedRepo(SELECTABLE_ARCHITECTURE_SKILLS[0]);
+    process.chdir(rootPath);
+    const before = fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8');
+    const notice = {
+      route: { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded', model: 'old',
+        reasoningEffort: 'low', origin: 'user-selected', selectedAt: '2026-09-23T00:00:00.000Z', catalogVersionAtSelection: '2026-09-23.2' },
+      recommendation: { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded', model: 'new',
+        reasoningEffort: 'medium', rationale: { expectedFit: 'Fit.', relativeCost: 'Cost.', relativeSpeed: 'Speed.', nonGuarantee: 'Not a guarantee.' } },
+      reasons: ['Revised cost guidance.'], catalogVersion: '2026-09-23.3', stateBasis: 'a'.repeat(64),
+    };
+    let prompts = 0;
+    let conflicts = 0;
+    await handleSyncProject({ type: 'sync' }, {
+      renderIntro: async () => {},
+      askForNewLanguageSkills: async (state) => ({ state, changedState: false }),
+      askForMissingFrameworkSkills: async (state) => ({ state, changedState: false }),
+      askForNewArchitectureSkill: async (state) => ({ state, changedState: false }),
+      reviewProjectModelRoutes: ((command: { type: string }) => {
+        if (command.type === 'preview') return { status: 'preview', notices: [notice], reviewUnavailable: false };
+        conflicts++;
+        return { status: 'conflict' };
+      }) as never,
+      askForModelRouteReview: async () => { prompts++; return 'replace'; },
+    });
+    assert.equal(prompts, 2);
+    assert.equal(conflicts, 2);
+    assert.equal(process.exitCode, 1);
+    assert.equal(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'), before);
+  });
   it('requires architecture selection, updates state, and applies normal architecture previews', async () => {
     const rootPath = createCleanInitializedRepo();
     process.chdir(rootPath);

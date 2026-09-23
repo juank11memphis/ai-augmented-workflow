@@ -14,6 +14,7 @@ export type { StopMcpServerCommand } from './stop-mcp-server/command.js';
 export { handleResolveModelRoute } from './resolve-model-route/handler.js';
 export type { ResolveModelRouteCommand } from './resolve-model-route/command.js';
 export { handleSetModelRoute } from './set-model-route/handler.js';
+export { validateModelRouteSelection } from './model-route-selection.js';
 export type { SetModelRouteCommand } from './set-model-route/command.js';
 export { resolveProjectModelRoute, setProjectModelRoute } from './model-route-adapters.js';
 export { handleListModelRoutes } from './list-model-routes/handler.js';

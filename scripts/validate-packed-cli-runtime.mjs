@@ -82,6 +82,7 @@ async function main() {
     if (reset.status !== 'configured' || reset.origin !== 'recommended') {
       throw new Error('Installed guided reset did not persist the current recommendation.');
     }
+    validateInstalledSyncReview({ installedPackageRoot, installedExecutable, npmBinPath, fixtureProjectPath });
 
     console.log(`Packed runtime install is isolated and ready: ${installedExecutable}`);
     console.log(`Packed runtime doctor smoke test passed in ${fixtureProjectPath}`);
@@ -92,6 +93,77 @@ async function main() {
     }
 
     rmSync(workspace, { recursive: true, force: true });
+  }
+}
+
+function validateInstalledSyncReview({ installedPackageRoot, installedExecutable, npmBinPath, fixtureProjectPath }) {
+  const catalogPath = path.join(installedPackageRoot, 'bin/modules/template-catalog/model-recommendations.json');
+  const baseCatalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
+  const statePath = path.join(fixtureProjectPath, '.sibu/state.json');
+  const reviewState = JSON.parse(readFileSync(statePath, 'utf8'));
+  reviewState.selectedLanguageSkills = ['typescript'];
+  reviewState.managedFiles['AGENTS.md'].status = 'unmanaged';
+  reviewState.modelRoutes.push({ ...reviewState.modelRoutes[0], workloadClass: 'demanding',
+    model: 'unrelated-external-model', reasoningEffort: 'high', origin: 'user-selected',
+    selectedAt: '2026-09-23T00:10:00.000Z' });
+  const savedState = `${JSON.stringify(reviewState, null, 2)}\n`;
+  for (const rationaleOnly of [false, true]) {
+    const catalog = structuredClone(baseCatalog);
+    const entry = catalog.recommendations.find((item) => item.role === 'implementation-executor' && item.workloadClass === 'bounded');
+    const before = { model: entry.model, reasoningEffort: entry.reasoningEffort, rationale: entry.rationale };
+    if (rationaleOnly) {
+      entry.rationale = { ...entry.rationale, expectedFit: 'Revised expected-fit guidance for bounded tasks.' };
+    } else {
+      entry.model = 'gpt-6-sol';
+      entry.reasoningEffort = 'medium';
+    }
+    const reason = rationaleOnly ? 'Fixture research revised expected-fit guidance.'
+      : 'Fixture research suggests similar expected fit at lower expected cost.';
+    catalog.catalogVersion = '2026-09-23.3';
+    catalog.releases = [{ version: catalog.catalogVersion, changes: [{ agentEnvironment: entry.agentEnvironment,
+      role: entry.role, workloadClass: entry.workloadClass, before,
+      after: { model: entry.model, reasoningEffort: entry.reasoningEffort, rationale: entry.rationale }, reason }] }];
+    writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
+    runInstalledSyncChoices({ installedExecutable, npmBinPath, fixtureProjectPath, statePath, savedState,
+      catalogVersion: catalog.catalogVersion, reason, expectedModel: entry.model,
+      expectedEffort: entry.reasoningEffort });
+  }
+  logStep('Installed sync reviewed model and rationale-only releases without unrelated route changes.');
+}
+
+function runInstalledSyncChoices({ installedExecutable, npmBinPath, fixtureProjectPath, statePath, savedState,
+  catalogVersion, reason, expectedModel, expectedEffort }) {
+  const beforeRoutes = JSON.parse(savedState).modelRoutes;
+  for (const [choice, expected] of [['1', 'gpt-6-luna'], ['2', 'gpt-6-sol'], ['3', 'gpt-6-luna']]) {
+    writeFileSync(statePath, savedState);
+    const input = choice === '1' ? '\r' : choice === '2' ? '\u001b[B\r' : '\u001b[B\u001b[B\r';
+    const output = runInstalledSibu(installedExecutable, ['sync'], npmBinPath, fixtureProjectPath, input);
+    if (!output.includes('Model recommendation update') || !output.includes(reason)) {
+      throw new Error(`Installed sync did not show route-scoped release guidance for choice ${choice}:\n${output}`);
+    }
+    const state = JSON.parse(readFileSync(statePath, 'utf8'));
+    const route = state.modelRoutes.find((item) => item.role === 'implementation-executor' && item.workloadClass === 'bounded');
+    const unrelated = state.modelRoutes.find((item) => item.role === 'implementation-executor' && item.workloadClass === 'demanding');
+    if (state.modelRoutes.length !== beforeRoutes.length || JSON.stringify(unrelated) !== JSON.stringify(beforeRoutes[1])) {
+      throw new Error(`Installed sync choice ${choice} changed an unrelated route.`);
+    }
+    if (choice !== '2' && JSON.stringify(route) !== JSON.stringify(beforeRoutes[0])) {
+      throw new Error(`Installed sync choice ${choice} changed the saved route without replacement.`);
+    }
+    if (route.model !== (choice === '2' ? expectedModel : expected) ||
+        route.reasoningEffort !== (choice === '2' ? expectedEffort : 'low')) {
+      throw new Error(`Installed sync choice ${choice} changed the route unexpectedly.`);
+    }
+    if (choice === '2' && (route.origin !== 'recommended' || route.catalogVersionAtSelection !== catalogVersion ||
+        route.selectedAt === beforeRoutes[0].selectedAt)) {
+      throw new Error('Installed sync replacement did not persist current recommendation metadata.');
+    }
+    if (choice === '1' && state.modelRouteReviews?.[0]?.catalogVersion !== catalogVersion) {
+      throw new Error(`Installed retain did not record a review marker:\n${output}`);
+    }
+    if (choice === '3' && state.modelRouteReviews?.length) {
+      throw new Error('Installed review-later unexpectedly recorded a review marker.');
+    }
   }
 }
 
@@ -114,6 +186,9 @@ async function validateInstalledModelCatalog(installedPackageRoot) {
   });
   if (catalog.catalogVersion !== '2026-09-23.2' || catalog.reviewedAt !== '2026-09-23T00:00:00.000Z') {
     throw new Error(`Unexpected installed model catalog metadata: ${catalog.catalogVersion}/${catalog.reviewedAt}.`);
+  }
+  if (catalog.historyBaseVersion !== catalog.catalogVersion || catalog.releases.length !== 0) {
+    throw new Error('Installed catalog must not claim undocumented historical recommendation changes.');
   }
   if (bounded.model !== 'gpt-6-luna' || bounded.reasoningEffort !== 'low') {
     throw new Error(`Expected installed bounded recommendation to be GPT-6 Luna/low, got ${bounded.model}/${bounded.reasoningEffort}.`);

@@ -3,4 +3,5 @@ export type { StateReadResult } from './state.js';
 export { isModelRoutes } from './model-routes.js';
 
 export { STATE_RELATIVE_PATH } from './state-path.js';
-export { readModelRoutes, upsertModelRoute } from './model-route-operations.js';
+export { readModelRoutes, upsertModelRoute, recordModelRouteReview } from './model-route-operations.js';
+export type { LedgerRouteRead } from './model-route-operations.js';

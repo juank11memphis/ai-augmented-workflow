@@ -11,6 +11,7 @@ export {
 } from './templates.js';
 export type { WorkerToolboxRoutingProfile } from './templates.js';
 export {
+  compareCatalogVersions,
   MODEL_REASONING_EFFORTS,
   MODEL_WORKLOAD_CLASSES,
   RECOMMENDATION_AGENT_ENVIRONMENTS,
@@ -18,6 +19,7 @@ export {
   loadModelRecommendationCatalog,
   parseModelRecommendationCatalog,
   resolveModelRecommendation,
+  reviewRecommendationSince,
 } from './model-routing.js';
 export type {
   ModelReasoningEffort,
