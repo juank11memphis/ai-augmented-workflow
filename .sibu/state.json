@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.25.0",
-  "templateVersion": "168",
+  "templateVersion": "169",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-24T01:35:20.543Z",
+  "updatedAt": "2026-09-24T03:04:30.490Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -113,14 +113,16 @@
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
       "templateVersion": "38",
-      "sha256": "8a163d3732669b135d3062112d6af8f1b271c3c25b2742cfac4a8fcc13ef01f4",
-      "status": "managed"
+      "sha256": "22231ef696aa5fbf9c7cb4ae2bac1fa16423187d6de50f5a310f60737a2071e0",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "39"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
       "templateVersion": "15",
-      "sha256": "1ad2461551ba824961ea10645e3a3886bd68263ce06adedfb2d6bf7704cb537d",
-      "status": "managed"
+      "sha256": "1fbae548842f301a22162a6a04487abd288ec7cd9b404e2220f762b826a42ea9",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "16"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
       "template": ".codex/agents/sibu-implementation-executor.toml",
@@ -335,5 +337,47 @@
       "sha256": "74544eae22e3cac4db3f4317dd0c946d9a40dcd3d54d9aac92695e2bc944740f",
       "status": "managed"
     }
-  }
+  },
+  "modelRoutes": [
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-planner",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-24T02:43:02.303Z"
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-executor",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-24T02:46:09.289Z"
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "architecture-reviewer",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-24T03:00:17.811Z"
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "technical-lead-reviewer",
+      "workloadClass": "demanding",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-24T03:00:23.146Z"
+    }
+  ]
 }
