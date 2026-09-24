@@ -93,6 +93,14 @@ describe('human-directed implementation review', () => {
     assert.doesNotMatch(worker, /Address only blocker and major findings/i);
   });
 
+  it('retains current-snapshot re-review after targeted authorized repair', () => {
+    assert.match(main, /current snapshot identity and changed-file scope, prior validation evidence/i);
+    assert.match(main, /source-verified story set only where relevant to those authorized changes/i);
+    assert.match(main, /Any mutation invalidates prior specialist outcomes.*run both fresh independent reviews.*another human decision/i);
+    assert.match(worker, /independently verify them against the full authoritative story.*actual local changes/i);
+    assert.match(worker, /no fixed reading ceiling/i);
+  });
+
   it('keeps installed and distributed review contracts aligned', () => {
     assert.equal(fs.readFileSync('.agents/skills/ai-implementation-plan-executor/SKILL.md', 'utf8'), main);
     assert.match(fs.readFileSync('.agents/skills/ai-implementation-executor-toolbox/SKILL.md', 'utf8'), /human-authorized change list for the current reviewed snapshot/);

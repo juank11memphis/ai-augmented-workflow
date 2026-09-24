@@ -1,5 +1,5 @@
 {
-  "templateVersion": "171",
+  "templateVersion": "172",
   "templates": {
     "AGENTS.md": {
       "version": "43",
@@ -149,17 +149,17 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "40",
+      "version": "41",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Reuses verified story references in initial implementation handoffs without changing review or repair packets."
+        "Targets specialist review and authorized repair handoffs with verified references while preserving snapshot and human-decision gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "17",
+      "version": "18",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Guides initial executors to read targeted context first while preserving full-story implementation and validation."
+        "Guides repair executors to verify targeted references against sources and local changes without exceeding human authorization."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -345,17 +345,17 @@
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Worker-only toolbox for independent, read-only architecture review of one Sibu story implementation.",
       "changes": [
-        "Adds evidence-based architecture review with isolated scope, blocking severity rules, and message-only output."
+        "Guides architecture reviewers to verify targeted references against authoritative boundaries and the unchanged diff."
       ]
     },
     "skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Worker-only toolbox for independent, read-only technical-lead review of one Sibu story implementation.",
       "changes": [
-        "Adds evidence-based implementation-quality review with isolated scope, blocking severity rules, and message-only output."
+        "Guides technical-lead reviewers to verify targeted behavior and quality references against sources and the unchanged diff."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {

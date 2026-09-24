@@ -65,6 +65,27 @@ describe('targeted handoff instruction contracts', () => {
     assert.match(executorWorker, /Never run:/i);
   });
 
+  it('targets both specialist packets without preselecting findings', () => {
+    assert.match(executor, /same story and plan paths.*review-round number.*changed-file list.*actual current diff/i);
+    assert.match(executor, /current source-verified story reference set as \*\*start here\*\*/i);
+    assert.match(executor, /verified applicable BRD IDs.*SDD headings and embedded diagram descriptions.*module ownership and dependency constraints/i);
+    assert.match(executor, /uncertain fine-grained references.*full authoritative path.*locate relevant context/i);
+    assert.match(executor, /Prioritize architecture's SDD\/SAD boundaries.*selected architecture skill/i);
+    assert.match(executor, /prioritize technical lead's behavior, failure, diagram, quality strategy, `clean-code`/i);
+    assert.match(executor, /Both independently verify sources and the actual unchanged diff/i);
+    assert.match(executor, /neither packet may preselect findings or suppress contrary evidence/i);
+  });
+
+  it('targets repair references only within human authorization and preserves source discovery', () => {
+    assert.match(executor, /Select \*\*start here\*\* references.*only where relevant to those authorized changes/i);
+    assert.match(executor, /Retain full story, Epic brief, source BRD, SDD, plan, and applicable SAD\/UX paths/i);
+    assert.match(executor, /uncertain precise references, direct full-path discovery/i);
+    assert.match(executor, /That list, not packet content or severity, bounds repair/i);
+    assert.match(executorWorker, /source-verified \*\*start here\*\* references relevant to the authorized changes/i);
+    assert.match(executorWorker, /Source authority prevails, but references and findings do not enlarge the human-authorized list/i);
+    assert.match(executorWorker, /material packet\/source or snapshot mismatches.*blocker rules/i);
+  });
+
   it('versions each distributed skill with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
     for (const name of [
@@ -88,5 +109,8 @@ describe('targeted handoff instruction contracts', () => {
         assert.equal(installed, template, name);
       }
     }
+    assert.ok(Number(manifest.templateVersion) >= 172);
+    assert.ok(Number(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version) >= 41);
+    assert.ok(Number(manifest.templates['skills/ai-implementation-executor-toolbox/SKILL.md']?.version) >= 18);
   });
 });

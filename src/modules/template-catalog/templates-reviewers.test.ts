@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { readTemplate, readTemplateManifest } from './index.js';
@@ -82,6 +83,20 @@ describe('specialist implementation reviewer toolboxes', () => {
       assert.match(contents, /Do not rely on copied patches or the main agent's full conversation/i);
     }
   });
+
+  it('keeps targeted references subordinate to independent source and diff review', () => {
+    for (const path of [architectureToolboxPath, technicalLeadToolboxPath]) {
+      const contents = readTemplate(path);
+      assert.match(contents, /source-verified \*\*start here\*\* references/i);
+      assert.match(contents, /independently verify every reference against the full authoritative paths and actual unchanged diff/i);
+      assert.match(contents, /locate uncertain precise references from the full source path/i);
+      assert.match(contents, /Expand to wider sections or complete artifacts/i);
+      assert.match(contents, /An omitted packet reference never excludes/i);
+      assert.match(contents, /material packet\/source conflict.*human_decision_required/i);
+    }
+    assert.match(readTemplate(architectureToolboxPath), /SAD\/SDD module boundaries and dependency constraints/i);
+    assert.match(readTemplate(technicalLeadToolboxPath), /SDD behavior, failure, diagram, and quality-strategy/i);
+  });
 });
 
 describe('specialist implementation reviewer wrappers', () => {
@@ -91,7 +106,11 @@ describe('specialist implementation reviewer wrappers', () => {
     for (const path of [architectureToolboxPath, technicalLeadToolboxPath, ...reviewerWrappers.map((wrapper) => wrapper.path)]) {
       const metadata = manifest.templates[path];
       assert.match(metadata?.description ?? '', /review/i);
-      assert.match(metadata?.changes.join('\n') ?? '', /Adds|Installs/i);
+      assert.match(metadata?.changes.join('\n') ?? '', /Adds|Installs|Guides/i);
+    }
+    for (const path of [architectureToolboxPath, technicalLeadToolboxPath]) {
+      assert.equal(readFileSync(`.agents/${path}`, 'utf8'), readTemplate(path));
+      assert.ok(Number(manifest.templates[path]?.version) >= 2);
     }
   });
 

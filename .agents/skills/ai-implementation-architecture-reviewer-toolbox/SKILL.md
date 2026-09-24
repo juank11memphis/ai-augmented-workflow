@@ -19,6 +19,8 @@ The packet must identify exactly one User Story and one story-local implementati
 - executor validation summary; and
 - read-only, approval, Git, and output constraints.
 
+The packet also supplies source-verified **start here** references where reliable: applicable BRD IDs, SDD headings and embedded diagram descriptions, SAD/SDD module boundaries and dependency constraints, and relevant skill paths. These prioritize inspection, not findings or review scope. Begin there, independently verify every reference against the full authoritative paths and actual unchanged diff, and locate uncertain precise references from the full source path. Expand to wider sections or complete artifacts whenever the change is broad or evidence is incomplete, conflicting, or insufficient for architecture judgment. An omitted packet reference never excludes a governing requirement or boundary. Source authority prevails; report a material packet/source conflict under the existing finding or `human_decision_required` rules rather than silently suppressing it.
+
 Inspect the actual current local diff. Do not rely on copied patches or the main agent's full conversation. If required context is missing, contradictory, or names multiple stories or plans, return `human_decision_required` with the gap; do not guess.
 
 ## Review scope
