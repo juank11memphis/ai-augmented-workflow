@@ -117,11 +117,11 @@ The worker must use only the packet, the toolbox, listed skill files including t
 
 ## Automated-run timing contract
 
-Timing is advisory, message-only observation. It must never change execution order, validation, reviewer availability handling, the three-repair limit, escalation, approval, commit, or continuation authority.
+Timing is advisory, message-only observation. It must never change execution order, validation, reviewer availability handling, human repair authorization, escalation, approval, commit, or continuation authority.
 
 ### Boundary, ledger, and sources
 
-- Start one ephemeral run ledger immediately after accepting one story or plan target and before `preparation_context`. Finish it immediately before presenting the human story-review packet. Human reading, approval metadata, commit, and continuation are outside the run.
+- Start one ephemeral run ledger immediately after accepting one story or plan target and before `preparation_context`. Finish it immediately before presenting the first human story-review packet. Human reading, discussion, decisions, approval metadata, commit, and continuation are outside that run. A later human-authorized repair starts separately bounded continuation timing; never include the intervening human pause in active automation.
 - Record ordered, non-overlapping top-level occurrences using only `preparation_context`, `planning`, `implementation`, `focused_validation`, `aggregate_validation`, `specialist_review`, and `repair`. Omit phases that do not occur. `orchestration_overhead` is uncovered run time calculated by the helper, never a worker interval.
 - An occurrence contains its stable phase label, occurrence number, absolute start and finish boundaries when known, and outcome. Concurrent child evidence adds only a stable role label, boundaries or elapsed duration, and outcome.
 - At each boundary prefer a suitable host-native absolute timestamp. Otherwise run `.agents/scripts/implementation-phase-timing.mjs clock`. Never estimate missing timing. Use the helper's `reconcile` operation for interval arithmetic and final output.
@@ -152,15 +152,15 @@ Timing evidence and user-visible summaries may contain only stable phase or work
 ### Review, repair, and reconciliation
 
 - Measure one enclosing `specialist_review` occurrence from the first reviewer start until the last reviewer finishes. Record `architecture-reviewer` and `technical-lead-reviewer` durations as children; never add child durations to the run total. With sequential fallback, record ordered specialist-review occurrences.
-- Record every repair and revalidation occurrence in order. Pause implementation or repair timing while focused or aggregate validation is active. Timing does not alter immutable review snapshots or permit a fourth repair.
+- Record every human-authorized repair and revalidation occurrence in order within its bounded continuation. Pause repair timing while focused or aggregate validation is active. Timing does not alter immutable review snapshots or authorize another repair.
 - Treat invalid, reversed, privacy-unsafe, or missing nested evidence as an internal reconciliation limitation. Retain valid enclosing boundaries and continue the workflow without heuristic repair or extra evidence fields.
 - A worker blocker, validation failure, unavailable reviewer, interruption, or cancellation closes the last observable boundary when control returns. Abrupt host termination may prevent any partial report.
 
-For a completed run, reconcile immediately before the human gate and report total wall-clock duration; each applicable exclusive phase's aggregate duration and outcomes; computed orchestration overhead; dominant or tied phases; and concurrent child durations. For `failed`, `blocked`, `interrupted`, or `cancelled`, report known evidence, the incomplete outcome, and last active phase. Every completed or partial summary must also show an explicit privacy-safe warning when any expected evidence is unavailable, incomplete, invalid, or rejected; say only that timing evidence is incomplete and some durations are unavailable, without naming its source or echoing payload content. The warning and the underlying evidence limitation never block or alter the workflow. The reconciled summary is authoritative when live delivery was delayed.
+For a completed initial run or separately bounded authorized continuation, reconcile immediately before its human gate and report total wall-clock duration; each applicable exclusive phase's aggregate duration and outcomes; computed orchestration overhead; dominant or tied phases; and concurrent child durations. Never combine runs across human pauses into one continuous duration. For `failed`, `blocked`, `interrupted`, or `cancelled`, report known evidence, the incomplete outcome, and last active phase. Every completed or partial summary must also show an explicit privacy-safe warning when any expected evidence is unavailable, incomplete, invalid, or rejected; say only that timing evidence is incomplete and some durations are unavailable, without naming its source or echoing payload content. The warning and the underlying evidence limitation never block or alter the workflow. The reconciled summary is authoritative when live delivery was delayed.
 
 ## Fallback matrix
 
-For each fresh `sibu-implementation-executor` initial or repair spawn, classify the delegated task before resolving `--role implementation-executor` using the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. For every `sibu-architecture-reviewer` and `sibu-technical-lead-reviewer` spawn, classify and resolve separately with `--role architecture-reviewer` and `--role technical-lead-reviewer`; do not reuse the executor's route. Follow saved, first-use, unavailable, save-failed, one-time, and cancellation states. Disclose the selected route and pass explicit `model` and `reasoning_effort` host spawn parameters on every path. If the host cannot accept both, stop the affected launch; no parent inheritance or silent fallback. Routing never changes foreground execution, reviewer independence, packet boundaries, the repair cap, or approval and commit authority.
+For each fresh `sibu-implementation-executor` initial or repair spawn, classify the delegated task before resolving `--role implementation-executor` using the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. For every `sibu-architecture-reviewer` and `sibu-technical-lead-reviewer` spawn, classify and resolve separately with `--role architecture-reviewer` and `--role technical-lead-reviewer`; do not reuse the executor's route. Follow saved, first-use, unavailable, save-failed, one-time, and cancellation states. Disclose the selected route and pass explicit `model` and `reasoning_effort` host spawn parameters on every path. If the host cannot accept both, stop the affected launch; no parent inheritance or silent fallback. Routing never changes foreground execution, reviewer independence, packet boundaries, human repair authorization, or approval and commit authority.
 
 Use host capability metadata from workflow target planning guidance to choose the safest execution path. This order is mandatory:
 
@@ -181,7 +181,7 @@ Narrowly inspect repository-owned definitions and guidance to establish availabl
 - Run a distinct packaging or runtime check only when changed assets can affect packaged output, installed behavior, generated runtime resources, or distribution semantics. If material relevance or coverage is uncertain, retain the distinct check and record the conservative rationale.
 - Rerun an expensive final check only after a later relevant mutation makes its evidence stale or when diagnosing a failure. Every repair mutation requires fresh validation evidence for the resulting work.
 - Repository-specific plans may name concrete checks discovered from that repository; this reusable policy must remain technology-, ecosystem-, tool-, and concrete-command-neutral.
-- A required validation failure blocks unsupported success or progression. Preserve review snapshots, repair limits, human approval, commit control, and continuation authority.
+- A required validation failure blocks unsupported success or progression. Preserve review snapshots, human repair authorization, human approval, commit control, and continuation authority.
 
 ## Story execution model
 
@@ -213,7 +213,7 @@ The main agent owns this message-only orchestration in its active context. Do no
 2. For each applicable review round, identify one review snapshot with the round number, current changed-file list, current local diff, and fresh validation summary. Capture the current Git status/diff before spawning reviewers; the snapshot is an unchanged-local-change invariant, not a persisted hash.
 3. Give fresh `sibu-architecture-reviewer` and `sibu-technical-lead-reviewer` instances the same story and plan paths, authoritative artifacts and skills, review-round number, changed-file list, local-change scope, validation summary, and access to the actual current diff.
 4. Spawn both read-only reviewers concurrently when supported. Otherwise run them sequentially without allowing any writer between them. Never run an implementation or repair executor while a reviewer is active.
-5. Before aggregating, compare Git status/diff with the captured local-change scope. If any unexpected mutation occurred, discard both outcomes and ask the user how to handle it; do not consume a repair round.
+5. Before aggregating, compare Git status/diff with the captured local-change scope. If any unexpected mutation occurred, discard both outcomes and ask the user how to handle it; do not present stale verdicts as current evidence.
 
 If reviewer spawning is unavailable, disclose that independent automated approval is unavailable and proceed to the human gate with implementation evidence and any completed reviewer packet as advisory evidence. Never simulate an independent specialist review inline.
 
@@ -221,20 +221,20 @@ If reviewer spawning is unavailable, disclose that independent automated approva
 
 Accept only the Story 01 reviewer packet contract: `approved | changes_required | human_decision_required` verdict; stable role-prefixed finding IDs; blocker/major findings with severity, file/location, evidence, violated expectation, and required outcome; minor notes; and unresolved risks. Associate the specialist role and review round from the spawn packet and orchestration context rather than requiring reviewers to echo them. Retry a malformed or incomplete packet once with a focused format request; if it still fails, treat that reviewer as unavailable.
 
-Aggregate only packets for the same unchanged snapshot. Deduplicate overlapping findings by required outcome while preserving every source finding ID, original severity, specialist ownership, and conclusion; never downgrade severity. Minor notes remain visible but do not trigger repair. Do not merge away substantive contradictions. Escalate with evidence when reviewers conflict, authoritative sources disagree, or a finding requires a material decision such as scope expansion, an unplanned public contract or persisted-data change, a new production dependency, a security/privacy consequence, a destructive migration, or an alternative architecture direction.
+Aggregate only packets for the same unchanged snapshot. Deduplicate overlapping findings by required outcome while preserving every source finding ID, original severity, specialist ownership, and conclusion; never downgrade severity. Minor notes remain visible but do not trigger repair. Do not merge away substantive contradictions. Present evidence for human judgment when reviewers conflict, authoritative sources disagree, or a finding requires a material decision such as scope expansion, an unplanned public contract or persisted-data change, a new production dependency, a security/privacy consequence, a destructive migration, or an alternative architecture direction. Never silently select a consequential option.
 
-### Bounded fresh repair
+### Human-directed review decision and authorized repair
 
-- Initial review is repair count zero. Count a repair only after a fresh repair executor mutates the implementation in response to one combined packet.
-- When compatible blocker or major findings remain and fewer than three repairs have completed, spawn a fresh existing `sibu-implementation-executor` in `repair` mode. Provide exactly one combined packet, the current snapshot identity and changed files, prior validation evidence, the story and plan paths, authoritative artifacts, and applicable skills.
-- Repair mode must not replan, replay implementation steps, broaden scope, or resolve a material decision. It returns current changed files and fresh proportionate validation evidence to the main agent.
-- Any repair mutation invalidates all prior automated approvals. Increment the shared repair count, establish a new local-change snapshot, and run both fresh specialist reviews again.
-- After the third repair, run one final synchronized review. If blocker or major findings remain, escalate them at the human gate; never start a fourth repair.
-- Matching specialist approvals, or minor-only outcomes, terminate automated review and advance only to the human story review gate. Automated outcomes never authorize approval metadata, commits, or feature continuation.
+- After every completed review round, including matching approvals or minor-only outcomes, present the unchanged snapshot identity, both original specialist verdicts, combined blocker/major findings and minor notes, current validation evidence, conflicts, unavailable-review warnings, and unresolved risks. Pause for the human to approve this snapshot as-is, authorize named changes, or defer. Reviewer verdicts, finding severity, and discussion alone never authorize repair or story progression.
+- The human may approve despite unresolved blocker, major, or minor findings. Keep each finding and the human-accepted risk visible without relabeling either specialist verdict as `approved`. Deferral preserves work and evidence without approval metadata, commit, or continuation.
+- Before any fresh `sibu-implementation-executor` in `repair` mode, require explicit human authorization of specific in-scope changes tied to the current reviewed snapshot. The human may select a subset of findings, a minor note, or another in-scope change. Clarify ambiguous, stale-snapshot, or out-of-scope requests; use the existing plan-revision stop for requests beyond the story plan. There is no automatic repair loop or fixed repair-round cap.
+- Give the fresh executor exactly one combined review packet preserving both specialists' original findings, the current snapshot identity and changed-file scope, prior validation evidence, the story and plan paths, authoritative artifacts and skills, and the human-authorized change list. That list, not packet content or severity, bounds repair. Repair mode must not replan, replay implementation steps, broaden scope, or resolve a material decision.
+- If repair fails or validation is partial or failed, return the completed work and evidence to the human; do not claim success or launch unsupported re-review. A validated repair returns changed files and fresh validation evidence. Any mutation invalidates prior specialist outcomes: capture a new snapshot, run both fresh independent reviews, present their outcomes, and wait for another human decision. Each later repair requires another explicit authorization.
+- Automated outcomes never authorize approval metadata, commits, or feature continuation.
 
 ## Story review gate
 
-After implementation, validation, and any applicable automated review/repair loop, report that the full story implementation is ready for human review and that you are waiting for story-level approval before marking steps approved, committing eligible non-ignored changes, and continuing the Epic.
+After implementation, validation, and each applicable specialist review round, present the current story snapshot for human decision. Wait for explicit story-level approval before marking steps approved, committing eligible non-ignored changes, and continuing the Epic.
 
 The review packet should include:
 
@@ -243,16 +243,17 @@ The review packet should include:
 - completed steps
 - validation commands and results
 - validation evidence covering tests added or updated, acceptance criteria verified, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
-- specialist-review applicability and repair rounds used
-- architecture and technical-lead verdicts, remaining minor notes, and any unavailable-review warning
-- unresolved blocker/major findings and escalation evidence when automated review could not approve
+- specialist-review applicability, current snapshot identity, and any human-authorized repair rounds
+- both original architecture and technical-lead verdicts, combined findings and minor notes, and any unavailable-review warning
+- unresolved findings, accepted risks if approving as-is, and conflicts or consequential choices requiring human judgment
+- approve-as-is, authorize named changes, or defer choices
 - risks or follow-up questions
 
 Use only the current changed files and fresh validation summary. Reviewer packets remain workflow messages and are summarized here rather than persisted.
 
 For non-trivial stories, “tests passed” alone is not enough. Use context-sensitive judgment for simple or documentation-only changes, but require enough validation evidence to review the story against its verification expectations and planned validation steps.
 
-If the user asks questions or requests changes, keep working within the same story until those changes are complete. If requested changes exceed the approved story plan, stop and ask whether the plan should be revised.
+Questions and discussion are not authorization. If the user authorizes specific in-scope changes for the current snapshot, use the fresh repair handoff above. If requested changes exceed the approved story plan, stop and ask whether the plan should be revised.
 
 ## Approval metadata and commit control
 

@@ -33,7 +33,7 @@ Use only the narrow packet from the main agent. The packet must include:
 - approval and commit rules from the main executor workflow
 - expected final output format
 
-An `implementation` packet includes the ordered plan steps. A `repair` packet additionally includes exactly one combined review packet, current snapshot identity and changed-file scope, and prior validation evidence. A repair packet must not contain a replacement plan or authorize scope expansion.
+An `implementation` packet includes the ordered plan steps. A `repair` packet additionally includes exactly one combined review packet retaining both reviewers' findings, the human-authorized list of specific changes for the current snapshot, current snapshot identity and changed-file scope, and prior validation evidence. A repair packet must not contain a replacement plan or authorize scope expansion. Findings alone are not authorization; if the list or snapshot binding is absent or ambiguous, stop before editing.
 
 If the packet names multiple stories, multiple plans, an Epic without one selected story, or no executable target, stop and ask the main agent for exactly one story or `.impl_plan/` path.
 
@@ -51,8 +51,8 @@ If a required source artifact or required skill path is missing, stop and report
 ### Repair mode
 
 - Inspect the actual current local changes and preserve valid implementation work.
-- Address only blocker and major findings in the one combined packet. Do not restart or replay the implementation plan, replan the story, broaden scope, or edit plan/upstream artifacts.
-- Reject and return a blocker with evidence for contradictions, material decisions, unrelated-file changes, scope expansion, new production dependencies, or changes that conflict with authoritative artifacts.
+- Address only the human-authorized change list for the current reviewed snapshot, whether it selects blocker, major, minor, or another in-scope change. The combined packet supplies evidence, not independent repair authority. Do not restart or replay the implementation plan, replan the story, broaden scope, or edit plan/upstream artifacts.
+- Reject and return a blocker with evidence for ambiguous or stale authorization, contradictions, material decisions, unrelated-file changes, scope expansion, new production dependencies, or changes that conflict with authoritative artifacts. Do not silently select an alternative.
 - Perform proportionate focused validation and return fresh post-repair validation evidence. Never reuse a pre-repair approval or validation claim as evidence for changed work.
 
 ## Execution rules
@@ -78,7 +78,7 @@ Narrowly inspect repository-owned definitions and guidance to establish availabl
 - Run a distinct packaging or runtime check only when changed assets can affect packaged output, installed behavior, generated runtime resources, or distribution semantics. If material relevance or coverage is uncertain, retain the distinct check and record the conservative rationale.
 - Rerun an expensive final check only after a later relevant mutation makes its evidence stale or when diagnosing a failure. Every repair mutation requires fresh validation evidence for the resulting work.
 - Repository-specific plans may name concrete checks discovered from that repository; this reusable policy must remain technology-, ecosystem-, tool-, and concrete-command-neutral.
-- A required validation failure blocks unsupported success or progression. Preserve review snapshots, repair limits, human approval, commit control, and continuation authority.
+- A required validation failure blocks unsupported success or progression. Preserve review snapshots, human repair authorization, human approval, commit control, and continuation authority.
 
 ## Git and approval safety
 

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "168",
+  "templateVersion": "169",
   "templates": {
     "AGENTS.md": {
       "version": "43",
@@ -149,17 +149,18 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "38",
+      "version": "39",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Routes executor and specialist-review spawns explicitly while preserving foreground execution and approval controls."
+        "Requires a human decision after every specialist review and limits repairs to explicitly authorized changes.",
+        "Excludes human discussion from automated-run timing and re-reviews each validated repair."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "15",
+      "version": "16",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Runs repository-owned focused checks during change and one non-duplicative final strategy after stabilization."
+        "Restricts fresh repair work to the human-authorized list for the current reviewed snapshot."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

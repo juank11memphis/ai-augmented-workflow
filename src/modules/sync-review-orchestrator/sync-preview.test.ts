@@ -183,13 +183,13 @@ describe('getSyncPreviews', () => {
     manifest.templates['skills/ai-implementation-plan-executor/SKILL.md'] = {
       ...manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']!,
       version: '999',
-      changes: ['Adds synchronized specialist review and bounded fresh repair.'],
+      changes: ['Requires a human decision after every specialist review and authorized repair.'],
     };
 
     const preview = getSyncPreview(rootPath, state, relativePath, manifest);
 
     assert.equal(preview.status, 'modified-with-update');
-    assert.deepEqual(preview.changes, ['Adds synchronized specialist review and bounded fresh repair.']);
+    assert.deepEqual(preview.changes, ['Requires a human decision after every specialist review and authorized repair.']);
 
     const reviewed = applySyncAction({ rootPath, state, manifest, preview, action: 'mark-reviewed' });
 

@@ -35,8 +35,10 @@ describe('implementation workflow timing contract', () => {
     const executor = readTemplate(EXECUTOR_TEMPLATE);
 
     assert.match(executor, /immediately after accepting one story or plan target and before `preparation_context`/);
-    assert.match(executor, /immediately before presenting the human story-review packet/);
-    assert.match(executor, /Human reading, approval metadata, commit, and continuation are outside the run/);
+    assert.match(executor, /immediately before presenting the first human story-review packet/);
+    assert.match(executor, /Human reading, discussion, decisions, approval metadata, commit, and continuation are outside that run/);
+    assert.match(executor, /later human-authorized repair starts separately bounded continuation timing/);
+    assert.match(executor, /never include the intervening human pause in active automation/);
     for (const phase of CANONICAL_PHASES) {
       assert.match(executor, new RegExp(`\\b${phase}\\b`));
     }
@@ -74,7 +76,8 @@ describe('implementation workflow timing contract', () => {
     assert.match(executor, /invalid, reversed, privacy-unsafe, or missing nested evidence/);
     assert.match(executor, /architecture-reviewer.*technical-lead-reviewer[\s\S]*never add child durations/i);
     assert.match(executor, /sequential fallback[\s\S]*ordered specialist-review occurrences/i);
-    assert.match(executor, /Record every repair and revalidation occurrence in order/);
+    assert.match(executor, /Record every human-authorized repair and revalidation occurrence in order within its bounded continuation/);
+    assert.match(executor, /Never combine runs across human pauses into one continuous duration/);
     assert.match(executor, /Every completed or partial summary[\s\S]*privacy-safe warning/);
     assert.match(executor, /unavailable, incomplete, invalid, or rejected/);
     assert.match(executor, /timing evidence is incomplete and some durations are unavailable/);
@@ -87,11 +90,12 @@ describe('implementation workflow timing contract', () => {
   it('keeps timing observational and preserves review and approval invariants', () => {
     const executor = readTemplate(EXECUTOR_TEMPLATE);
 
-    assert.match(executor, /must never change execution order, validation, reviewer availability handling, the three-repair limit/);
-    assert.match(executor, /Timing does not alter immutable review snapshots or permit a fourth repair/);
+    assert.match(executor, /must never change execution order, validation, reviewer availability handling, human repair authorization/);
+    assert.match(executor, /Timing does not alter immutable review snapshots or authorize another repair/);
     assert.match(executor, /Automated outcomes never authorize approval metadata, commits, or feature continuation/);
+    assert.match(executor, /After every completed review round, including matching approvals or minor-only outcomes/);
     assert.match(executor, /Never run an implementation or repair executor while a reviewer is active/);
-    assert.match(executor, /After the third repair[\s\S]*never start a fourth repair/);
+    assert.match(executor, /There is no automatic repair loop or fixed repair-round cap/);
     assert.match(executor, /exactly one final validation strategy/);
     assert.match(executor, /do not separately repeat standalone checks whose responsibilities it covers/i);
     assert.match(executor, /human story review/i);
@@ -174,7 +178,7 @@ describe('implementation worker timing evidence', () => {
     assert.equal(result.phases[4].occurrences[0].children.length, 2);
   });
 
-  it('keeps occurrence identities and transition keys unique across three fresh repair rounds', () => {
+  it('keeps occurrence identities and transition keys unique across repeated authorized continuations', () => {
     const repeatedPhases = [
       { phase: 'repair', occurrence: 1, startedAtEpochMs: 0, finishedAtEpochMs: 100, outcome: 'completed' },
       { phase: 'focused_validation', occurrence: 1, startedAtEpochMs: 100, finishedAtEpochMs: 150, outcome: 'completed' },
