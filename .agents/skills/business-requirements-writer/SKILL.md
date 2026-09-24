@@ -345,7 +345,7 @@ When shaping a BRD, prefer:
 
 ## Final response behavior
 
-After writing the file, final-answer with only the path created or updated. Do not paste the BRD body, excerpt, outline, or section summaries.
+After writing the file, name the path, then briefly list what changed in bullets. End with one concrete, context-appropriate next action for the user, such as UX for a UI-changing feature or software design once its prerequisites are ready; suggest it without starting the next stage. Do not paste the full BRD unless requested.
 
 Only include the full BRD when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/features/<feature-slug>/brd.md`.
 

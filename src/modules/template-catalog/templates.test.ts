@@ -209,7 +209,7 @@ describe('BRD writer upstream coverage grounding', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /next step/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 

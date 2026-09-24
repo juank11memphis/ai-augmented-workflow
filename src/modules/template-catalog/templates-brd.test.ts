@@ -40,6 +40,9 @@ describe('BRD authoring instruction contract (not model behavior)', () => {
     assert.match(contents, /never automatically execute the next stage/);
     assert.match(contents, /not a universal format, certification, or IIBA endorsement/);
     assert.match(contents, /No runtime network lookup/);
+    assert.match(contents, /briefly list what changed in bullets/);
+    assert.match(contents, /one concrete, context-appropriate next action/);
+    assert.match(contents, /without starting the next stage/);
   });
 });
 

@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.25.0",
-  "templateVersion": "167",
+  "templateVersion": "168",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-24T00:39:52.689Z",
+  "updatedAt": "2026-09-24T01:35:20.543Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -264,8 +264,9 @@
     ".agents/skills/business-requirements-writer/SKILL.md": {
       "template": "skills/business-requirements-writer/SKILL.md",
       "templateVersion": "2",
-      "sha256": "2c4dbc4a42bfe4c71315dee02aa8c63d2e3977bdad6aea01ee60d5b99a68b9cd",
-      "status": "managed"
+      "sha256": "765d30b538177704c596f2fa1a637dba0e74d0ad0de679cce35a4133005fca49",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "3"
     },
     ".agents/skills/software-architecture-writer/SKILL.md": {
       "template": "skills/software-architecture-writer/SKILL.md",

@@ -69,10 +69,12 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Determine specialist-review applicability**: send stories that change source code, tests, dependencies, schemas, or runtime configuration through automated implementation review while keeping documentation-only work on the existing validation and human-review path.
 - **Establish a shared review snapshot**: give architecture and technical-lead reviewers the same immutable story diff and validation evidence so their outcomes apply to one identifiable implementation state.
 - **Coordinate specialist implementation review**: obtain independent architecture and technical-lead assessments concurrently when the host supports it, or sequentially against the unchanged snapshot when concurrency is unavailable.
-- **Consolidate review findings**: combine and deduplicate evidence-based reviewer findings into one coherent repair packet without blurring specialist ownership.
-- **Route bounded implementation repair**: give each blocking-or-major combined packet to a fresh, narrowly briefed repair executor without replanning, require revalidation, invalidate approvals for earlier snapshots, and allow at most three shared repair rounds plus one final review.
-- **Escalate material review decisions**: stop unattended repair when authoritative sources conflict, the repair budget is exhausted, or a change requires significant product, architecture, dependency, data, security, privacy, migration, or scope judgment.
-- **Preserve final human story approval**: treat automated specialist approval as evidence for the user rather than permission to mark steps approved, commit changes, or continue delivery autonomously.
+- **Present every review round to the human**: combine and deduplicate evidence-based findings, show both specialist outcomes and unresolved risks for the same snapshot, and pause for a human decision even when both reviewers approve.
+- **Support human-directed review decisions**: let the user approve the current story as-is, authorize specific changes after discussion, or defer it regardless of finding severity.
+- **Preserve accepted risks**: keep unresolved findings visible when the human approves despite them, without misrepresenting that decision as specialist approval.
+- **Route authorized implementation repair**: give only human-authorized changes to a fresh, narrowly briefed repair executor without replanning; require revalidation, invalidate earlier specialist outcomes, and send the resulting snapshot through both reviews again before another human decision.
+- **Surface material review choices**: present conflicting sources or recommendations and consequential product, architecture, dependency, data, security, privacy, migration, or scope decisions to the human rather than resolving them autonomously.
+- **Preserve human story approval**: treat specialist approval as evidence rather than permission to mark steps approved, commit changes, or continue delivery autonomously.
 
 #### Local Evals Workbench
 
@@ -175,9 +177,9 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
 - **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
 - **Specialist implementation review** depends on a validated story implementation, a stable shared snapshot, the project SAD, feature SDD, selected architecture guidance, clean-code guidance, and applicable language or framework guidance.
-- **Repair routing** depends on both reviewer outcomes for the same snapshot; parallel execution is preferred when supported, but shared-snapshot consistency is required regardless of scheduling.
-- **Fresh repair execution** depends on a narrow handoff containing the original story and plan, authoritative sources and skills, current snapshot identity and changed files, combined findings, and prior validation evidence.
-- **Human story approval** follows automated specialist approval or review escalation and remains required before approval metadata, commit, or feature continuation.
+- **Human review decisions** depend on both reviewer outcomes for the same snapshot; parallel execution is preferred when supported, but shared-snapshot consistency is required regardless of scheduling.
+- **Fresh repair execution** depends on the human's authorization of specific changes and a narrow handoff containing the original story and plan, authoritative sources and skills, current snapshot identity and changed files, reviewer findings, and prior validation evidence.
+- **Human story approval** follows every specialist review round, whether reviewers approve or report unresolved findings, and remains required before approval metadata, commit, or feature continuation.
 - **Skill Guidance** must discover and confirm Evaluation Targets, obtain approval for the Eval Coverage Plan, and generate runnable suites before the **Local Evals Workbench** can execute them.
 - **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while Evaluation Targets, suite definitions, fixtures, and test-support files remain project-owned.
 - **Local Evals Workbench** depends on external **LLM provider APIs** for target execution, rubric judging, analysis, and proposal drafting; non-LLM result inspection should remain available when provider credentials are unavailable.
