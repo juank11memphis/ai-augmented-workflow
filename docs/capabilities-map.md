@@ -6,7 +6,7 @@ This Capabilities Map translates Sibu's Product Vision and Business Domain Model
 
 Capabilities are written at the product level: what Sibu must be able to do for developers and teams, not how the software is structured internally.
 
-User Control & Trust is treated as a cross-cutting principle rather than a standalone subdomain. Its concrete capabilities appear in the subdomains where users experience them: adoption, maintenance, pipeline guidance, architecture guidance, local eval repair, and tool configuration.
+User Control & Trust is treated as a cross-cutting principle rather than a standalone subdomain. Its concrete capabilities appear in the subdomains where users experience them: adoption, maintenance, pipeline guidance, architecture guidance, sub-agent model routing, local eval repair, and tool configuration.
 
 ## Capability Map
 
@@ -19,19 +19,24 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Require architecture skill selection**: ensure `sibu init` cannot complete until the user explicitly chooses one architecture skill from Sibu's existing fixed catalog, without Sibu choosing a default.
 - **Install selected workflow files**: create repo-local workflow files from selected Sibu templates while preserving that those files belong to the project.
 - **Install selected architecture guidance**: create the workflow guidance files and routing context for the selected architecture skill as part of the initialized workflow.
-- **Record workflow state**: store selected agents, selected architecture skill, template versions, file hashes, and ownership status so future workflow health and sync decisions have a reliable baseline.
+- **Record workflow state**: store selected agents, selected architecture skill, repo-wide sub-agent model routes, template versions, file hashes, and ownership status so future workflow health and sync decisions have a reliable baseline.
+- **Defer model-route selection until needed**: keep initial adoption lightweight by allowing each role-and-workload combination to request its route on first use rather than forcing every route choice during `sibu init`.
 - **Explain project ownership**: make clear that installed workflow files are project-owned even when Sibu tracks them as managed files.
 - **Explain installed workflow structure**: help users understand what was created, what is managed, what can be customized, and what remains under their control.
 
 #### Workflow Configuration Management
 
-- **List configurable workflow options**: show which optional skills, selected architecture skill, and MCP/tool integrations are available and which are already selected.
+- **List configurable workflow options**: show which optional skills, selected architecture skill, MCP/tool integrations, and Sibu-provided sub-agent model routes are available and already selected.
 - **Apply intentional selection changes**: let users add or stop optional workflow guidance and tool integrations after initialization.
 - **Warn before architecture replacement**: explain that replacing the selected architecture skill can disrupt prior technical designs, implementation plans, and implementation guidance before the user confirms the change.
 - **Apply intentional architecture replacement**: let users replace the selected architecture skill after warning and confirmation, without treating replacement as routine drift repair.
+- **Show configured model routes**: present every supported role-and-workload combination, its saved repo-wide route, recommendation status, and any missing or unavailable selection.
+- **Change one model route**: let users intentionally replace the model and reasoning effort for one role-and-workload combination.
+- **Reset model routes to recommendations**: let users reset one combination or all combinations to current compatible catalog recommendations only after explicit choice.
+- **Preserve user-selected routes**: retain available user-selected model choices and distinguish them from Sibu recommendations without blocking or silently replacing them.
 - **Check mutation readiness**: prevent post-init configuration changes when unresolved workflow drift or unsafe local state would make mutation ambiguous.
 - **Update selected workflow files**: create, update, or remove affected workflow files for selected skills, selected architecture guidance, and MCP/tool integrations without changing unrelated files.
-- **Record configuration state changes**: update selected skills, selected architecture skill, selected MCP servers, file metadata, hashes, and ownership state after approved configuration changes.
+- **Record configuration state changes**: update selected skills, selected architecture skill, selected MCP servers, repo-wide model routes, file metadata, hashes, and ownership state after approved configuration changes.
 - **Preserve configuration boundaries**: keep intentional configuration changes distinct from first-time adoption and sync maintenance.
 
 #### Workflow Maintenance & Sync Review
@@ -39,9 +44,10 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Check workflow health**: inspect Sibu-managed workflow state without changing files so users know whether the workflow is healthy or needs attention.
 - **Detect workflow drift**: identify missing, modified, unrecorded, customized, or outdated workflow files that need review.
 - **Detect architecture selection problems**: identify missing or unsupported selected architecture skill state as workflow health that needs review or repair.
-- **Explain maintenance findings**: make drift, local edits, architecture selection problems, and template updates understandable before the user decides what to do.
+- **Detect model-route review needs**: identify unavailable saved routes and newer research-informed catalog recommendations that the user may want to review.
+- **Explain maintenance findings**: make drift, local edits, architecture selection problems, model-route review needs, and template updates understandable before the user decides what to do.
 - **Protect local edits**: prevent automatic overwrite of user-customized workflow files and preserve local ownership decisions.
-- **Guide sync decisions**: help the user choose whether to repair, update, customize, unmanage, select missing required architecture guidance, or skip each relevant workflow change.
+- **Guide sync decisions**: help the user choose whether to repair, update, customize, unmanage, select missing required architecture guidance, retain or change a model route, or skip each relevant workflow change.
 - **Apply approved maintenance changes**: update workflow files and state metadata only after the user chooses an action.
 
 #### AI-Augmented Development Pipeline
@@ -105,6 +111,8 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Version templates**: track template versions so projects can detect freshness, drift, and available updates.
 - **Describe template changes**: provide user-facing update notes that make sync decisions understandable.
 - **Support safe template adoption**: make templates available for initialization and sync without implying that Sibu may silently overwrite project-owned files.
+- **Distribute model recommendations**: package the current model recommendation catalog for supported agent environments as versioned, reviewable Sibu guidance.
+- **Explain recommendation updates**: provide sync-visible notes when new models, changed provider guidance, or revised research-informed role recommendations become available.
 - **Provide eval-authoring templates**: distribute Sibu's eval-authoring skill and any conventional eval artifact templates without owning project-specific eval content.
 
 #### Skill Guidance
@@ -127,6 +135,14 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 
 - **Select agent support**: let users choose which supported agents should receive workflow files or configuration.
 - **Resolve agent-specific files**: determine which templates and workflow files are needed for each selected agent.
+- **Classify delegated workloads**: assign each task given to a Sibu-provided sub-agent one provider-neutral workload class based on scope, ambiguity, and risk.
+- **Support adaptive role routing**: allow the same sub-agent role to use different saved routes for bounded, demanding, or high-risk tasks.
+- **Maintain research-informed recommendations**: use current official guidance, provider information, and maintainer judgment to recommend the best expected role-and-workload fit, then consider expected cost and completion time.
+- **Translate recommendations by agent environment**: map provider-neutral workload classes to compatible concrete models and reasoning effort without making one provider part of Sibu's product identity.
+- **Request a route on first use**: pause an unconfigured role-and-workload launch, recommend a compatible route, obtain the user's choice, and save it repo-wide for reuse.
+- **Reuse explicit saved routes**: route later launches for the same role and workload class through the repo-wide choice without asking again or silently inheriting the parent model.
+- **Handle unavailable routes explicitly**: pause when a saved route cannot be used, preserve it until the user chooses, and recommend a replacement without silent substitution.
+- **Allow user-selected alternatives**: let users select any model available to their chosen agent environment while clearly distinguishing their choice from Sibu's current recommendation.
 - **Keep agent support adaptable**: allow Sibu to support changing agent ecosystems without making any one agent the center of the product.
 
 #### MCP / Tool Configuration Support
@@ -150,12 +166,14 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 ## Capability Dependencies / Sequencing
 
 - **Template Catalog**, **Skill Guidance**, **Agent Support Selection**, and **MCP / Tool Configuration Support** enable **Workflow Adoption & State Tracking**.
+- **Template Catalog** distributes versioned model recommendation data and change notes, while **Agent Support Selection** owns role classification, quality/cost interpretation, compatibility, and route-resolution behavior.
 - **Skill Guidance** must provide the fixed architecture skill catalog before **Workflow Adoption & State Tracking** can require architecture skill selection.
 - **Workflow Adoption & State Tracking** must precede **Workflow Configuration Management** and **Workflow Maintenance & Sync Review**, because both depend on recorded workflow state.
-- **Workflow Configuration Management** depends on **Template Catalog** for selectable skills and workflow templates, **Skill Guidance** for selected architecture guidance, **MCP / Tool Configuration Support** for safe tool configuration rendering, and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
-- **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template versions and meaningful update notes, and on **Skill Guidance** to repair missing or unsupported architecture skill selections.
+- **Workflow Configuration Management** depends on **Template Catalog** for selectable skills, workflow templates, and recommendation versions; **Skill Guidance** for selected architecture guidance; **Agent Support Selection** for valid model-route choices; **MCP / Tool Configuration Support** for safe tool configuration rendering; and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
+- **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template and recommendation versions with meaningful update notes, **Skill Guidance** to repair missing or unsupported architecture skill selections, and **Agent Support Selection** to interpret unavailable or superseded model routes.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
+- **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
 - **Specialist implementation review** depends on a validated story implementation, a stable shared snapshot, the project SAD, feature SDD, selected architecture guidance, clean-code guidance, and applicable language or framework guidance.
 - **Repair routing** depends on both reviewer outcomes for the same snapshot; parallel execution is preferred when supported, but shared-snapshot consistency is required regardless of scheduling.
 - **Fresh repair execution** depends on a narrow handoff containing the original story and plan, authoritative sources and skills, current snapshot identity and changed files, combined findings, and prior validation evidence.
@@ -171,8 +189,12 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 
 - **SAD/SDD rollout**: these capabilities describe the agreed replacement direction. Renamed authoring skills and updated distribution/consumer contracts still need implementation; the old standalone map and design artifacts are not additional permanent pipeline stages.
 
-- **Initial setup breadth**: Sibu may need to decide how much `init` should configure up front versus defer to later `sync` or setup flows.
-- **Workflow configuration breadth**: post-init configuration now has a first-class capability boundary; future work should decide which options beyond skills, architecture guidance, and MCP servers belong there.
+- **Initial setup breadth**: Sibu intentionally defers sub-agent model-route choices until each role-and-workload combination is first needed; other future setup choices may still need an init-versus-later decision.
+- **Workflow configuration breadth**: post-init configuration includes skills, architecture guidance, MCP servers, and repo-wide Sibu-provided sub-agent model routes; future options still need an explicit ownership decision.
+- **Initial provider mapping**: the first recommendation catalog may map only Codex models while workload classes remain provider-neutral for later supported agent environments.
+- **Recommendation freshness**: release-and-sync awareness favors reviewed, explainable maintainer guidance over immediate live discovery of every provider model.
+- **Team routes vs personal preferences**: the initial capability stores repo-wide choices; private per-developer overrides remain possible future evolution.
+- **Catalog coverage**: users may choose available models absent from the catalog; Sibu must not present either catalog recommendations or user-selected routes as guaranteed quality, cost, or completion-time outcomes.
 - **Architecture replacement risk**: replacing architecture guidance is allowed, but future feature work should define the exact warning, confirmation, and repair experience carefully.
 - **Skill selection depth**: optional skills may start as template choices, but could evolve into richer recommendations based on project type.
 - **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.

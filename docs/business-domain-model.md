@@ -20,6 +20,7 @@ Inside this domain:
 - managed workflow files, templates, drift, and sync review
 - repo-local AI integration discovery, eval coverage planning, suite authoring, execution, failure analysis, repair proposal review, and approval-gated project file mutation
 - skill selection and focused AI workflow guidance
+- repo-wide model routing for Sibu-provided sub-agent roles
 - required architecture skill selection from Sibu's fixed catalog
 - the AI-Augmented Development Pipeline for planned feature work
 - hard-stop prerequisite checks between pipeline artifacts
@@ -64,6 +65,14 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **MCP Server**: an external tool-connection endpoint that lets an AI agent access capabilities such as GitHub, Notion, Gmail, or other services.
 - **MCP Selection**: the user's choice to configure one or more MCP servers for supported agents in a project.
 - **MCP Configuration**: repo-local agent configuration that tells an agent how to connect to selected MCP servers without embedding secrets.
+- **Sibu-Provided Sub-agent Role**: a named delegated role distributed by Sibu, such as an implementation planner, executor, or specialist reviewer. User-created agents remain outside Sibu's model-routing responsibility.
+- **Workload Class**: a provider-neutral description of the scope, ambiguity, and risk of work delegated to a Sibu-provided sub-agent role. It supports recommendations without naming a provider model.
+- **Model Route**: the repo-wide, user-selected model and reasoning-effort choice for one Sibu-provided sub-agent role, workload class, and supported agent environment.
+- **Provider Mapping**: the translation from a provider-neutral workload class and sub-agent role to a concrete model and reasoning-effort recommendation for one supported agent environment.
+- **Model Recommendation Catalog**: Sibu's versioned, research-informed set of provider mappings, based on current official guidance, provider information, and maintainer judgment. It is updated through Sibu releases and reviewed through sync rather than discovered or applied silently at runtime.
+- **Recommended Model Route**: the current catalog-backed model route Sibu proposes as the best expected fit for a role and workload class, considering expected quality first, cost second, and completion time third without guaranteeing outcomes.
+- **User-Selected Model Route**: a route the user chooses instead of Sibu's current recommendation. It remains fully supported as a user choice and is clearly distinguished from a Sibu recommendation.
+- **Model Route Review**: the user-controlled decision to select, retain, replace, or reset a role-and-workload model route after first use, unavailability, or a catalog update.
 - **Artifact**: a project-owned document or plan produced by a skill and used as input for later work.
 - **Local Eval Artifact**: a project-owned eval definition, test case, fixture, prompt reference, assertion, grader, expected/reference output, or run result used by the Local Evals Workbench.
 - **Evaluation Target**: a repo-local generative-AI integration, agent, prompt, or AI-assisted workflow whose behavior the user wants to evaluate.
@@ -113,6 +122,9 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Required Selection vs Default Choice**: requiring a user to choose an architecture skill is not the same as Sibu choosing one by default. The user must make the explicit choice.
 - **MCP Server vs Skill**: an MCP server provides external tool access; a skill provides workflow guidance. A skill may tell an agent when or how to use a tool, but it is not the tool itself.
 - **MCP Configuration vs Credentials**: Sibu may render configuration that references credential environment variables, but Sibu should not store or embed secrets.
+- **Workload Class vs Model Route**: a workload class describes delegated work in provider-neutral terms; a model route records the concrete user choice for one role, workload class, and supported agent environment.
+- **Recommended vs Required Model**: a recommended model is Sibu's current research-informed suggestion for a role and workload class. It is never an allowlist entry, a quality guarantee, or a mandatory choice; users may select another available model.
+- **Unavailable vs User-Selected Model**: unavailable means the selected agent environment cannot use the saved route; user-selected means the user chose it instead of Sibu's current recommendation. A user-selected route may still be available and valid.
 - **Guide vs Autopilot**: Sibu guides developers into better AI collaboration; it does not replace the developer or run the whole project unattended.
 - **Sync vs Init**: `sibu init` is one-time adoption. `sibu sync` is ongoing maintenance. Re-running init is not the normal update path.
 
@@ -123,7 +135,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 #### Core Subdomains
 
 - **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages, including the required selected architecture skill.
-- **Workflow Configuration Management**: lets users intentionally change selected workflow guidance, architecture guidance, and tool integrations after initialization while preserving safety and state consistency.
+- **Workflow Configuration Management**: lets users intentionally change selected workflow guidance, architecture guidance, tool integrations, and repo-wide sub-agent model routes after initialization while preserving safety and state consistency.
 - **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
 - **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work so downstream AI work stays grounded in upstream decisions, including the repo's selected architecture skill for technical and implementation stages and bounded specialist review before human approval of code-changing stories.
 - **Local Evals Workbench**: helps users discover Evaluation Targets, approve deep risk-based coverage, create repo-local eval suites, run all or one test case against a selected compatible model, inspect results, analyze one failed assertion at a time, review concrete repair proposals, approve project file mutations, and rerun eval scope.
@@ -133,7 +145,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 
 - **Template Catalog**: provides Sibu-managed source templates for workflow files and skills.
 - **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, project-level software architecture documents, BRDs, per-feature software design documents, Scrum planning, implementation planning, execution, selected architecture guidance, and eval authoring.
-- **Agent Support Selection**: helps choose which agent support files and configurations belong in a project.
+- **Agent Support Selection**: helps choose which agent support files and configurations belong in a project and maintains explicit, repo-wide model routes for Sibu-provided sub-agent roles.
 - **MCP / Tool Configuration Support**: helps users select optional MCP servers, renders agent-specific configuration, and keeps external tool access separate from stored credentials.
 
 #### Generic / External Subdomains
@@ -176,6 +188,7 @@ flowchart TB
     WorkflowFiles["Workflow Files"]
     Artifacts["Pipeline Artifacts"]
     State["Sibu State Metadata"]
+    ModelRoutes["Sub-agent Model Routes"]
     ArchitectureGuidance["Selected Architecture Skill Guidance"]
     LocalChoices["Customizations / Unmanaged Files"]
     ReleaseArtifacts["Release Notes / Package Metadata"]
@@ -195,6 +208,7 @@ flowchart TB
   Adoption --> WorkflowFiles
   Configuration --> WorkflowFiles
   Configuration --> State
+  Configuration --> ModelRoutes
   Configuration --> ArchitectureGuidance
   Maintenance --> WorkflowFiles
   Maintenance --> State
@@ -215,6 +229,8 @@ flowchart TB
   Skills --> Artifacts
   Skills --> ArchitectureGuidance
   AgentSupport --> AiAgents
+  AgentSupport --> ModelRoutes
+  ModelRoutes -. "selects but does not own" .-> AiAgents
   McpConfig --> McpServers
   LocalEvals -. "uses but does not own" .-> ModelProviders
   McpServers --> Tools
@@ -223,7 +239,7 @@ flowchart TB
   ProjectOwned -. "owned by developer / team" .-> SibuDomain
 ```
 
-This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. Architecture skill selection is required at adoption time, and architecture skill replacement is a high-impact configuration change rather than ordinary drift repair. Maintainer Release Support is also core, but maintainer-facing: it protects Sibu's own release process rather than a consumer project's installed workflow. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
+This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. Repo-wide sub-agent model routes are project-owned configuration for Sibu-provided roles; the external models and coding agents remain outside Sibu's domain. Architecture skill selection is required at adoption time, and architecture skill replacement is a high-impact configuration change rather than ordinary drift repair. Maintainer Release Support is also core, but maintainer-facing: it protects Sibu's own release process rather than a consumer project's installed workflow. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
 
 ## Domain Concepts & Conceptual Diagram
 
@@ -288,6 +304,26 @@ A high-impact post-initialization configuration change where the user chooses a 
 #### MCP Server
 
 An external tool-access endpoint selected by the user and configured for supported agents. MCP servers are optional integrations, not Sibu-owned workflow logic.
+
+#### Sibu-Provided Sub-agent Role
+
+A named delegated role distributed and invoked by Sibu's workflow, such as an implementation planner, executor, architecture reviewer, or technical-lead reviewer. Model routing applies only to these Sibu-provided roles in the initial scope, not to unrelated user-created agents.
+
+#### Workload Class
+
+A provider-neutral classification of one delegated task based on how bounded, repeatable, ambiguous, multi-step, or high-risk it is. The same sub-agent role may handle different workload classes on different tasks. Workload classes explain why a route is recommended without making a provider or model part of Sibu's product identity.
+
+#### Model Route
+
+The project-owned, repo-wide choice of model and reasoning effort for one Sibu-provided sub-agent role and workload class in one supported agent environment. A route may be catalog-recommended or explicitly user-selected.
+
+#### Model Recommendation Catalog
+
+A versioned Sibu-maintained catalog of research-informed provider mappings. Recommendations use current official guidance, provider information, and maintainer judgment to estimate role-and-workload fit, cost, and completion time. New or changed recommendations arrive through Sibu releases and become visible through sync; they never overwrite a saved route automatically or guarantee outcomes.
+
+#### Model Route Review
+
+The user decision point used when a role has no saved route, a saved route is unavailable, a newer recommendation exists, or the user intentionally changes configuration. Sibu presents a recommendation, but the user selects the route that is recorded.
 
 #### Artifact
 
@@ -429,12 +465,17 @@ define focused task
 - A **Project / Repo** has workflow files, Sibu state metadata, selected agent support, and local user changes.
 - A **Template** has a path, version, description, and user-facing change notes.
 - A **Workflow File** has a repo path, source template, current content, recorded hash, template version, and ownership state.
-- **Sibu State Metadata** records managed paths, template versions, file hashes, selected agent support, the selected architecture skill, and whether files are managed, customized, or unmanaged.
+- **Sibu State Metadata** records managed paths, template versions, file hashes, selected agent support, the selected architecture skill, repo-wide model routes for Sibu-provided sub-agent roles, and whether files are managed, customized, or unmanaged.
 - A **Skill** has a purpose, trigger scope, required inputs, hard-stop conditions, owned output artifact, and boundaries.
 - An **Architecture Skill** has a catalog identifier, name, description, routing instruction, source template, and agent-specific target path.
 - A **Selected Architecture Skill** has exactly one catalog choice recorded in state and one installed guidance target for each selected agent that supports skill files.
 - A **Workflow Configuration Change** has a user intent, selected option, affected workflow files, readiness checks, and resulting state updates.
 - An **MCP Configuration** has a selected server, target agent, connection metadata, and references to credential environment variables when needed.
+- A **Sibu-Provided Sub-agent Role** has a stable role identifier, purpose, supported workload classes, supported agent environment, and route state for each role-and-workload combination.
+- A **Workload Class** has provider-neutral scope, ambiguity, reasoning, validation, and risk characteristics.
+- A **Model Route** has one sub-agent role, one workload class, one supported agent environment, one concrete model identifier, one reasoning effort, selection origin, and last-reviewed catalog version.
+- A **Model Recommendation Catalog** has a version, supported agent environments, role-to-workload assignments, provider mappings, concise research-informed rationales, review dates, and user-facing change notes.
+- A **Model Route Review** has a triggering condition, current route when present, current recommendation, user decision, and resulting recorded route.
 - An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
 - An **Implementation Review Cycle** has one story, one implementation executor result, two specialist reviewer roles, zero to three fresh repair executors, a current review snapshot, a shared repair count, reviewer outcomes, and an escalation or approval outcome.
 - A **Review Snapshot** has a diff identity, changed files, validation evidence, and the reviewer outcomes that apply to it.
@@ -465,8 +506,15 @@ define focused task
 - A **Drift** finding refers to one workflow file or one workflow-level state mismatch.
 - A **Sync Review** can resolve, defer, or record many drift findings.
 - A **Workflow Configuration Change** can add, stop, replace, or list selected skills and MCP/tool integrations after initialization.
+- A **Workflow Configuration Change** can also view, set, or reset one or all Sibu-provided sub-agent model routes.
 - A **Workflow Configuration Change** may create, update, remove, or record workflow files, but only as an intentional user-requested configuration change.
 - An **Architecture Skill Replacement** replaces exactly one selected architecture skill with exactly one other catalog architecture skill.
+- A **Project / Repo** may have one repo-wide **Model Route** for each supported combination of Sibu-provided sub-agent role, workload class, and agent environment.
+- Each configured **Model Route** belongs to exactly one Sibu-provided sub-agent role, one workload class, and one supported agent environment.
+- One Sibu-provided sub-agent role may be invoked for different **Workload Classes** on different tasks.
+- Each delegated task receives exactly one workload class before its model route is resolved.
+- A **Model Recommendation Catalog** may recommend one route per supported role, workload class, and agent environment, but a user may choose another available route.
+- A saved **Model Route** remains unchanged when a catalog recommendation changes until the user explicitly accepts or resets it.
 - A **Skill** produces or updates one primary **Artifact** type.
 - A **Skill** may guide use of an MCP-provided tool, but the MCP server remains an external integration.
 - An **Artifact** can be required by one or more downstream **Skills**.
@@ -513,6 +561,13 @@ define focused task
 - Optional non-architecture skills and MCP integrations are user-selected and may be changed after initialization.
 - Architecture skill replacement is allowed only as an intentional high-impact configuration change after Sibu strongly warns the user about downstream consequences.
 - Sibu must not commit, store, or embed secrets in generated MCP configuration.
+- Sibu must not silently inherit the parent model for a Sibu-provided sub-agent role that requires an explicit route.
+- Sibu must not silently substitute a different model when a saved route is unavailable.
+- A model route must be chosen explicitly by the user before first use of an unconfigured role-and-workload combination and recorded repo-wide for later runs.
+- Model recommendations must prioritize expected role-and-workload suitability before optimizing for lower expected cost and completion time.
+- Catalog recommendations guide user choice but never form a model allowlist; users may select another available model.
+- Catalog updates and newer recommendations must never overwrite a saved model route automatically.
+- Sibu owns model-routing guidance and project configuration, but it does not provide, control, or guarantee availability of external models.
 - Feature/product planning work must follow the enforced artifact pipeline when it triggers the relevant skills.
 - Technical design, implementation planning, and implementation execution should apply the selected architecture skill as binding guidance when shaping technical decisions.
 - Each pipeline skill owns a specific artifact and should not write unrelated downstream artifacts. SDD authors route architectural changes to the SAD writer rather than silently editing the SAD or inventing new boundaries.
@@ -551,6 +606,15 @@ define focused task
 - When local edits exist, Sibu should present review options instead of overwriting automatically.
 - When a managed file is missing, Sibu may offer to repair it during sync.
 - When an MCP server is selected, Sibu should render agent-specific configuration that references credentials safely rather than storing secret values.
+- When a Sibu-provided sub-agent role is needed, the workflow should first classify the delegated task using provider-neutral workload criteria.
+- When the resulting role-and-workload combination has no saved route, the workflow should pause, present the current compatible recommendation, ask the user to choose, and record that repo-wide choice before spawning the role.
+- When a saved model route is available, future runs should reuse it without asking again.
+- When a saved model route becomes unavailable or unsupported, the workflow should pause, preserve the old route until the user decides, and recommend a replacement without inheriting or substituting silently.
+- When a user selects a model outside the recommendation catalog, Sibu should allow the choice and identify it as user-selected rather than Sibu-recommended.
+- When a new catalog release adds or changes model recommendations, `sibu sync` should explain the change and let the user retain, replace, or reset affected routes.
+- When a user wants to manage model routes directly, Sibu should support viewing all role-and-workload routes, changing one combination, and resetting one or all combinations to current recommendations.
+- When choosing catalog recommendations, Sibu should use provider-neutral workload classes and current model research, prioritize expected task suitability, then prefer lower expected cost and completion time while making uncertainty visible.
+- When Codex is the selected agent environment, the initial catalog may recommend a lower-cost bounded-work route and a more capable demanding-work route; current recommendations must remain versioned catalog data rather than universal domain rules.
 - When a template update exists, Sibu should explain the meaningful change before the user decides whether to apply it.
 - When the user wants local ownership, Sibu should allow a file to become customized or unmanaged.
 - When planned feature work triggers a downstream skill without prerequisites, that skill should hard-stop and identify the missing upstream artifact.
@@ -587,7 +651,7 @@ define focused task
 
 1. **Uninitialized Repo**: the repo has no Sibu workflow metadata.
 2. **Initialized Workflow**: `sibu init` has created initial workflow files, installed the selected architecture skill guidance, and recorded state metadata.
-3. **Configured Workflow**: the user may intentionally add or stop optional workflow guidance, replace architecture guidance, or change tool integrations after initialization.
+3. **Configured Workflow**: the user may intentionally add or stop optional workflow guidance, replace architecture guidance, change tool integrations, or manage repo-wide sub-agent model routes after initialization.
 4. **Healthy Workflow**: managed files match known state and no drift is detected.
 5. **Drifted Workflow**: files are missing, modified, unrecorded, customized, or generated from older templates.
 6. **Sync Review Needed**: the user must decide how to handle detected drift or updates.
@@ -632,6 +696,17 @@ define focused task
 6. **Replacement Warned and Confirmed**: Sibu warns about downstream disruption and proceeds only if the user intentionally continues.
 7. **Architecture Skill Replaced**: state and workflow guidance are updated to the newly selected catalog option.
 
+#### Sub-agent Model Route Lifecycle
+
+1. **Role Needed**: the workflow needs to spawn one Sibu-provided sub-agent role for a delegated task.
+2. **Workload Classified**: the workflow assigns the task one provider-neutral workload class based on scope, ambiguity, and risk.
+3. **Route Checked**: the workflow checks repo-wide Sibu state for that role, workload class, and supported agent environment.
+4. **Route Selection Required**: when no route exists, the workflow pauses and presents the current compatible recommendation.
+5. **Route Selected and Recorded**: the user chooses a recommended or other available model route, which becomes the repo-wide choice for later tasks with the same role and workload class.
+6. **Route Reused**: later tasks with the same role and workload class use the saved route without asking again.
+7. **Route Review Needed**: an unavailable saved route, a new catalog recommendation, or an intentional configuration request creates a visible review opportunity.
+8. **Route Retained, Replaced, or Reset**: the user keeps the current route, chooses another available route, or resets one or all role-and-workload combinations to current recommendations.
+
 #### AI-Augmented Development Artifact Lifecycle
 
 1. **Prerequisite Artifact Exists**: upstream artifact is present and sufficient.
@@ -665,6 +740,16 @@ define focused task
 - **Architecture Skill Replacement Warned**: Sibu explains the likely downstream impact before applying the replacement.
 - **Architecture Skill Replaced**: the user intentionally confirms and Sibu records and installs the replacement architecture guidance.
 - **Architecture Selection Missing**: workflow state lacks a selected architecture skill and needs review or repair.
+- **Sub-agent Workload Classified**: a delegated task is assigned one provider-neutral workload class before route resolution.
+- **Sub-agent Model Route Requested**: the workflow needs a model route for one Sibu-provided sub-agent role and workload class.
+- **Sub-agent Model Route Missing**: no repo-wide route exists for the requested role, workload class, and agent environment, so execution pauses for user choice.
+- **Sub-agent Model Route Recommended**: Sibu presents the current compatible research-informed recommendation for the requested role.
+- **Sub-agent Model Route Selected**: the user chooses a model and reasoning effort for the role.
+- **Sub-agent Model Route Recorded**: the user's choice is saved as repo-wide Sibu state for reuse.
+- **Sub-agent Model Route Unavailable**: the saved route cannot be used in the current agent environment and requires explicit replacement review.
+- **Model Recommendation Catalog Updated**: a Sibu release provides new or changed research-informed recommendations.
+- **Sub-agent Model Route Review Requested**: sync or an explicit configuration action offers retain, replace, or reset choices without automatic overwrite.
+- **Sub-agent Model Route Changed**: the user intentionally replaces or resets a saved route.
 - **Drift Detected**: Sibu finds missing, modified, unrecorded, customized, or outdated workflow files.
 - **Template Update Available**: a newer Sibu template exists for a tracked workflow file.
 - **Local Customization Detected**: a workflow file has user edits that must be protected.
@@ -718,6 +803,10 @@ define focused task
 - The AI-Augmented Development Pipeline is enforced for planned product/feature work when the relevant skills are triggered.
 - Normal repo work and narrow fixes should stay lightweight and do not require the full pipeline by default.
 - Users want strong defaults, but they also need local control over languages, frameworks, agents, architecture guidance, eval artifacts, and managed files.
+- Initial model routing covers only Sibu-provided sub-agent roles and stores shared repo-wide choices; unrelated user-created agents and private per-developer overrides are outside the initial scope.
+- Initial recommendation support may provide only a Codex provider mapping, while workload classes and route concepts remain provider-neutral for future supported agent environments.
+- Model awareness is release-and-sync driven: a model becomes recommendable after Sibu maintainers research it and publish a catalog update, not merely because a provider announces or exposes it.
+- Current Codex guidance may recommend Luna with high reasoning for bounded work and Sol with medium reasoning for demanding or high-risk work. Astra is not currently recommended because of cost, but users may still select it explicitly.
 - Architecture guidance is required for initialized Sibu workflows, but the user must explicitly choose it from the existing fixed catalog.
 - This model assumes the fixed architecture skill catalog already exists; expanding or redefining that catalog is separate future work.
 - Installed workflow files are always project-owned, even when Sibu tracks them.
@@ -741,3 +830,7 @@ define focused task
 - **Artifact isolation vs deliberate override**: Sibu should prevent accidental source-control and LLM-context pollution from run artifacts, while recognizing that a user can deliberately override local safeguards.
 - **Skill boundaries**: each skill must stay focused on its owned artifact while still handing off enough context to downstream skills.
 - **External tool evolution**: agents, models, editors, MCP servers, and collaboration tools will keep changing, so Sibu must avoid hard-coding its business identity around any single external tool.
+- **Recommendation freshness vs research**: release-and-sync updates are less immediate than live provider discovery, but they keep recommendations reviewable, reproducible, and grounded in documented maintainer judgment.
+- **Cost vs expected quality**: the cheapest available model is not necessarily the best route; Sibu must prioritize expected role-and-workload suitability before optimizing cost, while avoiding guarantees it cannot substantiate.
+- **Team consistency vs personal preference**: initial routes are shared repo-wide for predictable collaboration; private per-developer overrides may require a future extension.
+- **Catalog guidance vs user freedom**: Sibu should distinguish recommended and user-selected routes clearly without preventing users from selecting available models outside the catalog.
