@@ -35,6 +35,8 @@ If selected architecture guidance is missing from the packet or unavailable to r
 
 If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context. Read the SDD with its embedded diagrams.
 
+For BRD and SDD context in the planner packet, read its verified **start here** IDs, sections, and diagrams first. The packet is navigation, not source authority or proof that omitted requirements are irrelevant. If references are uncertain, locate relevant context in the supplied full source path. Expand to wider sections or complete artifacts when story breadth, missing context, contradictions, validation planning, or quality requires it; there is no fixed context ceiling or prohibition on full reads. The authoritative BRD, SDD, SAD, and skills win over packet summaries. Surface material omissions or conflicts to the main agent under existing blocker rules, and plan the entire assigned story and its verification expectations.
+
 ## Planning rules
 
 - Read the story and required source artifacts before writing step files. Read its embedded diagrams.

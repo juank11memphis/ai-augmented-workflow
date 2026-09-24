@@ -46,6 +46,7 @@ If a required source artifact or required skill path is missing, stop and report
 ### Implementation mode
 
 - Execute all unapproved step files in filename order, once.
+- Read source-verified packet BRD IDs, SDD headings, and embedded diagrams first as **start here** references, not as an exclusive list or evidence that omitted requirements do not apply. Locate uncertain references from their full authoritative paths. Expand to wider sections or complete artifacts when scope, missing context, conflict, implementation, or validation quality requires it; no fixed context ceiling or full-read prohibition applies. The authoritative BRD, SDD, SAD, and skills prevail over the packet. Report material inconsistency under existing blocker rules and implement and validate the entire authorized story.
 - Return completion evidence to the main agent before human review. Do not present or own the human approval gate.
 
 ### Repair mode

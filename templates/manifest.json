@@ -1,5 +1,5 @@
 {
-  "templateVersion": "169",
+  "templateVersion": "171",
   "templates": {
     "AGENTS.md": {
       "version": "43",
@@ -135,32 +135,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "25",
+      "version": "27",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Routes implementation planner spawns through saved or user-chosen model and reasoning-effort settings."
+        "Starts planner handoffs from verified story-specific BRD and design references and clarifies when to check relevant project architecture boundaries."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "11",
+      "version": "12",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Adds repository-aware validation planning with focused checks, one non-duplicative final strategy, and conditional packaging coverage."
+        "Guides planners to expand beyond targeted references when the full story or source evidence requires it."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "39",
+      "version": "40",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Requires a human decision after every specialist review and limits repairs to explicitly authorized changes.",
-        "Excludes human discussion from automated-run timing and re-reviews each validated repair."
+        "Reuses verified story references in initial implementation handoffs without changing review or repair packets."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "16",
+      "version": "17",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Restricts fresh repair work to the human-authorized list for the current reviewed snapshot."
+        "Guides initial executors to read targeted context first while preserving full-story implementation and validation."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

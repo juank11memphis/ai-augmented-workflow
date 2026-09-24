@@ -46,7 +46,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 
 - Do not create or update product visions, Software Architecture Documents, BRDs, software designs, UX specs, Epics, User Stories, or production code.
 - Do not modify prior-stage artifacts.
-- Do not reread `docs/architecture.md` by default; trust `sdd.md` for Deep Module implementation boundaries.
+- Do not reread the full `docs/architecture.md` by default. Trust `sdd.md` for feature-specific Deep Module boundaries; read the relevant SAD section when needed to verify module ownership or dependency constraints before reporting them in a packet.
 - Do not infer implementation scope from an Epic brief, BRD, or software design without exactly one User Story.
 - Do not ask for a plan-approval gate before executor handoff unless the user explicitly requested planning-only.
 - Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
@@ -90,6 +90,12 @@ Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, dat
 
 When the BRD or software design includes Deep Module guidance, treat it as required planning context. Deep Modules answer “where does this implementation work belong?” Implementation steps must preserve approved module boundaries.
 
+## Story reference selection for planner handoff
+
+For a standalone planner invocation, curate a fresh reference set for the one assigned story before delegation. When the implementation executor invokes this planner for the same story, accept its current source-verified reference set instead of repeating selection; verify again if the story or a material source has changed. Use the story and Epic brief (and existing plan when available) to identify candidate BRD requirement IDs, verify every ID against the full `docs/features/<feature-slug>/brd.md` source, then identify governing headings and embedded diagrams in `docs/features/<feature-slug>/sdd.md` by reading source evidence. Report applicable module ownership and dependency constraints from the SDD, reading the relevant `docs/architecture.md` section when needed to verify SAD-owned boundaries rather than rereading the full SAD by default. Include required or relevant installed skill paths. Use stable IDs, exact headings, or an unambiguous diagram description under its heading—not guessed anchors, line numbers, or keyword matches alone.
+
+The reference set is a **start here** navigation aid, not a substitute for authoritative files or a complete requirement catalog. For any ID, heading, diagram, or boundary that cannot be verified reliably, retain its full source path and instruct the worker to locate relevant context there. Missing required artifacts or selected architecture guidance still hard-stop under the gates above; a fallback path does not waive them.
+
 ## Required sub-agent planning path
 
 Before each `sibu-implementation-planner` spawn, classify the delegated planning task before resolving `--role implementation-planner` through the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. Follow its saved, first-use, unavailable, save-failed, one-time, and cancellation branches. Disclose the chosen route and pass both selected `model` and `reasoning_effort` explicitly in the host spawn; no parent inheritance or silent fallback. If the host cannot accept both explicit values, stop this launch. This changes route selection only, not the fresh-context planner packet or inline capability fallback below.
@@ -100,6 +106,7 @@ Build a narrow planner packet for the worker. The packet must include:
 
 - exactly one User Story path
 - Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
+- the source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, and applicable SAD/SDD module ownership and dependency constraints; for uncertain fine-grained references, give the full authoritative path and a locate-relevant-context instruction instead
 - story verification expectations and any software design quality strategy context needed to plan validation steps
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`

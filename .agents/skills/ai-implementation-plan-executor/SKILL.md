@@ -91,6 +91,12 @@ If required source context is missing, stop and ask the user to create or restor
 
 Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, data/state implications, and verification-relevant risks. The SDD is authoritative; do not create a separate companion.
 
+## Story reference selection for initial handoff
+
+Before a planner or initial `implementation` executor spawn, curate one current reference set for the selected story. Verify required source paths under the gates above. Derive candidate BRD IDs from the story, Epic brief, and plan when available; verify each against `docs/features/<feature-slug>/brd.md`. Use source evidence to identify governing SDD headings and embedded diagrams, plus applicable SAD/SDD module ownership and dependency constraints and required or relevant installed skill paths. Prefer stable IDs, exact headings, or unambiguous diagram descriptions under headings; do not guess anchors, line numbers, or references from keywords alone. Reuse this verified set in role-specific planner and initial executor packets, and refresh it for a new story or materially changed source. A separately invoked planner curates its own set.
+
+Label references **start here**, never an exclusive reading list or replacement for the full authoritative paths. When a fine-grained ID, heading, diagram, or boundary is uncertain, supply the full source path and tell the worker to locate relevant context there. Missing required sources or selected architecture guidance remain hard stops; fallback does not waive a prerequisite. Keep specialist-review and `repair` packets under their existing contracts.
+
 ## Required sub-agent execution path
 
 When the host exposes any usable sub-agent spawn capability and `sibu-implementation-executor` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu executor worker, subject to host tool policy. Do not choose inline execution merely because worker progress is completion-only, or because inline execution is simpler or faster.
@@ -99,6 +105,7 @@ Build a narrow executor packet for the worker. The packet must include:
 
 - exactly one User Story path or story-local `.impl_plan/` folder
 - story, Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
+- for `implementation` mode, the current source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, applicable SAD/SDD module ownership and dependency constraints, and required or relevant skill paths; use full-path discovery instructions for uncertain fine-grained references without omitting a required source
 - executor toolbox path: `.agents/skills/ai-implementation-executor-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - selected architecture skill path as required architecture context
