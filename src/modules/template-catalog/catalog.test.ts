@@ -136,24 +136,6 @@ describe('export workflow skill MCP pairings', () => {
 });
 
 describe('skill target paths', () => {
-  it('registers one shared timing helper under the mandatory executor for every supported agent', () => {
-    const executors = MANDATORY_SKILLS.filter(
-      (skill) => skill.templateRelativePath === 'skills/ai-implementation-plan-executor/SKILL.md'
-    );
-    const timingTarget = {
-      templateRelativePath: 'scripts/implementation-phase-timing.mjs',
-      targetRelativePath: '.agents/scripts/implementation-phase-timing.mjs',
-    };
-
-    assert.equal(executors.length, 1);
-    for (const agent of SUPPORTED_AGENTS) {
-      const matchingTargets = executors[0]?.supplementalTargetsByAgent?.[agent.id]?.filter(
-        (target) => target.targetRelativePath === timingTarget.targetRelativePath
-      );
-      assert.deepEqual(matchingTargets, [timingTarget]);
-    }
-  });
-
   it('registers the touched source file size checker as shared clean-code support for all supported agents', () => {
     const cleanCodeSkills = MANDATORY_SKILLS.filter((skill) => skill.templateRelativePath === 'skills/clean-code/SKILL.md');
 

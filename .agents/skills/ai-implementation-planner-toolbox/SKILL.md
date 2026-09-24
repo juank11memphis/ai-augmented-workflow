@@ -123,10 +123,6 @@ Return a compact planning result with:
 - source artifacts and skills used
 - plan risks or blockers, if any
 
-Include at most one timing-only child evidence item containing `workerLabel: implementation-planner`, `outcome`, and either `startedAtEpochMs` plus `finishedAtEpochMs`, or `elapsedMs`. Do not include `phase` or `occurrence`: the main executor's enclosing `planning` occurrence is the sole authoritative top-level planning boundary. The allowed outcomes are `completed`, `failed`, `blocked`, `interrupted`, `cancelled`, and `incomplete`. Prefer host-native absolute boundaries, then `.agents/scripts/implementation-phase-timing.mjs clock`; when neither is available, omit the child evidence rather than estimating.
-
-Keep timing evidence in the handoff message only. Never add source, provenance, or availability fields. Never persist it or include prompts, source content, commands, paths, secrets, environment values, model identifiers, tokens, or costs. Timing failure never changes plan scope, the plan-only boundary, or the handoff outcome.
-
 ## BRD handoff
 
 Preserve source BRD IDs carried by the story and software design in implementation steps and validation. Worker packets must carry the source BRD path and applicable IDs, not copy the full requirement catalog or broaden worker authority.

@@ -57,7 +57,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.includes('.claude/settings.json'), true);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/structured-logging/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/scripts/check-touched-source-file-lines.mjs').length, 1);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/scripts/implementation-phase-timing.mjs').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/business-domain-model-writer/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/eval-authoring/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/capabilities-map-writer/SKILL.md').length, 1);
@@ -235,7 +234,6 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
       '.codex/agents/sibu-implementation-planner.toml',
       '.agents/skills/ai-implementation-plan-executor/SKILL.md',
-      '.agents/scripts/implementation-phase-timing.mjs',
       '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
       '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
       '.agents/skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',

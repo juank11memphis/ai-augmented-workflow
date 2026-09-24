@@ -25,21 +25,6 @@ const selectedGithubExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => ski
 const selectedNotionExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion')!;
 
 
-describe('implementation phase timing helper template', () => {
-  it('is manifest-backed, dependency-free, and byte-identical to the managed installed copy', () => {
-    const templatePath = 'scripts/implementation-phase-timing.mjs';
-    const manifest = readTemplateManifest();
-    const metadata = manifest.templates[templatePath];
-    const source = readTemplate(templatePath);
-    const installed = fs.readFileSync('.agents/scripts/implementation-phase-timing.mjs', 'utf8');
-    assert.match(metadata?.description ?? '', /dependency-free helper/i);
-    assert.match(metadata?.changes.join('\n') ?? '', /empty phase intervals.*non-overlapping/i);
-    assert.equal(source, installed);
-    assert.doesNotMatch(source, /\b(?:import|require)\b/);
-    assert.doesNotMatch(source, /node:(fs|path|http|https|net)|process\.env|fetch\s*\(|git\s/);
-  });
-});
-
 describe('dedicated exporter skill templates', () => {
   it('registers and renders the GitHub exporter skill', () => {
     const templatePath = 'skills/export-to-github/SKILL.md';

@@ -330,12 +330,6 @@
       "templateVersion": "1",
       "sha256": "23896b340c768a880c6b4570d6610066c541275194dd8aa6e1cffa81bf0f8f82",
       "status": "managed"
-    },
-    ".agents/scripts/implementation-phase-timing.mjs": {
-      "template": "scripts/implementation-phase-timing.mjs",
-      "templateVersion": "3",
-      "sha256": "74544eae22e3cac4db3f4317dd0c946d9a40dcd3d54d9aac92695e2bc944740f",
-      "status": "managed"
     }
   },
   "modelRoutes": [

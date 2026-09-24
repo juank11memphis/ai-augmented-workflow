@@ -1,5 +1,5 @@
 {
-  "templateVersion": "172",
+  "templateVersion": "181",
   "templates": {
     "AGENTS.md": {
       "version": "43",
@@ -142,24 +142,24 @@
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "12",
+      "version": "15",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Guides planners to expand beyond targeted references when the full story or source evidence requires it."
+        "Removes planner timing handoff instructions."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "41",
+      "version": "47",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Targets specialist review and authorized repair handoffs with verified references while preserving snapshot and human-decision gates."
+        "Removes automated-run timing guidance and helper use while retaining foreground progress delivery and human review controls."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "18",
+      "version": "22",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Guides repair executors to verify targeted references against sources and local changes without exceeding human authorization."
+        "Removes timing evidence instructions while retaining foreground progress delivery."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -398,13 +398,6 @@
       "description": "Gemini worker definition for read-only Sibu technical-lead review.",
       "changes": [
         "Installs a thin Gemini technical-lead-reviewer wrapper backed by the shared reviewer toolbox."
-      ]
-    },
-    "scripts/implementation-phase-timing.mjs": {
-      "version": "3",
-      "description": "Managed dependency-free helper for fallback workflow clocks and deterministic phase timing reconciliation.",
-      "changes": [
-        "Treats empty phase intervals consistently as non-overlapping while preserving deterministic timing reconciliation."
       ]
     }
   }

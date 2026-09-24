@@ -15,8 +15,6 @@ import { getWorkflowTargets, renderMissingWorkflowFiles } from '../template-cata
 const SAD_SKILL_PATH = '.agents/skills/software-architecture-writer/SKILL.md';
 const SAD_TEMPLATE_PATH = 'skills/software-architecture-writer/SKILL.md';
 const SAD_DOCUMENT_PATH = 'docs/architecture.md';
-const TIMING_HELPER_PATH = '.agents/scripts/implementation-phase-timing.mjs';
-const TIMING_HELPER_TEMPLATE = 'scripts/implementation-phase-timing.mjs';
 const temporaryRoots: string[] = [];
 
 afterEach(() => {
@@ -26,31 +24,6 @@ afterEach(() => {
 });
 
 describe('getSyncPreviews', () => {
-  it('offers and applies the new timing helper for an older initialized project', () => {
-    const rootPath = createCleanInitializedRepo();
-    const state = readState(rootPath);
-    delete state.managedFiles[TIMING_HELPER_PATH];
-    fs.rmSync(path.join(rootPath, TIMING_HELPER_PATH));
-
-    const preview = getSyncPreview(rootPath, state, TIMING_HELPER_PATH);
-
-    assert.equal(preview.status, 'new-template');
-    assert.equal(preview.managedFile.template, TIMING_HELPER_TEMPLATE);
-    assert.equal(preview.hasLocalFile, false);
-    assert.deepEqual(preview.changes, readTemplateManifest().templates[TIMING_HELPER_TEMPLATE]?.changes);
-
-    const applied = applySyncAction({
-      rootPath,
-      state,
-      manifest: readTemplateManifest(),
-      preview,
-      action: 'apply-update',
-    });
-    assert.equal(fs.existsSync(path.join(rootPath, TIMING_HELPER_PATH)), true);
-    assert.equal(applied.state.managedFiles[TIMING_HELPER_PATH]?.template, TIMING_HELPER_TEMPLATE);
-    assert.equal(applied.state.managedFiles[TIMING_HELPER_PATH]?.status, 'managed');
-  });
-
   it('reports the required Software Architecture Document writer as a new managed template for older state', () => {
     const rootPath = createCleanInitializedRepo();
     const statePath = path.join(rootPath, '.sibu/state.json');
