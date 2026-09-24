@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.25.0",
-  "templateVersion": "163",
+  "templateVersion": "167",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-23T16:52:17.103Z",
+  "updatedAt": "2026-09-24T00:39:52.689Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -24,8 +24,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "40",
-      "sha256": "404621682662eaab1dd1c56522a07d38bd7ecbc67e2a9c2343cd416f1d76cfec",
+      "templateVersion": "43",
+      "sha256": "102c2e02294d150f830782a951ec515c85c8649ac3786fed5d2e839d8fe0b741",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -68,20 +68,23 @@
     ".agents/skills/product-vision-writer/SKILL.md": {
       "template": "skills/product-vision-writer/SKILL.md",
       "templateVersion": "12",
-      "sha256": "becc2e095a2a09a5703c18bb290f59d0a9827b9775cef74132ac5fdac99c7d7e",
-      "status": "managed"
+      "sha256": "ca712fea6e3233b3bba2259d0ee80c70b59e63a24832ff4922b14cf4b1a5664f",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "13"
     },
     ".agents/skills/business-domain-model-writer/SKILL.md": {
       "template": "skills/business-domain-model-writer/SKILL.md",
       "templateVersion": "10",
-      "sha256": "f5b30abd09056929d8ea955d4e39032bd4be3281eff6e7f8061a3bf6716145d4",
-      "status": "managed"
+      "sha256": "dfc8631bd46093f9bfc4f5c55aff24f1c69ca8141cae0b63c02bda0b0f5decc6",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "11"
     },
     ".agents/skills/capabilities-map-writer/SKILL.md": {
       "template": "skills/capabilities-map-writer/SKILL.md",
       "templateVersion": "5",
-      "sha256": "5f7bb6157488a01ee34b1f795b1e43f5608815235855d7bffc1d80f6af17af75",
-      "status": "managed"
+      "sha256": "54c14e3303f034599f71379650191e3dc640bd2997286715e69226ed6578e7b8",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "6"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
@@ -91,8 +94,8 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "24",
-      "sha256": "f611dfd4867dd5114bbb1d6a1279b07bb918f14becece367d4042a28e32add9f",
+      "templateVersion": "25",
+      "sha256": "a6aefb17f624a4bb93af4b5da83cfa92103dc2a5174f3453a07001148c58e271",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
@@ -109,8 +112,8 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "37",
-      "sha256": "3ff5aee5c961a73585014a55bba33542c2e5acd62441eeb452cba169fd29f398",
+      "templateVersion": "38",
+      "sha256": "8a163d3732669b135d3062112d6af8f1b271c3c25b2742cfac4a8fcc13ef01f4",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -151,8 +154,8 @@
     },
     ".agents/skills/export-to-github/SKILL.md": {
       "template": "skills/export-to-github/SKILL.md",
-      "templateVersion": "6",
-      "sha256": "ab4657939d3625068dbe93a189c024ef7e3ce0365ee2780df8463b2847845919",
+      "templateVersion": "7",
+      "sha256": "7c306b85aedfbeab60bc1e0abdbac8f267f681b23dbaffc58d61080106265769",
       "status": "managed"
     },
     ".codex/agents/github-exporter.toml": {
@@ -163,8 +166,8 @@
     },
     ".agents/skills/export-to-notion/SKILL.md": {
       "template": "skills/export-to-notion/SKILL.md",
-      "templateVersion": "8",
-      "sha256": "cf4c618c6beaab4807f348eb16d5eaf5cf255e9faa8925f6dfd821bc4dd4f53d",
+      "templateVersion": "9",
+      "sha256": "ea448b9559f0cccdd48812d678ba31c416b54b223b1ebd008da94fa74e85783e",
       "status": "managed"
     },
     ".codex/agents/notion-exporter.toml": {
@@ -267,8 +270,9 @@
     ".agents/skills/software-architecture-writer/SKILL.md": {
       "template": "skills/software-architecture-writer/SKILL.md",
       "templateVersion": "1",
-      "sha256": "7f8819334bc99fbf4a110571cd4112f3d0b2c7d379fbadbc0cf99e4b99cf2f47",
-      "status": "managed"
+      "sha256": "ef75277886b373d079e3b7cabedce751cd930a013ec6209453352725373a4203",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "2"
     },
     ".agents/skills/software-design-writer/SKILL.md": {
       "template": "skills/software-design-writer/SKILL.md",

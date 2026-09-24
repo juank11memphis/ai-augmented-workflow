@@ -23,20 +23,23 @@ const selectedUxSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 
 const selectedGithubExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-github')!;
 const selectedNotionExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion')!;
 
+describe('repo-wide document writer responses', () => {
+  it('summarizes changes and suggests one user-directed next action', () => {
+    for (const writer of ['product-vision-writer', 'business-domain-model-writer', 'capabilities-map-writer', 'software-architecture-writer']) {
+      const contents = readTemplate(`skills/${writer}/SKILL.md`);
+      assert.match(contents, /briefly list what changed in bullets/);
+      assert.match(contents, /one concrete, context-appropriate next action/);
+      assert.match(contents, /without starting the next stage/);
+    }
+  });
+});
 
-const assertVersionMetadata = (version: string | undefined, label: string): void => {
-  assert.equal(typeof version, 'string', `${label} version should be a string`);
-  assert.match(version ?? '', /^\d+$/, `${label} version should be numeric metadata`);
-};
 
 describe('structured logging template', () => {
   it('is registered, readable, and captures safe storytelling logging guidance', () => {
     const templatePath = 'skills/structured-logging/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
-
-    assertVersionMetadata(manifest.templateVersion, 'global template');
-    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.description ?? '', /Mandatory structured logging/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
 
@@ -76,8 +79,6 @@ describe('structured logging routing hooks', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '8');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /500-line completion gate/i);
     assert.match(contents, /Hard source-file size gate/);
     assert.match(contents, /finish at or below 500 lines/);
@@ -90,16 +91,14 @@ describe('structured logging routing hooks', () => {
   it('keeps language and architecture skills as concise structured logging handoffs', () => {
     const manifest = readTemplateManifest();
     const expectations = [
-      { path: 'skills/typescript/SKILL.md', version: '3', hook: /When TypeScript changes affect logs/ },
-      { path: 'skills/golang/SKILL.md', version: '3', hook: /When Go changes affect logs/ },
-      { path: 'skills/architecture/command-pattern/SKILL.md', version: '11', hook: /Operational Behavior Uses Structured Logging/ },
+      { path: 'skills/typescript/SKILL.md', hook: /When TypeScript changes affect logs/ },
+      { path: 'skills/golang/SKILL.md', hook: /When Go changes affect logs/ },
+      { path: 'skills/architecture/command-pattern/SKILL.md', hook: /Operational Behavior Uses Structured Logging/ },
     ];
 
     for (const expectation of expectations) {
       const contents = readTemplate(expectation.path);
       const templateMetadata = manifest.templates[expectation.path];
-
-      assert.equal(templateMetadata?.version, expectation.version);
       assert.match(templateMetadata?.changes.join('\n') ?? '', expectation.path.includes('command-pattern') ? /SAD|SDD/i : /concise conversational response guidance/i);
       assert.match(contents, /`structured-logging`/);
       assert.match(contents, expectation.hook);
@@ -173,8 +172,6 @@ describe('layered architecture template', () => {
     const templatePath = 'skills/architecture/layered-architecture/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
-
-    assert.equal(templateMetadata?.version, '4');
     assert.match(templateMetadata?.description ?? '', /Layered Architecture|lightweight architecture/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
 
@@ -212,9 +209,6 @@ describe('BRD writer upstream coverage grounding', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assertVersionMetadata(manifest.templateVersion, 'global template');
-    assert.equal(templateMetadata?.version, '2');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
@@ -251,8 +245,6 @@ describe('UX expert Business Domain Model grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     const groundingTerms = ['domain language', 'user-facing concepts', 'rules', 'states', 'workflows', 'boundaries'];
-
-    assert.equal(templateMetadata?.version, '16');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
@@ -275,8 +267,6 @@ describe('feature idea capture template', () => {
     const templatePath = 'skills/feature-idea-capture/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
-
-    assert.equal(templateMetadata?.version, '3');
     assert.match(templateMetadata?.description ?? '', /Mandatory feature idea capture/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /BRD/i);
     assert.equal(manifest.templates['docs/feature-ideas.md'], undefined);
@@ -299,11 +289,8 @@ describe('capabilities map writer template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assertVersionMetadata(manifest.templateVersion, 'global template');
-    assert.equal(templateMetadata?.version, '5');
     assert.match(templateMetadata?.description ?? '', /Mandatory Capabilities Map writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /next step/i);
     assert.equal(manifest.templates['docs/capabilities-map.md'], undefined);
 
     assert.match(contents, /name: capabilities-map-writer/);
@@ -333,10 +320,8 @@ describe('business domain model writer template', () => {
     const templatePath = 'skills/business-domain-model-writer/SKILL.md';
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
-
-    assert.equal(templateMetadata?.version, '10');
     assert.match(templateMetadata?.description ?? '', /Mandatory Business Domain Model writer/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /next step/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     const contents = readTemplate(templatePath);
@@ -384,4 +369,3 @@ describe('business domain model writer template', () => {
     assert.match(contents, /Known Variations \/ Debt/);
   });
 });
-

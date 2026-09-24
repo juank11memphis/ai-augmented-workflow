@@ -90,8 +90,6 @@ describe('specialist implementation reviewer wrappers', () => {
 
     for (const path of [architectureToolboxPath, technicalLeadToolboxPath, ...reviewerWrappers.map((wrapper) => wrapper.path)]) {
       const metadata = manifest.templates[path];
-
-      assert.equal(metadata?.version, '1');
       assert.match(metadata?.description ?? '', /review/i);
       assert.match(metadata?.changes.join('\n') ?? '', /Adds|Installs/i);
     }

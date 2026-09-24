@@ -312,7 +312,7 @@ If `docs/business-domain-model.md` already exists, read it before revising. Trea
 
 ## Final response behavior
 
-After writing the file, final-answer with only the path created or updated. Do not paste the document body, excerpt, outline, or section summaries.
+After writing the file, name the path, then briefly list what changed in bullets. End with one concrete, context-appropriate next action for the user, usually reviewing or updating the Capabilities Map; suggest it without starting the next stage. Do not paste the full document unless requested.
 
 Only include the full document when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/business-domain-model.md`.
 

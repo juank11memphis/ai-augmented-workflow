@@ -160,6 +160,8 @@ For a completed run, reconcile immediately before the human gate and report tota
 
 ## Fallback matrix
 
+For each fresh `sibu-implementation-executor` initial or repair spawn, classify the delegated task before resolving `--role implementation-executor` using the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. For every `sibu-architecture-reviewer` and `sibu-technical-lead-reviewer` spawn, classify and resolve separately with `--role architecture-reviewer` and `--role technical-lead-reviewer`; do not reuse the executor's route. Follow saved, first-use, unavailable, save-failed, one-time, and cancellation states. Disclose the selected route and pass explicit `model` and `reasoning_effort` host spawn parameters on every path. If the host cannot accept both, stop the affected launch; no parent inheritance or silent fallback. Routing never changes foreground execution, reviewer independence, packet boundaries, the repair cap, or approval and commit authority.
+
 Use host capability metadata from workflow target planning guidance to choose the safest execution path. This order is mandatory:
 
 1. **Direct foreground worker:** spawn `sibu-implementation-executor` when the host makes its progress directly user-visible; the worker owns delivery for its phases.

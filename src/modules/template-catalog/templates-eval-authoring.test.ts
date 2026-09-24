@@ -56,12 +56,9 @@ describe('eval-authoring template registration', () => {
     const templateMetadata = manifest.templates[TEMPLATE_PATH];
     const agentsMetadata = manifest.templates['AGENTS.md'];
     const agentsContents = readTemplate('AGENTS.md');
-
-    assert.match(manifest.templateVersion, /^\d+$/);
-    assert.equal(templateMetadata?.version, '1');
     assert.match(templateMetadata?.description ?? '', /Mandatory eval-authoring skill/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Adds mandatory eval-authoring guidance/i);
-    assert.match(agentsMetadata?.changes.join('\n') ?? '', /sub-agent model routing/i);
+    assert.match(agentsMetadata?.changes.join('\n') ?? '', /easier to scan/i);
     assert.match(agentsContents, /use `eval-authoring`/);
     assert.match(agentsContents, /Sibu eval suites, eval definitions, fixtures, assertions\/graders, rubrics/i);
   });

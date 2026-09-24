@@ -91,15 +91,15 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Repair Proposal**: a concrete suggested project file mutation intended to address a failed assertion, including affected file(s), rationale, and expected eval impact.
 - **Approved Eval Repair**: a repair proposal the user explicitly accepts before Sibu mutates any project file.
 - **AI-Augmented Development Pipeline**: the ordered artifact chain used for planned product and feature work.
-- **Implementation Review Cycle**: the bounded automated quality review that follows implementation and validation for code-changing stories and precedes the final human review gate.
+- **Implementation Review Cycle**: the human-directed sequence of specialist reviews, human decisions, and any explicitly authorized repairs that follows implementation and validation for code-changing stories.
 - **Review Snapshot**: the exact implementation diff examined by both automated reviewers in one synchronized review round.
 - **Architecture Review**: an independent assessment of a review snapshot against the project SAD, feature SDD, selected architecture guidance, module boundaries, contracts, and simplicity expectations.
 - **Technical-Lead Review**: an independent assessment of the same review snapshot for correctness, tests, clean code, readability, maintainability, single responsibility, and applicable language or framework practices.
 - **Review Packet**: the structured, evidence-based findings and approval outcome returned by an automated reviewer for one review snapshot.
-- **Combined Review Packet**: the main agent's deduplicated set of blocking and non-blocking findings from both reviewer packets for the same snapshot.
-- **Repair Executor**: a fresh, narrowly briefed executor spawned for one repair round to address a combined review packet without replanning or broadening the story.
-- **Repair Round**: one fresh repair-executor change cycle responding to a combined review packet, followed by validation and a new synchronized review snapshot.
-- **Review Escalation**: the handoff to the user when automated repair is exhausted or a material decision must not be made autonomously.
+- **Combined Review Packet**: the main agent's deduplicated presentation of both reviewer outcomes and findings for the same snapshot, including unresolved risks, for human decision.
+- **Repair Executor**: a fresh, narrowly briefed executor spawned only after the human authorizes specific changes, without authority to replan or broaden the story.
+- **Repair Round**: one human-authorized repair-executor change cycle, followed by validation and a new synchronized review of the resulting snapshot.
+- **Human Review Decision**: the user's choice after each review round to approve the story as-is, authorize specific changes, or defer the story, regardless of reviewer severity or approval outcome.
 - **Hard Stop**: a skill refusal to proceed when required prerequisite artifacts or decisions are missing.
 - **Small Work Loop**: Sibu's preferred development behavior: define a focused task, inspect context, plan, confirm scope, change, validate, and review.
 - **User Control**: the invariant that the user chooses whether to accept, reject, customize, or unmanage Sibu-guided changes.
@@ -116,8 +116,8 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Assertion vs Grader**: assertion is the familiar UI term for checks; grader is the broader eval term for rubric or model-judged evaluation.
 - **Analysis vs Proposal vs Mutation**: analysis explains evidence, a proposal previews a concrete change, and mutation changes project files only after explicit user approval.
 - **Review vs Repair**: reviewers inspect an immutable snapshot and report findings; only an executor role modifies implementation work.
-- **Review Round vs Repair Round**: a review round inspects one snapshot; a repair round is consumed only when a fresh repair executor changes the implementation in response to review findings.
-- **Automated Approval vs Human Approval**: automated approval confirms that both specialist reviewers accept the same snapshot; it does not replace the user's final story-level approval.
+- **Review Round vs Repair Round**: a review round inspects one snapshot and always ends at a human decision; a repair round occurs only when the human authorizes implementation changes.
+- **Specialist Approval vs Human Approval**: specialist approval means both reviewers accept the same snapshot; it does not replace the user's final story-level approval, and lack of specialist approval does not veto the human's decision.
 - **Architecture Skill vs Architecture Model**: users may think in terms of an architecture model, but Sibu expresses that choice as a selected architecture skill from its fixed catalog. This feature does not define or expand the catalog.
 - **Required Selection vs Default Choice**: requiring a user to choose an architecture skill is not the same as Sibu choosing one by default. The user must make the explicit choice.
 - **MCP Server vs Skill**: an MCP server provides external tool access; a skill provides workflow guidance. A skill may tell an agent when or how to use a tool, but it is not the tool itself.
@@ -370,13 +370,13 @@ The SAD follows the Capabilities Map; BRD authoring does not require a SAD. The 
 
 #### Implementation Review Cycle
 
-The bounded AFK review-and-repair workflow for a code-changing story after its implementation executor has completed and validated the plan. Architecture and technical-lead reviewers independently inspect the same immutable review snapshot, preferably concurrently. The main agent combines and deduplicates their evidence-based findings, then spawns a fresh repair executor with the original narrow story context and combined packet. A repair creates a new snapshot that both reviewers assess together. After no more than three repair rounds, one final synchronized review either advances the shared snapshot to human review or escalates unresolved findings.
+The human-directed review workflow for a code-changing story after its implementation executor has completed and validated the plan. Architecture and technical-lead reviewers independently inspect the same immutable review snapshot, preferably concurrently. The main agent combines and deduplicates their evidence-based findings, presents both reviewer outcomes and unresolved risks to the human, and waits for a decision after every review round, including rounds where both reviewers approve. The human may approve the story as-is, authorize specific changes after discussion, or defer it. Only an explicit change authorization starts a fresh repair executor. A repair creates a new snapshot that both reviewers assess again; that review also returns to the human. There is no automatic repair loop or preset repair-round limit.
 
-The cycle pauses immediately when a repair requires a material human decision, including conflicting authoritative artifacts, unplanned public-contract or persisted-data changes, a new production dependency, security or privacy consequences, destructive migration, story-scope expansion, plan or acceptance-criteria changes, or materially different architectural solutions.
+The human decides whether to accept unresolved findings, including blocking or major ones. The main agent must not hide those findings or represent an accepted risk as specialist approval. Material choices—including conflicting authoritative artifacts, unplanned public-contract or persisted-data changes, new production dependencies, security or privacy consequences, destructive migration, scope expansion, plan or acceptance-criteria changes, and materially different architectural solutions—must be surfaced for human judgment rather than inferred by the reviewers or executor.
 
 #### Review Snapshot
 
-The exact story implementation diff reviewed in one synchronized round. Both automated approvals apply only to that snapshot and are invalidated when the executor changes it.
+The exact story implementation diff reviewed in one synchronized round. Both specialist outcomes apply only to that snapshot and are invalidated when the executor changes it.
 
 #### Architecture Review
 
@@ -388,15 +388,15 @@ A separate specialist review of implementation correctness and maintainability u
 
 #### Review Packet
 
-A reviewer outcome tied to one review snapshot. Each finding has a stable identifier, severity, evidence and location, the violated rule or expectation, impact, and required outcome. Blocking and major findings prevent automated approval; minor findings remain visible but do not prolong repair by themselves.
+A reviewer outcome tied to one review snapshot. Each finding has a stable identifier, severity, evidence and location, the violated rule or expectation, impact, and required outcome. Blocking and major findings prevent specialist approval; all findings remain visible for the human's decision.
 
 #### Repair Round
 
-One mutation by a fresh repair executor in response to the combined findings from both reviewers, followed by validation and a new synchronized review. Its narrow packet includes the story and plan paths, authoritative source artifacts and skills, current snapshot identity and changed files, combined findings, prior validation evidence, and instructions to repair without replanning or broadening scope. Initial review does not consume the shared limit. After the third repair, reviewers may inspect the resulting snapshot once more, but the workflow must not start a fourth automated repair.
+One mutation by a fresh repair executor following the human's explicit authorization of specific changes, followed by validation and a new synchronized review. Its narrow packet includes the story and plan paths, authoritative source artifacts and skills, current snapshot identity and changed files, reviewer findings, the human's authorized changes, prior validation evidence, and instructions to repair without replanning or broadening scope. Every resulting review returns to the human before another repair or final approval.
 
-#### Review Escalation
+#### Human Review Decision
 
-The review packet presented to the user when a material decision is required or the final post-repair review still has unresolved blocking or major findings. Escalation preserves completed work and evidence without marking the story approved or committing it.
+The decision requested after every synchronized review round. The main agent presents both reviewer outcomes, combined findings, validation evidence, and unresolved risks. The human may approve the current snapshot as-is, explicitly authorize specific repairs, or defer the story. Approval with unresolved findings records them as accepted risks rather than changing the reviewers' outcomes. Deferral preserves the implementation and review evidence without approval, commit, or autonomous continuation.
 
 #### Local Evals Workbench
 
@@ -477,11 +477,12 @@ define focused task
 - A **Model Recommendation Catalog** has a version, supported agent environments, role-to-workload assignments, provider mappings, concise research-informed rationales, review dates, and user-facing change notes.
 - A **Model Route Review** has a triggering condition, current route when present, current recommendation, user decision, and resulting recorded route.
 - An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
-- An **Implementation Review Cycle** has one story, one implementation executor result, two specialist reviewer roles, zero to three fresh repair executors, a current review snapshot, a shared repair count, reviewer outcomes, and an escalation or approval outcome.
+- An **Implementation Review Cycle** has one story, one implementation executor result, two specialist reviewer roles, a current review snapshot, reviewer outcomes, human decisions after each review, and zero or more explicitly authorized repair executors.
 - A **Review Snapshot** has a diff identity, changed files, validation evidence, and the reviewer outcomes that apply to it.
 - A **Review Packet** has a reviewer role, snapshot identity, findings, evidence, approval outcome, and unresolved risks.
 - A **Review Finding** has a stable identifier, severity, location, governing rule or expectation, evidence, impact, required outcome, and disposition.
-- A **Repair Round** has a triggering combined packet, one fresh repair executor, executor changes, validation result, resulting snapshot, and ordinal within the shared limit.
+- A **Repair Round** has a human authorization tied to a reviewed snapshot, one fresh repair executor, executor changes, validation result, and resulting snapshot.
+- A **Human Review Decision** has the reviewed snapshot, presented reviewer outcomes and unresolved findings, the user's choice, and any specifically authorized changes or accepted risks.
 - A **Local Eval Artifact** has a project path, purpose, eval scope, expected/reference context, ownership status, and relationship to one or more suites or test cases.
 - An **Evaluation Target** has a repo location, purpose, provider or runtime compatibility, observable behavior, and sources of expected behavior.
 - An **Eval Coverage Plan** has confirmed targets, applicable coverage categories, proposed scenarios, grader approaches, Coverage Gaps, and user approval state.
@@ -535,8 +536,9 @@ define focused task
 - A code-changing story has at most one active **Implementation Review Cycle** before its human story review.
 - One **Implementation Review Cycle** assesses one current **Review Snapshot** at a time through one architecture review and one technical-lead review.
 - Both automated reviewer approvals must refer to the same **Review Snapshot**.
-- One **Repair Round** responds to one **Combined Review Packet** and produces one new **Review Snapshot**.
-- An **Implementation Review Cycle** may perform no more than three **Repair Rounds** before final automated review and possible escalation.
+- Every synchronized review round leads to one **Human Review Decision** before any repair, story approval, or deferral.
+- One **Repair Round** responds to a human authorization for specific changes to one reviewed **Review Snapshot** and produces one new snapshot for both reviewers.
+- An **Implementation Review Cycle** has no automatic repair rounds or preset human-authorized repair limit; continuation requires a new human decision after each review.
 - A **Hard Stop** belongs to a skill and protects one or more prerequisite requirements.
 
 ## Domain Invariants & Business Rules
@@ -574,13 +576,14 @@ define focused task
 - Each pipeline skill must hard-stop when required upstream artifacts are missing or insufficient.
 - Narrow fixes and normal repo work do not require the full product pipeline unless the work creates product, domain, feature, architecture, planning, or implementation-plan ambiguity.
 - AI-assisted work should be small, explicit, validated where possible, and reviewable by the engineer.
-- Code-changing story implementations must complete automated architecture and technical-lead review against the same snapshot before reaching the final human story-review gate.
+- Code-changing story implementations must receive architecture and technical-lead review against the same snapshot before the human decides whether to approve, repair, or defer.
 - Automated reviewers must remain independent and read-only; a fresh repair executor applies each implementation repair.
-- Review findings must be evidence-based and scoped to the story snapshot. Minor findings alone must not prolong automated repair.
-- Any executor repair invalidates automated approvals for the prior snapshot.
-- Automated implementation review must never perform more than three repair rounds. A final review may follow the third repair, but a fourth automated repair is forbidden.
-- Automated reviewer approval must not replace explicit human story approval, approval metadata control, or commit control.
-- Material decisions must leave AFK execution and escalate to the user rather than being inferred by reviewers or the executor.
+- Review findings must be evidence-based and scoped to the story snapshot; their severity does not override the human's decision authority.
+- Every specialist review round must return both outcomes and unresolved findings to the human, even when both reviewers approve.
+- No implementation repair may start without the human explicitly authorizing the changes for the current reviewed snapshot.
+- Any executor repair invalidates specialist approvals for the prior snapshot and requires both reviewers to assess the new snapshot.
+- Specialist approval must not replace explicit human story approval, approval metadata control, or commit control. Human approval may accept unresolved findings without rewriting specialist outcomes.
+- Material decisions must be presented to the human rather than inferred by reviewers or the executor.
 - Local eval repair must focus the user and LLM on one failed assertion at a time.
 - Sibu must not claim exhaustive eval coverage; it must use systematic risk-based coverage and disclose known Coverage Gaps.
 - Suite generation must not invent expected behavior. Repo code, prompts, tests, and documentation provide evidence, and the user resolves material ambiguity.
@@ -623,10 +626,10 @@ define focused task
 - When a user requests a narrow fix, Sibu guidance should avoid unnecessary pipeline ceremony unless scope or ownership is unclear.
 - When a completed story changes source code, tests, dependencies, schemas, or runtime configuration, Sibu should run synchronized architecture and technical-lead reviews before requesting human story approval.
 - When a completed story changes documentation only, Sibu should retain its existing validation and human review gate without invoking specialist implementation reviewers.
-- When synchronized reviewer packets contain blocking or major findings, the main agent should deduplicate them into one combined packet and spawn a fresh, narrowly briefed repair executor without creating a new implementation plan.
-- When a fresh repair executor addresses review findings, it should receive the original story context, current snapshot identity, combined findings, and prior validation evidence; it should revalidate the story before both reviewers assess the resulting shared snapshot.
-- When reviewer recommendations conflict, authoritative artifacts conflict, or a repair requires a material decision, the main agent should stop AFK processing and escalate the evidence to the user.
-- When the third repair round completes, Sibu should allow one final synchronized review and then either advance an approved shared snapshot or escalate unresolved blocking and major findings without further automated mutation.
+- When both reviewer packets are available for the same snapshot, the main agent should deduplicate findings, present both outcomes and unresolved risks, and wait for the human's decision regardless of severity or specialist approval.
+- When the human authorizes specific changes, a fresh, narrowly briefed repair executor should receive the original story context, current snapshot identity, reviewer findings, authorized changes, and prior validation evidence without creating a new implementation plan or broadening scope; it should revalidate before both reviewers assess the resulting shared snapshot.
+- When reviewer recommendations or authoritative artifacts conflict, or a repair requires a material decision, the main agent should surface the evidence and alternatives to the human rather than choose autonomously.
+- When the human approves a snapshot despite unresolved findings, Sibu should preserve those findings and the human's accepted-risk decision without claiming specialist approval. When the human defers, Sibu should preserve the work and evidence without approval, commit, or autonomous continuation.
 - When a project has a conventional evals folder, Sibu should discover valid eval suites without manual dashboard configuration.
 - When a user requests eval creation without naming targets, Sibu should discover likely Evaluation Targets and ask the user to confirm them before coverage planning.
 - When confirmed targets need evals, Sibu should propose deep risk-based coverage for user approval before generating suite artifacts.
@@ -722,13 +725,12 @@ define focused task
 2. **Applicability Determined**: documentation-only work proceeds to human review; code, test, dependency, schema, or runtime-configuration changes enter automated review.
 3. **Review Snapshot Frozen**: the main agent identifies the exact diff both reviewers will assess.
 4. **Synchronized Reviews Completed**: architecture and technical-lead reviewers independently return packets for the same snapshot.
-5. **Review Outcomes Combined**: the main agent deduplicates findings and checks for conflicts or material decisions.
-6. **Snapshot Approved or Repair Requested**: matching approvals advance to human review; blocking or major findings produce one combined repair packet.
-7. **Fresh Repair Executor Spawned**: a new executor receives the original narrow story context, current snapshot identity, combined findings, and prior validation evidence without authority to replan or broaden scope.
-8. **Repair Applied and Validated**: the repair executor changes the implementation, validates it, and produces the next snapshot. This consumes one shared repair round.
-9. **Review Repeated**: both reviewers assess the new snapshot. The repair path may repeat up to three times in total, using a fresh repair executor each time.
-10. **Final Automated Outcome**: after the third repair, one final review either approves the shared snapshot or escalates unresolved findings without a fourth repair.
-11. **Human Story Review**: the user receives the implementation evidence and automated review outcomes and retains final approval authority.
+5. **Review Outcomes Presented**: the main agent deduplicates findings and presents both reviewer outcomes, validation evidence, conflicts, and unresolved risks to the human.
+6. **Human Decision Requested**: the workflow pauses after every review round, whether or not reviewers approve.
+7. **Story Approved, Deferred, or Changes Authorized**: the human may approve the current snapshot as-is, accepting any unresolved findings; defer it; or authorize specific changes after discussion.
+8. **Fresh Repair Executor Spawned When Authorized**: only an authorized repair starts a new executor with the original narrow story context, current snapshot identity, reviewer findings, approved changes, and prior validation evidence, without authority to replan or broaden scope.
+9. **Repair Applied and Validated**: the repair executor changes the implementation, validates it, and produces the next snapshot; prior specialist approvals no longer apply.
+10. **Review Repeated**: both reviewers assess the new snapshot, and the workflow returns to step 5. No automatic repair follows their findings.
 
 ### Domain Events
 
@@ -768,12 +770,13 @@ define focused task
 - **Review Snapshot Created**: the main agent identifies the exact implementation diff for synchronized specialist review.
 - **Architecture Review Completed**: the architecture reviewer returns an evidence-based packet for the current snapshot.
 - **Technical-Lead Review Completed**: the technical-lead reviewer returns an evidence-based packet for the same snapshot.
-- **Review Findings Combined**: the main agent deduplicates reviewer findings into one repair packet.
-- **Implementation Repair Requested**: blocking or major findings are consolidated for a fresh repair executor without replanning.
-- **Repair Executor Spawned**: a new executor receives the narrow repair context for one repair round.
-- **Implementation Repaired**: the repair executor applies the combined outcomes and validates the resulting snapshot.
-- **Automated Review Approved**: both specialist reviewers approve the same snapshot.
-- **Implementation Review Escalated**: a material decision or exhausted repair budget returns unresolved evidence to the user.
+- **Review Findings Presented**: the main agent presents both reviewer outcomes, deduplicated findings, and unresolved risks to the human for a decision.
+- **Story Changes Authorized**: the human identifies specific changes to make after reviewing the current snapshot.
+- **Repair Executor Spawned**: a fresh executor receives the narrow, authorized repair context for one repair round.
+- **Implementation Repaired**: the repair executor applies authorized changes and validates the resulting snapshot.
+- **Specialist Review Approved**: both specialist reviewers approve the same snapshot.
+- **Story Approved with Accepted Risks**: the human approves a snapshot despite unresolved reviewer findings, which remain visible as accepted risks.
+- **Story Review Deferred**: the human leaves the current implementation unapproved while preserving its work and review evidence.
 - **Eval Workspace Discovered**: Sibu finds repo-local eval suites.
 - **Evaluation Targets Discovered**: Sibu proposes likely repo-local AI integrations, agents, prompts, and workflows for user confirmation.
 - **Evaluation Targets Confirmed**: the user selects which proposed or directly named targets require eval coverage.
@@ -823,8 +826,8 @@ define focused task
 - **Pipeline enforcement vs developer flow**: feature work should follow the artifact chain, but narrow fixes should not be burdened with unnecessary process.
 - **Template freshness vs local edits**: newer templates may be valuable, but customized local files require careful review and protection.
 - **AI speed vs engineering pride**: Sibu should help users move faster while preserving clean code, maintainability, reviewability, and human ownership.
-- **Specialist depth vs review churn**: independent architecture and implementation-quality review improves scrutiny, but synchronized snapshots, combined findings, and one shared repair budget are required to prevent reviewer ping-pong.
-- **AFK progress vs human judgment**: bounded automated repair should remove routine review toil, while material decisions and final story approval remain explicitly human.
+- **Specialist depth vs review churn**: independent architecture and implementation-quality review improves scrutiny, but synchronized snapshots and one human decision after each round prevent unattended reviewer ping-pong and over-complication.
+- **Speed vs human judgment**: pausing after every review adds interaction, but keeps repair scope and final acceptance under the human's control.
 - **Dependency reuse vs dependency cost**: established libraries can be simpler than custom code, but production dependencies introduce maintenance, security, licensing, and footprint consequences that require human judgment.
 - **Deep coverage vs exhaustive claims**: Sibu should systematically explore applicable risks and edge cases while remaining explicit that open-ended AI behavior cannot be exhaustively enumerated.
 - **Artifact isolation vs deliberate override**: Sibu should prevent accidental source-control and LLM-context pollution from run artifacts, while recognizing that a user can deliberately override local safeguards.

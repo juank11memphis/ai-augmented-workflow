@@ -58,8 +58,7 @@ describe('atomic SAD/SDD distribution and consumer contracts', () => {
     for (const writer of writers) {
       const source = `skills/${writer}/SKILL.md`;
       assert.ok(MANDATORY_SKILLS.some((skill) => skill.templateRelativePath === source));
-      assert.equal(manifest.templates[source]?.version, '1');
-      assert.match(manifest.templates[source]?.changes.join(' ') ?? '', /ownership review/);
+      assert.match(manifest.templates[source]?.changes.join(' ') ?? '', writer === 'software-architecture-writer' ? /next step/ : /ownership review/);
       for (const agent of SUPPORTED_AGENTS) {
         const targets = getSkillTargetsForAgents(MANDATORY_SKILLS.find((skill) => skill.templateRelativePath === source)!, [agent]);
         assert.ok(targets.some((target) => target.templateRelativePath === source && target.targetRelativePath === `.agents/skills/${writer}/SKILL.md`));

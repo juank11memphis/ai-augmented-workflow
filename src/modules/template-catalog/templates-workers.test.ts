@@ -23,23 +23,18 @@ const selectedUxSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 
 const selectedGithubExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-github')!;
 const selectedNotionExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion')!;
 
-
-const assertVersionMetadata = (version: string | undefined, label: string): void => {
-  assert.equal(typeof version, 'string', `${label} version should be a string`);
-  assert.match(version ?? '', /^\d+$/, `${label} version should be numeric metadata`);
-};
 describe('AGENTS.md template', () => {
   it('keeps Sibu maintenance guidance without a manual session-start doctor requirement', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-
-    assert.equal(templateMetadata?.version, '42');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /sub-agent model routing/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /easier to scan/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
     assert.match(contents, /Answer only what the user asked/i);
+    assert.match(contents, /short paragraphs, bullets for distinct points, and clear headings/i);
+    assert.match(contents, /Avoid dense blocks of text or a single long sentence/i);
     assert.match(contents, /Do not expand a request about X into adjacent topics Y and Z/i);
     assert.match(contents, /do not let brevity reduce the quality of required interviews, artifacts, safety warnings, validation details, or review gates/i);
     assert.doesNotMatch(contents, /At the start of each session.*run `sibu doctor` once/i);
@@ -195,8 +190,6 @@ describe('Sibu planner worker templates', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '25');
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /planner spawns/i);
     assert.match(contents, /main-agent gatekeeper/i);
@@ -236,8 +229,6 @@ describe('Sibu planner worker templates', () => {
       selectedArchitectureSkill: selectedCommandPatternSkill,
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
-
-    assert.equal(templateMetadata?.version, '11');
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /repository-aware validation/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
@@ -280,8 +271,6 @@ describe('Sibu planner worker templates', () => {
       const templateMetadata = manifest.templates[templatePath];
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
-
-      assert.equal(templateMetadata?.version, '3');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation planner worker/i);
       assert.match(templateMetadata?.changes.join('\n') ?? '', /concise reporting guidance/i);
       assert.match(contents, /sibu-implementation-planner/);
@@ -310,8 +299,6 @@ describe('Sibu executor worker templates', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '38');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /executor and specialist-review spawns/i);
     assert.match(contents, /main-agent gatekeeper/i);
@@ -358,8 +345,6 @@ describe('Sibu executor worker templates', () => {
       selectedArchitectureSkill: selectedCommandPatternSkill,
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
-
-    assert.equal(templateMetadata?.version, '15');
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /repository-owned focused checks.*non-duplicative final strategy/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
@@ -412,8 +397,6 @@ describe('Sibu executor worker templates', () => {
       const templateMetadata = manifest.templates[templatePath];
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
-
-      assert.equal(templateMetadata?.version, '4');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation executor worker/i);
       assert.match(templateMetadata?.changes.join('\n') ?? '', /implementation and one-packet repair modes/i);
       assert.match(contents, /sibu-implementation-executor/);

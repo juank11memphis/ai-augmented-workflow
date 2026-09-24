@@ -146,7 +146,7 @@ If the user explicitly requests a different path, use that path instead.
 
 ### 7. Final response behavior
 
-After writing the file, final-answer with only the path created or updated. Do not paste the document body, excerpt, outline, or section summaries.
+After writing the file, name the path, then briefly list what changed in bullets. End with one concrete, context-appropriate next action for the user, usually reviewing or updating the Business Domain Model; suggest it without starting the next stage. Do not paste the full document unless requested.
 
 Only include the full document when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/product-vision.md`.
 

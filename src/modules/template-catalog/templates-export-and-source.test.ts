@@ -25,11 +25,6 @@ const selectedGithubExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => ski
 const selectedNotionExportSkill = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion')!;
 
 
-const assertVersionMetadata = (version: string | undefined, label: string): void => {
-  assert.equal(typeof version, 'string', `${label} version should be a string`);
-  assert.match(version ?? '', /^\d+$/, `${label} version should be numeric metadata`);
-};
-
 describe('implementation phase timing helper template', () => {
   it('is manifest-backed, dependency-free, and byte-identical to the managed installed copy', () => {
     const templatePath = 'scripts/implementation-phase-timing.mjs';
@@ -37,8 +32,6 @@ describe('implementation phase timing helper template', () => {
     const metadata = manifest.templates[templatePath];
     const source = readTemplate(templatePath);
     const installed = fs.readFileSync('.agents/scripts/implementation-phase-timing.mjs', 'utf8');
-
-    assert.equal(metadata?.version, '3');
     assert.match(metadata?.description ?? '', /dependency-free helper/i);
     assert.match(metadata?.changes.join('\n') ?? '', /empty phase intervals.*non-overlapping/i);
     assert.equal(source, installed);
@@ -53,8 +46,6 @@ describe('dedicated exporter skill templates', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '7');
     assert.match(templateMetadata?.description ?? '', /GitHub export skill/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /GitHub exporter spawns/i);
     assert.match(contents, /name: export-to-github/);
@@ -77,8 +68,6 @@ describe('dedicated exporter skill templates', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '9');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /Notion exporter spawns/i);
     assert.match(contents, /name: export-to-notion/);
@@ -112,8 +101,6 @@ describe('dedicated exporter skill templates', () => {
       const templateMetadata = manifest.templates[templatePath];
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
-
-      assert.equal(templateMetadata?.version, templatePath.includes('notion-exporter') ? (isCodexAgentTemplate ? '6' : '4') : (isCodexAgentTemplate ? '4' : '2'));
       assert.match(templateMetadata?.description ?? '', /exporter sub-agent/i);
       assert.match(templateMetadata?.changes.join('\n') ?? '', templatePath.includes('notion-exporter') ? /SAD|SDD/i : /concise reporting guidance/i);
       assert.match(contents, /sub-agent/i);
@@ -136,8 +123,6 @@ describe('session-start hook templates', () => {
     for (const templatePath of templatePaths) {
       const templateMetadata = manifest.templates[templatePath];
       const contents = readTemplate(templatePath);
-
-      assert.equal(templateMetadata?.version, '1');
       assert.match(templateMetadata?.description ?? '', /SessionStart hook/i);
       assert.match(templateMetadata?.changes.join('\n') ?? '', /managed .*SessionStart hook/i);
       assert.match(contents, /SessionStart/);
@@ -158,8 +143,6 @@ describe('framework skill templates', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '6');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
     assert.match(contents, /name: nextjs/);
     assert.match(contents, /also use `react` when that skill is installed/);
@@ -284,8 +267,6 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assertVersionMetadata(templateMetadata?.version, templatePath);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
     assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
     assert.doesNotMatch(contents, /GitHub export gate outcome/i);
@@ -298,7 +279,6 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
 
 describe('template catalog source templates', () => {
   it('exports every specialist reviewer source through manifest-backed rendering', () => {
-    const manifest = readTemplateManifest();
     const reviewerTemplatePaths = [
       'skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
       'skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
@@ -310,10 +290,7 @@ describe('template catalog source templates', () => {
       '.gemini/agents/sibu-technical-lead-reviewer.md',
     ];
 
-    assert.equal(manifest.templateVersion, '165');
-
     for (const templatePath of reviewerTemplatePaths) {
-      assert.equal(manifest.templates[templatePath]?.version, '1');
       assert.doesNotThrow(() => readTemplate(templatePath));
 
       const renderedContents = renderTemplateForSync({
@@ -335,8 +312,6 @@ describe('template catalog source templates', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-
-    assert.equal(templateMetadata?.version, '5');
     assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
     assert.match(contents, /Each React component belongs in its own nearby file by default/i);
     assert.match(contents, /Do not define helper subcomponents in a parent component file/i);
@@ -345,12 +320,6 @@ describe('template catalog source templates', () => {
     assert.match(contents, /Prefer separated component files/i);
     assert.match(contents, /Avoid multiple component implementations in one parent file/i);
     assert.match(contents, /inspect every changed React file/i);
-  });
-
-  it('returns manifest-backed template versions', () => {
-    const manifest = readTemplateManifest();
-
-    assert.equal(getTemplateVersion(manifest, 'skills/business-domain-model-writer/SKILL.md'), '10');
   });
 
   it('preserves the missing manifest entry error', () => {

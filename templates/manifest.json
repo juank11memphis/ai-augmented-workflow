@@ -1,11 +1,11 @@
 {
-  "templateVersion": "165",
+  "templateVersion": "167",
   "templates": {
     "AGENTS.md": {
-      "version": "42",
+      "version": "43",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Clarifies Sibu sub-agent model routing labels and prevents rejected routes from being suggested again as replacements."
+        "Makes agent responses easier to scan with short paragraphs, bullets, and useful headings."
       ]
     },
     ".codex/config.toml": {
@@ -58,24 +58,24 @@
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
-      "version": "12",
+      "version": "13",
       "description": "Mandatory product vision writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Summarizes Product Vision changes in bullets and suggests a relevant next step without starting it."
       ]
     },
     "skills/business-domain-model-writer/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory Business Domain Model writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Summarizes Business Domain Model changes in bullets and suggests a relevant next step without starting it."
       ]
     },
     "skills/capabilities-map-writer/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory Capabilities Map writer skill installed once at the shared .agents/skills workspace path.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Summarizes Capabilities Map changes in bullets and suggests a relevant next step without starting it."
       ]
     },
     "skills/typescript/SKILL.md": {
@@ -331,10 +331,10 @@
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Authors the project SAD at docs/architecture.md.",
       "changes": [
-        "Replaces the former writer with project SAD at docs/architecture.md; use sync for adoption and retire obsolete local copies/records only after ownership review."
+        "Summarizes project SAD changes in bullets and suggests a relevant next step without starting it."
       ]
     },
     "skills/software-design-writer/SKILL.md": {
