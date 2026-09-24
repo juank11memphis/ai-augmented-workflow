@@ -40,7 +40,7 @@ describe('repository-aware validation guidance lifecycle', () => {
 
       const preview = findManagedPreview(rootPath, state, validationSkill);
       assert.equal(preview.status, 'update-available');
-      assert.match(preview.changes.join('\n'), /repository-aware|non-duplicative/i);
+      assert.match(preview.changes.join('\n'), /repository-aware|non-duplicative|routes .*spawns/i);
 
       const applied = applySyncAction({
         rootPath,

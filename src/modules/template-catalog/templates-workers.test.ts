@@ -34,8 +34,8 @@ describe('AGENTS.md template', () => {
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
 
-    assert.equal(templateMetadata?.version, '40');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.equal(templateMetadata?.version, '42');
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /sub-agent model routing/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -196,9 +196,9 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '24');
+    assert.equal(templateMetadata?.version, '25');
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /repository-aware validation/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /planner spawns/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /software-design-writer/);
@@ -311,9 +311,9 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '37');
+    assert.equal(templateMetadata?.version, '38');
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /repository-owned focused checks.*non-duplicative final strategy/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /executor and specialist-review spawns/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);

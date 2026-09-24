@@ -13,6 +13,8 @@ Use this skill when the user asks to export a feature's Epics and User Stories t
 
 ## Non-blocking delegation requirement
 
+Before the `github-exporter` spawn, classify the export task before resolving `--role github-exporter` under the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. Follow its saved, missing, unavailable, failed-save, one-time, and cancellation branches. Disclose the selected route and pass explicit `model` and `reasoning_effort` host spawn parameters. If the host cannot accept both, stop this launch; no parent inheritance or silent fallback. Route review occurs before the existing background fire-and-notify spawn, without weakening external mutation opt-in or the no-local-write packet.
+
 Before reading planning artifacts or calling GitHub mutation tools, check whether the configured `github-exporter` sub-agent is available for the current AI target.
 
 If available, you must delegate the export to `github-exporter`. Do not perform the export inline and do not call GitHub issue or sub-issue mutation tools from the main agent.

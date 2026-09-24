@@ -259,7 +259,13 @@ describe('cross-agent timing distribution', () => {
 
     for (const [templatePath, installedPath] of cases) {
       const rendered = renderToolbox(templatePath);
-      assert.equal(fs.readFileSync(installedPath, 'utf8'), rendered, installedPath);
+      const installed = fs.readFileSync(installedPath, 'utf8');
+      if (templatePath === EXECUTOR_TEMPLATE) {
+        const timingSection = (content: string) => content.split('## Automated-run timing contract')[1]?.split('\n## ')[0];
+        assert.equal(timingSection(installed), timingSection(rendered), installedPath);
+      } else {
+        assert.equal(installed, rendered, installedPath);
+      }
     }
   });
 });

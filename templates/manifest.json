@@ -1,11 +1,11 @@
 {
-  "templateVersion": "163",
+  "templateVersion": "165",
   "templates": {
     "AGENTS.md": {
-      "version": "40",
+      "version": "42",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Clarifies Sibu sub-agent model routing labels and prevents rejected routes from being suggested again as replacements."
       ]
     },
     ".codex/config.toml": {
@@ -135,10 +135,10 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Adds repository-aware validation planning with focused checks, one non-duplicative final strategy, and conditional packaging coverage."
+        "Routes implementation planner spawns through saved or user-chosen model and reasoning-effort settings."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "37",
+      "version": "38",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Runs repository-owned focused checks during change and one non-duplicative final strategy after stabilization."
+        "Routes executor and specialist-review spawns explicitly while preserving foreground execution and approval controls."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -191,17 +191,17 @@
       ]
     },
     "skills/export-to-github/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Selectable GitHub export skill for publishing a named feature's Epics and User Stories to GitHub issues and native sub-issues.",
       "changes": [
-        "Adds concise conversational response guidance while preserving required interviews, artifacts, validation, blockers, and review gates."
+        "Routes background GitHub exporter spawns with an explicit model and reasoning effort before delegation."
       ]
     },
     "skills/export-to-notion/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Routes background Notion exporter spawns with an explicit model and reasoning effort before delegation."
       ]
     },
     ".codex/agents/github-exporter.toml": {

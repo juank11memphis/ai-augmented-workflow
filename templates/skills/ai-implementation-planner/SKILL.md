@@ -92,6 +92,8 @@ When the BRD or software design includes Deep Module guidance, treat it as requi
 
 ## Required sub-agent planning path
 
+Before each `sibu-implementation-planner` spawn, classify the delegated planning task before resolving `--role implementation-planner` through the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. Follow its saved, first-use, unavailable, save-failed, one-time, and cancellation branches. Disclose the chosen route and pass both selected `model` and `reasoning_effort` explicitly in the host spawn; no parent inheritance or silent fallback. If the host cannot accept both explicit values, stop this launch. This changes route selection only, not the fresh-context planner packet or inline capability fallback below.
+
 When the host exposes any usable sub-agent spawn capability and `sibu-implementation-planner` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu planner worker, subject to host tool policy. Do not choose inline planning merely because it is simpler or faster.
 
 Build a narrow planner packet for the worker. The packet must include:

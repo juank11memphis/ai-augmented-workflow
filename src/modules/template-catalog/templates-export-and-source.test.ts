@@ -54,9 +54,9 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '6');
+    assert.equal(templateMetadata?.version, '7');
     assert.match(templateMetadata?.description ?? '', /GitHub export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /concise conversational response guidance/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /GitHub exporter spawns/i);
     assert.match(contents, /name: export-to-github/);
     assert.match(contents, /github-exporter/);
     assert.match(contents, /clean, narrow export packet/);
@@ -78,9 +78,9 @@ describe('dedicated exporter skill templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
 
-    assert.equal(templateMetadata?.version, '8');
+    assert.equal(templateMetadata?.version, '9');
     assert.match(templateMetadata?.description ?? '', /Notion export skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Notion exporter spawns/i);
     assert.match(contents, /name: export-to-notion/);
     assert.match(contents, /notion-exporter/);
     assert.match(contents, /clean, narrow export packet/);
@@ -310,7 +310,7 @@ describe('template catalog source templates', () => {
       '.gemini/agents/sibu-technical-lead-reviewer.md',
     ];
 
-    assert.equal(manifest.templateVersion, '163');
+    assert.equal(manifest.templateVersion, '165');
 
     for (const templatePath of reviewerTemplatePaths) {
       assert.equal(manifest.templates[templatePath]?.version, '1');
