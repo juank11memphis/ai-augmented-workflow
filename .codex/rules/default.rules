@@ -25,6 +25,13 @@ prefix_rule(
 )
 
 prefix_rule(
+    pattern = ["pnpm", "build"],
+    decision = "allow",
+    match = [["pnpm", "build"]],
+    not_match = [["pnpm", "verify"], ["pnpm", "publish"]],
+)
+
+prefix_rule(
     pattern = ["git", "add"],
     decision = "allow",
     match = [["git", "add", "--", "src/foo.ts"]],
@@ -51,4 +58,15 @@ prefix_rule(
 prefix_rule(
     pattern = ["head"],
     decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["node", "--test"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["node", ["-e", "--eval", "-p", "--print"]],
+    decision = "forbidden",
+    justification = "Inline script execution bypasses file-based review — run it as a checked-in script instead.",
 )
