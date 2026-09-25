@@ -1,5 +1,5 @@
 {
-  "templateVersion": "182",
+  "templateVersion": "183",
   "templates": {
     "AGENTS.md": {
       "version": "43",
@@ -317,10 +317,10 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Adds mandatory eval-authoring guidance for Sibu-format suites, cases, fixtures, assertions, graders, and boundaries."
+        "Adds target confirmation and coverage approval gates before generating eval files, with systematic risk coverage and focused clarification for ambiguous expectations."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
