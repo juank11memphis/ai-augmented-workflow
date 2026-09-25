@@ -2,7 +2,7 @@
   "sibuVersion": "0.25.0",
   "templateVersion": "182",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-25T16:16:34.274Z",
+  "updatedAt": "2026-09-25T17:46:17.850Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -377,6 +377,46 @@
       "origin": "recommended",
       "catalogVersionAtSelection": "2026-09-23.2",
       "selectedAt": "2026-09-24T03:00:23.146Z"
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-planner",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-25T17:14:24.491Z"
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "implementation-executor",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-25T17:24:11.521Z"
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "architecture-reviewer",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-25T17:46:12.616Z"
+    },
+    {
+      "agentEnvironment": "codex",
+      "role": "technical-lead-reviewer",
+      "workloadClass": "high-risk",
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "origin": "recommended",
+      "catalogVersionAtSelection": "2026-09-23.2",
+      "selectedAt": "2026-09-25T17:46:17.849Z"
     }
   ]
 }

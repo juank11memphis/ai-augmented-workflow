@@ -24,7 +24,7 @@ This repository is the home for establishing an AI-augmented development workflo
 
 Treat context as a shared budget owned by the user. Prefer narrow, purposeful context before broad reads: search targeted paths, inspect snippets before full files, and avoid dependency, generated, build, cache, and lockfile content unless relevant.
 
-Do not dump full files, full diffs, broad recursive scans, or uncapped command output unless needed for quality or explicitly requested. Summarize large diffs, logs, command output, and generated artifacts by default, with focused excerpts when they support a decision.
+Do not dump full files, full diffs, or broad recursive scans unless needed for quality or explicitly requested. Summarize large diffs and generated artifacts by default, with focused excerpts when they support a decision.
 
 Keep responses concise by default, but spend the context needed for correctness, safety, validation, human control, or required context gathering. Warn or ask before optional expensive context operations.
 

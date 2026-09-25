@@ -1,11 +1,11 @@
 {
-  "templateVersion": "183",
+  "templateVersion": "184",
   "templates": {
     "AGENTS.md": {
-      "version": "43",
+      "version": "44",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Makes agent responses easier to scan with short paragraphs, bullets, and useful headings."
+        "Removes command-output and log summarization guidance so agents inspect verification results as needed."
       ]
     },
     ".codex/config.toml": {
