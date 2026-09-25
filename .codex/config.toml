@@ -1,5 +1,11 @@
 model_instructions_file = "../AGENTS.md"
 web_search = "live"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+writable_roots = ["/tmp"]
+network_access = false
 
 [agents]
 enabled = true

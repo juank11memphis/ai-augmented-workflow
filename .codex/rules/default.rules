@@ -1,13 +1,54 @@
 prefix_rule(
     pattern = ["pnpm", "verify"],
     decision = "allow",
-    match = ["pnpm verify", "pnpm verify --filter example"],
-    not_match = ["pnpm build", "pnpm run verify"],
+    match = [
+        ["pnpm", "verify"],
+        ["pnpm", "verify", "--filter", "example"],
+    ],
+    not_match = [
+        ["pnpm", "build"],
+        ["pnpm", "run", "verify"],
+    ],
 )
 
 prefix_rule(
     pattern = ["pnpm", "run", "verify"],
     decision = "allow",
-    match = ["pnpm run verify", "pnpm run verify --filter example"],
-    not_match = ["pnpm run build", "pnpm run test"],
+    match = [
+        ["pnpm", "run", "verify"],
+        ["pnpm", "run", "verify", "--filter", "example"],
+    ],
+    not_match = [
+        ["pnpm", "run", "build"],
+        ["pnpm", "run", "test"],
+    ],
+)
+
+prefix_rule(
+    pattern = ["git", "add"],
+    decision = "allow",
+    match = [["git", "add", "--", "src/foo.ts"]],
+    not_match = [["git", "push"]],
+)
+
+prefix_rule(
+    pattern = ["git", "diff"],
+    decision = "allow",
+    match = [["git", "diff", "--cached", "--check"], ["git", "diff", "--cached", "--stat"]],
+)
+
+prefix_rule(
+    pattern = ["git", "status"],
+    decision = "allow",
+    match = [["git", "status", "--short", "--untracked-files=all"]],
+)
+
+prefix_rule(
+    pattern = ["tail"],
+    decision = "allow",
+)
+
+prefix_rule(
+    pattern = ["head"],
+    decision = "allow",
 )
