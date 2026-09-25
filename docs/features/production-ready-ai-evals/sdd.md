@@ -206,7 +206,7 @@ All slices stay inside `local-evals-workbench`. Commands are immutable intent, h
 | Discover version-2 eval suites | Validate suite files, contained references, coverage, cases, and runner declaration; reject unsupported versions | Suite-definition reader, logger |
 | Describe eval suite runtime | Load one valid suite and obtain compatible tested/Judge Models and capabilities without executing a run | Suite registry, runner descriptor, logger |
 | Preview eval run | Validate scope/models/repeats, enforce artifact readiness, and obtain calls/cost estimate | Suite registry, runner descriptor, runner estimator, artifact-safety checker, logger |
-| Start eval run | Revalidate preview-sensitive state, create the initial run record, enforce one active run, and schedule execution | Suite registry, artifact store, artifact-safety checker, run scheduler, clock, logger |
+| Start eval run | Revalidate preview-sensitive state, create an independently identified queued run record, and schedule execution | Suite registry, artifact store, artifact-safety checker, run scheduler, clock, logger |
 | Execute eval run | Invoke the runner, consume bounded events, evaluate standard assertions, persist progress, and finalize status | Runner executor, assertion evaluator, artifact store, clock, logger |
 | List eval runs | Return bounded suite history newest first | Artifact reader, logger |
 | Get eval run | Return one bounded run summary or one selected case/assertion detail | Artifact reader, logger |
@@ -227,11 +227,11 @@ queued -> running -> completed
                   -> interrupted
 ```
 
-The workbench permits one active run per project in the initial implementation. Cases and repeats execute sequentially. This avoids provider bursts, preserves deterministic tool mocks, and makes partial evidence understandable. A second start request receives the active run identity rather than spawning competing work.
+Each run has its own identity and lifecycle. The workbench does not enforce a project-wide active-run limit or maintain an active-run pointer. Cases and repeats execute sequentially within a run, preserving deterministic tool mocks and understandable partial evidence. This design does not promise a cross-run scheduling policy. Running multiple Sibu processes against the same project at once is unsupported; the workbench does not coordinate their artifact writes.
 
 The local server schedules execution after the start handler has atomically created the queued manifest. Browser polling reads persisted progress, so refreshing or disconnecting the browser does not discard the run. Stopping the Sibu process terminates the child runner; the next artifact read classifies a stale queued/running manifest as interrupted.
 
-Cancellation and parallel execution are outside this feature scope.
+Cancellation and parallel case execution within a run are outside this feature scope; cross-run scheduling is unspecified.
 
 ## File-Backed Artifact Design
 
@@ -251,7 +251,7 @@ evals/artifacts/
 - `run.json` contains configuration, lifecycle status, aggregates, bounded diagnostics, model identities, calls, cost, timing, and case summaries.
 - Attempt files contain normalized turns, tool traces, assertion/grader results, and bounded output evidence.
 - `index.json` contains only the small fields needed by run history.
-- Writes use a sibling temporary file followed by atomic rename. The suite index is updated only after the corresponding run manifest is durable.
+- Writes use a sibling temporary file followed by atomic rename. The suite index is updated only after the corresponding run manifest is durable. In-process serialization protects shared index read-modify-write sequences, not a run-count limit; there is no persistent writer lock or `active.json` pointer. Atomic rename prevents partial-file publication but cannot prevent lost index updates from unsupported concurrent Sibu processes.
 - Run IDs combine time-sortable identity with sufficient randomness; browser inputs cannot choose artifact paths.
 - The store never follows artifact-directory symlinks outside the project.
 
@@ -385,7 +385,7 @@ Events include safe identifiers, scope, model IDs, repeat count, counts, duratio
 ### Adapter and integration verification
 
 - Fixture runner processes for describe, estimate, successful execution, rubrics, custom checks, streamed progress, stderr, crash, timeout, malformed/out-of-order events, and size-limit breaches.
-- Artifact-store tests for atomic writes, interrupted writes, index consistency, symlink/root escapes, stable history, and bounded reads.
+- Artifact-store tests for atomic writes, interrupted writes, same-process index consistency across independent runs, crash/restart without a persistent lock or active-run pointer, symlink/root escapes, stable history, and bounded reads. Do not claim a run-count limit or cross-process write coordination.
 - Git-safety tests for ignored/unignored paths, tracked artifacts, missing Git capability, and time-of-check/time-of-use revalidation.
 - HTTP parser and response tests for invalid IDs, oversized requests, escaping, polling, and restored history.
 - A fixture project whose generated runner wraps a fake AI integration and mocked tools without network access.
@@ -432,9 +432,9 @@ Template changes must also pass the repository's template-manifest, lifecycle, i
 
 - **Generated runner quality:** arbitrary frameworks require project-specific adaptation. The standard process protocol contains variation, but generated runner tests remain essential.
 - **Mock isolation:** without an OS sandbox, Sibu cannot independently prove that a faulty runner never contacts a real tool. Explicit mocks, minimal environment, eval mode, and no-network fixture tests reduce but do not eliminate this risk.
-- **Sequential execution:** improves determinism and recovery but makes large suites slower.
+- **Sequential cases within a run:** improves determinism and recovery but makes large suites slower. No project-wide active-run limit or cross-run scheduling guarantee is part of this design.
 - **Strict repeat aggregation:** exposes intermittent failures honestly but may produce more failed runs than average-score approaches.
-- **Filesystem history:** preserves local ownership and portability but requires careful atomicity, cleanup guidance, and bounded indexing.
+- **Filesystem history:** preserves local ownership and portability but requires careful atomicity, cleanup guidance, and bounded indexing. Concurrent Sibu processes using one project are unsupported and may lose index updates; users should run one workbench process per project. A crash must not leave a persistent writer lock or active-run pointer that blocks later saves.
 - **Dynamic model discovery:** keeps provider choice in the project but makes runner availability part of dashboard readiness.
 - **No version-1 compatibility:** simplifies the trustworthy contract but requires existing suites to be regenerated.
 - **Server-rendered UI evolution:** minimizes dependency and packaging changes, but the implementation must split cohesive rendering and client responsibilities to respect source-file size limits and avoid a monolithic script.
