@@ -1,4 +1,5 @@
 model_instructions_file = "../AGENTS.md"
+web_search = "live"
 
 [agents]
 enabled = true

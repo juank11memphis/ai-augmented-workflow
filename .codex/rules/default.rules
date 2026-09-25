@@ -1,0 +1,13 @@
+prefix_rule(
+    pattern = ["pnpm", "verify"],
+    decision = "allow",
+    match = ["pnpm verify", "pnpm verify --filter example"],
+    not_match = ["pnpm build", "pnpm run verify"],
+)
+
+prefix_rule(
+    pattern = ["pnpm", "run", "verify"],
+    decision = "allow",
+    match = ["pnpm run verify", "pnpm run verify --filter example"],
+    not_match = ["pnpm run build", "pnpm run test"],
+)
