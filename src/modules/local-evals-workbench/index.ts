@@ -4,3 +4,7 @@ export * from './run-local-eval-suite/index.js';
 export * from './analyze-failed-assertion/index.js';
 export * from './draft-eval-repair-proposal/index.js';
 export * from './apply-approved-eval-repair/index.js';
+export * from './run-history/index.js';
+export * from './check-eval-artifact-readiness/index.js';
+export * from './list-eval-runs/index.js';
+export * from './get-eval-run/index.js';

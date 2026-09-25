@@ -1,0 +1,4 @@
+import type { Attempt, Manifest, RunConfiguration } from './contracts.js';
+export const config: RunConfiguration = { suiteId: 'suite', caseIds: ['case'], scope: 'all', testedModel: 'synthetic', judgeModel: null, repeats: 1 };
+export function queued(): Manifest { return { ...config, version: 1, runId: 'run', state: 'queued', owner: { pid: 123, token: 'owner' }, createdAt: 100, updatedAt: 100, finishedAt: null, outcome: 'incomplete', calls: null, cost: null, diagnostics: [], cases: [{ caseId: 'case', state: 'not-run', attempts: [] }] }; }
+export function evidence(runId = 'run'): Attempt { return { version: 1, suiteId: 'suite', runId, caseId: 'case', number: 1, outcome: 'passed', durationMs: 5, calls: 1, cost: 0, output: 'synthetic output', truncated: false, diagnostics: [], turns: [], tools: [], assertions: [{ id: 'assertion', kind: 'assertion', outcome: 'passed', score: 1, expected: 'yes', actual: 'yes', diagnostics: [], turnIds: [], toolIds: [] }] }; }
