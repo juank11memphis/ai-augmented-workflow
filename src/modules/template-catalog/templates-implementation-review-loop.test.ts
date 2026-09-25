@@ -24,7 +24,8 @@ describe('human-directed implementation review', () => {
     assert.match(main, /source code, tests, dependencies, schemas, or runtime configuration require specialist review/i);
     assert.match(main, /round number, current changed-file list, current local diff, and fresh validation summary/i);
     assert.match(main, /snapshot is an unchanged-local-change invariant, not a persisted hash/i);
-    assert.match(main, /Spawn both read-only reviewers concurrently when supported/i);
+    assert.match(main, /Resolve both reviewers' model routes.*before launching either reviewer/i);
+    assert.match(main, /For Codex, when the host supports two concurrent sub-agents, spawn both read-only reviewers before waiting for either result/i);
     assert.match(main, /Otherwise run them sequentially without allowing any writer between them/i);
     assert.match(main, /unexpected mutation occurred, discard both outcomes/i);
     assert.match(main, /do not present stale verdicts as current evidence/i);

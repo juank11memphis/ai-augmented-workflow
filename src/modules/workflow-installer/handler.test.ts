@@ -158,6 +158,7 @@ describe('handleInitProject', () => {
     assert.equal(typeof state.managedFiles['.mcp.json']?.sha256, 'string');
     assert.equal(typeof state.managedFiles['.gemini/settings.json']?.sha256, 'string');
 
+    assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /\[agents\]\nenabled = true\nmax_concurrent_threads_per_session = 2/);
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /api\.githubcopilot\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/config.toml'), 'utf8'), /mcp\.notion\.com\/mcp/);
     assert.match(fs.readFileSync(path.join(rootPath, '.codex/hooks.json'), 'utf8'), /SessionStart/);

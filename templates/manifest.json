@@ -1,5 +1,5 @@
 {
-  "templateVersion": "181",
+  "templateVersion": "182",
   "templates": {
     "AGENTS.md": {
       "version": "43",
@@ -9,10 +9,10 @@
       ]
     },
     ".codex/config.toml": {
-      "version": "3",
+      "version": "4",
       "description": "Codex configuration pointing to AGENTS.md and rendering selected MCP servers with Codex-compatible settings.",
       "changes": [
-        "Adds approval prompts for GitHub MCP issue and sub-issue write tools in Codex configs."
+        "Enables two concurrent Codex sub-agents so independent reviewers can run in parallel."
       ]
     },
     "GEMINI.md": {
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "47",
+      "version": "48",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Removes automated-run timing guidance and helper use while retaining foreground progress delivery and human review controls."
+        "Launches both specialist reviewers before waiting for results when Codex supports concurrent sub-agents."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

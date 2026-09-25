@@ -40,7 +40,7 @@ describe('repository-aware validation guidance lifecycle', () => {
 
       const preview = findManagedPreview(rootPath, state, validationSkill);
       assert.equal(preview.status, 'update-available');
-      assert.match(preview.changes.join('\n'), /verified story-specific|foreground progress|Removes/i);
+      assert.match(preview.changes.join('\n'), /verified story-specific|foreground progress|Removes|reviewers/i);
 
       const applied = applySyncAction({
         rootPath,

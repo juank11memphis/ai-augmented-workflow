@@ -97,7 +97,7 @@ describe('targeted handoff instruction contracts', () => {
       const entry = manifest.templates[`skills/${name}/SKILL.md`];
       assert.ok(entry, name);
       assert.equal(entry.changes.length, 1, name);
-      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes/i, name);
+      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers/i, name);
       const installed = readFileSync(`.agents/skills/${name}/SKILL.md`, 'utf8');
       const template = readTemplate(`skills/${name}/SKILL.md`);
       if (name.includes('toolbox')) {

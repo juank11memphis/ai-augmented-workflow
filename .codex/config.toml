@@ -1,1 +1,5 @@
 model_instructions_file = "../AGENTS.md"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 2

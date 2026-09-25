@@ -88,6 +88,7 @@ describe('Sibu-provided sub-agent model routing', () => {
     it('retains foreground implementation and background exporter authority', () => {
         const executor = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
         assert.match(executor, /All implementation and repair execution stays in the foreground/);
+        assert.match(executor, /Resolve both reviewers' model routes[\s\S]*spawn both read-only reviewers before waiting for either result/);
         assert.match(executor, /Never run an implementation or repair executor while a reviewer is active/);
         assert.match(executor, /Only after explicit story-level user approval/);
         for (const path of ['skills/export-to-github/SKILL.md', 'skills/export-to-notion/SKILL.md']) {
