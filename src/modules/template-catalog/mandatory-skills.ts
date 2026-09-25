@@ -228,6 +228,20 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       gemini: '.agents/skills/eval-authoring/SKILL.md',
       claude: '.agents/skills/eval-authoring/SKILL.md',
     },
+    supplementalTargetsByAgent: {
+      codex: [{
+        templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md',
+        targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md',
+      }],
+      gemini: [{
+        templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md',
+        targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md',
+      }],
+      claude: [{
+        templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md',
+        targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md',
+      }],
+    },
   },
   {
     templateRelativePath: 'skills/feature-idea-capture/SKILL.md',

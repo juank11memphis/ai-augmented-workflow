@@ -241,6 +241,7 @@ describe('getWorkflowTargets', () => {
       '.codex/agents/sibu-architecture-reviewer.toml',
       '.codex/agents/sibu-technical-lead-reviewer.toml',
       '.agents/skills/eval-authoring/SKILL.md',
+      '.agents/skills/eval-authoring/references/version-2-contract.md',
       '.agents/skills/feature-idea-capture/SKILL.md',
       '.agents/skills/export-to-notion/SKILL.md',
       '.codex/agents/notion-exporter.toml',

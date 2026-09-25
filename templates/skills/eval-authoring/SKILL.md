@@ -52,77 +52,47 @@ If repo-owned code, prompts, tests, and docs cannot establish a meaningful expec
 
 Hard-stop if the request would require you to:
 
-- run evals or add runtime eval execution logic
+- run evals or add Sibu runtime eval execution logic (project-owned runner/test-support generation is allowed after coverage approval)
 - analyze failures, draft repairs, or apply approved repairs
 - mutate unrelated project files outside the requested eval artifacts
 - overwrite arbitrary existing eval suites without explicit scope
 - add secrets, credentials, private data, or full proprietary prompts as fixtures
 
-## Outputs
+## Generate version-2 artifacts
 
-Prefer small, conventional artifacts plus a short summary:
+Read [the version-2 contract](references/version-2-contract.md) before generation. New suites must use version 2, never legacy `run`/`cases` fields or predefined actual outputs. Inspect the target repository's language, framework, dependency versions and existing test seams; follow its installed language and clean-code guidance, plus structured-logging for operational code. Coverage approval does not waive separate repository code-change permission rules.
 
-- eval suite metadata
-- test case definitions
-- fixture or input-variable files when repeated inputs would clutter cases
-- expected/reference context or rubric text
-- assertion/grader definitions
-- run adapter expectations, not implementation, when the hook is external
-- run artifact/result location conventions, not generated results
+For every confirmed target, implement the approved plan without silently dropping scenarios:
 
-## Sibu MVP eval format
+- Create suite metadata, test case definitions, applicable single-turn and multi-turn cases, fixtures or input-variable files, expected/reference context, deterministic assertions, custom graders and inspectable rubrics.
+- Embed reviewed coverage dispositions, reasons and justified gaps. Separate standard Sibu assertions from runner-owned custom/rubric grading.
+- Create a runnable project-owned runner and test support using the contract's describe, estimate and execute operations. Invoke the real target integration with the selected Model Under Evaluation and a separately selected optional Judge Model; never substitute static expected outputs for target behavior.
+- Generate conventional runner tests with fake model/judge ports, not live model or external tool calls. Verify actual target dispatch, conversation state within attempts, reset between attempts and zero production tool-client calls. These tests are allowed during authoring; executing generated evals is not.
+- For an unfamiliar framework, use focused inspection and prove the adapter/mocking seam with conventional tests. If imports, model compatibility or isolation remain uncertain, ask for focused clarification and stop generation; do not invent SDK behavior or label a placeholder runnable.
 
-Use the project's existing convention when present. If no convention exists and the user still wants a new Sibu MVP eval, use this minimal shape as guidance and adapt only with explicit user approval:
+## Tool and data safety
 
-```json
-{
-  "id": "skill-authoring-boundaries",
-  "name": "Skill authoring boundaries",
-  "description": "Checks that generated skill guidance respects required boundaries.",
-  "target": {
-    "kind": "skill|prompt|command|workflow",
-    "path": "relative/project/path"
-  },
-  "run": {
-    "adapter": "documented-command-or-script",
-    "modelVariable": "SIBU_EVALS_MODEL"
-  },
-  "cases": [
-    {
-      "id": "missing-required-context",
-      "name": "Missing required context",
-      "input": { "request": "Create an eval for an unspecified behavior." },
-      "expected": { "reference": "The agent asks for focused clarification before writing pass/fail criteria." },
-      "assertions": [
-        {
-          "id": "hard-stops-before-inventing",
-          "type": "contains|not-contains|rubric|json-path|custom",
-          "criteria": "Must ask for missing target behavior and expected/reference context."
-        }
-      ]
-    }
-  ],
-  "artifacts": {
-    "resultsDir": "evals/artifacts/<suite-id>/",
-    "keep": ["inputs", "actual output excerpt", "assertion results", "grader notes"]
-  }
-}
-```
+Replace production tool handlers with suite-declared mocks before target initialization/execution. Require an explicit eval-mode marker, record selection, normalized arguments and order, and support deterministic success, error and unexpected-response outcomes. Fail closed for undeclared, extra, out-of-order or mismatched calls; never fall back to production clients. If isolation requires production changes, stop rather than modifying production files. Production prompts and integrations remain unchanged.
 
-### Conventional artifacts
+Use synthetic or redacted fixtures only: no secrets, credentials, raw production data or live endpoints. Reference proprietary prompts at their existing source rather than copying them. Validate project-root-contained lexical paths and nearest existing real paths before artifact reads/writes, including symlink parents. Use command argument arrays without shells and declared environment names only. Bound and redact evidence before emission or persistence; fail closed when safe redaction is uncertain. Diagnostics must not expose sensitive payloads. Trusted project runners are not an OS sandbox.
 
-Keep artifacts boring and discoverable:
+## Conventional artifacts and Git safety
 
 ```text
 evals/
   <suite-id>.json
+  runners/<suite-id>.<project-language-extension>
   fixtures/<suite-id>/<case-id>.json
   references/<suite-id>/<case-id>.md
-  artifacts/<suite-id>/.gitkeep
+  tests/<suite-id>.<project-test-extension>
 ```
 
-A suite should describe what is evaluated. Cases should provide inputs. Fixtures should hold larger reusable input variables. References should capture expected context or rubrics. Assertions/graders should be explicit enough for reviewers to understand pass/fail. Run adapters should be named and documented, but implemented only when the user asks for execution work. Artifacts/results should contain outputs and grader/assertion results produced by actual eval runs, not by this authoring guidance.
+Preserve existing Git rules; add the root `/evals/artifacts/` exclusion without clobbering them. Verify effective ignore and no tracked artifacts using the reference's Git checks. Missing Git, conflicting ignore rules (including later negations), or tracked artifacts require user guidance; never automatically delete or untrack files. Do not create run results or tracked placeholders. Keep ignored artifacts out of ordinary agent context.
+
+## Outputs
+
+Report created/changed paths, setup prerequisites and selected models, conventional test commands/results, coverage summary and gaps, and how the user can later invoke the direct runner protocol. Include concise setup/protocol/test instructions appropriate to the project stack. Distinguish directly runnable protocol support from dashboard version-2 execution, which may not yet be available. Do not claim live-agent compliance from static checks or fake-port tests.
 
 ## Boundaries
 
-This skill guides eval creation and maintenance only. Delegate eval execution, failure analysis, repair proposal drafting, and approved repair application to the Local Evals Workbench flows or another explicitly requested implementation task.
+This skill guides eval creation and maintenance only, including project-owned runners after approval. Do not modify production prompts/integrations or add Sibu runtime execution behavior. Delegate eval execution, failure analysis, repair proposal drafting, and approved repair application to the Local Evals Workbench flows or another explicitly requested implementation task.

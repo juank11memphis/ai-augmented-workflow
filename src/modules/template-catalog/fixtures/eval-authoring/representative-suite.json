@@ -1,0 +1,192 @@
+{
+  "version": 2,
+  "kind": "sibu-eval-suite",
+  "id": "synthetic-support",
+  "name": "Synthetic support fixture",
+  "description": "Offline conventional test support, not a live suite.",
+  "target": {
+    "id": "synthetic-support",
+    "kind": "integration",
+    "path": "project-target.mjs"
+  },
+  "coverage": {
+    "categories": [
+      {
+        "id": "happy-path",
+        "status": "covered"
+      },
+      {
+        "id": "multi-turn",
+        "status": "covered"
+      },
+      {
+        "id": "tools",
+        "status": "covered"
+      },
+      {
+        "id": "live-models",
+        "status": "not-applicable",
+        "reason": "Conventional tests use injected fakes, not live model evals."
+      }
+    ],
+    "gaps": []
+  },
+  "runner": {
+    "command": [
+      "node",
+      "runner-entrypoint.mjs"
+    ],
+    "requiredEnvironment": []
+  },
+  "testCases": [
+    {
+      "id": "single",
+      "name": "single",
+      "turns": [
+        {
+          "role": "user",
+          "content": {
+            "type": "inline",
+            "text": "Synthetic hello."
+          }
+        }
+      ],
+      "toolMocks": [],
+      "assertions": [
+        {
+          "id": "present",
+          "type": "output-contains",
+          "expected": "reply"
+        }
+      ],
+      "graders": []
+    },
+    {
+      "id": "conversation",
+      "name": "conversation",
+      "turns": [
+        {
+          "role": "user",
+          "content": {
+            "type": "inline",
+            "text": "First turn."
+          }
+        },
+        {
+          "role": "user",
+          "content": {
+            "type": "inline",
+            "text": "Second turn."
+          }
+        }
+      ],
+      "toolMocks": [],
+      "assertions": [
+        {
+          "id": "present",
+          "type": "output-contains",
+          "expected": "reply"
+        }
+      ],
+      "graders": []
+    },
+    {
+      "id": "tools",
+      "name": "tools",
+      "turns": [
+        {
+          "role": "user",
+          "content": {
+            "type": "inline",
+            "text": "tools:[{\"tool\": \"lookup\", \"arguments\": {\"id\": \"A\"}}, {\"tool\": \"lookup\", \"arguments\": {\"id\": \"B\"}}, {\"tool\": \"lookup\", \"arguments\": {\"id\": \"C\"}}]"
+          }
+        }
+      ],
+      "toolMocks": [
+        {
+          "id": "success",
+          "tool": "lookup",
+          "input": {
+            "id": "A"
+          },
+          "outcome": {
+            "type": "result",
+            "value": {
+              "status": "pending"
+            }
+          }
+        },
+        {
+          "id": "failure",
+          "tool": "lookup",
+          "input": {
+            "id": "B"
+          },
+          "outcome": {
+            "type": "error",
+            "code": "unavailable",
+            "message": "Synthetic unavailable."
+          }
+        },
+        {
+          "id": "unexpected",
+          "tool": "lookup",
+          "input": {
+            "id": "C"
+          },
+          "outcome": {
+            "type": "unexpected-response",
+            "value": [
+              "unexpected"
+            ]
+          }
+        }
+      ],
+      "assertions": [
+        {
+          "id": "present",
+          "type": "output-contains",
+          "expected": "reply"
+        }
+      ],
+      "graders": []
+    },
+    {
+      "id": "graded",
+      "name": "graded",
+      "turns": [
+        {
+          "role": "user",
+          "content": {
+            "type": "inline",
+            "text": "Synthetic judgment."
+          }
+        }
+      ],
+      "toolMocks": [],
+      "assertions": [
+        {
+          "id": "present",
+          "type": "output-contains",
+          "expected": "reply"
+        }
+      ],
+      "graders": [
+        {
+          "id": "nonempty",
+          "type": "custom",
+          "name": "nonempty"
+        },
+        {
+          "id": "quality",
+          "type": "rubric",
+          "rubric": {
+            "type": "inline",
+            "text": "Response should be present."
+          },
+          "threshold": 0.8
+        }
+      ]
+    }
+  ]
+}

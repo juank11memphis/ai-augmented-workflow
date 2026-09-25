@@ -1,11 +1,11 @@
 {
-  "templateVersion": "184",
+  "templateVersion": "185",
   "templates": {
     "AGENTS.md": {
       "version": "44",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Removes command-output and log summarization guidance so agents inspect verification results as needed."
+        "Removes command-output and log summarization guidance while keeping responses easier to scan."
       ]
     },
     ".codex/config.toml": {
@@ -317,10 +317,10 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Adds target confirmation and coverage approval gates before generating eval files, with systematic risk coverage and focused clarification for ambiguous expectations."
+        "Adds runnable version-2 suites and safe project-owned runners after target confirmation and coverage approval, with isolated tools, synthetic fixtures and conventional runner tests."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
@@ -398,6 +398,13 @@
       "description": "Gemini worker definition for read-only Sibu technical-lead review.",
       "changes": [
         "Installs a thin Gemini technical-lead-reviewer wrapper backed by the shared reviewer toolbox."
+      ]
+    },
+    "skills/eval-authoring/references/version-2-contract.md": {
+      "version": "1",
+      "description": "Version-2 suite and project-owned runner authoring contract.",
+      "changes": [
+        "Adds schema-aligned suites and an independently versioned runner protocol with isolated mock tools and offline test guidance."
       ]
     }
   }

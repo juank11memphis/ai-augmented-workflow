@@ -82,17 +82,17 @@ describe('eval-authoring skill content', () => {
     assert.match(contents, /ask one focused question and stop planning that expectation or generating files/i);
   });
 
-  it('documents Sibu MVP eval format and conventional artifacts without project-specific suites', () => {
+  it('documents version-2 eval generation and conventional artifacts without project-specific suites', () => {
     const contents = readTemplate(TEMPLATE_PATH);
 
-    assert.match(contents, /## Sibu MVP eval format/);
+    assert.match(contents, /## Generate version-2 artifacts/);
     assert.match(contents, /suite metadata|"name"/i);
     assert.match(contents, /test case definitions|"cases"/i);
     assert.match(contents, /fixtures? or input-variable/i);
     assert.match(contents, /expected\/reference context|"expected"/i);
-    assert.match(contents, /assertions\/graders|"assertions"/i);
-    assert.match(contents, /run adapter|"adapter"/i);
-    assert.match(contents, /artifacts\/results|"artifacts"/i);
+    assert.match(contents, /deterministic assertions, custom graders/i);
+    assert.match(contents, /runner/i);
+    assert.match(contents, /evals\/artifacts\//i);
     assert.match(contents, /evals\/\n  <suite-id>\.json/);
     assert.doesNotMatch(contents, /rpgizer/i);
   });
@@ -101,7 +101,7 @@ describe('eval-authoring skill content', () => {
     const contents = readTemplate(TEMPLATE_PATH);
 
     assert.match(contents, /Do not use this skill for ordinary product tests/i);
-    assert.match(contents, /run evals or add runtime eval execution logic/i);
+    assert.match(contents, /run evals or add Sibu runtime eval execution logic/i);
     assert.match(contents, /analyze failures, draft repairs, or apply approved repairs/i);
     assert.match(contents, /mutate unrelated project files/i);
     assert.match(contents, /overwrite arbitrary existing eval suites/i);
