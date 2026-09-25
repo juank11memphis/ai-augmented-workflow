@@ -2,15 +2,20 @@ import http from 'node:http';
 
 import { toPublicEvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import { createWorkbenchViewModel, renderWorkbenchShell, WORKBENCH_CLIENT_SCRIPT } from '../workbench-ui/index.js';
-import { DiscoveredEvalSuiteRegistry, InMemoryRunArtifactStore, parseEvalRunRequest, runLocalEvalSuite, UnavailableVersion2EvalSuiteRunner } from '../run-local-eval-suite/index.js';
+import { parseEvalRunRequest, runLocalEvalSuite } from '../run-local-eval-suite/index.js';
 import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/index.js';
-import { analyzeFailedAssertion, EnvironmentAssistanceConfig, OpenAiFailureAnalysisAdapter, parseAnalyzeFailedAssertionRequest } from '../analyze-failed-assertion/index.js';
+import { analyzeFailedAssertion, parseAnalyzeFailedAssertionRequest } from '../analyze-failed-assertion/index.js';
 import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
-import { draftEvalRepairProposal, InMemoryRepairProposalStore, NodeSafeProjectFileReader, OpenAiRepairProposalAdapter, parseDraftEvalRepairProposalRequest } from '../draft-eval-repair-proposal/index.js';
-import { applyApprovedEvalRepair, NodeSafeProjectFileMutator, parseApplyApprovedEvalRepairRequest, RepairProposalStoreReadinessAdapter, SibuManagedWorkflowReadinessAdapter } from '../apply-approved-eval-repair/index.js';
+import { draftEvalRepairProposal, parseDraftEvalRepairProposalRequest } from '../draft-eval-repair-proposal/index.js';
+import { applyApprovedEvalRepair, parseApplyApprovedEvalRepairRequest } from '../apply-approved-eval-repair/index.js';
 import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-proposal/index.js';
 import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { LocalWorkbenchServerStarterPort, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStartResult } from './ports.js';
+import { createWorkbenchDependencies, type LocalWorkbenchRuntimeDependencies } from '../workbench-composition.js';
+import { describeEvalSuiteRuntime } from '../describe-eval-suite-runtime/index.js';
+import { parseDescribeRequest } from '../describe-eval-suite-runtime/request-parser.js';
+import { previewEvalRun } from '../preview-eval-run/index.js';
+import { parsePreviewRequest } from '../preview-eval-run/request-parser.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -43,7 +48,7 @@ type LocalHttpServerFactory = (handler: LocalHttpRequestHandler) => LocalHttpSer
 export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStarterPort {
   constructor(
     private readonly createServer: LocalHttpServerFactory = createNodeHttpServer,
-    private readonly dependenciesFactory: (request: LocalWorkbenchServerStartRequest) => LocalWorkbenchRuntimeDependencies = defaultRuntimeDependencies
+    private readonly dependenciesFactory: (request: LocalWorkbenchServerStartRequest) => LocalWorkbenchRuntimeDependencies = createWorkbenchDependencies
   ) {}
 
   async startServer(request: LocalWorkbenchServerStartRequest): Promise<LocalWorkbenchServerStartResult> {
@@ -75,8 +80,6 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
   }
 }
 
-type LocalWorkbenchRuntimeDependencies = { readonly run: RunLocalEvalSuiteDependencies; readonly analysis: AnalyzeFailedAssertionDependencies; readonly proposal: DraftEvalRepairProposalDependencies; readonly applyRepair: ApplyApprovedEvalRepairDependencies };
-
 async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies): Promise<void> {
   const publicDiscoveryResult = toPublicEvalSuiteDiscoveryResult(startRequest.initialDiscoveryResult);
   if (request.url === '/api/eval-suites') {
@@ -86,6 +89,28 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
 
   if (request.url === '/api/eval-runs' && request.method === 'POST') {
     await handleEvalRunRequest(request, response, startRequest, dependencies.run);
+    return;
+  }
+  if (request.url === '/api/eval-suites/describe' && request.method === 'POST') {
+    if (!dependencies.describe) { writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable' }); return; }
+    const body = await readJsonBody(request);
+    const command = body.status === 'ok' ? parseDescribeRequest(body.payload) : undefined;
+    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    const result = await describeEvalSuiteRuntime(command, dependencies.describe);
+    writeJson(response, result.status === 'ready' ? 200 : 422, result);
+    return;
+  }
+  if (request.url === '/api/eval-runs/preview' && request.method === 'POST') {
+    if (!dependencies.preview) { writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable' }); return; }
+    const body = await readJsonBody(request);
+    const command = body.status === 'ok' ? parsePreviewRequest(body.payload) : undefined;
+    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    const result = await previewEvalRun(command, dependencies.preview);
+    writeJson(response, result.status === 'ready' ? 200 : 422, result);
+    return;
+  }
+  if ((request.url === '/api/eval-suites/describe' || request.url === '/api/eval-runs/preview') && request.method !== 'POST') {
+    writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' });
     return;
   }
 
@@ -180,56 +205,23 @@ function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer
   return http.createServer((request, response) => handler(request, response));
 }
 
-function defaultRuntimeDependencies(request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
-  const artifactStore = new InMemoryRunArtifactStore();
-  const logger = { info: console.info, warn: console.warn, error: console.error };
-  const assistanceConfig = new EnvironmentAssistanceConfig();
-  const config = assistanceConfig.getConfig();
-  const proposalStore = new InMemoryRepairProposalStore();
-  const fileMutator = new NodeSafeProjectFileMutator();
-  return {
-    run: {
-      suiteRegistry: new DiscoveredEvalSuiteRegistry(request.initialDiscoveryResult.definitions),
-      evalRunner: new UnavailableVersion2EvalSuiteRunner(),
-      artifactStore,
-      logger,
-    },
-    analysis: {
-      artifactReader: artifactStore,
-      assistanceConfig,
-      llm: new OpenAiFailureAnalysisAdapter(config.apiKey ?? ''),
-      logger,
-    },
-    proposal: {
-      artifactReader: artifactStore,
-      assistanceConfig,
-      projectFileReader: new NodeSafeProjectFileReader(),
-      llm: new OpenAiRepairProposalAdapter(config.apiKey ?? ''),
-      proposalStore,
-      logger,
-    },
-    applyRepair: {
-      proposalReader: new RepairProposalStoreReadinessAdapter(proposalStore),
-      safety: fileMutator,
-      workflowReadiness: new SibuManagedWorkflowReadinessAdapter(),
-      mutator: fileMutator,
-      logger,
-    },
-  };
-}
-
 async function readJsonBody(request: LocalHttpRequest): Promise<{ readonly status: 'ok'; readonly payload: unknown } | { readonly status: 'invalid'; readonly message: string }> {
   if (!request.on) return { status: 'invalid', message: 'Request body could not be read.' };
 
   return new Promise((resolve) => {
-    let body = '';
+    const chunks: Buffer[] = [];
+    let bytes = 0;
+    let exceeded = false;
     request.on?.('data', (chunk) => {
-      body += chunk.toString();
-      if (body.length > MAX_JSON_BODY_BYTES) resolve({ status: 'invalid', message: 'Request body is too large.' });
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      bytes += buffer.length;
+      if (bytes > MAX_JSON_BODY_BYTES) { exceeded = true; chunks.length = 0; return; }
+      if (!exceeded) chunks.push(buffer);
     });
     request.on?.('end', () => {
+      if (exceeded) { resolve({ status: 'invalid', message: 'Request body is too large.' }); return; }
       try {
-        resolve({ status: 'ok', payload: JSON.parse(body) as unknown });
+        resolve({ status: 'ok', payload: JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown });
       } catch {
         resolve({ status: 'invalid', message: 'Request body must be valid JSON.' });
       }

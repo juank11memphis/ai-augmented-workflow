@@ -8,7 +8,7 @@ export function renderWorkbenchShell(viewModel: WorkbenchViewModel, clientScript
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(viewModel.title)}</title>
-  <style>${workbenchStyles()}</style>
+  <style>[hidden]{display:none!important}.preview-actions{position:sticky;bottom:0;display:flex;gap:.5rem;padding:.5rem 0;background:#0f172a}.preview-actions button{flex:1}${workbenchStyles()}</style>
 </head>
 <body>
   <main class="workbench" data-workbench-root>
@@ -62,10 +62,18 @@ function renderControls(viewModel: WorkbenchViewModel): string {
       ${viewModel.runScopeOptions.map((option) => `<label><input type="radio" name="runScope" value="${option.type}" ${inputChecked(option.selected)} ${disabled(option.disabled)}> ${escapeHtml(option.label)}</label>`).join('')}
     </fieldset>
     ${renderTestCasePicker(viewModel)}
-    <button type="button" data-control="run" ${disabled(viewModel.controlsDisabled)}>${escapeHtml(viewModel.runButtonLabel)}</button>
+    <button type="button" data-control="run" ${disabled(viewModel.controlsDisabled)}>Review run</button>
     <label class="field">Model
       <select name="evalRunModel" data-control="model" ${disabled(viewModel.controlsDisabled)}>${renderModelOptions(viewModel.modelOptions)}</select>
     </label>
+    <label class="field" data-preview-judge hidden>Judge model
+      <select name="judgeModel" data-control="judge"></select>
+    </label>
+    <details data-preview-repeats><summary>Repeat cases</summary><label class="field">Repeats
+      <input type="number" data-control="repeats" min="1" max="20" step="1" value="1">
+    </label></details>
+    <p data-preview-status role="status" aria-live="polite"></p>
+    <div data-preview-dialog-slot></div>
     <dl class="summary" aria-label="Run summary">
       <div><dt>Pass rate</dt><dd data-bind="pass-rate">${escapeHtml(viewModel.summary.passRateLabel)}</dd></div>
       <div><dt>Avg latency</dt><dd data-bind="avg-latency">${escapeHtml(viewModel.summary.averageLatencyLabel)}</dd></div>

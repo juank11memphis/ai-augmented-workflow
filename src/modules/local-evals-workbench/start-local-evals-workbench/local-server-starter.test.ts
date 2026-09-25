@@ -31,7 +31,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.match(response.body, /Eval Suite/);
       assert.match(response.body, /Skill authoring checks/);
       assert.match(response.body, /Run scope/);
-      assert.match(response.body, /Run all 2 test cases/);
+      assert.match(response.body, /Review run/);
       assert.match(response.body, /Model/);
       assert.match(response.body, /Pass rate/);
       assert.match(response.body, /0\/2 complete/);

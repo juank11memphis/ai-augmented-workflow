@@ -6,6 +6,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { validatePackedEvalPreview } from './validate-packed-eval-preview.mjs';
 
 async function main() {
   const workspace = mkdtempSync(path.join(os.tmpdir(), 'sibu-packed-runtime-'));
@@ -48,6 +49,7 @@ async function main() {
 
     const installedPackageRoot = getInstalledPackageRoot({ npmCache, npmPrefix });
     await validateInstalledModelCatalog(installedPackageRoot);
+    await validatePackedEvalPreview({ workspace, installedPackageRoot });
     runInstalledNodeScript(installedPackageRoot, ['bin/admin/changelog.js', '--help']);
     runInstalledNodeScript(installedPackageRoot, ['bin/admin/release.js', '--help']);
 

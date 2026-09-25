@@ -1,0 +1,35 @@
+import type { DescribeEvalSuiteRuntimeCommand } from './command.js';
+import type { DescribeEvalSuiteRuntimeResult } from './result.js';
+import type { PreviewLoggerPort, RunnerDescriptorPort, SuiteRuntimeRegistryPort } from './ports.js';
+import { compatibleDescription, hasRubric } from '../runtime-description.js';
+
+export type DescribeEvalSuiteRuntimeDependencies = {
+  readonly suites: SuiteRuntimeRegistryPort;
+  readonly runner: RunnerDescriptorPort;
+  readonly logger?: PreviewLoggerPort;
+};
+export async function describeEvalSuiteRuntime(
+  command: DescribeEvalSuiteRuntimeCommand,
+  dependencies: DescribeEvalSuiteRuntimeDependencies
+): Promise<DescribeEvalSuiteRuntimeResult> {
+  const started = Date.now();
+  const log = (event: string, reason?: string): void => {
+    try { dependencies.logger?.record({ event, suiteId: command.suiteId, reason, durationMs: Date.now() - started }); } catch { /* A log sink cannot change readiness. */ }
+  };
+  log('eval_runtime_describe_started');
+  try {
+    const suite = await dependencies.suites.load(command.suiteId);
+    if (!suite) { log('eval_runtime_describe_blocked', 'suite-unavailable'); return { status: 'blocked', reason: 'suite-unavailable' }; }
+    const described = await dependencies.runner.describe(suite);
+    if (described.status === 'blocked') { log('eval_runtime_describe_blocked', described.reason); return described; }
+    const reason = compatibleDescription(suite, described.value);
+    if (reason) { log('eval_runtime_describe_blocked', reason); return { status: 'blocked', reason }; }
+    log('eval_runtime_describe_completed');
+    return { status: 'ready', suiteId: suite.id, models: described.value.models, judgeModels: described.value.judgeModels,
+      rubricRequired: hasRubric(suite.testCases), rubricCaseIds: suite.testCases.filter((testCase) => hasRubric([testCase])).map((testCase) => testCase.id),
+      costEstimation: described.value.costEstimation };
+  } catch {
+    log('eval_runtime_describe_blocked', 'runner-unavailable');
+    return { status: 'blocked', reason: 'runner-unavailable' };
+  }
+}

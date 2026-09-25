@@ -76,8 +76,8 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
   function renderRunButton(disabled) {
     const run = control('run');
     if (!run) return;
-    run.textContent = disabled ? 'Running...' : state.runScope?.type === 'test_case' ? 'Run 1 test case' : 'Run all ' + (selectedSuite()?.readyTestCaseCount || 0) + ' test cases';
-    setDisabled(disabled);
+    run.textContent = disabled ? 'Reviewing...' : 'Review run';
+    run.disabled = disabled || !runtimeReady;
   }
 
   function renderRunning() {
