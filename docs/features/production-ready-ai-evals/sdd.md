@@ -180,6 +180,8 @@ The Local Evals Workbench evaluates consistent, provider-independent checks:
 - tool-call sequence matches the required order;
 - expected conversation-turn count or turn-local output condition.
 
+For this version, JSON Schema grading supports a basic Draft 7 subset: `type`, `properties`, `required`, `items`, `additionalProperties`, `enum`, `const`, `minimum`, `maximum`, `minLength`, `maxLength`, `minItems`, and `maxItems`. Other keywords, including `$ref`, `$id`, `pattern`, and `patternProperties`, are reported as unsupported rather than evaluated. This keeps initial structured-output checks useful without reference resolution or regex execution on the workbench event loop.
+
 Assertion evaluation operates on normalized runner evidence rather than SDK-specific objects. Failed checks retain bounded expected and actual previews plus references to full local evidence.
 
 ### Runner-owned grading
@@ -229,7 +231,9 @@ queued -> running -> completed
 
 Each run has its own identity and lifecycle. The workbench does not enforce a project-wide active-run limit or maintain an active-run pointer. Cases and repeats execute sequentially within a run, preserving deterministic tool mocks and understandable partial evidence. This design does not promise a cross-run scheduling policy. Running multiple Sibu processes against the same project at once is unsupported; the workbench does not coordinate their artifact writes.
 
-The local server schedules execution after the start handler has atomically created the queued manifest. Browser polling reads persisted progress, so refreshing or disconnecting the browser does not discard the run. Stopping the Sibu process terminates the child runner; the next artifact read classifies a stale queued/running manifest as interrupted.
+The workbench UI disables starting another run while its current run is queued or running. This is a per-UI interaction rule, not server-side admission control: another tab or direct API client may start an independent run.
+
+The local server schedules execution after the start handler has atomically created the queued manifest. Browser polling reads persisted progress, so refreshing or disconnecting the browser does not discard the run while Sibu remains active. Shutdown of the Sibu process during a run is outside this feature's supported lifecycle: Sibu does not promise to terminate the child runner or recover the in-progress manifest on restart.
 
 Cancellation and parallel case execution within a run are outside this feature scope; cross-run scheduling is unspecified.
 
@@ -347,7 +351,6 @@ HTML remains server-rendered with progressively enhanced client behavior unless 
 | Estimate unavailable | Show a reason and require explicit start confirmation, as defined by UX |
 | Runner timeout, crash, malformed event, or size breach | Terminate the runner, preserve completed bounded evidence, and finalize error or partial status |
 | Browser disconnects | Continue the local run while the Sibu process lives; allow status restoration from persisted artifacts |
-| Sibu stops during a run | Terminate the child and later classify stale work as interrupted |
 | One attempt fails | Mark the case failed while preserving other attempts and the nondeterminism evidence |
 | Assistance provider unavailable | Keep result evidence usable; disable analysis/proposal actions with recovery guidance |
 | Project file changes after proposal | Refuse application and require a fresh proposal |
@@ -360,7 +363,7 @@ HTML remains server-rendered with progressively enhanced client behavior unless 
 - Forward only base process requirements and suite-declared environment names. Never echo values.
 - Escape all user/project/model-derived UI content.
 - Bound stored and displayed evidence; retain references to full local evidence rather than embedding it in analysis prompts.
-- Redact configured sensitive fields from outputs and traces before persistence. If redaction cannot be established, fail closed rather than store uncertain content.
+- Persist bounded runner output and traces as received in project-local, Git-ignored run artifacts; do not require redaction or a trusted provenance policy before saving. Never log credentials or suite-declared environment values. Raw results may contain sensitive content, so artifact isolation is not a confidentiality guarantee.
 - The runner process is trusted project code, not a sandbox. Do not run suites from untrusted repositories.
 - Repair target validation continues to reject root escapes, symlinks to outside paths, secrets, credentials, keys, tokens, and unapproved files.
 
@@ -425,7 +428,7 @@ Template changes must also pass the repository's template-manifest, lifecycle, i
 - REQ-09 through REQ-11: describe, preview, compatible single-model selection, repeats, and estimate operations.
 - REQ-12 and REQ-13: normalized evidence, atomic file-backed history, Git readiness, bounded reads, and UX list-detail views.
 - REQ-14: existing command slices adapted to durable run IDs and the binding guided repair flow.
-- REQ-15: synthetic/redacted authoring rules, environment isolation, bounded evidence, and fail-closed persistence.
+- REQ-15: synthetic/redacted fixture authoring, environment isolation, and bounded raw run evidence in Git-ignored local artifacts without a redaction prerequisite.
 - REQ-16: authoring skill hard stop when repo evidence cannot establish expected behavior.
 
 ## Risks and Tradeoffs
@@ -435,6 +438,8 @@ Template changes must also pass the repository's template-manifest, lifecycle, i
 - **Sequential cases within a run:** improves determinism and recovery but makes large suites slower. No project-wide active-run limit or cross-run scheduling guarantee is part of this design.
 - **Strict repeat aggregation:** exposes intermittent failures honestly but may produce more failed runs than average-score approaches.
 - **Filesystem history:** preserves local ownership and portability but requires careful atomicity, cleanup guidance, and bounded indexing. Concurrent Sibu processes using one project are unsupported and may lose index updates; users should run one workbench process per project. A crash must not leave a persistent writer lock or active-run pointer that blocks later saves.
+- **Sibu shutdown during a run:** deferred. A child runner may continue after Sibu stops, including possible model calls and cost; in-progress evidence may require manual recovery. This does not weaken timeout, crash, or protocol-failure handling while Sibu is active.
+- **Raw result retention:** local run artifacts may contain secrets or production data emitted by the project runner. Git-ignore keeps them out of normal commits but does not protect the local files from other processes or deliberate sharing; users choose which suites to run and manage the artifact directory.
 - **Dynamic model discovery:** keeps provider choice in the project but makes runner availability part of dashboard readiness.
 - **No version-1 compatibility:** simplifies the trustworthy contract but requires existing suites to be regenerated.
 - **Server-rendered UI evolution:** minimizes dependency and packaging changes, but the implementation must split cohesive rendering and client responsibilities to respect source-file size limits and avoid a monolithic script.

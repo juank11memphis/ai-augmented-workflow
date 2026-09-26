@@ -16,6 +16,9 @@ import { describeEvalSuiteRuntime } from '../describe-eval-suite-runtime/index.j
 import { parseDescribeRequest } from '../describe-eval-suite-runtime/request-parser.js';
 import { previewEvalRun } from '../preview-eval-run/index.js';
 import { parsePreviewRequest } from '../preview-eval-run/request-parser.js';
+import { startEvalRun } from '../start-eval-run/index.js';
+import { parseStartRequest } from '../start-eval-run/request-parser.js';
+import { parseGetRunRequest } from '../get-eval-run/request-parser.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -82,6 +85,26 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
 
 async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies): Promise<void> {
   const publicDiscoveryResult = toPublicEvalSuiteDiscoveryResult(startRequest.initialDiscoveryResult);
+  const url = new URL(request.url ?? '/', 'http://localhost');
+  if (url.pathname === '/api/eval-runs/start') {
+    if (request.method !== 'POST') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' }); return; }
+    if (!dependencies.start) { writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable' }); return; }
+    const body = await readJsonBody(request);
+    const command = body.status === 'ok' ? parseStartRequest(body.payload) : undefined;
+    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    const result = await startEvalRun(command, dependencies.start);
+    writeJson(response, result.status === 'queued' ? 202 : 422, result);
+    return;
+  }
+  if (url.pathname === '/api/eval-runs/status') {
+    if (request.method !== 'GET') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' }); return; }
+    if (!dependencies.get) { writeJson(response, 503, { status: 'blocked', reason: 'unavailable' }); return; }
+    const command = parseGetRunRequest(url);
+    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    const result = await dependencies.get(command);
+    writeJson(response, result.status === 'ok' ? 200 : 422, result);
+    return;
+  }
   if (request.url === '/api/eval-suites') {
     writeJson(response, 200, publicDiscoveryResult);
     return;

@@ -1,6 +1,6 @@
 import { ArtifactPaths } from './run-history/artifact-paths.js';
 import { ArtifactSafetyAdapter } from './run-history/artifact-safety-adapter.js';
-import type { ArtifactReadinessPort } from './preview-eval-run/ports.js';
+import type { ArtifactReadinessPort } from './run-configuration.js';
 import type { RuntimeOutcome } from './runtime-description.js';
 import type { Reason } from './run-history/contracts.js';
 export class PreviewArtifactReadiness implements ArtifactReadinessPort {

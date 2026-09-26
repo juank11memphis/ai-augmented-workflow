@@ -111,7 +111,7 @@ Never lead with raw artifacts, internal IDs, or long model output.
 - Say **Estimated cost**, not price guarantee.
 - Say **Known gaps**, not missing tests, when the gap is intentional and documented.
 - Use **Approve and apply** only when the exact affected files and change are visible.
-- Never show chain-of-thought, hidden reasoning, provider secrets, raw credentials, or unrestricted artifact dumps.
+- Never show chain-of-thought, hidden reasoning, configured provider credentials, or unrestricted artifact dumps. Bounded eval output appears as received when the user opens result evidence; this first version does not detect or mask sensitive content in that output.
 - Internal artifact locations may appear only in an expanded evidence section when useful for recovery.
 
 ## Binding Mockups

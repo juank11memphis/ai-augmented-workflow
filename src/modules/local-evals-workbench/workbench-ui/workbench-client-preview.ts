@@ -28,6 +28,8 @@ export const WORKBENCH_CLIENT_PREVIEW_SECTION = {
       'artifact-unsafe': 'The artifact area could not be verified as safe.',
       'estimate-invalid': 'The project runner returned an invalid estimate.',
       'input-unsafe': 'Selected suite inputs could not be safely read.',
+      'review-stale': 'Run setup changed. Review the latest estimate before starting.',
+      'schedule-failed': 'The run was queued but execution could not start. Check its saved status.',
     })[reason] || 'Run setup could not be verified.';
   }
   function invalidateReview() {
@@ -83,6 +85,7 @@ export const WORKBENCH_CLIENT_PREVIEW_SECTION = {
     } catch { if (generation === descriptionGeneration) previewStatus('Compatible models could not be loaded.'); }
   }
   async function openRunPreview(scope) {
+    if (runUnavailable()) return;
     if (!runtimeReady) { previewStatus('Compatible models are not ready.'); return; }
     invalidateReview();
     const generation = previewGeneration;
@@ -129,15 +132,12 @@ export const WORKBENCH_CLIENT_PREVIEW_SECTION = {
     else if (!event.shiftKey && document.activeElement === elements.at(-1)) { event.preventDefault(); elements[0].focus(); }
   }
   async function confirmReviewedRun() {
-    if (!reviewedPreview || confirmingPreview || reviewedPreview.key !== JSON.stringify(currentPreviewCommand(reviewedPreview.command.scope))) return;
+    if (runUnavailable() || !reviewedPreview || confirmingPreview || reviewedPreview.key !== JSON.stringify(currentPreviewCommand(reviewedPreview.command.scope))) return;
     confirmingPreview = true;
     control('preview-start').disabled = true;
     const reviewed = reviewedPreview;
     const generation = previewGeneration;
-    if (typeof window.sibuStartReviewedRun === 'function') {
-      try { await window.sibuStartReviewedRun(reviewed.command, reviewed.result); }
-      catch { previewStatus('Starting the run failed.'); }
-    } else previewStatus('Run execution is unavailable in this version. Your reviewed setup was not started.');
+    await startReviewedRun(reviewed.command, reviewed.result);
     if (generation === previewGeneration) closeReview();
   }`,
 } as const;

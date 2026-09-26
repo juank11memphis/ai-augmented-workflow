@@ -74,6 +74,7 @@ function renderControls(viewModel: WorkbenchViewModel): string {
     </label></details>
     <p data-preview-status role="status" aria-live="polite"></p>
     <div data-preview-dialog-slot></div>
+    <section data-run-panel aria-label="Selected run" hidden></section>
     <dl class="summary" aria-label="Run summary">
       <div><dt>Pass rate</dt><dd data-bind="pass-rate">${escapeHtml(viewModel.summary.passRateLabel)}</dd></div>
       <div><dt>Avg latency</dt><dd data-bind="avg-latency">${escapeHtml(viewModel.summary.averageLatencyLabel)}</dd></div>

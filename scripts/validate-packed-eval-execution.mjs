@@ -1,0 +1,87 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+/** Installed-only integration smoke in a separate, synthetic Git project. */
+export async function validatePackedEvalExecution({ workspace, installedPackageRoot }) {
+  const root = path.join(workspace, 'offline-eval-execution');
+  await mkdir(path.join(root, 'evals'), { recursive: true });
+  await mkdir(path.join(root, 'src'), { recursive: true });
+  await writeFile(path.join(root, '.gitignore'), '/evals/artifacts/\n');
+  await writeFile(path.join(root, 'src/target.mjs'), 'export function target(input, model) { return JSON.stringify({ text: model + ":synthetic:" + input }); }\n');
+  await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify({
+    version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline', description: 'Synthetic fixture',
+    target: { id: 'target', kind: 'integration', path: 'src/target.mjs' },
+    coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
+    runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
+    testCases: [{ id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'hello' } }],
+      toolMocks: [], assertions: [
+        { id: 'contains', type: 'output-contains', expected: 'synthetic:hello' },
+        { id: 'schema-pass', type: 'json-schema', schema: { type: 'object', required: ['text'], properties: { text: { const: 'fake:synthetic:hello' } } } },
+        { id: 'schema-fail', type: 'json-schema', schema: { type: 'object', properties: { text: { const: 'different' } } } },
+        { id: 'unsupported-ref', type: 'json-schema', schema: { $ref: '#/missing' } },
+        { id: 'unsupported-pattern', type: 'json-schema', schema: { type: 'object', properties: { text: { pattern: '(a+)+$' } } } },
+      ], graders: [] }],
+  }));
+  await writeFile(path.join(root, 'evals/runner.mjs'), `import { target } from '../src/target.mjs';
+let body=''; for await(const chunk of process.stdin) body += chunk; const q=JSON.parse(body);
+let n=0; function emit(type,caseId,data){process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,sequence:n++,type,
+runId:q.operation==='execute'?q.runId:null,caseId,attempt:caseId?1:null,data})+'\\n');}
+if(q.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn'],models:['fake'],judgeModels:[],requiredEnvironment:[],costEstimation:true});
+else if(q.operation==='estimate') emit('estimate',null,{targetCalls:1,judgeCalls:0,totalCalls:1,cost:{status:'unavailable',reason:'Provider pricing unavailable.'}});
+else if(q.operation==='execute'){emit('run-started',null,{model:q.model,judgeModel:null});emit('case-attempt-started','case',{});
+emit('conversation-turn-completed','case',{turnIndex:0,role:'assistant',output:target(q.testCases[0].turns[0].content.text,q.model)});
+emit('case-attempt-completed','case',{status:'completed'});emit('run-completed',null,{status:'completed'});}
+else process.exit(2);
+`);
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  const installed = relative => pathToFileURL(path.join(installedPackageRoot, 'bin/modules/local-evals-workbench', relative)).href;
+  const [{ discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader }, { NodeLocalWorkbenchServerStarter }] = await Promise.all([
+    import(installed('discover-conventional-eval-suites/index.js')),
+    import(installed('start-local-evals-workbench/local-server-starter.js')),
+  ]);
+  const discovery = await discoverConventionalEvalSuites({ type: 'discover-conventional-eval-suites', projectRoot: root },
+    { discoveryReader: new NodeEvalSuiteDiscoveryReader(), logger: { info() {}, warn() {} } });
+  assert.equal(discovery.status, 'ready');
+  const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: root, initialDiscoveryResult: discovery });
+  const post = async (route, body) => {
+    const response = await fetch(new URL(route, server.url), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    return { code: response.status, value: await response.json() };
+  };
+  try {
+    const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null, repeats: 1 };
+    assert.equal((await post('/api/eval-suites/describe', { suiteId: 'offline' })).code, 200);
+    const preview = await post('/api/eval-runs/preview', command);
+    assert.equal(preview.code, 200);
+    const { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost } = preview.value;
+    const started = await post('/api/eval-runs/start', { ...command, review: { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost } });
+    assert.equal(started.code, 202);
+    const query = new URLSearchParams({ suiteId: 'offline', runId: started.value.runId });
+    let status;
+    for (let tries = 0; tries < 100; tries++) {
+      const response = await fetch(new URL('/api/eval-runs/status?' + query, server.url));
+      status = await response.json();
+      if (status.value?.summary.state === 'completed') {
+        try {
+          const index = JSON.parse(await readFile(path.join(root, 'evals/artifacts/offline/index.json'), 'utf8'));
+          if (index.entries.some(entry => entry.runId === started.value.runId && entry.state === 'completed')) break;
+        } catch { /* Manifest may become visible just before index publication. */ }
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    assert.equal(status.value.summary.state, 'completed');
+    query.set('caseId', 'case'); query.set('attempt', '1');
+    const detail = await (await fetch(new URL('/api/eval-runs/status?' + query, server.url))).json();
+    assert.equal(detail.value.evidence.output, '{"text":"fake:synthetic:hello"}');
+    assert.deepEqual(detail.value.evidence.assertions.map(({ id, outcome, diagnostics }) => ({ id, outcome, diagnostics })), [
+      { id: 'contains', outcome: 'passed', diagnostics: [] },
+      { id: 'schema-pass', outcome: 'passed', diagnostics: [] },
+      { id: 'schema-fail', outcome: 'failed', diagnostics: ['/text:const'] },
+      { id: 'unsupported-ref', outcome: 'failed', diagnostics: ['unsupported-schema'] },
+      { id: 'unsupported-pattern', outcome: 'failed', diagnostics: ['unsupported-schema'] },
+    ]);
+    console.log('Packed offline eval execute/get smoke passed.');
+  } finally { await server.stop?.(); }
+}

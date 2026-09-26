@@ -58,14 +58,14 @@ it('ARCH-01: assertion and grader thresholds are optional finite numbers without
 });
 it('ARCH-01: reopened public selected reads retain assertion/grader thresholds and older threshold-free evidence', async () => {
   const p = await project(); try {
-    const a = fixture(p.root); const h = createRunHistory(p.root, { policy: a.policy, log() {} });
+    const a = fixture(p.root); const h = createRunHistory(p.root, { log() {} });
     const created = await h.store.create(config); assert.equal(created.status, 'ok'); if (created.status !== 'ok') return;
     const id = created.value.runId; assert.equal((await h.store.start('suite', id)).status, 'ok');
     const e = evidence(id); const assertion = e.assertions[0]!;
     const assertions = [{ ...assertion, threshold: -2 }, { ...assertion, id: 'grader', kind: 'grader' as const, threshold: 0.8 }, { ...assertion, id: 'legacy' }];
     assert.equal((await h.store.append('suite', id, { ...e, assertions })).status, 'ok');
     assert.equal((await h.store.finalize('suite', id, 'completed')).status, 'ok');
-    const reopened = createRunHistory(p.root, { policy: a.policy, log() {} });
+    const reopened = createRunHistory(p.root, { log() {} });
     const disk = JSON.parse(await readFile(path.join(a.paths.artifactRoot, a.paths.attempt('suite', id, 'case', 1)), 'utf8'));
     assert.deepEqual(disk.assertions, assertions);
     for (const selected of assertions) {

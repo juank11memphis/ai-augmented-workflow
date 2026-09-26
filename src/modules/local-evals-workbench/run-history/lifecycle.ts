@@ -8,9 +8,10 @@ export function transition(run: Manifest, state: RunState, now: number, diagnost
 }
 export function appendAttempt(run: Manifest, evidence: Attempt, now: number): Outcome<Manifest> {
   const selected = run.cases.find(c => c.caseId === evidence.caseId);
-  if (run.state !== 'running' || now < run.updatedAt || evidence.runId !== run.runId || evidence.suiteId !== run.suiteId || !selected || evidence.number !== selected.attempts.length + 1 || evidence.number > run.repeats) return { status: 'blocked', reason: 'invalid-transition' };
+  const replacingIncomplete = selected?.attempts.at(-1)?.outcome === 'incomplete' && evidence.number === selected.attempts.length;
+  if (run.state !== 'running' || now < run.updatedAt || evidence.runId !== run.runId || evidence.suiteId !== run.suiteId || !selected || !(evidence.number === selected.attempts.length + 1 || replacingIncomplete) || evidence.number > run.repeats) return { status: 'blocked', reason: 'invalid-transition' };
   const { number, outcome, durationMs, calls, cost } = evidence;
-  const attempts = [...selected.attempts, { number, outcome, durationMs, calls, cost }];
+  const attempts = [...(replacingIncomplete ? selected.attempts.slice(0, -1) : selected.attempts), { number, outcome, durationMs, calls, cost }];
   const cases = run.cases.map(c => c !== selected ? c : { ...c, attempts, state: attempts.length === run.repeats && attempts.every(a => a.outcome !== 'incomplete') ? 'completed' as const : 'incomplete' as const });
   const all = cases.flatMap(c => c.attempts);
   return { status: 'ok', value: { ...run, cases, updatedAt: now,

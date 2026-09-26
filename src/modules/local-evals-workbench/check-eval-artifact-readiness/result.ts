@@ -7,7 +7,6 @@ export function artifactReadinessGuidance(reason: Reason): string {
     case 'git-unavailable': return 'Make Git available and verify repository access before running evals.';
     case 'unverifiable-root': return 'Select the real Git repository root; nested or unverifiable roots are blocked.';
     case 'unsafe-path': return 'Use real project-local artifact directories without symlinks, special files, or hard-linked evidence.';
-    case 'policy-rejected': return 'Establish an internal evidence-safety policy before running evals.';
     default: return 'Review artifact filesystem permissions and safety before retrying.';
   }
 }

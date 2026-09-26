@@ -1,25 +1,25 @@
 import { mkdir } from 'node:fs/promises';
-import type { ArtifactStorePort, ArtifactLogger, Attempt, EvidencePolicy, Manifest, Outcome, OwnerPort, RunConfiguration, RunState } from './contracts.js';
+import type { ArtifactStorePort, ArtifactLogger, Attempt, Manifest, Outcome, OwnerPort, RunConfiguration, RunState } from './contracts.js';
 import { ArtifactFault, component, failure } from './artifact-paths.js';
 import { AtomicArtifactFile, SafetyFault } from './atomic-artifact-file.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
 import { active, attempt, configuration, logicalId, manifest, historyIndex } from './validation.js';
 import { LIMITS } from './limits.js';
-import { sanitize } from './evidence-policy.js';
+import { boundedArtifact } from './bounded-artifact.js';
 import { runIdentity } from './run-identity.js';
 import { serialized } from './active-run-owner.js';
 import { appendAttempt, transition } from './lifecycle.js';
 import { collectHistory, compact, indexFrom } from './history-index.js';
 export type StoreDependencies = {
   readonly files: AtomicArtifactFile; readonly reader: BoundedArtifactReader; readonly owner: OwnerPort;
-  readonly policy?: EvidencePolicy; readonly clock: () => number; readonly logger: ArtifactLogger;
+  readonly clock: () => number; readonly logger: ArtifactLogger;
   readonly generateId?: (now: number) => string;
 };
 export class FileArtifactStore implements ArtifactStorePort {
   constructor(private readonly dependencies: StoreDependencies) {}
   private get paths() { return this.dependencies.files.paths; }
   async create(input: RunConfiguration): Promise<Outcome<Manifest>> {
-    const config = sanitize(input, LIMITS.manifestBytes, configuration, this.dependencies.policy);
+    const config = boundedArtifact(input, LIMITS.manifestBytes, configuration);
     if (config.status !== 'ok') return this.report(config);
     return this.mutate(async () => {
       const now = this.dependencies.clock();
@@ -35,7 +35,7 @@ export class FileArtifactStore implements ArtifactStorePort {
     return this.update(suiteId, runId, run => transition(run, 'running', this.dependencies.clock()));
   }
   async append(suiteId: string, runId: string, input: Attempt): Promise<Outcome<Manifest>> {
-    const safe = sanitize(input, LIMITS.attemptBytes, attempt, this.dependencies.policy); if (safe.status !== 'ok') return this.report(safe);
+    const safe = boundedArtifact(input, LIMITS.attemptBytes, attempt); if (safe.status !== 'ok') return this.report(safe);
     return this.update(suiteId, runId, async run => {
       const updated = appendAttempt(run, safe.value, this.dependencies.clock()); if (updated.status !== 'ok') return updated;
       const valid = this.safeManifest(updated.value); if (valid.status !== 'ok') return valid;
@@ -85,14 +85,14 @@ export class FileArtifactStore implements ArtifactStorePort {
     const result = await this.dependencies.reader.read(this.paths.run(suiteId, runId), LIMITS.manifestBytes, manifest);
     return result.status === 'ok' && (result.value.suiteId !== suiteId || result.value.runId !== runId) ? { status: 'blocked', reason: 'corrupt' } : result;
   }
-  private safeManifest(run: Manifest) { return sanitize(run, LIMITS.manifestBytes, manifest, this.dependencies.policy); }
+  private safeManifest(run: Manifest) { return boundedArtifact(run, LIMITS.manifestBytes, manifest); }
   private async persist(run: Manifest): Promise<Outcome<Manifest>> {
     const safe = this.safeManifest(run); if (safe.status !== 'ok') return safe;
     await this.dependencies.files.write(this.paths.run(run.suiteId, run.runId), safe.value);
     const history = await collectHistory(this.paths, run.suiteId, this.dependencies.reader);
     if (history.status !== 'ok') return history;
     const index = indexFrom([...history.value.entries, compact(safe.value)]);
-    const safeIndex = sanitize(index, LIMITS.indexBytes, historyIndex, this.dependencies.policy); if (safeIndex.status !== 'ok') return safeIndex;
+    const safeIndex = boundedArtifact(index, LIMITS.indexBytes, historyIndex); if (safeIndex.status !== 'ok') return safeIndex;
     await this.dependencies.files.write(this.paths.index(run.suiteId), safeIndex.value);
     this.dependencies.logger.emit({ event: 'artifact-persisted', state: run.state, count: run.cases.length });
     return { status: 'ok', value: safe.value, warnings: history.warnings };

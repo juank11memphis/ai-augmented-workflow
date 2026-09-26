@@ -1,14 +1,14 @@
-import type { ArtifactReaderPort, Attempt, EvidencePolicy, HistoryEntry, Manifest, Outcome, Reason, RunDetail, Selection } from './contracts.js';
+import type { ArtifactReaderPort, Attempt, HistoryEntry, Manifest, Outcome, Reason, RunDetail, Selection } from './contracts.js';
 import { ArtifactPaths, failure } from './artifact-paths.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
 import { InterruptedRunRecovery } from './interrupted-run-recovery.js';
 import { attempt, integer, logicalId, manifest } from './validation.js';
 import { LIMITS } from './limits.js';
 import { compact, indexFrom, manifestCandidates } from './history-index.js';
-import { sanitize } from './evidence-policy.js';
+import { boundedArtifact } from './bounded-artifact.js';
 export class FileArtifactReader implements ArtifactReaderPort {
   constructor(private readonly paths: ArtifactPaths, private readonly reader: BoundedArtifactReader,
-    private readonly recovery: InterruptedRunRecovery, private readonly policy?: EvidencePolicy) {}
+    private readonly recovery?: InterruptedRunRecovery) {}
   async list(suiteId: string, limit: number): Promise<Outcome<readonly HistoryEntry[]>> {
     if (!logicalId(suiteId) || !integer(limit, LIMITS.history) || limit < 1) return { status: 'blocked', reason: 'invalid-input' };
     try {
@@ -32,7 +32,7 @@ export class FileArtifactReader implements ArtifactReaderPort {
       if (!referenced) return unavailable('not-found');
       const result = await this.reader.read(this.paths.attempt(suiteId, runId, selection.caseId, selection.attempt), LIMITS.attemptBytes, attempt);
       if (result.status !== 'ok') return unavailable(result.reason);
-      const safe = sanitize(result.value, LIMITS.attemptBytes, attempt, this.policy); if (safe.status !== 'ok') return unavailable(safe.reason);
+      const safe = boundedArtifact(result.value, LIMITS.attemptBytes, attempt); if (safe.status !== 'ok') return unavailable(safe.reason);
       const evidence = safe.value;
       if (evidence.runId !== runId || evidence.suiteId !== suiteId || evidence.caseId !== selection.caseId || evidence.number !== selection.attempt || evidence.outcome !== referenced.outcome) return unavailable('corrupt');
       const selected = selectEvidence(evidence, selection.assertionId);
@@ -42,8 +42,8 @@ export class FileArtifactReader implements ArtifactReaderPort {
   private async summary(suiteId: string, runId: string): Promise<Outcome<Manifest>> {
     const result = await this.reader.read(this.paths.run(suiteId, runId), LIMITS.manifestBytes, manifest); if (result.status !== 'ok') return result;
     if (result.value.runId !== runId || result.value.suiteId !== suiteId) return { status: 'blocked', reason: 'corrupt' };
-    const safe = sanitize(result.value, LIMITS.manifestBytes, manifest, this.policy); if (safe.status !== 'ok') return safe;
-    return this.recovery.classify(safe.value);
+    const safe = boundedArtifact(result.value, LIMITS.manifestBytes, manifest); if (safe.status !== 'ok') return safe;
+    return this.recovery ? this.recovery.classify(safe.value) : safe;
   }
 }
 function selectEvidence(evidence: Attempt, assertionId?: string): Attempt | undefined {

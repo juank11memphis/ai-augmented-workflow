@@ -7,7 +7,7 @@ import { project } from './test-project.js';
 import { config, evidence } from './test-fixtures.js';
 import { FileArtifactReader } from './file-artifact-reader.js';
 import { InterruptedRunRecovery } from './interrupted-run-recovery.js';
-export function historyReader(a: ReturnType<typeof fixture>) { return new FileArtifactReader(a.paths, a.reader, new InterruptedRunRecovery(a.owner, Date.now, a.store), a.policy); }
+export function historyReader(a: ReturnType<typeof fixture>) { return new FileArtifactReader(a.paths, a.reader, new InterruptedRunRecovery(a.owner, Date.now, a.store)); }
 it('restores missing/stale index and reads summaries without opening any attempt', async () => {
   const p = await project(); const reads: string[] = []; try {
     const a = fixture(p.root, { onRead: relative => reads.push(relative) }); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));

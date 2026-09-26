@@ -2,6 +2,7 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
   name: 'events',
   source: String.raw`  root.addEventListener('change', (event) => {
     const target = event.target;
+    if (runUnavailable() && target.matches('[data-control="suite"], [data-control="model"], [data-control="test-case"], [data-control="judge"], [data-control="repeats"], input[name="runScope"]')) return;
     if (target.matches('[data-control="suite"]')) { selectSuite(target.value); }
     if (target.matches('[data-control="model"]')) { state = { ...state, selectedEvalRunModel: target.value }; invalidateReview(); selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); }
     if (target.matches('input[name="runScope"]')) { state = { ...state, runScope: selectedScope() }; invalidateReview(); renderTestCasePicker(); syncJudgeVisibility(); }
@@ -10,10 +11,10 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     if (target.matches('[data-control="failures-only"]')) { filters.failuresOnly = target.checked; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); }
     if (target.matches('[data-control="variant"]')) { const checked = [...root.querySelectorAll('[data-control="variant"]:checked')].map((input) => input.value); filters.visibleVariantIds = checked.length ? checked : filters.visibleVariantIds.slice(0, 1); selectedCell = null; activeAssertionId = null; renderFilters(); renderResults(); renderSelectedCell(); }
   });
-  root.addEventListener('input', (event) => { if (event.target.matches('[data-control="repeats"]')) invalidateReview(); if (event.target.matches('[data-control="search"]')) { filters.searchQuery = event.target.value; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); } });
+  root.addEventListener('input', (event) => { if (event.target.matches('[data-control="repeats"]') && !runUnavailable()) invalidateReview(); if (event.target.matches('[data-control="search"]')) { filters.searchQuery = event.target.value; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); } });
   root.addEventListener('click', async (event) => {
     const suiteOption = event.target.closest('[data-control="suite-option"]');
-    if (suiteOption) { selectSuite(suiteOption.dataset.suiteId); return; }
+    if (suiteOption) { if (!runUnavailable()) selectSuite(suiteOption.dataset.suiteId); return; }
     const cellButton = event.target.closest('[data-cell-button]');
     if (cellButton) { selectedCell = { testCaseId: cellButton.dataset.testCaseId, modelId: cellButton.dataset.modelId }; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; focusRestoreKey = keyFor(selectedCell, cellButton.dataset.mode); cellButton.dataset.focusKey = focusRestoreKey; renderSelectedCell(); return; }
     if (event.target.closest('[data-control="select-assertion"]')) { activeAssertionId = event.target.closest('[data-control="select-assertion"]').dataset.assertionId; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); root.querySelector('[data-control="select-assertion"][data-assertion-id="' + h(activeAssertionId) + '"]')?.focus(); return; }
@@ -24,13 +25,17 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     if (event.target.matches('[data-control="preview-back"]')) { closeReview(); return; }
     if (event.target.matches('[data-control="preview-start"]')) { await confirmReviewedRun(); return; }
     if (event.target.matches('[data-control="rerun-recommendation"]')) { await rerunRecommended(event.target.dataset.rerunScope === 'suite'); return; }
-    if (event.target.matches('[data-control="retry-cell"]')) { const cell = selectedCell; const scope = cell ? { type: 'test_case', testCaseId: cell.testCaseId } : selectedScope(); state = { ...state, selectedEvalRunModel: cell?.modelId || state.selectedEvalRunModel, runScope: scope }; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); await runEval(scope); return; }
+    if (event.target.matches('[data-control="retry-cell"]')) { if (runUnavailable()) return; const cell = selectedCell; const scope = cell ? { type: 'test_case', testCaseId: cell.testCaseId } : selectedScope(); state = { ...state, selectedEvalRunModel: cell?.modelId || state.selectedEvalRunModel, runScope: scope }; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); await runEval(scope); return; }
     if (!event.target.matches('[data-control="run"]') && !event.target.matches('[data-control="retry-run"]')) return;
     await runEval();
   });
 
   function selectSuite(suiteId) {
-    if (!suiteId || suiteId === state.selectedSuiteId) return;
+    if (runUnavailable() || !suiteId || suiteId === state.selectedSuiteId) return;
+    runPollGeneration++;
+    runDetailGeneration++;
+    selectedRun = null;
+    if (runPanel()) { runPanel().textContent = ''; runPanel().hidden = true; }
     latestRun = null;
     filters = { failuresOnly: false, searchQuery: '', visibleVariantIds: [] };
     selectedCell = null;
@@ -38,12 +43,15 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     analysisState = { status: 'idle' };
     proposalState = { status: 'idle' };
     state = { ...state, selectedSuiteId: suiteId, runScope: { type: 'all' } };
+    rememberSuite(suiteId);
     invalidateReview();
     renderReady();
+    restoreSelectedRun();
     void loadRuntimeDescription();
   }
 
   async function runEval(scopeOverride) {
+    if (runUnavailable()) return;
     const scope = scopeOverride || selectedScope();
     await openRunPreview(scope);
   }
@@ -121,7 +129,7 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
 
 
   async function rerunRecommended(useFullSuite) {
-    if (proposalState.status !== 'applied') return;
+    if (runUnavailable() || proposalState.status !== 'applied') return;
     const recommendation = proposalState.result.rerunRecommendation || {};
     const alternate = (recommendation.alternateActions || []).find((item) => item.scope === 'suite');
     const action = useFullSuite ? (alternate || recommendation.primaryAction) : recommendation.primaryAction;

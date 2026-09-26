@@ -4,7 +4,6 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createRunHistory } from '../index.js';
-import { evidencePolicy } from './evidence-policy.js';
 import { project } from './test-project.js';
 import { config, evidence } from './test-fixtures.js';
 import { fixture } from './store-fixture.js';
@@ -13,27 +12,29 @@ async function contents(directory: string): Promise<string> {
   for (const entry of await readdir(directory, { withFileTypes: true })) result += entry.isDirectory() ? await contents(path.join(directory, entry.name)) : await readFile(path.join(directory, entry.name), 'utf8');
   return result;
 }
-it('AC-08/10: synthetic redacted history survives a fresh process, stays ignored, and secrets reach no artifact/temp/log', async () => {
+it('AC-08/10: bounded raw synthetic output survives fresh reads, stays ignored, and stays out of logs', async () => {
   const p = await project(); const logs: string[] = []; try {
-    const before = p.git('status', '--porcelain'); const policy = evidencePolicy(['output', 'content'], value => !JSON.stringify(value).includes('SECRET'));
-    const history = createRunHistory(p.root, { policy, log: line => logs.push(line) }); const run = await history.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));
+    const before = p.git('status', '--porcelain');
+    const history = createRunHistory(p.root, { log: line => logs.push(line) }); const run = await history.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));
     const id = run.value.runId; await history.store.start('suite', id);
-    assert.equal((await history.store.append('suite', id, { ...evidence(id), output: 'SECRET', turns: [{ id: 'turn', role: 'assistant', content: 'SECRET' }] })).status, 'ok');
+    const marker = 'SYNTHETIC_SECRET_SENTINEL';
+    assert.equal((await history.store.append('suite', id, { ...evidence(id), output: marker, turns: [{ id: 'turn', role: 'assistant', content: marker }] })).status, 'ok');
     assert.equal((await history.store.finalize('suite', id, 'completed')).status, 'ok');
     const module = new URL('../index.js', import.meta.url).href;
-    const script = `import {createRunHistory} from ${JSON.stringify(module)}; const h=createRunHistory(process.argv[1], {policy:{sanitize(value){return {status:'ok',value};}},log(){}}); console.log(JSON.stringify(await h.list({suiteId:'suite'})));`;
+    const script = `import {createRunHistory} from ${JSON.stringify(module)}; const h=createRunHistory(process.argv[1], {log(){}}); console.log(JSON.stringify(await h.list({suiteId:'suite'})));`;
     const restored = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', script, p.root], { encoding: 'utf8' }));
     assert.equal(restored.value[0].runId, id); assert.equal(restored.value[0].state, 'completed');
     assert.equal(p.git('status', '--porcelain'), before);
-    assert.ok(!(await contents(path.join(p.root, 'evals/artifacts'))).includes('SECRET')); assert.ok(!logs.join('').includes('SECRET'));
-    assert.equal((await history.store.create({ ...config, testedModel: 'SECRET' })).status, 'blocked');
+    assert.ok((await contents(path.join(p.root, 'evals/artifacts'))).includes(marker)); assert.ok(!logs.join('').includes(marker));
+    const selected = await history.get({ suiteId: 'suite', runId: id, selection: { caseId: 'case', attempt: 1 } });
+    assert.equal(selected.status === 'ok' && selected.value.evidence?.output, marker);
   } finally { await p.cleanup(); }
 });
 it('an obsolete regular writer.lock neither blocks recovery/new writes nor gets removed', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));
     await writeFile(path.join(p.root, 'evals/artifacts/writer.lock'), '');
-    const h = createRunHistory(p.root, { policy: a.policy, owner: { identity: { pid: 456, token: 'new' }, async check() { return 'stopped'; } }, log() {} });
+    const h = createRunHistory(p.root, { legacyRecoveryOnRead: true, owner: { identity: { pid: 456, token: 'new' }, async check() { return 'stopped'; } }, log() {} });
     const detail = await h.get({ suiteId: 'suite', runId: run.value.runId });
     assert.equal(detail.status === 'ok' && detail.value.summary.state, 'interrupted');
     assert.ok(detail.status === 'ok' && !detail.warnings?.includes('owner-unknown'));
@@ -73,7 +74,7 @@ it('TECH-02: a killed writer leaves no lock barrier; a fresh process recovers ev
       import assert from 'node:assert/strict';
       import {createRunHistory} from ${JSON.stringify(publicModule)};
       import {config,evidence} from ${JSON.stringify(evidenceModule)};
-      const h=createRunHistory(process.argv[1], {policy:{sanitize(value){return {status:'ok',value};}},log(){}});
+      const h=createRunHistory(process.argv[1], {legacyRecoveryOnRead:true,log(){}});
       const old=await h.get({suiteId:'suite',runId:process.argv[2],selection:{caseId:'case',attempt:1}});
       assert.equal(old.status,'ok');
       const next=await h.store.create(config); assert.equal(next.status,'ok'); const id=next.value.runId;

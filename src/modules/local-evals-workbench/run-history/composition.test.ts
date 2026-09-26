@@ -5,25 +5,28 @@ import path from 'node:path';
 import { createRunHistory } from '../index.js';
 import { project } from './test-project.js';
 import { config, evidence } from './test-fixtures.js';
-import { evidencePolicy } from './evidence-policy.js';
 import { AtomicArtifactFile } from './atomic-artifact-file.js';
 it('public composition exposes readiness and durable stores without legacy rewiring', async () => {
   const p = await project(); try {
-    const policy = evidencePolicy([], () => true); const history = createRunHistory(p.root, { policy, log() {} });
+    const history = createRunHistory(p.root, { log() {} });
     assert.equal((await history.checkReadiness()).status, 'ok'); const run = await history.store.create(config); assert.equal(run.status, 'ok'); if (run.status !== 'ok') return;
     const id = run.value.runId; await history.store.start('suite', id); await history.store.append('suite', id, evidence(id)); await history.store.finalize('suite', id, 'completed');
-    const fresh = createRunHistory(p.root, { policy, log() {} }); const list = await fresh.list({ suiteId: 'suite' }); assert.equal(list.status === 'ok' && list.value[0]?.state, 'completed');
+    const fresh = createRunHistory(p.root, { log() {} }); const list = await fresh.list({ suiteId: 'suite' }); assert.equal(list.status === 'ok' && list.value[0]?.state, 'completed');
     const selected = await fresh.get({ suiteId: 'suite', runId: id, selection: { caseId: 'case', attempt: 1 } }); assert.equal(selected.status === 'ok' && selected.value.evidence?.output, 'synthetic output');
   } finally { await p.cleanup(); }
 });
-it('missing safety policy blocks readiness/create before any filesystem mutation', async () => {
+it('retains bounded raw evidence without a policy prerequisite', async () => {
   const p = await project(); try {
     const history = createRunHistory(p.root, { log() {} });
     const readiness = await history.checkReadiness();
-    assert.equal(readiness.status === 'blocked' && readiness.reason, 'policy-rejected');
-    assert.ok(readiness.guidance?.includes('evidence-safety policy'));
-    assert.deepEqual(await history.store.create(config), { status: 'blocked', reason: 'policy-rejected' });
-    await assert.rejects(access(path.join(p.root, 'evals/artifacts')));
+    assert.equal(readiness.status, 'ok');
+    const run = await history.store.create(config); assert.equal(run.status, 'ok');
+    if (run.status !== 'ok') return;
+    const raw = { ...evidence(run.value.runId), output: 'SYNTHETIC_SECRET_SENTINEL' };
+    await history.store.start('suite', run.value.runId);
+    assert.equal((await history.store.append('suite', run.value.runId, raw)).status, 'ok');
+    const read = await history.get({ suiteId: 'suite', runId: run.value.runId, selection: { caseId: 'case', attempt: 1 } });
+    assert.equal(read.status === 'ok' && read.value.evidence?.output, raw.output);
   } finally { await p.cleanup(); }
 });
 it('public composition recovers from first manifest publication failure without restart or cleanup', async t => {
@@ -34,7 +37,7 @@ it('public composition recovers from first manifest publication failure without 
     return original.call(this, relative, value);
   });
   try {
-    const dependencies = { policy: evidencePolicy([], () => true), log() {} };
+    const dependencies = { log() {} };
     const first = createRunHistory(p.root, dependencies);
     const second = createRunHistory(`${p.root}/.`, dependencies);
     assert.deepEqual(await first.store.create(config), { status: 'blocked', reason: 'unavailable' });
@@ -56,7 +59,7 @@ it('public composition recovers from first manifest publication failure without 
 });
 it('obsolete regular active pointer content is ignored and left untouched', async () => {
   const p = await project(); try {
-    const dependencies = { policy: evidencePolicy([], () => true), log() {} };
+    const dependencies = { log() {} };
     const history = createRunHistory(p.root, dependencies);
     const first = await history.store.create(config); assert.equal(first.status, 'ok');
     const obsolete = path.join(p.root, 'evals/artifacts/active.json');

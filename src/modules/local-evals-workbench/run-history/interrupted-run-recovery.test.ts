@@ -12,7 +12,7 @@ it('classifies proven stopped ownership, preserves completed attempts and persis
     const a = fixture(p.root); const run = await a.store.create({ ...config, caseIds: ['case', 'not-run'] }); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));
     await a.store.start('suite', run.value.runId); await a.store.append('suite', run.value.runId, evidence(run.value.runId));
     const b = fixture(p.root, { owner: { identity: { pid: 456, token: 'new' }, async check() { return 'stopped'; } } });
-    const reader = new FileArtifactReader(b.paths, b.reader, new InterruptedRunRecovery(b.owner, Date.now, b.store), b.policy);
+    const reader = new FileArtifactReader(b.paths, b.reader, new InterruptedRunRecovery(b.owner, Date.now, b.store));
     for (let i = 0; i < 2; i++) { const result = await reader.get('suite', run.value.runId); assert.equal(result.status, 'ok'); if (result.status === 'ok') { assert.equal(result.value.summary.state, 'interrupted'); assert.equal(result.value.summary.outcome, 'incomplete'); assert.equal(result.value.summary.cases[0]?.attempts.length, 1); assert.equal(result.value.summary.cases[1]?.state, 'not-run'); } }
   } finally { await p.cleanup(); }
 });
@@ -49,7 +49,7 @@ it('recovering a stopped run preserves another live run and concurrent index upd
     ]);
     assert.equal(recovered.status, 'ok'); assert.equal(recovered.value.state, 'interrupted');
     assert.equal(started.status, 'ok'); assert.equal(started.value.state, 'running'); assert.equal(queued.status, 'ok');
-    const reader = new FileArtifactReader(current.paths, current.reader, new InterruptedRunRecovery(current.owner, Date.now, current.store), current.policy);
+    const reader = new FileArtifactReader(current.paths, current.reader, new InterruptedRunRecovery(current.owner, Date.now, current.store));
     const list = await reader.list('suite', 10); assert.equal(list.status, 'ok');
     const expected = new Map([[stale.value.runId, 'interrupted'], [live.value.runId, 'running'], [queued.value.runId, 'queued']]);
     assert.deepEqual(new Map(list.value.map(run => [run.runId, run.state])), expected);

@@ -57,12 +57,16 @@ function browser(
   const state = { discovery: { status: 'ready', suites: [{ id: 'suite', testCases: [{ id: 'case' }, { id: 'rubric' }] }] }, selectedSuiteId: 'suite', selectedEvalRunModel: 'fake/model', runScope: { type: 'all' as 'all' | 'test_case' } };
   const context = {
     document: documentState,
-    window: { sibuStartReviewedRun: async (command: unknown) => { starts.push(command); } },
+    window: {},
+    URLSearchParams,
+    setTimeout,
     Option: class { constructor(readonly label: string, readonly value: string) {} },
-    fetch: async (route: string, requestOptions: { body: string }) => {
-      requests.push({ route, body: JSON.parse(requestOptions.body) as Record<string, unknown> });
+    fetch: async (route: string, requestOptions?: { body: string }) => {
+      if (route.startsWith('/api/eval-runs/status?')) return { json: async () => ({ status: 'ok', value: { summary: { state: 'completed', cases: [], createdAt: Date.now(), finishedAt: Date.now() } } }) };
+      requests.push({ route, body: JSON.parse(requestOptions!.body) as Record<string, unknown> });
+      if (route === '/api/eval-runs/start') { starts.push(requests.at(-1)?.body); return { json: async () => ({ status: 'queued', suiteId: 'suite', runId: 'run' }) }; }
       if (route.endsWith('/describe')) return { json: async () => ({ status: 'ready', models: ['fake/model'], judgeModels: options.rubric || options.mixed ? ['fake/judge'] : [], rubricRequired: !!(options.rubric || options.mixed), rubricCaseIds: options.mixed ? ['rubric'] : options.rubric ? ['case', 'rubric'] : [] }) };
-      const response = { json: async () => options.onPreview ? options.onPreview(JSON.parse(requestOptions.body) as PreviewEvalRunCommand) : ({ status: 'ready', suiteId: 'suite', selectedCaseIds: ['case'], model: 'fake/model', judgeModel: null,
+      const response = { json: async () => options.onPreview ? options.onPreview(JSON.parse(requestOptions!.body) as PreviewEvalRunCommand) : ({ status: 'ready', suiteId: 'suite', selectedCaseIds: ['case'], model: 'fake/model', judgeModel: null,
         repeats: 1, targetCalls: 1, judgeCalls: 0, totalCalls: 1, cost, requiresConfirmation: true }) };
       if (!options.deferPreview) return response;
       return new Promise<typeof response>((resolve) => { releasePreview = () => resolve(response); });
@@ -93,7 +97,7 @@ test('unavailable cost requires explicit Start run after review and Back keeps s
   await app.emit('click', 'preview-start');
   await app.emit('click', 'preview-start');
   assert.equal(app.starts.length, 1);
-  assert.equal(app.requests.filter((request) => request.route === '/api/eval-runs').length, 0);
+  assert.equal(app.requests.filter((request) => request.route === '/api/eval-runs/start').length, 1);
 });
 test('changed selection invalidates the review and blocks stale confirmation', async () => {
   const app = browser({ status: 'available', amount: 0.01, currency: 'USD' });

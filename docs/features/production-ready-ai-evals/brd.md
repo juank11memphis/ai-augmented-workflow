@@ -10,7 +10,7 @@ This feature lets a developer ask their coding agent to find or inspect AI integ
 
 - OBJ-01 — A developer can confirm the repo's Evaluation Targets, approve proposed coverage, generate immediately runnable suites, and execute them locally against a selected compatible model without manually building eval infrastructure.
 - OBJ-02 — Every generated suite demonstrates systematic coverage of all applicable behavior and risk categories, with justified Coverage Gaps instead of happy-path-only or falsely exhaustive claims.
-- OBJ-03 — Eval creation, execution evidence, and repair preserve project ownership, prevent accidental secret or production-data exposure, avoid external tool side effects, and keep mutations under explicit user control.
+- OBJ-03 — Eval creation, execution evidence, and repair preserve project ownership, keep run artifacts out of normal Git and agent context, avoid external tool side effects, and keep mutations under explicit user control.
 
 ## Stakeholders and Needs
 
@@ -73,7 +73,7 @@ This feature lets a developer ask their coding agent to find or inspect AI integ
 - REQ-12 — Type: functional; Objectives: OBJ-01, OBJ-03. Results must expose outputs, assertion and grader outcomes, scores, tool traces, diagnostics, and other evidence needed to understand behavior.
 - REQ-13 — Type: functional; Objectives: OBJ-01, OBJ-03; Rules: RULE-06. Local run history and evidence must persist across dashboard sessions while remaining outside normal source-control tracking and ordinary LLM context.
 - REQ-14 — Type: functional; Objectives: OBJ-01, OBJ-03; Rules: RULE-07. The user must be able to analyze one failed assertion, review a concrete repair proposal, approve or reject it, and rerun the relevant scope.
-- REQ-15 — Type: quality; Objectives: OBJ-03; Rules: RULE-08. Generated fixtures and retained evidence must not introduce secrets, credentials, or raw production data.
+- REQ-15 — Type: quality; Objectives: OBJ-03; Rules: RULE-06, RULE-08. Generated fixtures must use synthetic or appropriately redacted data without secrets, credentials, or raw production data. Bounded run results may retain raw model output locally without redaction, including sensitive content, but must remain in Git-ignored artifacts outside ordinary agent context.
 - REQ-16 — Type: quality; Objectives: OBJ-01. If expected behavior cannot be established from repo-owned evidence, suite generation must stop for focused user clarification rather than inventing pass/fail criteria.
 
 ## Business Rules
@@ -99,7 +99,7 @@ This feature lets a developer ask their coding agent to find or inspect AI integ
 - AC-07 (REQ-10, REQ-11) — The user can choose a repeat count and sees expected call volume and estimated cost before starting the run.
 - AC-08 (REQ-12, REQ-13) — Completed results retain inspectable outputs, scores, tool traces, diagnostics, and assertion/grader outcomes across dashboard restarts without appearing in normal Git changes or ordinary agent context.
 - AC-09 (REQ-14) — A failed assertion can move through focused analysis, proposal review, explicit approval or rejection, approved mutation, and focused rerun without silent file changes.
-- AC-10 (REQ-15) — Generated fixtures and retained evidence contain no detected secret, credential, or raw production-data material.
+- AC-10 (REQ-15) — Generated fixtures contain no detected secret, credential, or raw production-data material. Run results retain bounded raw model output in local Git-ignored artifacts without a redaction prerequisite.
 - AC-11 (REQ-16) — When repo evidence does not establish a meaningful expectation, the agent requests focused clarification and does not create invented pass/fail criteria.
 
 ## Constraints, Assumptions, and Risks
@@ -109,6 +109,7 @@ This feature lets a developer ask their coding agent to find or inspect AI integ
 - Repeated runs and Judge Model use increase cost, making pre-run consumption visibility essential.
 - Target discovery and coverage planning can miss implicit business behavior; confirmation, explicit gaps, and clarification remain required.
 - Local artifact isolation prevents accidental Git and context pollution but cannot prevent a deliberate user override.
+- Raw model output retained in local artifacts may contain secrets or production data. Git-ignore is not confidentiality; users are responsible for the local artifact directory and should run only suites whose output they are willing to retain.
 
 ## Product Vision Fit
 

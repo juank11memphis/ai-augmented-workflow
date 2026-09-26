@@ -77,7 +77,7 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
     const run = control('run');
     if (!run) return;
     run.textContent = disabled ? 'Reviewing...' : 'Review run';
-    run.disabled = disabled || !runtimeReady;
+    run.disabled = disabled || !runtimeReady || runUnavailable();
   }
 
   function renderRunning() {

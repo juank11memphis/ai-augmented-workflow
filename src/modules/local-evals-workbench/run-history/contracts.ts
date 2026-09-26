@@ -1,6 +1,6 @@
 export type RunState = 'queued' | 'running' | 'completed' | 'partial' | 'blocked' | 'error' | 'interrupted';
 export type CheckOutcome = 'passed' | 'failed' | 'incomplete';
-export type Reason = 'invalid-input' | 'unsafe-path' | 'not-ignored' | 'tracked-artifacts' | 'git-unavailable' | 'unverifiable-root' | 'unavailable' | 'not-found' | 'corrupt' | 'limit-exceeded' | 'policy-rejected' | 'invalid-transition' | 'owner-unknown' | 'index-stale';
+export type Reason = 'invalid-input' | 'unsafe-path' | 'not-ignored' | 'tracked-artifacts' | 'git-unavailable' | 'unverifiable-root' | 'unavailable' | 'not-found' | 'corrupt' | 'limit-exceeded' | 'invalid-transition' | 'owner-unknown' | 'index-stale';
 export type Failure = { readonly status: 'blocked'; readonly reason: Reason };
 export type Outcome<T> = { readonly status: 'ok'; readonly value: T; readonly warnings?: readonly Reason[] } | Failure;
 export type Owner = { readonly pid: number; readonly token: string };
@@ -47,6 +47,5 @@ export interface ArtifactStorePort {
   append(suiteId: string, runId: string, attempt: Attempt): Promise<Outcome<Manifest>>;
   finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[]): Promise<Outcome<Manifest>>;
 }
-export interface EvidencePolicy { sanitize(value: unknown): Outcome<unknown> }
 export type ArtifactEvent = { readonly event: 'artifact-persisted' | 'artifact-blocked' | 'artifact-recovered' | 'artifact-read'; readonly reason?: Reason; readonly state?: RunState; readonly count?: number };
 export interface ArtifactLogger { emit(event: ArtifactEvent): void }

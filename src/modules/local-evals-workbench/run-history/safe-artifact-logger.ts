@@ -1,6 +1,6 @@
 import type { ArtifactEvent, ArtifactLogger } from './contracts.js';
 const events = new Set(['artifact-persisted', 'artifact-blocked', 'artifact-recovered', 'artifact-read']);
-const reasons = new Set(['invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded', 'policy-rejected', 'invalid-transition', 'owner-unknown', 'index-stale']);
+const reasons = new Set(['invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded', 'invalid-transition', 'owner-unknown', 'index-stale']);
 const states = new Set(['queued', 'running', 'completed', 'partial', 'blocked', 'error', 'interrupted']);
 export class SafeArtifactLogger implements ArtifactLogger {
   constructor(private readonly sink: (line: string) => void = line => console.error(line)) {}

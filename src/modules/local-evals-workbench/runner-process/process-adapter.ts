@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { declaredRunnerFile, type NormalizedEvalSuite, type NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
 import type { PreviewLoggerPort, RunnerDescriptorPort } from '../runtime-ports.js';
-import type { RunnerEstimatorPort } from '../preview-eval-run/ports.js';
+import type { RunnerEstimatorPort } from '../run-configuration.js';
 import type { RuntimeDescription, RuntimeOutcome } from '../runtime-description.js';
 import type { RuntimeBlockReason } from '../runtime-description.js';
 import { runnerEnvironment } from './environment.js';

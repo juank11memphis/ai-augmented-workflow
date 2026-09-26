@@ -18,15 +18,14 @@ it('persists queued/attempt/terminal state across stores and refuses duplicate f
     assert.equal(JSON.parse(await readFile(path.join(p.root, 'evals/artifacts/suite/index.json'), 'utf8')).entries.length, 1);
   } finally { await p.cleanup(); }
 });
-it('allows independent concurrent creates, rejects uncertain policy, missing attempt completion and rechecks Git', async () => {
+it('allows independent concurrent creates, retains raw output, detects missing evidence and rechecks Git', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const created = await Promise.all([a.store.create(config), fixture(p.root).store.create(config)]);
     assert.equal(created.filter(v => v.status === 'ok').length, 2);
     assert.equal(new Set(created.map(v => v.status === 'ok' && v.value.runId)).size, 2);
     const run = created.find(v => v.status === 'ok'); if (run?.status !== 'ok') return;
     await a.store.start('suite', run.value.runId);
-    assert.equal((await a.store.append('suite', run.value.runId, { ...evidence(run.value.runId), output: 'SECRET' })).status, 'blocked');
-    await a.store.append('suite', run.value.runId, evidence(run.value.runId));
+    assert.equal((await a.store.append('suite', run.value.runId, { ...evidence(run.value.runId), output: 'SYNTHETIC_SECRET_SENTINEL' })).status, 'ok');
     await unlink(path.join(p.root, 'evals/artifacts', a.paths.attempt('suite', run.value.runId, 'case', 1)));
     assert.deepEqual(await a.store.finalize('suite', run.value.runId, 'completed'), { status: 'blocked', reason: 'corrupt' });
     await writeFile(path.join(p.root, '.gitignore'), '');
