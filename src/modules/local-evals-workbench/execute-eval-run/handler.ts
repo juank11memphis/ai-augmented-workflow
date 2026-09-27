@@ -1,15 +1,21 @@
 import type { ExecuteEvalRunCommand } from './command.js';
 import type { ExecuteEvalRunResult } from './result.js';
 import type { ExecuteEvalRunDependencies } from './ports.js';
-import type { Attempt, RunState, TurnEvidence } from '../run-history/contracts.js';
+import type { Attempt, RunState, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
 import type { ExecutionEvent } from '../run-execution/contracts.js';
+import { normalizeGraderOutcome, normalizeGraderOutcomes } from '../run-execution/attempt-evidence.js';
+import { boundedJson, attempt as validAttempt } from '../run-history/validation.js';
+import { LIMITS } from '../run-history/limits.js';
 
 const MAX_DIAGNOSTICS = 20;
-
 class PersistenceStopped extends Error {}
+class EvidenceLimitStopped extends Error {}
+type Current = { caseId: string; number: number; began: number; turns: TurnEvidence[]; tools: ToolEvidence[];
+  graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[] };
 
 export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: ExecuteEvalRunDependencies): Promise<ExecuteEvalRunResult> {
   const { suite, runId, cases } = command;
+  const repeats = command.repeats ?? 1;
   const began = ports.clock();
   const log = (event: string, reason?: string): void => {
     try { ports.logger?.record({ event, suiteId: suite.id, reason, durationMs: ports.clock() - began }); } catch { /* Noncritical sink. */ }
@@ -17,62 +23,86 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
   const started = await ports.store.start(suite.id, runId);
   if (started.status === 'blocked') return { status: 'blocked', runId, reason: started.reason };
   log('eval_run_started');
-  let current: { caseId: string; began: number; turns: TurnEvidence[]; output: string; diagnostics: string[] } | undefined;
+  let current: Current | undefined;
   const runDiagnostics: string[] = [];
-  const addDiagnostic = (items: string[], code: string): void => {
-    if (items.length < MAX_DIAGNOSTICS) items.push(code);
-  };
+  const addDiagnostic = (items: string[], code: string): void => { if (items.length < MAX_DIAGNOSTICS) items.push(code); };
+  let caseIndex = 0;
+  let attemptNumber = 1;
   let completed = 0;
   let terminal: 'completed' | 'error' | 'interrupted' | undefined;
   const persist = async (attempt: Attempt): Promise<void> => {
+    if (!boundedJson(attempt, LIMITS.attemptBytes) || !validAttempt(attempt)) throw new EvidenceLimitStopped();
     const result = await ports.store.append(suite.id, runId, attempt);
-    if (result.status !== 'ok') throw new PersistenceStopped();
+    if (result.status !== 'ok') throw result.reason === 'limit-exceeded' ? new EvidenceLimitStopped() : new PersistenceStopped();
   };
-  const evidence = (outcome: Attempt['outcome'], assertions: Attempt['assertions'] = []): Attempt => {
-    if (!current) throw new Error('missing-case');
-    return { version: 1, suiteId: suite.id, runId, caseId: current.caseId, number: 1, outcome,
-      durationMs: Math.max(0, ports.clock() - current.began), calls: null, cost: null,
-      output: current.output, truncated: false, diagnostics: current.diagnostics, turns: current.turns, tools: [], assertions };
+  const evidence = (outcome: Attempt['outcome'], assertions: Attempt['assertions'] = [], calls: number | null = null, cost: number | null = null): Attempt => {
+    if (!current) throw new Error('missing-attempt');
+    return { version: 1, suiteId: suite.id, runId, caseId: current.caseId, number: current.number, outcome,
+      durationMs: Math.max(0, ports.clock() - current.began), calls, cost, output: current.output,
+      truncated: false, diagnostics: [...current.diagnostics], turns: [...current.turns], tools: [...current.tools], assertions };
   };
   const consume = async (event: ExecutionEvent): Promise<void> => {
+    if (terminal) throw new Error('event-after-terminal');
     if (event.type === 'case-started') {
-      if (current || cases[completed]?.id !== event.caseId) throw new Error('case-order');
-      current = { caseId: event.caseId, began: ports.clock(), turns: [], output: '', diagnostics: [] };
+      if (current || cases[caseIndex]?.id !== event.caseId || (event.attempt ?? 1) !== attemptNumber) throw new Error('attempt-order');
+      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], output: '', diagnostics: [] };
       await persist(evidence('incomplete'));
     } else if (event.type === 'turn-completed') {
-      if (!current || current.caseId !== event.caseId || current.turns.length) throw new Error('turn-order');
+      if (!current || current.caseId !== event.caseId || (event.attempt ?? 1) !== current.number
+        || (event.turnIndex ?? current.turns.length) !== current.turns.length || current.turns.some(turn => turn.id === event.turnId)) throw new Error('turn-order');
       current.output = event.output;
       current.turns.push({ id: event.turnId, role: 'assistant', content: event.output });
       await persist(evidence('incomplete'));
+    } else if (event.type === 'tool-recorded') {
+      if (!current || current.caseId !== event.caseId || event.attempt !== current.number
+        || event.position !== current.tools.length || !current.turns.some(turn => turn.id === event.turnId)
+        || current.tools.some(tool => tool.id === event.toolId)) throw new Error('tool-order');
+      current.tools.push({ id: event.toolId, name: event.name, arguments: event.arguments, result: event.result,
+        turnId: event.turnId, position: event.position, outcome: event.outcome });
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'grader-completed') {
+      if (!current || current.caseId !== event.caseId || event.attempt !== current.number
+        || current.graders.some(item => item.checkId === event.checkId)) throw new Error('grader-order');
+      const grader = cases[caseIndex]?.graders.find(item => item.id === event.checkId);
+      if (!grader) throw new Error('grader-result-invalid');
+      const result = normalizeGraderOutcome(grader, event, command.judgeModel ?? null);
+      const previous = current.graders.map(item => normalizeGraderOutcome(
+        cases[caseIndex]!.graders.find(grader => grader.id === item.checkId)!, item, command.judgeModel ?? null));
+      current.graders.push(event);
+      await persist(evidence('incomplete', [...previous, result]));
     } else if (event.type === 'case-completed') {
-      if (!current || current.caseId !== event.caseId) throw new Error('case-order');
+      if (!current || current.caseId !== event.caseId || (event.attempt ?? 1) !== current.number) throw new Error('attempt-order');
       if (event.status === 'completed') {
-        if (current.turns.length !== 1) throw new Error('missing-output');
-        const selected = cases[completed];
-        const assertions = ports.evaluator.evaluate(selected!.assertions, current.output, current.turns[0]!.id);
-        await persist(evidence(assertions.every(assertion => assertion.outcome === 'passed') ? 'passed' : 'failed', assertions));
+        if (current.turns.length !== cases[caseIndex]!.turns.length) throw new Error('missing-turn');
+        const selected = cases[caseIndex]!;
+        const assertions = ports.evaluator.evaluate(selected.assertions, { output: current.output, turns: current.turns, tools: current.tools });
+        if (assertions.length !== selected.assertions.length || new Set(assertions.map(item => item.id)).size !== assertions.length
+          || selected.assertions.some(item => !assertions.some(result => result.id === item.id))) throw new Error('assertion-results-invalid');
+        const graders = normalizeGraderOutcomes(selected.graders, current.graders, command.judgeModel ?? null);
+        const results = [...assertions, ...graders];
+        await persist(evidence(results.every(item => item.outcome === 'passed') ? 'passed' : 'failed', results,
+          event.calls ?? null, event.cost ?? null));
         completed++;
         current = undefined;
-        log('eval_case_completed');
+        if (attemptNumber === repeats) { caseIndex++; attemptNumber = 1; } else attemptNumber++;
+        log('eval_case_attempt_completed');
       } else {
         addDiagnostic(current.diagnostics, 'case-error');
         await persist(evidence('incomplete'));
       }
     } else if (event.type === 'diagnostic') {
       addDiagnostic(runDiagnostics, event.code);
-      if (current && event.caseId === current.caseId) {
+      if (current && event.caseId === current.caseId && (event.attempt === undefined || event.attempt === current.number)) {
         addDiagnostic(current.diagnostics, event.code);
         await persist(evidence('incomplete'));
       }
-    } else if (event.type === 'run-completed') {
-      terminal = event.status;
-    }
+    } else if (event.type === 'run-completed') terminal = event.status;
   };
   try {
     const outcome = await ports.runner.execute(command, consume);
     const status: Exclude<RunState, 'queued' | 'running'> = outcome.status === 'blocked' && completed === 0 ? 'blocked'
       : outcome.status === 'interrupted' ? 'interrupted'
-      : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length ? 'completed'
+      : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length * repeats ? 'completed'
       : completed ? 'partial' : 'error';
     if (outcome.reason) addDiagnostic(runDiagnostics, outcome.reason);
     const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics);
@@ -82,10 +112,11 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
   } catch (error) {
     if (error instanceof PersistenceStopped) return { status: 'storage-failed', runId };
     const status = completed ? 'partial' : 'error';
-    addDiagnostic(runDiagnostics, 'runner-invalid');
+    const reason = error instanceof EvidenceLimitStopped ? 'evidence-limit-exceeded' : 'runner-invalid';
+    addDiagnostic(runDiagnostics, reason);
     const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics);
     if (finished.status === 'blocked') return { status: 'storage-failed', runId, reason: finished.reason };
     log('eval_run_finished', status);
-    return { status, runId, reason: 'runner-invalid' };
+    return { status, runId, reason };
   }
 }

@@ -42,5 +42,48 @@ test('diagnostics retain their validated case identity without exposing payloads
     { type: 'diagnostic', code: 'runner-warning', caseId: null });
   validator.accept(event(2, 'case-attempt-started', 'case', {}));
   assert.deepEqual(validator.accept(event(3, 'run-diagnostic', 'case', { code: 'case-warning' })),
-    { type: 'diagnostic', code: 'case-warning', caseId: 'case' });
+    { type: 'diagnostic', code: 'case-warning', caseId: 'case', attempt: 1 });
+});
+
+test('deep protocol validates ordered attempts, tools, grader IDs, and selected Judge Model', () => {
+  const deep = { ...singleCase, turns: [singleCase.turns[0]!, singleCase.turns[0]!],
+    graders: [{ id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+  const selected: ExecutionSelection = { ...selection, cases: [deep], judgeModel: 'judge', repeats: 2 };
+  const make = () => new ExecuteEventValidator('request', selected);
+  const envelope = (sequence: number, type: string, attempt: number | null, data: unknown) => ({ protocolVersion: 1,
+    requestId: 'request', sequence, type, runId: 'run', caseId: attempt === null ? null : 'case', attempt, data });
+  const start = envelope(0, 'run-started', null, { model: 'fake', judgeModel: 'judge' });
+  const begun = envelope(1, 'case-attempt-started', 1, {});
+  const turn = envelope(2, 'conversation-turn-completed', 1, { turnIndex: 0, turnId: 't1', role: 'assistant', output: 'checking' });
+  const tool = envelope(3, 'tool-interaction-recorded', 1, { toolId: 'tool-1', turnId: 't1', position: 0, name: 'lookup', arguments: { id: 1 }, outcome: 'result', result: { found: true } });
+  const turn2 = envelope(4, 'conversation-turn-completed', 1, { turnIndex: 1, turnId: 't2', role: 'assistant', output: 'done' });
+  const rubric = envelope(5, 'rubric-judgment-completed', 1, { checkId: 'quality', passed: true, score: 0.9, threshold: 0.8, judgeModel: 'judge', evidence: 'clear', diagnostics: [] });
+  const complete = envelope(6, 'case-attempt-completed', 1, { status: 'completed', calls: 3, cost: 0.01 });
+  const valid = make();
+  for (const item of [start, begun, turn, tool, turn2, rubric, complete]) valid.accept(item);
+  assert.equal(valid.accept(envelope(7, 'case-attempt-started', 2, {})).type, 'case-started');
+  const prefix = [start, begun, turn];
+  for (const bad of [
+    { ...tool, data: { ...(tool.data as object), position: 1 } },
+    { ...tool, data: { ...(tool.data as object), turnId: 'missing' } },
+  ]) { const validator = make(); for (const item of prefix) validator.accept(item); assert.throws(() => validator.accept(bad)); }
+  const namedToolFields = { ...tool, data: { ...(tool.data as object),
+    arguments: { reasoning: 'ordinary input', nested: { rationale: 'ordinary input' } },
+    result: { reasoning: 'ordinary output', nested: { rationale: 'ordinary output' } } } };
+  const withNamedToolFields = make();
+  for (const item of prefix) withNamedToolFields.accept(item);
+  const recorded = withNamedToolFields.accept(namedToolFields);
+  assert.equal(recorded.type, 'tool-recorded');
+  if (recorded.type === 'tool-recorded') {
+    assert.deepEqual(JSON.parse(recorded.arguments), (namedToolFields.data as { arguments: unknown }).arguments);
+    assert.deepEqual(JSON.parse(recorded.result), (namedToolFields.data as { result: unknown }).result);
+  }
+  for (const bad of [
+    { ...rubric, data: { ...(rubric.data as object), judgeModel: 'wrong' } },
+    { ...rubric, data: { ...(rubric.data as object), checkId: 'undeclared' } },
+    { ...rubric, data: { ...(rubric.data as object), passed: false } },
+    { ...rubric, data: { ...(rubric.data as object), reasoning: 'hidden judge reasoning' } },
+  ]) { const validator = make(); for (const item of [start, begun, turn, tool, turn2]) validator.accept(item); assert.throws(() => validator.accept(bad)); }
+  const missing = make(); for (const item of [start, begun, turn, tool, turn2]) missing.accept(item);
+  assert.throws(() => missing.accept(complete));
 });

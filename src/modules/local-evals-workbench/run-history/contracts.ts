@@ -10,7 +10,8 @@ export type RunConfiguration = {
   readonly suiteId: string; readonly caseIds: readonly string[]; readonly scope: 'all' | 'selected';
   readonly testedModel: string; readonly judgeModel: string | null; readonly repeats: number;
 };
-export type AttemptSummary = { readonly number: number; readonly outcome: CheckOutcome; readonly durationMs: number; readonly calls: number | null; readonly cost: number | null };
+export type AttemptSummary = { readonly number: number; readonly outcome: CheckOutcome; readonly durationMs: number; readonly calls: number | null; readonly cost: number | null;
+  readonly rubricScores?: readonly number[] };
 export type CaseSummary = { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed'; readonly attempts: readonly AttemptSummary[] };
 export type Manifest = RunConfiguration & {
   readonly version: 1; readonly runId: string; readonly state: RunState; readonly owner: Owner;
@@ -22,9 +23,11 @@ export type AssertionEvidence = {
   readonly id: string; readonly kind: 'assertion' | 'grader'; readonly outcome: CheckOutcome;
   readonly score: number | null; readonly threshold?: number; readonly expected: string; readonly actual: string;
   readonly diagnostics: readonly string[]; readonly turnIds: readonly string[]; readonly toolIds: readonly string[];
+  readonly judgeModel?: string;
 };
 export type TurnEvidence = { readonly id: string; readonly role: 'user' | 'assistant' | 'system' | 'tool'; readonly content: string };
-export type ToolEvidence = { readonly id: string; readonly name: string; readonly arguments: string; readonly result: string };
+export type ToolEvidence = { readonly id: string; readonly name: string; readonly arguments: string; readonly result: string;
+  readonly turnId?: string; readonly position?: number; readonly outcome?: 'result' | 'error' | 'unexpected-response' };
 export type Attempt = {
   readonly version: 1; readonly suiteId: string; readonly runId: string; readonly caseId: string;
   readonly number: number; readonly outcome: CheckOutcome; readonly durationMs: number;

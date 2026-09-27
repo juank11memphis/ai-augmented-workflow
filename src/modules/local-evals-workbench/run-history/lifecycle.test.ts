@@ -27,3 +27,16 @@ it('seed 0x17: 100 generated repeated runs preserve counter and terminal invaria
     if (done.status === 'ok') { assert.equal(done.value.outcome, sequence % 2 ? 'failed' : 'passed'); assert.equal(transition(done.value, 'running', 201).status, 'blocked'); }
   }
 });
+
+it('fault injection: a failed required check or omitted repeat cannot aggregate to passed', () => {
+  const run = { ...queued(), repeats: 2 };
+  const started = transition(run, 'running', 101); assert.equal(started.status, 'ok'); if (started.status !== 'ok') return;
+  const first = appendAttempt(started.value, evidence(), 102); assert.equal(first.status, 'ok'); if (first.status !== 'ok') return;
+  assert.equal(transition(first.value, 'completed', 103).status, 'blocked');
+  const failed = { ...evidence(), number: 2, outcome: 'failed' as const,
+    assertions: [{ ...evidence().assertions[0]!, outcome: 'failed' as const }] };
+  const second = appendAttempt(first.value, failed, 103); assert.equal(second.status, 'ok'); if (second.status !== 'ok') return;
+  const done = transition(second.value, 'completed', 104); assert.equal(done.status, 'ok');
+  if (done.status === 'ok') assert.equal(done.value.outcome, 'failed');
+  assert.equal(transition(first.value, 'partial', 104).status, 'ok');
+});

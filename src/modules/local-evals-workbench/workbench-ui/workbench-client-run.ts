@@ -27,7 +27,11 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
     const elapsed = Math.max(0, ((manifest.finishedAt || Date.now()) - manifest.createdAt) / 1000).toFixed(1);
     return manifest.state + ' — ' + done + '/' + manifest.cases.length + ' cases, ' + elapsed + 's'
       + (current && (manifest.state === 'queued' || manifest.state === 'running') ? ', current: ' + current.caseId : '')
-      + ', cost unavailable';
+      + ', cost ' + (manifest.cost === null || manifest.cost === undefined ? 'unavailable' : manifest.cost);
+  }
+  function measuredTotal(attempts, key) {
+    return attempts.some(attempt => attempt[key] === null || attempt[key] === undefined)
+      ? 'unavailable' : attempts.reduce((sum, attempt) => sum + attempt[key], 0);
   }
   function renderSelectedRun(summary) {
     const panel = runPanel();
@@ -35,14 +39,15 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
     panel.hidden = false;
     const active = summary.state === 'queued' || summary.state === 'running';
     if (!active) runPollGeneration++;
-    const passed = summary.cases.filter(item => item.attempts[0]?.outcome === 'passed').length;
-    const failed = summary.cases.filter(item => item.attempts[0]?.outcome === 'failed').length;
+    const passed = summary.cases.filter(item => item.state === 'completed' && item.attempts.every(attempt => attempt.outcome === 'passed')).length;
+    const failed = summary.cases.filter(item => item.attempts.some(attempt => attempt.outcome === 'failed')).length;
     panel.innerHTML = '<h3 tabindex="-1" data-run-status-heading>Run ' + h(summary.state) + '</h3><p role="status" aria-live="polite" data-run-progress></p>'
       + '<p>' + h(passed) + ' passed, ' + h(failed) + ' failed. '
       + h(summary.cases.length - passed - failed) + ' not finished.</p>'
       + (summary.diagnostics?.length ? '<p>Run diagnostics: ' + summary.diagnostics.map(h).join(', ') + '</p>' : '') + '<ul>'
       + summary.cases.map(item => '<li>' + h(item.caseId) + ': ' + h(item.state)
-        + (item.attempts[0] ? ' <button type="button" data-run-detail="' + h(item.caseId) + '">Inspect ' + (item.attempts[0].outcome === 'incomplete' ? 'partial evidence' : 'result') + '</button>' : '') + '</li>').join('')
+        + (item.attempts.length ? ' — ' + h(item.attempts.filter(attempt => attempt.outcome === 'passed').length) + '/' + h(item.attempts.length) + ' passed; latency ' + h(item.attempts.reduce((sum, attempt) => sum + attempt.durationMs, 0)) + 'ms; calls ' + h(measuredTotal(item.attempts, 'calls')) + '; cost ' + h(measuredTotal(item.attempts, 'cost')) + '; rubric scores ' + h(item.attempts.flatMap(attempt => attempt.rubricScores || []).join(', ') || 'none') : '')
+        + item.attempts.map(attempt => ' <button type="button" data-run-detail="' + h(item.caseId) + '" data-attempt="' + h(attempt.number) + '">Inspect attempt ' + h(attempt.number) + '</button>').join('') + '</li>').join('')
       + '</ul><div data-run-detail-panel></div>';
     panel.querySelector('[data-run-progress]').textContent = runLabel(summary);
     runPhase = active ? 'active' : 'idle';
@@ -91,11 +96,11 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
       return false;
     } finally { if (runPhase === 'pending') runPhase = 'idle'; lockCurrentRun(runUnavailable()); }
   }
-  async function inspectRunCase(caseId) {
+  async function inspectRunCase(caseId, attemptNumber) {
     if (!selectedRun) return;
     const generation = ++runDetailGeneration;
     const selected = selectedRun;
-    const query = new URLSearchParams({ suiteId: selected.suiteId, runId: selected.runId, caseId, attempt: '1' });
+    const query = new URLSearchParams({ suiteId: selected.suiteId, runId: selected.runId, caseId, attempt: String(attemptNumber) });
     const target = runPanel()?.querySelector('[data-run-detail-panel]');
     if (!target) return;
     target.textContent = 'Loading selected result…';
@@ -106,15 +111,20 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
       target.textContent = '';
       if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') { target.textContent = 'Selected evidence is unavailable.'; return; }
       const evidence = payload.value.evidence;
-      const heading = document.createElement('h4'); heading.textContent = caseId + ' result'; target.append(heading);
+      const heading = document.createElement('h4'); heading.textContent = caseId + ' — attempt ' + attemptNumber; target.append(heading);
       const status = document.createElement('p'); status.textContent = 'Attempt: ' + evidence.outcome; target.append(status);
-      for (const diagnostic of [...(evidence.diagnostics || []), ...(evidence.assertions || []).flatMap(item => item.diagnostics || [])]) {
-        const item = document.createElement('p'); item.textContent = 'Diagnostic: ' + diagnostic; target.append(item);
-      }
       for (const assertion of evidence.assertions) {
         const item = document.createElement('p');
         item.textContent = assertion.id + ': ' + assertion.outcome + '. Expected: ' + assertion.expected + '. Actual: ' + assertion.actual;
         target.append(item);
+      }
+      const trace = document.createElement('details');
+      const traceSummary = document.createElement('summary'); traceSummary.textContent = 'Conversation turns and mocked tools'; trace.append(traceSummary);
+      for (const turn of evidence.turns || []) { const item = document.createElement('p'); item.textContent = turn.id + ': ' + turn.content; trace.append(item); }
+      for (const tool of evidence.tools || []) { const item = document.createElement('p'); item.textContent = tool.id + ': ' + tool.name + ' (' + (tool.outcome || 'result') + ') arguments ' + tool.arguments + ' result ' + tool.result; trace.append(item); }
+      target.append(trace);
+      for (const diagnostic of [...(evidence.diagnostics || []), ...(evidence.assertions || []).flatMap(item => item.diagnostics || [])]) {
+        const item = document.createElement('p'); item.textContent = 'Diagnostic: ' + diagnostic; target.append(item);
       }
       const details = document.createElement('details');
       const summary = document.createElement('summary'); summary.textContent = 'Bounded raw output'; details.append(summary);
@@ -123,7 +133,7 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
   }
   root.addEventListener('click', (event) => {
     const button = event.target.closest('[data-run-detail]');
-    if (button) void inspectRunCase(button.dataset.runDetail);
+    if (button) void inspectRunCase(button.dataset.runDetail, Number(button.dataset.attempt));
   });
   function restoreSelectedRun() {
     const runId = rememberedRun(state.selectedSuiteId);

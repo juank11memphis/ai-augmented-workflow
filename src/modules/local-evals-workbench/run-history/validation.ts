@@ -36,7 +36,8 @@ export function manifest(v: unknown): v is Manifest {
     || !texts(v.diagnostics) || !Array.isArray(v.cases) || v.cases.length !== v.caseIds.length) return false;
   return v.cases.every((c, i) => record(c) && keys(c, 'caseId state attempts') && c.caseId === v.caseIds[i]
     && enumValue(c.state, ['not-run', 'incomplete', 'completed']) && Array.isArray(c.attempts) && c.attempts.length <= v.repeats
-    && c.attempts.every((a, n) => record(a) && keys(a, 'number outcome durationMs calls cost') && a.number === n + 1 && outcome(a.outcome) && integer(a.durationMs) && calls(a.calls) && amount(a.cost))
+    && c.attempts.every((a, n) => record(a) && keys(a, 'number outcome durationMs calls cost rubricScores') && a.number === n + 1 && outcome(a.outcome) && integer(a.durationMs) && calls(a.calls) && amount(a.cost)
+      && (a.rubricScores === undefined || Array.isArray(a.rubricScores) && a.rubricScores.length <= LIMITS.evidenceItems && a.rubricScores.every(score => typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 1)))
     && c.state === (c.attempts.length === 0 ? 'not-run' : c.attempts.length === v.repeats && c.attempts.every(a => a.outcome !== 'incomplete') ? 'completed' : 'incomplete'))
     && (v.state !== 'queued' || v.cases.every(c => c.attempts.length === 0))
     && validTotals(v)
@@ -60,13 +61,21 @@ export function attempt(v: unknown): v is Attempt {
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || !integer(v.number, LIMITS.repeats) || v.number < 1 || !outcome(v.outcome)
     || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(v.diagnostics)) return false;
   if (!Array.isArray(v.turns) || v.turns.length > LIMITS.evidenceItems || !v.turns.every(t => record(t) && keys(t, 'id role content') && logicalId(t.id) && enumValue(t.role, ['user', 'assistant', 'system', 'tool']) && text(t.content))
-    || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result))
+    || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result turnId position outcome') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result)
+      && (t.turnId === undefined || logicalId(t.turnId)) && (t.position === undefined || integer(t.position, LIMITS.evidenceItems))
+      && (t.outcome === undefined || enumValue(t.outcome, ['result', 'error', 'unexpected-response'])))
     || !Array.isArray(v.assertions) || v.assertions.length > LIMITS.evidenceItems) return false;
   const turns = v.turns.map(t => t.id), tools = v.tools.map(t => t.id);
   return new Set(turns).size === turns.length && new Set(tools).size === tools.length
-    && v.assertions.every(a => record(a) && keys(a, 'id kind outcome score threshold expected actual diagnostics turnIds toolIds') && logicalId(a.id)
+    && v.tools.every((tool, index) => tool.position === undefined || tool.position === index)
+    && v.tools.every(tool => tool.turnId === undefined || turns.includes(tool.turnId))
+    && v.assertions.every(a => record(a) && keys(a, 'id kind outcome score threshold expected actual diagnostics turnIds toolIds judgeModel') && logicalId(a.id)
       && enumValue(a.kind, ['assertion', 'grader']) && outcome(a.outcome) && amount(a.score) && text(a.expected) && text(a.actual) && texts(a.diagnostics)
       && (!('threshold' in a) || typeof a.threshold === 'number' && Number.isFinite(a.threshold))
+      && (!('judgeModel' in a) || text(a.judgeModel) && a.judgeModel.length > 0 && a.kind === 'grader'
+        && typeof a.threshold === 'number' && a.threshold >= 0 && a.threshold <= 1
+        && typeof a.score === 'number' && a.score <= 1
+        && a.outcome === (a.score >= a.threshold ? 'passed' : 'failed'))
       && ids(a.turnIds, LIMITS.evidenceItems) && a.turnIds.every(id => turns.includes(id)) && ids(a.toolIds, LIMITS.evidenceItems) && a.toolIds.every(id => tools.includes(id)))
     && new Set(v.assertions.map(a => a.id)).size === v.assertions.length
     && (v.outcome !== 'passed' || v.assertions.length > 0 && v.assertions.every(a => a.outcome === 'passed'));

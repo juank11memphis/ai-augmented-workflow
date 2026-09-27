@@ -34,7 +34,9 @@ export class FileArtifactReader implements ArtifactReaderPort {
       if (result.status !== 'ok') return unavailable(result.reason);
       const safe = boundedArtifact(result.value, LIMITS.attemptBytes, attempt); if (safe.status !== 'ok') return unavailable(safe.reason);
       const evidence = safe.value;
-      if (evidence.runId !== runId || evidence.suiteId !== suiteId || evidence.caseId !== selection.caseId || evidence.number !== selection.attempt || evidence.outcome !== referenced.outcome) return unavailable('corrupt');
+      if (evidence.runId !== runId || evidence.suiteId !== suiteId || evidence.caseId !== selection.caseId || evidence.number !== selection.attempt || evidence.outcome !== referenced.outcome
+        || evidence.durationMs !== referenced.durationMs || evidence.calls !== referenced.calls || evidence.cost !== referenced.cost
+        || JSON.stringify(evidence.assertions.filter(item => item.judgeModel !== undefined && item.score !== null).map(item => item.score)) !== JSON.stringify(referenced.rubricScores ?? [])) return unavailable('corrupt');
       const selected = selectEvidence(evidence, selection.assertionId);
       return selected ? { status: 'ok', value: { summary: summary.value, evidence: selected, evidenceStatus: 'available' }, warnings: summary.warnings } : unavailable('not-found');
     } catch (error) { return failure(error); }

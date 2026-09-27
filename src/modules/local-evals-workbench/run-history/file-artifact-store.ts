@@ -101,7 +101,8 @@ export class FileArtifactStore implements ArtifactStorePort {
     for (const item of run.cases) for (const summary of item.attempts) {
       const read = await this.dependencies.reader.read(this.paths.attempt(run.suiteId, run.runId, item.caseId, summary.number), LIMITS.attemptBytes, attempt);
       if (read.status !== 'ok' || read.value.runId !== run.runId || read.value.suiteId !== run.suiteId || read.value.caseId !== item.caseId || read.value.number !== summary.number
-        || read.value.outcome !== summary.outcome || read.value.durationMs !== summary.durationMs || read.value.calls !== summary.calls || read.value.cost !== summary.cost) return false;
+        || read.value.outcome !== summary.outcome || read.value.durationMs !== summary.durationMs || read.value.calls !== summary.calls || read.value.cost !== summary.cost
+        || JSON.stringify(read.value.assertions.filter(item => item.judgeModel !== undefined && item.score !== null).map(item => item.score)) !== JSON.stringify(summary.rubricScores ?? [])) return false;
     }
     return true;
   }

@@ -46,9 +46,29 @@ test('rejects stale review and unsupported checks before creating a run', async 
   const stale = harness();
   assert.deepEqual(await startEvalRun({ ...command, review: { ...review, totalCalls: 2 } }, stale.ports), { status: 'blocked', reason: 'review-stale' });
   assert.ok(!stale.events.includes('create'));
-  const unsupported = harness();
-  assert.deepEqual(await startEvalRun({ ...command, repeats: 2 }, unsupported.ports), { status: 'blocked', reason: 'input-unsafe' });
-  assert.deepEqual(unsupported.events, []);
+  const invalid = harness();
+  assert.deepEqual(await startEvalRun({ ...command, repeats: 21 }, invalid.ports), { status: 'blocked', reason: 'input-unsafe' });
+  assert.deepEqual(invalid.events, []);
+});
+
+test('reviewed repeats and Judge Model reach queued configuration and scheduler', async () => {
+  const h = harness();
+  const rubricCase = { ...one, graders: [{ id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'good' }, threshold: 0.8 }] };
+  h.ports.suites.load = async () => ({ ...suite, testCases: [rubricCase] });
+  h.ports.runner.describe = async () => ({ status: 'ready', value: { runnerId: 'runner', capabilities: ['single-turn', 'rubric'] as const,
+    models: ['fake'], judgeModels: ['judge'], requiredEnvironment: [], costEstimation: true } });
+  h.ports.runner.estimate = async (_suite, input) => ({ status: 'ready', value: { targetCalls: input.repeats,
+    judgeCalls: input.repeats, totalCalls: input.repeats * 2, cost: review.cost } });
+  let created: unknown;
+  let scheduled: unknown;
+  const originalCreate = h.ports.store.create;
+  h.ports.store.create = async input => { created = input; return originalCreate(input); };
+  h.ports.scheduler.schedule = selection => { scheduled = selection; };
+  const deepReview = { ...review, targetCalls: 2, judgeCalls: 2, totalCalls: 4 };
+  const result = await startEvalRun({ ...command, judgeModel: 'judge', repeats: 2, review: deepReview }, h.ports);
+  assert.equal(result.status, 'queued');
+  assert.deepEqual(created && { judgeModel: (created as { judgeModel: string }).judgeModel, repeats: (created as { repeats: number }).repeats }, { judgeModel: 'judge', repeats: 2 });
+  assert.deepEqual(scheduled && { judgeModel: (scheduled as { judgeModel: string }).judgeModel, repeats: (scheduled as { repeats: number }).repeats }, { judgeModel: 'judge', repeats: 2 });
 });
 
 test('scheduler failure marks the queued run error, not started', async () => {

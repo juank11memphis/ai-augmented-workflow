@@ -2,10 +2,12 @@ import type { ArtifactStorePort } from '../run-history/contracts.js';
 import type { ExecutionEvent, ExecutionSelection, RunnerExecutionOutcome } from '../run-execution/contracts.js';
 import type { PreviewLoggerPort } from '../runtime-ports.js';
 import type { DeterministicAssertion } from '../discover-conventional-eval-suites/index.js';
-import type { AssertionEvidence } from '../run-history/contracts.js';
+import type { AssertionEvidence, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
+
+export type AttemptSnapshot = { readonly output: string; readonly turns: readonly TurnEvidence[]; readonly tools: readonly ToolEvidence[] };
 
 export interface OutputAssertionEvaluatorPort {
-  evaluate(assertions: readonly DeterministicAssertion[], output: string, turnId: string): readonly AssertionEvidence[];
+  evaluate(assertions: readonly DeterministicAssertion[], snapshot: AttemptSnapshot): readonly AssertionEvidence[];
 }
 
 export interface RunnerExecutorPort {

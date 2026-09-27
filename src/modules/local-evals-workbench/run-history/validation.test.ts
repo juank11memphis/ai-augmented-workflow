@@ -24,3 +24,12 @@ it('rejects inconsistent counters, oversize collections and duplicate assertion/
   const e = evidence(); assert.equal(attempt({ ...e, assertions: [e.assertions[0], e.assertions[0]] }), false);
   assert.equal(attempt({ ...e, turns: Array(101).fill({ id: 'turn', role: 'assistant', content: 'x' }) }), false);
 });
+
+it('rejects contradictory persisted Judge evidence on save and read boundaries', () => {
+  const base = evidence();
+  const grader = { ...base.assertions[0]!, id: 'quality', kind: 'grader' as const, score: 0.2,
+    threshold: 0.8, judgeModel: 'fake-judge', outcome: 'failed' as const };
+  assert.equal(attempt({ ...base, outcome: 'failed', assertions: [grader] }), true);
+  assert.equal(attempt({ ...base, assertions: [{ ...grader, outcome: 'passed' }] }), false);
+  assert.equal(attempt({ ...base, outcome: 'failed', assertions: [{ ...grader, threshold: 1.2 }] }), false);
+});

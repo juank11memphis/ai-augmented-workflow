@@ -1,12 +1,17 @@
 import type { DeterministicAssertion } from '../discover-conventional-eval-suites/index.js';
 import type { AssertionEvidence } from '../run-history/contracts.js';
 import { validateJsonSchema } from './json-schema-adapter.js';
+import { evaluateToolTurnAssertion } from './tool-turn-assertions.js';
+import type { AttemptSnapshot } from '../execute-eval-run/ports.js';
 
 const PREVIEW = 500;
 const preview = (value: string): string => value.length > PREVIEW ? `${value.slice(0, PREVIEW)}… [preview shortened]` : value;
 
-export function evaluateOutputAssertions(assertions: readonly DeterministicAssertion[], output: string, turnId: string): readonly AssertionEvidence[] {
+export function evaluateOutputAssertions(assertions: readonly DeterministicAssertion[], snapshot: AttemptSnapshot): readonly AssertionEvidence[] {
+  const { output } = snapshot;
+  const turnId = snapshot.turns.at(-1)?.id;
   return assertions.map(assertion => {
+    if (assertion.type !== 'output-equals' && assertion.type !== 'output-contains' && assertion.type !== 'json-schema') return evaluateToolTurnAssertion(assertion, snapshot);
     let passed = false;
     let expected = '';
     let diagnostics: readonly string[] = [];
@@ -30,7 +35,7 @@ export function evaluateOutputAssertions(assertions: readonly DeterministicAsser
     }
     return {
       id: assertion.id, kind: 'assertion', outcome: passed ? 'passed' : 'failed', score: null,
-      expected: preview(expected), actual: preview(output), diagnostics, turnIds: [turnId], toolIds: [],
+      expected: preview(expected), actual: preview(output), diagnostics, turnIds: turnId ? [turnId] : [], toolIds: [],
     };
   });
 }

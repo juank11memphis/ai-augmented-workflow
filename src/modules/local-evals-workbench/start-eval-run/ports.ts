@@ -9,6 +9,8 @@ export interface RunSchedulerPort {
     readonly suite: NormalizedEvalSuite;
     readonly cases: readonly NormalizedEvalTestCase[];
     readonly model: string;
+    readonly judgeModel: string | null;
+    readonly repeats: number;
   }): void;
 }
 

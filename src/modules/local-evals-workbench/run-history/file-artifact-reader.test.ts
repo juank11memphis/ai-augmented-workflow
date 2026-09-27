@@ -41,3 +41,20 @@ it('selects historical IDs and restores latest ordering across terminal partial 
     assert.equal((await reader.get('Suite.Name', ids[0]!)).status, 'ok');
   } finally { await p.cleanup(); }
 });
+
+it('rejects contradictory Judge evidence at save and reopened read', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail();
+    const id = run.value.runId; await a.store.start('suite', id);
+    const base = evidence(id);
+    const grader = { ...base.assertions[0]!, id: 'quality', kind: 'grader' as const, score: 0.2,
+      threshold: 0.8, judgeModel: 'fake-judge', outcome: 'failed' as const };
+    const valid = { ...base, outcome: 'failed' as const, assertions: [grader] };
+    assert.equal((await a.store.append('suite', id, { ...valid, assertions: [{ ...grader, outcome: 'passed' }] })).status, 'blocked');
+    assert.equal((await a.store.append('suite', id, valid)).status, 'ok');
+    await writeFile(path.join(p.root, 'evals/artifacts', a.paths.attempt('suite', id, 'case', 1)),
+      JSON.stringify({ ...valid, assertions: [{ ...grader, outcome: 'passed' }] }));
+    const detail = await historyReader(a).get('suite', id, { caseId: 'case', attempt: 1 });
+    assert.equal(detail.status === 'ok' && detail.value.evidenceStatus, 'unavailable');
+  } finally { await p.cleanup(); }
+});

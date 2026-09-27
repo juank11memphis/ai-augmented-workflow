@@ -11,7 +11,9 @@ test('start parser accepts one reviewed model and blocks browser-controlled exec
   for (const field of ['command', 'environment', 'projectRoot', 'artifactPath']) {
     assert.equal(parseStartRequest({ ...valid, [field]: 'unsafe' }), undefined);
   }
-  assert.equal(parseStartRequest({ ...valid, repeats: 2 }), undefined);
+  assert.equal(parseStartRequest({ ...valid, repeats: 2, judgeModel: 'judge' })?.repeats, 2);
+  assert.equal(parseStartRequest({ ...valid, repeats: 21 }), undefined);
+  assert.equal(parseStartRequest({ ...valid, judgeModel: '../escape' }), undefined);
   assert.equal(parseStartRequest({ ...valid, review: { ...valid.review, totalCalls: 2 } }), undefined);
   assert.equal(parseStartRequest({ ...valid, scope: { type: 'test_case', testCaseId: '../escape' } }), undefined);
 });

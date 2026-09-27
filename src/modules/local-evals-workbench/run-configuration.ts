@@ -1,6 +1,7 @@
 import type { NormalizedEvalSuite, NormalizedEvalTestCase } from './discover-conventional-eval-suites/index.js';
 import type { RuntimeOutcome } from './runtime-description.js';
 import type { ConsumptionEstimate } from './runtime-estimate.js';
+export const MAX_RUN_REPEATS = 20;
 
 /** Shared selection boundary for preview and start; neither slice owns the other's internals. */
 export type RunSelectionCommand = {

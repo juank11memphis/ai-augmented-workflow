@@ -3,9 +3,10 @@ import type { PreviewEvalRunResult } from './result.js';
 import type { ArtifactReadinessPort, CaseInputResolverPort, PreviewLoggerPort, RunnerDescriptorPort, RunnerEstimatorPort, SuiteRuntimeRegistryPort } from './ports.js';
 import { compatibleDescription, hasRubric, requiredCapabilities, type RuntimeBlockReason } from '../runtime-description.js';
 import type { NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
+import { MAX_RUN_REPEATS } from '../run-configuration.js';
 
 /** Hard upper bound avoids surprising spend and unsafe call arithmetic. */
-export const MAX_PREVIEW_REPEATS = 20;
+export const MAX_PREVIEW_REPEATS = MAX_RUN_REPEATS;
 export type PreviewEvalRunDependencies = {
   readonly suites: SuiteRuntimeRegistryPort;
   readonly runner: RunnerDescriptorPort & RunnerEstimatorPort;

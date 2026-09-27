@@ -29,7 +29,7 @@ test('per-UI run state locks controls and selected raw evidence renders as text 
       output, outcome: 'incomplete', diagnostics: ['runner-timeout'], assertions: [{ id: 'check', outcome: 'failed', expected: 'safe', actual: output, diagnostics: ['unsupported-schema'] }] } } }) }),
   };
   const api = vm.runInNewContext(WORKBENCH_CLIENT_RUN_SECTION.source + ';({ renderSelectedRun, inspectRunCase, setRun(value){selectedRun=value;} })', context) as {
-    renderSelectedRun(value: unknown): void; inspectRunCase(caseId: string): Promise<void>; setRun(value: unknown): void;
+    renderSelectedRun(value: unknown): void; inspectRunCase(caseId: string, attempt: number): Promise<void>; setRun(value: unknown): void;
   };
   api.renderSelectedRun(summary);
   assert.ok(controls.every(control => control.disabled));
@@ -39,10 +39,20 @@ test('per-UI run state locks controls and selected raw evidence renders as text 
   assert.equal(heading.focused, true);
   api.renderSelectedRun({ ...summary, state: 'partial', diagnostics: ['runner-timeout'],
     cases: [{ caseId: 'case', state: 'incomplete', attempts: [{ outcome: 'incomplete' }] }], finishedAt: Date.now() });
-  assert.match(panel.innerHTML, /Inspect partial evidence/);
+  assert.match(panel.innerHTML, /Inspect attempt/);
   assert.match(panel.innerHTML, /Run diagnostics: runner-timeout/);
+  assert.match(panel.innerHTML, /calls unavailable; cost unavailable/);
+  api.renderSelectedRun({ ...summary, state: 'completed', cost: null, cases: [{ caseId: 'case', state: 'completed', attempts: [
+    { outcome: 'passed', durationMs: 1, calls: 2, cost: 0.01 },
+    { outcome: 'passed', durationMs: 1, calls: null, cost: null },
+  ] }], finishedAt: Date.now() });
+  assert.match(panel.innerHTML, /calls unavailable; cost unavailable/);
+  api.renderSelectedRun({ ...summary, state: 'completed', cost: 0, cases: [{ caseId: 'case', state: 'completed', attempts: [
+    { outcome: 'passed', durationMs: 1, calls: 0, cost: 0 },
+  ] }], finishedAt: Date.now() });
+  assert.match(panel.innerHTML, /calls 0; cost 0/);
   api.setRun({ suiteId: 'suite', runId: 'run' });
-  await api.inspectRunCase('case');
+  await api.inspectRunCase('case', 1);
   const raw = created.find(node => node.tag === 'pre');
   assert.equal(raw?.textContent, output);
   assert.ok(created.some(node => node.textContent === 'Diagnostic: runner-timeout'));
