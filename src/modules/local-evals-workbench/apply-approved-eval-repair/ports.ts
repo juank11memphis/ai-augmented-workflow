@@ -1,12 +1,15 @@
-import type { ProposedRepairChange, RepairProposalPreview } from '../draft-eval-repair-proposal/result.js';
+import type { ProposedRepairChange, RepairProposalPreview } from '../repair-context/contracts.js';
 import type { ApprovedRepairChangedFile } from './result.js';
+import type { ProjectFileState } from '../repair-context/project-file-state.js';
 
 export type PendingApprovedRepairProposal = RepairProposalPreview & {
   readonly projectRoot: string;
+  readonly targetPrecondition: ProjectFileState;
 };
 
 export type ApprovedRepairProposalReaderPort = {
   getPendingProposal(proposalId: string): Promise<PendingApprovedRepairProposal | null> | PendingApprovedRepairProposal | null;
+  claimPendingProposal(proposalId: string): boolean;
 };
 
 export type ProjectFileMutationSafetyPort = {
@@ -22,7 +25,8 @@ export type ApprovedProjectFileMutatorPort = {
     readonly projectRoot: string;
     readonly targetPaths: readonly string[];
     readonly approvedChange: ProposedRepairChange;
-  }): Promise<{ readonly status: 'applied'; readonly changedFiles: readonly ApprovedRepairChangedFile[] } | { readonly status: 'failed'; readonly reason: string }>;
+    readonly targetPrecondition: ProjectFileState;
+  }): Promise<{ readonly status: 'applied'; readonly changedFiles: readonly ApprovedRepairChangedFile[] } | { readonly status: 'failed'; readonly reason: string; readonly changedFiles: readonly ApprovedRepairChangedFile[] }>;
 };
 
 export type ApplyApprovedRepairLogEvent =

@@ -19,6 +19,8 @@ import { parsePreviewRequest } from '../preview-eval-run/request-parser.js';
 import { startEvalRun } from '../start-eval-run/index.js';
 import { parseStartRequest } from '../start-eval-run/request-parser.js';
 import { parseGetRunRequest } from '../get-eval-run/request-parser.js';
+import { parseListRunRequest } from '../list-eval-runs/request-parser.js';
+import { renderWorkspaceShell } from '../workbench-ui/workspace-layout.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -105,6 +107,15 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
     writeJson(response, result.status === 'ok' ? 200 : 422, result);
     return;
   }
+  if (url.pathname === '/api/eval-runs/history') {
+    if (request.method !== 'GET') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' }); return; }
+    if (!dependencies.list) { writeJson(response, 503, { status: 'blocked', reason: 'unavailable' }); return; }
+    const command = parseListRunRequest(url);
+    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    const result = await dependencies.list(command);
+    writeJson(response, result.status === 'ok' ? 200 : 422, result);
+    return;
+  }
   if (request.url === '/api/eval-suites') {
     writeJson(response, 200, publicDiscoveryResult);
     return;
@@ -151,9 +162,13 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
     await handleApplyRepairProposalRequest(request, response, startRequest, dependencies.applyRepair);
     return;
   }
+  if (request.url === '/api/failure-analysis' || request.url === '/api/repair-proposals' || request.url === '/api/repair-proposals/apply') {
+    writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' });
+    return;
+  }
 
   const preferredEvalRunModel = dependencies.analysis.assistanceConfig.getConfig().assistanceModelLabel;
-  writeHtml(response, renderWorkbenchShell(createWorkbenchViewModel({ discovery: publicDiscoveryResult, preferredEvalRunModel }), WORKBENCH_CLIENT_SCRIPT));
+  writeHtml(response, renderWorkspaceShell(publicDiscoveryResult));
 }
 
 async function handleEvalRunRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: RunLocalEvalSuiteDependencies): Promise<void> {

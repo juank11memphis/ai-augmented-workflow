@@ -54,7 +54,8 @@ export async function discoverConventionalEvalSuites(
     .filter((definition) => !duplicatedIds.has(definition.suite.id))
     .map((definition) => definition.suite);
   const suites = definitions.map(toSummary);
-  const result = buildResult(suites, definitions, diagnostics);
+  const sourceBySuiteId = Object.fromEntries(validatedDefinitions.filter(item => !duplicatedIds.has(item.suite.id)).map(item => [item.suite.id, item.source]));
+  const result = buildResult(suites, definitions, diagnostics, sourceBySuiteId);
   const completedEvent = {
     event: 'eval_suite_discovery_completed' as const,
     outcome: result.status,
@@ -77,11 +78,12 @@ function toSummary(suite: NormalizedEvalSuite): EvalSuiteSummary {
     readyTestCaseCount: suite.testCases.length,
     testCases: suite.testCases.map((testCase) => ({ id: testCase.id, name: testCase.name })),
     modelOptions: [],
+    coverage: suite.coverage,
   };
 }
 
-function buildResult(suites: readonly EvalSuiteSummary[], definitions: readonly NormalizedEvalSuite[], diagnostics: readonly EvalSuiteDiscoveryDiagnostic[]): InternalEvalSuiteDiscoveryResult {
-  if (suites.length > 0) return { status: 'ready', suites, definitions, diagnostics };
+function buildResult(suites: readonly EvalSuiteSummary[], definitions: readonly NormalizedEvalSuite[], diagnostics: readonly EvalSuiteDiscoveryDiagnostic[], sourceBySuiteId: Readonly<Record<string, string>>): InternalEvalSuiteDiscoveryResult {
+  if (suites.length > 0) return { status: 'ready', suites, definitions, sourceBySuiteId, diagnostics };
   const missingEvalsFolder = diagnostics.some((diagnostic) => diagnostic.code === 'evals-folder-missing');
   return {
     status: 'blocked',
@@ -92,6 +94,7 @@ function buildResult(suites: readonly EvalSuiteSummary[], definitions: readonly 
       : ['Correct the reported definition issues or regenerate the suite using Sibu eval suite version 2.'],
     suites: [],
     definitions: [],
+    sourceBySuiteId: {},
     diagnostics,
   };
 }

@@ -5,9 +5,14 @@ import { parseAnalyzeFailedAssertionRequest } from './request-parser.js';
 
 describe('parseAnalyzeFailedAssertionRequest', () => {
   it('parses one active failed assertion request', () => {
-    const parsed = parseAnalyzeFailedAssertionRequest('/repo', { suiteId: 'suite', testCaseId: 'case-1', evalRunModelId: 'gpt-5-mini', runScope: { type: 'test_case', testCaseId: 'case-1' }, assertionId: 'a1' });
+    const parsed = parseAnalyzeFailedAssertionRequest('/repo', { suiteId: 'suite', runId: 'run-1', attempt: 1, testCaseId: 'case-1', evalRunModelId: 'gpt-5-mini', runScope: { type: 'test_case', testCaseId: 'case-1' }, assertionId: 'a1' });
     assert.equal(parsed.status, 'valid');
     if (parsed.status === 'valid') assert.equal(parsed.command.assertionId, 'a1');
+  });
+  it('accepts persisted provider model identities', () => {
+    const payload = { suiteId: 'suite', runId: 'run-1', attempt: 1, testCaseId: 'case-1',
+      evalRunModelId: 'provider:' + 'model/'.repeat(22), runScope: { type: 'all' }, assertionId: 'a1' };
+    assert.equal(parseAnalyzeFailedAssertionRequest('/repo', payload).status, 'valid');
   });
 
   it('rejects missing and wrong primitive fields', () => {

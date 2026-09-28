@@ -2,8 +2,8 @@ import type { NormalizedEvalSuite } from './suite-contract.js';
 
 export type EvalSuiteDiscoveryResult = EvalSuiteDiscoveryReadyResult | EvalSuiteDiscoveryBlockedResult;
 export type InternalEvalSuiteDiscoveryResult =
-  | (EvalSuiteDiscoveryReadyResult & { readonly definitions: readonly NormalizedEvalSuite[] })
-  | (EvalSuiteDiscoveryBlockedResult & { readonly definitions: readonly NormalizedEvalSuite[] });
+  | (EvalSuiteDiscoveryReadyResult & { readonly definitions: readonly NormalizedEvalSuite[]; readonly sourceBySuiteId?: Readonly<Record<string, string>> })
+  | (EvalSuiteDiscoveryBlockedResult & { readonly definitions: readonly NormalizedEvalSuite[]; readonly sourceBySuiteId?: Readonly<Record<string, string>> });
 
 export type EvalSuiteDiscoveryReadyResult = {
   readonly status: 'ready';
@@ -28,6 +28,7 @@ export type EvalSuiteSummary = {
   readonly testCases: readonly EvalSuiteTestCaseSummary[];
   /** Model discovery belongs to the future runner describe slice. */
   readonly modelOptions: readonly EvalSuiteModelOption[];
+  readonly coverage?: NormalizedEvalSuite['coverage'];
 };
 
 export type EvalSuiteTestCaseSummary = { readonly id: string; readonly name: string };
@@ -61,6 +62,6 @@ export type EvalSuiteDiscoveryDiagnostic = {
 };
 
 export function toPublicEvalSuiteDiscoveryResult(result: InternalEvalSuiteDiscoveryResult): EvalSuiteDiscoveryResult {
-  const { definitions: _definitions, ...publicResult } = result;
+  const { definitions: _definitions, sourceBySuiteId: _sources, ...publicResult } = result;
   return publicResult;
 }

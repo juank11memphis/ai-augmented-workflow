@@ -198,7 +198,7 @@ function blockedRun(): RunLocalEvalSuiteResult {
 
 
 function analysisReady(assertionId: string) {
-  return { status: 'analysis-ready' as const, assistanceModelLabel: 'gpt-5-mini', evidence: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId, assertionLabel: 'A', assertionKind: 'assertion' as const, assertionMessage: 'Failed.', actualOutputPreview: 'actual', expectedPreview: 'expected', cellOutputPreview: null, diagnostics: [], artifacts: [] }, analysis: { exactFailureExplanation: 'Failed.', likelyCause: 'prompt_issue' as const, evidenceSummary: 'Evidence.', uncertainty: 'Low.' } };
+  return { status: 'analysis-ready' as const, analysisId: 'analysis-1', assistanceModelLabel: 'gpt-5-mini', evidence: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId, assertionLabel: 'A', assertionKind: 'assertion' as const, assertionMessage: 'Failed.', actualOutputPreview: 'actual', expectedPreview: 'expected', cellOutputPreview: null, diagnostics: [], artifacts: [] }, analysis: { exactFailureExplanation: 'Failed.', likelyCause: 'prompt_issue' as const, evidenceSummary: 'Evidence.', uncertainty: 'Low.' } };
 }
 
 

@@ -26,6 +26,14 @@ export async function applyApprovedEvalRepair(command: ApplyApprovedEvalRepairCo
   if (!proposal) return block('stale-proposal', 'The repair proposal is unavailable or stale. Draft a fresh proposal before approving. No project files changed.', dependencies, startedAt, proposalId);
   if (proposal.approvalState !== 'pending') return block('stale-proposal', 'Only pending repair proposals can be approved. No project files changed.', dependencies, startedAt, proposalId);
   if (!sameRoot(command.projectRoot, proposal.projectRoot)) return block('wrong-project-root', 'The repair proposal was drafted for a different project root. No project files changed.', dependencies, startedAt, proposalId);
+  const source = proposal.sourceFailureScope;
+  if (!source || source.suiteId !== command.suiteId || source.runId !== command.runId
+    || source.testCaseId !== command.testCaseId || source.attempt !== command.attempt
+    || source.assertionId !== command.assertionId || proposal.affectedProjectFiles.length !== 1
+    || proposal.affectedProjectFiles[0] !== proposal.targetPrecondition.path
+    || proposal.proposedChange.kind === 'instructions') {
+    return block('stale-proposal', 'Proposal and selected failure do not match. Draft a fresh one. No project files changed.', dependencies, startedAt, proposalId);
+  }
 
   const safety = await dependencies.safety.validateTargets(command.projectRoot, proposal.affectedProjectFiles);
   if (safety.status === 'blocked') return block('unsafe-target', `${safety.reason} No project files changed.`, dependencies, startedAt, proposalId, proposal.affectedProjectFiles.length, safety.unsafePaths);
@@ -33,10 +41,12 @@ export async function applyApprovedEvalRepair(command: ApplyApprovedEvalRepairCo
   const readiness = await dependencies.workflowReadiness.checkReadiness(command.projectRoot, safety.safeTargets);
   if (readiness.status === 'blocked') return block('unsafe-workflow-readiness', `${readiness.message} No project files changed.`, dependencies, startedAt, proposalId, safety.safeTargets.length, readiness.affectedPaths, readiness.guidance);
 
-  const mutation = await dependencies.mutator.applyApprovedChange({ projectRoot: command.projectRoot, targetPaths: safety.safeTargets, approvedChange: proposal.proposedChange });
+  if (!dependencies.proposalReader.claimPendingProposal(proposalId)) return block('stale-proposal', 'This proposal was already applied or is being applied. Draft a fresh one. No project files changed.', dependencies, startedAt, proposalId);
+  const mutation = await dependencies.mutator.applyApprovedChange({ projectRoot: command.projectRoot, targetPaths: safety.safeTargets, approvedChange: proposal.proposedChange, targetPrecondition: proposal.targetPrecondition });
   if (mutation.status === 'failed') {
     dependencies.logger.error({ event: 'approved_repair_failed', proposalId, reason: mutation.reason, targetFileCount: safety.safeTargets.length, safeTargetPaths: safety.safeTargets, durationMs: elapsed(startedAt, dependencies) });
-    return { status: 'error', reason: 'mutation-failure', proposalId, changedFiles: [], changedFileCount: 0, message: 'The approved change could not be applied. No project files changed.' };
+    return { status: 'error', reason: 'mutation-failure', proposalId, changedFiles: mutation.changedFiles, changedFileCount: mutation.changedFiles.length,
+      message: mutation.changedFiles.length ? 'The repair failed after a file changed. Inspect the file before retrying.' : 'The approved change could not be applied. No project files changed.' };
   }
 
   const changedFiles = normalizeChangedFiles(mutation.changedFiles);

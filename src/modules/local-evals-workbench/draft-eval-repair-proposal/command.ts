@@ -1,11 +1,13 @@
 export type DraftEvalRepairProposalCommand = {
   readonly projectRoot: string;
   readonly suiteId: string;
+  readonly runId: string;
+  readonly attempt: number;
   readonly testCaseId: string;
   readonly evalRunModelId: string;
   readonly runScope: DraftEvalRepairProposalRunScope;
   readonly assertionId: string;
-  readonly priorAnalysis?: DraftProposalPriorAnalysis;
+  readonly analysisId: string;
   readonly repairDirection: RepairDirection;
 };
 

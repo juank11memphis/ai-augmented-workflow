@@ -1,12 +1,12 @@
 import type { AnalyzeFailedAssertionCommand } from './command.js';
-import { buildFailedAssertionEvidence } from './evidence.js';
-import type { AnalyzeFailedAssertionLoggerPort, AssistanceConfigPort, FailedAssertionRunArtifactReaderPort, FailureAnalysisLlmPort } from './ports.js';
+import type { AnalyzeFailedAssertionLoggerPort, AssistanceConfigPort, FailedAssertionRunArtifactReaderPort, FailureAnalysisLlmPort, FailureAnalysisStorePort } from './ports.js';
 import type { AnalyzeFailedAssertionBlockedResult, AnalyzeFailedAssertionResult } from './result.js';
 
 export type AnalyzeFailedAssertionDependencies = {
   readonly artifactReader: FailedAssertionRunArtifactReaderPort;
   readonly assistanceConfig: AssistanceConfigPort;
   readonly llm: FailureAnalysisLlmPort;
+  readonly analysisStore: FailureAnalysisStorePort;
   readonly logger: AnalyzeFailedAssertionLoggerPort;
   readonly clock?: () => number;
 };
@@ -20,17 +20,16 @@ export async function analyzeFailedAssertion(command: AnalyzeFailedAssertionComm
   const blockedScope = validateScope(command);
   if (blockedScope) return logBlocked(blockedScope, metadata, startedAt, dependencies);
 
-  const artifact = dependencies.artifactReader.getRunArtifact(command.suiteId, command.evalRunModelId, command.runScope.type, command.runScope.type === 'test_case' ? command.runScope.testCaseId : undefined);
-  if (!artifact) return logBlocked(blocked('missing-artifact', 'Run evidence was not found. Run the eval before requesting analysis.'), metadata, startedAt, dependencies);
-
-  const cell = artifact.matrix.rows.find((row) => row.testCaseId === command.testCaseId)?.cells.find((candidate) => candidate.modelId === command.evalRunModelId);
-  if (!cell) return logBlocked(blocked('missing-cell', 'The selected result cell was not found in the stored run.'), metadata, startedAt, dependencies);
-
-  const assertion = cell.assertions.find((candidate) => candidate.id === command.assertionId);
-  if (!assertion) return logBlocked(blocked('missing-assertion', 'The selected assertion was not found in the stored result cell.'), metadata, startedAt, dependencies);
-  if (assertion.status !== 'failed') return logBlocked(blocked('non-failed-assertion', 'Only failed assertions can be analyzed.'), metadata, startedAt, dependencies);
-
-  const evidence = buildFailedAssertionEvidence({ suiteId: command.suiteId, cell, assertion });
+  const selected = await dependencies.artifactReader.read(command);
+  if (selected.status === 'blocked') return logBlocked(blocked(
+    selected.reason === 'non-failed-assertion' ? 'non-failed-assertion' : 'missing-artifact',
+    'The selected failed assertion is unavailable in this saved run.'
+  ), metadata, startedAt, dependencies);
+  if (selected.value.testedModel !== command.evalRunModelId
+    || selected.value.runScope !== (command.runScope.type === 'all' ? 'all' : 'selected')) {
+    return logBlocked(blocked('invalid-scope', 'The selected model or scope does not match this saved run.'), metadata, startedAt, dependencies);
+  }
+  const evidence = selected.value.evidence;
   if (!config.hasOpenAiApiKey) {
     dependencies.logger.warn({ event: 'failure_analysis_unavailable', ...metadata, assistanceModelLabel: config.assistanceModelLabel, reason: 'missing-openai-api-key', durationMs: elapsed(startedAt, dependencies) });
     return {
@@ -45,8 +44,9 @@ export async function analyzeFailedAssertion(command: AnalyzeFailedAssertionComm
 
   try {
     const analysis = await dependencies.llm.analyzeFailure({ model: config.assistanceModelLabel, evidence });
+    const analysisId = dependencies.analysisStore.save(command, analysis);
     dependencies.logger.info({ event: 'failure_analysis_completed', ...metadata, assistanceModelLabel: config.assistanceModelLabel, durationMs: elapsed(startedAt, dependencies), outcome: 'analysis-ready' });
-    return { status: 'analysis-ready', assistanceModelLabel: config.assistanceModelLabel, evidence, analysis };
+    return { status: 'analysis-ready', analysisId, assistanceModelLabel: config.assistanceModelLabel, evidence, analysis };
   } catch {
     dependencies.logger.error({ event: 'failure_analysis_failed', ...metadata, assistanceModelLabel: config.assistanceModelLabel, reason: 'llm-failure', durationMs: elapsed(startedAt, dependencies) });
     return { status: 'error', reason: 'llm-failure', message: 'Failure analysis could not be completed. Try again later.', assistanceModelLabel: config.assistanceModelLabel, evidence };
@@ -54,6 +54,9 @@ export async function analyzeFailedAssertion(command: AnalyzeFailedAssertionComm
 }
 
 function validateScope(command: AnalyzeFailedAssertionCommand): AnalyzeFailedAssertionBlockedResult | null {
+  if (!Number.isInteger(command.attempt) || command.attempt < 1 || command.attempt > 20 || !command.runId) {
+    return blocked('invalid-scope', 'Select one saved run and attempt.');
+  }
   if (command.runScope.type === 'test_case' && command.runScope.testCaseId !== command.testCaseId) {
     return blocked('invalid-scope', 'Analysis must stay scoped to the active failed assertion test case.');
   }

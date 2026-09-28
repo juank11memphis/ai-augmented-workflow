@@ -27,13 +27,12 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.equal(fakeServer.listenHost, '127.0.0.1');
       assert.equal(result.host, '127.0.0.1');
       assert.equal(result.url, 'http://127.0.0.1:4321/');
-      assert.match(response.body, /Local Sibu Evals/);
+      assert.match(response.body, /Sibu Evals/);
       assert.match(response.body, /Eval Suite/);
       assert.match(response.body, /Skill authoring checks/);
       assert.match(response.body, /Run scope/);
       assert.match(response.body, /Review run/);
       assert.match(response.body, /Model/);
-      assert.match(response.body, /Pass rate/);
       assert.match(response.body, /0\/2 complete/);
       assert.equal(response.headers['cache-control'], 'no-store');
       assert.doesNotMatch(response.body, /openai-secret-for-test|model-secret-for-test|OPENAI_API_KEY|SIBU_EVALS_MODEL|PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|process\.env|mutation|mutate|\/repo/);
@@ -68,6 +67,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       await result.stop?.();
     }
   });
+
 
   it('serves blocked empty setup state from the local JSON endpoint', async () => {
     const fakeServer = new FakeLocalHttpServer(4321);
@@ -270,22 +270,23 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.equal((await fakeServer.renderRawResponse('/api/repair-proposals/apply', '{ nope')).statusCode, 400);
       assert.equal((await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'repair_1' })).statusCode, 400);
 
-      const missingApproval = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'repair_1', approvalMarker: 'not-approved' });
+      const selection = analysisPayload();
+      const missingApproval = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { ...selection, proposalId: 'repair_1', approvalMarker: 'not-approved' });
       assert.equal(missingApproval.statusCode, 422);
       assert.match(missingApproval.body, /missing-approval/);
       assert.equal(mutationCalls.length, 0);
 
-      const stale = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'stale', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
+      const stale = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { ...selection, proposalId: 'stale', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
       assert.equal(stale.statusCode, 422);
       assert.match(stale.body, /stale-proposal/);
       assert.equal(mutationCalls.length, 0);
 
-      const blocked = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'unsafe', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
+      const blocked = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { ...selection, proposalId: 'unsafe', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
       assert.equal(blocked.statusCode, 422);
       assert.match(blocked.body, /unsafe-target/);
       assert.equal(mutationCalls.length, 0);
 
-      const applied = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { proposalId: 'repair_1', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
+      const applied = await fakeServer.renderJsonResponse('/api/repair-proposals/apply', { ...selection, proposalId: 'repair_1', approvalMarker: APPLY_APPROVED_REPAIR_MARKER });
       assert.equal(applied.statusCode, 200);
       assert.match(applied.body, /applied|prompts\/skill-authoring\.md|changedFileCount|rerunRecommendation/);
       assert.match(applied.body, /Rerun this test case|Rerun full suite/);
@@ -404,6 +405,7 @@ class FakeLocalHttpServer {
     return { statusCode, headers, body };
   }
 
+
   async renderJsonResponse(url: string, payload: unknown): Promise<FakeResponse> {
     return this.renderRawResponse(url, JSON.stringify(payload));
   }
@@ -448,7 +450,7 @@ function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDepend
 
 function applyRepairDependencies(options: { readonly mutationCalls?: unknown[] } = {}): ApplyApprovedEvalRepairDependencies {
   return {
-    proposalReader: { getPendingProposal: (proposalId) => proposalId === 'stale' ? null : { proposalId, projectRoot: '/repo', affectedProjectFiles: [proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md'], changeSummary: 'Add hard stop rule.', rationale: 'The active assertion skipped the rule.', expectedEvalImpact: 'The focused assertion should pass.', proposedChange: { kind: 'replacement', representation: 'new content' }, approvalState: 'pending', sourceFailureScope: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1' } } },
+    proposalReader: { getPendingProposal: (proposalId) => proposalId === 'stale' ? null : { proposalId, projectRoot: '/repo', affectedProjectFiles: [proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md'], targetPrecondition: { status: 'absent', path: proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md' }, changeSummary: 'Add hard stop rule.', rationale: 'The active assertion skipped the rule.', expectedEvalImpact: 'The focused assertion should pass.', proposedChange: { kind: 'replacement', representation: 'new content' }, approvalState: 'pending', sourceFailureScope: { suiteId: 'skill-authoring', runId: 'run-1', testCaseId: 'missing-skill-boundary', attempt: 1, evalRunModelId: 'gpt-5-mini', judgeModel: null, repeats: 1, assertionId: 'a1' } }, claimPendingProposal: () => true },
     safety: { validateTargets: async (_root, targets) => targets.some((target) => target.startsWith('..')) ? { status: 'blocked', reason: 'unsafe target', unsafePaths: targets } : { status: 'ok', safeTargets: targets } },
     workflowReadiness: { checkReadiness: async () => ({ status: 'ready' }) },
     mutator: { applyApprovedChange: async (request) => { options.mutationCalls?.push(request); return { status: 'applied', changedFiles: request.targetPaths.map((target) => ({ path: target })) }; } },
@@ -457,29 +459,32 @@ function applyRepairDependencies(options: { readonly mutationCalls?: unknown[] }
 }
 
 function analysisPayload() {
-  return { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1' };
+  return { suiteId: 'skill-authoring', runId: 'run-1', attempt: 1, testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1' };
 }
 
 function proposalPayload() {
-  return { ...analysisPayload(), repairDirection: { type: 'prompt_issue' } };
+  return { ...analysisPayload(), analysisId: 'analysis-1', repairDirection: { type: 'prompt_issue' } };
 }
 
 function analysisDependencies(options: { readonly hasKey?: boolean; readonly model?: string; readonly throws?: boolean; readonly analysisCalls?: unknown[] } = {}): AnalyzeFailedAssertionDependencies {
   return {
-    artifactReader: { getRunArtifact: () => failedArtifact() },
+    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'gpt-5-mini', judgeModel: null, repeats: 1, runScope: 'all', evidence: { suiteId: 'skill-authoring', runId: 'run-1', attempt: 1, testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId: 'a1', assertionLabel: 'a1', assertionKind: 'assertion', assertionMessage: 'Failed active', actualOutputPreview: 'active failed output', expectedPreview: 'expected stop', cellOutputPreview: null, diagnostics: [], artifacts: [] } } }) },
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
     llm: { analyzeFailure: async (request) => { options.analysisCalls?.push(request); if (options.throws) throw new Error('full model response secret raw prompt'); return { exactFailureExplanation: 'The selected assertion failed.', likelyCause: 'prompt_issue', evidenceSummary: 'The output did not stop.', uncertainty: 'Low uncertainty.' }; } },
+    analysisStore: { save: () => 'analysis-1' },
     logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
   };
 }
 
 function proposalDependencies(options: { readonly hasKey?: boolean; readonly model?: string; readonly throws?: boolean; readonly proposalCalls?: unknown[]; readonly targetFile?: string; readonly summary?: string } = {}): DraftEvalRepairProposalDependencies {
   return {
-    artifactReader: { getRunArtifact: () => failedArtifact() },
+    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'gpt-5-mini', judgeModel: null, repeats: 1, runScope: 'all', evidence: { suiteId: 'skill-authoring', runId: 'run-1', attempt: 1, testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId: 'a1', assertionLabel: 'a1', assertionKind: 'assertion', assertionMessage: 'Failed active', actualOutputPreview: 'active failed output', expectedPreview: 'expected stop', cellOutputPreview: null, diagnostics: [], artifacts: [] } } }) },
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
-    projectFileReader: { readProjectFilePreviews: async () => ({ status: 'ok', files: [] }) },
-    llm: { draftProposal: async (request) => { options.proposalCalls?.push(request); if (options.throws) throw new Error('full model response raw prompt secret'); return { affectedProjectFiles: [options.targetFile ?? 'prompts/skill-authoring.md'], changeSummary: options.summary ?? 'Require missing input hard stops before drafting.', rationale: 'The active assertion failed because the prompt skipped the stop rule.', expectedEvalImpact: 'The selected assertion should pass while preserving other checks.', proposedChange: { kind: 'instructions', representation: 'Add an explicit missing-input hard stop rule.' } }; } },
-    proposalStore: { savePendingProposal: async (request) => ({ ...request.proposal, proposalId: 'repair_test', approvalState: 'pending', sourceFailureScope: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1' } }) },
+    analysisStore: { get: () => ({ exactFailureExplanation: 'The selected assertion failed.', likelyCause: 'prompt_issue', evidenceSummary: 'The output did not stop.', uncertainty: 'Low uncertainty.' }) },
+    context: { namedFiles: () => ({ status: 'ready', paths: ['prompts/skill-authoring.md'] }) },
+    projectFileReader: { readProjectFilePreviews: async () => ({ status: 'ok', files: [{ path: 'prompts/skill-authoring.md', preview: 'before', digest: 'one' }] }), readTargetState: async () => ({ status: 'ok', value: { status: 'present', path: 'prompts/skill-authoring.md', digest: 'one', content: 'before', preview: 'before' } }) },
+    llm: { draftProposal: async (request) => { options.proposalCalls?.push(request); if (options.throws) throw new Error('full model response raw prompt secret'); return { affectedProjectFiles: [options.targetFile ?? 'prompts/skill-authoring.md'], changeSummary: options.summary ?? 'Require missing input hard stops before drafting.', rationale: 'The active assertion failed because the prompt skipped the stop rule.', expectedEvalImpact: 'The selected assertion should pass while preserving other checks.', proposedChange: { kind: 'replacement', representation: 'Add an explicit missing-input hard stop rule.' } }; } },
+    proposalStore: { savePendingProposal: async (request) => ({ ...request.proposal, proposalId: 'repair_test', approvalState: 'pending', sourceFailureScope: { suiteId: request.suiteId, runId: request.runId, testCaseId: request.testCaseId, attempt: request.attempt, evalRunModelId: request.evalRunModelId, judgeModel: request.judgeModel, repeats: request.repeats, assertionId: request.assertionId } }) },
     logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
   };
 }

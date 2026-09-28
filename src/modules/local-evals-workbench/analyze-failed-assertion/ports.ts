@@ -1,17 +1,12 @@
-import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
-import type { AnalyzeFailedAssertionRunScope } from './command.js';
-import type { FailedAssertionEvidence } from './evidence.js';
-import type { FailureAnalysis } from './result.js';
+import type { FailedAssertionEvidence } from '../repair-context/contracts.js';
+import type { FailureAnalysis } from '../repair-context/contracts.js';
+import type { AssistanceConfig } from '../repair-context/assistance-config.js';
+export type { AssistanceConfig } from '../repair-context/assistance-config.js';
+import type { SelectedFailureReader } from '../repair-context/selected-evidence.js';
+import type { FailureSelection } from '../repair-context/selected-evidence.js';
 
-export type FailedAssertionRunArtifactReaderPort = {
-  getRunArtifact(suiteId: string, modelId: string, scope: AnalyzeFailedAssertionRunScope['type'], testCaseId?: string): StoredRunArtifact | undefined;
-};
-
-export type AssistanceConfig = {
-  readonly hasOpenAiApiKey: boolean;
-  readonly assistanceModelLabel: string;
-  readonly apiKey?: string;
-};
+export type FailedAssertionRunArtifactReaderPort = SelectedFailureReader;
+export type FailureAnalysisStorePort = { save(selection: FailureSelection, analysis: FailureAnalysis): string };
 
 export type AssistanceConfigPort = {
   getConfig(): AssistanceConfig;

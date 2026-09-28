@@ -1,8 +1,9 @@
-import type { RepairProposalPreview } from '../draft-eval-repair-proposal/result.js';
+import type { StoredRepairProposal } from '../repair-context/contracts.js';
 import type { ApprovedRepairProposalReaderPort, PendingApprovedRepairProposal } from './ports.js';
 
 export type PendingRepairProposalStore = {
-  getPendingProposal(proposalId: string): RepairProposalPreview | undefined;
+  getPendingProposal(proposalId: string): StoredRepairProposal | undefined;
+  claimPendingProposal(proposalId: string): boolean;
 };
 
 export class RepairProposalStoreReadinessAdapter implements ApprovedRepairProposalReaderPort {
@@ -11,13 +12,7 @@ export class RepairProposalStoreReadinessAdapter implements ApprovedRepairPropos
   getPendingProposal(proposalId: string): PendingApprovedRepairProposal | null {
     const proposal = this.store.getPendingProposal(proposalId);
     if (!proposal) return null;
-    const projectRoot = readProjectRoot(proposal);
-    if (!projectRoot) return null;
-    return { ...proposal, projectRoot };
+    return proposal;
   }
-}
-
-function readProjectRoot(proposal: RepairProposalPreview): string | null {
-  const candidate = proposal as RepairProposalPreview & { readonly projectRoot?: unknown };
-  return typeof candidate.projectRoot === 'string' && candidate.projectRoot.trim() ? candidate.projectRoot : null;
+  claimPendingProposal(proposalId: string): boolean { return this.store.claimPendingProposal(proposalId); }
 }

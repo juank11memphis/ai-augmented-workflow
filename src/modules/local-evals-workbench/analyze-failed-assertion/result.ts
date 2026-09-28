@@ -1,16 +1,9 @@
-import type { FailedAssertionEvidence } from './evidence.js';
-
-export type FailureLikelyCause = 'prompt_issue' | 'eval_assertion_issue' | 'fixture_input_issue' | 'model_nondeterminism' | 'unclear_needs_human_judgment';
-
-export type FailureAnalysis = {
-  readonly exactFailureExplanation: string;
-  readonly likelyCause: FailureLikelyCause;
-  readonly evidenceSummary: string;
-  readonly uncertainty: string;
-};
+import type { FailedAssertionEvidence, FailureAnalysis } from '../repair-context/contracts.js';
+export type { FailureLikelyCause, FailureAnalysis } from '../repair-context/contracts.js';
 
 export type AnalyzeFailedAssertionReadyResult = {
   readonly status: 'analysis-ready';
+  readonly analysisId: string;
   readonly assistanceModelLabel: string;
   readonly evidence: FailedAssertionEvidence;
   readonly analysis: FailureAnalysis;

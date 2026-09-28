@@ -1,5 +1,5 @@
 import { readPromptTemplate, renderPromptTemplate } from '../prompt-template.js';
-import type { FailedAssertionEvidence } from '../analyze-failed-assertion/evidence.js';
+import type { FailedAssertionEvidence } from '../repair-context/contracts.js';
 import type { DraftProposalPriorAnalysis, RepairDirection } from './command.js';
 import type { ProjectFilePreview } from './ports.js';
 
@@ -14,14 +14,16 @@ export function buildRepairProposalPrompt(input: { readonly evidence: FailedAsse
     assertionLabel: input.evidence.assertionLabel,
     assertionKind: input.evidence.assertionKind,
     assertionMessage: input.evidence.assertionMessage,
+    scoreAndThreshold: input.evidence.score == null ? 'Not reported.' : `Score ${input.evidence.score}${input.evidence.threshold === undefined ? '' : `; threshold ${input.evidence.threshold}`}`,
     actualOutputPreview: input.evidence.actualOutputPreview ?? 'Not reported.',
     expectedPreview: input.evidence.expectedPreview ?? 'Not reported.',
+    linkedEvidence: input.evidence.artifacts.map(item => `${item.label}: ${item.preview ?? 'No excerpt.'}`).join('\n') || 'None.',
     projectFileContext: formatProjectFileContext(input.projectFiles),
   });
 }
 
 function formatProjectFileContext(projectFiles: readonly ProjectFilePreview[]): string {
-  return projectFiles.map((file) => `${file.path}\n${file.preview}`).join('\n---\n') || 'No project files were preloaded; infer target path only when supported by evidence.';
+  return projectFiles.map((file) => `${file.path}\n${file.preview}`).join('\n---\n') || 'No named project file is available; return unavailableReason.';
 }
 
 function directionText(direction: RepairDirection): string {

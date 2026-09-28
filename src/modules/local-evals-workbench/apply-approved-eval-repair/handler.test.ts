@@ -12,7 +12,7 @@ const approvedChange = { kind: 'replacement' as const, representation: 'approved
 describe('applyApprovedEvalRepair', () => {
   it('blocks missing explicit approval before proposal lookup or writes', async () => {
     const dependencies = fakeDependencies({ proposal: proposal() });
-    const result = await applyApprovedEvalRepair({ projectRoot, proposalId: 'repair_1', approvalMarker: 'clicked-something-else' }, dependencies);
+    const result = await applyApprovedEvalRepair({ ...command(), approvalMarker: 'clicked-something-else' }, dependencies);
 
     assert.equal(result.status, 'blocked');
     assert.equal(result.reason, 'missing-approval');
@@ -80,20 +80,18 @@ describe('applyApprovedEvalRepair', () => {
     assert.equal(result.rerunRecommendation.primaryAction.label, 'Rerun this test case');
     assert.equal(result.rerunRecommendation.alternateActions[0]?.scope, 'suite');
     assert.equal(dependencies.calls.mutations.length, 1);
-    assert.deepEqual(dependencies.calls.mutations[0], { projectRoot, targetPaths: ['prompts/skill.md'], approvedChange });
+    assert.deepEqual(dependencies.calls.mutations[0], { projectRoot, targetPaths: ['prompts/skill.md'], approvedChange, targetPrecondition: proposal().targetPrecondition });
     assert.doesNotMatch(JSON.stringify(dependencies.events), /approved new content|secret-token-value/);
   });
 
 
-  it('reports multiple changed files and keeps full-suite rerun available', async () => {
+  it('rejects multiple target files before mutation', async () => {
     const dependencies = fakeDependencies({ proposal: proposal({ affectedProjectFiles: ['prompts/skill.md', 'evals/skill.json'] }) });
     const result = await applyApprovedEvalRepair(command(), dependencies);
 
-    assert.equal(result.status, 'applied');
-    assert.equal(result.changedFileCount, 2);
-    assert.deepEqual(result.changedFiles.map((file) => file.path), ['prompts/skill.md', 'evals/skill.json']);
-    assert.equal(result.rerunRecommendation.primaryAction.scope, 'test_case');
-    assert.equal(result.rerunRecommendation.alternateActions[0]?.label, 'Rerun full suite');
+    assert.equal(result.status, 'blocked');
+    assert.equal(result.changedFileCount, 0);
+    assert.equal(dependencies.calls.mutations.length, 0);
   });
 
   it('reports applied no-op mutations without claiming validation success', async () => {
@@ -130,7 +128,8 @@ describe('applyApprovedEvalRepair', () => {
 });
 
 function command() {
-  return { projectRoot, proposalId: 'repair_1', approvalMarker: APPLY_APPROVED_REPAIR_MARKER };
+  return { projectRoot, proposalId: 'repair_1', approvalMarker: APPLY_APPROVED_REPAIR_MARKER,
+    suiteId: 'skill-authoring', runId: 'run-1', testCaseId: 'missing-skill-boundary', attempt: 1, assertionId: 'a1' };
 }
 
 function proposal(overrides: Partial<PendingApprovedRepairProposal> = {}): PendingApprovedRepairProposal {
@@ -143,7 +142,8 @@ function proposal(overrides: Partial<PendingApprovedRepairProposal> = {}): Pendi
     expectedEvalImpact: 'The focused assertion should pass after rerun.',
     proposedChange: approvedChange,
     approvalState: 'pending',
-    sourceFailureScope: { suiteId: 'skill-authoring', testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', assertionId: 'a1' },
+    targetPrecondition: { status: 'absent', path: overrides.affectedProjectFiles?.[0] ?? 'prompts/skill.md' },
+    sourceFailureScope: { suiteId: 'skill-authoring', runId: 'run-1', testCaseId: 'missing-skill-boundary', attempt: 1, evalRunModelId: 'gpt-5-mini', judgeModel: null, repeats: 1, assertionId: 'a1' },
     ...overrides,
   };
 }
@@ -161,10 +161,10 @@ function fakeDependencies(options: {
   return {
     calls,
     events,
-    proposalReader: { getPendingProposal: () => { calls.lookup += 1; return options.proposal === undefined ? proposal() : options.proposal; } },
+    proposalReader: { getPendingProposal: () => { calls.lookup += 1; return options.proposal === undefined ? proposal() : options.proposal; }, claimPendingProposal: () => true },
     safety: { validateTargets: async (_root, targetPaths) => options.unsafePaths?.length ? { status: 'blocked', reason: 'unsafe target', unsafePaths: options.unsafePaths } : { status: 'ok', safeTargets: targetPaths } },
     workflowReadiness: { checkReadiness: async () => options.readiness ?? { status: 'ready' } },
-    mutator: { applyApprovedChange: async (request) => { calls.mutations.push(request); return options.mutationFails ? { status: 'failed', reason: 'disk-error' } : { status: 'applied', changedFiles: options.changedFiles ?? request.targetPaths.map((path) => ({ path })) }; } },
+    mutator: { applyApprovedChange: async (request) => { calls.mutations.push(request); return options.mutationFails ? { status: 'failed', reason: 'disk-error', changedFiles: [] } : { status: 'applied', changedFiles: options.changedFiles ?? request.targetPaths.map((path) => ({ path })) }; } },
     logger: { info: (event) => events.push(event), warn: (event) => events.push(event), error: (event) => events.push(event) },
     clock: () => 10,
   };

@@ -1,5 +1,6 @@
 import { APPLY_APPROVED_REPAIR_MARKER } from './command.js';
 import type { ApplyApprovedEvalRepairCommand } from './command.js';
+import { logicalId } from '../run-history/validation.js';
 
 export type ApplyApprovedEvalRepairParseResult =
   | { readonly status: 'ok'; readonly command: ApplyApprovedEvalRepairCommand }
@@ -11,7 +12,11 @@ export function parseApplyApprovedEvalRepairRequest(projectRoot: string, payload
   if (!proposalId) return invalid('Proposal id is required.');
   const approvalMarker = readString(payload.approvalMarker);
   if (!approvalMarker) return invalid('Explicit approval marker is required.');
-  return { status: 'ok', command: { projectRoot, proposalId, approvalMarker } };
+  if (!logicalId(payload.suiteId) || !logicalId(payload.runId) || !logicalId(payload.testCaseId) || !logicalId(payload.assertionId)
+    || !Number.isInteger(payload.attempt) || (payload.attempt as number) < 1 || (payload.attempt as number) > 20
+    || 'proposedChange' in payload || 'affectedProjectFiles' in payload || 'targetPrecondition' in payload) return invalid('Select one saved failure without supplying file changes.');
+  return { status: 'ok', command: { projectRoot, proposalId, approvalMarker, suiteId: payload.suiteId, runId: payload.runId,
+    testCaseId: payload.testCaseId, attempt: payload.attempt as number, assertionId: payload.assertionId } };
 }
 
 function invalid(message: string): ApplyApprovedEvalRepairParseResult { return { status: 'invalid', message }; }

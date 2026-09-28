@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { parseDraftEvalRepairProposalRequest } from './request-parser.js';
 
-const base = { suiteId: 'suite', testCaseId: 'case-1', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1' };
+const base = { suiteId: 'suite', runId: 'run-1', attempt: 1, testCaseId: 'case-1', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1', analysisId: 'analysis-1' };
 
 describe('parseDraftEvalRepairProposalRequest', () => {
+  it('accepts persisted provider model identities', () => {
+    assert.equal(parseDraftEvalRepairProposalRequest('/repo', { ...base, evalRunModelId: 'provider:' + 'model/'.repeat(22), repairDirection: { type: 'prompt_issue' } }).status, 'valid');
+  });
   for (const type of ['prompt_issue', 'eval_assertion_issue', 'fixture_input_issue', 'regression_case'] as const) {
     it(`accepts ${type} for one active assertion`, () => {
       const result = parseDraftEvalRepairProposalRequest('/repo', { ...base, repairDirection: { type } });
@@ -14,7 +17,7 @@ describe('parseDraftEvalRepairProposalRequest', () => {
   }
 
   it('accepts concrete custom direction and active test case scope', () => {
-    const result = parseDraftEvalRepairProposalRequest('/repo', { ...base, runScope: { type: 'test_case', testCaseId: 'case-1' }, repairDirection: { type: 'custom', instruction: 'Update prompts/foo.md to require a hard stop.' }, priorAnalysis: { summary: 'Likely prompt issue.', likelyCause: 'prompt_issue' } });
+    const result = parseDraftEvalRepairProposalRequest('/repo', { ...base, runScope: { type: 'test_case', testCaseId: 'case-1' }, repairDirection: { type: 'custom', instruction: 'Update prompts/foo.md to require a hard stop.' } });
     assert.equal(result.status, 'valid');
   });
 

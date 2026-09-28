@@ -1,26 +1,9 @@
-import type { EvalArtifact, EvalAssertionResult, EvalCell, EvalDiagnostic } from '../run-local-eval-suite/result.js';
+import type { EvalAssertionResult, EvalCell } from '../run-local-eval-suite/result.js';
+import type { FailedAssertionEvidence } from '../repair-context/contracts.js';
+export type { FailedAssertionEvidence, SafeEvidenceDiagnostic, SafeEvidenceArtifact } from '../repair-context/contracts.js';
 
 const MAX_PREVIEW_LENGTH = 600;
 const MAX_ITEMS = 6;
-
-export type FailedAssertionEvidence = {
-  readonly suiteId: string;
-  readonly testCaseId: string;
-  readonly evalRunModelId: string;
-  readonly evalRunModelLabel: string;
-  readonly assertionId: string;
-  readonly assertionLabel: string;
-  readonly assertionKind: EvalAssertionResult['kind'];
-  readonly assertionMessage: string;
-  readonly actualOutputPreview: string | null;
-  readonly expectedPreview: string | null;
-  readonly cellOutputPreview: string | null;
-  readonly diagnostics: readonly SafeEvidenceDiagnostic[];
-  readonly artifacts: readonly SafeEvidenceArtifact[];
-};
-
-export type SafeEvidenceDiagnostic = Pick<EvalDiagnostic, 'code' | 'severity' | 'message' | 'location'>;
-export type SafeEvidenceArtifact = Pick<EvalArtifact, 'id' | 'label' | 'kind' | 'preview' | 'reference'>;
 
 export function buildFailedAssertionEvidence(input: {
   readonly suiteId: string;

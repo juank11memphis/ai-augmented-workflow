@@ -1,20 +1,25 @@
-import type { AssistanceConfig } from '../analyze-failed-assertion/ports.js';
-import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
+import type { AssistanceConfig } from '../repair-context/assistance-config.js';
 import type { DraftEvalRepairProposalRunScope, DraftProposalPriorAnalysis, RepairDirection } from './command.js';
-import type { FailedAssertionEvidence } from '../analyze-failed-assertion/evidence.js';
-import type { RepairProposalPreview, ProposedRepairChange } from './result.js';
+import type { FailedAssertionEvidence } from '../repair-context/contracts.js';
+import type { RepairProposalPreview, ProposedRepairChange, StoredRepairProposal, FailureAnalysis } from '../repair-context/contracts.js';
+import type { SelectedFailureReader } from '../repair-context/selected-evidence.js';
+import type { ProjectFileState } from '../repair-context/project-file-state.js';
+import type { DraftEvalRepairProposalCommand } from './command.js';
+import type { FailureSelection } from '../repair-context/selected-evidence.js';
+export type { StoredRepairProposal } from '../repair-context/contracts.js';
 
-export type ProposalRunArtifactReaderPort = {
-  getRunArtifact(suiteId: string, modelId: string, scope: DraftEvalRepairProposalRunScope['type'], testCaseId?: string): StoredRunArtifact | undefined;
-};
+export type ProposalRunArtifactReaderPort = SelectedFailureReader;
 
 export type ProposalAssistanceConfigPort = { getConfig(): AssistanceConfig };
 
-export type ProjectFilePreview = { readonly path: string; readonly preview: string };
+export type ProjectFilePreview = { readonly path: string; readonly preview: string; readonly digest?: string };
 
 export type SafeProjectFileReaderPort = {
   readProjectFilePreviews(projectRoot: string, requestedPaths: readonly string[]): Promise<{ readonly status: 'ok'; readonly files: readonly ProjectFilePreview[] } | { readonly status: 'blocked'; readonly reason: string; readonly unsafePaths: readonly string[] }>;
+  readTargetState(projectRoot: string, path: string): Promise<{ readonly status: 'ok'; readonly value: ProjectFileState } | { readonly status: 'blocked'; readonly reason: string }>;
 };
+export type ProposalContextPort = { namedFiles(command: DraftEvalRepairProposalCommand): { readonly status: 'ready'; readonly paths: readonly string[] } | { readonly status: 'blocked'; readonly reason: string } };
+export type ProposalAnalysisStorePort = { get(id: string, selection: FailureSelection): FailureAnalysis | null };
 
 export type RepairProposalDraft = {
   readonly affectedProjectFiles: readonly string[];
@@ -38,12 +43,17 @@ export type RepairProposalStorePort = {
   savePendingProposal(request: {
     readonly projectRoot: string;
     readonly suiteId: string;
+    readonly runId: string;
     readonly testCaseId: string;
+    readonly attempt: number;
     readonly evalRunModelId: string;
+    readonly judgeModel: string | null;
+    readonly repeats: number;
     readonly assertionId: string;
+    readonly targetPrecondition: ProjectFileState;
     readonly proposal: Omit<RepairProposalPreview, 'proposalId' | 'approvalState'>;
   }): Promise<RepairProposalPreview>;
-  getPendingProposal?(proposalId: string): RepairProposalPreview | undefined;
+  getPendingProposal?(proposalId: string): StoredRepairProposal | undefined;
 };
 
 export type DraftRepairProposalLogEvent =

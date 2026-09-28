@@ -17,8 +17,12 @@ import { createRunHistory } from './run-history/composition.js';
 import { executeEvalRun } from './execute-eval-run/index.js';
 import type { StartEvalRunDependencies } from './start-eval-run/index.js';
 import type { GetEvalRunCommand, GetEvalRunResult } from './get-eval-run/index.js';
+import type { ListEvalRunsCommand, ListEvalRunsResult } from './list-eval-runs/index.js';
 import { ProjectRunnerExecuteAdapter } from './runner-process/execute-adapter.js';
 import { evaluateOutputAssertions } from './run-execution/output-assertions.js';
+import { createSelectedFailureReader } from './repair-context/selected-evidence.js';
+import { namedProposalContext } from './repair-context/proposal-context-adapter.js';
+import { InMemoryFailureAnalysisStore } from './repair-context/analysis-store.js';
 
 export type LocalWorkbenchRuntimeDependencies = {
   readonly run: RunLocalEvalSuiteDependencies;
@@ -29,6 +33,7 @@ export type LocalWorkbenchRuntimeDependencies = {
   readonly preview?: PreviewEvalRunDependencies;
   readonly start?: StartEvalRunDependencies;
   readonly get?: (command: GetEvalRunCommand) => Promise<GetEvalRunResult>;
+  readonly list?: (command: ListEvalRunsCommand) => Promise<ListEvalRunsResult>;
 };
 
 export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
@@ -37,6 +42,7 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
   const assistanceConfig = new EnvironmentAssistanceConfig();
   const config = assistanceConfig.getConfig();
   const proposalStore = new InMemoryRepairProposalStore();
+  const analysisStore = new InMemoryFailureAnalysisStore();
   const fileMutator = new NodeSafeProjectFileMutator();
   const suites = new ProjectSuiteRuntimeRegistry(request.projectRoot);
   const previewLogger = { record: (event: { readonly event: string; readonly suiteId?: string; readonly reason?: string; readonly durationMs?: number }): void => {
@@ -49,8 +55,8 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
   const inputs = { resolve: (cases: Parameters<typeof resolveSuiteInputs>[1]) => resolveSuiteInputs(request.projectRoot, cases) };
   return {
     run: { suiteRegistry: new DiscoveredEvalSuiteRegistry(request.initialDiscoveryResult.definitions), evalRunner: new UnavailableVersion2EvalSuiteRunner(), artifactStore, logger },
-    analysis: { artifactReader: artifactStore, assistanceConfig, llm: new OpenAiFailureAnalysisAdapter(config.apiKey ?? ''), logger },
-    proposal: { artifactReader: artifactStore, assistanceConfig, projectFileReader: new NodeSafeProjectFileReader(), llm: new OpenAiRepairProposalAdapter(config.apiKey ?? ''), proposalStore, logger },
+    analysis: { artifactReader: createSelectedFailureReader(history.get), assistanceConfig, llm: new OpenAiFailureAnalysisAdapter(config.apiKey ?? ''), analysisStore, logger },
+    proposal: { artifactReader: createSelectedFailureReader(history.get), assistanceConfig, analysisStore, context: { namedFiles: command => namedProposalContext(request.initialDiscoveryResult.definitions, request.initialDiscoveryResult.sourceBySuiteId, command) }, projectFileReader: new NodeSafeProjectFileReader(), llm: new OpenAiRepairProposalAdapter(config.apiKey ?? ''), proposalStore, logger },
     applyRepair: { proposalReader: new RepairProposalStoreReadinessAdapter(proposalStore), safety: fileMutator, workflowReadiness: new SibuManagedWorkflowReadinessAdapter(), mutator: fileMutator, logger },
     describe: { suites, runner, logger: previewLogger },
     preview: { suites, runner, artifacts: readiness, inputs, logger: previewLogger },
@@ -64,5 +70,6 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
       } },
     },
     get: command => history.get(command),
+    list: command => history.list(command),
   };
 }

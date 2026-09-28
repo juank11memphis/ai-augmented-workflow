@@ -1,29 +1,5 @@
-import type { FailedAssertionEvidence } from '../analyze-failed-assertion/evidence.js';
-
-export type RepairProposalApprovalState = 'pending';
-
-export type RepairProposalSourceFailureScope = {
-  readonly suiteId: string;
-  readonly testCaseId: string;
-  readonly evalRunModelId: string;
-  readonly assertionId: string;
-};
-
-export type ProposedRepairChange = {
-  readonly kind: 'unified-diff' | 'replacement' | 'instructions';
-  readonly representation: string;
-};
-
-export type RepairProposalPreview = {
-  readonly proposalId: string;
-  readonly affectedProjectFiles: readonly string[];
-  readonly changeSummary: string;
-  readonly rationale: string;
-  readonly expectedEvalImpact: string;
-  readonly proposedChange: ProposedRepairChange;
-  readonly approvalState: RepairProposalApprovalState;
-  readonly sourceFailureScope?: RepairProposalSourceFailureScope;
-};
+import type { FailedAssertionEvidence, RepairProposalPreview } from '../repair-context/contracts.js';
+export type { RepairProposalApprovalState, RepairProposalSourceFailureScope, ProposedRepairChange, RepairProposalPreview } from '../repair-context/contracts.js';
 
 export type DraftEvalRepairProposalReadyResult = {
   readonly status: 'proposal-ready';
@@ -43,7 +19,7 @@ export type DraftEvalRepairProposalUnavailableResult = {
 
 export type DraftEvalRepairProposalBlockedResult = {
   readonly status: 'blocked';
-  readonly reason: 'invalid-scope' | 'unclear-direction' | 'missing-artifact' | 'missing-cell' | 'missing-assertion' | 'non-failed-assertion' | 'unsafe-target-files';
+  readonly reason: 'invalid-scope' | 'unclear-direction' | 'stale-analysis' | 'missing-artifact' | 'missing-cell' | 'missing-assertion' | 'non-failed-assertion' | 'unsafe-target-files';
   readonly message: string;
   readonly evidence?: FailedAssertionEvidence;
 };

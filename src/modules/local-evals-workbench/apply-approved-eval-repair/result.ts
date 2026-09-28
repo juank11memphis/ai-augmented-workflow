@@ -60,7 +60,7 @@ export type ApplyApprovedEvalRepairResult =
       readonly status: 'error';
       readonly reason: 'mutation-failure';
       readonly proposalId: string;
-      readonly changedFiles: readonly [];
-      readonly changedFileCount: 0;
+      readonly changedFiles: readonly ApprovedRepairChangedFile[];
+      readonly changedFileCount: number;
       readonly message: string;
     };

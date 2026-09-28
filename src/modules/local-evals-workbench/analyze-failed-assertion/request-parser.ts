@@ -1,4 +1,6 @@
 import type { AnalyzeFailedAssertionCommand, AnalyzeFailedAssertionRunScope } from './command.js';
+import { logicalId } from '../run-history/validation.js';
+import { supportedModelId } from '../repair-context/model-id.js';
 
 export type ParseAnalyzeFailedAssertionRequestResult =
   | { readonly status: 'valid'; readonly command: AnalyzeFailedAssertionCommand }
@@ -6,10 +8,12 @@ export type ParseAnalyzeFailedAssertionRequestResult =
 
 export function parseAnalyzeFailedAssertionRequest(projectRoot: string, payload: unknown): ParseAnalyzeFailedAssertionRequestResult {
   if (!isRecord(payload)) return invalid('Request payload must be an object.');
-  if (!isString(payload.suiteId)) return invalid('suiteId is required.');
-  if (!isString(payload.testCaseId)) return invalid('testCaseId is required.');
-  if (!isString(payload.evalRunModelId)) return invalid('evalRunModelId is required.');
-  if (!isString(payload.assertionId)) return invalid('assertionId is required.');
+  if (!logicalId(payload.suiteId)) return invalid('suiteId is required.');
+  if (!logicalId(payload.runId)) return invalid('runId is required.');
+  if (!Number.isInteger(payload.attempt) || (payload.attempt as number) < 1 || (payload.attempt as number) > 20) return invalid('attempt must be 1 through 20.');
+  if (!logicalId(payload.testCaseId)) return invalid('testCaseId is required.');
+  if (!supportedModelId(payload.evalRunModelId)) return invalid('evalRunModelId is required.');
+  if (!logicalId(payload.assertionId)) return invalid('assertionId is required.');
   if ('assertionIds' in payload || Array.isArray(payload.assertionId)) return invalid('Analyze exactly one active failed assertion.');
 
   const runScope = parseScope(payload.runScope, payload.testCaseId);
@@ -20,6 +24,8 @@ export function parseAnalyzeFailedAssertionRequest(projectRoot: string, payload:
     command: {
       projectRoot,
       suiteId: payload.suiteId,
+      runId: payload.runId,
+      attempt: payload.attempt as number,
       testCaseId: payload.testCaseId,
       evalRunModelId: payload.evalRunModelId,
       runScope,
