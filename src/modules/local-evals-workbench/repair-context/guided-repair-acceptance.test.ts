@@ -15,12 +15,15 @@ import { applyApprovedEvalRepair } from '../apply-approved-eval-repair/handler.j
 import { APPLY_APPROVED_REPAIR_MARKER } from '../apply-approved-eval-repair/command.js';
 import { NodeSafeProjectFileMutator } from '../apply-approved-eval-repair/safe-project-file-mutator.js';
 import { RepairProposalStoreReadinessAdapter } from '../apply-approved-eval-repair/proposal-readiness-adapter.js';
+import { previewEvalRun } from '../preview-eval-run/handler.js';
+import { startEvalRun } from '../start-eval-run/handler.js';
+import type { NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
 
 const logger = { info() {}, warn() {}, error() {} };
 const selection = { suiteId: 'suite', testCaseId: 'case', attempt: 2, assertionId: 'assertion',
   evalRunModelId: 'synthetic', runScope: { type: 'all' as const } };
 
-test('restored persisted failure stays isolated through analysis, one-file proposal, approval and no-rerun result', async () => {
+test('restored failure remains immutable through approval and distinct confirmed case and suite reruns', async () => {
   const p = await project();
   try {
     await fs.mkdir(path.join(p.root, 'prompts'));
@@ -87,5 +90,44 @@ test('restored persisted failure stays isolated through analysis, one-file propo
     assert.equal(await fs.readFile(path.join(p.root, 'prompts/agent.md'), 'utf8'), 'Verify before action.');
     assert.equal((await applyApprovedEvalRepair(applyCommand, deps)).status, 'blocked');
     assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'run.json'), 'utf8'), beforeManifest);
+    const sourceAttempt = await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'cases/case/2.json'), 'utf8');
+    const suite: NormalizedEvalSuite = { version: 2, kind: 'sibu-eval-suite', id: 'suite', name: 'Suite', description: 'Offline',
+      target: { id: 'target', kind: 'agent', path: 'prompts/agent.md' }, coverage: { categories: [], gaps: [] },
+      runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
+      testCases: [{ id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Check' } }], toolMocks: [],
+        assertions: [{ id: 'assertion', type: 'output-contains', expected: 'yes' }], graders: [] }] };
+    const scheduled: string[] = [];
+    const runner = { describe: async () => ({ status: 'ready' as const, value: { runnerId: 'offline', capabilities: ['single-turn' as const],
+      models: ['synthetic'], judgeModels: [], requiredEnvironment: [], costEstimation: true } }),
+    estimate: async () => ({ status: 'ready' as const, value: { targetCalls: 1, judgeCalls: 0, totalCalls: 1,
+      cost: { status: 'available' as const, amount: 0, currency: 'USD' } } }) };
+    const runPorts = { suites: { load: async () => suite }, runner, inputs: { resolve: async () => ({ status: 'ready' as const, value: suite.testCases }) },
+      artifacts: { check: async () => ({ status: 'ready' as const, value: null }) }, store: history.store,
+      scheduler: { schedule: ({ runId: scheduledId }: { runId: string }) => { scheduled.push(scheduledId); } } };
+    for (const scope of [{ type: 'test_case' as const, testCaseId: 'case' }, { type: 'all' as const }]) {
+      const selection = { suiteId: 'suite', scope, model: 'synthetic', judgeModel: null, repeats: 2 };
+      const preview = await previewEvalRun(selection, runPorts);
+      assert.equal(preview.status, 'ready');
+      assert.equal(scheduled.length, scope.type === 'test_case' ? 0 : 1, 'preview never schedules');
+      if (preview.status !== 'ready') continue;
+      const started = await startEvalRun({ ...selection, review: { selectedCaseIds: preview.selectedCaseIds, targetCalls: preview.targetCalls,
+        judgeCalls: preview.judgeCalls, totalCalls: preview.totalCalls, cost: preview.cost } }, runPorts);
+      assert.equal(started.status, 'queued');
+      if (started.status !== 'queued') continue;
+      assert.notEqual(started.runId, runId);
+      assert.equal(scheduled.at(-1), started.runId);
+      assert.equal((await history.store.start('suite', started.runId)).status, 'ok');
+      const rerunEvidence = { ...evidence(started.runId), outcome: scope.type === 'all' ? 'failed' as const : 'passed' as const,
+        assertions: [{ ...evidence(started.runId).assertions[0]!, outcome: scope.type === 'all' ? 'failed' as const : 'passed' as const }] };
+      assert.equal((await history.store.append('suite', started.runId, rerunEvidence)).status, 'ok');
+      assert.equal((await history.store.append('suite', started.runId, { ...rerunEvidence, number: 2 })).status, 'ok');
+      assert.equal((await history.store.finalize('suite', started.runId, 'completed')).status, 'ok');
+      const read = await history.get({ suiteId: 'suite', runId: started.runId });
+      assert.equal(read.status, 'ok');
+      if (read.status === 'ok') assert.equal(read.value.summary.runId, started.runId);
+    }
+    assert.equal(new Set(scheduled).size, 2);
+    assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'run.json'), 'utf8'), beforeManifest);
+    assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'cases/case/2.json'), 'utf8'), sourceAttempt);
   } finally { await p.cleanup(); }
 });

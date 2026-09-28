@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const MAX_BYTES = 32 * 1024;
-const SECRET = /(?:^|\/)(?:\.env(?:\.|$)|[^/]*(?:secret|credential|token|private[-_]?key)[^/]*|[^/]*\.(?:pem|key))|(?:^|\/)id_rsa$/i;
+const SECRET = /(?:^|\/)(?:\.env(?:\.|$)|[^/]*(?:secret|credential|token|api[-_]?key|private[-_]?key)[^/]*|[^/]*\.(?:pem|key))|(?:^|\/)id_(?:rsa|dsa|ecdsa|ed25519)$|(?:^|[/._-])key(?:$|[/._-])/i;
 
 export type ProjectFileState =
   | { readonly status: 'present'; readonly path: string; readonly digest: string; readonly content: string; readonly preview: string }

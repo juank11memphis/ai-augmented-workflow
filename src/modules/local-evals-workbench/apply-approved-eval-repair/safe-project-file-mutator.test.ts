@@ -15,7 +15,8 @@ describe('NodeSafeProjectFileMutator', () => {
     await fs.symlink(outside, path.join(root, 'linked', 'escape'));
 
     const mutator = new NodeSafeProjectFileMutator();
-    for (const target of ['../outside.md', path.join(outside, 'file.md'), '.env', 'config/private-key.pem', 'linked/escape/file.md']) {
+    for (const target of ['../outside.md', path.join(outside, 'file.md'), '.env', 'config/private-key.pem', 'config/api-key.txt',
+      'linked/escape/file.md', 'evals/artifacts/suite/run.json', 'a\\b.md', 'a//b.md', './prompt.md']) {
       const result = await mutator.validateTargets(root, [target]);
       assert.equal(result.status, 'blocked', target);
       assert.deepEqual((await mutator.applyApprovedChange({ projectRoot: root, targetPaths: [target], targetPrecondition: { status: 'absent', path: target }, approvedChange: { kind: 'replacement', representation: 'MUST NOT WRITE' } })).status, 'failed', target);
@@ -23,15 +24,47 @@ describe('NodeSafeProjectFileMutator', () => {
     await assert.rejects(fs.readFile(path.join(outside, 'file.md'), 'utf8'));
   });
 
-  it('writes only a valid in-root replacement target and reports safe metadata', async () => {
+  it('rejects hardlinks and aliases into secret and artifact paths', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sibu-mutator-alias-'));
+    try {
+      await fs.mkdir(path.join(root, 'evals/artifacts'), { recursive: true });
+      await fs.writeFile(path.join(root, '.env'), 'secret');
+      await fs.writeFile(path.join(root, 'ordinary.md'), 'safe');
+      await fs.link(path.join(root, 'ordinary.md'), path.join(root, 'linked.md'));
+      await fs.symlink(path.join(root, '.env'), path.join(root, 'secret-alias.md'));
+      await fs.symlink(path.join(root, 'evals/artifacts'), path.join(root, 'artifact-alias'));
+      const mutator = new NodeSafeProjectFileMutator();
+      for (const target of ['ordinary.md', 'linked.md', 'secret-alias.md', 'artifact-alias/new.md']) {
+        assert.equal((await mutator.validateTargets(root, [target])).status, 'blocked', target);
+      }
+      assert.equal(await fs.readFile(path.join(root, '.env'), 'utf8'), 'secret');
+    } finally { await fs.rm(root, { recursive: true, force: true }); }
+  });
+
+  it('does not mutate conventional private-key targets even with a forged precondition', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sibu-mutator-private-key-'));
+    try {
+      await fs.mkdir(path.join(root, '.ssh'));
+      const mutator = new NodeSafeProjectFileMutator();
+      for (const target of ['.ssh/id_ed25519', '.ssh/id_ecdsa']) {
+        await fs.writeFile(path.join(root, target), 'PRIVATE KEY SENTINEL');
+        const result = await mutator.applyApprovedChange({ projectRoot: root, targetPaths: [target],
+          targetPrecondition: { status: 'present', path: target, digest: 'forged', content: 'PRIVATE KEY SENTINEL', preview: 'PRIVATE KEY SENTINEL' },
+          approvedChange: { kind: 'replacement', representation: 'MUST NOT WRITE' } });
+        assert.equal(result.status, 'failed', target);
+        assert.equal(await fs.readFile(path.join(root, target), 'utf8'), 'PRIVATE KEY SENTINEL');
+      }
+    } finally { await fs.rm(root, { recursive: true, force: true }); }
+  });
+
+  it('rejects absent replacement targets without creating a file', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sibu-mutator-'));
     const mutator = new NodeSafeProjectFileMutator();
 
     const result = await mutator.applyApprovedChange({ projectRoot: root, targetPaths: ['prompts/skill.md'], targetPrecondition: { status: 'absent', path: 'prompts/skill.md' }, approvedChange: { kind: 'replacement', representation: 'new approved content' } });
 
-    assert.equal(result.status, 'applied');
-    if (result.status === 'applied') assert.deepEqual(result.changedFiles, [{ path: 'prompts/skill.md' }]);
-    assert.equal(await fs.readFile(path.join(root, 'prompts/skill.md'), 'utf8'), 'new approved content');
+    assert.equal(result.status, 'failed');
+    await assert.rejects(fs.readFile(path.join(root, 'prompts/skill.md'), 'utf8'));
   });
 
   it('applies a simple approved unified diff only when it matches current file content', async () => {

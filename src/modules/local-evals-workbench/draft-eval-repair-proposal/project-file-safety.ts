@@ -3,8 +3,7 @@ import path from 'node:path';
 import type { SafeProjectFileReaderPort } from './ports.js';
 import { readProjectFileState } from '../repair-context/project-file-state.js';
 
-const MAX_FILE_PREVIEW_BYTES = 4 * 1024;
-const SECRET_PATTERNS = [/^\.env(?:\.|$)/, /(?:^|\/|\\)\.env(?:\.|$)/, /secret/i, /credential/i, /private[-_]?key/i, /(?:^|\/|\\)id_rsa$/i, /\.pem$/i, /\.key$/i, /token/i];
+const SECRET_PATTERNS = [/^\.env(?:\.|$)/, /(?:^|\/|\\)\.env(?:\.|$)/, /secret/i, /credential/i, /(?:api|private)[-_]?key/i, /(?:^|[/._-])key(?:$|[/._-])/i, /(?:^|\/|\\)id_(?:rsa|dsa|ecdsa|ed25519)$/i, /\.pem$/i, /\.key$/i, /token/i];
 
 export type FileTargetValidation = { readonly status: 'ok'; readonly paths: readonly string[] } | { readonly status: 'blocked'; readonly unsafePaths: readonly string[]; readonly reason: string };
 
@@ -29,14 +28,15 @@ export class NodeSafeProjectFileReader implements SafeProjectFileReaderPort {
     for (const targetPath of safe.paths) {
       const state = await readProjectFileState(projectRoot, targetPath);
       if (state.status === 'blocked' || state.value.status !== 'present') return { status: 'blocked' as const, reason: 'Named project file is unsafe or unreadable.', unsafePaths: [targetPath] };
-      files.push({ path: targetPath, preview: state.value.preview.slice(0, MAX_FILE_PREVIEW_BYTES), digest: state.value.digest });
+      // Repair replacements need the complete bounded source, not a truncated preview.
+      files.push({ path: targetPath, preview: state.value.content, digest: state.value.digest });
     }
     return { status: 'ok' as const, files };
   }
 }
 
 function isSafeProjectPath(root: string, target: string): boolean {
-  if (!target || path.isAbsolute(target)) return false;
+  if (!target || path.isAbsolute(target) || target.includes('\\') || target.split('/').some(part => !part || part === '.' || part === '..')) return false;
   if (SECRET_PATTERNS.some((pattern) => pattern.test(target))) return false;
   return isInsideRoot(root, path.resolve(root, target));
 }

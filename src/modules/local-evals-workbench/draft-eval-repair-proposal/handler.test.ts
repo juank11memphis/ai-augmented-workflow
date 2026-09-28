@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { draftEvalRepairProposal, type DraftEvalRepairProposalDependencies } from './handler.js';
 import type { DraftEvalRepairProposalCommand } from './command.js';
 import type { SelectedFailureRead } from '../repair-context/selected-evidence.js';
+import { NodeSafeProjectFileReader } from './project-file-safety.js';
 
 const command: DraftEvalRepairProposalCommand = { projectRoot: '/repo', suiteId: 'suite', runId: 'run-1',
   testCaseId: 'case-1', attempt: 2, evalRunModelId: 'model', runScope: { type: 'all' }, assertionId: 'a1', analysisId: 'analysis-1',
@@ -60,6 +61,18 @@ describe('draftEvalRepairProposal', () => {
     assert.equal(result.status, 'blocked');
     assert.equal(calls.length, 1);
   });
+  it('blocks suite-named conventional private keys before provider submission', async () => {
+    for (const target of ['.ssh/id_ed25519', '.ssh/id_ecdsa']) {
+      const calls: unknown[] = [];
+      const result = await draftEvalRepairProposal(command, {
+        ...dependencies({ calls }),
+        context: { namedFiles: () => ({ status: 'ready', paths: [target] }) },
+        projectFileReader: new NodeSafeProjectFileReader(),
+      });
+      assert.equal(result.status, 'blocked', target);
+      assert.equal(calls.length, 1, 'only saved evidence is read; provider and store are untouched');
+    }
+  });
   it('rejects unsupported or stale diffs before proposal-ready and storage', async () => {
     for (const representation of [
       '--- a/prompts/agent.md\n+++ b/prompts/agent.md\n@@ -1 +1 @@\n-before\n+after\n@@ -2 +2 @@\n-x\n+y',
@@ -76,5 +89,15 @@ describe('draftEvalRepairProposal', () => {
     const result = await draftEvalRepairProposal(command, dependencies({ change: { kind: 'unified-diff', representation:
       '--- a/prompts/agent.md\n+++ b/prompts/agent.md\n@@ -1 +1 @@\n-before\n+after' } }));
     assert.equal(result.status, 'proposal-ready');
+  });
+  it('blocks mismatched analysis, selected model and missing failed evidence without saving', async () => {
+    const wrongAnalysis = await draftEvalRepairProposal({ ...command, repairDirection: { type: 'fixture_input_issue' } }, dependencies());
+    assert.equal(wrongAnalysis.status, 'blocked');
+    const calls: unknown[] = [];
+    const wrongModel = await draftEvalRepairProposal(command, dependencies({ selected: { status: 'ready', value: { ...selected.value, testedModel: 'other' } }, calls }));
+    assert.equal(wrongModel.status, 'blocked');
+    assert.equal(calls.length, 1);
+    const nonfailed = await draftEvalRepairProposal(command, dependencies({ selected: { status: 'blocked', reason: 'non-failed-assertion' }, calls: [] }));
+    assert.equal(nonfailed.status, 'blocked');
   });
 });

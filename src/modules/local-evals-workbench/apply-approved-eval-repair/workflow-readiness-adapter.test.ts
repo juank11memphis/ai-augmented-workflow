@@ -25,6 +25,14 @@ describe('SibuManagedWorkflowReadinessAdapter', () => {
       assert.match(result.guidance.join('\n'), /sibu sync/);
     }
   });
+
+  it('blocks mutation when present workflow state cannot be parsed', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sibu-readiness-corrupt-'));
+    await fs.mkdir(path.join(root, '.sibu'));
+    await fs.writeFile(path.join(root, '.sibu/state.json'), '{not-json');
+    const result = await new SibuManagedWorkflowReadinessAdapter().checkReadiness(root, ['AGENTS.md']);
+    assert.equal(result.status, 'blocked');
+  });
 });
 
 async function projectWithState(files: Record<string, { readonly sha256: string }>): Promise<string> {

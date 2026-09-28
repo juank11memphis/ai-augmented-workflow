@@ -17,6 +17,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     suite = suites.find(item => item.id === id) || null;
     run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null; review = null;
     runGeneration++; historyGeneration++; detailGeneration++;
+    if (typeof runtimeGeneration !== 'undefined') runtimeGeneration++;
+    if (typeof strictRuntimeChoices !== 'undefined') strictRuntimeChoices = false;
     clearSelectedDetail();
     activePanel = null; panelReturn = null; side.hidden = true; side.innerHTML = '';
     side.removeAttribute('role'); side.removeAttribute('aria-modal'); side.removeAttribute('aria-label');

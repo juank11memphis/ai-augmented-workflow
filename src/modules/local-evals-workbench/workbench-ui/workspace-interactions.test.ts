@@ -45,7 +45,7 @@ test('selected repeat moves analysis → one-file proposal → explicit apply wi
   assert.deepEqual((calls[1]!.body as { analysisId: string }).analysisId, 'analysis-1');
   assert.match(host.innerHTML, /&lt;verified&gt;/);
   assert.doesNotMatch(host.innerHTML, /<verified>/);
-  assert.doesNotMatch(host.innerHTML, /<details>/);
+  assert.match(host.innerHTML, /<details><summary>Show full diff<\/summary>/);
   await api.requestRepair('apply');
   assert.equal(api.getStage(), 'applied');
   assert.equal(calls.length, 3);

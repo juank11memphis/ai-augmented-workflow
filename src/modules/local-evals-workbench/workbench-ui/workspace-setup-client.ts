@@ -6,7 +6,8 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   let suite = suites[0] || null;
   let run = null, history = [], selectedRunId = null, latestKnownRunId = null, acceptedRunId = null, runtime = null, review = null;
-  let runGeneration = 0, historyGeneration = 0, detailGeneration = 0;
+  let runGeneration = 0, historyGeneration = 0, detailGeneration = 0, runtimeGeneration = 0;
+  let strictRuntimeChoices = false;
   let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', repeats: 1 };
   let sheetReturn = null, startPending = false, startUncertain = false, activePanel = null;
   const one = selector => document.querySelector(selector);
@@ -68,16 +69,18 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   async function loadRuntime() {
     if (!suite) return;
-    const current = suite.id; runtime = null;
+    const current = suite.id, generation = ++runtimeGeneration; runtime = null;
     try {
       const payload = await post('/api/eval-suites/describe', { suiteId: current });
-      if (suite?.id !== current) return;
+      if (suite?.id !== current || generation !== runtimeGeneration) return;
       if (payload.status !== 'ready') { status('Compatible models unavailable: ' + (payload.reason || 'check local setup')); return; }
       runtime = payload;
-      if (!(payload.models || []).includes(setup.model)) setup.model = payload.models?.[0] || '';
-      if (!(payload.judgeModels || []).includes(setup.judgeModel)) setup.judgeModel = payload.judgeModels?.[0] || '';
+      if (!(payload.models || []).includes(setup.model)) setup.model = strictRuntimeChoices ? '' : payload.models?.[0] || '';
+      if (!(payload.judgeModels || []).includes(setup.judgeModel)) setup.judgeModel = strictRuntimeChoices ? '' : payload.judgeModels?.[0] || '';
+      if (strictRuntimeChoices && (!setup.model || needsJudge() && !setup.judgeModel)) status('Previous model choice is unavailable. Choose compatible models before review.');
+      strictRuntimeChoices = false;
       refreshSetupControls();
-    } catch { if (suite?.id === current) status('Compatible models could not be loaded.'); }
+    } catch { if (suite?.id === current && generation === runtimeGeneration) { strictRuntimeChoices = false; status('Compatible models could not be loaded.'); } }
   }
   async function showReview() {
     readSetup();

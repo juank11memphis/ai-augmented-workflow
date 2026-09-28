@@ -15,6 +15,16 @@ export type ApplyApprovedEvalRepairDependencies = {
 };
 
 export async function applyApprovedEvalRepair(command: ApplyApprovedEvalRepairCommand, dependencies: ApplyApprovedEvalRepairDependencies): Promise<ApplyApprovedEvalRepairResult> {
+  try {
+    return await applyApprovedEvalRepairChecked(command, dependencies);
+  } catch {
+    dependencies.logger.error({ event: 'approved_repair_failed', proposalId: command.proposalId, reason: 'unexpected-port-failure', targetFileCount: 0, safeTargetPaths: [], durationMs: 0 });
+    return { status: 'error', reason: 'mutation-failure', proposalId: command.proposalId, changedFiles: [], changedFileCount: 0,
+      message: 'The repair outcome is uncertain. Inspect the target before drafting another proposal.' };
+  }
+}
+
+async function applyApprovedEvalRepairChecked(command: ApplyApprovedEvalRepairCommand, dependencies: ApplyApprovedEvalRepairDependencies): Promise<ApplyApprovedEvalRepairResult> {
   const startedAt = (dependencies.clock ?? Date.now)();
   const proposalId = command.proposalId.trim();
   dependencies.logger.info({ event: 'approved_repair_requested', proposalId });
@@ -49,7 +59,12 @@ export async function applyApprovedEvalRepair(command: ApplyApprovedEvalRepairCo
       message: mutation.changedFiles.length ? 'The repair failed after a file changed. Inspect the file before retrying.' : 'The approved change could not be applied. No project files changed.' };
   }
 
-  const changedFiles = normalizeChangedFiles(mutation.changedFiles);
+  if (mutation.changedFiles.length !== 1 || mutation.changedFiles[0]?.path !== proposal.targetPrecondition.path) {
+    dependencies.logger.error({ event: 'approved_repair_failed', proposalId, reason: 'unexpected-mutation-result', targetFileCount: safety.safeTargets.length, safeTargetPaths: safety.safeTargets, durationMs: elapsed(startedAt, dependencies) });
+    return { status: 'error', reason: 'mutation-failure', proposalId, changedFiles: mutation.changedFiles, changedFileCount: mutation.changedFiles.length,
+      message: 'The repair outcome is uncertain. Inspect the target before drafting another proposal.' };
+  }
+  const changedFiles = normalizeChangedFiles(mutation.changedFiles, proposal.changeSummary);
   dependencies.logger.info({ event: 'approved_repair_applied', proposalId, targetFileCount: safety.safeTargets.length, changedFileCount: changedFiles.length, safeTargetPaths: changedFiles.map((file) => file.path), durationMs: elapsed(startedAt, dependencies) });
   return {
     status: 'applied',
@@ -62,8 +77,8 @@ export async function applyApprovedEvalRepair(command: ApplyApprovedEvalRepairCo
   };
 }
 
-function normalizeChangedFiles(files: readonly ApprovedRepairChangedFile[]): readonly ApprovedRepairChangedFile[] {
-  return files.map((file) => ({ path: file.path, summary: file.summary ?? 'Changed by approved proposal.' }));
+function normalizeChangedFiles(files: readonly ApprovedRepairChangedFile[], summary: string): readonly ApprovedRepairChangedFile[] {
+  return files.map((file) => ({ path: file.path, summary }));
 }
 
 function createRerunRecommendation(proposal: PendingApprovedRepairProposal): ApprovedRepairRerunRecommendation {

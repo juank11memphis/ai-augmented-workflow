@@ -29,6 +29,15 @@ describe('applyApprovedEvalRepair', () => {
     assert.equal(dependencies.calls.mutations.length, 0);
   });
 
+  it('keeps unexpected proposal-read errors uncertain rather than claiming no file changed', async () => {
+    const dependencies = fakeDependencies({ proposal: proposal() });
+    dependencies.proposalReader.getPendingProposal = async () => { throw new Error('unavailable'); };
+    const result = await applyApprovedEvalRepair(command(), dependencies);
+    assert.equal(result.status, 'error');
+    assert.match(result.message, /uncertain/i);
+    assert.equal(dependencies.calls.mutations.length, 0);
+  });
+
   it('blocks proposals drafted for a different active project root', async () => {
     const dependencies = fakeDependencies({ proposal: proposal({ projectRoot: '/other-repo' }) });
     const result = await applyApprovedEvalRepair(command(), dependencies);
@@ -73,7 +82,7 @@ describe('applyApprovedEvalRepair', () => {
     const result = await applyApprovedEvalRepair(command(), dependencies);
 
     assert.equal(result.status, 'applied');
-    assert.deepEqual(result.changedFiles, [{ path: 'prompts/skill.md', summary: 'Changed by approved proposal.' }]);
+    assert.deepEqual(result.changedFiles, [{ path: 'prompts/skill.md', summary: 'Change prompt hard stop behavior.' }]);
     assert.equal(result.changedFileCount, 1);
     assert.equal(result.validationStatus, 'not-rerun');
     assert.equal(result.rerunRecommendation.primaryAction.scope, 'test_case');
@@ -94,14 +103,13 @@ describe('applyApprovedEvalRepair', () => {
     assert.equal(dependencies.calls.mutations.length, 0);
   });
 
-  it('reports applied no-op mutations without claiming validation success', async () => {
+  it('treats a no-change mutator response as uncertain rather than claiming application', async () => {
     const dependencies = fakeDependencies({ changedFiles: [] });
     const result = await applyApprovedEvalRepair(command(), dependencies);
 
-    assert.equal(result.status, 'applied');
+    assert.equal(result.status, 'error');
     assert.equal(result.changedFileCount, 0);
     assert.deepEqual(result.changedFiles, []);
-    assert.equal(result.validationStatus, 'not-rerun');
     assert.doesNotMatch(result.message, /fixed|resolved/i);
   });
 

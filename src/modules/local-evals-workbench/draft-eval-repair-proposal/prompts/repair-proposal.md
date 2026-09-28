@@ -8,7 +8,7 @@ Return JSON with:
 - proposedChange{kind,representation}
 
 If file targets or eval impact are unclear, return JSON with unavailableReason instead of guessing.
-Allowed proposedChange.kind values: unified-diff or replacement. Name exactly one affected project file from the project file context. A unified diff must have exactly one hunk with matching --- a/path and +++ b/path headers, and its context must match the current file exactly. Otherwise use a complete replacement. If no safe named file is present, return unavailableReason.
+Allowed proposedChange.kind values: unified-diff or replacement. Name exactly one affected project file from the project file context. A unified diff must have exactly one hunk with matching --- a/path and +++ b/path headers, and its context must match the current file exactly. Otherwise use a complete replacement containing every byte of the named file after the change. If complete source context or a safe named file is unavailable, return unavailableReason; never invent omitted content.
 
 Repair direction: {{repairDirection}}
 Prior analysis: {{priorAnalysis}}

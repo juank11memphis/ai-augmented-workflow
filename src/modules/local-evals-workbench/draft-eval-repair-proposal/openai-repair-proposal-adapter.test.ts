@@ -4,7 +4,7 @@ import { OpenAiRepairProposalAdapter, parseRepairProposalDraft } from './openai-
 import type { OpenAiRepairProposalClient } from './openai-repair-proposal-adapter.js';
 import type { FailedAssertionEvidence } from '../analyze-failed-assertion/evidence.js';
 
-const validJson = JSON.stringify({ affectedProjectFiles: ['prompts/skill.md'], changeSummary: 'Add a hard stop rule.', rationale: 'The active output skipped the expected refusal.', expectedEvalImpact: 'The selected assertion should pass.', proposedChange: { kind: 'instructions', representation: 'Add the rule.' } });
+const validJson = JSON.stringify({ affectedProjectFiles: ['prompts/skill.md'], changeSummary: 'Add a hard stop rule.', rationale: 'The active output skipped the expected refusal.', expectedEvalImpact: 'The selected assertion should pass.', proposedChange: { kind: 'replacement', representation: 'Add the rule.' } });
 const evidence: FailedAssertionEvidence = { suiteId: 'suite', testCaseId: 'case-1', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'GPT-5 mini', assertionId: 'a1', assertionLabel: 'Must stop', assertionKind: 'assertion', assertionMessage: 'Expected refusal.', actualOutputPreview: 'actual', expectedPreview: 'expected', cellOutputPreview: 'actual', diagnostics: [], artifacts: [] };
 
 describe('OpenAiRepairProposalAdapter', () => {
@@ -23,6 +23,9 @@ describe('OpenAiRepairProposalAdapter', () => {
     assert.throws(() => parseRepairProposalDraft(JSON.stringify({ ...JSON.parse(validJson), expectedEvalImpact: '' })));
     assert.throws(() => parseRepairProposalDraft(JSON.stringify({ ...JSON.parse(validJson), affectedProjectFiles: ['.env'] })));
     assert.throws(() => parseRepairProposalDraft(JSON.stringify({ ...JSON.parse(validJson), affectedProjectFiles: ['../outside.md'] })));
+    assert.throws(() => parseRepairProposalDraft(JSON.stringify({ ...JSON.parse(validJson), proposedChange: { kind: 'instructions', representation: 'Do something.' } })));
+    assert.throws(() => parseRepairProposalDraft(JSON.stringify({ ...JSON.parse(validJson), affectedProjectFiles: ['prompts/skill.md', 'other.md'] })));
+    assert.throws(() => parseRepairProposalDraft(' '.repeat(65 * 1024)));
     const client: OpenAiRepairProposalClient = { createResponse: async () => { throw new Error('provider rejected raw prompt secret'); } };
     await assert.rejects(new OpenAiRepairProposalAdapter('secret-key', client).draftProposal({ model: 'gpt-5-mini', evidence, repairDirection: { type: 'prompt_issue' }, projectFiles: [] }));
   });

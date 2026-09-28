@@ -5,6 +5,21 @@ import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
 import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 
+test('rerun runtime refresh never silently replaces an unavailable prior model', async () => {
+  const progress = { textContent: '' };
+  const slot = { querySelector: () => null };
+  const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [{ id: 'case' }] }] }) }),
+    querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': slot, '[data-progress]': progress })[selector], addEventListener() {} };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return { loadRuntime, setPrior(){setup.model="prior"; strictRuntimeChoices=true;}, getSetup:()=>setup }; })()',
+    { document, fetch: async () => ({ json: async () => ({ status: 'ready', models: ['other'], judgeModels: [], rubricCaseIds: [] }) }) }) as {
+      loadRuntime(): Promise<void>; setPrior(): void; getSetup(): { model: string };
+    };
+  api.setPrior();
+  await api.loadRuntime();
+  assert.equal(api.getSetup().model, '');
+  assert.match(progress.textContent, /Previous model choice is unavailable/);
+});
+
 test('case switches and late discovery keep conditional Judge options and keyboard focus in sync', async () => {
   const listeners = new Map<string, (event: { target: { matches: (selector: string) => boolean } }) => void>();
   const controls = { scope: 'one', caseId: 'plain', model: '', judge: '', repeats: '1' };

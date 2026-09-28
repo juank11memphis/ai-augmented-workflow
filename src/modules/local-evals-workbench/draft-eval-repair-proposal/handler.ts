@@ -57,7 +57,8 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
     const targetPath = draft.affectedProjectFiles[0]!;
     const current = await dependencies.projectFileReader.readTargetState(command.projectRoot, targetPath);
     if (current.status === 'blocked' || current.value.status !== 'present') return logBlocked({ status: 'blocked', reason: 'unsafe-target-files', message: 'The named repair target could not be safely read.', evidence }, metadata, startedAt, dependencies);
-    if (projectFiles.files.find(file => file.path === targetPath)?.digest !== current.value.digest) return logBlocked({ status: 'blocked', reason: 'unsafe-target-files', message: 'The target changed while drafting. Draft a fresh proposal.', evidence }, metadata, startedAt, dependencies);
+    const supplied = projectFiles.files.find(file => file.path === targetPath);
+    if (supplied?.digest !== current.value.digest || supplied.preview !== current.value.content) return logBlocked({ status: 'blocked', reason: 'unsafe-target-files', message: 'The target changed or its complete content was unavailable while drafting. Draft a fresh proposal.', evidence }, metadata, startedAt, dependencies);
     let proposedContent: string;
     try {
       if (validation.proposal.proposedChange.kind === 'replacement') proposedContent = validation.proposal.proposedChange.representation;
@@ -66,6 +67,7 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
     } catch {
       return reject('vague-proposal', 'The proposed diff cannot be applied to the current file. Draft a single matching hunk or a complete replacement.', 1, metadata, startedAt, dependencies, config.assistanceModelLabel, evidence);
     }
+    if (proposedContent === current.value.content) return reject('vague-proposal', 'The proposal makes no file change. Draft a concrete repair.', 1, metadata, startedAt, dependencies, config.assistanceModelLabel, evidence);
     if (Buffer.byteLength(proposedContent, 'utf8') > 32 * 1024) return reject('vague-proposal', 'The proposed file exceeds the supported size. Draft a smaller one-file change.', 1, metadata, startedAt, dependencies, config.assistanceModelLabel, evidence);
     const proposal = await dependencies.proposalStore.savePendingProposal({ projectRoot: command.projectRoot, suiteId: command.suiteId, runId: command.runId, testCaseId: command.testCaseId, attempt: command.attempt, evalRunModelId: selected.value.testedModel, judgeModel: selected.value.judgeModel, repeats: selected.value.repeats, assertionId: command.assertionId, targetPrecondition: current.value, proposal: validation.proposal });
     dependencies.logger.info({ event: 'repair_proposal_drafted', ...metadata, assistanceModelLabel: config.assistanceModelLabel, targetFileCount: proposal.affectedProjectFiles.length, durationMs: elapsed(startedAt, dependencies), outcome: 'proposal-ready' });

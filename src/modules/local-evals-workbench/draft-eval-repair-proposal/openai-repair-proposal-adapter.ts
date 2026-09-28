@@ -27,14 +27,16 @@ export class OpenAiRepairProposalAdapter implements RepairProposalLlmPort {
 }
 
 export function parseRepairProposalDraft(outputText: string): RepairProposalDraft {
+  if (Buffer.byteLength(outputText, 'utf8') > 64 * 1024) throw new Error('Repair proposal response is too large.');
   const payload = JSON.parse(outputText) as unknown;
   if (!isRecord(payload) || typeof payload.unavailableReason === 'string') throw new Error('Repair proposal unavailable or unreadable.');
-  const affectedProjectFiles = Array.isArray(payload.affectedProjectFiles) ? payload.affectedProjectFiles.filter(isNonEmptyString).map((value) => value.trim()) : [];
+  const affectedProjectFiles = Array.isArray(payload.affectedProjectFiles) && payload.affectedProjectFiles.every(isNonEmptyString)
+    ? payload.affectedProjectFiles.map((value) => value.trim()) : [];
   const changeSummary = readString(payload.changeSummary);
   const rationale = readString(payload.rationale);
   const expectedEvalImpact = readString(payload.expectedEvalImpact);
   const proposedChange = readProposedChange(payload.proposedChange);
-  if (affectedProjectFiles.length === 0 || !changeSummary || !rationale || !expectedEvalImpact || !proposedChange) throw new Error('Repair proposal response is missing required fields.');
+  if (affectedProjectFiles.length !== 1 || !changeSummary || !rationale || !expectedEvalImpact || !proposedChange || proposedChange.kind === 'instructions') throw new Error('Repair proposal response must contain one concrete file change.');
   if (validateProjectFileTargets('/project', affectedProjectFiles).status === 'blocked') throw new Error('Repair proposal response includes unsafe target files.');
   return { affectedProjectFiles, changeSummary, rationale, expectedEvalImpact, proposedChange };
 }
