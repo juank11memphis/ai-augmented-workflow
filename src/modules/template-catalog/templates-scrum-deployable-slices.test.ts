@@ -80,14 +80,80 @@ describe('deployable Scrum authoring contract', () => {
     assert.match(invalid, /ux\.md.*mockups/);
   });
 
-  it('uses resolvable BRD IDs in the reviewed example pair', () => {
-    for (const name of ['valid-epic.md', 'valid-story.md']) {
+  it('uses resolvable authoring BRD IDs without treating them as checkout authority', () => {
+    for (const name of [
+      'valid-epic.md', 'valid-story.md', 'flag-decision-cases.md',
+      'flagged-epic.md', 'flagged-story.md', 'flag-removal-story.md',
+    ]) {
       const content = fixture(name);
       assert.match(content, /docs\/features\/deployable-epic-story-authoring\/brd\.md/);
       const ids = [...new Set(content.match(/\bREQ-\d{2}\b/g) ?? [])];
       assert.ok(ids.length > 0);
       for (const id of ids) assert.match(brd, new RegExp(`\\*\\*${id}\\b`));
     }
+    for (const name of ['flagged-epic.md', 'flagged-story.md', 'flag-removal-story.md']) {
+      const content = fixture(name);
+      assert.match(content, /Authoring rules only:.*These sources do not define checkout behavior/);
+      assert.match(content, /Checkout authority missing:.*checkout feature BRD.*revised checkout SDD.*project SAD flag mechanism/);
+      assert.match(content, /\*\*Status:\*\* draft/);
+      assert.doesNotMatch(content, /\*\*Status:\*\* ready-for-planning/);
+    }
+    for (const name of ['flagged-story.md', 'flag-removal-story.md']) {
+      const content = fixture(name);
+      assert.match(content, /Open questions: What checkout BRD\/SDD behavior/);
+      assert.match(content, /Accepted assumptions: none\. Remain `draft` until resolved/);
+      assert.match(content, /Checkout UX applicability unresolved/);
+    }
+  });
+
+  it('asks for a reasoned flag choice only when unfinished behavior would be exposed', () => {
+    const cases = fixture('flag-decision-cases.md');
+    assert.match(skill, /Do not ask about flags speculatively for internal-only or backward-compatible increments/);
+    assert.match(skill, /Explain the concrete exposure risk and ask whether the user wants to use flags/);
+    assert.match(skill, /do not ask the user to determine whether a flag is needed/);
+    for (const heading of [
+      'No flag needed', 'Explained need and user decision', 'Refusal with viable slice',
+      'Refusal without viable slice', 'First accepted flag: missing mechanism',
+      'Later feature: established mechanism', 'Resume after source handoffs',
+    ]) assert.match(cases, new RegExp(`^## ${heading}$`, 'm'));
+    assert.match(cases, /do not ask a speculative flag question/);
+    assert.match(cases, /checkout flow.*concrete exposure risk/);
+    assert.match(cases, /independently deployable and reviewable Story/);
+    assert.match(cases, /conflict and stop for a human decision/);
+  });
+
+  it('pauses for project SAD and feature SDD handoffs without inventing or repeating a mechanism', () => {
+    assert.match(skill, /read the target project's `docs\/architecture\.md`/);
+    assert.match(skill, /Reuse an established mechanism without asking how flags work again/);
+    assert.match(skill, /ask once how the project should support flags/);
+    assert.match(skill, /obtain an explicit choice/);
+    assert.match(skill, /user-directed `software-architecture-writer` update to the project SAD/);
+    assert.match(skill, /user-directed `software-design-writer` revision of this feature's SDD/);
+    assert.match(skill, /Resume planning only after both sources are available and consistent/);
+    const cases = fixture('flag-decision-cases.md');
+    assert.match(cases, /project SAD has no clear flag mechanism.*Ask once/s);
+    assert.match(cases, /project SAD already records a mechanism; reuse it without another mechanism question/);
+    assert.match(cases, /reread the revised SDD/);
+  });
+
+  it('specifies flagged Epic inventory, off/on Stories, and scoped final removal', () => {
+    const epic = fixture('flagged-epic.md');
+    const story = fixture('flagged-story.md');
+    const removal = fixture('flag-removal-story.md');
+    assertHeadingsInOrder(story, storyHeadings);
+    assertHeadingsInOrder(removal, storyHeadings);
+    assert.match(skill, /Create and link a final Story dedicated to removing all flag code/);
+    assert.match(skill, /flag-off preservation of existing behavior and flag-on new behavior/);
+    assert.match(skill, /repository search scoped to executable code and configuration plus human diff review/);
+    assert.match(epic, /checkout_enabled.*used by SAMPLE-S02 and removed by SAMPLE-S03/);
+    assert.match(epic, /cannot be done until SAMPLE-S03 removes all introduced flag code references/);
+    assert.ok(epic.indexOf('flagged-story.md') < epic.indexOf('flag-removal-story.md'));
+    assert.match(story, /AC-01 — Flag off \(illustrative\):[^\n]*existing checkout behavior is preserved as defined by the missing checkout BRD\/SDD/);
+    assert.match(story, /AC-02 — Flag on \(illustrative\):[^\n]*new checkout path completes an order as defined by the missing checkout BRD\/SDD/);
+    assert.match(story, /Safe default and migration conditions: pending the project SAD and revised checkout SDD/);
+    assert.match(removal, /search scoped to executable code and configuration.*human diff review/);
+    assert.match(removal, /\*\*Behind flag:\*\* no/);
+    assert.doesNotMatch(removal, /production.deployment evidence/i);
   });
 
   it('preserves upstream gates, output paths, user control, and new-artifact-only scope', () => {
@@ -98,9 +164,9 @@ describe('deployable Scrum authoring contract', () => {
     assert.match(skill, /newly created Epics and Stories only/);
     assert.match(skill, /do not retrofit existing planning artifacts/);
     assert.match(skill, /A user request selects the next stage/);
-    assert.doesNotMatch(skill, /ask whether they want to use flags|route.*SAD update|final flag-removal Story/i);
+    assert.match(skill, /ask whether the user wants to use flags/);
     const manifest = readTemplateManifest();
-    assert.match(manifest.templates['skills/scrum-master-planner/SKILL.md']?.changes.join(' ') ?? '', /deployable.*traceable/i);
+    assert.match(manifest.templates['skills/scrum-master-planner/SKILL.md']?.changes.join(' ') ?? '', /conditional flag decisions.*SAD.*SDD.*removal/i);
   });
 });
 

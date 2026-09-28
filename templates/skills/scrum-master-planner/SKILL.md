@@ -41,7 +41,7 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 
 - Do not create or update product visions, Software Architecture Documents, BRDs, software designs, UX specs, implementation plans, or production code.
 - Do not modify prior-stage artifacts.
-- Do not reread `docs/architecture.md` by default; trust `sdd.md` for Deep Module implementation boundaries.
+- Do not reread `docs/architecture.md` by default for ordinary planning; read it when an accepted flag needs the project's established flag mechanism.
 - Do not add product scope or architecture decisions absent from the BRD and software design.
 
 ## Required inputs
@@ -136,6 +136,16 @@ Good Epic boundaries include:
 
 Avoid Epics that are only generic layers such as “frontend,” “backend,” “tests,” or “refactor” unless the source docs explicitly make that the delivery outcome.
 
+### Conditional feature-flag decision before finalization
+
+While sizing each independently deployable, reviewable slice, assess whether merging it would expose unfinished behavior. Do not ask about flags speculatively for internal-only or backward-compatible increments. A flag defers visibility; it never makes a nonworking horizontal layer deployable.
+
+If a proposed slice needs a flag, pause **before** finalizing its Epic or Stories. Explain the concrete exposure risk and ask whether the user wants to use flags; do not ask the user to determine whether a flag is needed.
+
+- If the user declines, re-slice into a complete, independently deployable and one-sitting-reviewable unflagged increment. If no viable slice exists, present the deployability/reviewability conflict and stop for a human decision. Never silently add a flag or finalize an incomplete horizontal slice.
+- If the user accepts, read the target project's `docs/architecture.md` for its project-wide flag mechanism. Reuse an established mechanism without asking how flags work again. If it is missing or ambiguous, ask once how the project should support flags (existing framework, external service, or project-local mechanism). If the user has no preference, give a concise recommendation and obtain an explicit choice. Pause for a user-directed `software-architecture-writer` update to the project SAD; do not invent or record a mechanism only in this feature's SDD.
+- With a clear project SAD mechanism, pause for a user-directed `software-design-writer` revision of this feature's SDD. It must record feature-specific flag-off and flag-on behavior, defaults, migration conditions, and safety implications. Ask only for missing feature-specific behavior. Do not edit the SAD or SDD here. Resume planning only after both sources are available and consistent; reread the revised SDD before writing flagged artifacts.
+
 ### 3. Write each Epic brief
 
 Each `epic_brief.md` should use this structure:
@@ -163,6 +173,9 @@ Each `epic_brief.md` should use this structure:
 ## User Stories and Sequence
 1. [<Story ID and title>](./stories/<order>-<user-story-slug>.md) — <outcome; dependencies or `none`>
 
+## Feature Flags
+- <`none`, or each named coarse capability-level flag and the Stories that use it>
+
 ## Acceptance Criteria
 - <Observable condition proving this one outcome is complete.>
 
@@ -170,7 +183,7 @@ Each `epic_brief.md` should use this structure:
 - <Only meaningful dependencies, risks, or sequencing notes.>
 ```
 
-Use this section order and keep the Epic brief short. Record meaningful cross-Story dependencies and an explicit completion condition; do not group unrelated outcomes or only technical layers. Reference applicable source sections and valid BRD requirement IDs rather than copying upstream contracts.
+Use this section order and keep the Epic brief short. Record meaningful cross-Story dependencies and an explicit completion condition; do not group unrelated outcomes or only technical layers. Reference applicable source sections and valid BRD requirement IDs rather than copying upstream contracts. For a flagged Epic, name each coarse flag (ideally one per independent capability) and its Story users. Create and link a final Story dedicated to removing all flag code introduced by the Epic **at the same time** as the flagged Stories. The Epic cannot be marked done while those code references remain. Do not assert or check production deployment.
 
 ### 4. Sequence and write User Stories
 
@@ -229,8 +242,8 @@ As a <user or contributor>, I want <capability or outcome>, so that <value or re
 <Applicable sourced conditions and thresholds, or `not applicable`; invent none.>
 
 ## Deployability and Feature Flag
-**Behind flag:** no | <named flag when already supported by source design>.
-<Why this working increment can be merged and deployed without unmerged sibling Stories; applicable safe defaults or migration notes, or `not applicable`.>
+**Behind flag:** no | <named flag supported by the project SAD and feature SDD>.
+<Why this working increment can be merged and deployed without unmerged sibling Stories; for flagged work, flag-off preservation and flag-on behavior with applicable safe defaults or migration conditions; otherwise `not applicable`.>
 
 ## Dependencies
 <Stories this depends on and Stories it blocks, or `none`.>
@@ -242,6 +255,8 @@ As a <user or contributor>, I want <capability or outcome>, so that <value or re
 Keep this section order for every new Story. Mark irrelevant details `not applicable` or `none` instead of inventing them. Keep Stories concrete, but do not turn them into implementation plans or task checklists. If detailed implementation guidance is needed, point to the software design instead of restating it. A `ready-for-planning` status requires no unresolved material question; record accepted assumptions explicitly. Readiness does not authorize implementation.
 
 Keep `## Acceptance Criteria`, `## Verification Expectations`, and `## Validation` distinct:
+
+For every flagged Story, name its flag and include verifiable acceptance criteria for flag-off preservation of existing behavior and flag-on new behavior. Record applicable safe defaults and migration conditions in deployability notes. Every unflagged Story says `**Behind flag:** no`. The final flag-removal Story must verify, by repository search scoped to executable code and configuration plus human diff review, that no code references to any Epic-introduced flag remain; exclude historical documentation and unrelated identifiers from the search judgment. It is last in the Epic sequence, leaves the capability working without flag code, and does not require production-deployment evidence.
 
 - Acceptance Criteria stay behavior-focused: observable product, workflow, or artifact outcomes that must be true.
 - Each criterion has a stable local ID, an observable pass/fail outcome, its applicable source BRD ID, and a verification label: test, build/check, visual comparison, or `needs human/LLM-judge review`. Use concrete examples where helpful; do not invent subjective or numeric thresholds.
@@ -264,6 +279,7 @@ Before finishing, verify:
 - every Story filename includes a two-digit execution order prefix
 - Stories with the same order number are actually parallelizable
 - every Story can be merged and deployed safely on its own, even if its user-facing value is gated or incomplete until the Epic is done
+- flagged Epics inventory each flag and Story user, include a final flag-code removal Story, and remain incomplete while those references remain
 - Story count is pragmatic, not inflated
 - no Story adds scope that is absent from the BRD or software design
 - acceptance criteria are testable enough for a reviewer

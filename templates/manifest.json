@@ -1,5 +1,5 @@
 {
-  "templateVersion": "188",
+  "templateVersion": "189",
   "templates": {
     "AGENTS.md": {
       "version": "45",
@@ -128,10 +128,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "19",
+      "version": "20",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Adds deployable, traceable Epic and Story authoring, including applicable UX source sections, with stable IDs, source-linked checks, and honest readiness while preserving BRD, SDD, and required-UX gates."
+        "Adds conditional flag decisions, project SAD and feature SDD handoffs, and final flag-removal Stories while preserving unflagged planning."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
