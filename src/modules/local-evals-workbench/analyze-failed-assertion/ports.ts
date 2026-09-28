@@ -20,11 +20,11 @@ export type FailureAnalysisLlmPort = {
 };
 
 export type AnalyzeFailedAssertionLogEvent =
-  | { readonly event: 'failure_analysis_requested'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string }
-  | { readonly event: 'failure_analysis_unavailable'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly reason: string; readonly durationMs: number }
-  | { readonly event: 'failure_analysis_completed'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly durationMs: number; readonly outcome: string }
-  | { readonly event: 'failure_analysis_blocked'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly reason: string; readonly durationMs: number }
-  | { readonly event: 'failure_analysis_failed'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly reason: string; readonly durationMs: number };
+  | { readonly event: 'failure_analysis_requested'; readonly suiteId: string; readonly runId: string; readonly attempt: number; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string }
+  | { readonly event: 'failure_analysis_unavailable'; readonly suiteId: string; readonly runId: string; readonly attempt: number; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly reason: string; readonly durationMs: number }
+  | { readonly event: 'failure_analysis_completed'; readonly suiteId: string; readonly runId: string; readonly attempt: number; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly durationMs: number; readonly outcome: string }
+  | { readonly event: 'failure_analysis_blocked'; readonly suiteId: string; readonly runId: string; readonly attempt: number; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly reason: string; readonly durationMs: number }
+  | { readonly event: 'failure_analysis_failed'; readonly suiteId: string; readonly runId: string; readonly attempt: number; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly reason: string; readonly durationMs: number };
 
 export type AnalyzeFailedAssertionLoggerPort = {
   info(event: AnalyzeFailedAssertionLogEvent): void;

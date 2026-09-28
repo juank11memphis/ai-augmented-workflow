@@ -56,15 +56,18 @@ test('changing the failed-check control retains run identity through analysis an
   const listeners = new Map<string, ((event: unknown) => void)[]>();
   const calls: { url: string; body: Record<string, unknown> }[] = [];
   const host = { innerHTML: '', closest: () => false, querySelector: () => null };
-  const result = { innerHTML: '' }, detail = { innerHTML: '', hidden: false }, side = { hidden: true };
+  const result = { innerHTML: '' }, detail = { innerHTML: '', hidden: false, querySelector: () => null }, side = { hidden: true };
   const document = { activeElement: null, querySelectorAll: (selector: string) => selector === '[data-repair-host]' ? [host] : [],
     addEventListener: (name: string, listener: (event: unknown) => void) => listeners.set(name, [...listeners.get(name) ?? [], listener]) };
-  const context = { document, esc: escape, one: (selector: string) => ({ '[data-results-container]': result, '[data-detail]': detail, '[data-side-panel]': side })[selector],
+  const context = { document, esc: escape, URLSearchParams, matchMedia: () => ({ matches: false }), one: (selector: string) => ({ '[data-results-container]': result, '[data-detail]': detail, '[data-side-panel]': side })[selector],
     suite: { id: 'suite', testCases: [{ id: 'case', name: 'Case' }] }, suites: [],
-    run: { runId: 'run-two', testedModel: 'provider:model/long', scope: 'all', cases: [], state: 'completed' },
+    run: { runId: 'run-two', testedModel: 'provider:model/long', scope: 'all', cases: [{ caseId: 'case', attempts: [{ number: 2, outcome: 'failed' }] }], state: 'completed' },
     history: [{ runId: 'run-two' }], selectedRunId: 'run-two', latestKnownRunId: 'run-two', setup: { caseId: '' },
     runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
-    loadRuntime: async () => undefined, json: async () => new Promise(() => undefined),
+    loadRuntime: async () => undefined, json: async (url: string) => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
+      outcome: 'failed', assertions: url.includes('assertionId=') ? [{ id: 'failed-two', outcome: 'failed', actual: 'selected', expected: 'expected', diagnostics: [] }]
+        : [{ id: 'failed-one', outcome: 'failed' }, { id: 'failed-two', outcome: 'failed' }], turns: [], tools: [], diagnostics: [], output: '',
+    } } }),
     post: async (url: string, body: Record<string, unknown>) => { calls.push({ url, body });
       return url.includes('failure-analysis') ? { status: 'analysis-ready', analysisId: 'analysis-1', analysis: { likelyCause: 'prompt_issue' } }
         : { status: 'proposal-rejected', message: 'no change' }; },
@@ -74,12 +77,13 @@ test('changing the failed-check control retains run identity through analysis an
     setSelection(value: unknown): void; requestRepair(kind: string): Promise<void>; getSelection(): typeof selection;
   };
   api.setSelection({ ...selection, assertionId: 'failed-one', evalRunModelId: 'provider:model/long' });
-  for (const listener of listeners.get('change') ?? []) listener({ target: { matches: (selector: string) => selector === '[data-action="assertion-select"]', value: 'failed-two' } });
+  for (const listener of listeners.get('change') ?? []) listener({ target: { matches: (selector: string) => selector === '[data-action="assertion-select"]', dataset: { caseId: 'case', attempt: '2' }, value: 'failed-two' } });
+  await new Promise(resolve => setImmediate(resolve));
   await api.requestRepair('analysis');
   await api.requestRepair('proposal');
   assert.equal(calls.length, 2);
-  for (const call of calls) assert.deepEqual({ suiteId: call.body.suiteId, runId: call.body.runId, testCaseId: call.body.testCaseId,
-    attempt: call.body.attempt, assertionId: call.body.assertionId, evalRunModelId: call.body.evalRunModelId, runScope: call.body.runScope },
+  for (const call of calls) assert.deepEqual(JSON.parse(JSON.stringify({ suiteId: call.body.suiteId, runId: call.body.runId, testCaseId: call.body.testCaseId,
+    attempt: call.body.attempt, assertionId: call.body.assertionId, evalRunModelId: call.body.evalRunModelId, runScope: call.body.runScope })),
     { suiteId: 'suite', runId: 'run-two', testCaseId: 'case', attempt: 2, assertionId: 'failed-two', evalRunModelId: 'provider:model/long', runScope: { type: 'all' } });
 });
 
@@ -117,7 +121,7 @@ test('compact Coverage traps keyboard focus, Escape returns focus, and discards 
     history: [{ runId: 'run-two' }], selectedRunId: 'run-two', latestKnownRunId: 'run-two', setup: { caseId: '' },
     runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
     resetRepair: () => undefined, loadRuntime: async () => undefined,
-    sheetSlot: { querySelector: () => ({}) }, closeSheet: () => { closedDetails++; },
+    sheetSlot: { querySelector: () => ({}) }, openSheet: () => undefined, closeSheet: () => { closedDetails++; },
     json: async (url: string) => url.includes('history') ? new Promise(() => undefined) : new Promise(resolve => { resolveDetail = resolve; }),
     status: () => undefined };
   vm.runInNewContext(WORKSPACE_RESULTS_CLIENT, context);
@@ -158,7 +162,7 @@ test('medium result detail moves focus to a focusable heading and returns it to 
     resetRepair: () => undefined, repairMarkup: () => '', loadRuntime: async () => undefined,
     sheetSlot: { querySelector: () => null },
     json: async () => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
-      outcome: 'failed', assertions: [{ id: 'check', outcome: 'failed', actual: 'a', expected: 'b' }],
+      outcome: 'failed', assertions: [{ id: 'check', outcome: 'failed', actual: 'a', expected: 'b', diagnostics: [] }],
       turns: [], tools: [], diagnostics: [], output: '' } } }), status: () => undefined };
   vm.runInNewContext(WORKSPACE_RESULTS_CLIENT, context);
   const click = (action: string, caseId = '') => {
@@ -199,3 +203,60 @@ test('suite switch clears either open panel and stale selected detail before a n
     assert.equal(detail.hidden, false);
   }
 });
+
+for (const failure of ['unavailable', 'rejected'] as const) {
+  test(`compact assertion switch clears old evidence and proposal during deferred ${failure} read`, async () => {
+    const listeners = new Map<string, ((event: unknown) => void)[]>();
+    const result = { innerHTML: '' }, detail = { innerHTML: '', hidden: false }, side = { hidden: true };
+    const sheet = { innerHTML: '' };
+    let finishRead!: (value: unknown) => void;
+    let rejectRead!: (reason: Error) => void;
+    const attemptEvidence = { status: 'ok', value: { evidenceStatus: 'available', evidence: {
+      outcome: 'failed', assertions: [
+        { id: 'failed-one', outcome: 'failed', actual: 'OLD EVIDENCE', expected: 'old expected', diagnostics: [] },
+        { id: 'failed-two', outcome: 'failed', actual: 'NEW EVIDENCE', expected: 'new expected', diagnostics: [] },
+      ], turns: [], tools: [], diagnostics: [], output: 'Raw response',
+    } } };
+    const selectedEvidence = (id: string) => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
+      outcome: 'failed', assertions: [{ id, outcome: 'failed', actual: id === 'failed-one' ? 'OLD EVIDENCE' : 'NEW EVIDENCE',
+        expected: 'expected', diagnostics: [] }], turns: [], tools: [], diagnostics: [], output: '',
+    } } });
+    const document = { activeElement: null, querySelectorAll: () => [],
+      addEventListener: (name: string, listener: (event: unknown) => void) => listeners.set(name, [...listeners.get(name) ?? [], listener]) };
+    const context = { document, URLSearchParams, matchMedia: () => ({ matches: true }), esc: escape,
+      one: (selector: string) => ({ '[data-results-container]': result, '[data-detail]': detail, '[data-side-panel]': side })[selector],
+      suite: { id: 'suite', testCases: [{ id: 'case', name: 'Case' }] }, suites: [],
+      run: { runId: 'run', testedModel: 'model', scope: 'all', cases: [{ caseId: 'case', attempts: [{ number: 1, outcome: 'failed' }] }] },
+      history: [{ runId: 'run' }], selectedRunId: 'run', latestKnownRunId: 'run', setup: { caseId: '' },
+      runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
+      loadRuntime: async () => undefined, status: () => undefined,
+      openSheet: (_title: string, html: string) => { sheet.innerHTML = html; },
+      json: async (url: string) => !url.includes('assertionId=') ? attemptEvidence
+        : url.includes('failed-one') ? selectedEvidence('failed-one')
+          : new Promise((resolve, reject) => { finishRead = resolve; rejectRead = reject; }),
+    };
+    const api = vm.runInNewContext(WORKSPACE_REPAIR_CLIENT + WORKSPACE_RESULTS_CLIENT
+      + ';({ inspectCase, stage: () => repairStage, seedProposal() { repairStage = "proposal"; repairProposal = { proposalId: "old", changeSummary: "OLD PROPOSAL" }; } })', context) as {
+      inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void>;
+      stage(): string; seedProposal(): void;
+    };
+    await api.inspectCase('case', 1, 'failed-one');
+    api.seedProposal();
+    assert.match(sheet.innerHTML, /OLD EVIDENCE/);
+
+    const pending = api.inspectCase('case', 1, 'failed-two');
+    assert.equal(api.stage(), 'idle');
+    assert.match(sheet.innerHTML, /Loading selected evidence for failed-two/);
+    assert.equal(sheet.innerHTML, detail.innerHTML);
+    assert.doesNotMatch(sheet.innerHTML, /OLD EVIDENCE|OLD PROPOSAL/);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.match(sheet.innerHTML, /Loading selected evidence for failed-two/);
+
+    if (failure === 'unavailable') finishRead({ status: 'ok', value: { evidenceStatus: 'unavailable' } });
+    else rejectRead(new Error('read failed'));
+    await pending;
+    assert.match(sheet.innerHTML, failure === 'unavailable' ? /Selected evidence is unavailable/ : /Selected evidence could not be loaded/);
+    assert.equal(sheet.innerHTML, detail.innerHTML);
+    assert.doesNotMatch(sheet.innerHTML, /OLD EVIDENCE|OLD PROPOSAL|NEW EVIDENCE/);
+  });
+}

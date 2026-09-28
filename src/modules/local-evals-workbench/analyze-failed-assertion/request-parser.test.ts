@@ -29,4 +29,15 @@ describe('parseAnalyzeFailedAssertionRequest', () => {
     assert.equal(parseAnalyzeFailedAssertionRequest('/repo', { suiteId: 'suite', testCaseId: 'case-1', evalRunModelId: 'model', runScope: { type: 'all' }, assertionIds: ['a1', 'a2'], assertionId: 'a1' }).status, 'invalid');
     assert.equal(parseAnalyzeFailedAssertionRequest('/repo', { suiteId: 'suite', testCaseId: 'case-1', evalRunModelId: 'model', runScope: { type: 'all' }, assertionId: ['a1'] }).status, 'invalid');
   });
+  it('keeps the server project root and rejects invalid durable identity', () => {
+    const valid = { suiteId: 'suite', runId: 'run', attempt: 2, testCaseId: 'case',
+      evalRunModelId: 'model', runScope: { type: 'all' }, assertionId: 'failed' };
+    const parsed = parseAnalyzeFailedAssertionRequest('/server-root', { ...valid, projectRoot: '/attacker-root' });
+    assert.equal(parsed.status, 'valid');
+    if (parsed.status === 'valid') assert.equal(parsed.command.projectRoot, '/server-root');
+    for (const change of [{ attempt: 0 }, { attempt: 21 }, { attempt: 1.5 }, { runId: '../run' },
+      { assertionId: ['failed'] }, { evalRunModelId: 'bad model' }]) {
+      assert.equal(parseAnalyzeFailedAssertionRequest('/server-root', { ...valid, ...change }).status, 'invalid');
+    }
+  });
 });

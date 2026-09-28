@@ -50,5 +50,30 @@ describe('analyzeFailedAssertion', () => {
     assert.equal(result.status, 'analysis-unavailable');
     assert.equal(calls.length, 1);
     assert.doesNotMatch(JSON.stringify(events), /selected actual|secret/);
+    assert.match(JSON.stringify(events), /run-1/);
+    assert.match(JSON.stringify(events), /"attempt":2/);
+  });
+  it('rejects a mismatched ready payload before calling assistance or saving', async () => {
+    if (selected.status !== 'ready') throw new Error('Invalid fixture');
+    for (const mismatch of [
+      { runId: 'other-run' }, { attempt: 1 }, { suiteId: 'other-suite' },
+      { testCaseId: 'other-case' }, { assertionId: 'other-assertion' }, { evalRunModelId: 'other-model' },
+    ]) {
+      const calls: unknown[] = [];
+      const result = await analyzeFailedAssertion(command, dependencies({ calls, selected: {
+        status: 'ready', value: { ...selected.value, evidence: { ...selected.value.evidence, ...mismatch } },
+      } }));
+      assert.equal(result.status, 'blocked');
+      assert.equal(calls.length, 1);
+    }
+  });
+  it('returns safe recoverable evidence when the reader or provider fails', async () => {
+    const readerFailure = { ...dependencies(), artifactReader: { read: async () => { throw new Error('secret reader details'); } } };
+    assert.equal((await analyzeFailedAssertion(command, readerFailure)).status, 'blocked');
+    const providerFailure = { ...dependencies(), llm: { analyzeFailure: async () => { throw new Error('secret provider details'); } } };
+    const result = await analyzeFailedAssertion(command, providerFailure);
+    assert.equal(result.status, 'error');
+    assert.doesNotMatch(JSON.stringify(result), /secret provider/);
+    assert.match(JSON.stringify(result), /selected actual/);
   });
 });

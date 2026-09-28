@@ -82,6 +82,27 @@ else process.exit(2);
       { id: 'unsupported-ref', outcome: 'failed', diagnostics: ['unsupported-schema'] },
       { id: 'unsupported-pattern', outcome: 'failed', diagnostics: ['unsupported-schema'] },
     ]);
+    const [{ createSelectedFailureReader }, { OpenAiFailureAnalysisAdapter }] = await Promise.all([
+      import(installed('repair-context/selected-evidence.js')),
+      import(installed('analyze-failed-assertion/openai-failure-analysis-adapter.js')),
+    ]);
+    const selectedReader = createSelectedFailureReader(async command => {
+      const params = new URLSearchParams({ suiteId: command.suiteId, runId: command.runId,
+        caseId: command.selection.caseId, attempt: String(command.selection.attempt), assertionId: command.selection.assertionId });
+      return (await (await fetch(new URL('/api/eval-runs/status?' + params, server.url))).json());
+    });
+    const selected = await selectedReader.read({ suiteId: 'offline', runId: started.value.runId,
+      testCaseId: 'case', attempt: 1, assertionId: 'schema-fail' });
+    assert.equal(selected.status, 'ready');
+    let packedPrompt = '';
+    const adapter = new OpenAiFailureAnalysisAdapter('fake-key', { createResponse: async request => {
+      packedPrompt = request.input;
+      return { outputText: JSON.stringify({ exactFailureExplanation: 'Schema mismatch', likelyCause: 'eval_assertion_issue',
+        evidenceSummary: 'Selected schema check failed', uncertainty: 'Low' }) };
+    } });
+    await adapter.analyzeFailure({ model: 'fake-assistance', evidence: selected.value.evidence });
+    assert.match(packedPrompt, /selected_failed_assertion_data|schema-fail/);
+    assert.doesNotMatch(packedPrompt, /fake-key/);
     console.log('Packed offline eval execute/get smoke passed.');
   } finally { await server.stop?.(); }
 }

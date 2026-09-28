@@ -129,37 +129,58 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     side.innerHTML = '<div class="section-heading"><h2 tabindex="-1">Coverage</h2><button type="button" data-action="close-panel">Close</button></div><h3>Known gaps</h3>' + (gaps ? '<ul>' + gaps + '</ul>' : '<p>No known gaps documented.</p>') + '<h3>Coverage categories</h3><ul>' + categories + '</ul>';
     focusPanel();
   }
-  async function inspectCase(caseId, attempt) {
+  async function inspectCase(caseId, attempt, requestedAssertionId = null) {
     if (!run || !suite) return;
     resetRepair();
     const current = { suiteId: suite.id, runId: run.runId, caseId }, generation = ++detailGeneration;
-    detail.innerHTML = '<h2>Result detail</h2><p>Loading selected evidence…</p>';
+    function showEvidenceState(message) {
+      const html = '<h2>Result detail</h2><p>' + esc(message) + '</p>';
+      detail.innerHTML = html;
+      if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
+    }
+    showEvidenceState(requestedAssertionId ? 'Loading selected evidence for ' + requestedAssertionId + '…' : 'Loading selected evidence…');
     const query = new URLSearchParams({ ...current, attempt: String(attempt) });
     try {
       const payload = await json('/api/eval-runs/status?' + query);
       if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
-      if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') { detail.innerHTML = '<h2>Result detail</h2><p>Selected evidence is unavailable.</p>'; return; }
-      const evidence = payload.value.evidence;
-      const assertions = evidence.assertions.map(item => '<li><strong>' + esc(item.id) + ' — ' + esc(item.outcome) + '</strong>' + (item.score == null ? '' : ' · Score ' + esc(item.score)) + '<p>Actual: ' + esc(item.actual) + '</p><p>Expected: ' + esc(item.expected) + '</p></li>').join('');
+      if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') { showEvidenceState('Selected evidence is unavailable.'); return; }
+      const failed = payload.value.evidence.assertions.filter(item => item.outcome === 'failed');
+      const rawResponse = payload.value.evidence.output;
+      const assertionId = failed.find(item => item.id === requestedAssertionId)?.id || failed[0]?.id;
+      if (assertionId) query.set('assertionId', assertionId);
+      const selected = assertionId ? await json('/api/eval-runs/status?' + query) : payload;
+      if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
+      if (selected.status !== 'ok' || selected.value.evidenceStatus !== 'available') { showEvidenceState('Selected evidence is unavailable.'); return; }
+      const evidence = selected.value.evidence;
+      const assertion = assertionId ? evidence.assertions.find(item => item.id === assertionId) : evidence.assertions[0];
       const attempts = run.cases.find(item => item.caseId === caseId)?.attempts || [];
       const attemptChoices = '<label class="field">Attempt<select data-action="attempt-select" data-case-id="' + esc(caseId) + '">' + attempts.map(item => '<option value="' + esc(item.number) + '"' + (item.number === attempt ? ' selected' : '') + '>Attempt ' + esc(item.number) + ' — ' + esc(item.outcome) + '</option>').join('') + '</select></label>';
-      const failed = evidence.assertions.filter(item => item.outcome === 'failed');
-      const failedChoices = failed.length ? '<label class="field">Failed check<select data-action="assertion-select">' + failed.map(item => '<option value="' + esc(item.id) + '">' + esc(item.id) + '</option>').join('') + '</select></label>' : '';
-      selectedFailure = latestRun() && failed.length ? { suiteId: suite.id, runId: run.runId, testCaseId: caseId, attempt, assertionId: failed[0].id, evalRunModelId: run.testedModel, runScope: run.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: caseId } } : null;
+      const failedChoices = failed.length ? '<label class="field">Failed check ' + (failed.findIndex(item => item.id === assertionId) + 1) + ' of ' + failed.length + '<select data-action="assertion-select" data-case-id="' + esc(caseId) + '" data-attempt="' + esc(attempt) + '">' + failed.map(item => '<option value="' + esc(item.id) + '"' + (item.id === assertionId ? ' selected' : '') + '>' + esc(item.id) + '</option>').join('') + '</select></label>' : '';
+      selectedFailure = latestRun() && assertionId ? { suiteId: suite.id, runId: run.runId, testCaseId: caseId, attempt, assertionId, evalRunModelId: run.testedModel, runScope: run.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: caseId } } : null;
       const trace = evidence.turns.map(item => '<p>' + esc(item.role) + ': ' + esc(item.content) + '</p>').join('') + evidence.tools.map(item => '<p>Tool ' + esc(item.name) + ': ' + esc(item.outcome || 'result') + ' · ' + esc(item.arguments) + ' · ' + esc(item.result) + '</p>').join('');
+      const allChecks = payload.value.evidence.assertions.map(item => '<li><strong>' + esc(item.id) + '</strong> — ' + esc(item.outcome)
+        + (item.score == null ? '' : ' · Score ' + esc(item.score) + (item.threshold == null ? '' : ' · Threshold ' + esc(item.threshold)))
+        + '<p>Actual: ' + esc(item.actual || 'Not reported.') + '</p><p>Expected: ' + esc(item.expected || 'Not reported.') + '</p>'
+        + (item.diagnostics.length ? '<ul>' + item.diagnostics.map(message => '<li>' + esc(message) + '</li>').join('') + '</ul>' : '') + '</li>').join('');
+      const attemptDiagnostics = payload.value.evidence.diagnostics.map(item => '<p>' + esc(item) + '</p>').join('');
       const html = '<div class="section-heading"><h2 tabindex="-1">Result detail</h2><button type="button" data-action="close-detail">Close</button></div>'
         + (latestRun() ? '' : '<p class="readonly">Historical run · read-only</p>')
-        + '<h3>' + esc(suite.testCases.find(item => item.id === caseId)?.name || caseId) + '</h3><p>' + esc(evidence.outcome) + ' · ' + evidence.assertions.filter(item => item.outcome === 'failed').length + ' failed checks</p>'
+        + '<h3>' + esc(suite.testCases.find(item => item.id === caseId)?.name || caseId) + '</h3><p>' + esc(evidence.outcome) + ' · ' + failed.length + ' failed checks</p>'
         + attemptChoices + failedChoices
-        + '<section class="detail-section"><h3>What happened / Expected</h3><ul>' + assertions + '</ul></section>'
+        + '<section class="detail-section"><h3>What happened</h3><p>' + esc(assertion?.actual || 'No actual behavior reported.') + '</p>' + (assertion?.score == null ? '' : '<p>Score ' + esc(assertion.score) + (assertion.threshold == null ? '' : ' · Threshold ' + esc(assertion.threshold)) + '</p>') + '</section>'
+        + '<section class="detail-section"><h3>Expected</h3><p>' + esc(assertion?.expected || 'No expected behavior reported.') + '</p></section>'
+        + '<details class="detail-section"><summary>All checks (' + payload.value.evidence.assertions.length + ')</summary>' + (allChecks ? '<ul>' + allChecks + '</ul>' : '<p>No checks reported.</p>') + '</details>'
         + '<details class="detail-section"><summary>Conversation turns and tool trace</summary>' + (trace || '<p>No trace reported.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Diagnostics</summary>' + (evidence.diagnostics.map(item => '<p>' + esc(item) + '</p>').join('') || '<p>No diagnostics.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Bounded raw evidence</summary><pre>' + esc(evidence.output) + '</pre></details>'
+        + '<details class="detail-section"><summary>Diagnostics</summary>' + ((assertion?.diagnostics || []).map(item => '<p>' + esc(item) + '</p>').join('') || '<p>No selected diagnostics.</p>') + '</details>'
+        + '<details class="detail-section"><summary>Attempt diagnostics</summary>' + (attemptDiagnostics || '<p>No attempt diagnostics.</p>') + '</details>'
+        + '<details class="detail-section"><summary>Bounded raw response</summary>'
+        + (payload.value.evidence.truncated ? '<p>Saved response was truncated.</p>' : '')
+        + '<pre>' + esc(rawResponse || 'No raw response was retained for this attempt.') + '</pre></details>'
         + '<section data-repair-host aria-label="Guided repair">' + repairMarkup() + '</section>';
       detail.innerHTML = html;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
       else detail.querySelector('h2')?.focus();
-    } catch { if (generation === detailGeneration && !activePanel) detail.innerHTML = '<h2>Result detail</h2><p>Selected evidence could not be loaded.</p>'; }
+    } catch { if (generation === detailGeneration && !activePanel) showEvidenceState('Selected evidence could not be loaded.'); }
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
@@ -176,7 +197,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   document.addEventListener('change', event => {
     if (event.target.matches('[data-action="failures-only"]')) { failuresOnly = event.target.checked; renderWorkspace(); }
     if (event.target.matches('[data-action="attempt-select"]')) void inspectCase(event.target.dataset.caseId, Number(event.target.value));
-    if (event.target.matches('[data-action="assertion-select"]') && selectedFailure) { const next = { ...selectedFailure, assertionId: event.target.value }; resetRepair(); selectedFailure = next; renderRepair(); }
+    if (event.target.matches('[data-action="assertion-select"]')) void inspectCase(event.target.dataset.caseId, Number(event.target.dataset.attempt), event.target.value);
   });
   document.addEventListener('keydown', event => {
     if (side.hidden || side.getAttribute('role') !== 'dialog') return;

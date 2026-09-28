@@ -11,7 +11,9 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (!selectedFailure || !latestRun()) return '';
     const pending = repairPending ? ' disabled' : '';
     const notice = '<p role="status" aria-live="polite">' + esc(repairMessage) + '</p>';
-    if (repairStage === 'idle') return '<h3 tabindex="-1">Fix one failure</h3><p>Selected failed check: ' + esc(selectedFailure.assertionId) + '</p><button type="button" data-action="analyze-failure"' + pending + '>Analyze failure</button>' + notice;
+    if (repairStage === 'idle' || repairStage === 'loading') return '<h3 tabindex="-1">Fix one failure</h3><p>Selected failed check: ' + esc(selectedFailure.assertionId) + '</p><button type="button" data-action="analyze-failure"' + pending + '>Analyze failure</button>' + notice;
+    if (repairStage === 'unavailable') return '<h3 tabindex="-1">Analysis unavailable</h3><p>Configure an OpenAI API key in the server environment, then check again. Local evidence remains available above.</p><button type="button" data-action="analyze-failure">Check again</button>' + notice;
+    if (repairStage === 'retryable-error') return '<h3 tabindex="-1">Analysis could not finish</h3><p>Local evidence remains available above.</p><button type="button" data-action="analyze-failure">Retry analysis</button>' + notice;
     if (repairStage === 'analysis') {
       const analysis = repairAnalysis;
       const cause = analysis?.likelyCause || 'unclear_needs_human_judgment';
@@ -44,6 +46,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (!selectedFailure || repairPending || !latestRun()) return;
     const current = { ...selectedFailure }, key = selectionKey(current), generation = ++repairGeneration;
     repairPending = true; repairMessage = kind === 'analysis' ? 'Analyzing the selected check…' : kind === 'proposal' ? 'Drafting one-file repair…' : 'Checking approval and file state…';
+    if (kind === 'analysis') repairStage = 'loading';
     renderRepair();
     try {
       let result;
@@ -62,11 +65,17 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       }
       if (generation !== repairGeneration || selectionKey(selectedFailure) !== key || !latestRun()) return;
       if (kind === 'analysis' && result.status === 'analysis-ready') { repairAnalysis = result.analysis; repairAnalysisId = result.analysisId; repairStage = 'analysis'; repairMessage = ''; }
+      else if (kind === 'analysis' && result.status === 'analysis-unavailable') { repairStage = 'unavailable'; repairMessage = result.message || 'Analysis unavailable.'; }
+      else if (kind === 'analysis' && result.status === 'error') { repairStage = 'retryable-error'; repairMessage = result.message || 'Analysis could not finish.'; }
+      else if (kind === 'analysis') { repairStage = 'retryable-error'; repairMessage = result.message || 'Selected analysis is no longer available. Review the evidence and try again.'; }
       else if (kind === 'proposal' && result.status === 'proposal-ready') { repairProposal = result.proposal; repairStage = 'proposal'; repairMessage = ''; }
       else if (kind === 'apply' && result.status === 'applied') { repairApplied = result; repairStage = 'applied'; repairMessage = 'Source run unchanged. Rerun to verify.'; }
       else repairMessage = result.message || result.reason || 'This step is unavailable. Review the selected evidence and try again.';
     } catch {
-      if (generation === repairGeneration && selectionKey(selectedFailure) === key) repairMessage = 'The repair service could not finish. No new approval was sent automatically.';
+      if (generation === repairGeneration && selectionKey(selectedFailure) === key) {
+        if (kind === 'analysis') repairStage = 'retryable-error';
+        repairMessage = 'The repair service could not finish. No new approval was sent automatically.';
+      }
     } finally {
       if (generation === repairGeneration && selectionKey(selectedFailure) === key) { repairPending = false; renderRepair(); }
     }
