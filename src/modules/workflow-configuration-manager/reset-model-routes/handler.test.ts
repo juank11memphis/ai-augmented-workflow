@@ -45,7 +45,7 @@ it('resets one key, derives recommended origin, and stops honestly after a parti
   const result = handleResetModelRoutes({ type: 'models:reset', scope: 'all', confirmed: true, catalogVersion: catalog.catalogVersion, stateBasis: initialBasis }, partial.ports);
   assert.equal(result.status, 'failed');
   assert.equal(result.completed.length, 2);
-  if (result.status === 'failed') assert.equal(result.notAttempted.length, 15);
+  if (result.status === 'failed') assert.equal(result.notAttempted.length, 12);
   assert.equal(partial.writes, 3);
   assert.equal(partial.saved.length, 2);
 });

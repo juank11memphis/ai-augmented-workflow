@@ -15,7 +15,7 @@ it('lists every route in stable role/workload order, deriving user selection ind
   });
   assert.equal(result.status, 'listed');
   if (result.status !== 'listed') return;
-  assert.equal(result.routes.length, 18);
+  assert.equal(result.routes.length, 15);
   assert.deepEqual(result.routes.slice(0, 3).map((item) => item.recommendation.workloadClass), ['bounded', 'demanding', 'high-risk']);
   assert.equal(result.routes[0].status, 'user-selected');
   assert.equal(result.routes[0].reviewNeeded, true);

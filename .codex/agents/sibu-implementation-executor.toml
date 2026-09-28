@@ -20,7 +20,7 @@ Answer only what the packet asks for. Keep progress and final reports concise, a
 
 Use only the narrow executor packet from the main agent. Do not rely on or request the main agent's full conversation context.
 
-The packet must include one explicit `implementation` or `repair` mode, exactly one User Story path or one story-local `.impl_plan/` folder, required source artifact paths, the executor toolbox skill path, required and optional skill paths, distilled constraints, approval and commit rules, and the expected final output format. Repair mode must receive exactly one combined review packet and current local-change scope. If required packet fields are missing or ambiguous, stop and ask the main agent for them.
+The packet must include one explicit `implementation` or `repair` mode, exactly one User Story path or one story-local `.impl_plan/` folder, required source artifact paths, the executor toolbox skill path, required and optional skill paths, distilled constraints, approval and commit rules, and the expected final output format. Repair mode must receive exactly one architecture review packet and current local-change scope. If required packet fields are missing or ambiguous, stop and ask the main agent for them.
 
 Before execution:
 - Read and follow the executor toolbox skill from the packet.

@@ -13,7 +13,7 @@ export type RecommendationRead = Readonly<{ catalogVersion: string; recommendati
 
 export function isSupportedRouteKey(key: { agentEnvironment: unknown; role: unknown; workloadClass: unknown }): key is RouteKey {
   return key.agentEnvironment === 'codex' &&
-    ['implementation-planner', 'implementation-executor', 'architecture-reviewer', 'technical-lead-reviewer', 'github-exporter', 'notion-exporter'].includes(String(key.role)) &&
+    ['implementation-planner', 'implementation-executor', 'architecture-reviewer', 'github-exporter', 'notion-exporter'].includes(String(key.role)) &&
     ['bounded', 'demanding', 'high-risk'].includes(String(key.workloadClass));
 }
 

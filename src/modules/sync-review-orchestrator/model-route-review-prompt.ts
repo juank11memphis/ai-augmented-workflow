@@ -7,7 +7,6 @@ const ROLE_LABELS: Record<string, string> = {
   'implementation-planner': 'Implementation planner',
   'implementation-executor': 'Implementation executor',
   'architecture-reviewer': 'Architecture reviewer',
-  'technical-lead-reviewer': 'Technical lead reviewer',
   'github-exporter': 'GitHub exporter',
   'notion-exporter': 'Notion exporter',
 };

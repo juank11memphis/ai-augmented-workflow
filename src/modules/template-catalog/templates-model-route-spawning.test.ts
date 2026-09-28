@@ -11,7 +11,6 @@ const roles = [
     ['skills/ai-implementation-planner/SKILL.md', 'implementation-planner', 'sibu-implementation-planner'],
     ['skills/ai-implementation-plan-executor/SKILL.md', 'implementation-executor', 'sibu-implementation-executor'],
     ['skills/ai-implementation-plan-executor/SKILL.md', 'architecture-reviewer', 'sibu-architecture-reviewer'],
-    ['skills/ai-implementation-plan-executor/SKILL.md', 'technical-lead-reviewer', 'sibu-technical-lead-reviewer'],
     ['skills/export-to-github/SKILL.md', 'github-exporter', 'github-exporter'],
     ['skills/export-to-notion/SKILL.md', 'notion-exporter', 'notion-exporter'],
  ] as const;
@@ -88,8 +87,8 @@ describe('Sibu-provided sub-agent model routing', () => {
     it('retains foreground implementation and background exporter authority', () => {
         const executor = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
         assert.match(executor, /All implementation and repair execution stays in the foreground/);
-        assert.match(executor, /Resolve both reviewers' model routes[\s\S]*spawn both read-only reviewers before waiting for either result/);
-        assert.match(executor, /Never run an implementation or repair executor while a reviewer is active/);
+        assert.match(executor, /Resolve the architecture reviewer's model route before launching the read-only reviewer/);
+        assert.match(executor, /Never run an implementation or repair executor while the reviewer is active/);
         assert.match(executor, /Only after explicit story-level user approval/);
         for (const path of ['skills/export-to-github/SKILL.md', 'skills/export-to-notion/SKILL.md']) {
             const source = readTemplate(path);
@@ -106,7 +105,7 @@ describe('Sibu-provided sub-agent model routing', () => {
         assert.match(guidance, /main-agent[^\n]*not persisted[^\n]*not enforced/i);
     });
 
-    it('resolves all six role keys, saves only an explicit selection, and reuses exact state', () => {
+    it('resolves all five role keys, saves only an explicit selection, and reuses exact state', () => {
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-spawn-routes-'));
         const statePath = path.join(root, '.sibu', 'state.json');
         fs.mkdirSync(path.dirname(statePath));
@@ -133,7 +132,7 @@ describe('Sibu-provided sub-agent model routing', () => {
                 assert.equal(resolveProjectModelRoute({ ...key, workloadClass: 'high-risk' }, root).status, 'missing');
             }
             const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-            assert.equal(state.modelRoutes.length, 6);
+            assert.equal(state.modelRoutes.length, 5);
             assert.equal(resolveProjectModelRoute({ type: 'models:resolve', agentEnvironment: 'codex', role: 'user-created-agent', workloadClass: 'bounded' }, root).status, 'unsupported');
         } finally {
             fs.rmSync(root, { recursive: true, force: true });

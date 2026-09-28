@@ -151,20 +151,12 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
           targetRelativePath: '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
         },
         {
-          templateRelativePath: 'skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.codex/agents/sibu-implementation-executor.toml',
           targetRelativePath: '.codex/agents/sibu-implementation-executor.toml',
         },
         {
           templateRelativePath: '.codex/agents/sibu-architecture-reviewer.toml',
           targetRelativePath: '.codex/agents/sibu-architecture-reviewer.toml',
-        },
-        {
-          templateRelativePath: '.codex/agents/sibu-technical-lead-reviewer.toml',
-          targetRelativePath: '.codex/agents/sibu-technical-lead-reviewer.toml',
         },
       ],
       gemini: [
@@ -177,20 +169,12 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
           targetRelativePath: '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
         },
         {
-          templateRelativePath: 'skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.gemini/agents/sibu-implementation-executor.md',
           targetRelativePath: '.gemini/agents/sibu-implementation-executor.md',
         },
         {
           templateRelativePath: '.gemini/agents/sibu-architecture-reviewer.md',
           targetRelativePath: '.gemini/agents/sibu-architecture-reviewer.md',
-        },
-        {
-          templateRelativePath: '.gemini/agents/sibu-technical-lead-reviewer.md',
-          targetRelativePath: '.gemini/agents/sibu-technical-lead-reviewer.md',
         },
       ],
       claude: [
@@ -203,20 +187,12 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
           targetRelativePath: '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
         },
         {
-          templateRelativePath: 'skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.claude/agents/sibu-implementation-executor.md',
           targetRelativePath: '.claude/agents/sibu-implementation-executor.md',
         },
         {
           templateRelativePath: '.claude/agents/sibu-architecture-reviewer.md',
           targetRelativePath: '.claude/agents/sibu-architecture-reviewer.md',
-        },
-        {
-          templateRelativePath: '.claude/agents/sibu-technical-lead-reviewer.md',
-          targetRelativePath: '.claude/agents/sibu-technical-lead-reviewer.md',
         },
       ],
     },

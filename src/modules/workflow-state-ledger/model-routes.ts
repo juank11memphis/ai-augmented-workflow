@@ -13,7 +13,6 @@ const SIBU_ROLES: readonly SibuModelRole[] = [
   'implementation-planner',
   'implementation-executor',
   'architecture-reviewer',
-  'technical-lead-reviewer',
   'github-exporter',
   'notion-exporter',
 ];

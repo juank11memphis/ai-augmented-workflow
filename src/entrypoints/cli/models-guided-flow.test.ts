@@ -26,11 +26,11 @@ function fixture(answers: string[], configured = true, width = 40) {
 }
 
 it('keeps binding route/menu option order, labels, narrow wrapping, and back without mutation', async () => {
-  const test = fixture(['1', '4', '20']);
+  const test = fixture(['1', '4', '17']);
   await runModelsGuidedFlow(test.terminal, test.operations);
   const text = test.output.join('\n');
   assert.match(text, /Model routes\n\nWhich route would you like to review/);
-  assert.match(text, /19\. Reset routes\n20\. Exit/);
+  assert.match(text, /16\. Reset routes\n17\. Exit/);
   assert.match(text, /Current: GPT-6 Luna \/ low\nStatus: Recommended · Review current\n   recommendation/);
   assert.match(text, /1\. Keep current\n2\. Choose another\n3\. Reset to current recommendation\n4\. Back/);
   assert.ok(test.output.every((line) => line.length <= 40));
@@ -38,18 +38,18 @@ it('keeps binding route/menu option order, labels, narrow wrapping, and back wit
 });
 
 it('requires deliberate all reset and supports missing-route selection', async () => {
-  const cancelled = fixture(['19', '', '20']);
+  const cancelled = fixture(['16', '', '17']);
   await runModelsGuidedFlow(cancelled.terminal, cancelled.operations);
   assert.equal(cancelled.writes, 0);
   assert.match(cancelled.output.join('\n'), /No routes were changed/);
-  const missing = fixture(['1', '1', '20'], false);
+  const missing = fixture(['1', '1', '17'], false);
   await runModelsGuidedFlow(missing.terminal, missing.operations);
   assert.equal(missing.writes, 1);
   assert.match(missing.output.join('\n'), /Current: Not configured/);
 });
 
 it('accepts catalog-external model and reports partial reset without claiming success', async () => {
-  const external = fixture(['1', '2', '2', 'outside-catalog', 'high', '20']);
+  const external = fixture(['1', '2', '2', 'outside-catalog', 'high', '17']);
   const selected: string[] = [];
   const operations = { ...external.operations, set: (command: { model: string; reasoningEffort: string }) => {
     selected.push(`${command.model}/${command.reasoningEffort}`);
@@ -58,13 +58,13 @@ it('accepts catalog-external model and reports partial reset without claiming su
   await runModelsGuidedFlow(external.terminal, operations);
   assert.deepEqual(selected, ['outside-catalog/high']);
   assert.match(external.output.join('\n'), /User selected\./);
-  const partial = fixture(['19', 'RESET ALL', '20']);
+  const partial = fixture(['16', 'RESET ALL', '17']);
   await runModelsGuidedFlow(partial.terminal, { ...partial.operations, reset: () => ({ status: 'failed' as const,
     completed: [recommendation], failed: catalog.recommendations[1], notAttempted: catalog.recommendations.slice(2), recovery: 'Retry after checking workflow state.' }) });
   const report = partial.output.join('\n');
   assert.match(report, /Completed: 1 route\.\n  Implementation planner · bounded/);
   assert.match(report, /Failed: Implementation planner ·\n   demanding\./);
-  assert.match(report, /Not attempted: 16 routes\./);
+  assert.match(report, /Not attempted: 13 routes\./);
   assert.match(report, /  Implementation planner · high-risk/);
   assert.match(report, /  Notion exporter · high-risk/);
   assert.ok(partial.output.every((line) => line.length <= 40));
@@ -79,7 +79,7 @@ it('shows saved routes without recommendations and permits no mutation', async (
 });
 
 it('keeps conflict status and route identity in a partial reset report', async () => {
-  const test = fixture(['19', 'RESET ALL', '20']);
+  const test = fixture(['16', 'RESET ALL', '17']);
   await runModelsGuidedFlow(test.terminal, { ...test.operations, reset: () => ({ status: 'conflict' as const,
     completed: [recommendation], failed: catalog.recommendations[1], notAttempted: catalog.recommendations.slice(2),
     recovery: 'Review routes again before retrying.' }) });
@@ -90,7 +90,7 @@ it('keeps conflict status and route identity in a partial reset report', async (
 it('wraps long identifiers without truncating even below 20 columns', async () => {
   const longModel = 'provider-model-with-a-very-long-unbroken-identifier';
   for (const width of [8, 15, 19]) {
-    const test = fixture(['20'], true, width);
+    const test = fixture(['17'], true, width);
     const longRoute = { ...route, model: longModel };
     await runModelsGuidedFlow(test.terminal, { ...test.operations, list: () => ({ status: 'listed' as const,
       catalogVersion: catalog.catalogVersion, stateBasis,

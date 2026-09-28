@@ -33,7 +33,7 @@ Assess evidence in the changed-file scope against the User Story and acceptance 
 - simplicity, cohesion at architecture boundaries, and avoidance of unnecessary complexity;
 - premature optimization, reinvention, and unusual approaches that increase maintenance risk.
 
-Do not perform the technical-lead review of local readability, test sufficiency, or routine implementation style. Mention those only when they create architectural evidence.
+Keep this review focused on architecture. Mention local readability, test sufficiency, or routine implementation style only when they create architectural evidence.
 
 An established library may be noted as an alternative. If adopting it would add a production dependency, return `human_decision_required`; never authorize that dependency.
 

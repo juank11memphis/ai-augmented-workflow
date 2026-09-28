@@ -266,13 +266,9 @@ describe('template catalog source templates', () => {
   it('exports every specialist reviewer source through manifest-backed rendering', () => {
     const reviewerTemplatePaths = [
       'skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-      'skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
       '.codex/agents/sibu-architecture-reviewer.toml',
-      '.codex/agents/sibu-technical-lead-reviewer.toml',
       '.claude/agents/sibu-architecture-reviewer.md',
-      '.claude/agents/sibu-technical-lead-reviewer.md',
       '.gemini/agents/sibu-architecture-reviewer.md',
-      '.gemini/agents/sibu-technical-lead-reviewer.md',
     ];
 
     for (const templatePath of reviewerTemplatePaths) {

@@ -90,10 +90,10 @@ describe('model route CLI', () => {
     fs.writeFileSync(statePath, JSON.stringify({ sibuVersion: '1', templateVersion: '1', generatedAt: 'old', updatedAt: 'old', selectedAgents: [], managedFiles: {} }));
     try {
       const before = fs.readFileSync(statePath, 'utf8');
-      const run = spawnSync(process.execPath, [executable, 'models'], { cwd: root, encoding: 'utf8', input: '20\n' });
+      const run = spawnSync(process.execPath, [executable, 'models'], { cwd: root, encoding: 'utf8', input: '17\n' });
       assert.equal(run.status, 0);
       assert.match(run.stdout, /Model routes/);
-      assert.match(run.stdout, /19\. Reset routes\n20\. Exit/);
+      assert.match(run.stdout, /16\. Reset routes\n17\. Exit/);
       assert.equal(fs.readFileSync(statePath, 'utf8'), before);
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
   });

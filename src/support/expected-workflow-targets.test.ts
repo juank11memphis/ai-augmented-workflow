@@ -98,19 +98,15 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md').length, 1);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.includes('.codex/agents/sibu-implementation-planner.toml'), true);
     assert.equal(targetPaths.includes('.codex/agents/sibu-implementation-executor.toml'), true);
     assert.equal(targetPaths.includes('.codex/agents/sibu-architecture-reviewer.toml'), true);
-    assert.equal(targetPaths.includes('.codex/agents/sibu-technical-lead-reviewer.toml'), true);
     assert.equal(targetPaths.includes('.claude/agents/sibu-implementation-planner.md'), true);
     assert.equal(targetPaths.includes('.claude/agents/sibu-implementation-executor.md'), true);
     assert.equal(targetPaths.includes('.claude/agents/sibu-architecture-reviewer.md'), true);
-    assert.equal(targetPaths.includes('.claude/agents/sibu-technical-lead-reviewer.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/sibu-implementation-planner.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/sibu-implementation-executor.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/sibu-architecture-reviewer.md'), true);
-    assert.equal(targetPaths.includes('.gemini/agents/sibu-technical-lead-reviewer.md'), true);
     assertNoInvalidTargets(targets);
   });
 
@@ -122,7 +118,6 @@ describe('getWorkflowTargets', () => {
     ] as const;
     const sharedToolboxes = [
       '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-      '.agents/skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
     ];
 
     for (const selectedHost of hostCases) {
@@ -134,10 +129,8 @@ describe('getWorkflowTargets', () => {
       }
 
       for (const host of hostCases) {
-        for (const role of ['architecture', 'technical-lead']) {
-          const wrapperPath = `.${host.id}/agents/sibu-${role}-reviewer.${host.extension}`;
-          assert.equal(targetPaths.includes(wrapperPath), host.id === selectedHost.id, `${selectedHost.id} selection: ${wrapperPath}`);
-        }
+        const wrapperPath = `.${host.id}/agents/sibu-architecture-reviewer.${host.extension}`;
+        assert.equal(targetPaths.includes(wrapperPath), host.id === selectedHost.id, `${selectedHost.id} selection: ${wrapperPath}`);
       }
 
       assert.equal(targetPaths.includes('.agents/skills/ai-implementation-planner-toolbox/SKILL.md'), true);
@@ -236,10 +229,8 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/ai-implementation-plan-executor/SKILL.md',
       '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
       '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-      '.agents/skills/ai-implementation-technical-lead-reviewer-toolbox/SKILL.md',
       '.codex/agents/sibu-implementation-executor.toml',
       '.codex/agents/sibu-architecture-reviewer.toml',
-      '.codex/agents/sibu-technical-lead-reviewer.toml',
       '.agents/skills/eval-authoring/SKILL.md',
       '.agents/skills/eval-authoring/references/version-2-contract.md',
       '.agents/skills/feature-idea-capture/SKILL.md',
@@ -248,7 +239,6 @@ describe('getWorkflowTargets', () => {
       '.claude/agents/sibu-implementation-planner.md',
       '.claude/agents/sibu-implementation-executor.md',
       '.claude/agents/sibu-architecture-reviewer.md',
-      '.claude/agents/sibu-technical-lead-reviewer.md',
       '.claude/agents/notion-exporter.md',
     ]);
 

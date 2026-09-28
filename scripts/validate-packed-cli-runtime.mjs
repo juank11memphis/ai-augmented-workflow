@@ -78,7 +78,7 @@ async function main() {
     if (configured.status !== 'configured' || configured.route.model !== 'packed-external-model' || configured.route.reasoningEffort !== 'high') {
       throw new Error('Installed route resolve did not return the explicit saved choice.');
     }
-    const guided = runInstalledSibu(installedExecutable, ['models'], npmBinPath, fixtureProjectPath, '4\n3\n20\n');
+    const guided = runInstalledSibu(installedExecutable, ['models'], npmBinPath, fixtureProjectPath, '4\n3\n17\n');
     if (!guided.includes('Model routes') || !guided.includes('Reset to current recommendation') || !guided.includes('Completed: 1 route.')) {
       throw new Error('Installed guided route review/reset did not complete.');
     }

@@ -65,15 +65,14 @@ describe('targeted handoff instruction contracts', () => {
     assert.match(executorWorker, /Never run:/i);
   });
 
-  it('targets both specialist packets without preselecting findings', () => {
-    assert.match(executor, /same story and plan paths.*review-round number.*changed-file list.*actual current diff/i);
+  it('targets the architecture packet without preselecting findings', () => {
+    assert.match(executor, /story and plan paths.*review-round number.*changed-file list.*actual current diff/i);
     assert.match(executor, /current source-verified story reference set as \*\*start here\*\*/i);
     assert.match(executor, /verified applicable BRD IDs.*SDD headings and embedded diagram descriptions.*module ownership and dependency constraints/i);
     assert.match(executor, /uncertain fine-grained references.*full authoritative path.*locate relevant context/i);
-    assert.match(executor, /Prioritize architecture's SDD\/SAD boundaries.*selected architecture skill/i);
-    assert.match(executor, /prioritize technical lead's behavior, failure, diagram, quality strategy, `clean-code`/i);
-    assert.match(executor, /Both independently verify sources and the actual unchanged diff/i);
-    assert.match(executor, /neither packet may preselect findings or suppress contrary evidence/i);
+    assert.match(executor, /Prioritize SDD\/SAD boundaries.*selected architecture skill/i);
+    assert.match(executor, /reviewer independently verifies sources and the actual unchanged diff/i);
+    assert.match(executor, /packet must not preselect findings or suppress contrary evidence/i);
   });
 
   it('targets repair references only within human authorization and preserves source discovery', () => {
@@ -97,7 +96,7 @@ describe('targeted handoff instruction contracts', () => {
       const entry = manifest.templates[`skills/${name}/SKILL.md`];
       assert.ok(entry, name);
       assert.equal(entry.changes.length, 1, name);
-      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers/i, name);
+      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet/i, name);
       const installed = readFileSync(`.agents/skills/${name}/SKILL.md`, 'utf8');
       const template = readTemplate(`skills/${name}/SKILL.md`);
       if (name.includes('toolbox')) {

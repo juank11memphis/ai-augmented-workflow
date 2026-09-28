@@ -35,7 +35,6 @@ describe('model route state validation', () => {
       'implementation-planner',
       'implementation-executor',
       'architecture-reviewer',
-      'technical-lead-reviewer',
       'github-exporter',
       'notion-exporter',
     ];

@@ -33,7 +33,7 @@ Use only the narrow packet from the main agent. The packet must include:
 - approval and commit rules from the main executor workflow
 - expected final output format
 
-An `implementation` packet includes the ordered plan steps. A `repair` packet additionally includes exactly one combined review packet retaining both reviewers' findings, the human-authorized list of specific changes for the current snapshot, current snapshot identity and changed-file scope, and prior validation evidence. A repair packet must not contain a replacement plan or authorize scope expansion. Findings alone are not authorization; if the list or snapshot binding is absent or ambiguous, stop before editing.
+An `implementation` packet includes the ordered plan steps. A `repair` packet additionally includes exactly one architecture review packet retaining the reviewer's findings, the human-authorized list of specific changes for the current snapshot, current snapshot identity and changed-file scope, and prior validation evidence. A repair packet must not contain a replacement plan or authorize scope expansion. Findings alone are not authorization; if the list or snapshot binding is absent or ambiguous, stop before editing.
 
 If the packet names multiple stories, multiple plans, an Epic without one selected story, or no executable target, stop and ask the main agent for exactly one story or `.impl_plan/` path.
 

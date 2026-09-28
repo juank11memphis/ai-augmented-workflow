@@ -20,6 +20,12 @@ This repository is the home for establishing an AI-augmented development workflo
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
 
+## Validation permission hygiene
+
+- Run repository validation commands directly (for example, `pnpm verify`), without shell wrappers, output redirection, timestamp commands, or command variations unless they are necessary for the check itself. This lets existing narrow command approvals apply.
+- Run an expensive final check only after changes stabilize. Do not retry the same check or request repeated escalations merely to obtain a different permission outcome.
+- If a required check fails for a sandbox-related reason, follow the host's escalation rule once using the exact command and a narrow reusable approval prefix. If escalation is denied or still unavailable, report the validation limitation instead of trying alternate wrappers or commands to bypass it.
+
 ## Context budget discipline
 
 Treat context as a shared budget owned by the user. Prefer narrow, purposeful context before broad reads: search targeted paths, inspect snippets before full files, and avoid dependency, generated, build, cache, and lockfile content unless relevant.
@@ -72,7 +78,7 @@ For planned product/feature work, use this pipeline: product vision -> business 
 
 ## Sibu-provided sub-agent model routes
 
-Use this protocol only for the six Sibu-provided roles named by their gatekeeper skills; user-created agents are not routed. Before every such spawn, classify the delegated task in provider-neutral terms: **bounded** means clear, narrow, repeatable work with little ambiguity or safety consequence; **demanding** means ambiguous or multi-step work needing broader reasoning; **high-risk** means security, privacy, destructive actions, persisted-data migration, or consequential architecture decisions. When material risk is uncertain, choose the higher-risk applicable class. Explain a high-risk choice briefly and allow the user to correct the classification.
+Use this protocol only for the five Sibu-provided roles named by their gatekeeper skills; user-created agents are not routed. Before every such spawn, classify the delegated task in provider-neutral terms: **bounded** means clear, narrow, repeatable work with little ambiguity or safety consequence; **demanding** means ambiguous or multi-step work needing broader reasoning; **high-risk** means security, privacy, destructive actions, persisted-data migration, or consequential architecture decisions. When material risk is uncertain, choose the higher-risk applicable class. Explain a high-risk choice briefly and allow the user to correct the classification.
 
 The gatekeeper names its exact supported role, then runs `sibu models resolve --agent <environment> --role <role> --workload <class> --json` before spawning. Use the current supported agent environment (initially `codex`); do not infer a route from the parent session. Treat the result as versioned state: `configured` has a saved route, `missing` includes the current recommendation, `workflow-unavailable` and `unsupported` mean no spawn, and `recommendation-unavailable` means no first-use selection. If a configured result has no usable catalog, disclose that current recommendation guidance is unavailable; do not invent a replacement. Use `catalog.catalogVersion` and `stateBasis` from the resolution when saving.
 
