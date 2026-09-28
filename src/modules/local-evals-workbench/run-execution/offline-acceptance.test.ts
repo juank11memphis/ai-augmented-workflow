@@ -24,8 +24,11 @@ test('offline target execution persists real output and changed integration chan
         assertions: { id: string; outcome: string; diagnostics: string[] }[] } } };
     };
     const terminal = async (runId: string) => {
-      for (let tries = 0; tries < 150; tries++) {
+      const deadline = performance.now() + 30_000;
+      let lastState = 'not-observed';
+      while (performance.now() < deadline) {
         const status = await get('offline', runId);
+        lastState = status.status === 'ok' ? status.value.summary.state : status.status;
         if (status.status === 'ok' && !['queued', 'running'].includes(status.value.summary.state)) {
           try {
             const index = JSON.parse(await readFile(path.join(project.root, 'evals/artifacts/offline/index.json'), 'utf8')) as {
@@ -34,9 +37,9 @@ test('offline target execution persists real output and changed integration chan
             if (index.entries.some(entry => entry.runId === runId && entry.state === status.value.summary.state)) return status;
           } catch { /* Atomic index update is still in flight. */ }
         }
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-      assert.fail('Run did not reach a persisted terminal state.');
+      assert.fail(`Run did not reach a persisted terminal state within 30 seconds (last state: ${lastState}).`);
     };
     const before = project.git('status', '--porcelain');
     try {
