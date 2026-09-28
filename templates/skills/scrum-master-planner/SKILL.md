@@ -124,7 +124,7 @@ Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, dat
 
 ### 2. Choose Epic boundaries
 
-Create Epics around coherent delivery outcomes, not technical layers.
+Create Epics around one coherent delivery outcome each, not technical layers. Split unrelated outcomes even when combining them would reduce the Epic count. Name the existing capabilities served and keep each Epic's Stories in a meaningful delivery sequence.
 
 Good Epic boundaries include:
 
@@ -143,12 +143,16 @@ Each `epic_brief.md` should use this structure:
 ```md
 # <Epic Name> Epic Brief
 
+**Epic ID:** <stable ID>
+
 ## Summary
 <What outcome this Epic delivers and why it matters.>
 
 ## Source Context
-- BRD: <relative path>
-- Technical design: <relative path>
+- BRD: <relative path, applicable sections and requirement IDs>
+- Technical design: <relative path and applicable SDD sections>
+- Domain and capabilities: <applicable Business Domain Model and Capabilities Map sections; name served capabilities>
+- UX: <applicable UX document sections when this Epic includes UI changes, otherwise `not applicable`>
 
 ## Scope
 - <What belongs in this Epic.>
@@ -156,23 +160,23 @@ Each `epic_brief.md` should use this structure:
 ## Out of Scope
 - <What this Epic intentionally does not cover.>
 
-## User Stories
-- [<Story title>](./stories/<order>-<user-story-slug>.md)
+## User Stories and Sequence
+1. [<Story ID and title>](./stories/<order>-<user-story-slug>.md) — <outcome; dependencies or `none`>
 
 ## Acceptance Criteria
-- <Epic-level criteria that prove the outcome is complete.>
+- <Observable condition proving this one outcome is complete.>
 
 ## Dependencies / Risks
 - <Only meaningful dependencies, risks, or sequencing notes.>
 ```
 
-Adapt headings only when it improves clarity. Keep the Epic brief short.
+Use this section order and keep the Epic brief short. Record meaningful cross-Story dependencies and an explicit completion condition; do not group unrelated outcomes or only technical layers. Reference applicable source sections and valid BRD requirement IDs rather than copying upstream contracts.
 
 ### 4. Sequence and write User Stories
 
 Within each Epic, decide the order of execution before writing User Story files. Use the lowest practical sequence number for the first story that should be implemented, then increment only when later stories depend on earlier work. If two or more stories can be developed at the same time, give them the same order number.
 
-Each User Story should be independently understandable, reviewable, and deployable.
+Each new User Story should be independently understandable, reviewable in one sitting, and deployable as one working vertical increment. Prefer one primary bounded context and name necessary cross-context collaboration. Split unrelated behaviors or a horizontal-only layer rather than finalizing an incomplete Story.
 
 A User Story represents a shippable increment that can move from backlog to Done and be merged safely on its own. It may be hidden behind feature flags, internal-only paths, disabled defaults, or incomplete parent-Epic workflows, but it must leave the product in a valid deployable state without requiring unmerged sibling Stories.
 
@@ -181,23 +185,30 @@ Use this structure:
 ```md
 # <User Story Title>
 
+**Story ID:** <stable ID>
+
 ## Epic
 [<Epic Name>](./epic_brief.md)
+
+**Status:** draft | ready-for-planning | in-progress | done
 
 ## User Story
 As a <user or contributor>, I want <capability or outcome>, so that <value or reason>.
 
-## Context
-<Brief source-grounded context.>
+## Context and Source Traceability
+- BRD: <relative path, applicable sections and valid requirement IDs>
+- SDD: <relative path and applicable sections/contracts>
+- Domain and capability: <applicable Business Domain Model and Capabilities Map sections; name served capability>
+- UX: <applicable UX sections when UI changes, otherwise `not applicable`>
 
-## Scope
+## In Scope
 - <What this story includes.>
 
 ## Out of Scope
 - <What this story excludes.>
 
 ## Acceptance Criteria
-- <Observable, testable behavior or artifact.>
+- **AC-01 — <name>:** <Observable pass/fail outcome and source BRD ID>. Verification: test | build/check | visual comparison | needs human/LLM-judge review.
 
 ## Verification Expectations
 - <Reviewable evidence expected for this story, proportionate to risk.>
@@ -205,15 +216,35 @@ As a <user or contributor>, I want <capability or outcome>, so that <value or re
 ## Validation
 - <Likely manual or automated checks from the software design.>
 
-## Notes
-- <Optional implementation, sequencing, or risk notes. Omit if not useful.>
+## Domain Context
+<Primary bounded context, applicable aggregates/events and collaborators; `not applicable` for irrelevant details.>
+
+## Technical Context
+<Affected layer and applicable SDD sections/contracts by reference, not copied design.>
+
+## UX References
+<Applicable UX sections and mockups, or `not applicable`.>
+
+## Non-Functional Criteria
+<Applicable sourced conditions and thresholds, or `not applicable`; invent none.>
+
+## Deployability and Feature Flag
+**Behind flag:** no | <named flag when already supported by source design>.
+<Why this working increment can be merged and deployed without unmerged sibling Stories; applicable safe defaults or migration notes, or `not applicable`.>
+
+## Dependencies
+<Stories this depends on and Stories it blocks, or `none`.>
+
+## Open Questions and Assumptions
+<Unresolved questions and separately identified accepted assumptions, or `none`.>
 ```
 
-Keep Stories concrete, but do not turn them into implementation plans or task checklists. If detailed implementation guidance is needed, point to the software design instead of restating it.
+Keep this section order for every new Story. Mark irrelevant details `not applicable` or `none` instead of inventing them. Keep Stories concrete, but do not turn them into implementation plans or task checklists. If detailed implementation guidance is needed, point to the software design instead of restating it. A `ready-for-planning` status requires no unresolved material question; record accepted assumptions explicitly. Readiness does not authorize implementation.
 
 Keep `## Acceptance Criteria`, `## Verification Expectations`, and `## Validation` distinct:
 
 - Acceptance Criteria stay behavior-focused: observable product, workflow, or artifact outcomes that must be true.
+- Each criterion has a stable local ID, an observable pass/fail outcome, its applicable source BRD ID, and a verification label: test, build/check, visual comparison, or `needs human/LLM-judge review`. Use concrete examples where helpful; do not invent subjective or numeric thresholds.
 - Verification Expectations stay evidence-focused: the confidence reviewers should expect from tests, focused review, manual checks, or justified omissions. Derive them from the BRD, the software design quality strategy, and embedded SDD diagrams.
 - Validation stays command/check-focused: likely checks the implementer can run, without duplicating implementation-plan steps.
 
@@ -223,6 +254,11 @@ Verification expectations should name the smallest useful evidence for the story
 
 Before finishing, verify:
 
+- enumerate distinct behaviors or outcomes in each proposed Story; split unrelated ones and reject horizontal-only database, backend, frontend, or test layers that need unmerged siblings to work
+- size by deployable value and one-sitting human reviewability, not task count or elapsed time; roughly three to six acceptance criteria is a review heuristic, not a hard cap, and extra criteria trigger a split review
+- missing or contradictory source IDs, contracts, domain facts, or capability references are returned to the owning upstream stage instead of guessed
+- material open questions keep a Story in `draft` until resolved or explicitly accepted as assumptions
+
 - every MVP scope item from the BRD is covered by at least one Epic or Story, or intentionally left out with a reason
 - every Story belongs to exactly one Epic
 - every Story filename includes a two-digit execution order prefix
@@ -231,6 +267,8 @@ Before finishing, verify:
 - Story count is pragmatic, not inflated
 - no Story adds scope that is absent from the BRD or software design
 - acceptance criteria are testable enough for a reviewer
+
+Apply these authoring rules to newly created Epics and Stories only; do not retrofit existing planning artifacts or change downstream implementation-planner behavior.
 
 ## Final response behavior
 
