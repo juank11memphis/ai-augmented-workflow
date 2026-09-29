@@ -1,5 +1,5 @@
 {
-  "templateVersion": "189",
+  "templateVersion": "190",
   "templates": {
     "AGENTS.md": {
       "version": "45",
@@ -135,17 +135,17 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "27",
+      "version": "28",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Starts planner handoffs from verified story-specific BRD and design references and clarifies when to check relevant project architecture boundaries."
+        "Adds a checked Milestone/Task handoff from verified story-specific BRD and design references, with declared-flag inventory and current Story-review compatibility."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "15",
+      "version": "16",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Removes planner timing handoff instructions."
+        "Removes planner handoff of unchecked Tasks; adds outcome-grouped Milestones, durable plan state, and declared-flag checks without changing executor step-file consumption."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {

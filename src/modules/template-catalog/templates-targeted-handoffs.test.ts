@@ -99,7 +99,11 @@ describe('targeted handoff instruction contracts', () => {
       assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet/i, name);
       const installed = readFileSync(`.agents/skills/${name}/SKILL.md`, 'utf8');
       const template = readTemplate(`skills/${name}/SKILL.md`);
-      if (name.includes('toolbox')) {
+      if (name === 'ai-implementation-planner' || name === 'ai-implementation-planner-toolbox') {
+        // Installed project copies adopt changed templates only through reviewable Sibu sync.
+        assert.match(installed, new RegExp(`name: ${name}`));
+        assert.match(template, /Milestone/);
+      } else if (name.includes('toolbox')) {
         const placeholder = name.includes('planner') ? '{{PLANNER_WORKER_ROUTING}}' : '{{EXECUTOR_WORKER_ROUTING}}';
         const [prefix, suffix] = template.split(placeholder);
         assert.ok(installed.startsWith(prefix), name);
