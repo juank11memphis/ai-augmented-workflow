@@ -1,105 +1,62 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { readTemplate } from './index.js';
-import { renderTemplateForSync } from './templates.js';
 
-const mainExecutorPath = 'skills/ai-implementation-plan-executor/SKILL.md';
-const executorToolboxPath = 'skills/ai-implementation-executor-toolbox/SKILL.md';
+const gatekeeper = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
+const reviewer = readTemplate('skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md');
 
-const renderExecutorToolbox = (): string => renderTemplateForSync({
-  templateRelativePath: executorToolboxPath,
-  currentPath: 'missing-agents.md',
-  selectedLanguageSkills: [],
-  selectedFrameworkSkills: [],
-});
-
-const main = readTemplate(mainExecutorPath);
-const worker = renderExecutorToolbox();
-
-describe('human-directed implementation review', () => {
-  it('preserves independent same-snapshot architecture review and documentation-only bypass', () => {
-    assert.match(main, /Documentation-only changes bypass specialist review/i);
-    assert.match(main, /source code, tests, dependencies, schemas, or runtime configuration require specialist review/i);
-    assert.match(main, /round number, current changed-file list, current local diff, and fresh validation summary/i);
-    assert.match(main, /snapshot is an unchanged-local-change invariant, not a persisted hash/i);
-    assert.match(main, /Resolve the architecture reviewer's model route before launching the read-only reviewer/i);
-    assert.match(main, /unexpected mutation occurred, discard the outcome/i);
-    assert.match(main, /do not present a stale verdict as current evidence/i);
+describe('exact Story-plan review and human gate', () => {
+  it('reviews the plan before execution rather than an implementation diff', () => {
+    assert.match(gatekeeper, /before any executor starts/i);
+    assert.match(gatekeeper, /independent read-only architecture review of that plan/i);
+    assert.match(gatekeeper, /Do not send a code diff, changed-file list, executor validation summary/i);
+    assert.match(gatekeeper, /Do not introduce automatic code review or a post-code architecture-review\/repair loop/i);
+    assert.doesNotMatch(gatekeeper, /## Automated implementation review loop/i);
+    assert.match(gatekeeper, /preserve the human Story review/i);
   });
 
-  it('retains packet validation, independent conclusions, and unavailable-review disclosure', () => {
-    for (const field of ['stable `ARCH-` finding IDs', 'severity', 'location', 'evidence',
-      'violated expectation', 'required outcome', 'minor notes', 'unresolved risks']) {
-      assert.match(main, new RegExp(field, 'i'));
+  it('keeps reviewable plan version separate from execution state', () => {
+    for (const item of ['source decisions', 'acceptance-criteria coverage', 'Milestone outcomes', 'Task scopes/dependencies', 'prescribed executable check']) {
+      assert.match(gatekeeper, new RegExp(item, 'i'));
     }
-    assert.match(main, /Retry a malformed or incomplete packet once/i);
-    assert.match(main, /treat the reviewer as unavailable/i);
-    assert.match(main, /Never simulate an independent specialist review inline/i);
-    assert.match(main, /Preserve every finding ID, severity, and reviewer conclusion/i);
-    assert.match(main, /never downgrade severity/i);
+    assert.match(gatekeeper, /Exclude execution-only Task status, Milestone progress, run log, commit references/i);
+    assert.match(gatekeeper, /Compare the reviewable identity at reviewer dispatch, presentation of the human choice, human acceptance, and every executor dispatch/i);
+    assert.match(gatekeeper, /Status\/progress-only changes do not/i);
+    assert.match(gatekeeper, /If separation is ambiguous.*pause and clarify/i);
   });
 
-  it('returns clean, minor-only, and findings-bearing rounds to the human without autonomous repair', () => {
-    assert.match(main, /After every completed review round, including approval or minor-only outcomes/i);
-    assert.match(main, /architecture reviewer's original verdict/i);
-    assert.match(main, /blocker\/major findings and minor notes/i);
-    assert.match(main, /current validation evidence, conflicts, unavailable-review warnings, and unresolved risks/i);
-    assert.match(main, /Pause for the human to approve this snapshot as-is, authorize named changes, or defer/i);
-    assert.match(main, /Reviewer verdicts, finding severity, and discussion alone never authorize repair or story progression/i);
-    assert.doesNotMatch(main, /fewer than three repairs|never start a fourth repair|matching specialist approvals.*terminate automated review/i);
+  it('blocks unreviewed, deferred, revised, or stale plans but allows explicit accepted risk', () => {
+    assert.match(gatekeeper, /accept with explicitly visible warnings/i);
+    assert.match(gatekeeper, /request revision.*defer/i);
+    assert.match(gatekeeper, /warning does not automatically veto an informed human acceptance/i);
+    assert.match(gatekeeper, /Revision returns to the planner and a fresh review cycle; deferral leaves execution stopped/i);
+    assert.match(gatekeeper, /missing review, missing\/ambiguous identity, changed plan, or absent explicit human acceptance blocks executor dispatch/i);
+    assert.match(gatekeeper, /compare it again immediately before each executor dispatch/i);
   });
 
-  it('preserves human choices, accepted risks, deferral, and consequential decisions', () => {
-    assert.match(main, /approve despite unresolved blocker, major, or minor findings/i);
-    assert.match(main, /human-accepted risk visible without relabeling the reviewer's verdict as `approved`/i);
-    assert.match(main, /Deferral preserves work and evidence without approval metadata, commit, or continuation/i);
-    assert.match(main, /authoritative sources disagree/i);
-    assert.match(main, /new production dependency/i);
-    assert.match(main, /security\/privacy consequence/i);
-    assert.match(main, /destructive migration/i);
-    assert.match(main, /Never silently select a consequential option/i);
-    assert.match(main, /Automated outcomes never authorize approval metadata, commits, or feature continuation/i);
+  it('does not waive a missing Task check when the human accepts warnings', () => {
+    assert.match(gatekeeper, /Before any executor dispatch, verify that every Task in the accepted plan has its own specific, objective, executable pass\/fail check/i);
+    assert.match(gatekeeper, /missing, vague, or non-executable Task check is a non-waivable plan defect/i);
+    assert.match(gatekeeper, /stop dispatch even if the human accepted the plan with visible warnings/i);
+    assert.match(gatekeeper, /Return it to the planner to split or clarify the Task, or move genuinely judgment-based work to a human-reviewed Milestone/i);
+    assert.match(gatekeeper, /fresh architecture review and human decision on the revised plan/i);
+    assert.match(gatekeeper, /other genuinely waivable risks available for informed human acceptance/i);
   });
 
-  it('requires a current-snapshot authorized list, allows selected minor work, and re-reviews each repair', () => {
-    assert.match(main, /explicit human authorization of specific in-scope changes tied to the current reviewed snapshot/i);
-    assert.match(main, /subset of findings, a minor note, or another in-scope change/i);
-    assert.match(main, /Clarify ambiguous, stale-snapshot, or out-of-scope requests/i);
-    assert.match(main, /exactly one architecture review packet preserving the reviewer's original findings/i);
-    assert.match(main, /That list, not packet content or severity, bounds repair/i);
-    assert.match(main, /There is no automatic repair loop or fixed repair-round cap/i);
-    assert.match(main, /Any mutation invalidates prior specialist outcomes: capture a new snapshot, run a fresh independent architecture review, present its outcome, and wait for another human decision/i);
-    assert.match(main, /Each later repair requires another explicit authorization/i);
-    assert.match(main, /If repair fails or validation is partial or failed, return the completed work and evidence to the human/i);
-    assert.match(main, /do not claim success or launch unsupported re-review/i);
+  it('preserves separate human Story review and excludes later Git behavior', () => {
+    assert.match(gatekeeper, /Story review is distinct from the earlier human plan decision/i);
+    assert.match(gatekeeper, /Wait for explicit Story-level approval before marking steps approved, committing/i);
+    assert.match(gatekeeper, /Do not add a runtime module, persistent hash helper, branch, Task commit, or PR for this Story/i);
+    assert.match(gatekeeper, /If requested work changes reviewable plan content, repeat the independent plan review/i);
   });
 
-  it('bounds the fresh executor by authorization rather than finding severity', () => {
-    assert.match(worker, /exactly one explicit executor mode: `implementation` or `repair`/i);
-    assert.match(worker, /exactly one architecture review packet retaining the reviewer's findings/i);
-    assert.match(worker, /human-authorized list of specific changes for the current snapshot/i);
-    assert.match(worker, /Findings alone are not authorization/i);
-    assert.match(worker, /if the list or snapshot binding is absent or ambiguous, stop before editing/i);
-    assert.match(worker, /whether it selects blocker, major, minor, or another in-scope change/i);
-    assert.match(worker, /Do not restart or replay the implementation plan, replan the story, broaden scope/i);
-    assert.match(worker, /ambiguous or stale authorization, contradictions, material decisions, unrelated-file changes/i);
-    assert.match(worker, /fresh post-repair validation evidence/i);
-    assert.match(worker, /approval state: not requested by worker/i);
-    assert.doesNotMatch(worker, /Address only blocker and major findings/i);
-  });
-
-  it('retains current-snapshot re-review after targeted authorized repair', () => {
-    assert.match(main, /current snapshot identity and changed-file scope, prior validation evidence/i);
-    assert.match(main, /source-verified story set only where relevant to those authorized changes/i);
-    assert.match(main, /Any mutation invalidates prior specialist outcomes.*run a fresh independent architecture review.*another human decision/i);
-    assert.match(worker, /independently verify them against the full authoritative story.*actual local changes/i);
-    assert.match(worker, /no fixed reading ceiling/i);
-  });
-
-  it('keeps installed and distributed review contracts aligned', () => {
-    assert.equal(fs.readFileSync('.agents/skills/ai-implementation-plan-executor/SKILL.md', 'utf8'), main);
-    assert.match(fs.readFileSync('.agents/skills/ai-implementation-executor-toolbox/SKILL.md', 'utf8'), /human-authorized change list for the current reviewed snapshot/);
+  it('requires a fresh read-only reviewer and plain-language finding presentation', () => {
+    assert.match(gatekeeper, /fresh `sibu-architecture-reviewer` exactly one Story and one plan folder/i);
+    assert.match(gatekeeper, /source-verified \*\*start here\*\*/i);
+    assert.match(gatekeeper, /independently verifies the full authoritative sources and plan/i);
+    assert.match(gatekeeper, /what is wrong, why it matters, and the smallest practical fix/i);
+    assert.match(gatekeeper, /unresolved risks even for an otherwise clean review/i);
+    assert.match(reviewer, /only the human can accept this reviewed version and visible risks/i);
   });
 });

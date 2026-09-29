@@ -1,5 +1,5 @@
 {
-  "templateVersion": "190",
+  "templateVersion": "192",
   "templates": {
     "AGENTS.md": {
       "version": "45",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "49",
+      "version": "51",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Uses only architecture review before the human story decision; removes the technical-lead reviewer gate."
+        "Plan review of the exact Story version now blocks executor dispatch when any Task lacks a specific executable check, even if the plan was accepted with warnings."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -345,31 +345,31 @@
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "3",
-      "description": "Worker-only toolbox for independent, read-only architecture review of one Sibu story implementation.",
+      "version": "4",
+      "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Removes references to the retired technical-lead reviewer while keeping architecture review focused."
+        "Repurposes read-only architecture plan review for exact Story plans, with simplicity findings first and no code-diff review."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {
-      "version": "1",
+      "version": "2",
       "description": "Codex worker definition for read-only Sibu architecture review.",
       "changes": [
-        "Installs a thin Codex architecture-reviewer wrapper backed by the shared reviewer toolbox."
+        "Guides Codex plan-only architecture review with exact version context and read-only limits."
       ]
     },
     ".claude/agents/sibu-architecture-reviewer.md": {
-      "version": "1",
+      "version": "2",
       "description": "Claude worker definition for read-only Sibu architecture review.",
       "changes": [
-        "Installs a thin Claude architecture-reviewer wrapper backed by the shared reviewer toolbox."
+        "Guides Claude plan-only architecture review with exact version context and read-only limits."
       ]
     },
     ".gemini/agents/sibu-architecture-reviewer.md": {
-      "version": "1",
+      "version": "2",
       "description": "Gemini worker definition for read-only Sibu architecture review.",
       "changes": [
-        "Installs a thin Gemini architecture-reviewer wrapper backed by the shared reviewer toolbox."
+        "Guides Gemini plan-only architecture review with exact version context and read-only limits."
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {

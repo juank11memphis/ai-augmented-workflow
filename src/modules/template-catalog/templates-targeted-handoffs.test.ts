@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { readTemplate, readTemplateManifest } from './index.js';
@@ -56,33 +55,15 @@ describe('targeted handoff instruction contracts', () => {
     assert.match(executorWorker, /human-authorized change list/i);
   });
 
-  it('retains specialist, repair, approval, and commit instructions', () => {
-    assert.match(executor, /Keep specialist-review and `repair` packets under their existing contracts/i);
-    assert.match(executor, /human story.review packet|human review and workflow.control guarantees/i);
-    assert.match(executor, /final approval metadata and commit execution remain with the main agent/i);
-    assert.match(plannerWorker, /Never write production code/i);
+  it('targets plan evidence without preselecting findings and preserves the human gate', () => {
+    assert.match(executor, /plan-review packet uses the independent reviewer contract/i);
+    assert.match(executor, /source-verified \*\*start here\*\*/i);
+    assert.match(executor, /reviewer independently verifies the full authoritative sources and plan/i);
+    assert.match(executor, /current reviewable plan identity and content/i);
+    assert.match(executor, /Do not send a code diff/i);
+    assert.match(executor, /explicit Story-level approval before marking steps approved/i);
     assert.match(executorWorker, /Never approve your own work/i);
     assert.match(executorWorker, /Never run:/i);
-  });
-
-  it('targets the architecture packet without preselecting findings', () => {
-    assert.match(executor, /story and plan paths.*review-round number.*changed-file list.*actual current diff/i);
-    assert.match(executor, /current source-verified story reference set as \*\*start here\*\*/i);
-    assert.match(executor, /verified applicable BRD IDs.*SDD headings and embedded diagram descriptions.*module ownership and dependency constraints/i);
-    assert.match(executor, /uncertain fine-grained references.*full authoritative path.*locate relevant context/i);
-    assert.match(executor, /Prioritize SDD\/SAD boundaries.*selected architecture skill/i);
-    assert.match(executor, /reviewer independently verifies sources and the actual unchanged diff/i);
-    assert.match(executor, /packet must not preselect findings or suppress contrary evidence/i);
-  });
-
-  it('targets repair references only within human authorization and preserves source discovery', () => {
-    assert.match(executor, /Select \*\*start here\*\* references.*only where relevant to those authorized changes/i);
-    assert.match(executor, /Retain full story, Epic brief, source BRD, SDD, plan, and applicable SAD\/UX paths/i);
-    assert.match(executor, /uncertain precise references, direct full-path discovery/i);
-    assert.match(executor, /That list, not packet content or severity, bounds repair/i);
-    assert.match(executorWorker, /source-verified \*\*start here\*\* references relevant to the authorized changes/i);
-    assert.match(executorWorker, /Source authority prevails, but references and findings do not enlarge the human-authorized list/i);
-    assert.match(executorWorker, /material packet\/source or snapshot mismatches.*blocker rules/i);
   });
 
   it('versions each distributed skill with current user-facing sync notes', () => {
@@ -96,21 +77,10 @@ describe('targeted handoff instruction contracts', () => {
       const entry = manifest.templates[`skills/${name}/SKILL.md`];
       assert.ok(entry, name);
       assert.equal(entry.changes.length, 1, name);
-      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet/i, name);
-      const installed = readFileSync(`.agents/skills/${name}/SKILL.md`, 'utf8');
+      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet|plan review/i, name);
       const template = readTemplate(`skills/${name}/SKILL.md`);
-      if (name === 'ai-implementation-planner' || name === 'ai-implementation-planner-toolbox') {
-        // Installed project copies adopt changed templates only through reviewable Sibu sync.
-        assert.match(installed, new RegExp(`name: ${name}`));
-        assert.match(template, /Milestone/);
-      } else if (name.includes('toolbox')) {
-        const placeholder = name.includes('planner') ? '{{PLANNER_WORKER_ROUTING}}' : '{{EXECUTOR_WORKER_ROUTING}}';
-        const [prefix, suffix] = template.split(placeholder);
-        assert.ok(installed.startsWith(prefix), name);
-        assert.ok(installed.endsWith(suffix), name);
-      } else {
-        assert.equal(installed, template, name);
-      }
+      // Project-owned installed copies adopt source changes only through reviewable Sibu sync.
+      assert.match(template, new RegExp(`name: ${name}`));
     }
     assert.ok(Number(manifest.templateVersion) >= 172);
     assert.ok(Number(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version) >= 41);

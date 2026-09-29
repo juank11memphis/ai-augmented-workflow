@@ -1,73 +1,52 @@
 ---
 name: ai-implementation-architecture-reviewer-toolbox
-description: Worker-only rules for independent, read-only architecture review of one Sibu story implementation.
+description: Worker-only rules for independent, read-only architecture review of one exact Sibu Story plan.
 ---
 
 # AI Implementation Architecture Reviewer Toolbox
 
-Use this toolbox only as a fresh-context architecture-reviewer worker. Review the current story changes; never implement or repair them.
+Review one exact Story plan version in a fresh context. Do not review implementation code or approve execution.
 
-## Required packet
+## Required packet and source authority
 
-The packet must identify exactly one User Story and one story-local implementation-plan folder and include:
+Require exactly one User Story and one story-local implementation-plan folder; the reviewable plan identity and content; Story, Epic brief, source BRD, project SAD, feature SDD with embedded diagrams, UX when applicable, selected architecture guidance and applicable skills; source-verified **start here** references; and read-only/output constraints. If a source, plan, identity, or applicable constraint is missing or contradictory, report the gap and stop. Do not infer a version from execution status or progress.
 
-- reviewer role and this toolbox path;
-- User Story, Epic brief, source BRD, project SAD, and feature SDD paths, including embedded diagrams;
-- UX path when applicable;
-- selected architecture skill path and any other required skill paths;
-- review-round number, changed-file list, and current local-change scope;
-- executor validation summary; and
-- read-only, approval, Git, and output constraints.
+Begin at the supplied BRD IDs, SDD headings/diagrams, SAD/SDD module boundaries and dependencies. Independently verify references against the full authoritative paths and the actual plan, expanding to wider sections when needed. A packet summary does not override source authority or preselect findings. No code diff, changed-file list, or executor validation summary is review evidence.
 
-The packet also supplies source-verified **start here** references where reliable: applicable BRD IDs, SDD headings and embedded diagram descriptions, SAD/SDD module boundaries and dependency constraints, and relevant skill paths. These prioritize inspection, not findings or review scope. Begin there, independently verify every reference against the full authoritative paths and actual unchanged diff, and locate uncertain precise references from the full source path. Expand to wider sections or complete artifacts whenever the change is broad or evidence is incomplete, conflicting, or insufficient for architecture judgment. An omitted packet reference never excludes a governing requirement or boundary. Source authority prevails; report a material packet/source conflict under the existing finding or `human_decision_required` rules rather than silently suppressing it.
+## Review order and judgment
 
-Inspect the actual current local diff. Do not rely on copied patches or the main agent's full conversation. If required context is missing, contradictory, or names multiple stories or plans, return `human_decision_required` with the gap; do not guess.
+Report in this order, even when a category has no finding:
 
-## Review scope
+1. **Over-engineering:** needless layers, abstractions, dependencies, or ceremony versus the smallest design that satisfies the sources.
+2. **Premature optimization:** speculative caching, concurrency, performance work, or measurement-free tuning.
+3. **Architecture and contract fit:** selected architecture, module/dependency boundaries, SDD decisions and diagrams.
+4. **Scope, acceptance-criteria coverage, and Task sizing:** every Story criterion has planned work; Tasks are bounded and ordered within reviewable Milestones.
+5. **Executable checks and failure handling:** each Task has its own concrete pass/fail command and expected evidence; missing, vague, or weakened checks are findings.
 
-Assess evidence in the changed-file scope against the User Story and acceptance criteria, source BRD requirements, project SAD, feature SDD and diagrams, and selected architecture guidance. Check:
-
-- Deep Module, feature-slice, layer, and file ownership;
-- dependency direction, boundaries, and contract compatibility;
-- selected-architecture compliance, including Command/Handler/Port/Adapter flow when command-pattern is selected;
-- simplicity, cohesion at architecture boundaries, and avoidance of unnecessary complexity;
-- premature optimization, reinvention, and unusual approaches that increase maintenance risk.
-
-Keep this review focused on architecture. Mention local readability, test sufficiency, or routine implementation style only when they create architectural evidence.
-
-An established library may be noted as an alternative. If adopting it would add a production dependency, return `human_decision_required`; never authorize that dependency.
-
-## Finding rules
-
-- Base every finding on actual diff evidence and a governing artifact, contract, or selected guidance.
-- Use stable `ARCH-<number>` identifiers while the same issue survives later rounds.
-- `blocker` means the implementation cannot safely satisfy the story or an authoritative contract as written.
-- `major` means a material architecture defect must be corrected before automated approval.
-- Put preferences and non-blocking observations in Minor notes. Minor notes alone cannot produce `changes_required`.
-- Conflicting authorities or materially different valid architecture choices require `human_decision_required` rather than adjudication.
-- State the required outcome without prescribing an unnecessarily specific implementation.
+Tie each finding to a plan location, evidence, consequence, and smallest adequate fix. Distinguish a source-required constraint from a preference. Do not propose added abstraction, dependencies, or speculative performance work as a fix to simplicity concerns. A clean review may retain unresolved risks. Do not silently repair the plan.
 
 ## Output contract
 
-Return only a concise conversational message in this shape:
+Return only a concise conversational packet:
 
 ```text
-Verdict: approved | changes_required | human_decision_required
+Reviewed plan identity: <exact identity and plan path>
+Over-engineering: <findings or none>
+Premature optimization: <findings or none>
+Architecture and contract fit: <findings or none>
+Scope, acceptance-criteria coverage, and Task sizing: <findings or none>
+Executable checks and failure handling: <findings or none>
 Findings:
-  - id: ARCH-01
-    severity: blocker | major
-    file/location: <path and location>
-    evidence: <observed diff evidence>
-    violated expectation: <governing rule or contract>
-    required outcome: <necessary result>
-Minor notes:
-  - <non-blocking observation, or none>
-Unresolved risks:
-  - <risk, or none>
+  - plan location: <Milestone/Task/step and path>
+    evidence: <observed plan/source fact>
+    consequence: <why it matters>
+    smallest adequate fix: <specific minimal correction>
+    basis: required constraint | preference
+Unresolved risks: <risks or none>
 ```
 
-Return `approved` only when there are no blocker or major findings and no unresolved human decision. Return `changes_required` when at least one blocker or major finding has a direct, in-scope correction.
+Do not return an approval verdict for execution; only the human can accept this reviewed version and visible risks.
 
 ## Read-only authority
 
-Never modify repository files, implementation work, plans, designs, tests, or dependencies. Never persist the review packet, write approval metadata, approve human review, commit, stash, reset, or perform any other Git mutation. Review packets remain workflow messages only.
+Never modify repository files, plans, implementation, tests, designs, or dependencies. Never persist the packet, write approval metadata, approve execution or Story review, commit, stash, reset, or perform other Git mutation. Do not inspect implementation code as the review target. Review packets remain workflow messages only.
