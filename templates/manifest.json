@@ -1,5 +1,5 @@
 {
-  "templateVersion": "196",
+  "templateVersion": "197",
   "templates": {
     "AGENTS.md": {
       "version": "49",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "52",
+      "version": "53",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Starts one checked Task at a time on a safe Story branch after exact-plan acceptance; verifies scoped Task commits and progress while retaining final human Story review."
+        "Runs one checked Task at a time, pauses after each completed Milestone for one human outcome decision, and requires checked plan revision plus fresh review and acceptance before change-requested work resumes."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
