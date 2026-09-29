@@ -30,7 +30,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 ### What this skill writes
 
 - Code, docs, tests, or other repo changes required by all unapproved implementation steps in the story plan, either through the executor worker or inline fallback.
-- Step approval metadata only after explicit story-level user approval.
+- Story status and step approval metadata at their respective execution and human-approval gates.
 - One focused commit for remaining approved eligible Story changes after explicit story-level user approval; checked Tasks may already have passing scoped commits.
 - Missing story-local implementation step files by routing through `ai-implementation-planner`, then immediately continuing into plan review without a separate plan-generation approval gate.
 
@@ -46,7 +46,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 ### What this skill must not do
 
 - Do not create product visions, Software Architecture Documents, BRDs, software designs, UX specs, Epics, or User Stories.
-- Do not modify prior-stage artifacts except for approval metadata in implementation step files after explicit story-level approval.
+- Do not modify prior-stage artifacts except the selected Story's status field at the gates below and approval metadata in implementation step files after explicit story-level approval.
 - Do not reread `docs/architecture.md` by default; trust `sdd.md` for Deep Module implementation boundaries.
 - Do not mark any step approved before explicit story-level user approval.
 - Do not make a final Story commit before explicit story-level user approval. This does not prohibit one passing scoped Task commit in `checked-task` mode.
@@ -199,17 +199,33 @@ Once the human accepts the current reviewed identity, compare it again immediate
 
 Before branch creation and each dispatch, compare the accepted reviewable plan identity; status and progress alone do not change it. If acceptance is absent or stale, a Task lacks its prescribed executable check and expected evidence, or the next ordered Task is unclear, stop for plan review rather than inventing work or a check. Inspect the current branch, index, worktree, and available isolation. Only after acceptance, create or select one dedicated Story branch. Refuse branch collisions, unrelated staged or user changes, ambiguous pre-existing work, unavailable source control/isolation, or a real-credential need. Reconcile existing plans or branches with the human; never stash, reset, rebase, overwrite, force-add ignored files, or expose credentials to unblock execution.
 
-Dispatch exactly the next ordered Task to a **fresh** `sibu-implementation-executor` context. Its narrow packet carries one Task ID, Story branch, accepted-plan identity, bounded files/area, exact prescribed check and passing evidence, conventions, recent progress, named skills, and exact optional source pointers. Do not send all upstream documents by default, rely on prior worker memory, or dispatch another Task while one is active. The worker's only commit authority is one passing, scoped Task-ID-linked Conventional Commit. Verify its returned Task and branch identity, actual check command/result, staged/committed scope, commit reference, and post-commit progress before advancing; a blocker stops the Story. Keep final Story approval and continuation with the main agent. Milestone/PR orchestration is not introduced here.
+After selecting the Story branch and immediately before the first Task dispatch, change only the selected Story file's `**Status:**` field from `ready-for-planning` to `in-progress`. On a resumed Story, preserve `in-progress`; if the field is missing, `draft`, `done`, or otherwise conflicts with the accepted plan and execution evidence, stop and reconcile it with the human. Leave the Story `in-progress` through Task execution, Milestone deferrals, PR blockers, and final PR review. This status edit is progress metadata, not plan approval or permission to commit ignored Story files.
 
-## Story review gate
+Dispatch exactly the next ordered Task to a **fresh** `sibu-implementation-executor` context. Its narrow packet carries one Task ID, Story branch, accepted-plan identity, bounded files/area, exact prescribed check and passing evidence, conventions, recent progress, named skills, and exact optional source pointers. Do not send all upstream documents by default, rely on prior worker memory, or dispatch another Task while one is active. The worker's only commit authority is one passing, scoped Task-ID-linked Conventional Commit. Verify its returned Task and branch identity, actual check command/result, staged/committed scope, commit reference, and post-commit progress before advancing; a blocker stops the Story. Keep final Story approval and continuation with the main agent.
 
-After accepted-plan execution and validation, present the current implementation for human Story review. Wait for explicit Story-level approval before marking steps approved, making any remaining eligible final Story commit, and continuing the Epic. Already checked Task commits do not confer Story approval. Story review is distinct from the earlier human plan decision.
+### Milestone outcome and human decision
 
-Include the story path, plan folder, changed files, completed steps, validation commands/results, tests and acceptance criteria verified, edge/failure coverage, skipped deeper checks and residual risks. For non-trivial Stories, “tests passed” alone is not enough evidence. State the accepted plan identity and any visible warnings without turning the plan reviewer into a code reviewer. Human discussion is not approval; requested implementation changes remain subject to story scope, fresh validation, and a new Story decision. If requested work changes reviewable plan content, repeat the independent plan review and human acceptance before further execution.
+After **every** Task in the current Milestone has its prescribed check passed, scoped Task-ID commit verified, and post-commit progress recorded, pause before dispatching any Task in a later Milestone. A blocked or unverified Task does not complete its Milestone: report the blocker and stop without presenting a review-as-success claim. Do not ask for human approval after each routine passing Task.
+
+For an earlier Milestone, present one concise, human-readable outcome: what changed and why it matters; each Task ID, actual check and result, and commit reference; known blockers and risks; and the current accepted plan identity. Offer **accept**, **request changes**, or **defer**. Never claim an unrun check passed. A pending decision forbids later-Milestone dispatch. On acceptance, advance **only to the next Milestone** on the still-current accepted plan, then recheck its identity and Task checks before dispatch. On deferral, preserve Milestone review and progress state and dispatch nothing.
+
+Human-requested changes become new or revised bounded planned Tasks with their own specific executable pass/fail checks and expected passing evidence; do not auto-repair feedback or invent checks. Return the requested outcome to the planner. Changed reviewable plan content invalidates the previous identity, architecture review, and human acceptance. Obtain a **fresh independent plan-only architecture review** of the revised identity, present findings and risks, and require explicit human acceptance of that exact version before any executor resumes. Status/progress-only updates do not invalidate accepted scope. Missing checks or stale identity stop dispatch. Do not substitute an implementation-code architecture review.
+
+For the final Milestone, including a one-Milestone Story, the existing final human Story-review interaction below **is the same Milestone decision**, not a second gate. Open one Story PR from the dedicated Story branch only after all final-Milestone Tasks have passing prescribed checks, verified scoped commits and progress, and required story-level validation has completed successfully. A final request for changes follows the same checked plan-revision loop before further executor work; update the same PR for renewed final review.
+
+## Story review gate: one final PR decision
+
+The main agent, never the Task executor, opens one PR from the verified dedicated Story branch after the accepted plan's final checked Tasks and required story-level validation are complete. Do not open a PR early, from another branch, or with missing or failed required local checks. Confirm the branch, accepted plan identity, final Task check/commit/progress evidence, and actual story-level command results before opening it. The PR is the final Milestone and Story review surface for one- and multi-Milestone Stories; earlier Milestones keep their conversational pauses. There is no separate post-PR approval or implementation-code architecture review.
+
+Write a short, plain-language PR description with **What changed**, **Why it matters**, **Verification**, and **Known risks and limits** sections. Include the Story path and accepted plan identity, Task commits, tests and acceptance criteria covered, edge/failure coverage, and residual risks. For non-trivial Stories, “tests passed” alone is not enough evidence. Report each story-level check's actual result; distinguish passing, failing, pending, and unavailable CI checks as observed from the host before the human decides. Never call an unrun, pending, failed, or unavailable check passing. If CI has not settled, disclose that and wait for its available status before requesting the final decision. The human judges readability; deterministic template tests do not prove live agent or PR-host behavior.
+
+If source-control hosting access, PR creation, or check retrieval fails, preserve the branch and validation evidence, report the blocker, and leave final review incomplete. Do not silently substitute a conversational approval, create a second PR, merge, or deploy. Do not put credentials or sensitive data into the PR, logs, or worker packet.
+
+Present the PR for one explicit **accept**, **request changes**, or **defer** decision. Acceptance alone permits approval metadata and any remaining eligible final Story commit below. Already checked Task commits do not confer Story approval. Deferral and requested changes leave the Story `in-progress`. Requested changes become new or revised bounded checked plan Tasks, invalidating the old reviewable plan identity. Obtain fresh independent plan-only architecture review and explicit human acceptance of the revised identity before executor dispatch; revalidate the changed Story and update the **same PR** and its actual checks for renewed final review. Never substitute a code-diff architecture review or ask for a duplicate final approval.
 
 ## Approval metadata and commit control
 
-Only after explicit story-level user approval, update every completed step file by adding or updating:
+Only after explicit story-level user approval, change only the selected Story file's `**Status:**` field from `in-progress` to `done` and update every completed step file by adding or updating:
 
 ```md
 ## Review status
@@ -236,15 +252,15 @@ After the approved story implementation is committed, continue through the curre
 
 ## Final response behavior
 
-After implementing all unapproved steps in one story, briefly report:
+After final Story checks and PR creation, briefly report in the PR handoff:
 
-- that the story implementation finished and is ready for review
+- that the final Milestone and Story are ready for one PR review
 - the story file path and implementation plan folder
 - the steps completed
 - validations run and their results
 - compact validation evidence, including acceptance criteria verified, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
 - notable risks or follow-up questions, if any
-- that you are waiting for story approval before marking steps approved, committing eligible non-ignored changes, and continuing
+- that you are waiting for the explicit PR review decision before marking steps approved, committing eligible non-ignored changes, and continuing
 
 After approving and committing a story implementation, briefly report the commit hash or why no commit was created, then continue to the next story/Epic according to the feature continuation check.
 

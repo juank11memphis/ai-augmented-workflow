@@ -61,7 +61,8 @@ describe('targeted handoff instruction contracts', () => {
     assert.match(executor, /reviewer independently verifies the full authoritative sources and plan/i);
     assert.match(executor, /current reviewable plan identity and content/i);
     assert.match(executor, /Do not send a code diff/i);
-    assert.match(executor, /explicit Story-level approval before marking steps approved/i);
+    assert.match(executor, /Present the PR for one explicit.*decision/i);
+    assert.match(executor, /Acceptance alone permits approval metadata and any remaining eligible final Story commit/i);
     assert.match(executorWorker, /Never approve your own work/i);
     assert.match(executorWorker, /Never run:/i);
   });
