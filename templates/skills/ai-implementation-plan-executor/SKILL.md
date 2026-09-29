@@ -243,12 +243,12 @@ If every story change is ignored and nothing is eligible to commit, skip the com
 
 ## Feature continuation check
 
-After the approved story implementation is committed, continue through the current feature unless there is no next story or Epic to implement.
+After the approved story implementation is committed, continue through the current feature unless there is no next story or Epic to implement. After a Story PR merge is confirmed, including a merge requested in a later turn, run this check again before ending the turn. Do not treat the merge as Story approval: if the final human Story decision is still missing, stop at that gate. Otherwise continue without asking for a separate continuation confirmation; preserve every required plan review, human acceptance, code-change permission, and blocker gate.
 
 1. Inspect the current Epic's `stories/` folder in filename order.
 2. If a next User Story exists, plan it through `ai-implementation-planner` when needed, then immediately begin execution.
 3. If no next story exists, inspect the feature's `epics/` folder and choose the next logical Epic based on dependencies, sequencing, risk reduction, and feature value.
-4. If no logical next Epic exists or every Epic has all stories approved, tell the user the feature appears ready and stop.
+4. If no logical next Epic exists or every Epic has all stories approved, tell the user the feature appears ready and stop. Do not invent work outside the current feature.
 
 ## Final response behavior
 

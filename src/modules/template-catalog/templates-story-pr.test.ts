@@ -69,6 +69,13 @@ describe('Final Story PR written contract', () => {
     assert.match(gatekeeper, /Do not stage or commit ignored paths, including ignored `docs\/features\/\*\*` paths/);
   });
 
+  it('rechecks feature continuation after merge without bypassing human gates', () => {
+    assert.match(gatekeeper, /After a Story PR merge is confirmed, including a merge requested in a later turn, run this check again before ending the turn/);
+    assert.match(gatekeeper, /Do not treat the merge as Story approval: if the final human Story decision is still missing, stop at that gate/);
+    assert.match(gatekeeper, /continue without asking for a separate continuation confirmation; preserve every required plan review, human acceptance, code-change permission, and blocker gate/);
+    assert.match(gatekeeper, /If no logical next Epic exists or every Epic has all stories approved, tell the user the feature appears ready and stop/);
+  });
+
   it('provides a scannable representative description and versioned distribution note', () => {
     const description = fixture('representative-description');
     for (const section of ['What changed', 'Why it matters', 'Verification', 'Known risks and limits']) {
@@ -78,8 +85,8 @@ describe('Final Story PR written contract', () => {
     assert.match(description, /Hosted CI is pending; it has not been counted as passing/);
     assert.match(description, /not live agent behavior or pull-request hosting/);
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '199');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '55');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Story status current/);
+    assert.equal(manifest.templateVersion, '200');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '56');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Rechecks the next Story or Epic after a confirmed PR merge/);
   });
 });
