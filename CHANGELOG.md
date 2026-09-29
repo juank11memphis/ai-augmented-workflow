@@ -4,6 +4,72 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 1.1.0 - 2026-09-29
+
+### Added
+- continue feature workflow after PR merge
+- complete reviewed milestone and final PR workflow
+- add final Story PR review contract (T-01)
+- gate milestone review before task continuation (T-01)
+- guide checked task execution on story branches
+- gate story execution on reviewed plans
+- add checked milestone story plans
+- guide conditional feature flag planning
+- improve deployable epic and story authoring
+- approve focused repairs and rerun
+- analyze persisted failed assertions
+- deliver responsive eval workspace
+- evaluate deep agent behavior and repeats
+- execute single-turn local eval runs
+- add local eval model discovery and run preview
+- persist isolated local eval run history
+- guide runnable deep eval suite generation
+- guide eval target discovery and coverage approval
+- run specialist reviewers in parallel
+- target review and repair context handoffs
+- target planner and executor context handoffs
+- require human decisions after implementation reviews
+- route Sibu subagents explicitly
+- review recommendation updates during sync
+- add guided route management
+- add machine-readable route operations
+- establish recommendation catalog and route state
+- distribute repository-aware guidance
+- report implementation phase timing
+- add implementation phase timing helper
+- establish version 2 eval suite contract
+- orchestrate automated implementation reviews
+- add specialist implementation reviewers
+
+### Changed
+- sync workflow and track story status
+- align final PR review contracts (T-02)
+- sync milestone review workflow
+- sync workflow and clarify LLM test scope
+- capture local workflow and test updates
+- record local workflow updates
+- sync eval authoring workflow files
+- update Codex command rules and executor route
+- configure Codex sandbox and command rules
+- simplify local eval run concurrency design
+- update agent guidance and model routes
+- configure Codex web search and verify rules
+- record reviewed Sibu workflow state
+- record workflow sync and model routes
+- define human-directed implementation review
+- refresh workflow guidance and human review model
+- document domain and capability updates
+- design production-ready AI evals
+
+### Removed
+- remove obsolete workflow reference notes
+- remove technical lead reviewer from workflow
+- remove Sibu story-run timing feature
+- remove human-directed implementation review BRD
+
+### Fixed
+- avoid duplicate aggregate build
+
 ## 1.0.0 - 2026-09-21
 
 ### Added
