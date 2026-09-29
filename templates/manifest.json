@@ -1,11 +1,11 @@
 {
-  "templateVersion": "192",
+  "templateVersion": "193",
   "templates": {
     "AGENTS.md": {
-      "version": "45",
+      "version": "46",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes five Sibu-provided roles after removing the technical-lead reviewer."
+        "Runs repository validation commands directly, avoids repeat permission prompts, and reports sandbox denials without bypassing host approvals."
       ]
     },
     ".codex/config.toml": {

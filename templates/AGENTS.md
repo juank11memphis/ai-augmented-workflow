@@ -20,6 +20,13 @@
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
 - Use Conventional Commits 1.0.0 for commit messages.
 
+## Validation permission hygiene
+
+- Run repository validation commands directly as defined, without shell wrappers, output redirection, timestamps, or altered arguments unless the check itself requires them. This lets narrow host approvals apply across languages and toolchains.
+- Run expensive final checks only after changes stabilize. Do not rerun a check or seek repeated escalations merely to obtain a different permission outcome.
+- If sandbox restrictions block a required check, use the host's escalation process once for the exact command and a narrowly scoped reusable approval, when supported. If denied or still blocked, report the limitation; do not use alternate commands or wrappers to bypass it.
+- Repository instructions do not grant host permissions. Do not ask the user for separate permission when the host already allows a routine validation command.
+
 ## Context budget discipline
 
 Treat context as a shared budget owned by the user. Prefer narrow, purposeful context before broad reads: search targeted paths, inspect snippets before full files, and avoid dependency, generated, build, cache, and lockfile content unless relevant.

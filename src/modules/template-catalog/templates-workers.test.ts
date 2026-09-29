@@ -28,7 +28,7 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Routes five Sibu-provided roles/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /validation commands directly/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -38,6 +38,18 @@ describe('AGENTS.md template', () => {
     assert.match(contents, /Do not expand a request about X into adjacent topics Y and Z/i);
     assert.match(contents, /do not let brevity reduce the quality of required interviews, artifacts, safety warnings, validation details, or review gates/i);
     assert.doesNotMatch(contents, /At the start of each session.*run `sibu doctor` once/i);
+  });
+
+  it('uses language-agnostic validation commands without bypassing host permissions', () => {
+    const contents = readTemplate('AGENTS.md');
+
+    assert.match(contents, /Run repository validation commands directly as defined/i);
+    assert.match(contents, /without shell wrappers, output redirection, timestamps, or altered arguments/i);
+    assert.match(contents, /Run expensive final checks only after changes stabilize/i);
+    assert.match(contents, /escalation process once for the exact command/i);
+    assert.match(contents, /If denied or still blocked, report the limitation/i);
+    assert.match(contents, /Repository instructions do not grant host permissions/i);
+    assert.doesNotMatch(contents, /pnpm verify/i);
   });
 
   it('includes judgment and honesty guidance for uncertainty and appropriate challenge', () => {

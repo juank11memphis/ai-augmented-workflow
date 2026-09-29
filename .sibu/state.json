@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.25.0",
-  "templateVersion": "186",
+  "templateVersion": "189",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-28T19:51:59.835Z",
+  "updatedAt": "2026-09-29T15:54:22.299Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -24,10 +24,9 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "43",
-      "sha256": "1a40daffff37979814f2406e02f6538785851b71e5b87b62aface8b41a0aa664",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "45"
+      "templateVersion": "45",
+      "sha256": "de6b0d1936a017a0b18521879f169886ed4a996acfe71301083ae9de7b12f433",
+      "status": "managed"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -90,8 +89,8 @@
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "17",
-      "sha256": "b218435bdb04be528c2bc87e0b45276527718d7ec8ee97da88868e482f90addb",
+      "templateVersion": "20",
+      "sha256": "b49ae86cf25e5ad624efb17efe106b6b84b12a8770d620f2a9bd104fc8e91f53",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
@@ -357,8 +356,8 @@
       "agentEnvironment": "codex",
       "role": "implementation-planner",
       "workloadClass": "high-risk",
-      "model": "gpt-6-astra",
-      "reasoningEffort": "high",
+      "model": "gpt-6-sol",
+      "reasoningEffort": "medium",
       "origin": "recommended",
       "catalogVersionAtSelection": "2026-09-23.2",
       "selectedAt": "2026-09-25T17:14:24.491Z"

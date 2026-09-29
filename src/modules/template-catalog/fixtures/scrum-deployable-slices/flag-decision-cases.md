@@ -1,6 +1,6 @@
 # Reviewed Conditional Flag Decisions
 
-Business source: `docs/features/deployable-epic-story-authoring/brd.md`, `REQ-06`–`REQ-08`, `REQ-10`.
+Business source: `src/modules/template-catalog/fixtures/scrum-deployable-slices/sample-brd.md`, `REQ-06`–`REQ-08`, `REQ-10`.
 These are review samples, not a claim that static tests prove every future planning judgment.
 
 ## No flag needed

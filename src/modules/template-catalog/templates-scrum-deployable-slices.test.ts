@@ -8,7 +8,7 @@ import { readTemplate, readTemplateManifest } from './index.js';
 const skill = readTemplate('skills/scrum-master-planner/SKILL.md');
 const fixtureRoot = join(process.cwd(), 'src/modules/template-catalog/fixtures/scrum-deployable-slices');
 const fixture = (name: string): string => readFileSync(join(fixtureRoot, name), 'utf8');
-const brd = readFileSync(join(process.cwd(), 'docs/features/deployable-epic-story-authoring/brd.md'), 'utf8');
+const brd = fixture('sample-brd.md');
 
 const storyHeadings = [
   'Epic', 'User Story', 'Context and Source Traceability', 'In Scope', 'Out of Scope',
@@ -86,7 +86,7 @@ describe('deployable Scrum authoring contract', () => {
       'flagged-epic.md', 'flagged-story.md', 'flag-removal-story.md',
     ]) {
       const content = fixture(name);
-      assert.match(content, /docs\/features\/deployable-epic-story-authoring\/brd\.md/);
+      assert.match(content, /src\/modules\/template-catalog\/fixtures\/scrum-deployable-slices\/sample-brd\.md/);
       const ids = [...new Set(content.match(/\bREQ-\d{2}\b/g) ?? [])];
       assert.ok(ids.length > 0);
       for (const id of ids) assert.match(brd, new RegExp(`\\*\\*${id}\\b`));

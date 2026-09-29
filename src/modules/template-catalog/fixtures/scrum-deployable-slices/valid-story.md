@@ -11,7 +11,7 @@
 As an engineer, I want the new Story template to express a complete unflagged planning contract, so implementation planning starts from checkable scope.
 
 ## Context and Source Traceability
-- BRD: `docs/features/deployable-epic-story-authoring/brd.md`, Requirements `REQ-02`, `REQ-03`, `REQ-04`, `REQ-05`, `REQ-09`, `REQ-10`.
+- BRD: `src/modules/template-catalog/fixtures/scrum-deployable-slices/sample-brd.md`, Requirements `REQ-02`, `REQ-03`, `REQ-04`, `REQ-05`, `REQ-09`, `REQ-10`.
 - SDD: `docs/features/deployable-epic-story-authoring/sdd.md`, Ownership and artifact contracts; Story boundary and template; Sizing and verification checks.
 - Domain and capability: `docs/business-domain-model.md`, Skill Guidance; `docs/capabilities-map.md`, Skill Guidance (focused skill instructions) and Template Catalog (versioned templates).
 - UX: not applicable; this is a domain-only guidance change with no UI impact.

@@ -66,15 +66,17 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Explain feature behavior visually**: include a main-flow Mermaid sequence diagram in each SDD, allowing a justified alternative for changes without meaningful interaction flow.
 - **Route architectural changes upstream**: pause SDD work that changes module boundaries or system-wide decisions and direct the user to update the SAD first; keep architecture-compatible details in the SDD.
 - **Keep AI work reviewable**: guide work into small, explicit, validated chunks that preserve engineer judgment and accountability.
-- **Determine specialist-review applicability**: send stories that change source code, tests, dependencies, schemas, or runtime configuration through automated implementation review while keeping documentation-only work on the existing validation and human-review path.
-- **Establish a shared review snapshot**: give the architecture reviewer an immutable story diff and validation evidence so the outcome applies to one identifiable implementation state.
-- **Coordinate specialist implementation review**: obtain one independent, read-only architecture assessment against the unchanged snapshot.
-- **Present every review round to the human**: show the architecture reviewer’s evidence-based findings and unresolved risks for the snapshot, and pause for a human decision even when the reviewer approves.
-- **Support human-directed review decisions**: let the user approve the current story as-is, authorize specific changes after discussion, or defer it regardless of finding severity.
-- **Preserve accepted risks**: keep unresolved findings visible when the human approves despite them, without misrepresenting that decision as specialist approval.
-- **Route authorized implementation repair**: give only human-authorized changes to a fresh, narrowly briefed repair executor without replanning; require revalidation, invalidate the earlier architecture outcome, and send the resulting snapshot through a fresh architecture review before another human decision.
+- **Plan stories into reviewed milestones and tasks**: turn one deployable story into at least one human-reviewed milestone and bounded, ordered tasks without a task-count quota.
+- **Define executable task checks before execution**: give each task its own objective pass/fail check and distilled context; split or clarify uncheckable tasks rather than delegating vague work.
+- **Challenge plan complexity early**: obtain independent architecture review of the exact plan version, emphasizing over-engineering and premature optimization as well as architecture fit, scope, and check quality; do not send code to the architecture reviewer.
+- **Present plan findings plainly**: explain reviewer findings, proposed fixes, and unresolved risks briefly in language a human can readily understand.
+- **Gate execution on human plan acceptance**: let the human accept a reviewed plan with visible risks, request revision and fresh review, or defer execution.
+- **Execute checked tasks on a story branch**: run one bounded task per fresh-context executor iteration, commit only after its prescribed check passes, and retain concise progress history.
+- **Stop on executor blockers**: escalate ambiguity, missing checks, repeated failures, undeclared flags, or material scope changes instead of permitting executor improvisation.
+- **Review every milestone with a human**: pause after each milestone and turn requested changes into planned, checked tasks before resuming unattended work.
+- **Open a plain-language story PR**: create a PR at the final milestone with a clear summary of changes, user value, and verification; use its review as both final milestone and story review.
 - **Surface material review choices**: present conflicting sources or recommendations and consequential product, architecture, dependency, data, security, privacy, migration, or scope decisions to the human rather than resolving them autonomously.
-- **Preserve human story approval**: treat specialist approval as evidence rather than permission to mark steps approved, commit changes, or continue delivery autonomously.
+- **Keep deployment outside the workflow**: coordinate reviewed story delivery through the PR without handling production deployment.
 
 #### Local Evals Workbench
 
@@ -124,7 +126,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Define skill boundaries**: make each skill's purpose, required inputs, owned outputs, hard stops, and handoffs clear.
 - **Support optional skill selection**: let users include non-architecture workflow guidance relevant to their project without forcing every optional skill into every repo.
 - **Preserve skill handoffs**: ensure skills pass the right reviewed context downstream while avoiding responsibility for artifacts outside their scope.
-- **Guide specialist implementation reviews**: provide focused architecture-review guidance with evidence standards, severity rules, snapshot-bound outcomes, and read-only reviewer authority.
+- **Guide plan architecture reviews**: provide focused, read-only plan-review guidance that challenges over-engineering and premature optimization, with evidence tied to the reviewed plan version.
 - **Guide eval authoring**: provide focused guidance so agents create and maintain eval suites, test cases, assertions/graders, fixtures, and expected/reference artifacts in Sibu's expected format.
 - **Discover evaluation targets**: help agents identify likely repo-local generative-AI integrations, agents, prompts, and workflows, then ask the user to confirm which targets need evals.
 - **Propose deep eval coverage**: analyze each confirmed target across applicable happy-path, edge, failure, abuse, safety, multi-turn, tool-interaction, malformed-input, ambiguous-input, adversarial-input, and nondeterminism scenarios before files are generated.
@@ -176,10 +178,11 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
 - **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
-- **Specialist implementation review** depends on a validated story implementation, a stable shared snapshot, the project SAD, feature SDD, selected architecture guidance, clean-code guidance, and applicable language or framework guidance.
-- **Human review decisions** depend on the architecture reviewer’s outcome for the current unchanged snapshot.
-- **Fresh repair execution** depends on the human's authorization of specific changes and a narrow handoff containing the original story and plan, authoritative sources and skills, current snapshot identity and changed files, reviewer findings, and prior validation evidence.
-- **Human story approval** follows every specialist review round, whether the reviewer approves or reports unresolved findings, and remains required before approval metadata, commit, or feature continuation.
+- **Plan architecture review** depends on one complete story plan, project SAD, feature SDD, selected architecture guidance, and task-level objective checks; it precedes any unattended execution.
+- **Human plan acceptance** depends on findings for the current plan version; a changed plan needs a fresh review and human decision.
+- **Checked task execution** depends on an accepted plan, one story branch, task-specific checks, relevant conventions, and progress history.
+- **Human milestone review** follows every milestone; requested changes return to planning for checked tasks before executor work resumes.
+- **Final story review** occurs through the final milestone PR, whose hosting remains an external source-control capability. Production deployment is not part of this pipeline capability.
 - **Skill Guidance** must discover and confirm Evaluation Targets, obtain approval for the Eval Coverage Plan, and generate runnable suites before the **Local Evals Workbench** can execute them.
 - **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while Evaluation Targets, suite definitions, fixtures, and test-support files remain project-owned.
 - **Local Evals Workbench** depends on external **LLM provider APIs** for target execution, rubric judging, analysis, and proposal drafting; non-LLM result inspection should remain available when provider credentials are unavailable.
@@ -202,7 +205,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.
 - **Pipeline strictness**: Sibu must balance enforcing artifact prerequisites and required architecture guidance with staying lightweight for narrow fixes.
-- **Reviewer host compatibility**: supported agents may differ in sub-agent concurrency, so the workflow must prefer parallel specialist review without making simultaneous execution a correctness requirement.
+- **Plan-review host compatibility**: supported agents may differ in sub-agent availability; the workflow must keep the plan-review and human-decision gates intact without assuming concurrent reviewers.
 - **Release workflow scope**: maintainer release support should stay focused on Sibu's own publication process unless the product explicitly expands into release management for consumer projects.
 
 - **Local eval format maturity**: the first eval format should be conventional and narrow, but may need migration/versioning once real projects create many suites.

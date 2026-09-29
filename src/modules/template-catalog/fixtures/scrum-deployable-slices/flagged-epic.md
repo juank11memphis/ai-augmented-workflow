@@ -7,7 +7,7 @@
 Illustrate a checkout Epic using one temporary capability flag. This is not an approved checkout delivery plan.
 
 ## Source Context
-- Authoring rules only: `docs/features/deployable-epic-story-authoring/brd.md`, `REQ-06`, `REQ-07`, `REQ-08`, `REQ-10`; and its `sdd.md`, Conditional feature-flag decision and SDD handoff. These sources do not define checkout behavior.
+- Authoring rules only: `src/modules/template-catalog/fixtures/scrum-deployable-slices/sample-brd.md`, `REQ-06`, `REQ-07`, `REQ-08`, `REQ-10`; and its `sdd.md`, Conditional feature-flag decision and SDD handoff. These sources do not define checkout behavior.
 - Checkout authority missing: the checkout feature BRD, revised checkout SDD, applicable project SAD flag mechanism, domain/capability references, and any required checkout UX. Supply and verify these before finalizing this Epic.
 
 ## Scope

@@ -11,7 +11,7 @@
 Illustrative value only: a maintainer removes a temporary checkout gate after the checkout sources define the behavior that must remain.
 
 ## Context and Source Traceability
-- Authoring rules only: `docs/features/deployable-epic-story-authoring/brd.md`, `REQ-07`, `REQ-08`, `REQ-10`; and its `sdd.md`, Epic boundary and brief; Conditional feature-flag decision and SDD handoff. These sources do not define checkout behavior.
+- Authoring rules only: `src/modules/template-catalog/fixtures/scrum-deployable-slices/sample-brd.md`, `REQ-07`, `REQ-08`, `REQ-10`; and its `sdd.md`, Epic boundary and brief; Conditional feature-flag decision and SDD handoff. These sources do not define checkout behavior.
 - Checkout authority missing: checkout feature BRD, revised checkout SDD, applicable project SAD flag mechanism, domain/capability references, and any required checkout UX. Resolve their applicability before planning readiness.
 
 ## In Scope

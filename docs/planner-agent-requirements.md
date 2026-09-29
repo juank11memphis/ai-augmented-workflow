@@ -10,15 +10,17 @@ The planner is the only agent that reads the broad project context. It turns ups
 
 ## Output hierarchy
 - **User story**: deployable, delivers value. Acceptance criteria live here.
-- **Milestone** (optional): a checkpoint a human can review in a few minutes. Add only when a story is big enough that one review at the end would be painful. If a story has roughly 5 to 10 tasks, skip milestones.
+- **Milestone** (optional): a checkpoint a human can review in a few minutes. Add only when a story is big enough that one review of the final PR would be painful (too large a diff, or too many distinct concerns to review at once). Because tasks are tiny, a story will often have dozens of them, so milestones are likely common; group tasks into milestones by reviewable outcome (e.g. "endpoint works," "UI wired up"), not by a task-count quota. If the whole story's diff is easy to review in one sitting, skip milestones.
 - **Task**: the unit the executor loop actually runs.
 
 Plan top-down (story → milestone → tasks). Execution is bottom-up.
 
 ## Task sizing
-- One task = one commit and one verification run (e.g. one function, one test case, one bug fix, one small migration).
-- Rule of thumb: if you can't define an objective pass/fail check for it, split it further.
+- One task = one clear outcome, one bounded implementation area, one testable success condition set, achievable in one context window and landing as one commit.
+- Too large causes drift and compounding failure; too small causes overhead and context switching. Don't split below the point where a task still has a meaningful, verifiable outcome (e.g. a bug fix, a endpoint slice, a small migration, a component with its tests).
+- Rule of thumb: if you can't define an objective pass/fail check for it, split it further. If you can describe "done" in a sentence or two without ambiguity, it's probably the right size.
 - Each task must have an unambiguous done-state.
+- Terminology: in many published autonomous-loop tools, the loop unit is called a "user story." In this framework that unit is a **task**; stories are the larger deployable slices above it.
 
 ## Each task must be self-contained
 Include:
@@ -30,6 +32,14 @@ Include:
 6. Dependencies and ordering relative to other tasks
 
 Do NOT expect the executor to read product_vision, domain model, capabilities map, sad, or brd. Distill what it needs into the task.
+
+## Feature flags
+- The planner does not invent flags. It uses only the flags declared by the epic and its stories.
+- Flag definition and wiring is one of the first tasks of the first flagged story, so later tasks build on it.
+- Tasks touching flagged code have checks covering both states: flag off (existing behavior unchanged) and flag on (new behavior works).
+- Every flagged epic must include a final story (or a final task set in the last story) that enables the feature for real and removes all its flags, so the epic ships to prod with no flags left. Plan this removal work at the same time as the flag itself, never as an afterthought.
+- Removal tasks: delete the flag checks, keep the winning code path, delete the losing path and its tests, and verify with a check that no references to the flag remain in the codebase.
+- Executors cannot create flags on their own.
 
 ## Verification design
 - Primary gate is objective and non-LLM: tests, build, lint, architecture/boundary tests, visual diff.

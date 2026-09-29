@@ -6,7 +6,7 @@
 New unflagged planning artifacts are traceable and reviewable without waiting for another Story.
 
 ## Source Context
-- BRD: `docs/features/deployable-epic-story-authoring/brd.md`, Requirements `REQ-01`–`REQ-05`, `REQ-09`, `REQ-10`.
+- BRD: `src/modules/template-catalog/fixtures/scrum-deployable-slices/sample-brd.md`, Requirements `REQ-01`–`REQ-05`, `REQ-09`, `REQ-10`.
 - Technical design: `docs/features/deployable-epic-story-authoring/sdd.md`, Ownership and artifact contracts; Authoring behavior and output shape.
 - Domain: `docs/business-domain-model.md`, Skill Guidance and AI-Augmented Development Pipeline.
 - Capabilities served: `docs/capabilities-map.md`, Skill Guidance and Template Catalog.

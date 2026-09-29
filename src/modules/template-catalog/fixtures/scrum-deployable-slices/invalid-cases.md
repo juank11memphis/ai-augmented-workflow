@@ -10,7 +10,7 @@ A database-only Story cannot work until an unmerged backend and frontend Story e
 **Status:** draft. Open question: which capability owns the behavior? Do not label ready-for-planning.
 
 ## Missing or invalid BRD ID
-`REQ-99` does not occur in `docs/features/deployable-epic-story-authoring/brd.md`; stop for source correction. A Story with no source ID cannot claim traceability.
+`REQ-99` does not occur in `src/modules/template-catalog/fixtures/scrum-deployable-slices/sample-brd.md`; stop for source correction. A Story with no source ID cannot claim traceability.
 
 ## Unverifiable criterion
 "The Story feels polished" has neither an observable outcome nor a `needs human/LLM-judge review` label; rewrite or explicitly label human judgment.
