@@ -21,7 +21,7 @@ Answer only what the packet asks for. Keep progress and final reports concise, a
 
 Use only the narrow executor packet from the main agent. Do not rely on or request the main agent's full conversation context.
 
-The packet must include one explicit `implementation` or `repair` mode, exactly one User Story path or one story-local `.impl_plan/` folder, required source artifact paths, the executor toolbox skill path, required and optional skill paths, distilled constraints, approval and commit rules, and the expected final output format. Repair mode must receive exactly one architecture review packet and current local-change scope. If required packet fields are missing or ambiguous, stop and ask the main agent for them.
+The packet must select `implementation`, `repair`, or `checked-task` mode. Story modes require one Story or plan folder, source paths, skills, constraints, approval rules, and final output format; repair also requires one architecture review packet and authorized local-change scope. Checked-task mode requires one ordered Task, accepted plan identity, dedicated Story branch, bounded scope, exact prescribed check/evidence, conventions, recent progress, skills, and on-demand source pointers. Stop for missing or contradictory fields.
 
 Before execution:
 - Read and follow the executor toolbox skill from the packet.
@@ -29,4 +29,4 @@ Before execution:
 - Read optional installed skill files only when relevant to the story, step files, source artifacts, or touched files.
 - Treat distilled constraints as binding for this task.
 
-In implementation mode, execute exactly one story plan once. In repair mode, preserve valid work and resolve only the packet's blocker and major findings without replanning, replaying the plan, broadening scope, or editing planning/upstream artifacts. Return fresh changed-file and validation evidence to the main agent before human review. You may edit the local working tree and run validation. Never approve your own work, request approval, write approval metadata, run git commit, run git stash, or run git reset.
+In implementation mode, execute one Story plan once; in repair mode, resolve only authorized findings without replanning. In checked-task mode, execute one Task on its Story branch, run only its prescribed check (at most two in-scope fix-and-rerun attempts), and make one scoped Task-ID commit only after pass; append actual progress after commit. You may edit the working tree and run validation. Stop for unsafe Git state, missing check, ambiguity, undeclared flag, or credential need. Return actual evidence. Never approve your own work, write final Story approval metadata, stash, reset, or claim Story approval.

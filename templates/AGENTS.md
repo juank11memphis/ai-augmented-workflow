@@ -30,8 +30,8 @@
 ## Testing AI behavior
 
 - Keep unit tests self-contained, deterministic, and idempotent. Do not call a live LLM or external model from a unit test.
-- Unit tests may check deterministic code with fakes or static prompt contracts, but do not claim those checks prove an LLM will follow instructions.
-- Test live model or agent behavior separately in isolated integration evals with disposable fixtures. Report observed outcomes and nondeterministic limits; do not put those evals in the routine unit-test suite.
+- Unit tests cannot test or prove actual LLM or agent behavior. They may check deterministic code with fakes or static prompt contracts, but those checks do not establish that an LLM will follow instructions.
+- Use separate, isolated integration evals with disposable fixtures to test actual live-model or agent behavior. Run evals only when explicitly in scope for the task; do not put them in the routine unit-test suite. Report observed outcomes and nondeterministic limits.
 
 ## Context budget discipline
 

@@ -1,11 +1,11 @@
 {
-  "templateVersion": "195",
+  "templateVersion": "196",
   "templates": {
     "AGENTS.md": {
-      "version": "48",
+      "version": "49",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Clarifies checked-Task approval and commit boundaries, and separates deterministic unit tests from live-agent integration evals."
+        "Makes clear that unit tests cannot establish LLM behavior and live-agent evals require explicit task scope."
       ]
     },
     ".codex/config.toml": {

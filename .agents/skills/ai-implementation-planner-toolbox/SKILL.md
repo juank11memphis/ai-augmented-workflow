@@ -62,6 +62,10 @@ For BRD and SDD context in the planner packet, read its verified **start here** 
 - Preserve story scope, acceptance criteria, `sdd.md` as the authoritative software design artifact, selected architecture constraints, and UX constraints when applicable. Treat embedded diagrams as authoritative SDD context and preserve diagram-stated boundaries, flows, and data/state implications.
 - Apply selected architecture guidance to story-local implementation step ordering, boundaries, dependency direction, and reviewable constraints. Under command-pattern guidance, plan command/result and handler/domain validation before adapter or transport validation unless the story context clearly requires a different order.
 - Translate verification expectations and the technical-design quality strategy into concrete validation steps near the work they prove; do not rely on only a generic final test command.
+- Produce at least one Milestone grouped by a reviewable outcome, not a Task-count quota. Treat each ordered step file as one Task so the current executor can still consume `*.md` in filename order. Do not add a Markdown plan header or index file to that glob.
+- Give every Task a stable ID, one bounded outcome, relevant Story acceptance criteria, distilled source decisions, exact optional on-demand pointers, applicable skills, dependencies, known files or area, status, and its own specific executable pass/fail check with expected evidence. Inspect available check definitions enough to know what they prove; a Story-wide generic test instruction or subjective review is not a Task check. Split or clarify an uncheckable Task, or put genuinely judgment-based work in the Milestone human-review outcome; never mark it executable.
+- In the first ordered step file, record a compact Story-plan view: Story ID/path, exact upstream sources and selected architecture, coverage of every Story acceptance criterion by Task and Milestone, ordered Milestone outcomes/Task IDs/evidence, a Task/status list, and durable conventions. Name a story-local non-Markdown progress-log path and its append-only entry shape (Task ID, outcome, actual check result, commit reference when present, blocker, and gotchas). Set up the log only as planning guidance; do not claim execution or commit. Keep plan-review and human-decision fields preparatory; this story does not activate a plan-review gate.
+- Inventory flags declared in the Epic and Stories. State `Flags: none` when none are declared; never invent one. For declared flagged Tasks, prescribe executable checks for both flag-off regression and flag-on behavior. Include final removal and a no-reference check only when that removal is declared upstream. Stop planning for clarification if a required flag or removal scope is undeclared.
 - For code-changing stories, include `node .agents/scripts/check-touched-source-file-lines.mjs` in validation expectations and require pass/fail evidence for the touched source-file size gate.
 - When likely touched source files are large, near 500 lines, already over the limit, or likely to exceed it, plan explicit cohesive refactoring steps or Done conditions before final file-size validation.
 - Use context-sensitive validation vocabulary: unit, acceptance/integration, edge/failure, regression, and deeper property/invariant, torture/fuzz, mutation, or manual QA checks when story risk justifies them. Include a short skip rationale and residual risks when a relevant deeper check is omitted.
@@ -83,7 +87,7 @@ Before writing validation steps, narrowly inspect repository-owned definitions a
 
 ## Step file format
 
-Every step file must use this exact section structure:
+Every step file must retain this exact section structure so the current executor can read it in filename order. Put Task and Milestone metadata inside these sections; the first step also carries the compact Story-plan view described above:
 
 ```md
 # Step: <Imperative step title>
@@ -94,6 +98,8 @@ Every step file must use this exact section structure:
 
 ## Scope
 
+- Task ID: <stable Story-scoped ID>; Milestone ID: <stable ID>; Status: pending; Depends on: <Task IDs or none>
+- Story acceptance criteria: <IDs>; source decisions: <distilled decisions>; on-demand pointers: <exact paths and headings>; applicable skills: <paths>
 - <Specific in-scope action or boundary>
 - <Specific in-scope action or boundary>
 - Do not <explicit out-of-scope boundary when useful>
@@ -105,11 +111,14 @@ Every step file must use this exact section structure:
 
 ## Done when
 
+- Task check: `<executable command or assertion>`; pass: <objective condition>; expected evidence: <result or artifact>
 - <Specific observable completion condition>
 - <Acceptance criterion or technical requirement covered by this step is satisfied>
 - <Relevant compile, test, lint, build, or manual validation passes>
 - <Validation evidence this step should create, such as unit, acceptance/integration, edge/failure, regression, or justified deeper-check coverage>
 ```
+
+Milestone outcomes and human-review evidence are not substitutes for individual Task checks. Keep subjective judgments in the Milestone view; do not mark such a Task executable. Preserve the existing Story-level implementation review, approval, and commit controls; plan-version, review-state, branch, Task-commit, and PR execution belong to later Stories, not this planner-output increment.
 
 Each step's Done conditions should identify the confidence created by that step. Keep validation proportional: use deeper property/invariant, torture/fuzz, mutation, or manual QA checks only when the risk profile justifies them, and explain relevant skips briefly instead of adding test-theater.
 

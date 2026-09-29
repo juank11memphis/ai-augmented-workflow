@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.25.0",
-  "templateVersion": "189",
+  "templateVersion": "195",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-29T15:54:22.299Z",
+  "updatedAt": "2026-09-29T20:28:31.736Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -25,8 +25,9 @@
     "AGENTS.md": {
       "template": "AGENTS.md",
       "templateVersion": "45",
-      "sha256": "de6b0d1936a017a0b18521879f169886ed4a996acfe71301083ae9de7b12f433",
-      "status": "managed"
+      "sha256": "560886cfa89d4d0318de6edad171130589401702c8afa9aaaa3141aa6e38a824",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "48"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -95,17 +96,15 @@
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "25",
-      "sha256": "51ad5d60e21e1dffce3757be41d43822b34b99a2771dc4c1615382c432b5d47f",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "27"
+      "templateVersion": "28",
+      "sha256": "5e5cb5da1595271e7e6ef29203ea51568ea158c40571cb086436183c7bd12add",
+      "status": "managed"
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
-      "templateVersion": "11",
-      "sha256": "8e8d719011fcf0115fe775cc3cf716a84b515a53df04f89626a9c1a470c69026",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "15"
+      "templateVersion": "16",
+      "sha256": "a18f7a27dab258bc213f74be9d0c74539b0a300c6729eb86b6de0601baeb4c8f",
+      "status": "managed"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
       "template": ".codex/agents/sibu-implementation-planner.toml",
@@ -115,24 +114,21 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "38",
-      "sha256": "fa2004181d50714b58b0c521320b87005aa8e2fdd0afb54882b7adda6f46e2c3",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "49"
+      "templateVersion": "52",
+      "sha256": "548eafb205e993c424b8e06e63e8f8d467b976a247bec147bad10a1f785c1554",
+      "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
-      "templateVersion": "15",
-      "sha256": "04c842f83f1e5b550904b3d4dabe7c845bea081524b85964b537109ffe5e5e4d",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "23"
+      "templateVersion": "24",
+      "sha256": "6dde3975a951339f10f18ed65d2b21b4da8b657b3f4698daef680063c0913e2e",
+      "status": "managed"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
       "template": ".codex/agents/sibu-implementation-executor.toml",
-      "templateVersion": "4",
-      "sha256": "e0b4d231e525c3ea5e07457fcc74a037808d1cd109b5d50bf56acaed17593580",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "5"
+      "templateVersion": "6",
+      "sha256": "de202e7f6e9cafe8f22c8dd03ea5ed796173c617772a3a5e508cde080e9a0642",
+      "status": "managed"
     },
     ".agents/skills/feature-idea-capture/SKILL.md": {
       "template": "skills/feature-idea-capture/SKILL.md",
@@ -196,10 +192,9 @@
     },
     ".gemini/agents/sibu-implementation-executor.md": {
       "template": ".gemini/agents/sibu-implementation-executor.md",
-      "templateVersion": "4",
-      "sha256": "108c9e99292703cf376344d3433ea4edaf843a60d1c67ff74f1d7bdc01253db0",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "5"
+      "templateVersion": "6",
+      "sha256": "471e99fa32da6aaaf21362c368d9158c42a6a742c211ad8d8019c98c3777345a",
+      "status": "managed"
     },
     ".gemini/agents/github-exporter.md": {
       "template": ".gemini/agents/github-exporter.md",
@@ -221,10 +216,9 @@
     },
     ".claude/agents/sibu-implementation-executor.md": {
       "template": ".claude/agents/sibu-implementation-executor.md",
-      "templateVersion": "4",
-      "sha256": "108c9e99292703cf376344d3433ea4edaf843a60d1c67ff74f1d7bdc01253db0",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "5"
+      "templateVersion": "6",
+      "sha256": "471e99fa32da6aaaf21362c368d9158c42a6a742c211ad8d8019c98c3777345a",
+      "status": "managed"
     },
     ".claude/agents/github-exporter.md": {
       "template": ".claude/agents/github-exporter.md",
@@ -291,27 +285,26 @@
     },
     ".agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "dfae3a5afcfd45422fac7d1685ae9c2565e2726ed47e9292f253a71a21df68bc",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "3"
+      "templateVersion": "4",
+      "sha256": "5dd0946606674221154da7ac81ec5703e2fdaefd925d04760fccc7e658a829c7",
+      "status": "managed"
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {
       "template": ".codex/agents/sibu-architecture-reviewer.toml",
-      "templateVersion": "1",
-      "sha256": "e2689e86a9b3c3acdf3c4b8f7af705667292e2bb7b7d137333aad7ae41d4f1db",
+      "templateVersion": "2",
+      "sha256": "12ae6ee820dbbd955ab350d8baaf2caf10019c711fd5f3942d66278ede5d6ac1",
       "status": "managed"
     },
     ".gemini/agents/sibu-architecture-reviewer.md": {
       "template": ".gemini/agents/sibu-architecture-reviewer.md",
-      "templateVersion": "1",
-      "sha256": "26beda40b789cb2c5418c591cb791ef7388936aeecc097377ee001de3cb556ac",
+      "templateVersion": "2",
+      "sha256": "c548d73b70a022a3cbf2cfeb4cf110ce94f6cd0e5fe8534d597e0fc7fc537e5a",
       "status": "managed"
     },
     ".claude/agents/sibu-architecture-reviewer.md": {
       "template": ".claude/agents/sibu-architecture-reviewer.md",
-      "templateVersion": "1",
-      "sha256": "26beda40b789cb2c5418c591cb791ef7388936aeecc097377ee001de3cb556ac",
+      "templateVersion": "2",
+      "sha256": "c548d73b70a022a3cbf2cfeb4cf110ce94f6cd0e5fe8534d597e0fc7fc537e5a",
       "status": "managed"
     },
     ".agents/skills/eval-authoring/references/version-2-contract.md": {

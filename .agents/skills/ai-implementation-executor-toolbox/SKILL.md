@@ -37,7 +37,7 @@ This toolbox is for `sibu-implementation-executor` workers only. It is not a nor
 
 Use only the narrow packet from the main agent. The packet must include:
 
-- exactly one explicit executor mode: `implementation` or `repair`
+- exactly one explicit executor mode: `implementation`, `repair`, or `checked-task`
 - exactly one User Story path or one story-local `.impl_plan/` folder
 - required source artifact paths: story, Epic brief, BRD, software design with embedded diagrams, and UX spec when the story, plan, or feature has UI impact
 - this toolbox skill path
@@ -53,7 +53,9 @@ Use only the narrow packet from the main agent. The packet must include:
 
 An `implementation` packet includes the ordered plan steps. A `repair` packet additionally includes exactly one architecture review packet retaining the reviewer's findings, the human-authorized list of specific changes for the current snapshot, current snapshot identity and changed-file scope, and prior validation evidence. A repair packet must not contain a replacement plan or authorize scope expansion. Findings alone are not authorization; if the list or snapshot binding is absent or ambiguous, stop before editing.
 
-If the packet names multiple stories, multiple plans, an Epic without one selected story, or no executable target, stop and ask the main agent for exactly one story or `.impl_plan/` path.
+A `checked-task` packet instead includes exactly one ordered Task ID and Story path, dedicated Story branch, accepted reviewable-plan identity, bounded files/area, the **exact executable check and expected passing evidence**, conventions, recent progress, applicable skill paths, and exact source pointers to open on demand. It must identify the plan/status and progress locations. Reject missing or contradictory fields, stale acceptance, a missing check, or a Task that is not the next ordered pending Task. Do not plan a replacement check, broaden scope, or read broad upstream documents by default.
+
+If the packet names multiple stories, multiple plans, an Epic without one selected story, or no executable target, stop and ask the main agent for exactly one story or `.impl_plan/` path. A `checked-task` packet must name exactly one Task; do not execute the other plan steps.
 
 If selected architecture guidance is missing from the packet or unavailable to read, stop and tell the main agent to direct the user to run `sibu sync`; do not choose, infer, or substitute architecture guidance.
 
@@ -75,22 +77,30 @@ If a required source artifact or required skill path is missing, stop and report
 - Reject and return a blocker with evidence for ambiguous or stale authorization, contradictions, material decisions, unrelated-file changes, scope expansion, new production dependencies, or changes that conflict with authoritative artifacts. Do not silently select an alternative.
 - Perform proportionate focused validation and return fresh post-repair validation evidence. Never reuse a pre-repair approval or validation claim as evidence for changed work.
 
+### Checked-Task mode
+
+- Work only on the assigned Task in a fresh bounded context. Confirm the accepted plan identity, Task order/status, exact check, and current Story branch before editing. If branch/index/worktree state is unsafe or isolation is unavailable, stop without modifying or hiding user work. No real credentials may enter the workspace, packet, output, or logs.
+- Run the exact prescribed check after implementation. If it fails, make at most **two** evidence-guided, in-scope fixes, rerunning that same check after each fix. Do not retry an unchanged failing command, weaken or replace the check, or infer success from judgment. Stop immediately for missing/changed check, ambiguous or contradictory evidence, scope expansion, unexpected Git state, or material product/security/privacy/data/dependency/architecture consequence. After two failed fixes, stop without marking done or making a completed-Task commit.
+- If the upstream Epic/Story declares a flag, run the assigned flag-off and flag-on checks; for its planned removal Task, run the supplied no-reference check. Never invent a flag or its checks. An undeclared flag need blocks immediately.
+- Only after every assigned check passes, stage **only Task-owned eligible files**, inspect staged paths and diff for unrelated or ignored work, and make one Conventional Commit referencing the Task ID on the Story branch. Never force-add ignored files. Append a compact progress entry **after** commit with actual check command/result, commit reference, gotchas, and decisions; keep tracked progress out of unrelated Task staging and make its persistence explicit. Update Task status without changing reviewable plan content. On blocker, record check, attempts, and reason in progress without a done state or completed-Task commit. Return actual evidence to the main agent; do not claim final Story approval.
+- Never stash, reset, rebase, overwrite user work, open a PR, merge, deploy, or create approval metadata. If a safe scoped commit cannot be made, stop and report the blocker.
+
 ## Execution rules
 
-- Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill, and relevant optional installed skills before execution. Read its embedded diagrams.
+- In Story-plan modes, read the story, ordered step files, required source artifacts, required skills, selected architecture skill, and relevant optional installed skills before execution. Read embedded diagrams. In `checked-task` mode, start with only the assigned Task, conventions, recent progress, named skills, and exact source pointers; open pointed source sections on demand.
 - If `structured-logging` is provided in the packet, apply it only to observability-relevant code paths and do not duplicate its policy in other skill guidance.
 - Apply selected architecture guidance during implementation and review, including boundaries, dependency direction, sequencing, and architecture-specific risks. Treat embedded diagrams as authoritative SDD context, keep `sdd.md` as the authoritative software design artifact, and preserve diagram-stated boundaries, flows, and data/state implications during implementation and review.
 - Follow only the selected mode; repair mode does not execute plan steps.
 - Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, diagram-stated implications when included, and distilled constraints. Do not modify the SDD or create a separate diagram companion.
 - Read repository files narrowly, only as needed for the current step or validation result.
-- Run focused validation named by the step files or software design when practical, and collect compact evidence against the story verification expectations and validation steps.
+- In Story-plan modes, run focused validation named by the step files or software design when practical. In `checked-task` mode, run the assigned exact check and expected evidence without substitution. Collect compact evidence for the applicable mode.
 - For code-changing work, run `node .agents/scripts/check-touched-source-file-lines.mjs` before presenting a review packet. If it fails, refactor touched oversized source files into cohesive focused files and re-run the checker successfully before review.
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.
 - If an optional relevant skill is absent and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag it as a Review Gate risk.
 
 ## Repository-aware validation policy
 
-Narrowly inspect repository-owned definitions and guidance to establish available focused checks, whether a canonical aggregate verification exists, the distinct responsibilities it covers, and whether changed assets affect packaged or runtime-distributed behavior. Do not infer coverage from a check's name.
+For Story-plan `implementation` or `repair`, narrowly inspect repository-owned definitions and guidance to establish available focused checks, whether a canonical aggregate verification exists, the distinct responsibilities it covers, and whether changed assets affect packaged or runtime-distributed behavior. Do not infer coverage from a check's name. For `checked-task`, the accepted plan's prescribed check is binding; do not invent an aggregate or replace the check under this policy.
 
 - During implementation or repair, run proportionate focused checks for the changing work; they provide fast feedback but do not replace final confidence.
 - After stabilization, execute exactly one final validation strategy. When a canonical aggregate exists, run it once and do not separately repeat standalone checks whose responsibilities it covers.
@@ -102,11 +112,11 @@ Narrowly inspect repository-owned definitions and guidance to establish availabl
 
 ## Git and approval safety
 
-The executor worker may edit the local working tree and run validation for the story. It must never perform final workflow-control actions.
+The Story-plan executor worker may edit the local working tree and run validation for the story. A checked-Task executor has only the narrow passing Task-commit authority above; neither worker may perform final Story workflow-control actions.
 
 Never run:
 
-- `git commit`
+- `git commit` in `implementation` or `repair` mode, or before a passing scoped check in `checked-task` mode
 - `git stash`
 - `git reset`
 
@@ -118,7 +128,7 @@ Never write approval metadata such as:
 - Status: approved
 ```
 
-Never approve your own work. Final approval metadata and commit execution remain with the main agent after explicit user approval, or with the human manually if the workflow requires it.
+Never approve your own work. Final Story approval metadata and any remaining Story commit remain with the main agent after explicit user approval, or with the human manually if the workflow requires it.
 
 ## Completion handoff
 
@@ -142,7 +152,7 @@ The packet selects direct foreground, main-mediated foreground, or completion-on
 
 ## Final result
 
-Return a compact completion summary or blocker directly to the main agent. Include the mode, changed files, validations, Validation Evidence including the file-size gate result for code-changing work, risks, follow-up questions, and `approval state: not requested by worker`. Do not commit.
+Return a compact completion summary or blocker directly to the main agent. Include the mode, changed files, validations, Validation Evidence including the file-size gate result for code-changing work, risks, follow-up questions, and `approval state: not requested by worker`. Do not make a final Story commit; `checked-task` mode alone may return its passing scoped Task commit reference.
 
 ## BRD handoff
 

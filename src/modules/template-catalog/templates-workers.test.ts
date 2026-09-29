@@ -28,7 +28,7 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /deterministic unit tests from live-agent integration evals/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /unit tests cannot establish LLM behavior/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -57,8 +57,9 @@ describe('AGENTS.md template', () => {
 
     assert.match(contents, /unit tests self-contained, deterministic, and idempotent/i);
     assert.match(contents, /Do not call a live LLM or external model from a unit test/i);
-    assert.match(contents, /do not claim those checks prove an LLM will follow instructions/i);
-    assert.match(contents, /separately in isolated integration evals with disposable fixtures/i);
+    assert.match(contents, /unit tests cannot test or prove actual LLM or agent behavior/i);
+    assert.match(contents, /separate, isolated integration evals with disposable fixtures/i);
+    assert.match(contents, /Run evals only when explicitly in scope for the task/i);
   });
 
   it('includes judgment and honesty guidance for uncertainty and appropriate challenge', () => {

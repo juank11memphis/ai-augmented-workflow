@@ -24,6 +24,7 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 - The feature's `brd.md`.
 - The feature's `sdd.md` as the authoritative software design artifact, including any feature-level quality strategy.
 - The story's verification expectations and any technical-design quality strategy needed to plan validation steps.
+- A source-verified inventory of flags declared by the Epic and its Stories, including any declared final-removal work; use `Flags: none` when none exist and never invent one.
 - `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
 - The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when sub-agent spawning is available.
 - Selected architecture guidance for the workflow.
@@ -108,11 +109,13 @@ Build a narrow planner packet for the worker. The packet must include:
 - Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
 - the source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, and applicable SAD/SDD module ownership and dependency constraints; for uncertain fine-grained references, give the full authoritative path and a locate-relevant-context instruction instead
 - story verification expectations and any software design quality strategy context needed to plan validation steps
+- the source-verified Epic/Story flag inventory (`Flags: none` when unflagged), declared final-removal Story if any, and a stop instruction for any undeclared flag need
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
 - distilled skill constraints, such as “create only `.impl_plan/*.md` files,” “read included diagrams and preserve diagram-stated boundaries, flows, and data/state implications without replacing `sdd.md`,” “turn verification expectations into concrete validation steps,” “include short skip rationale for deeper checks when story risk makes the skip relevant,” “do not write production code,” “inspect narrowly,” selected architecture constraints, and any story-specific architecture or UX constraints
+- a request for one or more outcome-grouped Milestones and ordered checked Tasks, with Story acceptance-criteria coverage, durable status/conventions/progress setup, and current-executor-compatible step files
 - expected output format: plan folder, ordered step files created or updated, source artifacts and skills used, and risks/blockers
 
 Do not include exporter skills such as `export-to-github` or `export-to-notion` in the planner packet.
@@ -191,12 +194,19 @@ Every step file must use this structure:
 
 Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, BRD, or software design. Validation steps should sit close to the behavior they prove; under command-pattern guidance, handler/domain validation generally precedes adapter or transport validation. Done conditions should make expected validation evidence and residual risks reviewable.
 
+For this compatible planner-output increment, retain the four step headings above and use one ordered step file per bounded Task. Within those sections, include stable Task and Milestone IDs, Task status and dependencies, relevant Story acceptance criteria, distilled source decisions, exact optional source pointers, applicable skills, known files/area, and a specific executable pass/fail check with expected evidence for that Task. The first step also carries the compact Story/AC coverage and Milestone-outcome view, Task/status list, durable conventions, and a story-local non-Markdown progress-log location and entry shape. Do not create a Markdown plan header that the current executor would mistake for an executable step. A generic Story test or subjective review is not an executable Task check; split or clarify the Task, or reserve genuinely subjective judgment for the human-reviewed Milestone.
+
+Use only flags declared by the Epic and Stories. Require explicit `Flags: none` for unflagged work. For flagged Tasks, require checks for both flag-off regression and flag-on behavior; include upstream-declared final removal and a no-reference check when applicable. An undeclared flag need blocks handoff rather than expanding scope. Do not activate plan architecture review, branch creation, Task commits, or PR flow in this Story 01 contract; the current Story-level review and approval controls remain in force.
+
 ## Plan quality gate
 
 Before considering planning complete, verify:
 
 - the step files are for exactly one User Story
 - every acceptance criterion maps to at least one step file
+- every Milestone has a reviewable outcome and ordered Task IDs, without a Task-count quota
+- every executable Task has its own objective check and expected evidence; missing or merely subjective checks block handoff
+- the flag inventory, off/on checks for declared flagged Tasks, and any upstream-declared removal no-reference check are explicit
 - every step names the file, module, command, or artifact to change when known
 - validation steps are explicit enough to prove the story is complete and reflect the story's verification expectations
 - the plan preserves approved Deep Module, architecture, and UX boundaries
