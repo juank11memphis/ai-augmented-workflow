@@ -27,6 +27,12 @@ This repository is the home for establishing an AI-augmented development workflo
 - If sandbox restrictions block a required check, use the host's escalation process once for the exact command and a narrowly scoped reusable approval, when supported. If denied or still blocked, report the limitation; do not use alternate commands or wrappers to bypass it.
 - Repository instructions do not grant host permissions. Do not ask the user for separate permission when the host already allows a routine validation command.
 
+## Testing AI behavior
+
+- Keep unit tests self-contained, deterministic, and idempotent. Do not call a live LLM or external model from a unit test.
+- Unit tests may check deterministic code with fakes or static prompt contracts, but do not claim those checks prove an LLM will follow instructions.
+- Test live model or agent behavior separately in isolated integration evals with disposable fixtures. Report observed outcomes and nondeterministic limits; do not put those evals in the routine unit-test suite.
+
 ## Context budget discipline
 
 Treat context as a shared budget owned by the user. Prefer narrow, purposeful context before broad reads: search targeted paths, inspect snippets before full files, and avoid dependency, generated, build, cache, and lockfile content unless relevant.

@@ -14,7 +14,7 @@
 ## Agent-specific instructions
 
 - Before any task that writes or modifies code, propose a brief plan and wait for user confirmation once per requested task.
-- Exception: when the user asks to plan, implement, execute, continue, or work through a User Story or Epic with `ai-implementation-plan-executor`, that request is confirmation to generate any missing implementation plan and begin execution immediately. Do not require a separate plan approval gate; wait only for the story-level review after implementation finishes.
+- Exception: when the user asks to plan, implement, execute, continue, or work through a User Story or Epic with `ai-implementation-plan-executor`, that request confirms missing plan generation without a separate code-change approval. The exact plan still needs independent review and explicit human acceptance before a Story branch or Task execution; completed work still needs human Story review. A checked-Task executor may commit only its scoped Task after the prescribed check passes; final Story approval and continuation remain with the main agent.
 - For read-only work, research, planning, documentation-only edits, or other non-code changes, do not ask for confirmation unless the action is destructive, risky, ambiguous, or explicitly requires user approval.
 - After confirmation, proceed with all agreed in-scope changes without re-asking.
 - Ask again only if the scope changes materially, the approach becomes materially more complex or risky, or the user explicitly asks to review before continuing.
@@ -26,6 +26,12 @@
 - Run expensive final checks only after changes stabilize. Do not rerun a check or seek repeated escalations merely to obtain a different permission outcome.
 - If sandbox restrictions block a required check, use the host's escalation process once for the exact command and a narrowly scoped reusable approval, when supported. If denied or still blocked, report the limitation; do not use alternate commands or wrappers to bypass it.
 - Repository instructions do not grant host permissions. Do not ask the user for separate permission when the host already allows a routine validation command.
+
+## Testing AI behavior
+
+- Keep unit tests self-contained, deterministic, and idempotent. Do not call a live LLM or external model from a unit test.
+- Unit tests may check deterministic code with fakes or static prompt contracts, but do not claim those checks prove an LLM will follow instructions.
+- Test live model or agent behavior separately in isolated integration evals with disposable fixtures. Report observed outcomes and nondeterministic limits; do not put those evals in the routine unit-test suite.
 
 ## Context budget discipline
 

@@ -77,7 +77,7 @@ describe('targeted handoff instruction contracts', () => {
       const entry = manifest.templates[`skills/${name}/SKILL.md`];
       assert.ok(entry, name);
       assert.equal(entry.changes.length, 1, name);
-      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet|plan review/i, name);
+      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet|plan review|checked.Task/i, name);
       const template = readTemplate(`skills/${name}/SKILL.md`);
       // Project-owned installed copies adopt source changes only through reviewable Sibu sync.
       assert.match(template, new RegExp(`name: ${name}`));

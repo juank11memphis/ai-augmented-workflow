@@ -28,7 +28,7 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /validation commands directly/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /deterministic unit tests from live-agent integration evals/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -50,6 +50,15 @@ describe('AGENTS.md template', () => {
     assert.match(contents, /If denied or still blocked, report the limitation/i);
     assert.match(contents, /Repository instructions do not grant host permissions/i);
     assert.doesNotMatch(contents, /pnpm verify/i);
+  });
+
+  it('keeps live LLM behavior out of self-contained unit tests', () => {
+    const contents = readTemplate('AGENTS.md');
+
+    assert.match(contents, /unit tests self-contained, deterministic, and idempotent/i);
+    assert.match(contents, /Do not call a live LLM or external model from a unit test/i);
+    assert.match(contents, /do not claim those checks prove an LLM will follow instructions/i);
+    assert.match(contents, /separately in isolated integration evals with disposable fixtures/i);
   });
 
   it('includes judgment and honesty guidance for uncertainty and appropriate challenge', () => {
@@ -312,7 +321,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /plan review of the exact Story version/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /checked Task at a time/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -337,7 +346,7 @@ describe('Sibu executor worker templates', () => {
     assert.match(contents, /export-to-notion/);
     assert.match(contents, /Fallback matrix/);
     assert.match(contents, /Inline compressed-context fallback/);
-    assert.match(contents, /approval metadata and commit execution remain with the main agent/);
+    assert.match(contents, /final Story approval metadata, any final Story commit, and feature continuation under main-agent control/i);
     assert.match(contents, /git commit/);
     assert.match(contents, /git stash/);
     assert.match(contents, /git reset/);
@@ -358,7 +367,7 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /architecture review packet/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /checked-Task execution/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
@@ -410,24 +419,24 @@ describe('Sibu executor worker templates', () => {
       const contents = readTemplate(templatePath);
       const isCodexAgentTemplate = templatePath.startsWith('.codex/');
       assert.match(templateMetadata?.description ?? '', /Sibu implementation executor worker/i);
-      assert.match(templateMetadata?.changes.join('\n') ?? '', /architecture review packet/i);
+      assert.match(templateMetadata?.changes.join('\n') ?? '', /checked Task/i);
       assert.match(contents, /sibu-implementation-executor/);
       assert.match(contents, /narrow executor packet/);
       assert.match(contents, /executor toolbox skill/);
-      assert.match(contents, /required and optional skill paths/);
+      assert.match(contents, /required skill files listed in the packet/);
+      assert.match(contents, /optional installed skill files only when relevant/);
       assert.match(contents, /distilled constraints/);
       assert.match(contents, /full conversation context/);
       assert.match(contents, /implementation.*repair/i);
-      assert.match(contents, /exactly one architecture review packet/i);
-      assert.match(contents, /without replanning, replaying the plan, broadening scope/i);
+      assert.match(contents, /one architecture review packet/i);
+      assert.match(contents, /without replanning/i);
       assert.match(contents, /Light verbose mode/);
       assert.match(contents, /Show the plan once at the beginning/);
       assert.match(contents, /Show only test failures and final test results/);
       assert.match(contents, /run validation/);
       assert.match(contents, /Never approve your own work/);
-      assert.match(contents, /run git commit/);
-      assert.match(contents, /run git stash/);
-      assert.match(contents, /run git reset/);
+      assert.match(contents, /Task-ID commit only after pass/i);
+      assert.match(contents, /stash, reset/i);
 
       if (isCodexAgentTemplate) {
         assert.match(contents, /developer_instructions =/);

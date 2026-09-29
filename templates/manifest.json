@@ -1,11 +1,11 @@
 {
-  "templateVersion": "193",
+  "templateVersion": "195",
   "templates": {
     "AGENTS.md": {
-      "version": "46",
+      "version": "48",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Runs repository validation commands directly, avoids repeat permission prompts, and reports sandbox denials without bypassing host approvals."
+        "Clarifies checked-Task approval and commit boundaries, and separates deterministic unit tests from live-agent integration evals."
       ]
     },
     ".codex/config.toml": {
@@ -149,17 +149,17 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "51",
+      "version": "52",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Plan review of the exact Story version now blocks executor dispatch when any Task lacks a specific executable check, even if the plan was accepted with warnings."
+        "Starts one checked Task at a time on a safe Story branch after exact-plan acceptance; verifies scoped Task commits and progress while retaining final human Story review."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "23",
+      "version": "24",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Uses the architecture review packet for authorized repairs instead of a two-reviewer packet."
+        "Adds bounded checked-Task execution with fixed checks, at most two focused fixes, passing Task-only commits, and durable blocker/progress reporting."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -268,24 +268,24 @@
       ]
     },
     ".codex/agents/sibu-implementation-executor.toml": {
-      "version": "5",
+      "version": "6",
       "description": "Codex Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Requires one architecture review packet for authorized repairs after the technical-lead reviewer is removed."
+        "Routes one checked Task with a prescribed check and limited passing commit authority while preserving final Story review."
       ]
     },
     ".claude/agents/sibu-implementation-executor.md": {
-      "version": "5",
+      "version": "6",
       "description": "Claude Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Requires one architecture review packet for authorized repairs after the technical-lead reviewer is removed."
+        "Routes one checked Task with a prescribed check and limited passing commit authority while preserving final Story review."
       ]
     },
     ".gemini/agents/sibu-implementation-executor.md": {
-      "version": "5",
+      "version": "6",
       "description": "Gemini Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Requires one architecture review packet for authorized repairs after the technical-lead reviewer is removed."
+        "Routes one checked Task with a prescribed check and limited passing commit authority while preserving final Story review."
       ]
     },
     ".codex/hooks.json": {

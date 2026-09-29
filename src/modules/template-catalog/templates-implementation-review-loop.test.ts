@@ -46,8 +46,8 @@ describe('exact Story-plan review and human gate', () => {
 
   it('preserves separate human Story review and excludes later Git behavior', () => {
     assert.match(gatekeeper, /Story review is distinct from the earlier human plan decision/i);
-    assert.match(gatekeeper, /Wait for explicit Story-level approval before marking steps approved, committing/i);
-    assert.match(gatekeeper, /Do not add a runtime module, persistent hash helper, branch, Task commit, or PR for this Story/i);
+    assert.match(gatekeeper, /Wait for explicit Story-level approval before marking steps approved, making any remaining eligible final Story commit/i);
+    assert.match(gatekeeper, /Do not add a runtime module or persistent hash helper/i);
     assert.match(gatekeeper, /If requested work changes reviewable plan content, repeat the independent plan review/i);
   });
 

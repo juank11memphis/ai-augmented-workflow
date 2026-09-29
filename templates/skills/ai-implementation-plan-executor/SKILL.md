@@ -11,7 +11,7 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 ## Purpose
 
-Review and accept one exact Story plan before execution while preserving Sibu's later human Story review and workflow-control guarantees. This main-agent gatekeeper verifies or creates the plan, obtains an independent read-only architecture review of that plan, explains the result, and waits for the human decision before any executor starts. It keeps final Story approval metadata, commit, and feature continuation under main-agent control.
+Review and accept one exact Story plan before execution while preserving Sibu's later human Story review and workflow-control guarantees. This main-agent gatekeeper verifies or creates the plan, obtains an independent read-only architecture review of that plan, explains the result, and waits for the human decision before any executor starts. It keeps final Story approval metadata, any final Story commit, and feature continuation under main-agent control; a Task executor alone may commit its own checked Task.
 
 When a compatible sub-agent spawn capability is available and permitted by the host, always delegate bounded file editing and validation to `sibu-implementation-executor` using a narrow packet and the executor toolbox. Execute inline only when sub-agent spawning is unavailable or blocked by host capability limits. Do not skip the final story-level review gate.
 
@@ -31,7 +31,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 
 - Code, docs, tests, or other repo changes required by all unapproved implementation steps in the story plan, either through the executor worker or inline fallback.
 - Step approval metadata only after explicit story-level user approval.
-- One focused commit for approved eligible changes after explicit story-level user approval.
+- One focused commit for remaining approved eligible Story changes after explicit story-level user approval; checked Tasks may already have passing scoped commits.
 - Missing story-local implementation step files by routing through `ai-implementation-planner`, then immediately continuing into plan review without a separate plan-generation approval gate.
 
 ### When this skill stops
@@ -49,8 +49,8 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - Do not modify prior-stage artifacts except for approval metadata in implementation step files after explicit story-level approval.
 - Do not reread `docs/architecture.md` by default; trust `sdd.md` for Deep Module implementation boundaries.
 - Do not mark any step approved before explicit story-level user approval.
-- Do not commit story implementation changes before explicit story-level user approval.
-- Do not let the executor worker write approval metadata or run `git commit`, `git stash`, or `git reset`.
+- Do not make a final Story commit before explicit story-level user approval. This does not prohibit one passing scoped Task commit in `checked-task` mode.
+- Do not let a Story-plan executor worker write approval metadata or run `git commit`, `git stash`, or `git reset`. A checked-Task executor may make only the passing, scoped Task commit defined below; neither worker may stash or reset.
 - Do not choose or infer architecture guidance when it is missing; selected architecture is repo-owned workflow configuration repaired through `sibu sync`.
 
 
@@ -110,11 +110,11 @@ Build a narrow executor packet for the worker. The packet must include:
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
-- distilled skill constraints, including story scope, verification expectations, quality strategy context from the software design when relevant, validation steps from the implementation plan, Deep Module boundaries, selected architecture constraints, embedded diagram constraints to preserve diagram-stated boundaries, flows, and data/state implications without replacing `sdd.md`, UX constraints when relevant, and “do not write approval metadata or run git commit/stash/reset”
+- distilled skill constraints, including story scope, verification expectations, quality strategy context from the software design when relevant, validation steps from the implementation plan, Deep Module boundaries, selected architecture constraints, embedded diagram constraints to preserve diagram-stated boundaries, flows, and data/state implications without replacing `sdd.md`, UX constraints when relevant, and mode-specific Git authority: no commit in Story-plan modes; one passing scoped Task commit only in `checked-task` mode; never stash/reset or write final Story approval metadata
 - validation evidence requirements: completion must show tests added or updated, acceptance criteria verified, commands run, edge/failure coverage, skipped deeper checks with rationale when relevant, and residual risks or known gaps
-- approval and commit rules: the worker may edit the working tree and run validation, but final approval metadata and commit execution remain with the main agent after explicit user approval
+- approval and commit rules: Story-plan modes may edit and validate but not commit; `checked-task` mode may commit one passing scoped Task; final Story approval metadata and any remaining final Story commit stay with the main agent after explicit user approval
 - expected output format: changed files, completed steps, validation commands/results, compact validation evidence, risks, follow-up questions, and approval state
-- executor mode: `implementation` for initial Story execution; any later human-requested change must be planned and re-reviewed before execution
+- executor mode: `checked-task` for one accepted-plan Task; retain `implementation` for an already authorized legacy Story-plan execution and `repair` only for specifically authorized later repair. Any human-requested change to reviewable plan content must be planned and re-reviewed before dispatch.
 - selected transition-delivery route: `direct foreground`, `main-mediated foreground`, or `completion-only evidence`, including which actor owns any available user-visible delivery
 - main-owned transition-delivery context: selected foreground route, sole user-visible delivery owner, a unique transition ID for this phase invocation, and any delivered transition keys that must not be replayed
 
@@ -151,9 +151,9 @@ Narrowly inspect repository-owned definitions and guidance to establish availabl
 - Repository-specific plans may name concrete checks discovered from that repository; this reusable policy must remain technology-, ecosystem-, tool-, and concrete-command-neutral.
 - A required validation failure blocks unsupported success or progression. Preserve the accepted plan identity, human Story approval, commit control, and continuation authority.
 
-## Story execution model
+## Legacy Story-plan execution model
 
-Execute all unapproved step files in filename order. A step file is approved only when it contains:
+This section applies to an already authorized `implementation` or `repair` Story-plan worker, not a `checked-task` worker. The checked-Task dispatch contract above takes precedence for new accepted plans. In legacy `implementation` mode, execute all unapproved step files in filename order. A step file is approved only when it contains:
 
 ```md
 ## Review status
@@ -173,7 +173,7 @@ Do not mark steps approved, commit changes, move to the next story, or move to t
 
 ## Exact-plan architecture review and human decision
 
-The main agent owns this message-only gate before the first executor dispatch. Do not add a runtime module, persistent hash helper, branch, Task commit, or PR for this Story. The architecture reviewer assesses the plan, never an implementation diff.
+The main agent owns this message-only gate before the first executor dispatch. Do not add a runtime module or persistent hash helper. The architecture reviewer assesses the plan, never an implementation diff; branch creation and Task commits remain downstream of human plan acceptance.
 
 ### Reviewable plan identity
 
@@ -193,11 +193,17 @@ Present each material finding in short, plain language: what is wrong, why it ma
 
 Before any executor dispatch, verify that every Task in the accepted plan has its own specific, objective, executable pass/fail check and expected passing evidence. A missing, vague, or non-executable Task check is a non-waivable plan defect: stop dispatch even if the human accepted the plan with visible warnings. Return it to the planner to split or clarify the Task, or move genuinely judgment-based work to a human-reviewed Milestone; then obtain a fresh architecture review and human decision on the revised plan. Keep other genuinely waivable risks available for informed human acceptance.
 
-Once the human accepts the current reviewed identity, compare it again immediately before each executor dispatch. Until later Stories implement Task-level execution and Git lifecycle, use the existing post-acceptance execution path and preserve the human Story review below. Do not introduce automatic code review or a post-code architecture-review/repair loop.
+Once the human accepts the current reviewed identity, compare it again immediately before each executor dispatch. Preserve the human Story review below. Do not introduce automatic code review or a post-code architecture-review/repair loop.
+
+### Checked-Task dispatch on a Story branch
+
+Before branch creation and each dispatch, compare the accepted reviewable plan identity; status and progress alone do not change it. If acceptance is absent or stale, a Task lacks its prescribed executable check and expected evidence, or the next ordered Task is unclear, stop for plan review rather than inventing work or a check. Inspect the current branch, index, worktree, and available isolation. Only after acceptance, create or select one dedicated Story branch. Refuse branch collisions, unrelated staged or user changes, ambiguous pre-existing work, unavailable source control/isolation, or a real-credential need. Reconcile existing plans or branches with the human; never stash, reset, rebase, overwrite, force-add ignored files, or expose credentials to unblock execution.
+
+Dispatch exactly the next ordered Task to a **fresh** `sibu-implementation-executor` context. Its narrow packet carries one Task ID, Story branch, accepted-plan identity, bounded files/area, exact prescribed check and passing evidence, conventions, recent progress, named skills, and exact optional source pointers. Do not send all upstream documents by default, rely on prior worker memory, or dispatch another Task while one is active. The worker's only commit authority is one passing, scoped Task-ID-linked Conventional Commit. Verify its returned Task and branch identity, actual check command/result, staged/committed scope, commit reference, and post-commit progress before advancing; a blocker stops the Story. Keep final Story approval and continuation with the main agent. Milestone/PR orchestration is not introduced here.
 
 ## Story review gate
 
-After accepted-plan execution and validation, present the current implementation for human Story review. Wait for explicit Story-level approval before marking steps approved, committing eligible non-ignored changes, and continuing the Epic. Story review is distinct from the earlier human plan decision.
+After accepted-plan execution and validation, present the current implementation for human Story review. Wait for explicit Story-level approval before marking steps approved, making any remaining eligible final Story commit, and continuing the Epic. Already checked Task commits do not confer Story approval. Story review is distinct from the earlier human plan decision.
 
 Include the story path, plan folder, changed files, completed steps, validation commands/results, tests and acceptance criteria verified, edge/failure coverage, skipped deeper checks and residual risks. For non-trivial Stories, “tests passed” alone is not enough evidence. State the accepted plan identity and any visible warnings without turning the plan reviewer into a code reviewer. Human discussion is not approval; requested implementation changes remain subject to story scope, fresh validation, and a new Story decision. If requested work changes reviewable plan content, repeat the independent plan review and human acceptance before further execution.
 
@@ -215,7 +221,7 @@ Only after explicit story-level user approval, update every completed step file 
 
 Before writing approval markers, identify the current Git user with `git config user.name`; if unavailable, use `git config user.email`.
 
-After writing approval markers, commit only eligible non-ignored changes produced by the approved story. Do not stage or commit ignored paths, including ignored `docs/features/**` paths. Do not include unrelated local edits or pre-existing worktree changes. Use a Conventional Commits 1.0.0 message describing the completed story.
+After writing approval markers, commit only remaining eligible non-ignored changes produced by the approved story, if any; do not duplicate a checked Task commit. Do not stage or commit ignored paths, including ignored `docs/features/**` paths. Do not include unrelated local edits or pre-existing worktree changes. Use a Conventional Commits 1.0.0 message describing the completed story.
 
 If every story change is ignored and nothing is eligible to commit, skip the commit and report that clearly.
 

@@ -175,7 +175,7 @@ describe('downstream selected architecture guidance gates', () => {
       },
       {
         path: 'skills/ai-implementation-executor-toolbox/SKILL.md',
-        patterns: [/Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill/i, /Apply selected architecture guidance during implementation and review/i],
+        patterns: [/In Story-plan modes, read the story, ordered step files, required source artifacts, required skills, selected architecture skill/i, /Apply selected architecture guidance during implementation and review/i],
       },
     ];
 
