@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.25.0",
-  "templateVersion": "195",
+  "templateVersion": "197",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-29T20:28:31.736Z",
+  "updatedAt": "2026-09-29T20:55:20.095Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -25,9 +25,9 @@
     "AGENTS.md": {
       "template": "AGENTS.md",
       "templateVersion": "45",
-      "sha256": "560886cfa89d4d0318de6edad171130589401702c8afa9aaaa3141aa6e38a824",
+      "sha256": "10b9c96e1e0ccd93b16c36acb07576d416198a13d8abf5efba4e79ce8974d246",
       "status": "customized",
-      "lastReviewedTemplateVersion": "48"
+      "lastReviewedTemplateVersion": "49"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -114,8 +114,8 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "52",
-      "sha256": "548eafb205e993c424b8e06e63e8f8d467b976a247bec147bad10a1f785c1554",
+      "templateVersion": "53",
+      "sha256": "e6165fbf80893723d2166f00c39044b6953376a89704f3b9a81dbc87ea48b5ab",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
