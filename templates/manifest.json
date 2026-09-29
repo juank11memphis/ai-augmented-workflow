@@ -152,7 +152,7 @@
       "version": "54",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Opens one final Story PR after checked Tasks and Story validation; reports CI honestly and uses that PR for the final Milestone and Story review, including checked revisions."
+        "Opens one final Story PR after running one checked Task at a time and Story validation; reports CI honestly and uses that PR for the final Milestone and Story review, including checked revisions."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

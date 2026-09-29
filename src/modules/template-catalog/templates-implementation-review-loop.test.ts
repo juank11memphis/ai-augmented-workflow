@@ -44,11 +44,13 @@ describe('exact Story-plan review and human gate', () => {
     assert.match(gatekeeper, /other genuinely waivable risks available for informed human acceptance/i);
   });
 
-  it('preserves separate human Story review and excludes later Git behavior', () => {
-    assert.match(gatekeeper, /Story review is distinct from the earlier human plan decision/i);
-    assert.match(gatekeeper, /Wait for explicit Story-level approval before marking steps approved, making any remaining eligible final Story commit/i);
+  it('keeps final PR review distinct from plan acceptance and excludes runtime machinery', () => {
+    assert.match(gatekeeper, /PR is the final Milestone and Story review surface/i);
+    assert.match(gatekeeper, /Present the PR for one explicit.*decision/i);
+    assert.match(gatekeeper, /Acceptance alone permits approval metadata and any remaining eligible final Story commit/i);
+    assert.match(gatekeeper, /There is no separate post-PR approval/i);
     assert.match(gatekeeper, /Do not add a runtime module or persistent hash helper/i);
-    assert.match(gatekeeper, /If requested work changes reviewable plan content, repeat the independent plan review/i);
+    assert.match(gatekeeper, /fresh independent plan-only architecture review and explicit human acceptance of the revised identity before executor dispatch/i);
   });
 
   it('requires a fresh read-only reviewer and plain-language finding presentation', () => {
