@@ -1,5 +1,5 @@
 {
-  "templateVersion": "198",
+  "templateVersion": "199",
   "templates": {
     "AGENTS.md": {
       "version": "49",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "54",
+      "version": "55",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Opens one final Story PR after running one checked Task at a time and Story validation; reports CI honestly and uses that PR for the final Milestone and Story review, including checked revisions."
+        "Keeps Story status current while running one checked Task at a time: in-progress when execution begins and done only after explicit final PR approval."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

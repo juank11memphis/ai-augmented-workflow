@@ -1,12 +1,15 @@
 model_instructions_file = "../AGENTS.md"
-web_search = "live"
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
-
-[sandbox_workspace_write]
-writable_roots = ["/tmp"]
-network_access = false
 
 [agents]
 enabled = true
 max_concurrent_threads_per_session = 2
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
+
+[mcp_servers.github.tools.issue_write]
+approval_mode = "approve"
+
+[mcp_servers.github.tools.sub_issue_write]
+approval_mode = "approve"

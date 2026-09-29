@@ -56,6 +56,19 @@ describe('Final Story PR written contract', () => {
     assert.match(gatekeeper, /Do not silently substitute a conversational approval, create a second PR, merge, or deploy/);
   });
 
+  it('tracks Story status without treating Task completion or PR creation as Story approval', () => {
+    assertInOrder(gatekeeper, [
+      'Only after acceptance, create or select one dedicated Story branch',
+      'change only the selected Story file\'s `**Status:**` field from `ready-for-planning` to `in-progress`',
+      'Dispatch exactly the next ordered Task',
+    ]);
+    assert.match(gatekeeper, /preserve `in-progress`; if the field is missing, `draft`, `done`, or otherwise conflicts.*stop and reconcile it with the human/);
+    assert.match(gatekeeper, /Leave the Story `in-progress` through Task execution, Milestone deferrals, PR blockers, and final PR review/);
+    assert.match(gatekeeper, /Deferral and requested changes leave the Story `in-progress`/);
+    assert.match(gatekeeper, /Only after explicit story-level user approval, change only the selected Story file's `\*\*Status:\*\*` field from `in-progress` to `done`/);
+    assert.match(gatekeeper, /Do not stage or commit ignored paths, including ignored `docs\/features\/\*\*` paths/);
+  });
+
   it('provides a scannable representative description and versioned distribution note', () => {
     const description = fixture('representative-description');
     for (const section of ['What changed', 'Why it matters', 'Verification', 'Known risks and limits']) {
@@ -65,8 +78,8 @@ describe('Final Story PR written contract', () => {
     assert.match(description, /Hosted CI is pending; it has not been counted as passing/);
     assert.match(description, /not live agent behavior or pull-request hosting/);
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '198');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '54');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /final Story PR/);
+    assert.equal(manifest.templateVersion, '199');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '55');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Story status current/);
   });
 });
