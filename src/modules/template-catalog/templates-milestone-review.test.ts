@@ -21,10 +21,10 @@ function ordered(contract: string, phrases: string[]): void {
 
 describe('Milestone review written contract', () => {
   it('uses one final Story gate even for a one-Milestone Story', () => {
-    assert.match(fixture('one-milestone'), /final Story review is the one M-01 review; do not ask twice/i);
+    assert.match(fixture('one-milestone'), /final Story review is the one M-01 PR review; do not ask twice/i);
     assert.match(gatekeeper, /final Milestone, including a one-Milestone Story.*same Milestone decision.*not a second gate/i);
-    assert.match(gatekeeper, /Do not open a PR here/i);
-    assert.match(gatekeeper, /must not be followed by another Milestone or Story approval request for the same outcome/i);
+    assert.match(gatekeeper, /PR is the final Milestone and Story review surface for one- and multi-Milestone Stories/i);
+    assert.match(gatekeeper, /There is no separate post-PR approval or implementation-code architecture review/i);
   });
 
   it('requires verified Task evidence before pausing, then advances only after acceptance', () => {
@@ -83,8 +83,8 @@ describe('Milestone review written contract', () => {
       assert.match(wrapper, /Task-ID commit only after pass/i);
     }
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '197');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '53');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Milestone.*fresh review/i);
+    assert.equal(manifest.templateVersion, '198');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '54');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /final.*PR.*review/i);
   });
 });
