@@ -4,6 +4,44 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+async function validateInstalledWorkbenchPage(serverUrl) {
+  const response = await fetch(new URL('/', serverUrl));
+  assert.equal(response.status, 200, 'installed workbench page should load');
+  assert.match(response.headers.get('content-type') ?? '', /^text\/html\b/i);
+  const html = await response.text();
+  assert.match(html, /<section\b[^>]*data-run-setup\b[^>]*>/);
+  assert.match(html, /<div\b[^>]*data-setup-fields\b[^>]*>/);
+  assert.match(html, /<button\b[^>]*data-action="review"/);
+  assert.match(html, /data-results-container/);
+
+  const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map(match => match[1]);
+  const scripts = [...html.matchAll(/<script\b(?![^>]*\btype="application\/json")[^>]*>([\s\S]*?)<\/script>/gi)].map(match => match[1]);
+  for (const match of html.matchAll(/<(?:script\b[^>]*\bsrc|link\b[^>]*\brel="stylesheet"[^>]*\bhref)="([^"]+)"[^>]*>/gi)) {
+    const assetUrl = new URL(match[1], serverUrl);
+    assert.equal(assetUrl.origin, new URL(serverUrl).origin, 'page assets must be served locally');
+    const asset = await fetch(assetUrl);
+    assert.equal(asset.status, 200, `installed page asset should load: ${assetUrl.pathname}`);
+    const content = await asset.text();
+    assert.ok(content.length > 0, `installed page asset should not be empty: ${assetUrl.pathname}`);
+    if (assetUrl.pathname.endsWith('.css')) styles.push(content);
+    if (assetUrl.pathname.endsWith('.js')) scripts.push(content);
+  }
+  const css = styles.join('\n');
+  const client = scripts.join('\n');
+  assert.match(css, /\[data-run-setup\]/);
+  assert.match(css, /@media\(min-width:700px\)/);
+  assert.match(css, /@media\(min-width:1100px\)/);
+  assert.match(client, /function blockedModelMessage\(/);
+  for (const reason of ['environment-missing', 'model-unavailable', 'runner-unavailable', 'runner-invalid', 'capability-unsupported', 'judge-unavailable']) {
+    assert.ok(client.includes(`case '${reason}'`), `installed client needs recovery for ${reason}`);
+  }
+  assert.match(client, /data-model-readiness[\s\S]*?data-action="copy-steps"/);
+  assert.match(client, /data-action="review"[\s\S]*?disabled = Boolean\(runtimeState !== 'ready'/);
+  assert.match(client, /Steps copied\./);
+  assert.match(client, /Copy failed\. Select the steps above instead\./);
+  console.log('Packed installed workbench GET / page, styles, client recovery, and Copy steps smoke passed.');
+}
+
 /** Installed-only integration smoke in a separate, synthetic Git project. */
 export async function validatePackedEvalExecution({ workspace, installedPackageRoot }) {
   const root = path.join(workspace, 'offline-eval-execution');
@@ -51,6 +89,7 @@ else process.exit(2);
     return { code: response.status, value: await response.json() };
   };
   try {
+    await validateInstalledWorkbenchPage(server.url);
     const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null, repeats: 1 };
     assert.equal((await post('/api/eval-suites/describe', { suiteId: 'offline' })).code, 200);
     const preview = await post('/api/eval-runs/preview', command);
