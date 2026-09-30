@@ -34,7 +34,7 @@ export type LocalEvalsWorkbenchLogEvent =
   | { readonly event: 'local_evals_workbench_start_requested' }
   | { readonly event: 'local_evals_workbench_state_blocked'; readonly reason: 'missing-workflow-state' | 'invalid-workflow-state' }
   | { readonly event: 'local_evals_workbench_started'; readonly host: LocalWorkbenchHost; readonly port: number; readonly suiteCount: number; readonly discoveryStatus: 'ready' | 'blocked' }
-  | { readonly event: 'local_evals_workbench_start_failed'; readonly reason: 'server-start-failed' };
+  | { readonly event: 'local_evals_workbench_start_failed'; readonly reason: 'workflow-state-read-failed' | 'discovery-failed' | 'server-start-failed' };
 
 export type LocalEvalsWorkbenchLoggerPort = {
   info(event: LocalEvalsWorkbenchLogEvent): void;

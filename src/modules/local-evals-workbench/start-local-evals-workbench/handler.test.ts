@@ -59,6 +59,17 @@ describe('startLocalEvalsWorkbench', () => {
     assert.equal(serverStarter.calls, 0);
   });
 
+  it('does not expose a raw workflow-state reader message', async () => {
+    const result = await startLocalEvalsWorkbench({ type: 'evals', projectRoot }, {
+      workflowStateReader: stateReader({ status: 'invalid', message: 'OPENAI_API_KEY=secret /repo/private.json' }),
+      suiteDiscovery: suiteDiscovery(readyDiscovery()),
+      serverStarter: new CountingServerStarter(),
+      logger: new CapturingLogger(),
+    });
+    assert.equal(result.status, 'blocked');
+    assert.doesNotMatch(JSON.stringify(result), /OPENAI_API_KEY|secret|private\.json/);
+  });
+
   it('returns a server-start failure without unsafe log metadata', async () => {
     const logs = new CapturingLogger();
 
@@ -71,8 +82,45 @@ describe('startLocalEvalsWorkbench', () => {
 
     assert.equal(result.status, 'failed');
     assert.equal(result.reason, 'server-start-failed');
+    assert.match(result.message, /server.*cause is unknown/);
+    assert.doesNotMatch(result.guidance.join(' '), /another local process is blocking/);
+    assert.deepEqual(logs.events.at(-1), { event: 'local_evals_workbench_start_failed', reason: 'server-start-failed' });
     const serializedLogs = JSON.stringify(logs.events);
     assert.doesNotMatch(serializedLogs, /secret|OPENAI_API_KEY|SIBU_EVALS_MODEL|\/repo/);
+  });
+
+  it('identifies discovery as the last observed failure step and never starts the server', async () => {
+    const logs = new CapturingLogger();
+    const serverStarter = new CountingServerStarter();
+    const result = await startLocalEvalsWorkbench({ type: 'evals', projectRoot }, {
+      workflowStateReader: stateReader({ status: 'valid' }),
+      suiteDiscovery: { discover: async () => { throw new Error('OPENAI_API_KEY=secret /repo/private.json'); } },
+      serverStarter,
+      logger: logs,
+    });
+
+    assert.equal(result.status, 'failed');
+    assert.equal(result.reason, 'discovery-failed');
+    assert.match(result.message, /discover eval suites.*cause is unknown/);
+    assert.doesNotMatch(result.guidance.join(' '), /port/);
+    assert.equal(serverStarter.calls, 0);
+    assert.deepEqual(logs.events.at(-1), { event: 'local_evals_workbench_start_failed', reason: 'discovery-failed' });
+    assert.doesNotMatch(JSON.stringify({ result, events: logs.events }), /OPENAI_API_KEY|secret|private\.json/);
+  });
+
+  it('contains a throwing log sink without changing successful startup', async () => {
+    const throwingLogger = {
+      info: () => { throw new Error('sink failed'); },
+      warn: () => { throw new Error('sink failed'); },
+      error: () => { throw new Error('sink failed'); },
+    };
+    const result = await startLocalEvalsWorkbench({ type: 'evals', projectRoot }, {
+      workflowStateReader: stateReader({ status: 'valid' }),
+      suiteDiscovery: suiteDiscovery(readyDiscovery()),
+      serverStarter: new CountingServerStarter(),
+      logger: throwingLogger,
+    });
+    assert.equal(result.status, 'started');
   });
 });
 
