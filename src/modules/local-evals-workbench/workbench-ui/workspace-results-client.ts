@@ -24,6 +24,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     activePanel = null; panelReturn = null; side.hidden = true; side.innerHTML = '';
     side.removeAttribute('role'); side.removeAttribute('aria-modal'); side.removeAttribute('aria-label');
     detail.hidden = false; failuresOnly = false; search = '';
+    const searchInput = resultContainer.querySelector?.('[data-action="search"]');
+    if (searchInput) searchInput.value = '';
     setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '', repeats: 1 };
     renderWorkspace(); void loadRuntime(); void loadHistory();
   }
@@ -71,10 +73,18 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       detail.innerHTML = ''; return;
     }
     const rows = visibleCases.map(item => ({ ...item, status: run && !runIds.includes(item.id) ? { state: 'excluded', failed: 0, attempts: [] } : caseStatus(item.id) }))
-      .filter(item => (!failuresOnly || item.status.state === 'failed') && item.name.toLowerCase().includes(search));
-    resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small>' + visibleCases.length + '</small></h2><label><input type="checkbox" data-action="failures-only"' + (failuresOnly ? ' checked' : '') + '> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search test cases" value="' + esc(search) + '"></label></div>'
-      + (rows.length ? '<ul class="result-list">' + rows.map(item => '<li><button type="button" data-action="case" data-case-id="' + esc(item.id) + '"' + (item.status.attempts.length ? '' : ' disabled') + ' aria-label="' + esc('Open ' + item.name + ', ' + item.status.state + ', ' + item.status.failed + ' failed attempts') + '"><span class="result-icon" aria-hidden="true">' + (item.status.state === 'passed' ? '✓' : item.status.state === 'failed' ? '✕' : '–') + '</span><span><strong>' + esc(item.name) + '</strong><small>' + esc(item.status.state) + ' · ' + item.status.failed + ' failed attempts · ' + item.status.attempts.length + ' attempts</small></span></button></li>').join('') + '</ul>' : '<p>No matching results.</p>')
-      + '</section>';
+      .filter(item => (!failuresOnly || item.status.state === 'failed') && item.name.toLowerCase().includes(search.toLowerCase()));
+    if (!resultContainer.querySelector?.('.results')) {
+      resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search test cases"></label></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
+    }
+    const count = resultContainer.querySelector?.('#results-title small');
+    const list = resultContainer.querySelector?.('[data-result-list]');
+    const empty = resultContainer.querySelector?.('[data-result-empty]');
+    const failureFilter = resultContainer.querySelector?.('[data-action="failures-only"]');
+    if (count) count.textContent = String(rows.length);
+    if (failureFilter) failureFilter.checked = failuresOnly;
+    if (list) list.innerHTML = rows.map(item => '<li><button type="button" data-action="case" data-case-id="' + esc(item.id) + '"' + (item.status.attempts.length ? '' : ' disabled') + ' aria-label="' + esc('Open ' + item.name + ', ' + item.status.state + ', ' + item.status.failed + ' failed attempts') + '"><span class="result-icon" aria-hidden="true">' + (item.status.state === 'passed' ? '✓' : item.status.state === 'failed' ? '✕' : '–') + '</span><span><strong>' + esc(item.name) + '</strong><small>' + esc(item.status.state) + ' · ' + item.status.failed + ' failed attempts · ' + item.status.attempts.length + ' attempts</small></span></button></li>').join('');
+    if (empty) { empty.hidden = rows.length > 0; empty.textContent = search ? 'No test cases match this search.' : failuresOnly ? 'No failed results are visible.' : 'No results yet.'; }
   }
   async function loadHistory() {
     if (!suite) return;
@@ -105,7 +115,10 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       renderWorkspace();
       if (isActive()) setTimeout(pollRun, 700);
       else {
-        if (acceptedFinished || previous && ['queued','running'].includes(previous)) { one('[data-status-summary]').focus(); void loadHistory(); }
+        if (acceptedFinished || previous && ['queued','running'].includes(previous)) {
+          if (!document.activeElement?.matches?.('[data-action="search"]')) one('[data-status-summary]').focus();
+          void loadHistory();
+        }
       }
     } catch { if (generation === runGeneration) { status('Connection lost. Reconnecting to this run…'); setTimeout(pollRun, 1200); } }
   }
@@ -215,7 +228,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (event.shiftKey && (document.activeElement === first || document.activeElement === side.querySelector('h2') || !side.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && (document.activeElement === last || !side.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
   });
-  document.addEventListener('input', event => { if (event.target.matches('[data-action="search"]')) { search = event.target.value.toLowerCase(); renderWorkspace(); one('[data-action="search"]')?.focus(); } });
+  document.addEventListener('input', event => { if (event.target.matches('[data-action="search"]')) { search = event.target.value; renderWorkspace(); } });
   setup.caseId = suite?.testCases[0]?.id || '';
   void loadRuntime(); void loadHistory();
 `;
