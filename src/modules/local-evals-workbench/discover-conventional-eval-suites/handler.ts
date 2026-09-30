@@ -17,9 +17,20 @@ export async function discoverConventionalEvalSuites(
 ): Promise<InternalEvalSuiteDiscoveryResult> {
   const clock = dependencies.clock ?? Date.now;
   const startedAt = clock();
-  dependencies.logger.info({ event: 'eval_suite_discovery_started' });
+  emitDiscoveryEvent(() => dependencies.logger.info({ event: 'eval_suite_discovery_started' }));
 
-  const rawDefinitions = await dependencies.discoveryReader.readConventionalEvalSuites(command.projectRoot);
+  let rawDefinitions;
+  try {
+    rawDefinitions = await dependencies.discoveryReader.readConventionalEvalSuites(command.projectRoot);
+  } catch {
+    rawDefinitions = [{ source: 'evals', payload: undefined, diagnostics: [{
+      code: 'discovery-read-failed' as const,
+      reason: 'discovery-read-failed',
+      severity: 'error' as const,
+      location: 'evals',
+      message: 'Eval suite discovery failed before definitions could be read.',
+    }] }];
+  }
   const diagnostics: EvalSuiteDiscoveryDiagnostic[] = [];
   const validatedDefinitions: ValidatedDefinition[] = [];
 
@@ -62,11 +73,13 @@ export async function discoverConventionalEvalSuites(
     suiteCount: suites.length,
     diagnosticCount: diagnostics.length,
     unsupportedCount: diagnostics.filter((diagnostic) => diagnostic.code === 'suite-definition-unsupported').length,
-    reasonCodes: [...new Set(diagnostics.map((diagnostic) => diagnostic.reason ?? diagnostic.code))].sort(),
+    reasonCodes: [...new Set(diagnostics.map((diagnostic) => diagnostic.code))].sort(),
     durationMs: Math.max(0, clock() - startedAt),
   };
-  if (result.status === 'ready') dependencies.logger.info(completedEvent);
-  else dependencies.logger.warn(completedEvent);
+  emitDiscoveryEvent(() => {
+    if (result.status === 'ready') dependencies.logger.info(completedEvent);
+    else dependencies.logger.warn(completedEvent);
+  });
   return result;
 }
 
@@ -84,19 +97,33 @@ function toSummary(suite: NormalizedEvalSuite): EvalSuiteSummary {
 
 function buildResult(suites: readonly EvalSuiteSummary[], definitions: readonly NormalizedEvalSuite[], diagnostics: readonly EvalSuiteDiscoveryDiagnostic[], sourceBySuiteId: Readonly<Record<string, string>>): InternalEvalSuiteDiscoveryResult {
   if (suites.length > 0) return { status: 'ready', suites, definitions, sourceBySuiteId, diagnostics };
+  const failed = diagnostics.some((diagnostic) => diagnostic.code === 'discovery-read-failed');
   const missingEvalsFolder = diagnostics.some((diagnostic) => diagnostic.code === 'evals-folder-missing');
+  const unreadable = diagnostics.some((diagnostic) => diagnostic.severity === 'error'
+    || (diagnostic.code !== 'evals-folder-missing' && diagnostic.reason !== 'no-suite-definitions'));
+  const reason = failed ? 'discovery-failed' : missingEvalsFolder ? 'missing-evals-folder' : unreadable ? 'unreadable-eval-suites' : 'no-eval-suites';
+  const guidance = reason === 'missing-evals-folder' || reason === 'no-eval-suites'
+    ? ['Add version-2 Sibu eval suite JSON files under the project root evals/ folder.']
+    : reason === 'unreadable-eval-suites'
+      ? ['Review the reported discovery issues, correct file access, or regenerate incompatible suites using Sibu eval suite version 2.']
+      : ['Check project access and retry eval suite discovery; the underlying cause is unknown.'];
   return {
     status: 'blocked',
-    reason: missingEvalsFolder ? 'missing-evals-folder' : 'no-valid-eval-suites',
-    message: missingEvalsFolder ? 'No conventional evals folder was found.' : 'No valid version-2 Sibu eval suites were found.',
-    guidance: missingEvalsFolder
-      ? ['Add version-2 Sibu eval suite JSON files under the project root evals/ folder.']
-      : ['Correct the reported definition issues or regenerate the suite using Sibu eval suite version 2.'],
+    reason,
+    message: reason === 'missing-evals-folder' ? 'No conventional evals folder was found.'
+      : reason === 'no-eval-suites' ? 'No eval suites were found in evals/.'
+      : reason === 'unreadable-eval-suites' ? 'Eval suites were found but could not be used.'
+      : 'Eval suite discovery failed; the underlying cause is unknown.',
+    guidance,
     suites: [],
     definitions: [],
     sourceBySuiteId: {},
     diagnostics,
   };
+}
+
+function emitDiscoveryEvent(write: () => void): void {
+  try { write(); } catch { /* Logging must not change the discovery outcome. */ }
 }
 
 function duplicateIds(ids: readonly string[]): ReadonlySet<string> {

@@ -16,12 +16,18 @@ type DeclaredPath = {
   readonly inspectContent: boolean;
 };
 
+type PathAccess = (candidate: string) => Promise<void>;
+
 export class NodeEvalSuiteDiscoveryReader implements EvalSuiteDiscoveryReaderPort {
+  constructor(private readonly accessPath: PathAccess = (candidate) => fs.access(candidate)) {}
+
   async readConventionalEvalSuites(projectRoot: string): Promise<readonly RawEvalSuiteDefinition[]> {
     const safeRoot = await realProjectRoot(projectRoot);
     const evalsPath = path.join(safeRoot, EVALS_FOLDER);
 
-    if (!(await pathExists(evalsPath))) return [emptyDefinition('evals-folder-missing', 'info', 'evals-folder-missing', 'Project does not contain a root evals/ folder.')];
+    const evalsPresence = await pathPresence(evalsPath, this.accessPath);
+    if (evalsPresence === 'missing') return [emptyDefinition('evals-folder-missing', 'info', 'evals-folder-missing', 'Project does not contain a root evals/ folder.')];
+    if (evalsPresence === 'unreadable') return [emptyDefinition('evals-folder-unreadable', 'error', 'evals-folder-unreadable', 'The evals/ folder could not be checked.')];
     if (!(await isContainedExistingPath(safeRoot, evalsPath))) return [emptyDefinition('declared-path-unsafe', 'error', 'evals-folder-unsafe', 'The evals/ folder must stay inside the project root.')];
 
     let entries;
@@ -152,7 +158,14 @@ function diagnostic(code: EvalSuiteDiscoveryDiagnostic['code'], severity: EvalSu
 }
 
 async function realProjectRoot(projectRoot: string): Promise<string> { return fs.realpath(projectRoot); }
-async function pathExists(candidate: string): Promise<boolean> { try { await fs.access(candidate); return true; } catch { return false; } }
+async function pathPresence(candidate: string, accessPath: PathAccess): Promise<'present' | 'missing' | 'unreadable'> {
+  try {
+    await accessPath(candidate);
+    return 'present';
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'missing' : 'unreadable';
+  }
+}
 
 async function readBoundedFile(filePath: string, maxBytes: number): Promise<string | undefined> {
   const handle = await fs.open(filePath, 'r');

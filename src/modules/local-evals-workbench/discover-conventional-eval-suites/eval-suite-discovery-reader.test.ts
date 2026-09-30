@@ -27,9 +27,30 @@ describe('NodeEvalSuiteDiscoveryReader', () => {
 
     const malformed = await discoverFromProjectRoot(path.join(fixturesRoot, 'malformed-project'));
     assert.equal(malformed.status, 'blocked');
+    assert.equal(malformed.reason, 'unreadable-eval-suites');
     assert.ok(malformed.diagnostics.some((item) => item.code === 'suite-file-read-failed'));
     assert.ok(malformed.diagnostics.some((item) => item.code === 'suite-definition-malformed'));
     assert.doesNotMatch(JSON.stringify(malformed), /not json|credential-value/);
+  });
+
+  it('treats only ENOENT as absent when probing evals/', async () => {
+    const project = await createProject();
+    for (const code of ['ENOENT', 'EACCES', 'EPERM', 'EIO', 'UNKNOWN']) {
+      const reader = new NodeEvalSuiteDiscoveryReader(async () => {
+        const error = new Error('sk-synthetic-secret-marker') as NodeJS.ErrnoException;
+        error.code = code;
+        throw error;
+      });
+      const logger = new RecordingLogger();
+      const result = await discoverConventionalEvalSuites(
+        { type: 'discover-conventional-eval-suites', projectRoot: project },
+        { discoveryReader: reader, logger }
+      );
+      if (result.status !== 'blocked') assert.fail(`Expected ${code} discovery to be blocked`);
+      assert.equal(result.reason, code === 'ENOENT' ? 'missing-evals-folder' : 'unreadable-eval-suites', code);
+      assert.equal(result.diagnostics[0]?.code, code === 'ENOENT' ? 'evals-folder-missing' : 'evals-folder-unreadable', code);
+      assert.doesNotMatch(JSON.stringify({ result, events: logger.events }), /sk-synthetic-secret-marker|sibu-evals-project-/);
+    }
   });
 
   it('blocks version 1 with safe regeneration guidance', async () => {
@@ -211,4 +232,10 @@ async function discoverFromProjectRoot(projectRoot: string) {
 class CapturingLogger implements EvalSuiteDiscoveryLoggerPort {
   info(_event: EvalSuiteDiscoveryLogEvent): void {}
   warn(_event: EvalSuiteDiscoveryLogEvent): void {}
+}
+
+class RecordingLogger implements EvalSuiteDiscoveryLoggerPort {
+  readonly events: EvalSuiteDiscoveryLogEvent[] = [];
+  info(event: EvalSuiteDiscoveryLogEvent): void { this.events.push(event); }
+  warn(event: EvalSuiteDiscoveryLogEvent): void { this.events.push(event); }
 }
