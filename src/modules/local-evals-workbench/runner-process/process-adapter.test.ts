@@ -42,7 +42,14 @@ test('describe and estimate use declared environment, cwd and protocol without m
 });
 test('missing environment, invalid event, crash, timeout and oversized output block safely', async () => {
   await fixture(validRunner, async (root) => {
-    assert.deepEqual(await new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS, { PATH: process.env.PATH }).describe(suite), { status: 'blocked', reason: 'environment-missing' });
+    const logs: unknown[] = [];
+    const adapter = new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS,
+      { PATH: process.env.PATH, UNRELATED: 'private-value' }, { record: (entry) => logs.push(entry) });
+    const result = await adapter.describe(suite);
+    assert.deepEqual(result, { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: 'TEST_KEY' });
+    assert.doesNotMatch(JSON.stringify({ result, logs }), /private-value|UNRELATED|sibu-preview-runner-/);
+    const unsafeSuite = { ...suite, runner: { ...suite.runner, requiredEnvironment: ['TEST_KEY=private-value'] } };
+    assert.deepEqual(await adapter.describe(unsafeSuite), { status: 'blocked', reason: 'input-unsafe' });
   });
   for (const [source, reason] of [
     [`process.stdout.write('not json\\n')`, 'runner-invalid'],
@@ -95,4 +102,14 @@ test('stderr overflow and idle timeout after partial output terminate safely', a
       assert.doesNotMatch(JSON.stringify(result), /secret-123/);
     });
   }
+});
+test('runner stderr and paths never replace stable process-failure reasons or enter logs', async () => {
+  await fixture(`process.stderr.write('private-value /private/runner'); process.exit(2);`, async (root) => {
+    const logs: unknown[] = [];
+    const adapter = new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS,
+      { PATH: process.env.PATH, TEST_KEY: 'private-value' }, { record: (entry) => logs.push(entry) });
+    const result = await adapter.describe(suite);
+    assert.deepEqual(result, { status: 'blocked', reason: 'runner-unavailable' });
+    assert.doesNotMatch(JSON.stringify({ result, logs }), /private-value|\/private\/runner|sibu-preview-runner-/);
+  });
 });

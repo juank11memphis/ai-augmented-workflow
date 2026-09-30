@@ -57,8 +57,8 @@ describe('exact Story-plan review and human gate', () => {
     assert.match(gatekeeper, /fresh `sibu-architecture-reviewer` exactly one Story and one plan folder/i);
     assert.match(gatekeeper, /source-verified \*\*start here\*\*/i);
     assert.match(gatekeeper, /independently verifies the full authoritative sources and plan/i);
-    assert.match(gatekeeper, /what is wrong, why it matters, and the smallest practical fix/i);
-    assert.match(gatekeeper, /unresolved risks even for an otherwise clean review/i);
+    assert.match(gatekeeper, /top-level bullet with three indented bullets.*What it means.*Why it matters.*Fix/i);
+    assert.match(gatekeeper, /Show risks even for an otherwise clean review/i);
     assert.match(reviewer, /only the human can accept this reviewed version and visible risks/i);
   });
 });

@@ -1,7 +1,7 @@
 import type { DescribeEvalSuiteRuntimeCommand } from './command.js';
 import type { DescribeEvalSuiteRuntimeResult } from './result.js';
 import type { PreviewLoggerPort, RunnerDescriptorPort, SuiteRuntimeRegistryPort } from './ports.js';
-import { compatibleDescription, hasRubric } from '../runtime-description.js';
+import { compatibleDescription, hasRubric, isDeclaredEnvironmentName } from '../runtime-description.js';
 
 export type DescribeEvalSuiteRuntimeDependencies = {
   readonly suites: SuiteRuntimeRegistryPort;
@@ -21,7 +21,14 @@ export async function describeEvalSuiteRuntime(
     const suite = await dependencies.suites.load(command.suiteId);
     if (!suite) { log('eval_runtime_describe_blocked', 'suite-unavailable'); return { status: 'blocked', reason: 'suite-unavailable' }; }
     const described = await dependencies.runner.describe(suite);
-    if (described.status === 'blocked') { log('eval_runtime_describe_blocked', described.reason); return described; }
+    if (described.status === 'blocked') {
+      log('eval_runtime_describe_blocked', described.reason);
+      if (described.reason === 'environment-missing'
+        && isDeclaredEnvironmentName(described.missingEnvironmentName, suite.runner.requiredEnvironment)) {
+        return { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: described.missingEnvironmentName };
+      }
+      return { status: 'blocked', reason: described.reason };
+    }
     const reason = compatibleDescription(suite, described.value);
     if (reason) { log('eval_runtime_describe_blocked', reason); return { status: 'blocked', reason }; }
     log('eval_runtime_describe_completed');
