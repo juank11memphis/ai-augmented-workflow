@@ -8,8 +8,8 @@ Update the planner toolbox to produce executor-compatible Milestones and checked
 
 - Story: AFK-E01-S01; source: `docs/features/afk-story-planning-and-execution/epics/reviewed-story-delivery/stories/01-produce-milestone-plans-with-checked-tasks.md`; architecture: `command-pattern`.
 - Flags: none. Coverage: AC-01 -> T-01; AC-02 -> T-01; AC-03 -> T-01; AC-04 -> T-01; AC-05 -> T-02. Plan review: not started; human decision: pending.
-- Milestone M-01: reviewable outcome: toolbox guidance yields checked, executor-compatible plans and rejects uncheckable Tasks; ordered Tasks: T-01; completion evidence: named compatibility, positive-plan, and uncheckable-Task TAP passes; human review: pending.
-- Milestone M-02: reviewable outcome: gatekeeper requires source-grounded flag handling and both changed skills ship with versioned notes; ordered Tasks: T-02; completion evidence: named flag-handoff and distribution TAP passes; human review: pending.
+- Milestone M-01: reviewable outcome: toolbox guidance yields checked, executor-compatible plans and rejects uncheckable Tasks; ordered Tasks: T-01; completion evidence: named compatibility, positive-plan, and uncheckable-Task TAP passes; automatic progression after verification.
+- Milestone M-02: reviewable outcome: gatekeeper requires source-grounded flag handling and both changed skills ship with versioned notes; ordered Tasks: T-02; completion evidence: named flag-handoff and distribution TAP passes; final Story PR review: pending.
 - Task/status list: T-01 pending, T-02 pending. Conventions: preserve executor step headings and selected architecture.
 - Progress log: `progress.log` (non-Markdown); append Task ID, outcome, actual check result, commit reference when present, blocker, and gotchas.
 - Task ID: T-01; Milestone ID: M-01; Status: pending; Depends on: none.

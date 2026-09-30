@@ -75,7 +75,7 @@ describe('checked Task execution template contract', () => {
     for (const path of ['AGENTS.md', 'skills/ai-implementation-executor-toolbox/SKILL.md']) {
       assert.match(manifest.templates[path]?.changes.join('') ?? '', /Task/i);
     }
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Story approval/);
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /final Story PR review/);
     assert.match(readTemplate('AGENTS.md'), /checked-Task executor may commit only its scoped Task after the prescribed check passes/i);
   });
 });

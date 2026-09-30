@@ -8,7 +8,7 @@ Ship executor-compatible Milestone and Task guidance for this Story, with regres
 
 - Story: AFK-E01-S01; source: `docs/features/afk-story-planning-and-execution/epics/reviewed-story-delivery/stories/01-produce-milestone-plans-with-checked-tasks.md`; architecture: `command-pattern`.
 - Flags: none. Coverage: AC-01 -> T-01; AC-02 -> T-01; AC-03 -> T-01; AC-04 -> T-01; AC-05 -> T-01. Plan review: not started; human decision: pending.
-- Milestone M-01: reviewable outcome: planner guidance produces checked Milestone plans and rejects unsafe handoffs; ordered Tasks: T-01; completion evidence: focused TAP output for template, fixture, and distribution assertions; human review: pending.
+- Milestone M-01: reviewable outcome: planner guidance produces checked Milestone plans and rejects unsafe handoffs; ordered Tasks: T-01; completion evidence: focused TAP output for template, fixture, and distribution assertions; final Story PR review: pending.
 - Task/status list: T-01 pending. Conventions: preserve existing executor step headings; do not invent flags.
 - Progress log: `progress.log` (non-Markdown); append Task ID, outcome, actual check result, commit reference when present, blocker, and gotchas.
 - Task ID: T-01; Milestone ID: M-01; Status: pending; Depends on: none.

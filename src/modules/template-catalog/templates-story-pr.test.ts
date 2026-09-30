@@ -23,7 +23,7 @@ describe('Final Story PR written contract', () => {
   it('opens one PR only after accepted plan, correct branch, checked Tasks, and Story validation', () => {
     const scenarios = fixture('scenarios');
     assert.match(scenarios, /One Milestone:.*one final M-01\/Story decision/);
-    assert.match(scenarios, /Multiple Milestones:.*M-01 human decision pauses M-02.*final M-02\/Story decision/);
+    assert.match(scenarios, /Multiple Milestones:.*verified M-01 advances automatically to M-02.*final M-02\/Story decision/);
     assert.match(scenarios, /Early or wrong-branch attempt: no PR/);
     assertInOrder(gatekeeper, [
       'accepted plan identity',
@@ -63,7 +63,7 @@ describe('Final Story PR written contract', () => {
       'Dispatch exactly the next ordered Task',
     ]);
     assert.match(gatekeeper, /preserve `in-progress`; if the field is missing, `draft`, `done`, or otherwise conflicts.*stop and reconcile it with the human/);
-    assert.match(gatekeeper, /Leave the Story `in-progress` through Task execution, Milestone deferrals, PR blockers, and final PR review/);
+    assert.match(gatekeeper, /Leave the Story `in-progress` through Task execution, human-decision blockers, PR blockers, and final PR review/);
     assert.match(gatekeeper, /Deferral and requested changes leave the Story `in-progress`/);
     assert.match(gatekeeper, /Only after explicit story-level user approval, change only the selected Story file's `\*\*Status:\*\*` field from `in-progress` to `done`/);
     assert.match(gatekeeper, /Do not stage or commit ignored paths, including ignored `docs\/features\/\*\*` paths/);
@@ -85,8 +85,8 @@ describe('Final Story PR written contract', () => {
     assert.match(description, /Hosted CI is pending; it has not been counted as passing/);
     assert.match(description, /not live agent behavior or pull-request hosting/);
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '201');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '57');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Explains architecture plan review findings.*confirmed PR merge/);
+    assert.equal(manifest.templateVersion, '202');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '58');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Advances verified Milestones without routine approval pauses.*final Story PR review/);
   });
 });

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "201",
+  "templateVersion": "202",
   "templates": {
     "AGENTS.md": {
       "version": "49",
@@ -135,24 +135,24 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "28",
+      "version": "29",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Adds a checked Milestone/Task handoff from verified story-specific BRD and design references, with declared-flag inventory and current Story-review compatibility."
+        "Flags judgment needed before safe continuation for a human decision and reserves routine outcome review for the final Story PR."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "16",
+      "version": "17",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Removes planner handoff of unchecked Tasks; adds outcome-grouped Milestones, durable plan state, and declared-flag checks without changing executor step-file consumption."
+        "Clarifies that Milestones group checked Tasks without routine human review; material judgments stop execution for a human."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "57",
+      "version": "58",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Explains architecture plan review findings in plain-language nested bullets with meaning, impact, and the smallest fix; preserves Story approval and next Story or Epic continuation after a confirmed PR merge."
+        "Advances verified Milestones without routine approval pauses, stops for ambiguity or material decisions, and retains plan acceptance and final Story PR review."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

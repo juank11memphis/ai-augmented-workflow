@@ -8,7 +8,7 @@ Preserve off behavior and add on behavior for the declared flag.
 
 - Story: EX-01; source: `stories/01.md`; architecture: `command-pattern`.
 - Flags: `demo-mode` declared by Epic `epic_brief.md`; final removal declared by Story `stories/03-remove-demo-mode.md`.
-- Milestone M-01: reviewable outcome: both flag states pass; ordered Tasks: T-01; completion evidence: off/on TAP output; human review: pending.
+- Milestone M-01: reviewable outcome: both flag states pass; ordered Tasks: T-01; completion evidence: off/on TAP output; final Story PR review: pending.
 - Task/status list: T-01 pending. Conventions: do not invent flags.
 - Progress log: `progress.log` (non-Markdown); append Task ID, outcome, actual check result, commit reference when present, blocker, and gotchas.
 - Task ID: T-01; Milestone ID: M-01; Status: pending; Depends on: none.

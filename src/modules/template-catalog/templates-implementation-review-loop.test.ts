@@ -39,7 +39,7 @@ describe('exact Story-plan review and human gate', () => {
     assert.match(gatekeeper, /Before any executor dispatch, verify that every Task in the accepted plan has its own specific, objective, executable pass\/fail check/i);
     assert.match(gatekeeper, /missing, vague, or non-executable Task check is a non-waivable plan defect/i);
     assert.match(gatekeeper, /stop dispatch even if the human accepted the plan with visible warnings/i);
-    assert.match(gatekeeper, /Return it to the planner to split or clarify the Task, or move genuinely judgment-based work to a human-reviewed Milestone/i);
+    assert.match(gatekeeper, /Return it to the planner to split or clarify the Task; if judgment is needed before safe continuation, stop for a human decision/i);
     assert.match(gatekeeper, /fresh architecture review and human decision on the revised plan/i);
     assert.match(gatekeeper, /other genuinely waivable risks available for informed human acceptance/i);
   });

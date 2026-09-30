@@ -111,7 +111,7 @@ describe('Milestone planner instruction and fixture contract', () => {
     assert.throws(() => assertCheckedTasks(missingCheck, 1));
     const toolbox = readTemplate(toolboxPath);
     assert.match(toolbox, /Split or clarify an uncheckable Task/);
-    assert.match(toolbox, /human-review outcome/);
+    assert.match(toolbox, /human-decision stop/);
   });
 
   it('uses declared flags with off/on and final-removal checks, rejecting inventions', () => {
