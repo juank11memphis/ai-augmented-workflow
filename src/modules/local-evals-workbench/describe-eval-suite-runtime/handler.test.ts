@@ -30,3 +30,38 @@ test('suite, environment and runner failures are focused blocks', async () => {
   assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner }), { status: 'blocked', reason: 'environment-undeclared' });
   assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner: { describe: async () => { throw Error('secret'); } } }), { status: 'blocked', reason: 'runner-unavailable' });
 });
+
+test('only a declared missing environment name crosses the Describe boundary', async () => {
+  const declaredSuite = { ...suite, runner: { ...suite.runner, requiredEnvironment: ['VALID_KEY'] } };
+  const records: unknown[] = [];
+  const logger = { record: (event: unknown) => { records.push(event); } };
+  const describe = (missingEnvironmentName: string) => describeEvalSuiteRuntime(
+    { suiteId: 'suite' },
+    { suites: { load: async () => declaredSuite }, runner: { describe: async () => ({ status: 'blocked' as const, reason: 'environment-missing' as const, missingEnvironmentName, secretValue: 'secret-value' }) }, logger }
+  );
+  assert.deepEqual(await describe('VALID_KEY'), { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: 'VALID_KEY' });
+  for (const name of ['OTHER_KEY', 'VALID_KEY=secret-value', 'INVALID-KEY', '']) {
+    assert.deepEqual(await describe(name), { status: 'blocked', reason: 'environment-missing' });
+  }
+  assert.doesNotMatch(JSON.stringify(records), /secret-value|VALID_KEY|OTHER_KEY/);
+});
+
+test('distinct runner and compatibility blockers remain stable and do not invent a credential', async () => {
+  const runnerReasons = ['runner-unavailable', 'runner-invalid', 'runner-timeout'] as const;
+  for (const reason of runnerReasons) {
+    const result = await describeEvalSuiteRuntime({ suiteId: 'suite' }, {
+      suites: { load: async () => suite },
+      runner: { describe: async () => ({ status: 'blocked', reason, missingEnvironmentName: 'SECRET_KEY', stderr: 'secret-value' }) },
+    });
+    assert.deepEqual(result, { status: 'blocked', reason });
+  }
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, {
+    suites: { load: async () => suite },
+    runner: { describe: async () => ({ status: 'ready', value: { ...description, models: [] } }) },
+  }), { status: 'blocked', reason: 'model-unavailable' });
+  const unsupported = { ...suite, testCases: [{ ...suite.testCases[0]!, turns: [...suite.testCases[0]!.turns, ...suite.testCases[0]!.turns] }] };
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, {
+    suites: { load: async () => unsupported },
+    runner: { describe: async () => ({ status: 'ready', value: description }) },
+  }), { status: 'blocked', reason: 'capability-unsupported' });
+});

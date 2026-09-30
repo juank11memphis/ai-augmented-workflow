@@ -18,9 +18,17 @@ export type RuntimeBlockReason =
   | 'repeats-invalid' | 'artifact-unsafe' | 'artifact-not-ignored' | 'artifact-tracked'
   | 'artifact-git-unavailable' | 'artifact-root-unsafe' | 'estimate-invalid' | 'input-unsafe';
 
+export type RuntimeBlock =
+  | { readonly status: 'blocked'; readonly reason: 'environment-missing'; readonly missingEnvironmentName?: string }
+  | { readonly status: 'blocked'; readonly reason: Exclude<RuntimeBlockReason, 'environment-missing'> };
+
 export type RuntimeOutcome<T> =
   | { readonly status: 'ready'; readonly value: T }
-  | { readonly status: 'blocked'; readonly reason: RuntimeBlockReason };
+  | RuntimeBlock;
+
+export function isDeclaredEnvironmentName(name: unknown, declared: readonly string[]): name is string {
+  return typeof name === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(name) && declared.includes(name);
+}
 
 export function requiredCapabilities(cases: readonly NormalizedEvalTestCase[]): readonly RunnerCapability[] {
   const capabilities = new Set<RunnerCapability>();
