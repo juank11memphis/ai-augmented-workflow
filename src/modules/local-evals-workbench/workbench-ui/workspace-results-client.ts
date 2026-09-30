@@ -19,6 +19,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     runGeneration++; historyGeneration++; detailGeneration++;
     if (typeof runtimeGeneration !== 'undefined') runtimeGeneration++;
     if (typeof strictRuntimeChoices !== 'undefined') strictRuntimeChoices = false;
+    setRuntimeState('loading', 'Loading compatible models…');
     clearSelectedDetail();
     activePanel = null; panelReturn = null; side.hidden = true; side.innerHTML = '';
     side.removeAttribute('role'); side.removeAttribute('aria-modal'); side.removeAttribute('aria-label');

@@ -27,6 +27,9 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(html, /data-action="review"/);
   assert.doesNotMatch(html, /data-action="new-run"/);
   assert.match(html, /data-results-container/);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /<summary>Model support<\/summary>/);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /Sibu\\'s built-in analysis and repair help currently uses OpenAI/);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /More providers are planned/);
   assert.match(html, /data-detail/);
   assert.match(html, /min-width:700px/);
   assert.match(html, /min-width:1100px/);

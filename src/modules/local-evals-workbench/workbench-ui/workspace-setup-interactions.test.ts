@@ -5,6 +5,57 @@ import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
 import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 
+test('loading and known blocked reasons stay beside an unavailable model choice', async () => {
+  const fields = { innerHTML: '' };
+  const review = { disabled: false };
+  const announcement = { textContent: '' };
+  const region = { querySelector: (selector: string) => ({ '[data-setup-fields]': fields, '[data-action="review"]': review })[selector] };
+  const document = { activeElement: null, getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
+    querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': {}, '[data-run-setup]': region,
+      '[data-setup-status]': announcement })[selector], addEventListener() {} };
+  let resolve!: (value: unknown) => void;
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return {loadRuntime, refreshSetupControls};})()',
+    { document, fetch: async () => ({ json: () => new Promise(done => { resolve = done; }) }) }) as {
+      loadRuntime(): Promise<void>; refreshSetupControls(): void;
+    };
+  api.refreshSetupControls();
+  assert.match(fields.innerHTML, /Model being tested<select[^>]*disabled[^>]*>/);
+  assert.match(fields.innerHTML, /Loading compatible models/);
+  assert.equal(review.disabled, true);
+  const loading = api.loadRuntime();
+  await new Promise(done => setImmediate(done));
+  resolve({ status: 'blocked', reason: 'runner-unavailable' });
+  await loading;
+  assert.match(fields.innerHTML, /eval runner could not start/);
+  assert.match(fields.innerHTML, /data-model-readiness/);
+  assert.equal(review.disabled, true);
+  assert.match(announcement.textContent, /eval runner could not start/);
+  assert.doesNotMatch(fields.innerHTML, /OPENAI_API_KEY/);
+});
+
+test('a late suite description cannot replace a newer suite and an invalid prior choice stays unselected', async () => {
+  const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [
+    { id: 'first', testCases: [] }, { id: 'second', testCases: [] }] }) }),
+    querySelector: (selector: string) => selector === '[data-workspace]' ? {} : null, addEventListener() {} };
+  const resolves: ((value: unknown) => void)[] = [];
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
+    + '; return {loadRuntime, chooseSecond(){suite=suites[1];setup.model="old";}, get:()=>({model:setup.model,state:runtimeState})};})()',
+    { document, fetch: async () => ({ json: () => new Promise(done => { resolves.push(done); }) }) }) as {
+      loadRuntime(): Promise<void>; chooseSecond(): void; get(): { model: string; state: string };
+    };
+  const first = api.loadRuntime();
+  await new Promise(done => setImmediate(done));
+  api.chooseSecond();
+  const second = api.loadRuntime();
+  await new Promise(done => setImmediate(done));
+  resolves[1]({ status: 'ready', models: ['new'], judgeModels: [], rubricCaseIds: [] });
+  await second;
+  resolves[0]({ status: 'ready', models: ['stale'], judgeModels: [], rubricCaseIds: [] });
+  await first;
+  assert.equal(api.get().model, '');
+  assert.equal(api.get().state, 'ready');
+});
+
 test('rerun runtime refresh never silently replaces an unavailable prior model', async () => {
   const progress = { textContent: '' };
   const slot = { querySelector: () => null };
