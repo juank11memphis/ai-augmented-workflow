@@ -9,8 +9,55 @@ import { APPLY_APPROVED_REPAIR_MARKER } from '../apply-approved-eval-repair/inde
 import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
+import { readyDiscovery, blockedDiscovery, runDependencies, FakeLocalHttpServer, runtimeDependencies, applyRepairDependencies, analysisPayload, proposalPayload, analysisDependencies, proposalDependencies, failedArtifact, withOfflineWorkbench } from './local-server-starter-test-fixture.js';
 
 describe('NodeLocalWorkbenchServerStarter', () => {
+  it('serves inline setup and passes offline Describe, Preview, and Start through authoritative handlers', async () => {
+    await withOfflineWorkbench(async ({ getHtml, post, setRunnerMode }) => {
+      const html = await getHtml();
+      assert.match(html, /data-run-setup/);
+      assert.match(html, /data-setup-fields/);
+      assert.match(html, /data-action="review"/);
+      assert.doesNotMatch(html, /data-action="new-run"|selection-sheet/);
+
+      const described = await post('/api/eval-suites/describe', { suiteId: 'offline' });
+      assert.equal(described.code, 200);
+      assert.deepEqual(described.payload.models, ['fake/available', 'fake/unavailable']);
+
+      const all = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
+      assert.equal(all.code, 200);
+      assert.deepEqual(all.payload.selectedCaseIds, ['first', 'second']);
+      assert.equal(all.payload.totalCalls, 2);
+      assert.equal((all.payload.cost as { status: string }).status, 'available');
+
+      const one = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/unavailable' });
+      assert.equal(one.code, 200);
+      assert.deepEqual(one.payload.selectedCaseIds, ['first']);
+      assert.equal(one.payload.totalCalls, 1);
+      assert.equal((one.payload.cost as { status: string }).status, 'unavailable');
+      const review = ({ selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost }: typeof one.payload) =>
+        ({ selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost });
+      const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/unavailable' };
+      const stale = await post('/api/eval-runs/start', { ...selection, review: review(all.payload) });
+      assert.deepEqual(stale.payload, { status: 'blocked', reason: 'review-stale' });
+      assert.equal(stale.code, 422);
+
+      await setRunnerMode('no-models');
+      const noModels = await post('/api/eval-suites/describe', { suiteId: 'offline' });
+      assert.equal(noModels.payload.status, 'blocked');
+      assert.equal(noModels.payload.reason, 'model-unavailable');
+      await setRunnerMode('failure');
+      const failure = await post('/api/eval-suites/describe', { suiteId: 'offline' });
+      assert.equal(failure.payload.status, 'blocked');
+      assert.doesNotMatch(JSON.stringify(failure.payload), /evals\/runner|\/tmp\/|secret/);
+
+      await setRunnerMode('ready');
+      const started = await post('/api/eval-runs/start', { ...selection, review: review(one.payload) });
+      assert.equal(started.code, 202);
+      assert.equal(started.payload.status, 'queued');
+      assert.equal(started.payload.suiteId, 'offline');
+    });
+  });
   it('binds to localhost and serves only safe initial content', async () => {
     const fakeServer = new FakeLocalHttpServer(4321);
     const starter = new NodeLocalWorkbenchServerStarter((handler) => {
@@ -296,205 +343,3 @@ describe('NodeLocalWorkbenchServerStarter', () => {
   });
 
 });
-
-function readyDiscovery(): InternalEvalSuiteDiscoveryResult {
-  return {
-    status: 'ready',
-    definitions: [],
-    suites: [{
-      id: 'skill-authoring',
-      name: 'Skill authoring checks',
-      description: 'Checks generated skills.',
-      readyTestCaseCount: 2,
-      testCases: [{ id: 'names-artifact', name: 'Names artifact' }, { id: 'missing-skill-boundary', name: 'Missing skill boundary' }],
-      modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
-    }],
-    diagnostics: [],
-  };
-}
-
-function blockedDiscovery(): InternalEvalSuiteDiscoveryResult {
-  return {
-    status: 'blocked',
-    reason: 'missing-evals-folder',
-    message: 'No conventional evals folder was found.',
-    guidance: ['Add Sibu eval suite JSON files under the project root evals/ folder.'],
-    suites: [],
-    definitions: [],
-    diagnostics: [{ code: 'evals-folder-missing', severity: 'info', location: 'evals', message: 'Project does not contain a root evals/ folder.' }],
-  };
-}
-
-
-
-function runDependencies(calls: string[][], options: { readonly throws?: boolean } = {}): RunLocalEvalSuiteDependencies {
-  const suite = {
-    version: 2 as const,
-    id: 'skill-authoring',
-    name: 'Skill authoring checks',
-    modelOptions: [{ id: 'gpt-5-mini', label: 'GPT-5 mini' }],
-    testCases: [{ id: 'missing-skill-boundary', name: 'Missing skill boundary' }, { id: 'names-artifact', name: 'Names artifact' }],
-  };
-  return {
-    suiteRegistry: { findSuite: async (_projectRoot, suiteId) => suiteId === suite.id ? suite : null },
-    evalRunner: {
-      runSuite: async (request) => {
-        calls.push(request.testCases.map((testCase) => testCase.id));
-        if (options.throws) throw new Error('full raw output secret /repo');
-        return { status: 'completed', cells: request.testCases.map((testCase) => ({ testCaseId: testCase.id, status: 'passed' as const, output: 'short safe preview' })) };
-      },
-    },
-    artifactStore: { storeRunArtifact: async () => undefined },
-    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
-  };
-}
-
-type FakeResponse = {
-  readonly statusCode: number;
-  readonly headers: Record<string, string>;
-  readonly body: string;
-};
-
-type FakeHandler = (request: { readonly url?: string; readonly method?: string; readonly on?: (event: string, listener: Function) => void }, response: {
-  writeHead(statusCode: number, headers: Record<string, string>): void;
-  end(body: string): void;
-}) => void;
-
-class FakeLocalHttpServer {
-  handler?: FakeHandler;
-  listenHost?: string;
-  private closed = false;
-
-  constructor(private readonly port: number) {}
-
-  once(_event: 'error', _listener: (error: Error) => void): void {}
-
-  off(_event: 'error', _listener: (error: Error) => void): void {}
-
-  listen(_port: number, host: string, callback: () => void): void {
-    this.listenHost = host;
-    callback();
-  }
-
-  address(): { port: number } {
-    return { port: this.port };
-  }
-
-  close(callback: (error?: Error) => void): void {
-    this.closed = true;
-    callback();
-  }
-
-  renderResponse(url: string): FakeResponse {
-    assert.equal(this.closed, false);
-    assert.ok(this.handler);
-    let statusCode = 0;
-    let headers: Record<string, string> = {};
-    let body = '';
-
-    this.handler({ url, method: 'GET' }, {
-      writeHead: (nextStatusCode, nextHeaders) => {
-        statusCode = nextStatusCode;
-        headers = nextHeaders;
-      },
-      end: (nextBody) => {
-        body = nextBody;
-      },
-    });
-
-    return { statusCode, headers, body };
-  }
-
-
-  async renderJsonResponse(url: string, payload: unknown): Promise<FakeResponse> {
-    return this.renderRawResponse(url, JSON.stringify(payload));
-  }
-
-  async renderRawResponse(url: string, bodyPayload: string): Promise<FakeResponse> {
-    assert.equal(this.closed, false);
-    assert.ok(this.handler);
-    let statusCode = 0;
-    let headers: Record<string, string> = {};
-    let body = '';
-    const listeners = new Map<string, Function[]>();
-    const request = {
-      url,
-      method: 'POST',
-      on: (event: string, listener: Function) => {
-        listeners.set(event, [...(listeners.get(event) ?? []), listener]);
-      },
-    };
-
-    this.handler(request, {
-      writeHead: (nextStatusCode, nextHeaders) => {
-        statusCode = nextStatusCode;
-        headers = nextHeaders;
-      },
-      end: (nextBody) => {
-        body = nextBody;
-      },
-    });
-
-    for (const listener of listeners.get('data') ?? []) listener(bodyPayload);
-    for (const listener of listeners.get('end') ?? []) listener();
-    await new Promise((resolve) => setImmediate(resolve));
-    return { statusCode, headers, body };
-  }
-}
-
-
-
-function runtimeDependencies(overrides: { readonly run?: RunLocalEvalSuiteDependencies; readonly analysis?: AnalyzeFailedAssertionDependencies; readonly proposal?: DraftEvalRepairProposalDependencies; readonly applyRepair?: ApplyApprovedEvalRepairDependencies } = {}) {
-  return { run: overrides.run ?? runDependencies([]), analysis: overrides.analysis ?? analysisDependencies(), proposal: overrides.proposal ?? proposalDependencies(), applyRepair: overrides.applyRepair ?? applyRepairDependencies() };
-}
-
-function applyRepairDependencies(options: { readonly mutationCalls?: unknown[] } = {}): ApplyApprovedEvalRepairDependencies {
-  return {
-    proposalReader: { getPendingProposal: (proposalId) => proposalId === 'stale' ? null : { proposalId, projectRoot: '/repo', affectedProjectFiles: [proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md'], targetPrecondition: { status: 'absent', path: proposalId === 'unsafe' ? '../outside.md' : 'prompts/skill-authoring.md' }, changeSummary: 'Add hard stop rule.', rationale: 'The active assertion skipped the rule.', expectedEvalImpact: 'The focused assertion should pass.', proposedChange: { kind: 'replacement', representation: 'new content' }, approvalState: 'pending', sourceFailureScope: { suiteId: 'skill-authoring', runId: 'run-1', testCaseId: 'missing-skill-boundary', attempt: 1, evalRunModelId: 'gpt-5-mini', judgeModel: null, repeats: 1, assertionId: 'a1' } }, claimPendingProposal: () => true },
-    safety: { validateTargets: async (_root, targets) => targets.some((target) => target.startsWith('..')) ? { status: 'blocked', reason: 'unsafe target', unsafePaths: targets } : { status: 'ok', safeTargets: targets } },
-    workflowReadiness: { checkReadiness: async () => ({ status: 'ready' }) },
-    mutator: { applyApprovedChange: async (request) => { options.mutationCalls?.push(request); return { status: 'applied', changedFiles: request.targetPaths.map((target) => ({ path: target })) }; } },
-    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
-  };
-}
-
-function analysisPayload() {
-  return { suiteId: 'skill-authoring', runId: 'run-1', attempt: 1, testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', runScope: { type: 'all' }, assertionId: 'a1' };
-}
-
-function proposalPayload() {
-  return { ...analysisPayload(), analysisId: 'analysis-1', repairDirection: { type: 'prompt_issue' } };
-}
-
-function analysisDependencies(options: { readonly hasKey?: boolean; readonly model?: string; readonly throws?: boolean; readonly analysisCalls?: unknown[] } = {}): AnalyzeFailedAssertionDependencies {
-  return {
-    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'gpt-5-mini', judgeModel: null, repeats: 1, runScope: 'all', evidence: { suiteId: 'skill-authoring', runId: 'run-1', attempt: 1, testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId: 'a1', assertionLabel: 'a1', assertionKind: 'assertion', assertionMessage: 'Failed active', actualOutputPreview: 'active failed output', expectedPreview: 'expected stop', cellOutputPreview: null, diagnostics: [], artifacts: [] } } }) },
-    assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
-    llm: { analyzeFailure: async (request) => { options.analysisCalls?.push(request); if (options.throws) throw new Error('full model response secret raw prompt'); return { exactFailureExplanation: 'The selected assertion failed.', likelyCause: 'prompt_issue', evidenceSummary: 'The output did not stop.', uncertainty: 'Low uncertainty.' }; } },
-    analysisStore: { save: () => 'analysis-1' },
-    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
-  };
-}
-
-function proposalDependencies(options: { readonly hasKey?: boolean; readonly model?: string; readonly throws?: boolean; readonly proposalCalls?: unknown[]; readonly targetFile?: string; readonly summary?: string } = {}): DraftEvalRepairProposalDependencies {
-  return {
-    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'gpt-5-mini', judgeModel: null, repeats: 1, runScope: 'all', evidence: { suiteId: 'skill-authoring', runId: 'run-1', attempt: 1, testCaseId: 'missing-skill-boundary', evalRunModelId: 'gpt-5-mini', evalRunModelLabel: 'gpt-5-mini', assertionId: 'a1', assertionLabel: 'a1', assertionKind: 'assertion', assertionMessage: 'Failed active', actualOutputPreview: 'active failed output', expectedPreview: 'expected stop', cellOutputPreview: null, diagnostics: [], artifacts: [] } } }) },
-    assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: options.model ?? 'gpt-5-mini', apiKey: options.hasKey === false ? undefined : 'secret' }) },
-    analysisStore: { get: () => ({ exactFailureExplanation: 'The selected assertion failed.', likelyCause: 'prompt_issue', evidenceSummary: 'The output did not stop.', uncertainty: 'Low uncertainty.' }) },
-    context: { namedFiles: () => ({ status: 'ready', paths: ['prompts/skill-authoring.md'] }) },
-    projectFileReader: { readProjectFilePreviews: async () => ({ status: 'ok', files: [{ path: 'prompts/skill-authoring.md', preview: 'before', digest: 'one' }] }), readTargetState: async () => ({ status: 'ok', value: { status: 'present', path: 'prompts/skill-authoring.md', digest: 'one', content: 'before', preview: 'before' } }) },
-    llm: { draftProposal: async (request) => { options.proposalCalls?.push(request); if (options.throws) throw new Error('full model response raw prompt secret'); return { affectedProjectFiles: [options.targetFile ?? 'prompts/skill-authoring.md'], changeSummary: options.summary ?? 'Require missing input hard stops before drafting.', rationale: 'The active assertion failed because the prompt skipped the stop rule.', expectedEvalImpact: 'The selected assertion should pass while preserving other checks.', proposedChange: { kind: 'replacement', representation: 'Add an explicit missing-input hard stop rule.' } }; } },
-    proposalStore: { savePendingProposal: async (request) => ({ ...request.proposal, proposalId: 'repair_test', approvalState: 'pending', sourceFailureScope: { suiteId: request.suiteId, runId: request.runId, testCaseId: request.testCaseId, attempt: request.attempt, evalRunModelId: request.evalRunModelId, judgeModel: request.judgeModel, repeats: request.repeats, assertionId: request.assertionId } }) },
-    logger: { info: () => undefined, warn: () => undefined, error: () => undefined },
-  };
-}
-
-function failedArtifact(): StoredRunArtifact {
-  return {
-    suiteId: 'skill-authoring', modelId: 'gpt-5-mini', scope: 'all',
-    matrix: { suiteId: 'skill-authoring', suiteName: 'Skill checks', status: 'failed', aggregates: { total: 1, passed: 0, failed: 1, blocked: 0, error: 0 }, diagnostics: [], rows: [{ testCaseId: 'missing-skill-boundary', name: 'Missing skill boundary', status: 'failed', cells: [{ testCaseId: 'missing-skill-boundary', modelId: 'gpt-5-mini', modelLabel: 'GPT-5 mini', status: 'failed', outputPreview: 'short output', durationMs: 10, diagnostics: [], metrics: [], artifacts: [], assertions: [
-      { id: 'a1', label: 'Must stop first', kind: 'assertion', status: 'failed', message: 'Failed active', expectedPreview: 'expected stop', actualPreview: 'active failed output', metrics: [], diagnostics: [], artifacts: [] },
-      { id: 'a2', label: 'Other failure', kind: 'assertion', status: 'failed', message: 'Other failed', expectedPreview: 'expected other', actualPreview: 'other failed output', metrics: [], diagnostics: [], artifacts: [] },
-    ] }] }] },
-  };
-}

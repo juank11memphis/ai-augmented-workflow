@@ -33,6 +33,10 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(html, /data-detail/);
   assert.match(html, /min-width:700px/);
   assert.match(html, /min-width:1100px/);
+  assert.match(html, /grid-template-columns:minmax\(16rem,2fr\) minmax\(18rem,3fr\)/);
+  assert.match(html, /\[data-run-setup\] \[data-setup-fields\]\{display:grid/);
+  assert.match(html, /\.sheet-overlay\{position:fixed;inset:0/);
+  assert.match(html, /\.workspace:has\(\[data-run-setup\]\[hidden\]\) \[data-results-container\]/);
   assert.doesNotMatch(html, /Eval result matrix|variant-filter|coverage percentage/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
 });
