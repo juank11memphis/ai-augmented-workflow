@@ -28,7 +28,8 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /unit tests cannot establish LLM behavior/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /automatic execution of an exact Story plan.*no findings or unresolved risks/i);
+    assert.match(contents, /complete review finds no findings or unresolved risks.*accepts the exact plan automatically and immediately begins execution/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -322,7 +323,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /verified Milestones without routine approval pauses.*final Story PR review/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Automatically accepts clean, risk-free architecture-reviewed Story plans.*human decision/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);

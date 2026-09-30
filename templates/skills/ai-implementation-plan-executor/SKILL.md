@@ -1,6 +1,6 @@
 ---
 name: ai-implementation-plan-executor
-description: Gatekeep one Sibu story plan through independent plan review, human acceptance, execution, story review, and approval control.
+description: Gatekeep one Sibu story plan through independent plan review, conditional human acceptance, execution, story review, and approval control.
 ---
 
 # AI Implementation Plan Executor
@@ -11,7 +11,7 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 ## Purpose
 
-Review and accept one exact Story plan before execution while preserving Sibu's later human Story review and workflow-control guarantees. This main-agent gatekeeper verifies or creates the plan, obtains an independent read-only architecture review of that plan, explains the result, and waits for the human decision before any executor starts. It keeps final Story approval metadata, any final Story commit, and feature continuation under main-agent control; a Task executor alone may commit its own checked Task.
+Review and accept one exact Story plan before execution while preserving Sibu's later human Story review and workflow-control guarantees. This main-agent gatekeeper verifies or creates the plan and obtains an independent read-only architecture review. If that complete review has no findings or unresolved risks, accept the exact plan automatically and proceed directly to execution. Otherwise explain findings and risks and wait for a human decision. It keeps final Story approval metadata, any final Story commit, and feature continuation under main-agent control; a Task executor alone may commit its own checked Task.
 
 When a compatible sub-agent spawn capability is available and permitted by the host, always delegate bounded file editing and validation to `sibu-implementation-executor` using a narrow packet and the executor toolbox. Execute inline only when sub-agent spawning is unavailable or blocked by host capability limits. Do not skip the final story-level review gate.
 
@@ -85,7 +85,7 @@ docs/features/<feature-slug>/sdd.md
 docs/features/<feature-slug>/ux.md  # when the story, any step, or feature has UI impact
 ```
 
-If the initial User Story has no matching `.impl_plan/`, or the initial `.impl_plan/` folder is missing, empty, or has no ordered `.md` step files, route through `ai-implementation-planner` to create or repair the story-local plan, then immediately continue into independent plan review. The user request authorizes plan generation, not execution of an unaccepted plan.
+If the initial User Story has no matching `.impl_plan/`, or the initial `.impl_plan/` folder is missing, empty, or has no ordered `.md` step files, route through `ai-implementation-planner` to create or repair the story-local plan, then immediately continue into independent plan review. The user request authorizes plan generation and execution only after the exact plan is accepted by the clean-review rule or a human decision below.
 
 If required source context is missing, stop and ask the user to create or restore the missing artifact first. Do not delegate incomplete execution work to the worker.
 
@@ -99,7 +99,7 @@ Label references **start here**, never an exclusive reading list or replacement 
 
 ## Required sub-agent execution path
 
-Only after the human accepts the currently reviewed plan version, when the host exposes any usable sub-agent spawn capability and `sibu-implementation-executor` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu executor worker after plan acceptance, subject to host tool policy. Do not choose inline execution merely because worker progress is completion-only, or because inline execution is simpler or faster.
+Only after the currently reviewed plan version is accepted automatically on a clean review or explicitly by the human when findings or risks exist, when the host exposes any usable sub-agent spawn capability and `sibu-implementation-executor` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu executor worker after plan acceptance, subject to host tool policy. Do not choose inline execution merely because worker progress is completion-only, or because inline execution is simpler or faster.
 
 Build a narrow executor packet for the worker. The packet must include:
 
@@ -128,7 +128,7 @@ Select one route: direct worker-visible progress, main-mediated progress, or com
 
 ## Fallback matrix
 
-For each fresh `sibu-implementation-executor` spawn, classify the delegated task before resolving `--role implementation-executor` using the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. For every `sibu-architecture-reviewer` plan-review spawn, classify and resolve with `--role architecture-reviewer`; do not reuse the executor's route. Follow saved, first-use, unavailable, save-failed, one-time, and cancellation states. Disclose the selected route and pass explicit `model` and `reasoning_effort` host spawn parameters on every path. If the host cannot accept both, stop the affected launch; no parent inheritance or silent fallback. Routing never changes reviewer independence, packet boundaries, human plan acceptance, or Story approval and commit authority.
+For each fresh `sibu-implementation-executor` spawn, classify the delegated task before resolving `--role implementation-executor` using the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. For every `sibu-architecture-reviewer` plan-review spawn, classify and resolve with `--role architecture-reviewer`; do not reuse the executor's route. Follow saved, first-use, unavailable, save-failed, one-time, and cancellation states. Disclose the selected route and pass explicit `model` and `reasoning_effort` host spawn parameters on every path. If the host cannot accept both, stop the affected launch; no parent inheritance or silent fallback. Routing never changes reviewer independence, packet boundaries, conditional plan acceptance, or Story approval and commit authority.
 
 Use host capability metadata from workflow target planning guidance to choose the safest execution path. This order is mandatory:
 
@@ -171,15 +171,15 @@ For unapproved steps:
 
 Do not mark steps approved, commit changes, move to the next story, or move to the next Epic until the user explicitly approves the completed story implementation.
 
-## Exact-plan architecture review and human decision
+## Exact-plan architecture review and conditional decision
 
-The main agent owns this message-only gate before the first executor dispatch. Do not add a runtime module or persistent hash helper. The architecture reviewer assesses the plan, never an implementation diff; branch creation and Task commits remain downstream of human plan acceptance.
+The main agent owns this message-only gate before the first executor dispatch. Do not add a runtime module or persistent hash helper. The architecture reviewer assesses the plan, never an implementation diff; branch creation and Task commits remain downstream of clean-review automatic acceptance or explicit human acceptance.
 
 ### Reviewable plan identity
 
 Identify one exact reviewable plan version from the current Story plan content: source decisions and references, acceptance-criteria coverage, Milestone outcomes and ordered Task IDs, Task scopes/dependencies, and each Task's prescribed executable check and expected evidence. Include any reviewable conventions that constrain implementation. Exclude execution-only Task status, Milestone progress, run log, commit references, and approval/progress metadata; these cannot silently change accepted scope or checks. A stable content digest or explicit version label may identify the version only if it is reproducibly tied to that reviewable content. If separation is ambiguous, or the identity cannot be established, pause and clarify rather than treating an old acceptance as current.
 
-Compare the reviewable identity at reviewer dispatch, presentation of the human choice, human acceptance, and every executor dispatch. Any reviewable change invalidates the prior review and acceptance, including human-requested work during execution or PR review. Status/progress-only changes do not. A changed plan returns to the planner for the affected work, then to a fresh architecture reviewer and human decision; never reuse a stale packet.
+Compare the reviewable identity at reviewer dispatch, review-packet receipt, acceptance (automatic or human), and every executor dispatch. For a review requiring human choice, compare it again at presentation and human acceptance. Any reviewable change invalidates the prior review and acceptance, including human-requested work during execution or PR review. Status/progress-only changes do not. A changed plan returns to the planner for the affected work, then to a fresh architecture reviewer and the conditional decision below; never reuse a stale packet.
 
 ### Independent read-only review
 
@@ -187,13 +187,15 @@ Before execution, send a fresh `sibu-architecture-reviewer` exactly one Story an
 
 Require a compact packet naming the reviewed identity and reporting, in order: over-engineering findings or explicit absence; premature-optimization findings or explicit absence; architecture/contract fit; Story and acceptance-criteria coverage and Task sizing; and each Task's executable check and failure handling. Each finding names plan location, evidence, consequence, smallest adequate fix, and whether it is a necessary constraint or preference. Preserve unresolved risks even when no blocking finding exists. The reviewer never modifies the plan, approves execution, or reviews implementation code. If a packet is malformed or incomplete, retry a focused format request once; if still unavailable, disclose that independent review is unavailable and do not claim the plan was reviewed or dispatch an executor.
 
-### Human plan decision
+### Clean-review acceptance or human plan decision
 
-Present each material finding as a short top-level bullet with three indented bullets: **What it means** (plain-language context, defining unfamiliar checks or terms), **Why it matters** (the user-visible consequence), and **Fix** (the smallest concrete action). Keep each sub-bullet to one or two short sentences; do not rely on jargon or state only the finding's name. Use the same nested-bullet format for unresolved risks, omitting Fix only when no action is known. Show risks even for an otherwise clean review. Offer these choices for the current reviewed version: **accept**, **accept with explicitly visible warnings**, **request revision**, or **defer**. A reviewer's clean packet is not human acceptance; a warning does not automatically veto an informed human acceptance. Do not silently repair the plan. Revision returns to the planner and a fresh review cycle; deferral leaves execution stopped. A missing review, missing/ambiguous identity, changed plan, or absent explicit human acceptance blocks executor dispatch.
+If the complete, independent review packet for the unchanged exact plan explicitly reports **no findings in any required category and no unresolved risks**, and every Task has the prescribed objective executable check and expected evidence, the main agent accepts that exact identity automatically. Record that it was accepted through the clean-review path; do not ask for human plan approval. Immediately continue to the Story branch and first Task, subject to the normal branch, route, source-context, and blocker gates. A reviewer cannot approve its own plan; the main agent verifies the packet and makes this conditional acceptance. Silence, a vague "clean" label, missing category, malformed packet, unassessed concern, or missing check is not a clean review and must not trigger automatic acceptance.
 
-Before any executor dispatch, verify that every Task in the accepted plan has its own specific, objective, executable pass/fail check and expected passing evidence. A missing, vague, or non-executable Task check is a non-waivable plan defect: stop dispatch even if the human accepted the plan with visible warnings. Return it to the planner to split or clarify the Task; if judgment is needed before safe continuation, stop for a human decision rather than deferring it to a Milestone. Then obtain a fresh architecture review and human decision on the revised plan. Keep other genuinely waivable risks available for informed human acceptance.
+If any finding or unresolved risk exists, present each as a short top-level bullet with three indented bullets: **What it means** (plain-language context, defining unfamiliar checks or terms), **Why it matters** (the user-visible consequence), and **Fix** (the smallest concrete action). Keep each sub-bullet to one or two short sentences; do not rely on jargon or state only the finding's name. Use the same nested-bullet format for unresolved risks, omitting Fix only when no action is known. Offer these choices for the current reviewed version: **accept**, **accept with explicitly visible warnings**, **request revision**, or **defer**. A finding or unresolved risk requires explicit human acceptance of that exact version before execution; a warning does not automatically veto informed human acceptance. Do not silently repair the plan. Revision returns to the planner and a fresh review cycle; deferral leaves execution stopped. A missing review, missing/ambiguous identity, changed plan, or missing applicable acceptance blocks executor dispatch.
 
-Once the human accepts the current reviewed identity, compare it again immediately before each executor dispatch. Preserve the human Story review below. Do not introduce automatic code review or a post-code architecture-review/repair loop.
+Before any executor dispatch, verify that every Task in the accepted plan has its own specific, objective, executable pass/fail check and expected passing evidence. A missing, vague, or non-executable Task check is a non-waivable plan defect: stop dispatch even if the review otherwise appears clean or the human accepted visible warnings. Return it to the planner to split or clarify the Task; if judgment is needed before safe continuation, stop for a human decision rather than deferring it to a Milestone. Then obtain a fresh architecture review and apply the conditional decision to the revised plan. Keep other genuinely waivable risks available for informed human acceptance.
+
+Once the current reviewed identity is accepted automatically or by the human, compare it again immediately before each executor dispatch. Preserve the human Story review below. Do not introduce automatic code review or a post-code architecture-review/repair loop.
 
 ### Checked-Task dispatch on a Story branch
 
@@ -211,7 +213,7 @@ For an earlier Milestone, advance automatically **only to the next Milestone** o
 
 Stop and ask the human before further dispatch when ambiguity cannot be resolved from the accepted plan, or work would require a consequential architecture, scope, dependency, security, privacy, or persisted-data change. State what is unknown, the consequence, and the smallest decision needed. Do not silently make the decision or treat a routine Milestone boundary as permission to proceed. Check failures unresolved after the worker's allowed focused fixes, stale identity, missing evidence, and other blockers also stop unattended work; report them without claiming success. If the decision changes reviewable plan content, use the revision loop below.
 
-Human-requested changes become new or revised bounded planned Tasks with their own specific executable pass/fail checks and expected passing evidence; do not auto-repair feedback or invent checks. Return the requested outcome to the planner. Changed reviewable plan content invalidates the previous identity, architecture review, and human acceptance. Obtain a **fresh independent plan-only architecture review** of the revised identity, present findings and risks, and require explicit human acceptance of that exact version before any executor resumes. Status/progress-only updates do not invalidate accepted scope. Missing checks or stale identity stop dispatch. Do not substitute an implementation-code architecture review.
+Human-requested changes become new or revised bounded planned Tasks with their own specific executable pass/fail checks and expected passing evidence; do not auto-repair feedback or invent checks. Return the requested outcome to the planner. Changed reviewable plan content invalidates the previous identity, architecture review, and acceptance. Obtain a **fresh independent plan-only architecture review** of the revised identity and apply the same conditional decision: accept automatically only if it has no findings or unresolved risks; otherwise present them and require explicit human acceptance before any executor resumes. Status/progress-only updates do not invalidate accepted scope. Missing checks or stale identity stop dispatch. Do not substitute an implementation-code architecture review.
 
 For the final Milestone, including a one-Milestone Story, the existing final human Story-review interaction below is the **only routine post-execution decision**. Open one Story PR from the dedicated Story branch only after all final-Milestone Tasks have passing prescribed checks, verified scoped commits and progress, and required story-level validation has completed successfully. A final request for changes follows the same checked plan-revision loop before further executor work; update the same PR for renewed final review.
 
@@ -223,7 +225,7 @@ Write a short, plain-language PR description with **What changed**, **Why it mat
 
 If source-control hosting access, PR creation, or check retrieval fails, preserve the branch and validation evidence, report the blocker, and leave final review incomplete. Do not silently substitute a conversational approval, create a second PR, merge, or deploy. Do not put credentials or sensitive data into the PR, logs, or worker packet.
 
-Present the PR for one explicit **accept**, **request changes**, or **defer** decision. Acceptance alone permits approval metadata and any remaining eligible final Story commit below. Already checked Task commits do not confer Story approval. Deferral and requested changes leave the Story `in-progress`. Requested changes become new or revised bounded checked plan Tasks, invalidating the old reviewable plan identity. Obtain fresh independent plan-only architecture review and explicit human acceptance of the revised identity before executor dispatch; revalidate the changed Story and update the **same PR** and its actual checks for renewed final review. Never substitute a code-diff architecture review or ask for a duplicate final approval.
+Present the PR for one explicit **accept**, **request changes**, or **defer** decision. Acceptance alone permits approval metadata and any remaining eligible final Story commit below. Already checked Task commits do not confer Story approval. Deferral and requested changes leave the Story `in-progress`. Requested changes become new or revised bounded checked plan Tasks, invalidating the old reviewable plan identity. Obtain fresh independent plan-only architecture review and apply the same clean-review or human-decision rule to the revised identity before executor dispatch; revalidate the changed Story and update the **same PR** and its actual checks for renewed final review. Never substitute a code-diff architecture review or ask for a duplicate final approval.
 
 ## Approval metadata and commit control
 
@@ -245,7 +247,7 @@ If every story change is ignored and nothing is eligible to commit, skip the com
 
 ## Feature continuation check
 
-After the approved story implementation is committed, continue through the current feature unless there is no next story or Epic to implement. After a Story PR merge is confirmed, including a merge requested in a later turn, run this check again before ending the turn. Do not treat the merge as Story approval: if the final human Story decision is still missing, stop at that gate. Otherwise continue without asking for a separate continuation confirmation; preserve every required plan review, human acceptance, code-change permission, and blocker gate.
+After the approved story implementation is committed, continue through the current feature unless there is no next story or Epic to implement. After a Story PR merge is confirmed, including a merge requested in a later turn, run this check again before ending the turn. Do not treat the merge as Story approval: if the final human Story decision is still missing, stop at that gate. Otherwise continue without asking for a separate continuation confirmation; preserve every required plan review, applicable human decision, code-change permission, and blocker gate.
 
 1. Inspect the current Epic's `stories/` folder in filename order.
 2. If a next User Story exists, plan it through `ai-implementation-planner` when needed, then immediately begin execution.

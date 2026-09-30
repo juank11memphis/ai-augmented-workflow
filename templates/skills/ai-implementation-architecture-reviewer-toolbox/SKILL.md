@@ -45,7 +45,7 @@ Findings:
 Unresolved risks: <risks or none>
 ```
 
-Do not return an approval verdict for execution; only the human can accept this reviewed version and visible risks.
+Do not return an approval verdict for execution. The main agent conditionally accepts an exact plan only after verifying a complete packet with no findings or unresolved risks; findings or risks require explicit human acceptance.
 
 ## Read-only authority
 

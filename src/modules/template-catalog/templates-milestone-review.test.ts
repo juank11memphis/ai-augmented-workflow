@@ -60,16 +60,18 @@ describe('Milestone progression written contract', () => {
     assert.match(gatekeeper, /Missing checks or stale identity stop dispatch/i);
   });
 
-  it('requires checked revision, fresh plan-only review, and exact-version human acceptance', () => {
+  it('requires checked revision, fresh plan-only review, and conditional exact-version acceptance', () => {
     const failures = fixture('revision-and-blockers');
-    for (const missing of ['without Task checks', 'without fresh independent plan-only architecture review', 'without explicit human acceptance']) {
+    for (const missing of ['without Task checks', 'without fresh independent plan-only architecture review', 'with a finding or unresolved risk but without explicit human acceptance']) {
       assert.match(failures, new RegExp(`${missing}.*no dispatch`, 'i'));
     }
+    assert.match(failures, /complete clean review and unchanged identity: automatically accepted; dispatch next Task/i);
     ordered(gatekeeper, [
       'Human-requested changes become new or revised bounded planned Tasks',
       'Changed reviewable plan content invalidates the previous identity',
       'fresh independent plan-only architecture review',
-      'require explicit human acceptance of that exact version before any executor resumes',
+      'accept automatically only if it has no findings or unresolved risks',
+      'require explicit human acceptance before any executor resumes',
     ]);
     assert.match(gatekeeper, /Do not substitute an implementation-code architecture review/i);
   });
@@ -85,8 +87,8 @@ describe('Milestone progression written contract', () => {
       assert.match(wrapper, /Task-ID commit only after pass/i);
     }
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '202');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '58');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Advances verified Milestones without routine approval pauses.*final Story PR review/);
+    assert.equal(manifest.templateVersion, '203');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '59');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Automatically accepts clean, risk-free architecture-reviewed Story plans.*human decision/);
   });
 });

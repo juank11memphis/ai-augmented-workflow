@@ -70,7 +70,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Define executable task checks before execution**: give each task its own objective pass/fail check and distilled context; split or clarify uncheckable tasks rather than delegating vague work.
 - **Challenge plan complexity early**: obtain independent architecture review of the exact plan version, emphasizing over-engineering and premature optimization as well as architecture fit, scope, and check quality; do not send code to the architecture reviewer.
 - **Present plan findings plainly**: explain reviewer findings, proposed fixes, and unresolved risks briefly in language a human can readily understand.
-- **Gate execution on human plan acceptance**: let the human accept a reviewed plan with visible risks, request revision and fresh review, or defer execution.
+- **Gate execution on exact-plan review**: automatically accept a complete review with no findings or unresolved risks and start execution; require a human decision for findings or risks, and block missing or stale reviews.
 - **Execute checked tasks on a story branch**: run one bounded task per fresh-context executor iteration, commit only after its prescribed check passes, and retain concise progress history.
 - **Stop on executor blockers**: escalate ambiguity, missing checks, repeated failures, undeclared flags, or material scope changes instead of permitting executor improvisation.
 - **Advance through checked milestones**: record each milestone's verified outcome and advance to the next without routine human approval; stop for ambiguity, material decisions, failed checks, or other blockers.
@@ -179,7 +179,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
 - **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
 - **Plan architecture review** depends on one complete story plan, project SAD, feature SDD, selected architecture guidance, and task-level objective checks; it precedes any unattended execution.
-- **Human plan acceptance** depends on findings for the current plan version; a changed plan needs a fresh review and human decision.
+- **Conditional plan acceptance** depends on a complete review of the exact plan version: no findings or unresolved risks permits automatic execution; findings or risks require a human decision. A changed plan needs a fresh review and the same rule.
 - **Checked task execution** depends on an accepted plan, one story branch, task-specific checks, relevant conventions, and progress history.
 - **Checked milestone progression** follows each verified milestone without a routine human pause; material decisions and blockers still stop unattended execution, and changed plans require fresh review and human acceptance.
 - **Final story review** occurs through the final milestone PR, whose hosting remains an external source-control capability. Production deployment is not part of this pipeline capability.

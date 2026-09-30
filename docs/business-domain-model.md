@@ -97,11 +97,11 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Milestone**: a reviewable outcome grouping one or more Tasks; every User Story has at least one, and earlier Milestones advance automatically after verification.
 - **Task**: one bounded, meaningful implementation outcome executed in one fresh agent run with a planner-specified, executable pass/fail check and a task-specific commit after it passes.
 - **Task Check**: the objective, mechanical pass/fail evidence defined by the planner for one Task before execution; the executor runs it but does not invent it.
-- **Plan Review Cycle**: architecture review of the current plan, plain-language presentation of findings, and a human decision before execution; changed plans require fresh review.
+- **Plan Review Cycle**: architecture review of the current plan followed by automatic acceptance when no findings or unresolved risks exist, or plain-language presentation and a human decision when they do; changed plans require fresh review.
 - **Architecture Review**: independent, read-only assessment of the implementation plan, prioritizing over-engineering and premature optimization alongside architecture fit, scope, task sizing, and Task Checks; it does not review code.
 - **Review Packet**: evidence-based findings and outcome returned by the architecture reviewer for one exact plan version.
 - **Review Presentation**: the main agent's short, plain-language explanation of the plan review findings, proposed fixes, and unresolved risks for human decision.
-- **Human Plan Decision**: the user's choice to accept the current reviewed plan, request changes, or defer it; accepted unresolved warnings remain visible.
+- **Human Plan Decision**: when findings or unresolved risks exist, the user's choice to accept the current reviewed plan, request changes, or defer it; accepted unresolved warnings remain visible.
 - **Story Branch**: the isolated source-control branch for one User Story, receiving checked Task commits before a final pull request.
 - **Progress Log**: compact task-by-task execution history, including outcome, commit reference, decisions, gotchas, and blockers for later fresh-context runs.
 - **Story Pull Request**: the final review surface for a completed story; its clear, plain-language description explains changes, value, and verification. Review of the final Milestone through this PR is also the final story review.
@@ -121,7 +121,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Assertion vs Grader**: assertion is the familiar UI term for checks; grader is the broader eval term for rubric or model-judged evaluation.
 - **Analysis vs Proposal vs Mutation**: analysis explains evidence, a proposal previews a concrete change, and mutation changes project files only after explicit user approval.
 - **Plan Review vs Story Review**: the architecture specialist inspects the plan before execution; the human reviews completed Story work through the final PR. Earlier Milestones do not require routine human approval. The architecture reviewer does not review code.
-- **Specialist Outcome vs Human Acceptance**: an architecture-review outcome informs but does not veto the human plan decision; accepted unresolved warnings remain visible.
+- **Specialist Outcome vs Plan Acceptance**: a complete review with no findings or unresolved risks permits automatic acceptance of its exact plan; otherwise its outcome informs, but does not veto, the human's decision on visible findings and risks.
 - **Task vs User Story**: Tasks are fresh-context execution units; User Stories are deployable slices whose acceptance criteria govern the plan.
 - **Architecture Skill vs Architecture Model**: users may think in terms of an architecture model, but Sibu expresses that choice as a selected architecture skill from its fixed catalog. This feature does not define or expand the catalog.
 - **Required Selection vs Default Choice**: requiring a user to choose an architecture skill is not the same as Sibu choosing one by default. The user must make the explicit choice.
@@ -163,7 +163,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 
 #### Cross-Cutting Principle
 
-- **User Control & Trust**: not a standalone subdomain, but a governing product principle expressed through concrete capabilities in each subdomain. Adoption must make project ownership clear. Maintenance must protect local edits and require sync review decisions. The pipeline must preserve artifact review gates, hard-stop on missing context, apply selected architecture guidance, require human plan acceptance, material-decision stops, and final Story PR review, and prevent executors from inventing scope or checks. Local eval repair must separate analysis, proposal, approval, mutation, and rerun. Tool configuration must avoid storing secrets. Across the domain, Sibu keeps the engineer responsible for direction and judgment.
+- **User Control & Trust**: not a standalone subdomain, but a governing product principle expressed through concrete capabilities in each subdomain. Adoption must make project ownership clear. Maintenance must protect local edits and require sync review decisions. The pipeline must preserve artifact review gates, hard-stop on missing context, apply selected architecture guidance, automatically accept only complete risk-free plan reviews, require human decisions on findings or material blockers and final Story PR review, and prevent executors from inventing scope or checks. Local eval repair must separate analysis, proposal, approval, mutation, and rerun. Tool configuration must avoid storing secrets. Across the domain, Sibu keeps the engineer responsible for direction and judgment.
 
 ### Context Map
 
@@ -367,24 +367,24 @@ Product Vision
 → Per-feature SDD using SAD + BRD + required UX
 → Epics / User Stories
 → Story Implementation Plan
-→ Architecture Review of Plan / Human Plan Acceptance
+→ Architecture Review of Plan / Conditional Plan Acceptance
 → Story-Branch Checked Task Execution / Automatic Milestone Progression
 → Final Story Review through PR
 ```
 
-The SAD follows the Capabilities Map; BRD authoring does not require a SAD. The selected architecture skill is binding for SAD authoring, SDD authoring, planning, execution, and plan review. The architecture reviewer reviews plans only, never implementation code. Routine human review occurs at plan acceptance and the final Story PR; ambiguity and material decisions still stop execution for the human. Production deployment remains outside Sibu's owned workflow here.
+The SAD follows the Capabilities Map; BRD authoring does not require a SAD. The selected architecture skill is binding for SAD authoring, SDD authoring, planning, execution, and plan review. The architecture reviewer reviews plans only, never implementation code. A complete plan review without findings or unresolved risks permits immediate execution; findings, risks, ambiguity, and material decisions stop for the human. Final Story PR review remains human. Production deployment remains outside Sibu's owned workflow here.
 
 #### Story Implementation Plan and Plan Review Cycle
 
 The planner reads the relevant upstream project and feature artifacts once, then creates a story-local plan with at least one Milestone and bounded Tasks. It distills decisions, acceptance-criteria links, exact source pointers, dependencies, applicable skills, and an executable, objective pass/fail check into every Task before execution. If such a check cannot be defined, the planner splits or clarifies the Task; judgment needed before safe continuation becomes a human-decision stop, while final outcome judgment belongs at the Story PR. It also establishes a task list, durable conventions, and compact progress history for fresh executor runs. It uses only feature flags already declared by the Epic and Stories and plans their removal when applicable.
 
-A fresh architecture reviewer assesses the exact plan version before execution. Its primary challenges are over-engineering and premature optimization; it also checks the selected architecture guidance, SAD/SDD boundaries and contracts, story scope, task sizing, coverage, and whether each Task has a concrete check. The main agent presents findings, proposed fixes, and unresolved risks briefly in plain language. The human may accept the reviewed plan, explicitly accept visible unresolved warnings, request changes, or defer. A changed plan must be reviewed again before execution. The reviewer never reviews implementation code.
+A fresh architecture reviewer assesses the exact plan version before execution. Its primary challenges are over-engineering and premature optimization; it also checks the selected architecture guidance, SAD/SDD boundaries and contracts, story scope, task sizing, coverage, and whether each Task has a concrete check. If the complete packet has no findings or unresolved risks, the main agent accepts that exact plan and begins execution without a human plan decision. Otherwise it presents findings, proposed fixes, and unresolved risks briefly in plain language, and the human may accept the plan, explicitly accept visible warnings, request changes, or defer. A changed plan must be reviewed again under the same rule. Missing, incomplete, or stale reviews do not authorize execution. The reviewer never reviews implementation code.
 
 #### Story-Branch Execution and Checked Milestone Progression
 
 After plan acceptance, the story receives its own branch. Each unattended executor run starts with fresh context, reads exactly one Task plus its relevant conventions and progress history, follows only the supplied pointers and skills, implements only that Task, runs its prescribed check, and commits the scoped result only after a pass. If the first check fails, it may make up to two focused, in-scope fixes, rerunning the same check after each. It records the outcome and commit reference before exiting. It cannot invent checks, flags, scope, or material decisions. A fix requiring any of those, or continued failure after two fixes, blocks the Task and returns it to the planner or human instead of triggering improvisation.
 
-Every story has one or more Milestones, grouped by reviewable outcome rather than a task-count quota. After each earlier Milestone's Tasks pass their checks, receive scoped commits, and record progress, the next Milestone proceeds without routine human approval. Ambiguity, consequential architecture or scope changes, security/privacy/data/dependency decisions, failed checks, or missing evidence stop unattended work for a human or planner decision. Human-requested changes to completed work become new or revised planned Tasks with their own checks and fresh plan review and acceptance before execution resumes. The final Milestone is presented through a PR from the story branch; its review is the final story review, with no duplicate gate. The PR description explains what changed, why it matters, and how it was verified in clear, easy-to-scan language. This workflow does not own production deployment.
+Every story has one or more Milestones, grouped by reviewable outcome rather than a task-count quota. After each earlier Milestone's Tasks pass their checks, receive scoped commits, and record progress, the next Milestone proceeds without routine human approval. Ambiguity, consequential architecture or scope changes, security/privacy/data/dependency decisions, failed checks, or missing evidence stop unattended work for a human or planner decision. Human-requested changes to completed work become new or revised planned Tasks with their own checks and fresh plan review and conditional acceptance before execution resumes. The final Milestone is presented through a PR from the story branch; its review is the final story review, with no duplicate gate. The PR description explains what changed, why it matters, and how it was verified in clear, easy-to-scan language. This workflow does not own production deployment.
 
 #### Local Evals Workbench
 
@@ -470,7 +470,7 @@ define focused task
 - A **Task** has an ID, one outcome, bounded scope, source decisions and pointers, dependencies, applicable skills, and its own executable Task Check.
 - A **Review Packet** identifies the exact plan version, findings, evidence, proposed fixes, outcome, and unresolved risks.
 - A **Review Finding** has a stable identifier, severity, location, governing rule or expectation, evidence, impact, required outcome, and disposition.
-- A **Human Plan Decision** identifies the reviewed plan version, reviewer outcome, accepted risks or requested changes, and whether execution may begin.
+- A **Human Plan Decision**, when required by findings or unresolved risks, identifies the reviewed plan version, reviewer outcome, accepted risks or requested changes, and whether execution may begin.
 - A **Story Branch** belongs to one User Story and contains its verified Task commits.
 - A **Progress Log** records Task outcomes, commit references, decisions, gotchas, and blockers for later runs.
 - A **Story Pull Request** has a story branch, clear change/value/verification description, and the final human story review outcome.
@@ -526,7 +526,7 @@ define focused task
 - The **AI-Augmented Development Pipeline** uses the **Selected Architecture Skill** as downstream context for technical design, implementation planning, and execution.
 - Each **Story Implementation Plan** belongs to exactly one User Story and contains at least one **Milestone**; each Milestone contains one or more **Tasks**.
 - Each **Task** has its own planner-defined **Task Check** before any executor run; each passing Task yields a task-specific commit on one **Story Branch**.
-- Each plan version receives architecture review and a **Human Plan Decision** before execution; revisions invalidate prior review and acceptance.
+- Each plan version receives architecture review before execution; a complete review with no findings or unresolved risks permits automatic acceptance, while findings or risks require a **Human Plan Decision**. Revisions invalidate prior review and acceptance.
 - Earlier **Milestones** advance automatically only after checked Tasks, scoped commits, and progress are verified; the **Story Pull Request** carries the final human story review.
 - A **Hard Stop** belongs to a skill and protects one or more prerequisite requirements.
 
@@ -569,10 +569,10 @@ define focused task
 - Every Task must have an objective, executable check specified by the planner before the executor starts; the executor must not invent or weaken it.
 - No Task is done or committed without its check passing; ambiguous or uncheckable Tasks are revised before unattended execution.
 - The architecture reviewer is independent and read-only, reviews plans before execution, prioritizes over-engineering and premature optimization, and does not review code.
-- Every changed plan must receive a fresh architecture review and human acceptance before execution resumes from that plan.
+- Every changed plan must receive a fresh architecture review and conditional acceptance before execution resumes from that plan.
 - Review findings must be evidence-based and visible; their severity does not override the human's authority to accept risks explicitly.
 - Each User Story uses its own branch, and each completed Task has a scoped commit with its Task ID.
-- Human-requested changes must become planned, checked Tasks with fresh plan review and acceptance before executor work resumes.
+- Human-requested changes must become planned, checked Tasks with fresh plan review and conditional acceptance before executor work resumes.
 - The final Milestone's PR review is the final story review, not an additional review gate; earlier Milestones have no routine approval gate.
 - Material decisions must be presented to the human rather than inferred by reviewers or the executor.
 - Local eval repair must focus the user and LLM on one failed assertion at a time.
@@ -616,9 +616,9 @@ define focused task
 - When a skill produces an artifact, that artifact should clarify one layer of decision-making before downstream work starts.
 - When a user requests a narrow fix, Sibu guidance should avoid unnecessary pipeline ceremony unless scope or ownership is unclear.
 - When the planner cannot define a concrete pass/fail check for a Task, it should split or clarify the Task; judgment needed before safe continuation requires a human stop, while final outcome judgment belongs at the Story PR.
-- When a plan is ready, a fresh architecture reviewer should identify unnecessary complexity and premature optimization first, then assess normal architectural and verification concerns before a human accepts the plan.
-- When the architecture review packet is available, the main agent should explain findings, proposed fixes, and unresolved risks briefly and plainly, then wait for the human's decision.
-- When a plan changes after review, the planner should send the new version through fresh architecture review and human acceptance before unattended execution.
+- When a plan is ready, a fresh architecture reviewer should identify unnecessary complexity and premature optimization first, then assess normal architectural and verification concerns before the plan is conditionally accepted.
+- When a complete architecture review packet has no findings or unresolved risks, the main agent should accept that exact plan and start execution without a human plan decision. Otherwise it should explain findings, proposed fixes, and risks briefly and plainly, then wait for the human's decision.
+- When a plan changes after review, the planner should send the new version through fresh architecture review and conditional acceptance before unattended execution.
 - When an executor encounters ambiguity, missing checks, undeclared flags, or material scope changes, it should stop immediately rather than use retry attempts. After an initial check failure, it may make up to two focused, in-scope fixes and rerun the same check; continued failure stops and records the blocker.
 - When a human requests changes during execution or PR review, the planner should turn them into new or revised checked Tasks before an executor acts.
 - When the final Milestone is ready, the story PR should clearly explain the changes, value, and validation; its human review completes the story review.
@@ -716,8 +716,8 @@ define focused task
 
 1. **Story Plan Created**: the planner turns one deployable User Story into at least one Milestone and bounded Tasks, each with its own executable pass/fail check.
 2. **Plan Reviewed**: a fresh architecture reviewer assesses the exact plan version, looking first for over-engineering and premature optimization, then architecture fit, scope, and check quality.
-3. **Findings Presented**: the main agent explains findings and proposed fixes plainly; the human accepts the plan and any visible risks, requests changes, or defers.
-4. **Plan Revised When Requested**: the planner changes the plan; a fresh architecture review and human decision apply to the new version before execution.
+3. **Plan Decision**: a complete review without findings or unresolved risks is accepted automatically; otherwise the main agent explains findings and risks plainly, and the human accepts, requests changes, or defers.
+4. **Plan Revised When Requested**: the planner changes the plan; a fresh architecture review and conditional acceptance apply to the new version before execution.
 5. **Story Branch Opened**: execution uses one branch for the User Story after plan acceptance.
 6. **Task Executed and Checked**: a fresh executor performs one Task, runs the prescribed check, makes a Task-specific commit only on pass, and records the result in the progress log. Blockers stop execution for planner or human intervention.
 7. **Milestone Verified and Advanced**: after all Tasks pass, receive scoped commits, and record progress, an earlier Milestone advances without routine human approval. Blockers or material decisions stop execution for human input.
@@ -758,7 +758,8 @@ define focused task
 - **Artifact Accepted for Downstream Work**: an artifact is clear enough to serve as input for the next pipeline stage.
 - **Story Plan Created**: a planner produces one story-local plan with Milestones and checked Tasks.
 - **Plan Architecture Review Completed**: a reviewer reports on the current plan version, including unnecessary complexity and premature optimization.
-- **Plan Findings Presented**: the main agent explains findings, fixes, and unresolved risks for human decision.
+- **Plan Cleanly Accepted**: after a complete review with no findings or unresolved risks, the main agent accepts the exact plan and begins execution.
+- **Plan Findings Presented**: when findings or unresolved risks exist, the main agent explains them and proposed fixes for human decision.
 - **Plan Accepted with Risks**: the human explicitly accepts a reviewed plan and any visible unresolved warnings.
 - **Plan Revision Requested**: the human asks for changes; the next version requires fresh review.
 - **Story Branch Opened**: execution begins on a branch dedicated to one User Story.
@@ -820,7 +821,7 @@ define focused task
 - **Template freshness vs local edits**: newer templates may be valuable, but customized local files require careful review and protection.
 - **AI speed vs engineering pride**: Sibu should help users move faster while preserving clean code, maintainability, reviewability, and human ownership.
 - **Plan scrutiny vs review churn**: independent plan architecture review should expose unnecessary complexity early; only changed plan versions repeat specialist review, while implementation code receives final human PR review rather than automated architecture review.
-- **Speed vs human judgment**: automatic progression through checked Milestones reduces routine interaction, while plan acceptance, material-decision stops, and final PR review keep direction and acceptance under human control.
+- **Speed vs human judgment**: automatic acceptance of clean reviewed plans and progression through checked Milestones reduce routine interaction, while findings, material-decision stops, and final PR review keep consequential direction and acceptance under human control.
 - **Dependency reuse vs dependency cost**: established libraries can be simpler than custom code, but production dependencies introduce maintenance, security, licensing, and footprint consequences that require human judgment.
 - **Deep coverage vs exhaustive claims**: Sibu should systematically explore applicable risks and edge cases while remaining explicit that open-ended AI behavior cannot be exhaustively enumerated.
 - **Artifact isolation vs deliberate override**: Sibu should prevent accidental source-control and LLM-context pollution from run artifacts, while recognizing that a user can deliberately override local safeguards.
