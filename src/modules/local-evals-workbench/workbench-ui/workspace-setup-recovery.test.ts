@@ -34,6 +34,7 @@ function blockedBrowser(result: BlockedResult, clipboard?: { writeText(text: str
 
 test('known blocked reasons show distinct safe guidance instead of an empty model picker', async () => {
   const cases = [
+    { reason: 'environment-missing', missingEnvironmentName: 'OPENAI_API_KEY', expected: /needs OPENAI_API_KEY.*project-root \.env, or to \.env\.local if \.env is missing or has no key.*restart Sibu Evals/ },
     { reason: 'environment-missing', missingEnvironmentName: 'TEST_KEY', expected: /needs TEST_KEY.*Set its value in the terminal that starts Sibu Evals.*restart Sibu Evals/ },
     { reason: 'environment-missing', expected: /needs server-side setup.*Check the suite requirements/ },
     { reason: 'model-unavailable', expected: /listed no models.*Update its supported models/ },

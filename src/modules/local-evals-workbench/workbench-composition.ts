@@ -23,6 +23,7 @@ import { evaluateOutputAssertions } from './run-execution/output-assertions.js';
 import { createSelectedFailureReader } from './repair-context/selected-evidence.js';
 import { namedProposalContext } from './repair-context/proposal-context-adapter.js';
 import { InMemoryFailureAnalysisStore } from './repair-context/analysis-store.js';
+import { loadEvalEnvironment } from './eval-environment.js';
 
 export type LocalWorkbenchRuntimeDependencies = {
   readonly run: RunLocalEvalSuiteDependencies;
@@ -39,7 +40,8 @@ export type LocalWorkbenchRuntimeDependencies = {
 export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
   const artifactStore = new InMemoryRunArtifactStore();
   const logger = { info: console.info, warn: console.warn, error: console.error };
-  const assistanceConfig = new EnvironmentAssistanceConfig();
+  const environment = loadEvalEnvironment(request.projectRoot);
+  const assistanceConfig = new EnvironmentAssistanceConfig(environment);
   const config = assistanceConfig.getConfig();
   const proposalStore = new InMemoryRepairProposalStore();
   const analysisStore = new InMemoryFailureAnalysisStore();
@@ -48,9 +50,9 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
   const previewLogger = { record: (event: { readonly event: string; readonly suiteId?: string; readonly reason?: string; readonly durationMs?: number }): void => {
     try { console.info(event); } catch { /* Noncritical sink. */ }
   } };
-  const runner = new ProjectRunnerProcessAdapter(request.projectRoot, undefined, process.env, previewLogger);
+  const runner = new ProjectRunnerProcessAdapter(request.projectRoot, undefined, environment, previewLogger);
   const history = createRunHistory(request.projectRoot, { log: line => console.info(line) });
-  const executor = new ProjectRunnerExecuteAdapter(request.projectRoot, undefined, process.env, previewLogger);
+  const executor = new ProjectRunnerExecuteAdapter(request.projectRoot, undefined, environment, previewLogger);
   const readiness = new PreviewArtifactReadiness(request.projectRoot);
   const inputs = { resolve: (cases: Parameters<typeof resolveSuiteInputs>[1]) => resolveSuiteInputs(request.projectRoot, cases) };
   return {

@@ -26,7 +26,9 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       case 'judge-unavailable': return 'This suite listed no compatible Judge models. Check its Judge model setup, then restart Sibu Evals.';
       case 'runner-unavailable': return "This suite's eval runner could not start. Check the suite setup, then restart Sibu Evals.";
       case 'runner-invalid': return "This suite's eval runner returned an invalid description. Check the suite setup, then restart Sibu Evals.";
-      case 'environment-missing': return typeof missingEnvironmentName === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(missingEnvironmentName)
+      case 'environment-missing': return missingEnvironmentName === 'OPENAI_API_KEY'
+        ? 'This suite needs OPENAI_API_KEY to check which models it can run. Add it to project-root .env, or to .env.local if .env is missing or has no key. You can also export it in the terminal that starts Sibu Evals. Then restart Sibu Evals.'
+        : typeof missingEnvironmentName === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(missingEnvironmentName)
         ? 'This suite needs ' + missingEnvironmentName + ' to check which models it can run. Set its value in the terminal that starts Sibu Evals, then restart Sibu Evals.'
         : 'This suite needs server-side setup before its models can be checked. Check the suite requirements in the terminal that starts Sibu Evals, then restart Sibu Evals.';
       case 'capability-unsupported': return 'This suite needs runner capabilities that are not available. Check its runner setup, then restart Sibu Evals.';
