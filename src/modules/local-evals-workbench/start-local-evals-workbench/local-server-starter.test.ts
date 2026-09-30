@@ -105,6 +105,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
 
       assert.equal(response.headers['content-type'], 'application/json; charset=utf-8');
       assert.equal(payload.status, 'ready');
+      assert.equal('issue' in payload, false);
       assert.equal(payload.suites[0]?.name, 'Skill authoring checks');
       assert.equal(payload.suites[0]?.readyTestCaseCount, 2);
       assert.equal(payload.suites[0]?.testCases[0]?.id, 'names-artifact');
@@ -134,6 +135,52 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.match(response.body, /No conventional evals folder/);
     } finally {
       await result.stop?.();
+    }
+  });
+
+  it('correlates a blocked discovery response with one safe local event', async () => {
+    const fakeServer = new FakeLocalHttpServer(4321);
+    const events: unknown[] = [];
+    const logger = { info: () => undefined, warn: (event: unknown) => events.push(event), error: () => undefined };
+    const starter = new NodeLocalWorkbenchServerStarter((handler) => { fakeServer.handler = handler; return fakeServer; }, () => runtimeDependencies(), logger);
+    const started = await starter.startServer({ projectRoot: '/private/project', initialDiscoveryResult: blockedDiscovery() });
+    try {
+      const reference = '123e4567-e89b-42d3-a456-426614174000';
+      const response = await requestDiscovery(fakeServer, reference);
+      const payload = JSON.parse(response.body) as { issue: { category: string; reference: string } };
+      assert.equal(payload.issue.category, 'missing-evals-folder');
+      assert.equal(payload.issue.reference, reference);
+      assert.equal(response.headers['x-sibu-request-reference'], reference);
+      assert.deepEqual(events, [{ event: 'local_evals_workbench_request_issue', stage: 'discovery', outcome: 'blocked', reason: 'missing-evals-folder', reference }]);
+
+      const replaced = await requestDiscovery(fakeServer, 'OPENAI_API_KEY=sk-secret'.repeat(30));
+      const replacedPayload = JSON.parse(replaced.body) as { issue: { reference: string } };
+      assert.match(replacedPayload.issue.reference, /^[a-f0-9-]{36}$/);
+      assert.equal(replaced.headers['x-sibu-request-reference'], replacedPayload.issue.reference);
+      assert.equal((events[1] as { reference: string }).reference, replacedPayload.issue.reference);
+      assert.doesNotMatch(replaced.body + JSON.stringify(events), /sk-secret|private\/project/);
+    } finally {
+      await started.stop?.();
+    }
+  });
+
+  it('contains a discovery request-boundary exception with unknown cause and a matching event', async () => {
+    const fakeServer = new FakeLocalHttpServer(4321);
+    const events: unknown[] = [];
+    const logger = { info: () => undefined, warn: (event: unknown) => events.push(event), error: () => undefined };
+    const badResult = Object.defineProperty(blockedDiscovery(), 'definitions', { get: () => { throw new Error('sk-secret /private/project'); } });
+    const starter = new NodeLocalWorkbenchServerStarter((handler) => { fakeServer.handler = handler; return fakeServer; }, () => runtimeDependencies(), logger);
+    const started = await starter.startServer({ projectRoot: '/private/project', initialDiscoveryResult: badResult });
+    try {
+      const response = await requestDiscovery(fakeServer, 'invalid-secret-reference');
+      const payload = JSON.parse(response.body) as { issue: { outcome: string; category: string; reference: string } };
+      assert.equal(response.statusCode, 500);
+      assert.equal(payload.issue.outcome, 'failed');
+      assert.equal(payload.issue.category, 'unknown');
+      assert.equal((events[0] as { reference: string }).reference, payload.issue.reference);
+      assert.doesNotMatch(response.body + JSON.stringify(events), /sk-secret|private\/project|invalid-secret-reference/);
+    } finally {
+      await started.stop?.();
     }
   });
 
@@ -344,3 +391,16 @@ describe('NodeLocalWorkbenchServerStarter', () => {
   });
 
 });
+
+async function requestDiscovery(server: FakeLocalHttpServer, reference: string): Promise<{ statusCode: number; headers: Record<string, string>; body: string }> {
+  assert.ok(server.handler);
+  let statusCode = 0;
+  let headers: Record<string, string> = {};
+  let body = '';
+  server.handler(Object.assign({ url: '/api/eval-suites', method: 'GET' }, { headers: { 'x-sibu-request-reference': reference } }), {
+    writeHead: (status, values) => { statusCode = status; headers = values; },
+    end: (value) => { body = value; },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  return { statusCode, headers, body };
+}

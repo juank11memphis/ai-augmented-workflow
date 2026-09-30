@@ -47,6 +47,14 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
       return { event: event.event, stage: 'workflow-state', outcome: 'blocked', reason: event.reason === 'missing-workflow-state' ? 'missing-workflow-state' : 'invalid-workflow-state' };
     case 'local_evals_workbench_start_failed':
       return { event: event.event, stage: failedStage(event.reason), outcome: 'failed', reason: safeFailureReason(event.reason) };
+    case 'local_evals_workbench_request_issue':
+      return {
+        event: event.event,
+        stage: 'discovery',
+        outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
+        reason: isKnownPublicDiscoveryReason(event.reason) ? event.reason : 'unknown',
+        reference: safeReference(event.reference),
+      };
     case 'local_evals_workbench_started':
       return {
         event: event.event,
@@ -67,6 +75,16 @@ function failedStage(reason: 'workflow-state-read-failed' | 'discovery-failed' |
 function safeFailureReason(reason: string): string {
   if (reason === 'workflow-state-read-failed' || reason === 'discovery-failed' || reason === 'server-start-failed') return reason;
   return 'unknown';
+}
+
+function isKnownPublicDiscoveryReason(reason: string): boolean {
+  return reason === 'missing-evals-folder' || reason === 'no-eval-suites'
+    || reason === 'unreadable-eval-suites' || reason === 'discovery-failed';
+}
+
+function safeReference(value: string): string | undefined {
+  return /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value)
+    ? value.toLowerCase() : undefined;
 }
 
 const knownDiscoveryReasons = new Set([
