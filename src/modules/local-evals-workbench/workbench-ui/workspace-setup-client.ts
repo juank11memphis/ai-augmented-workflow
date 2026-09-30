@@ -20,13 +20,15 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   const json = async (url, options) => (await fetch(url, options)).json();
   const post = (url, body) => json(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId }, model: setup.model, judgeModel: needsJudge() ? setup.judgeModel || null : null, repeats: Number(setup.repeats) });
-  function blockedModelMessage(reason) {
+  function blockedModelMessage(reason, missingEnvironmentName) {
     switch (reason) {
       case 'model-unavailable': return 'This suite listed no models. Update its supported models, then restart Sibu Evals.';
       case 'judge-unavailable': return 'This suite listed no compatible Judge models. Check its Judge model setup, then restart Sibu Evals.';
       case 'runner-unavailable': return "This suite's eval runner could not start. Check the suite setup, then restart Sibu Evals.";
       case 'runner-invalid': return "This suite's eval runner returned an invalid description. Check the suite setup, then restart Sibu Evals.";
-      case 'environment-missing': return 'This suite needs server-side setup before its models can be checked. Check the suite requirements in the terminal that starts Sibu Evals, then restart Sibu Evals.';
+      case 'environment-missing': return typeof missingEnvironmentName === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(missingEnvironmentName)
+        ? 'This suite needs ' + missingEnvironmentName + ' to check which models it can run. Set its value in the terminal that starts Sibu Evals, then restart Sibu Evals.'
+        : 'This suite needs server-side setup before its models can be checked. Check the suite requirements in the terminal that starts Sibu Evals, then restart Sibu Evals.';
       case 'capability-unsupported': return 'This suite needs runner capabilities that are not available. Check its runner setup, then restart Sibu Evals.';
       default: return 'Compatible models could not be checked. Check the suite setup, then try again.';
     }
@@ -64,8 +66,9 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     const judges = (runtime?.judgeModels || []).map(id => '<option value="' + esc(id) + '"' + (setup.judgeModel === id ? ' selected' : '') + '>' + esc(id) + '</option>').join('');
     return '<fieldset><legend>Run scope</legend><label><input type="radio" name="scope" value="all"' + (setup.scope === 'all' ? ' checked' : '') + '> All ' + esc(suite?.testCases.length || 0) + ' cases</label><label><input type="radio" name="scope" value="one"' + (setup.scope === 'one' ? ' checked' : '') + '> One case</label></fieldset>'
       + '<label class="field" data-case-field' + (setup.scope === 'one' ? '' : ' hidden') + '>Test case<select data-field="case">' + cases + '</select></label>'
-      + '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label>'
-      + '<p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>'
+      + (runtimeState === 'blocked'
+        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><button type="button" data-action="copy-steps">Copy steps</button><p role="status" data-copy-status></p></div>'
+        : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
       + '<details><summary>Model support</summary><p>Tests can use models supported by this suite. Sibu\'s built-in analysis and repair help currently uses OpenAI. More providers are planned.</p></details>'
       + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '')
       + '<details><summary>Repeat cases</summary><label class="field">Repeats<input type="number" data-field="repeats" min="1" max="20" step="1" value="' + esc(setup.repeats) + '"></label></details>';
@@ -104,7 +107,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     try {
       const payload = await post('/api/eval-suites/describe', { suiteId: current });
       if (suite?.id !== current || generation !== runtimeGeneration) return;
-      if (payload.status !== 'ready') { setRuntimeState('blocked', blockedModelMessage(payload.reason)); refreshSetupControls(); return; }
+      if (payload.status !== 'ready') { setRuntimeState('blocked', blockedModelMessage(payload.reason, payload.missingEnvironmentName)); refreshSetupControls(); return; }
       if (!payload.models?.length) { setRuntimeState('blocked', blockedModelMessage('model-unavailable')); refreshSetupControls(); return; }
       runtime = payload;
       if (!(payload.models || []).includes(setup.model)) setup.model = strictRuntimeChoices || hadModel ? '' : payload.models[0];
@@ -172,6 +175,15 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
     if (target.dataset.action === 'suite') selectSuite(target.dataset.suiteId);
+    if (target.dataset.action === 'copy-steps') {
+      const steps = runtimeState === 'blocked' ? runtimeMessage : '';
+      const feedback = () => steps === runtimeMessage && runtimeState === 'blocked' ? one('[data-copy-status]') : null;
+      try {
+        if (!steps || !navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        Promise.resolve(navigator.clipboard.writeText(steps)).then(() => { const node = feedback(); if (node) node.textContent = 'Steps copied.'; },
+          () => { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the steps above instead.'; });
+      } catch { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the steps above instead.'; }
+    }
     if (target.dataset.action === 'copy-prompt') { navigator.clipboard?.writeText('Create production-ready Sibu evals for this project.').then(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Prompt copied.'; }).catch(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Copy failed. Select the prompt text instead.'; }); }
     if (target.dataset.action === 'close-sheet') closeSheet();
     if (target.dataset.action === 'review') void showReview();
