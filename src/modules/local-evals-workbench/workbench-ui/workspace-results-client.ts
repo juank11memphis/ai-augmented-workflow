@@ -19,6 +19,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     runGeneration++; historyGeneration++; detailGeneration++;
     if (typeof runtimeGeneration !== 'undefined') runtimeGeneration++;
     if (typeof strictRuntimeChoices !== 'undefined') strictRuntimeChoices = false;
+    setRuntimeState('loading', 'Loading compatible models…');
     clearSelectedDetail();
     activePanel = null; panelReturn = null; side.hidden = true; side.innerHTML = '';
     side.removeAttribute('role'); side.removeAttribute('aria-modal'); side.removeAttribute('aria-label');
@@ -39,8 +40,11 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     for (const item of document.querySelectorAll('[data-action="suite"]')) {
       if (item.dataset.suiteId === suite?.id) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
     }
-    for (const action of ['coverage','history','new-run']) one('[data-action="' + action + '"]').hidden = !suite;
-    one('[data-action="new-run"]').disabled = Boolean(isActive() || startPending || startUncertain);
+    for (const action of ['coverage','history']) one('[data-action="' + action + '"]').hidden = !suite;
+    setupRegion.hidden = !suite || isActive() || startPending || startUncertain;
+    const reviewAction = setupRegion.querySelector('[data-action="review"]');
+    if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
+    refreshSetupControls();
     const historical = run && history.length && !latestRun();
     one('[data-latest-label]').textContent = run ? (historical ? 'Historical run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
     const runIds = run?.caseIds || [];
