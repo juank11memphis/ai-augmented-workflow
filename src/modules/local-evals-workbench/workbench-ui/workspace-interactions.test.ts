@@ -188,7 +188,7 @@ test('suite switch clears either open panel and stale selected detail before a n
       suite: { id: 'old', testCases: [{ id: 'old-case' }] }, run: null, history: [], selectedRunId: null, runtime: null, review: null,
       runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false,
       activePanel: panel, setup: {}, resetRepair() {}, isActive: () => false,
-      loadRuntime() {}, json: async () => new Promise(() => undefined), status() {} };
+      loadRuntime() {}, setRuntimeState() {}, json: async () => new Promise(() => undefined), status() {} };
     const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + '; renderWorkspace = () => {}; ({ selectSuite, getDetail: () => detail, getPanel: () => activePanel })', context) as {
       selectSuite(id: string): void; getDetail(): typeof detail; getPanel(): string | null;
     };
@@ -202,6 +202,53 @@ test('suite switch clears either open panel and stale selected detail before a n
     detail.innerHTML = 'New suite result';
     assert.equal(detail.hidden, false);
   }
+});
+
+test('actual workspace rendering collapses setup for an accepted run and restores it on completion', () => {
+  const nodes: Record<string, { textContent?: string; innerHTML?: string; hidden?: boolean; value?: string; disabled?: boolean;
+    querySelector?: (selector: string) => unknown }> = {};
+  for (const selector of ['[data-results-container]', '[data-detail]', '[data-side-panel]', '[data-suite-title]',
+    '[data-suite-description]', '[data-action="suite-select"]', '[data-action="coverage"]', '[data-action="history"]',
+    '[data-latest-label]', '[data-status-summary]',
+    '[data-run-metrics]', '[data-progress]']) nodes[selector] = { textContent: '', innerHTML: '' };
+  const reviewAction = { disabled: false };
+  nodes['[data-run-setup]'] = { hidden: false, querySelector: selector => selector === '[data-action="review"]' ? reviewAction : null };
+  const document = { querySelectorAll: () => [], addEventListener() {} };
+  const context = { document, URLSearchParams, esc: escape, one: (selector: string) => nodes[selector],
+    suite: { id: 'suite', name: 'Suite', description: '', testCases: [{ id: 'case', name: 'Case' }] },
+    run: null, history: [], selectedRunId: 'accepted', latestKnownRunId: 'accepted', acceptedRunId: 'accepted',
+    setup: { model: 'tested', caseId: 'case' }, runtime: { models: ['tested'], judgeModels: [], rubricCaseIds: [] },
+    runGeneration: 0, historyGeneration: 0, detailGeneration: 0,
+    setupRegion: nodes['[data-run-setup]'],
+    startPending: false, startUncertain: false, activePanel: null,
+    isActive: () => Boolean(context.acceptedRunId || context.run && ['queued', 'running'].includes(context.run.state)),
+    needsJudge: () => false, refreshSetupControls() {}, status: (value: string) => { nodes['[data-progress]']!.textContent = value; },
+    loadRuntime() {}, json: async () => new Promise(() => undefined) } as {
+      document: typeof document; URLSearchParams: typeof URLSearchParams; esc: typeof escape; one(selector: string): typeof nodes[string];
+      suite: { id: string; name: string; description: string; testCases: { id: string; name: string }[] };
+      run: null | { runId: string; state: string; createdAt: number; finishedAt: number; caseIds: string[];
+        cases: { caseId: string; state: string; attempts: { outcome: string }[] }[]; cost: null };
+      history: never[]; selectedRunId: string; latestKnownRunId: string; acceptedRunId: string | null;
+      setup: { model: string; caseId: string }; runtime: { models: string[]; judgeModels: string[]; rubricCaseIds: string[] };
+      runGeneration: number; historyGeneration: number; detailGeneration: number;
+      startPending: boolean; startUncertain: boolean; activePanel: null;
+      isActive(): boolean; needsJudge(): boolean; refreshSetupControls(): void; status(value: string): void;
+      loadRuntime(): void; json(): Promise<unknown>;
+    };
+  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace })', context) as { renderWorkspace(): void };
+  api.renderWorkspace();
+  assert.equal(nodes['[data-run-setup]']!.hidden, true);
+  assert.match(nodes['[data-status-summary]']!.textContent!, /Run queued/);
+  context.run = { runId: 'accepted', state: 'running', createdAt: 1, finishedAt: 2, caseIds: ['case'],
+    cases: [{ caseId: 'case', state: 'incomplete', attempts: [] }], cost: null };
+  api.renderWorkspace();
+  assert.equal(nodes['[data-run-setup]']!.hidden, true);
+  assert.match(nodes['[data-results-container]']!.innerHTML!, /Results/);
+  context.acceptedRunId = null;
+  context.run = { ...context.run, state: 'completed', cases: [{ caseId: 'case', state: 'completed', attempts: [{ outcome: 'passed' }] }] };
+  api.renderWorkspace();
+  assert.equal(nodes['[data-run-setup]']!.hidden, false);
+  assert.match(nodes['[data-results-container]']!.innerHTML!, /Results/);
 });
 
 for (const failure of ['unavailable', 'rejected'] as const) {

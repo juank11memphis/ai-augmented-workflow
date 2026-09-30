@@ -6,7 +6,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   let suite = suites[0] || null;
   let run = null, history = [], selectedRunId = null, latestKnownRunId = null, acceptedRunId = null, runtime = null, review = null;
-  let runGeneration = 0, historyGeneration = 0, detailGeneration = 0, runtimeGeneration = 0;
+  let runGeneration = 0, historyGeneration = 0, detailGeneration = 0, runtimeGeneration = 0, previewGeneration = 0;
   let strictRuntimeChoices = false;
   let runtimeState = 'loading', runtimeMessage = 'Loading compatible models…';
   let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', repeats: 1 };
@@ -42,7 +42,11 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     sheetSlot.innerHTML = '<div class="sheet-overlay"><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="sheet-header"><h2 id="sheet-title">' + esc(title) + '</h2><button type="button" data-action="close-sheet" aria-label="Close ' + esc(title) + '">×</button></div>' + content + '<div class="sheet-actions">' + actions + '</div></section></div>';
     sheetSlot.querySelector('button')?.focus();
   }
-  function closeSheet() { detailGeneration++; resetRepair(); sheetSlot.textContent = ''; const target = sheetReturn; sheetReturn = null; target?.focus(); }
+  function closeSheet() {
+    if (review) { review = null; previewGeneration++; }
+    detailGeneration++; resetRepair(); sheetSlot.textContent = '';
+    const target = sheetReturn; sheetReturn = null; target?.focus();
+  }
   function trapSheet(event) {
     const dialog = sheetSlot.querySelector('[role="dialog"]');
     if (!dialog) return;
@@ -69,7 +73,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   function showSetup() {
     if (!suite || isActive() || startPending || startUncertain) return;
     resetRepair();
-    review = null;
+    review = null; previewGeneration++;
     if (sheetSlot.querySelector('[role="dialog"]')) closeSheet();
     setupRegion.querySelector('[data-action="review"]')?.focus();
   }
@@ -87,14 +91,14 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   function readSetup() {
     const judge = setupRegion.querySelector('[data-field="judge"]');
     setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel, repeats: Number(setupRegion.querySelector('[data-field="repeats"]')?.value || 1) };
-    review = null;
+    review = null; previewGeneration++;
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
   }
   async function loadRuntime() {
     if (!suite) return;
     const current = suite.id, generation = ++runtimeGeneration, hadModel = Boolean(setup.model), hadJudge = Boolean(setup.judgeModel);
-    runtime = null; review = null;
+    runtime = null; review = null; previewGeneration++;
     setRuntimeState('loading', 'Loading compatible models…');
     refreshSetupControls();
     try {
@@ -117,29 +121,41 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     if (!runtime || !setup.model || needsJudge() && !setup.judgeModel || !Number.isInteger(setup.repeats) || setup.repeats < 1 || setup.repeats > 20) {
       one('[data-setup-status]').textContent = needsJudge() && !setup.judgeModel ? 'Choose a compatible Judge model.' : 'Choose a compatible model and repeat count from 1 to 20.'; return;
     }
-    const request = command(), descriptionGeneration = runtimeGeneration;
+    const request = command(), descriptionGeneration = runtimeGeneration, requestGeneration = ++previewGeneration;
     one('[data-setup-status]').textContent = 'Checking calls and cost…';
     try {
       const result = await post('/api/eval-runs/preview', request);
-      if (descriptionGeneration !== runtimeGeneration || JSON.stringify(request) !== JSON.stringify(command()) || !setupRegion?.isConnected) return;
+      if (descriptionGeneration !== runtimeGeneration || requestGeneration !== previewGeneration ||
+        JSON.stringify(request) !== JSON.stringify(command()) || !setupRegion?.isConnected || startPending || startUncertain || isActive()) return;
       if (result.status !== 'ready') { one('[data-setup-status]').textContent = 'Run cannot be reviewed: ' + (result.reason || 'check local setup'); return; }
       review = { request, result };
       const cost = result.cost?.status === 'available' ? result.cost.currency + ' ' + result.cost.amount : 'Cost unavailable: ' + (result.cost?.reason || 'estimate unavailable');
-      const content = '<p>' + esc(suite.name) + '</p><p>' + esc(result.selectedCaseIds.length) + ' cases · ' + esc(result.repeats === 1 ? 'once' : result.repeats + ' repeats') + '</p><dl><div><dt>Model</dt><dd>' + esc(result.model) + '</dd></div>' + (result.judgeModel ? '<div><dt>Judge</dt><dd>' + esc(result.judgeModel) + '</dd></div>' : '') + '<div><dt>Expected calls</dt><dd>' + esc(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + esc(cost) + '</dd></div></dl><p>Actual cost may vary.</p><p role="status" data-review-status></p>';
+      const selectedCase = suite.testCases.find(item => item.id === result.selectedCaseIds[0]);
+      const scope = request.scope.type === 'all' ? 'All ' + result.selectedCaseIds.length + ' cases' : '1 test case';
+      const content = '<p>' + esc(suite.name) + '</p><dl><div><dt>Scope</dt><dd>' + esc(scope) + '</dd></div>'
+        + (request.scope.type === 'test_case' ? '<div><dt>Test case</dt><dd>' + esc(selectedCase?.name || request.scope.testCaseId) + '</dd></div>' : '')
+        + '<div><dt>Repeats</dt><dd>' + esc(result.repeats) + '</dd></div><div><dt>Model</dt><dd>' + esc(result.model) + '</dd></div>'
+        + (result.judgeModel ? '<div><dt>Judge</dt><dd>' + esc(result.judgeModel) + '</dd></div>' : '')
+        + '<div><dt>Expected calls</dt><dd>' + esc(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + esc(cost) + '</dd></div></dl><p>Actual cost may vary.</p><p role="status" data-review-status></p>';
+      sheetReturn = setupRegion.querySelector('[data-action="review"]') || sheetReturn;
       openSheet('Review run', content, '<button type="button" data-action="back-setup">Back</button><button class="primary" type="button" data-action="start">Start run</button>');
-    } catch { const node = one('[data-setup-status]'); if (descriptionGeneration === runtimeGeneration && node) node.textContent = 'Run preview could not finish. Try again.'; }
+    } catch { const node = one('[data-setup-status]'); if (descriptionGeneration === runtimeGeneration && requestGeneration === previewGeneration && node) node.textContent = 'Run preview could not finish. Try again.'; }
   }
   async function startRun() {
     if (!review || startPending || startUncertain || isActive()) return;
     const { request, result } = review; startPending = true;
+    if (setupRegion) setupRegion.hidden = true;
+    status('Starting run…');
     const button = sheetSlot.querySelector('[data-action="start"]'); if (button) button.disabled = true;
     try {
       const payload = await post('/api/eval-runs/start', { ...request, review: { selectedCaseIds: result.selectedCaseIds, targetCalls: result.targetCalls, judgeCalls: result.judgeCalls, totalCalls: result.totalCalls, cost: result.cost } });
       if (payload.status !== 'queued') {
-        const message = 'Run was not started: ' + (payload.reason || 'review it again');
+        const message = 'Run was not started: ' + (payload.reason || 'review it again') + '. Check History before reviewing again.';
         const reviewStatus = sheetSlot.querySelector('[data-review-status]');
         if (reviewStatus) reviewStatus.textContent = message;
-        status(message); review = null; return;
+        status(message); review = null; if (button) button.disabled = true;
+        if (setupRegion) setupRegion.hidden = false;
+        return;
       }
       selectedRunId = payload.runId; latestKnownRunId = payload.runId; acceptedRunId = payload.runId; run = null;
       closeSheet(); clearSelectedDetail(); renderWorkspace(); status('Run queued. Loading saved progress…');
@@ -151,7 +167,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       if (reviewStatus) reviewStatus.textContent = message;
       status(message);
     }
-    finally { startPending = false; if (button) button.disabled = false; }
+    finally { startPending = false; if (button && review && !startUncertain) button.disabled = false; }
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;

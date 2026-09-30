@@ -176,7 +176,7 @@ test('dismissing review during Start preserves visible blocked and uncertain out
     else fail(new Error('network failure'));
     await pending;
     assert.equal(submissions, 1);
-    assert.equal(startButton.disabled, false);
+    assert.equal(startButton.disabled, true);
     if (outcome === 'blocked') {
       assert.match(progress.textContent, /Run was not started: missing model/);
       assert.equal(api.getState().review, null);
@@ -254,4 +254,109 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
     assert.equal(api.getState().isLatest, true);
     assert.equal(setupRegion.hidden, false);
   }
+});
+
+test('review uses the current preview, returns focus on Back and Escape, and ignores late previews', async () => {
+  const listeners = new Map<string, (event: { key: string; preventDefault(): void }) => void>();
+  const controls = { scope: 'one', caseId: 'case-a', model: 'tested', judge: '', repeats: '1' };
+  const requests: { resolve(value: unknown): void }[] = [];
+  const reviewButton = { focus() { document.activeElement = reviewButton; }, disabled: false };
+  const sheetButton = { focus() { document.activeElement = sheetButton; } };
+  const slot = { innerHTML: '', set textContent(value: string) { if (value === '') this.innerHTML = ''; }, querySelector(selector: string): unknown {
+    if (selector === 'button') return sheetButton;
+    if (selector === '[role="dialog"]') return this.innerHTML.includes('role="dialog"') ? { querySelectorAll: () => [sheetButton] } : null;
+    return null;
+  } };
+  const region = { isConnected: true, querySelector(selector: string): unknown {
+    if (selector === '[data-action="review"]') return reviewButton;
+    if (selector === 'input[name="scope"]:checked') return { value: controls.scope };
+    if (selector === '[data-field="case"]') return { value: controls.caseId };
+    if (selector === '[data-field="model"]') return { value: controls.model };
+    if (selector === '[data-field="judge"]') return null;
+    if (selector === '[data-field="repeats"]') return { value: controls.repeats };
+    return null;
+  } };
+  const setupStatus = { textContent: '' };
+  const document: { activeElement: unknown; getElementById(): { textContent: string }; querySelector(selector: string): unknown;
+    addEventListener(name: string, listener: (event: { key: string; preventDefault(): void }) => void): void } = {
+    activeElement: reviewButton,
+    getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', name: 'Suite', testCases: [
+      { id: 'case-a', name: 'Case A' }, { id: 'case-b', name: 'Case B' }] }] }) }),
+    querySelector: selector => ({ '[data-workspace]': {}, '[data-sheet-slot]': slot, '[data-run-setup]': region,
+      '[data-setup-status]': setupStatus })[selector],
+    addEventListener: (name, listener) => listeners.set(name, listener),
+  };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
+    + '; runtime={models:["tested"],judgeModels:[],rubricCaseIds:[]}; return {showReview,showSetup,closeSheet,getReview:()=>review};})()',
+  { document, setupRegion: region, resetRepair() {}, fetch: async () => ({ json: () => new Promise(resolve => requests.push({ resolve })) }) }) as {
+    showReview(): Promise<void>; showSetup(): void; closeSheet(): void; getReview(): unknown;
+  };
+  const ready = { status: 'ready', selectedCaseIds: ['case-a'], repeats: 1, model: 'tested', judgeModel: null,
+    totalCalls: 2, targetCalls: 2, judgeCalls: 0, cost: { status: 'unavailable', reason: 'runner did not estimate' } };
+  const first = api.showReview();
+  await new Promise(resolve => setImmediate(resolve));
+  requests[0]!.resolve(ready);
+  await first;
+  assert.match(slot.innerHTML, /<dt>Scope<\/dt><dd>1 test case/);
+  assert.match(slot.innerHTML, /<dt>Test case<\/dt><dd>Case A/);
+  assert.match(slot.innerHTML, /Cost unavailable: runner did not estimate/);
+  api.showSetup();
+  assert.equal(document.activeElement, reviewButton);
+  assert.equal(api.getReview(), null);
+
+  const second = api.showReview();
+  await new Promise(resolve => setImmediate(resolve));
+  requests[1]!.resolve(ready);
+  await second;
+  listeners.get('keydown')!({ key: 'Escape', preventDefault() {} });
+  assert.equal(document.activeElement, reviewButton);
+  assert.equal(api.getReview(), null);
+
+  const late = api.showReview();
+  await new Promise(resolve => setImmediate(resolve));
+  controls.caseId = 'case-b';
+  api.showSetup();
+  requests[2]!.resolve(ready);
+  await late;
+  assert.equal(slot.innerHTML, '');
+  assert.equal(api.getReview(), null);
+});
+
+test('double Start sends one reviewed snapshot and keeps setup collapsed until rejection', async () => {
+  let finish!: (value: unknown) => void;
+  let submissions = 0;
+  let submitted: unknown;
+  const button = { disabled: false };
+  const reviewStatus = { textContent: '' };
+  const region = { hidden: false };
+  const progress = { textContent: '' };
+  const slot = { querySelector: (selector: string) => ({ '[data-action="start"]': button,
+    '[data-review-status]': reviewStatus })[selector] };
+  const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
+    querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-run-setup]': region,
+      '[data-sheet-slot]': slot, '[data-progress]': progress })[selector], addEventListener() {} };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
+    + '; return {startRun,setReview(value){review=value;}};})()', { document,
+    fetch: (_url: string, options: { body: string }) => { submissions++; submitted = JSON.parse(options.body);
+      return Promise.resolve({ json: () => new Promise(resolve => { finish = resolve; }) }); } }) as {
+      startRun(): Promise<void>; setReview(value: unknown): void;
+    };
+  api.setReview({ request: { suiteId: 'suite', scope: { type: 'all' }, model: 'tested', repeats: 2 },
+    result: { selectedCaseIds: ['case'], targetCalls: 2, judgeCalls: 0, totalCalls: 2,
+      cost: { status: 'unavailable', reason: 'not estimated' } } });
+  const pending = api.startRun();
+  await api.startRun();
+  assert.equal(submissions, 1);
+  assert.equal(region.hidden, true);
+  assert.equal(button.disabled, true);
+  assert.match(progress.textContent, /Starting run/);
+  assert.deepEqual(JSON.parse(JSON.stringify(submitted)), { suiteId: 'suite', scope: { type: 'all' }, model: 'tested', repeats: 2,
+    review: { selectedCaseIds: ['case'], targetCalls: 2, judgeCalls: 0, totalCalls: 2,
+      cost: { status: 'unavailable', reason: 'not estimated' } } });
+  finish({ status: 'blocked', reason: 'stale-review' });
+  await pending;
+  assert.equal(region.hidden, false);
+  assert.match(reviewStatus.textContent, /stale-review.*Check History/);
+  await api.startRun();
+  assert.equal(submissions, 1);
 });
