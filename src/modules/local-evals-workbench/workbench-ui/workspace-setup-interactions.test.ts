@@ -27,14 +27,16 @@ test('case switches and late discovery keep conditional Judge options and keyboa
     addEventListener: (name: string, listener: (event: { target: { matches: (selector: string) => boolean } }) => void) => void } = {
     activeElement: null,
     getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', name: 'Suite', testCases: [{ id: 'plain', name: 'Plain' }, { id: 'rubric', name: 'Rubric' }] }] }) }),
-    querySelector: selector => selector === '[data-workspace]' ? {} : selector === '[data-sheet-slot]' ? slot : null,
+    querySelector: selector => selector === '[data-workspace]' ? {} : selector === '[data-sheet-slot]' ? slot : selector === '[data-run-setup]' ? region : null,
     addEventListener: (name, listener) => listeners.set(name, listener),
   };
   const focusable = (field: string) => ({ dataset: { field }, focus() { document.activeElement = this; } });
   const fields = { innerHTML: '', querySelector: (selector: string) => focusable(selector.match(/data-field="([^"]+)/)?.[1] || 'scope') };
-  const slot = { innerHTML: '', textContent: '', querySelector(selector: string): unknown {
+  const reviewAction = { ...focusable('review'), disabled: false };
+  const slot = { innerHTML: '', textContent: '', querySelector: () => null };
+  const region = { querySelector(selector: string): unknown {
     if (selector === '[data-setup-fields]') return fields;
-    if (selector === 'button') return focusable('close');
+    if (selector === '[data-action="review"]') return reviewAction;
     if (selector === 'input[name="scope"]:checked') return { value: controls.scope };
     if (selector === '[data-field="case"]') return { value: controls.caseId };
     if (selector === '[data-field="model"]') return { value: controls.model };
@@ -50,12 +52,16 @@ test('case switches and late discovery keep conditional Judge options and keyboa
     needsJudge(): boolean; getSetup(): { judgeModel: string };
   };
   api.showSetup();
+  assert.equal(slot.innerHTML, '');
+  assert.equal((document.activeElement as { dataset: { field: string } }).dataset.field, 'review');
   api.readSetup(); api.refreshSetupControls();
+  assert.equal(reviewAction.disabled, true);
   const loading = api.loadRuntime();
   await new Promise(resolve => setImmediate(resolve));
   finishDiscovery({ status: 'ready', models: ['tested'], judgeModels: ['judge-a'], rubricCaseIds: ['rubric'] });
   await loading;
   assert.match(fields.innerHTML, /value="tested"/);
+  assert.equal(reviewAction.disabled, false);
   assert.doesNotMatch(fields.innerHTML, /data-field="judge"/);
 
   controls.caseId = 'rubric';
@@ -75,6 +81,14 @@ test('case switches and late discovery keep conditional Judge options and keyboa
   api.readSetup(); api.refreshSetupControls();
   assert.equal(api.getSetup().judgeModel, 'judge-a');
   assert.match(fields.innerHTML, /data-field="judge"/);
+  controls.scope = 'all';
+  api.readSetup(); api.refreshSetupControls();
+  assert.match(fields.innerHTML, /data-case-field hidden/);
+  assert.match(fields.innerHTML, /data-field="judge"/);
+  controls.scope = 'one';
+  controls.caseId = 'plain';
+  api.readSetup(); api.refreshSetupControls();
+  assert.doesNotMatch(fields.innerHTML, /data-case-field hidden|data-field="judge"/);
 });
 
 test('dismissing review during Start preserves visible blocked and uncertain outcomes without resubmitting', async () => {
@@ -131,7 +145,7 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
     const progress = { textContent: '' };
     const detail = { innerHTML: priorDetail };
     const startButton = { disabled: false };
-    const newRunButton = { disabled: false };
+    const setupRegion = { hidden: false, innerHTML: '', querySelector: () => null };
     const slot = { textContent: '', innerHTML: '', querySelector: (selector: string) => selector === '[data-action="start"]' ? startButton : null };
     const responses = [
       { status: 'unavailable' },
@@ -143,7 +157,7 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
     const document = { activeElement: null, getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
       querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': slot, '[data-progress]': progress,
         '[data-detail]': detail, '[data-results-container]': {}, '[data-side-panel]': {},
-        '[data-status-summary]': { focus() {} }, '[data-action=new-run]': newRunButton })[selector],
+        '[data-status-summary]': { focus() {} }, '[data-run-setup]': setupRegion })[selector],
       querySelectorAll: () => [], addEventListener() {} };
     const context = { document, URLSearchParams, setTimeout: (callback: () => void) => { timers.push(callback); },
       fetch: async (url: string) => ({ json: async () => {
@@ -153,7 +167,7 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
         return { status: 'ready', models: [], judgeModels: [] };
       } }) };
     const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + WORKSPACE_RESULTS_CLIENT + WORKSPACE_REPAIR_CLIENT
-      + '; renderWorkspace = () => { document.querySelector("[data-action=new-run]").disabled = isActive() || startPending || startUncertain; };'
+      + '; renderWorkspace = () => { document.querySelector("[data-run-setup]").hidden = isActive() || startPending || startUncertain; };'
       + ' return { startRun, showSetup, rerunAfterRepair, setReview(value){review=value;}, primeRepair(){'
       + ' run={runId:"old",state:"completed",judgeModel:null,repeats:1}; selectedRunId="old"; history=[{runId:"old"}];'
       + ' selectedFailure={suiteId:"suite",runId:"old",testCaseId:"case"}; repairStage="applied";'
@@ -174,7 +188,7 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
     assert.equal(api.getState().run, null);
     assert.equal(api.getState().repairStage, 'idle');
     assert.doesNotMatch(detail.innerHTML, /Earlier/);
-    assert.equal(newRunButton.disabled, true);
+    assert.equal(setupRegion.hidden, true);
     assert.equal(statusRequests, 1);
     assert.ok(historyRequests >= 1);
     const sheetBefore = slot.innerHTML;
@@ -187,6 +201,6 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
     assert.equal(api.getState().acceptedRunId, null);
     assert.equal(api.getState().run?.state, 'completed');
     assert.equal(api.getState().isLatest, true);
-    assert.equal(newRunButton.disabled, false);
+    assert.equal(setupRegion.hidden, false);
   }
 });

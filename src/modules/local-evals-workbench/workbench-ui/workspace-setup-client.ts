@@ -12,6 +12,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   let sheetReturn = null, startPending = false, startUncertain = false, activePanel = null;
   const one = selector => document.querySelector(selector);
   const sheetSlot = one('[data-sheet-slot]');
+  const setupRegion = one('[data-run-setup]');
   const selectedCaseIds = () => setup.scope === 'all' ? (suite?.testCases || []).map(item => item.id) : [setup.caseId];
   const needsJudge = () => selectedCaseIds().some(id => (runtime?.rubricCaseIds || []).includes(id));
   const isActive = () => Boolean(acceptedRunId || run && ['queued', 'running'].includes(run.state));
@@ -44,36 +45,41 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       + '<label class="field" data-case-field' + (setup.scope === 'one' ? '' : ' hidden') + '>Test case<select data-field="case">' + cases + '</select></label>'
       + '<label class="field">Model being tested<select data-field="model"><option value="">Choose model</option>' + models + '</select></label>'
       + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '')
-      + '<details><summary>Repeat cases</summary><label class="field">Repeats<input type="number" data-field="repeats" min="1" max="20" step="1" value="' + esc(setup.repeats) + '"></label></details><p role="status" data-setup-status></p>';
+      + '<details><summary>Repeat cases</summary><label class="field">Repeats<input type="number" data-field="repeats" min="1" max="20" step="1" value="' + esc(setup.repeats) + '"></label></details>';
   }
   function showSetup() {
     if (!suite || isActive() || startPending || startUncertain) return;
     resetRepair();
     review = null;
-    openSheet('New run', '<div data-setup-fields>' + setupMarkup() + '</div>', '<button class="primary" type="button" data-action="review">Review run</button>');
+    if (sheetSlot.querySelector('[role="dialog"]')) closeSheet();
+    setupRegion.querySelector('[data-action="review"]')?.focus();
   }
   function refreshSetupControls() {
-    const fields = sheetSlot.querySelector('[data-setup-fields]');
+    const fields = setupRegion?.querySelector('[data-setup-fields]');
     if (!fields) return;
     const focused = document.activeElement;
     const selector = focused?.name === 'scope' ? 'input[name="scope"][value="' + setup.scope + '"]'
       : focused?.dataset?.field ? '[data-field="' + focused.dataset.field + '"]' : null;
     fields.innerHTML = setupMarkup();
+    const reviewAction = setupRegion.querySelector('[data-action="review"]');
+    if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
     if (selector) fields.querySelector(selector)?.focus();
   }
   function readSetup() {
-    const dialog = sheetSlot;
-    const judge = dialog.querySelector('[data-field="judge"]');
-    setup = { scope: dialog.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: dialog.querySelector('[data-field="case"]')?.value || '', model: dialog.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel, repeats: Number(dialog.querySelector('[data-field="repeats"]')?.value || 1) };
+    const judge = setupRegion.querySelector('[data-field="judge"]');
+    setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel, repeats: Number(setupRegion.querySelector('[data-field="repeats"]')?.value || 1) };
     review = null;
+    const reviewAction = setupRegion.querySelector('[data-action="review"]');
+    if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
   }
   async function loadRuntime() {
     if (!suite) return;
     const current = suite.id, generation = ++runtimeGeneration; runtime = null;
+    refreshSetupControls();
     try {
       const payload = await post('/api/eval-suites/describe', { suiteId: current });
       if (suite?.id !== current || generation !== runtimeGeneration) return;
-      if (payload.status !== 'ready') { status('Compatible models unavailable: ' + (payload.reason || 'check local setup')); return; }
+      if (payload.status !== 'ready') { status('Compatible models unavailable: ' + (payload.reason || 'check local setup')); refreshSetupControls(); return; }
       runtime = payload;
       if (!(payload.models || []).includes(setup.model)) setup.model = strictRuntimeChoices ? '' : payload.models?.[0] || '';
       if (!(payload.judgeModels || []).includes(setup.judgeModel)) setup.judgeModel = strictRuntimeChoices ? '' : payload.judgeModels?.[0] || '';
@@ -85,19 +91,19 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   async function showReview() {
     readSetup();
     if (!runtime || !setup.model || needsJudge() && !setup.judgeModel || !Number.isInteger(setup.repeats) || setup.repeats < 1 || setup.repeats > 20) {
-      sheetSlot.querySelector('[data-setup-status]').textContent = needsJudge() && !setup.judgeModel ? 'Choose a compatible Judge model.' : 'Choose a compatible model and repeat count from 1 to 20.'; return;
+      one('[data-setup-status]').textContent = needsJudge() && !setup.judgeModel ? 'Choose a compatible Judge model.' : 'Choose a compatible model and repeat count from 1 to 20.'; return;
     }
     const request = command();
-    sheetSlot.querySelector('[data-setup-status]').textContent = 'Checking calls and cost…';
+    one('[data-setup-status]').textContent = 'Checking calls and cost…';
     try {
       const result = await post('/api/eval-runs/preview', request);
-      if (JSON.stringify(request) !== JSON.stringify(command()) || sheetSlot.querySelector('[data-setup-status]') === null) return;
-      if (result.status !== 'ready') { sheetSlot.querySelector('[data-setup-status]').textContent = 'Run cannot be reviewed: ' + (result.reason || 'check local setup'); return; }
+      if (JSON.stringify(request) !== JSON.stringify(command()) || !setupRegion?.isConnected) return;
+      if (result.status !== 'ready') { one('[data-setup-status]').textContent = 'Run cannot be reviewed: ' + (result.reason || 'check local setup'); return; }
       review = { request, result };
       const cost = result.cost?.status === 'available' ? result.cost.currency + ' ' + result.cost.amount : 'Cost unavailable: ' + (result.cost?.reason || 'estimate unavailable');
       const content = '<p>' + esc(suite.name) + '</p><p>' + esc(result.selectedCaseIds.length) + ' cases · ' + esc(result.repeats === 1 ? 'once' : result.repeats + ' repeats') + '</p><dl><div><dt>Model</dt><dd>' + esc(result.model) + '</dd></div>' + (result.judgeModel ? '<div><dt>Judge</dt><dd>' + esc(result.judgeModel) + '</dd></div>' : '') + '<div><dt>Expected calls</dt><dd>' + esc(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + esc(cost) + '</dd></div></dl><p>Actual cost may vary.</p><p role="status" data-review-status></p>';
       openSheet('Review run', content, '<button type="button" data-action="back-setup">Back</button><button class="primary" type="button" data-action="start">Start run</button>');
-    } catch { const node = sheetSlot.querySelector('[data-setup-status]'); if (node) node.textContent = 'Run preview could not finish. Try again.'; }
+    } catch { const node = one('[data-setup-status]'); if (node) node.textContent = 'Run preview could not finish. Try again.'; }
   }
   async function startRun() {
     if (!review || startPending || startUncertain || isActive()) return;
@@ -125,7 +131,6 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
-    if (target.dataset.action === 'new-run') showSetup();
     if (target.dataset.action === 'suite') selectSuite(target.dataset.suiteId);
     if (target.dataset.action === 'copy-prompt') { navigator.clipboard?.writeText('Create production-ready Sibu evals for this project.').then(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Prompt copied.'; }).catch(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Copy failed. Select the prompt text instead.'; }); }
     if (target.dataset.action === 'close-sheet') closeSheet();
