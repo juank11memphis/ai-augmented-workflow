@@ -40,3 +40,17 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.doesNotMatch(html, /Eval result matrix|variant-filter|coverage percentage/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
 });
+
+it('renders contextual discovery recovery without embedding unsafe diagnostics', () => {
+  for (const [reason, title] of [['no-eval-suites', 'No eval suites found'], ['unreadable-eval-suites', "Sibu couldn't read the eval suites"]] as const) {
+    const html = renderWorkspaceShell({ status: 'blocked', reason, message: 'sk-secret', guidance: ['private content'], suites: [],
+      diagnostics: [{ code: 'suite-file-read-failed', severity: 'error', location: '/private/project', message: 'sk-secret' }] });
+    assert.match(html, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(html, /data-discovery-notice/);
+    assert.match(html, /data-issue-details hidden/);
+    assert.match(html, /data-action="copy-issue" hidden/);
+    assert.doesNotMatch(html, /sk-secret|private content|\/private\/project/);
+    assert.match(html, /data-results-container/);
+    assert.match(html, /data-run-setup hidden/);
+  }
+});

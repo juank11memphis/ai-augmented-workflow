@@ -47,3 +47,14 @@ it('uses persisted run scope and retains historical cases removed from the curre
   assert.equal(historic.cases[0]?.name, 'retired');
   assert.equal(historic.progress, '1/1 complete');
 });
+
+it('distinguishes empty discovery from unreadable suites without exposing diagnostics', () => {
+  const blocked = (reason: 'no-eval-suites' | 'unreadable-eval-suites') => createWorkspaceViewModel({
+    discovery: { status: 'blocked', reason, message: 'sk-secret', guidance: ['private content'], suites: [], diagnostics: [] },
+  });
+  assert.equal(blocked('no-eval-suites').discoveryNotice?.title, 'No eval suites found');
+  assert.match(blocked('no-eval-suites').discoveryNotice?.nextStep ?? '', /Add an eval suite/);
+  assert.match(blocked('unreadable-eval-suites').discoveryNotice?.title ?? '', /couldn't read/);
+  assert.match(blocked('unreadable-eval-suites').discoveryNotice?.nextStep ?? '', /Check the local eval workspace/);
+  assert.doesNotMatch(JSON.stringify(blocked('unreadable-eval-suites').discoveryNotice), /sk-secret|private content/);
+});
