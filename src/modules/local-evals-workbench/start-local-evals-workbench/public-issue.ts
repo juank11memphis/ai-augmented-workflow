@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
+import type { DescribeEvalSuiteRuntimeResult } from '../describe-eval-suite-runtime/result.js';
+import { isSafeEnvironmentName, type RuntimeBlockReason } from '../runtime-description.js';
 
 type BlockedDiscovery = Extract<EvalSuiteDiscoveryResult, { status: 'blocked' }>;
 type DiscoveryReason = BlockedDiscovery['reason'];
@@ -17,6 +19,71 @@ export type PublicDiscoveryIssue = {
 };
 
 type IssueCopy = Pick<PublicDiscoveryIssue, 'title' | 'explanation' | 'nextStep' | 'recoveryAction'>;
+
+export type PublicModelCheckIssue = {
+  readonly stage: 'model-check';
+  readonly outcome: 'blocked' | 'failed';
+  readonly category: RuntimeBlockReason | 'invalid-request' | 'unknown';
+  readonly title: string;
+  readonly explanation: string;
+  readonly nextStep: string;
+  readonly recoveryAction: 'edit-suites' | 'retry' | 'report';
+  readonly reference: string;
+};
+
+type ModelCheckCopy = Pick<PublicModelCheckIssue, 'title' | 'explanation' | 'nextStep' | 'recoveryAction'>;
+const copy = (title: string, explanation: string, nextStep: string, recoveryAction: ModelCheckCopy['recoveryAction']): ModelCheckCopy =>
+  ({ title, explanation, nextStep, recoveryAction });
+
+const modelCheckCopy: Record<RuntimeBlockReason, ModelCheckCopy> = {
+  'suite-unavailable': copy('Suite unavailable', 'Sibu could not use this suite.', 'Check the suite definition, then retry.', 'edit-suites'),
+  'runner-unavailable': copy('Runner unavailable', 'The suite runner could not be used.', 'Check the runner command and retry.', 'edit-suites'),
+  'runner-absent': copy('Runner not found', 'The configured runner was not found.', 'Install or correct the runner command, then retry.', 'edit-suites'),
+  'runner-start-failed': copy('Runner could not start', 'The configured runner failed to start.', 'Check the runner command and permissions, then retry.', 'edit-suites'),
+  'runner-exited': copy('Runner exited', 'The runner ended before returning a model description.', 'Check the runner operation, then retry.', 'retry'),
+  'runner-protocol-invalid': copy('Runner protocol invalid', 'The runner response did not follow the expected protocol.', 'Check runner compatibility, then retry.', 'edit-suites'),
+  'runner-invalid': copy('Runner response invalid', 'Sibu could not use the runner response.', 'Check the runner output format, then retry.', 'edit-suites'),
+  'runner-timeout': copy('Runner timed out', 'The runner did not answer the model check in time.', 'Check that the runner is working, then retry.', 'retry'),
+  'environment-missing': copy('Required setting missing', 'This suite needs a required setting.', 'Add or export the setting, restart Sibu Evals, then retry.', 'edit-suites'),
+  'required-setting-rejected': copy('Required setting rejected', 'The runner could not accept a required setting name.', 'Fix the suite required settings, then retry.', 'edit-suites'),
+  'runner-request-too-large': copy('Model check too large', 'Sibu could not send the model check because it was too large.', 'Copy issue details and report the problem.', 'report'),
+  'environment-undeclared': copy('Runner setting undeclared', 'The runner requires a setting not declared by this suite.', 'Declare the required setting in the suite, then retry.', 'edit-suites'),
+  'capability-unsupported': copy('Capability unsupported', 'The runner does not support a capability this suite needs.', 'Review suite and runner support, then retry.', 'edit-suites'),
+  'model-unavailable': copy('No compatible models', 'The runner returned no compatible target models.', 'Review runner model support, then retry.', 'edit-suites'),
+  'judge-unavailable': copy('Judge model unavailable', 'The runner returned no compatible judge model.', 'Review runner judge support, then retry.', 'edit-suites'),
+  'case-unavailable': copy('Case unavailable', 'A selected case could not be used.', 'Review the suite cases, then retry.', 'edit-suites'),
+  'repeats-invalid': copy('Repeat count invalid', 'The suite repeat count could not be used.', 'Correct the suite repeat count, then retry.', 'edit-suites'),
+  'artifact-unsafe': copy('Artifact location unsafe', 'The artifact location did not pass safety checks.', 'Correct the suite artifact location, then retry.', 'edit-suites'),
+  'artifact-not-ignored': copy('Artifact location not ignored', 'The artifact location is not Git-ignored.', 'Ignore the artifact location, then retry.', 'edit-suites'),
+  'artifact-tracked': copy('Artifact location tracked', 'The artifact location contains tracked files.', 'Move artifacts away from tracked files, then retry.', 'edit-suites'),
+  'artifact-git-unavailable': copy('Artifact safety unavailable', 'Sibu could not check Git tracking for artifacts.', 'Check Git access, then retry.', 'retry'),
+  'artifact-root-unsafe': copy('Artifact root unsafe', 'The artifact root did not pass safety checks.', 'Correct the artifact root, then retry.', 'edit-suites'),
+  'estimate-invalid': copy('Estimate invalid', 'The runner estimate could not be used.', 'Check the runner estimate response, then retry.', 'edit-suites'),
+  'input-unsafe': copy('Model check input unsafe', 'Sibu rejected older unclassified model-check input.', 'Review runner setup and request size, then retry.', 'retry'),
+};
+
+export function modelCheckIssue(result: Extract<DescribeEvalSuiteRuntimeResult, { status: 'blocked' }>, reference: string): PublicModelCheckIssue {
+  const base = modelCheckCopy[result.reason];
+  const name = result.reason === 'environment-missing' ? result.missingEnvironmentName
+    : result.reason === 'required-setting-rejected' ? result.rejectedSettingName : undefined;
+  const safeName = isSafeEnvironmentName(name) ? name : undefined;
+  return {
+    stage: 'model-check', outcome: 'blocked', category: result.reason,
+    ...base,
+    explanation: safeName && result.reason === 'environment-missing' ? `This suite needs ${safeName}.` : base.explanation,
+    reference,
+  };
+}
+
+export function invalidModelCheckIssue(reference: string): PublicModelCheckIssue {
+  return { stage: 'model-check', outcome: 'blocked', category: 'invalid-request',
+    ...copy('Model check request invalid', 'Sibu could not read this model-check request.', 'Correct the request and retry.', 'retry'), reference };
+}
+
+export function unknownModelCheckIssue(reference: string): PublicModelCheckIssue {
+  return { stage: 'model-check', outcome: 'failed', category: 'unknown',
+    ...copy('Model check failed', 'Sibu could not complete the model check. Cause unknown.', 'Retry the check. If it repeats, use the reference to find the local diagnostic.', 'retry'), reference };
+}
 
 const discoveryCopy: Record<DiscoveryReason, IssueCopy> = {
   'missing-evals-folder': {

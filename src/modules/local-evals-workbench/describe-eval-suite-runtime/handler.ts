@@ -27,6 +27,10 @@ export async function describeEvalSuiteRuntime(
         && isDeclaredEnvironmentName(described.missingEnvironmentName, suite.runner.requiredEnvironment)) {
         return { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: described.missingEnvironmentName };
       }
+      if (described.reason === 'required-setting-rejected'
+        && isDeclaredEnvironmentName(described.rejectedSettingName, suite.runner.requiredEnvironment)) {
+        return { status: 'blocked', reason: 'required-setting-rejected', rejectedSettingName: described.rejectedSettingName };
+      }
       return { status: 'blocked', reason: described.reason };
     }
     const reason = compatibleDescription(suite, described.value);

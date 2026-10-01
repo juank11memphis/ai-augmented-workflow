@@ -3,98 +3,149 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 
-type BlockedResult = { status: 'blocked'; reason: string; missingEnvironmentName?: unknown; secretValue?: string; stderr?: string };
+type BlockedResult = { status: 'blocked'; reason: string; issue?: unknown; missingEnvironmentName?: unknown; rejectedSettingName?: unknown; secretValue?: string; stderr?: string };
+const reference = '123e4567-e89b-42d3-a456-426614174000';
+function issue(reason: string) { return { stage: 'model-check', outcome: 'blocked', category: reason, reference, title: 'sk-secret', explanation: 'private runner error' }; }
 
-function blockedBrowser(result: BlockedResult, clipboard?: { writeText(text: string): Promise<void> }) {
+function blockedBrowser(result: BlockedResult, clipboard?: { writeText(text: string): Promise<void> }, lostResponse = false) {
   const listeners = new Map<string, (event: { target: { closest(selector: string): unknown } }) => void>();
   const fields = { innerHTML: '', querySelector: () => null };
   const review = { disabled: false };
   const announcement = { textContent: '' };
-  const copyStatus = { textContent: '' };
+  const feedback = { textContent: '' };
   const results = { hidden: false, textContent: 'Previous results' };
+  const history = { hidden: false, textContent: 'History' };
   const region = { querySelector: (selector: string) => ({
-    '[data-setup-fields]': fields, '[data-action="review"]': review,
-  })[selector as '[data-setup-fields]' | '[data-action="review"]'] };
+    '[data-setup-fields]': fields, '[data-action="review"]': review, '[data-model-copy-status]': feedback,
+    '[data-model-notice-heading]': { focus() {} },
+  })[selector as '[data-setup-fields]'] };
   const document = {
     activeElement: null as unknown,
     getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
     querySelector: (selector: string) => ({
       '[data-workspace]': {}, '[data-sheet-slot]': {}, '[data-run-setup]': region,
-      '[data-setup-status]': announcement, '[data-copy-status]': copyStatus,
-      '[data-results-container]': results,
+      '[data-setup-status]': announcement, '[data-results-container]': results,
+      '[data-action="history"]': history,
     })[selector as '[data-workspace]'],
     addEventListener: (name: string, listener: (event: { target: { closest(selector: string): unknown } }) => void) => listeners.set(name, listener),
   };
   const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return {loadRuntime, refreshSetupControls};})()', {
-    document, navigator: clipboard ? { clipboard } : {}, fetch: async () => ({ json: async () => result }),
+    document, navigator: clipboard ? { clipboard } : {}, fetch: async () => {
+      if (lostResponse) throw new Error('sk-secret private provider stderr');
+      return { json: async () => result };
+    },
   }) as { loadRuntime(): Promise<void>; refreshSetupControls(): void };
-  const clickCopy = () => listeners.get('click')?.({ target: { closest: () => ({ dataset: { action: 'copy-steps' } }) } });
-  return { api, fields, review, announcement, copyStatus, results, document, clickCopy };
+  const click = (action: string) => listeners.get('click')?.({ target: { closest: () => ({ dataset: { action } }) } });
+  return { api, fields, review, announcement, feedback, results, history, document, click };
 }
 
-test('known blocked reasons show distinct safe guidance instead of an empty model picker', async () => {
+test('model-check categories render contextual safe copy with read-only recovery', async () => {
   const cases = [
-    { reason: 'environment-missing', missingEnvironmentName: 'OPENAI_API_KEY', expected: /needs OPENAI_API_KEY.*project-root \.env, or to \.env\.local if \.env is missing or has no key.*restart Sibu Evals/ },
-    { reason: 'environment-missing', missingEnvironmentName: 'TEST_KEY', expected: /needs TEST_KEY.*Set its value in the terminal that starts Sibu Evals.*restart Sibu Evals/ },
-    { reason: 'environment-missing', expected: /needs server-side setup.*Check the suite requirements/ },
-    { reason: 'model-unavailable', expected: /listed no models.*Update its supported models/ },
-    { reason: 'runner-unavailable', expected: /eval runner could not start.*Check the suite setup/ },
-    { reason: 'runner-invalid', expected: /runner returned an invalid description.*Check the suite setup/ },
-    { reason: 'capability-unsupported', expected: /runner capabilities that are not available.*Check its runner setup/ },
-    { reason: 'judge-unavailable', expected: /no compatible Judge models.*Check its Judge model setup/ },
-    { reason: 'unknown', expected: /Compatible models could not be checked.*Check the suite setup/ },
-  ];
-  for (const item of cases) {
-    const browser = blockedBrowser({ status: 'blocked', ...item, secretValue: 'do-not-show', stderr: 'private runner error' });
+    ['environment-missing', /needs a required setting/], ['required-setting-rejected', /will not pass to a runner/],
+    ['runner-request-too-large', /too large/], ['runner-absent', /not found/], ['runner-start-failed', /could not start/],
+    ['runner-exited', /ended before/], ['runner-protocol-invalid', /expected protocol/], ['runner-invalid', /unusable description/],
+    ['runner-timeout', /did not answer in time/], ['capability-unsupported', /does not support a capability/],
+    ['model-unavailable', /no compatible models/], ['judge-unavailable', /no compatible Judge models/],
+    ['input-unsafe', /without a precise cause/], ['unknown', /Cause unknown/],
+  ] as const;
+  for (const [reason, expected] of cases) {
+    const browser = blockedBrowser({ status: 'blocked', reason, issue: issue(reason), secretValue: 'sk-secret', stderr: 'private runner error' });
     await browser.api.loadRuntime();
-    assert.match(browser.fields.innerHTML, item.expected);
-    assert.match(browser.fields.innerHTML, /Model being tested.*data-model-readiness.*Copy steps/s);
-    assert.doesNotMatch(browser.fields.innerHTML, /data-field="model"|type="password"|do-not-show|private runner error/);
+    assert.match(browser.fields.innerHTML, expected);
+    assert.match(browser.fields.innerHTML, /Model being tested.*model-notice.*Can't check models.*Try again.*Copy issue details/s);
+    assert.doesNotMatch(browser.fields.innerHTML, /data-field="model"|sk-secret|private runner error/);
     assert.equal(browser.review.disabled, true);
-    assert.match(browser.announcement.textContent, item.expected);
-    assert.equal(browser.results.hidden, false);
     assert.equal(browser.results.textContent, 'Previous results');
+    assert.equal(browser.history.textContent, 'History');
+    assert.match(browser.announcement.textContent, expected);
   }
 });
 
-test('unchecked names and unknown causes never leak into visible or copied steps', async () => {
-  for (const missingEnvironmentName of ['bad-name<script>', 'KEY=value', 'secret-value', 123]) {
-    const browser = blockedBrowser({ status: 'blocked', reason: 'environment-missing', missingEnvironmentName });
+test('safe setting names, unchecked names, and malformed issue fields remain private', async () => {
+  for (const [reason, name, expected] of [
+    ['environment-missing', 'OPENAI_API_KEY', /needs OPENAI_API_KEY.*project-root \.env/],
+    ['required-setting-rejected', 'NODE_OPTIONS', /asks for NODE_OPTIONS/],
+    ['required-setting-rejected', 'bad-name<script>', /asks for a setting/],
+  ] as const) {
+    const browser = blockedBrowser({ status: 'blocked', reason, issue: issue(reason),
+      missingEnvironmentName: name, rejectedSettingName: name });
     await browser.api.loadRuntime();
-    assert.match(browser.fields.innerHTML, /Check the suite requirements/);
-    assert.doesNotMatch(browser.fields.innerHTML, /bad-name|KEY=value|secret-value|123/);
+    assert.match(browser.fields.innerHTML, expected);
+    assert.doesNotMatch(browser.fields.innerHTML, /bad-name|<script>/);
   }
-  const browser = blockedBrowser({ status: 'blocked', reason: 'unrecognized', missingEnvironmentName: 'SECRET_KEY' });
+  const browser = blockedBrowser({ status: 'blocked', reason: 'runner-timeout', issue: { ...issue('runner-timeout'), reference: 'sk-secret' } });
   await browser.api.loadRuntime();
-  assert.match(browser.fields.innerHTML, /Compatible models could not be checked/);
-  assert.doesNotMatch(browser.fields.innerHTML, /SECRET_KEY/);
+  assert.doesNotMatch(browser.fields.innerHTML, /Copy issue details|sk-secret|Reference:/);
 });
 
-test('Copy steps copies exactly the visible guidance and reports success without moving focus', async () => {
+test('Copy issue details copies only safe fields, confirms without clearing notice or moving focus', async () => {
   let copied = '';
-  const browser = blockedBrowser({ status: 'blocked', reason: 'environment-missing', missingEnvironmentName: 'TEST_KEY' },
+  const browser = blockedBrowser({ status: 'blocked', reason: 'runner-timeout', issue: issue('runner-timeout') },
     { writeText: async text => { copied = text; } });
   await browser.api.loadRuntime();
   const focus = { id: 'copy-button' };
   browser.document.activeElement = focus;
-  browser.clickCopy();
+  browser.click('copy-model-issue');
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(copied, browser.announcement.textContent);
-  assert.equal(browser.copyStatus.textContent, 'Steps copied.');
+  assert.equal(copied, `Stage: model-check\nOutcome: blocked\nCategory: runner-timeout\nReference: ${reference}`);
+  assert.equal(browser.feedback.textContent, 'Issue details copied.');
+  assert.match(browser.fields.innerHTML, /Can\'t check models/);
   assert.equal(browser.document.activeElement, focus);
 });
 
-test('Clipboard absence or rejection leaves readable steps and a manual-select fallback', async () => {
+test('clipboard absence or rejection retains selectable details and notice', async () => {
   for (const clipboard of [undefined, { writeText: async () => { throw Error('denied'); } }]) {
-    const browser = blockedBrowser({ status: 'blocked', reason: 'runner-unavailable' }, clipboard);
+    const browser = blockedBrowser({ status: 'blocked', reason: 'runner-timeout', issue: issue('runner-timeout') }, clipboard);
     await browser.api.loadRuntime();
     const visible = browser.fields.innerHTML;
-    browser.clickCopy();
+    browser.click('copy-model-issue');
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(browser.fields.innerHTML, visible);
-    assert.match(browser.copyStatus.textContent, /Select the steps above instead/);
+    assert.match(browser.feedback.textContent, /Select the issue details above instead/);
     assert.equal(browser.review.disabled, true);
   }
+});
+
+test('lost model-check response offers connection retry without a fabricated reference', async () => {
+  const browser = blockedBrowser({ status: 'blocked', reason: 'unknown' }, undefined, true);
+  await browser.api.loadRuntime();
+  assert.match(browser.fields.innerHTML, /received no response.*matching terminal event may not exist/s);
+  assert.match(browser.fields.innerHTML, /Try again/);
+  assert.doesNotMatch(browser.fields.innerHTML, /sk-secret|private provider stderr|Reference:|Copy issue details/);
+  assert.equal(browser.review.disabled, true);
+  assert.equal(browser.results.textContent, 'Previous results');
+});
+
+test('Try again only describes, focuses a failed notice, and ignores an older blocked response', async () => {
+  const requests: { url: string; resolve(value: unknown): void }[] = [];
+  let focused = 0;
+  const heading = { focus: () => { focused++; } };
+  const fields = { innerHTML: '', querySelector: () => heading };
+  const review = { disabled: false };
+  const region = { querySelector: (selector: string) => ({ '[data-setup-fields]': fields, '[data-action="review"]': review,
+    '[data-model-notice-heading]': heading })[selector as '[data-setup-fields]'] };
+  const listeners = new Map<string, (event: { target: { closest(): unknown } }) => void>();
+  const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
+    querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': {}, '[data-run-setup]': region,
+      '[data-setup-status]': { textContent: '' } })[selector as '[data-workspace]'],
+    addEventListener: (name: string, listener: (event: { target: { closest(): unknown } }) => void) => listeners.set(name, listener) };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return {loadRuntime};})()', {
+    document, fetch: async (url: string) => ({ json: () => new Promise(resolve => requests.push({ url, resolve })) }),
+  }) as { loadRuntime(): Promise<void> };
+  const first = api.loadRuntime();
+  await new Promise(resolve => setImmediate(resolve));
+  listeners.get('click')?.({ target: { closest: () => ({ dataset: { action: 'retry-model' } }) } });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(requests.length, 2);
+  assert.ok(requests.every(request => request.url === '/api/eval-suites/describe'));
+  requests[1]!.resolve({ status: 'blocked', reason: 'runner-timeout', issue: issue('runner-timeout') });
+  await new Promise(resolve => setImmediate(resolve));
+  requests[0]!.resolve({ status: 'blocked', reason: 'runner-absent', issue: issue('runner-absent') });
+  await first;
+  assert.match(fields.innerHTML, /did not answer in time/);
+  assert.doesNotMatch(fields.innerHTML, /was not found/);
+  assert.equal(focused, 1);
+  assert.equal(review.disabled, true);
 });
 
 test('discovery responses preserve prior Results and copy only a validated server issue', async () => {

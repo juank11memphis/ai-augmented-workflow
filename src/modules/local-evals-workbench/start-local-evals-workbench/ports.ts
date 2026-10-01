@@ -1,5 +1,6 @@
 import type { InternalEvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { LocalWorkbenchHost } from './result.js';
+import type { RuntimeBlockReason } from '../runtime-description.js';
 
 export type WorkflowStateStatus =
   | { readonly status: 'valid' }
@@ -35,7 +36,7 @@ export type LocalEvalsWorkbenchLogEvent =
   | { readonly event: 'local_evals_workbench_state_blocked'; readonly reason: 'missing-workflow-state' | 'invalid-workflow-state' }
   | { readonly event: 'local_evals_workbench_started'; readonly host: LocalWorkbenchHost; readonly port: number; readonly suiteCount: number; readonly discoveryStatus: 'ready' | 'blocked' }
   | { readonly event: 'local_evals_workbench_start_failed'; readonly reason: 'workflow-state-read-failed' | 'discovery-failed' | 'server-start-failed' }
-  | { readonly event: 'local_evals_workbench_request_issue'; readonly stage: 'discovery'; readonly outcome: 'blocked' | 'failed'; readonly reason: 'missing-evals-folder' | 'no-eval-suites' | 'unreadable-eval-suites' | 'discovery-failed' | 'unknown'; readonly reference: string };
+  | { readonly event: 'local_evals_workbench_request_issue'; readonly stage: 'discovery' | 'model-check'; readonly outcome: 'blocked' | 'failed'; readonly reason: 'missing-evals-folder' | 'no-eval-suites' | 'unreadable-eval-suites' | 'discovery-failed' | RuntimeBlockReason | 'invalid-request' | 'unknown'; readonly reference: string };
 
 export type LocalEvalsWorkbenchLoggerPort = {
   info(event: LocalEvalsWorkbenchLogEvent): void;

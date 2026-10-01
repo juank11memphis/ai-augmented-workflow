@@ -49,13 +49,13 @@ test('missing environment, invalid event, crash, timeout and oversized output bl
     assert.deepEqual(result, { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: 'TEST_KEY' });
     assert.doesNotMatch(JSON.stringify({ result, logs }), /private-value|UNRELATED|sibu-preview-runner-/);
     const unsafeSuite = { ...suite, runner: { ...suite.runner, requiredEnvironment: ['TEST_KEY=private-value'] } };
-    assert.deepEqual(await adapter.describe(unsafeSuite), { status: 'blocked', reason: 'input-unsafe' });
+    assert.deepEqual(await adapter.describe(unsafeSuite), { status: 'blocked', reason: 'required-setting-rejected' });
   });
   for (const [source, reason] of [
-    [`process.stdout.write('not json\\n')`, 'runner-invalid'],
-    [`process.exit(2)`, 'runner-unavailable'],
+    [`process.stdout.write('not json\\n')`, 'runner-protocol-invalid'],
+    [`process.exit(2)`, 'runner-exited'],
     [`setTimeout(()=>{}, 1000)`, 'runner-timeout'],
-    [`process.stdout.write('x'.repeat(1024))`, 'runner-invalid'],
+    [`process.stdout.write('x'.repeat(1024))`, 'runner-protocol-invalid'],
   ]) {
     await fixture(source, async (root) => {
       const limits = { ...PREVIEW_PROCESS_LIMITS, startupMs: 200, idleMs: 200, overallMs: 400, eventLineBytes: 300, stdoutBytes: 500 };
@@ -86,7 +86,7 @@ test('envelope, cardinality and nonzero-exit violations never become ready', asy
   for (const item of cases) {
     await fixture(`let body='';process.stdin.on('data',c=>body+=c);process.stdin.on('end',()=>{const request=JSON.parse(body);process.stdout.write(${JSON.stringify(item.emitted)}.replaceAll('REQUEST_ID',request.requestId));process.exitCode=${item.exit ?? 0};});`, async (root) => {
       const result = await new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS, { PATH: process.env.PATH, TEST_KEY: 'secret-123' }).describe(suite);
-      assert.equal(result.status, 'blocked', item.name);
+      assert.deepEqual(result, { status: 'blocked', reason: item.exit ? 'runner-exited' : 'runner-protocol-invalid' }, item.name);
     });
   }
 });
@@ -109,7 +109,25 @@ test('runner stderr and paths never replace stable process-failure reasons or en
     const adapter = new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS,
       { PATH: process.env.PATH, TEST_KEY: 'private-value' }, { record: (entry) => logs.push(entry) });
     const result = await adapter.describe(suite);
-    assert.deepEqual(result, { status: 'blocked', reason: 'runner-unavailable' });
+    assert.deepEqual(result, { status: 'blocked', reason: 'runner-exited' });
     assert.doesNotMatch(JSON.stringify({ result, logs }), /private-value|\/private\/runner|sibu-preview-runner-/);
+  });
+});
+test('missing file, failed start, and oversized request have distinct source causes', async () => {
+  await fixture(validRunner, async (root) => {
+    const logs: unknown[] = [];
+    const record = { record: (entry: unknown) => logs.push(entry) };
+    const env = { PATH: process.env.PATH, TEST_KEY: 'SYNTHETIC_SECRET_VALUE' };
+    await rm(path.join(root, 'evals/runner.mjs'));
+    assert.deepEqual(await new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS, env, record).describe(suite),
+      { status: 'blocked', reason: 'runner-absent' });
+    await writeFile(path.join(root, 'evals/runner.mjs'), validRunner);
+    const notExecutable = { ...suite, runner: { ...suite.runner, command: ['./evals/runner.mjs'] } };
+    assert.deepEqual(await new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS,
+      env, record).describe(notExecutable), { status: 'blocked', reason: 'runner-start-failed' });
+    assert.deepEqual(await new ProjectRunnerProcessAdapter(root,
+      { ...PREVIEW_PROCESS_LIMITS, requestBytes: 4 }, env, record).describe(suite),
+    { status: 'blocked', reason: 'runner-request-too-large' });
+    assert.doesNotMatch(JSON.stringify(logs), /SYNTHETIC_SECRET_VALUE|sibu-preview-runner-/);
   });
 });

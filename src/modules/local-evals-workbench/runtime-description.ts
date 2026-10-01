@@ -12,22 +12,29 @@ export type RuntimeDescription = {
 };
 
 export type RuntimeBlockReason =
-  | 'suite-unavailable' | 'runner-unavailable' | 'runner-invalid' | 'runner-timeout'
-  | 'environment-missing' | 'environment-undeclared' | 'capability-unsupported'
+  | 'suite-unavailable' | 'runner-unavailable' | 'runner-absent' | 'runner-start-failed'
+  | 'runner-exited' | 'runner-protocol-invalid' | 'runner-invalid' | 'runner-timeout'
+  | 'environment-missing' | 'required-setting-rejected' | 'runner-request-too-large'
+  | 'environment-undeclared' | 'capability-unsupported'
   | 'model-unavailable' | 'judge-unavailable' | 'case-unavailable'
   | 'repeats-invalid' | 'artifact-unsafe' | 'artifact-not-ignored' | 'artifact-tracked'
   | 'artifact-git-unavailable' | 'artifact-root-unsafe' | 'estimate-invalid' | 'input-unsafe';
 
 export type RuntimeBlock =
   | { readonly status: 'blocked'; readonly reason: 'environment-missing'; readonly missingEnvironmentName?: string }
-  | { readonly status: 'blocked'; readonly reason: Exclude<RuntimeBlockReason, 'environment-missing'> };
+  | { readonly status: 'blocked'; readonly reason: 'required-setting-rejected'; readonly rejectedSettingName?: string }
+  | { readonly status: 'blocked'; readonly reason: Exclude<RuntimeBlockReason, 'environment-missing' | 'required-setting-rejected'> };
 
 export type RuntimeOutcome<T> =
   | { readonly status: 'ready'; readonly value: T }
   | RuntimeBlock;
 
+export function isSafeEnvironmentName(name: unknown): name is string {
+  return typeof name === 'string' && name.length <= 128 && /^[A-Z_][A-Z0-9_]*$/.test(name);
+}
+
 export function isDeclaredEnvironmentName(name: unknown, declared: readonly string[]): name is string {
-  return typeof name === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(name) && declared.includes(name);
+  return isSafeEnvironmentName(name) && declared.includes(name);
 }
 
 export function requiredCapabilities(cases: readonly NormalizedEvalTestCase[]): readonly RunnerCapability[] {

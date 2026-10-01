@@ -1,5 +1,6 @@
 import type { EvalSuiteDiscoveryLogEvent, EvalSuiteDiscoveryLoggerPort } from '../discover-conventional-eval-suites/index.js';
 import type { LocalEvalsWorkbenchLogEvent, LocalEvalsWorkbenchLoggerPort } from './ports.js';
+import { type RuntimeBlockReason } from '../runtime-description.js';
 
 type LogLevel = 'info' | 'warn' | 'error';
 type SafeLogEvent = LocalEvalsWorkbenchLogEvent | EvalSuiteDiscoveryLogEvent;
@@ -50,9 +51,11 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
     case 'local_evals_workbench_request_issue':
       return {
         event: event.event,
-        stage: 'discovery',
+        stage: event.stage === 'model-check' ? 'model-check' : 'discovery',
         outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
-        reason: isKnownPublicDiscoveryReason(event.reason) ? event.reason : 'unknown',
+        reason: event.stage === 'model-check'
+          ? (isKnownModelCheckReason(event.reason) ? event.reason : 'unknown')
+          : (isKnownPublicDiscoveryReason(event.reason) ? event.reason : 'unknown'),
         reference: safeReference(event.reference),
       };
     case 'local_evals_workbench_started':
@@ -80,6 +83,20 @@ function safeFailureReason(reason: string): string {
 function isKnownPublicDiscoveryReason(reason: string): boolean {
   return reason === 'missing-evals-folder' || reason === 'no-eval-suites'
     || reason === 'unreadable-eval-suites' || reason === 'discovery-failed';
+}
+
+const knownModelCheckReasons: ReadonlySet<RuntimeBlockReason | 'invalid-request'> = new Set([
+  'suite-unavailable', 'runner-unavailable', 'runner-absent', 'runner-start-failed',
+  'runner-exited', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout',
+  'environment-missing', 'required-setting-rejected', 'runner-request-too-large',
+  'environment-undeclared', 'capability-unsupported', 'model-unavailable',
+  'judge-unavailable', 'case-unavailable', 'repeats-invalid', 'artifact-unsafe',
+  'artifact-not-ignored', 'artifact-tracked', 'artifact-git-unavailable',
+  'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe', 'invalid-request',
+]);
+
+function isKnownModelCheckReason(reason: string): boolean {
+  return knownModelCheckReasons.has(reason as RuntimeBlockReason | 'invalid-request');
 }
 
 function safeReference(value: string): string | undefined {

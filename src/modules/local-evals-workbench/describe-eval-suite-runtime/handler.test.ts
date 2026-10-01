@@ -47,13 +47,19 @@ test('only a declared missing environment name crosses the Describe boundary', a
 });
 
 test('distinct runner and compatibility blockers remain stable and do not invent a credential', async () => {
-  const runnerReasons = ['runner-unavailable', 'runner-invalid', 'runner-timeout'] as const;
+  const runnerReasons = [
+    'runner-unavailable', 'runner-invalid', 'runner-timeout',
+    'runner-request-too-large', 'input-unsafe',
+  ] as const;
   for (const reason of runnerReasons) {
+    const records: unknown[] = [];
     const result = await describeEvalSuiteRuntime({ suiteId: 'suite' }, {
       suites: { load: async () => suite },
-      runner: { describe: async () => ({ status: 'blocked', reason, missingEnvironmentName: 'SECRET_KEY', stderr: 'secret-value' }) },
+      runner: { describe: async () => ({ status: 'blocked', reason, missingEnvironmentName: 'SECRET_KEY', stderr: 'secret-value', providerContent: 'secret-value' }) },
+      logger: { record: (event) => { records.push(event); } },
     });
     assert.deepEqual(result, { status: 'blocked', reason });
+    assert.doesNotMatch(JSON.stringify([result, records]), /SECRET_KEY|secret-value/);
   }
   assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, {
     suites: { load: async () => suite },
@@ -64,4 +70,35 @@ test('distinct runner and compatibility blockers remain stable and do not invent
     suites: { load: async () => unsupported },
     runner: { describe: async () => ({ status: 'ready', value: description }) },
   }), { status: 'blocked', reason: 'capability-unsupported' });
+});
+
+test('rejected setting carries only a declared, bounded safe name', async () => {
+  const declaredSuite = { ...suite, runner: { ...suite.runner, requiredEnvironment: ['VALID_KEY', 'NODE_OPTIONS', 'A'.repeat(129)] } };
+  const records: unknown[] = [];
+  const dependencies = (rejectedSettingName: unknown) => ({
+    suites: { load: async () => declaredSuite },
+    runner: { describe: async () => ({ status: 'blocked' as const, reason: 'required-setting-rejected' as const, rejectedSettingName: rejectedSettingName as string, stderr: 'secret-value', providerContent: 'secret-value' }) },
+    logger: { record: (event: unknown) => { records.push(event); } },
+  });
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, dependencies('NODE_OPTIONS')), {
+    status: 'blocked', reason: 'required-setting-rejected', rejectedSettingName: 'NODE_OPTIONS',
+  });
+  for (const name of ['UNDECLARED_KEY', 'BAD-NAME', 'KEY=secret-value', 'A'.repeat(129), '', 123, undefined]) {
+    const result = await describeEvalSuiteRuntime({ suiteId: 'suite' }, dependencies(name));
+    assert.deepEqual(result, { status: 'blocked', reason: 'required-setting-rejected' });
+    assert.doesNotMatch(JSON.stringify(result), /secret-value|UNDECLARED_KEY|BAD-NAME/);
+  }
+  assert.doesNotMatch(JSON.stringify(records), /NODE_OPTIONS|UNDECLARED_KEY|secret-value|providerContent|stderr/);
+});
+
+test('a failed log sink never changes the describe outcome', async () => {
+  const logger = { record: () => { throw Error('secret-value'); } };
+  const ready = await describeEvalSuiteRuntime({ suiteId: 'suite' }, {
+    suites: { load: async () => suite }, runner: { describe: async () => ({ status: 'ready', value: description }) }, logger,
+  });
+  assert.equal(ready.status, 'ready');
+  const blocked = await describeEvalSuiteRuntime({ suiteId: 'suite' }, {
+    suites: { load: async () => suite }, runner: { describe: async () => ({ status: 'blocked', reason: 'runner-request-too-large' }) }, logger,
+  });
+  assert.deepEqual(blocked, { status: 'blocked', reason: 'runner-request-too-large' });
 });

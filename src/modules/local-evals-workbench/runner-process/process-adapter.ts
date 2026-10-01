@@ -38,10 +38,11 @@ export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, Runner
   ): Promise<RuntimeOutcome<{ readonly data: unknown; readonly secrets: readonly string[] }>> {
     const environment = runnerEnvironment(suite, this.environment);
     if (environment.status === 'blocked') return environment;
-    if (!(await this.runnerContained(suite))) return { status: 'blocked', reason: 'runner-unavailable' };
+    const containment = await this.runnerContained(suite);
+    if (containment !== 'contained') return { status: 'blocked', reason: containment };
     const requestId = randomUUID();
     const body = Buffer.from(JSON.stringify({ protocolVersion: 1, requestId, ...payload }) + '\n');
-    if (body.length > this.limits.requestBytes) return { status: 'blocked', reason: 'input-unsafe' };
+    if (body.length > this.limits.requestBytes) return { status: 'blocked', reason: 'runner-request-too-large' };
     const { values, secrets } = environment.value;
     const startedAt = Date.now();
     this.log({ event: 'eval_runner_process_started', suiteId: suite.id });
@@ -77,7 +78,7 @@ export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, Runner
         settled = true;
         clearTimeout(startup); clearTimeout(idle); clearTimeout(overall); clearTimeout(forcedKill); clearTimeout(cleanupTimeout);
         if (failureReason || exitCode !== 0) {
-          const reason = failureReason ?? 'runner-unavailable';
+          const reason = failureReason ?? 'runner-exited';
           this.log({ event: 'eval_runner_process_blocked', suiteId: suite.id, reason, durationMs: Date.now() - startedAt });
           resolve({ status: 'blocked', reason });
           return;
@@ -85,22 +86,23 @@ export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, Runner
         try {
           const envelope = validateEnvelope(parser.finish(), requestId, eventType);
           this.log({ event: envelope.status === 'ready' ? 'eval_runner_process_exited' : 'eval_runner_process_blocked',
-            suiteId: suite.id, reason: envelope.status === 'blocked' ? envelope.reason : undefined, durationMs: Date.now() - startedAt });
-          resolve(envelope.status === 'blocked' ? envelope : { status: 'ready', value: { data: envelope.value, secrets } });
+            suiteId: suite.id, reason: envelope.status === 'blocked' ? 'runner-protocol-invalid' : undefined, durationMs: Date.now() - startedAt });
+          resolve(envelope.status === 'blocked' ? { status: 'blocked', reason: 'runner-protocol-invalid' }
+            : { status: 'ready', value: { data: envelope.value, secrets } });
         } catch {
-          this.log({ event: 'eval_runner_process_blocked', suiteId: suite.id, reason: 'runner-invalid', durationMs: Date.now() - startedAt });
-          resolve({ status: 'blocked', reason: 'runner-invalid' });
+          this.log({ event: 'eval_runner_process_blocked', suiteId: suite.id, reason: 'runner-protocol-invalid', durationMs: Date.now() - startedAt });
+          resolve({ status: 'blocked', reason: 'runner-protocol-invalid' });
         }
       };
       startup = setTimeout(() => fail('runner-timeout'), this.limits.startupMs);
       idle = setTimeout(() => fail('runner-timeout'), this.limits.idleMs);
       overall = setTimeout(() => fail('runner-timeout'), this.limits.overallMs);
-      child.on('error', () => fail('runner-unavailable'));
+      child.on('error', () => fail('runner-start-failed'));
       child.on('exit', () => { if (failureReason) finish(null); });
       child.on('close', finish);
       child.stdout.on('data', (chunk: Buffer) => {
         if (!firstOutput) { firstOutput = true; clearTimeout(startup); }
-        try { parser.push(chunk); resetIdle(); } catch { fail('runner-invalid'); }
+        try { parser.push(chunk); resetIdle(); } catch { fail('runner-protocol-invalid'); }
       });
       child.stderr.on('data', (chunk: Buffer) => {
         stderrBytes += chunk.length;
@@ -111,18 +113,21 @@ export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, Runner
       child.stdin.end(body);
     });
   }
-  private async runnerContained(suite: NormalizedEvalSuite): Promise<boolean> {
+  private async runnerContained(suite: NormalizedEvalSuite): Promise<'contained' | 'runner-absent' | 'runner-unavailable'> {
     const runner = declaredRunnerFile(suite.runner.command);
-    if (!runner) return false;
+    if (!runner) return 'runner-unavailable';
     try {
       const root = await realpath(this.projectRoot);
       const candidate = path.resolve(root, runner.path);
       const relative = path.relative(root, candidate);
-      if (relative.startsWith('..') || path.isAbsolute(relative)) return false;
+      if (relative.startsWith('..') || path.isAbsolute(relative)) return 'runner-unavailable';
       const actual = await realpath(candidate);
       const actualRelative = path.relative(root, actual);
-      return !actualRelative.startsWith('..') && !path.isAbsolute(actualRelative) && (await stat(candidate)).isFile();
-    } catch { return false; }
+      return !actualRelative.startsWith('..') && !path.isAbsolute(actualRelative) && (await stat(candidate)).isFile()
+        ? 'contained' : 'runner-unavailable';
+    } catch (error) {
+      return (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'runner-absent' : 'runner-unavailable';
+    }
   }
   private log(event: { readonly event: string; readonly suiteId: string; readonly reason?: string; readonly durationMs?: number }): void {
     try { this.logger?.record(event); } catch { /* Logging cannot change a runner outcome. */ }

@@ -30,6 +30,9 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(WORKSPACE_CLIENT_SCRIPT, /<summary>Model support<\/summary>/);
   assert.match(WORKSPACE_CLIENT_SCRIPT, /Sibu\\'s built-in analysis and repair help currently uses OpenAI/);
   assert.match(WORKSPACE_CLIENT_SCRIPT, /More providers are planned/);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /Model being tested.*model-notice.*retry-model/s);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /copy-model-issue/);
+  assert.match(html, /\.model-notice\{border:1px/);
   assert.match(html, /data-detail/);
   assert.match(html, /min-width:700px/);
   assert.match(html, /min-width:1100px/);

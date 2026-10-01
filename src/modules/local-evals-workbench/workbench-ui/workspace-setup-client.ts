@@ -9,6 +9,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   let runGeneration = 0, historyGeneration = 0, detailGeneration = 0, runtimeGeneration = 0, previewGeneration = 0;
   let strictRuntimeChoices = false;
   let runtimeState = 'loading', runtimeMessage = 'Loading compatible models…';
+  let modelIssue = null;
   let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', repeats: 1 };
   let sheetReturn = null, startPending = false, startUncertain = false, activePanel = null;
   const one = selector => document.querySelector(selector);
@@ -68,20 +69,41 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     } catch { showDiscoveryNotice(connectionCopy.noResponse); }
   }
   const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId }, model: setup.model, judgeModel: needsJudge() ? setup.judgeModel || null : null, repeats: Number(setup.repeats) });
-  function blockedModelMessage(reason, missingEnvironmentName) {
-    switch (reason) {
-      case 'model-unavailable': return 'This suite listed no models. Update its supported models, then restart Sibu Evals.';
-      case 'judge-unavailable': return 'This suite listed no compatible Judge models. Check its Judge model setup, then restart Sibu Evals.';
-      case 'runner-unavailable': return "This suite's eval runner could not start. Check the suite setup, then restart Sibu Evals.";
-      case 'runner-invalid': return "This suite's eval runner returned an invalid description. Check the suite setup, then restart Sibu Evals.";
-      case 'environment-missing': return missingEnvironmentName === 'OPENAI_API_KEY'
-        ? 'This suite needs OPENAI_API_KEY to check which models it can run. Add it to project-root .env, or to .env.local if .env is missing or has no key. You can also export it in the terminal that starts Sibu Evals. Then restart Sibu Evals.'
-        : typeof missingEnvironmentName === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(missingEnvironmentName)
-        ? 'This suite needs ' + missingEnvironmentName + ' to check which models it can run. Set its value in the terminal that starts Sibu Evals, then restart Sibu Evals.'
-        : 'This suite needs server-side setup before its models can be checked. Check the suite requirements in the terminal that starts Sibu Evals, then restart Sibu Evals.';
-      case 'capability-unsupported': return 'This suite needs runner capabilities that are not available. Check its runner setup, then restart Sibu Evals.';
-      default: return 'Compatible models could not be checked. Check the suite setup, then try again.';
-    }
+  const modelCopy = {
+    'suite-unavailable': 'This suite could not be used. Check its definition, then retry.',
+    'runner-unavailable': 'The runner could not be used. Check its command, then retry.',
+    'runner-absent': 'The runner was not found. Install or correct its command, then retry.',
+    'runner-start-failed': 'The runner could not start. Check its command and permissions, then retry.',
+    'runner-exited': 'The runner ended before describing models. Check it, then retry.',
+    'runner-protocol-invalid': 'The runner response did not follow the expected protocol. Check compatibility, then retry.',
+    'runner-invalid': 'The runner returned an unusable description. Check its output, then retry.',
+    'runner-timeout': 'Runner did not answer in time. Check that it can start, then retry.',
+    'required-setting-rejected': 'This suite asks for a setting Sibu will not pass to a runner. Remove it from required settings, then retry.',
+    'runner-request-too-large': 'Sibu could not send the model check because it was too large. Copy issue details and report the problem.',
+    'environment-undeclared': 'The runner needs a setting not declared by this suite. Declare it, then retry.',
+    'environment-missing': 'This suite needs a required setting. Add or export it, restart Sibu Evals, then retry.',
+    'capability-unsupported': 'The runner does not support a capability this suite needs. Review suite and runner support, then retry.',
+    'model-unavailable': 'The runner returned no compatible models. Review model support, then retry.',
+    'judge-unavailable': 'The runner returned no compatible Judge models. Review Judge support, then retry.',
+    'input-unsafe': 'Older model-check input was rejected without a precise cause. Review runner setup and request size, then retry.',
+    'invalid-request': 'Sibu could not read this model-check request. Correct it, then retry.',
+    'unknown': 'Cause unknown. Sibu could not complete the model check. Try again; if it repeats, copy the issue details.',
+  };
+  const safeSettingName = value => typeof value === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(value) && value.length <= 128;
+  const safeReference = value => typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);
+  function modelNotice(payload, reason = payload?.reason) {
+    const category = Object.hasOwn(modelCopy, reason) ? reason : 'unknown';
+    const name = category === 'required-setting-rejected' ? payload?.rejectedSettingName : payload?.missingEnvironmentName;
+    let guidance = modelCopy[category];
+    if (safeSettingName(name) && category === 'required-setting-rejected') guidance = 'This suite asks for ' + name + ', which Sibu will not pass to a runner. Remove it from required settings, then retry.';
+    if (safeSettingName(name) && category === 'environment-missing') guidance = name === 'OPENAI_API_KEY'
+      ? 'This suite needs OPENAI_API_KEY. Add it to project-root .env, or .env.local if .env is missing or has no key. You can also export it in the starting terminal. Restart Sibu Evals, then retry.'
+      : 'This suite needs ' + name + '. Set it in the starting terminal, restart Sibu Evals, then retry.';
+    const issue = payload?.issue;
+    const details = issue?.stage === 'model-check' && issue.category === category &&
+      ['blocked', 'failed'].includes(issue.outcome) && safeReference(issue.reference)
+      ? 'Stage: model-check\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() : null;
+    return { guidance, details };
   }
   function setRuntimeState(state, message) {
     runtimeState = state; runtimeMessage = message;
@@ -117,7 +139,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     return '<fieldset><legend>Run scope</legend><label><input type="radio" name="scope" value="all"' + (setup.scope === 'all' ? ' checked' : '') + '> All ' + esc(suite?.testCases.length || 0) + ' cases</label><label><input type="radio" name="scope" value="one"' + (setup.scope === 'one' ? ' checked' : '') + '> One case</label></fieldset>'
       + '<label class="field" data-case-field' + (setup.scope === 'one' ? '' : ' hidden') + '>Test case<select data-field="case">' + cases + '</select></label>'
       + (runtimeState === 'blocked'
-        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><button type="button" data-action="copy-steps">Copy steps</button><p role="status" data-copy-status></p></div>'
+        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p role="status" data-model-copy-status></p></div></div>'
         : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
       + '<details><summary>Model support</summary><p>Tests can use models supported by this suite. Sibu\'s built-in analysis and repair help currently uses OpenAI. More providers are planned.</p></details>'
       + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '')
@@ -148,17 +170,17 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
   }
-  async function loadRuntime() {
+  async function loadRuntime(userRetry = false) {
     if (!suite) return;
     const current = suite.id, generation = ++runtimeGeneration, hadModel = Boolean(setup.model), hadJudge = Boolean(setup.judgeModel);
-    runtime = null; review = null; previewGeneration++;
+    runtime = null; review = null; modelIssue = null; previewGeneration++;
     setRuntimeState('loading', 'Loading compatible models…');
     refreshSetupControls();
     try {
       const payload = await post('/api/eval-suites/describe', { suiteId: current });
       if (suite?.id !== current || generation !== runtimeGeneration) return;
-      if (payload.status !== 'ready') { setRuntimeState('blocked', blockedModelMessage(payload.reason, payload.missingEnvironmentName)); refreshSetupControls(); return; }
-      if (!payload.models?.length) { setRuntimeState('blocked', blockedModelMessage('model-unavailable')); refreshSetupControls(); return; }
+      if (payload.status !== 'ready') { modelIssue = modelNotice(payload); setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); return; }
+      if (!payload.models?.length) { modelIssue = modelNotice(payload, 'model-unavailable'); setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); return; }
       runtime = payload;
       if (!(payload.models || []).includes(setup.model)) setup.model = strictRuntimeChoices || hadModel ? '' : payload.models[0];
       if (!(payload.judgeModels || []).includes(setup.judgeModel)) setup.judgeModel = strictRuntimeChoices || hadJudge ? '' : payload.judgeModels?.[0] || '';
@@ -167,7 +189,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       if (strictRuntimeChoices && (!setup.model || needsJudge() && !setup.judgeModel)) status('Previous model choice is unavailable. Choose compatible models before review.');
       strictRuntimeChoices = false;
       refreshSetupControls();
-    } catch { if (suite?.id === current && generation === runtimeGeneration) { setRuntimeState('blocked', blockedModelMessage('unknown')); refreshSetupControls(); } }
+    } catch { if (suite?.id === current && generation === runtimeGeneration) { modelIssue = { guidance: 'The model check received no response. Check the connection and try again. A matching terminal event may not exist.', details: null }; setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); } }
   }
   async function showReview() {
     readSetup();
@@ -234,15 +256,16 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       } catch { feedback('Copy failed. Select the issue details above instead.'); }
     }
     if (target.dataset.action === 'suite') selectSuite(target.dataset.suiteId);
-    if (target.dataset.action === 'copy-steps') {
-      const steps = runtimeState === 'blocked' ? runtimeMessage : '';
-      const feedback = () => steps === runtimeMessage && runtimeState === 'blocked' ? one('[data-copy-status]') : null;
+    if (target.dataset.action === 'copy-model-issue') {
+      const details = runtimeState === 'blocked' ? modelIssue?.details : null;
+      const feedback = () => details && details === modelIssue?.details ? setupRegion.querySelector('[data-model-copy-status]') : null;
       try {
-        if (!steps || !navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
-        Promise.resolve(navigator.clipboard.writeText(steps)).then(() => { const node = feedback(); if (node) node.textContent = 'Steps copied.'; },
-          () => { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the steps above instead.'; });
-      } catch { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the steps above instead.'; }
+        if (!details || !navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        Promise.resolve(navigator.clipboard.writeText(details)).then(() => { const node = feedback(); if (node) node.textContent = 'Issue details copied.'; },
+          () => { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the issue details above instead.'; });
+      } catch { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the issue details above instead.'; }
     }
+    if (target.dataset.action === 'retry-model') void loadRuntime(true);
     if (target.dataset.action === 'copy-prompt') { navigator.clipboard?.writeText('Create production-ready Sibu evals for this project.').then(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Prompt copied.'; }).catch(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Copy failed. Select the prompt text instead.'; }); }
     if (target.dataset.action === 'close-sheet') closeSheet();
     if (target.dataset.action === 'review') void showReview();
