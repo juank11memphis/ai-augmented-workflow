@@ -67,7 +67,10 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
       assert.equal(unavailable.code, 200);
       assert.equal((unavailable.payload.cost as { status: string }).status, 'unavailable');
       const missingCase = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'missing' }, model: 'fake/available' });
-      assert.deepEqual(missingCase.payload, { status: 'blocked', stage: 'selection', reason: 'case-unavailable' });
+      assert.equal(missingCase.payload.status, 'blocked');
+      assert.equal(missingCase.payload.stage, 'selection');
+      assert.equal(missingCase.payload.reason, 'case-unavailable');
+      assert.equal((missingCase.payload.issue as { category: string }).category, 'case-unavailable');
       const invalid = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available', command: ['sh'] });
       assert.equal(invalid.code, 400);
       const malformed = await fetch(new URL('/api/eval-runs/preview', server.url), { method: 'POST', body: '{' });
@@ -78,13 +81,19 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
       assert.equal(wrongMethod.status, 405);
       await writeFile(path.join(root, '.gitignore'), '');
       const unsafe = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
-      assert.deepEqual(unsafe.payload, { status: 'blocked', stage: 'artifact-readiness', reason: 'artifact-not-ignored' });
+      assert.equal(unsafe.payload.status, 'blocked');
+      assert.equal(unsafe.payload.stage, 'artifact-readiness');
+      assert.equal(unsafe.payload.reason, 'artifact-not-ignored');
+      assert.equal((unsafe.payload.issue as { category: string }).category, 'artifact-not-ignored');
       await writeFile(path.join(root, '.gitignore'), '/evals/artifacts/\n');
       await mkdir(path.join(root, 'evals/artifacts'));
       await writeFile(path.join(root, 'evals/artifacts/tracked.txt'), 'tracked fixture');
       execFileSync('git', ['add', '-f', 'evals/artifacts/tracked.txt'], { cwd: root });
       const tracked = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
-      assert.deepEqual(tracked.payload, { status: 'blocked', stage: 'artifact-readiness', reason: 'artifact-tracked' });
+      assert.equal(tracked.payload.status, 'blocked');
+      assert.equal(tracked.payload.stage, 'artifact-readiness');
+      assert.equal(tracked.payload.reason, 'artifact-tracked');
+      assert.equal((tracked.payload.issue as { category: string }).category, 'artifact-tracked');
     } finally { await server.stop?.(); }
   });
 });
