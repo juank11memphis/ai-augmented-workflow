@@ -31,15 +31,18 @@ async function validateInstalledWorkbenchPage(serverUrl) {
   assert.match(css, /\[data-run-setup\]/);
   assert.match(css, /@media\(min-width:700px\)/);
   assert.match(css, /@media\(min-width:1100px\)/);
-  assert.match(client, /function blockedModelMessage\(/);
+  assert.match(client, /function modelNotice\(/);
   for (const reason of ['environment-missing', 'model-unavailable', 'runner-unavailable', 'runner-invalid', 'capability-unsupported', 'judge-unavailable']) {
-    assert.ok(client.includes(`case '${reason}'`), `installed client needs recovery for ${reason}`);
+    assert.ok(client.includes(`'${reason}':`), `installed client needs recovery for ${reason}`);
   }
-  assert.match(client, /data-model-readiness[\s\S]*?data-action="copy-steps"/);
+  assert.match(client, /data-model-readiness[\s\S]*?data-action="retry-model"/);
+  assert.match(client, /data-action="copy-model-issue"/);
+  assert.match(client, /Stage: model-check/);
+  assert.match(client, /safeReference\(issue\.reference\)/);
   assert.match(client, /data-action="review"[\s\S]*?disabled = Boolean\(runtimeState !== 'ready'/);
-  assert.match(client, /Steps copied\./);
-  assert.match(client, /Copy failed\. Select the steps above instead\./);
-  console.log('Packed installed workbench GET / page, styles, client recovery, and Copy steps smoke passed.');
+  assert.match(client, /Issue details copied\./);
+  assert.match(client, /Copy failed\. Select the issue details above instead\./);
+  console.log('Packed installed workbench GET / page, styles, client recovery, and Copy issue details smoke passed.');
 }
 
 /** Installed-only integration smoke in a separate, synthetic Git project. */

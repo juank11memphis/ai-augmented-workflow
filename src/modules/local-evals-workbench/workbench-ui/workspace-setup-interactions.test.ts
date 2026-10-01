@@ -26,10 +26,10 @@ test('loading and known blocked reasons stay beside an unavailable model choice'
   await new Promise(done => setImmediate(done));
   resolve({ status: 'blocked', reason: 'runner-unavailable' });
   await loading;
-  assert.match(fields.innerHTML, /eval runner could not start/);
+  assert.match(fields.innerHTML, /runner could not be used/);
   assert.match(fields.innerHTML, /data-model-readiness/);
   assert.equal(review.disabled, true);
-  assert.match(announcement.textContent, /eval runner could not start/);
+  assert.match(announcement.textContent, /runner could not be used/);
   assert.doesNotMatch(fields.innerHTML, /OPENAI_API_KEY/);
 });
 
