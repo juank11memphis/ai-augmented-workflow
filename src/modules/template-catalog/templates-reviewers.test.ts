@@ -35,6 +35,9 @@ describe('plan-only architecture reviewer', () => {
     assert.match(toolbox, /speculative caching/i);
     assert.match(toolbox, /missing, vague, or weakened checks are findings/i);
     assert.match(toolbox, /clean review may retain unresolved risks/i);
+    assert.match(toolbox, /previously supplied finding is resolved, persists, or was superseded/i);
+    assert.match(toolbox, /Prior finding dispositions: <resolved \| persists \| superseded/i);
+    assert.match(toolbox, /Do not return an approval verdict for execution/i);
   });
 
   it('covers the representative plan-review failure cases without a code-review target', () => {

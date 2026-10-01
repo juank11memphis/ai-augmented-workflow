@@ -28,8 +28,8 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /automatic execution of an exact Story plan.*no findings or unresolved risks/i);
-    assert.match(contents, /complete review finds no findings or unresolved risks.*accepts the exact plan automatically and immediately begins execution/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /automatically revises actionable Story plan-review findings.*final Story review/i);
+    assert.match(contents, /planner automatically revises actionable review findings.*complete review finds no findings or unresolved risks.*accepts the exact plan automatically/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
     assert.match(contents, /`sibu sync` is the post-init workflow maintenance command/i);
@@ -214,7 +214,7 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /expected touchpoints rather than an exhaustive edit allowlist/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /architecture-review findings.*existing Story plan/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /software-design-writer/);
@@ -253,7 +253,7 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /owning area and known files.*adjacent changes/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /affected plan steps.*completed Task evidence/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -323,7 +323,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /justified adjacent Task files.*material-change review gates/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /AFK planner-reviewer revision loop.*Story PR/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);

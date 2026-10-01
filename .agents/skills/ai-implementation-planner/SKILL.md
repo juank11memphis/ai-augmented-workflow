@@ -69,6 +69,8 @@ docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
 
 Do not create an implementation plan from a vague request, Epic brief, BRD, or software design alone.
 
+For a review-driven revision of an existing Story plan, the main agent also supplies the exact reviewed identity, the architecture reviewer's findings and smallest adequate fixes, and the plan folder. Revise only the affected plan content, preserve completed Task evidence and source authority, and return a concise finding-to-change account. Do not edit implementation code or declare the plan accepted. If a fix requires a material product, architecture, security, privacy, persisted-data, dependency, or scope decision, report the blocker instead of choosing it.
+
 ## Required source context gate
 
 Before delegating or planning inline, verify these paths exist and are coherent:
@@ -108,6 +110,7 @@ Build a narrow planner packet for the worker. The packet must include:
 - exactly one User Story path
 - Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
 - the source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, and applicable SAD/SDD module ownership and dependency constraints; for uncertain fine-grained references, give the full authoritative path and a locate-relevant-context instruction instead
+- for review-driven revision, the current plan folder and reviewed identity, the complete finding/risk packet, and a request to address actionable findings minimally while reporting any material-decision blocker
 - story verification expectations and any software design quality strategy context needed to plan validation steps
 - the source-verified Epic/Story flag inventory (`Flags: none` when unflagged), declared final-removal Story if any, and a stop instruction for any undeclared flag need
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`

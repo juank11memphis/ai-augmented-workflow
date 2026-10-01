@@ -23,7 +23,9 @@ Report in this order, even when a category has no finding:
 4. **Scope, acceptance-criteria coverage, and Task sizing:** every Story criterion has planned work; Tasks are bounded and ordered within reviewable Milestones.
 5. **Executable checks and failure handling:** each Task has its own concrete pass/fail command and expected evidence; missing, vague, or weakened checks are findings.
 
-Tie each finding to a plan location, evidence, consequence, and smallest adequate fix. Distinguish a source-required constraint from a preference. Do not propose added abstraction, dependencies, or speculative performance work as a fix to simplicity concerns. A clean review may retain unresolved risks. Do not silently repair the plan.
+Tie each finding to a plan location, evidence, consequence, and smallest adequate fix. Distinguish a source-required constraint from a preference. For each unresolved risk, state whether a source-aligned fix is known or a material decision is needed. Do not propose added abstraction, dependencies, or speculative performance work as a fix to simplicity concerns. A clean review may retain unresolved risks. Do not silently repair the plan.
+
+On a revised plan, independently assess the whole exact version before reporting whether each previously supplied finding is resolved, persists, or was superseded, and report new findings separately. Prior findings are follow-up context, not a preselected verdict. Do not infer a fix from a claimed planner summary or implementation diff.
 
 ## Output contract
 
@@ -42,10 +44,11 @@ Findings:
     consequence: <why it matters>
     smallest adequate fix: <specific minimal correction>
     basis: required constraint | preference
-Unresolved risks: <risks or none>
+Unresolved risks: <risks with known fix or material decision needed, or none>
+Prior finding dispositions: <resolved | persists | superseded for each supplied finding, or none on first review>
 ```
 
-Do not return an approval verdict for execution. The main agent conditionally accepts an exact plan only after verifying a complete packet with no findings or unresolved risks; findings or risks require explicit human acceptance.
+Do not return an approval verdict for execution. The main agent conditionally accepts an exact plan only after verifying a complete packet with no findings or unresolved risks. Actionable findings return to the planner for a new plan version and independent review; unresolved material decisions or risks return to the human.
 
 ## Read-only authority
 

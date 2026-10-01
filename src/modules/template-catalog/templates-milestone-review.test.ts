@@ -62,16 +62,16 @@ describe('Milestone progression written contract', () => {
 
   it('requires checked revision, fresh plan-only review, and conditional exact-version acceptance', () => {
     const failures = fixture('revision-and-blockers');
-    for (const missing of ['without Task checks', 'without fresh independent plan-only architecture review', 'with a finding or unresolved risk but without explicit human acceptance']) {
+    for (const missing of ['without Task checks', 'without fresh independent plan-only architecture review', 'with an unresolved material risk but without explicit human acceptance']) {
       assert.match(failures, new RegExp(`${missing}.*no dispatch`, 'i'));
     }
+    assert.match(failures, /with an actionable finding: planner revises; fresh independent plan-only review; no dispatch yet/i);
     assert.match(failures, /complete clean review and unchanged identity: automatically accepted; dispatch next Task/i);
     ordered(gatekeeper, [
       'Human-requested changes become new or revised bounded planned Tasks',
       'Changed reviewable plan content invalidates the previous identity',
       'fresh independent plan-only architecture review',
-      'accept automatically only if it has no findings or unresolved risks',
-      'require explicit human acceptance before any executor resumes',
+      'same AFK finding/revision loop and conditional acceptance before any executor resumes',
     ]);
     assert.match(gatekeeper, /Do not substitute an implementation-code architecture review/i);
   });
@@ -87,8 +87,8 @@ describe('Milestone progression written contract', () => {
       assert.match(wrapper, /Task-ID commit only after pass/i);
     }
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '204');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '60');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /justified adjacent Task files.*material-change review gates/);
+    assert.equal(manifest.templateVersion, '205');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '61');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /AFK planner-reviewer revision loop.*Story PR/);
   });
 });

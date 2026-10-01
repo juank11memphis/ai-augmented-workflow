@@ -52,6 +52,8 @@ If selected architecture guidance is missing from the packet or unavailable to r
 
 If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context. Read the SDD with its embedded diagrams.
 
+For review-driven revision, require the existing plan folder, exact reviewed identity, and complete reviewer finding/risk packet. Verify that identity against the current reviewable plan before editing. Apply the smallest source-aligned fixes to affected step files; preserve stable Task IDs, completed Task evidence, and unrelated plan content. Return a finding-to-change account and the revised plan identity for the main agent's fresh review. Do not self-review or approve the plan. Report a blocker instead of choosing a material product, architecture, security, privacy, persisted-data, dependency, or scope decision.
+
 For BRD and SDD context in the planner packet, read its verified **start here** IDs, sections, and diagrams first. The packet is navigation, not source authority or proof that omitted requirements are irrelevant. If references are uncertain, locate relevant context in the supplied full source path. Expand to wider sections or complete artifacts when story breadth, missing context, contradictions, validation planning, or quality requires it; there is no fixed context ceiling or prohibition on full reads. The authoritative BRD, SDD, SAD, and skills win over packet summaries. Surface material omissions or conflicts to the main agent under existing blocker rules, and plan the entire assigned story and its verification expectations.
 
 ## Planning rules
