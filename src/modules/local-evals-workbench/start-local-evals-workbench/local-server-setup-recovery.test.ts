@@ -6,6 +6,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader } from '../discover-conventional-eval-suites/index.js';
+import { createWorkbenchDependencies } from '../workbench-composition.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
 const SECRET = 'private-test-value-713';
@@ -46,6 +47,7 @@ process.stdin.on('end', () => {
 
 type Scenario = {
   readonly mode: string;
+  readonly throwAtPreviewBoundary?: boolean;
   readonly requiredEnvironment?: readonly string[];
   readonly multiTurn?: boolean;
   readonly rubric?: boolean;
@@ -86,7 +88,15 @@ async function withWorkbench(scenario: Scenario, run: (client: {
     );
     assert.equal(discovery.status, 'ready');
     assert.equal(discovery.definitions.length, 1);
-    const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: root, initialDiscoveryResult: discovery });
+    const starter = scenario.throwAtPreviewBoundary
+      ? new NodeLocalWorkbenchServerStarter(undefined, (request) => ({
+        ...createWorkbenchDependencies(request),
+        get preview(): ReturnType<typeof createWorkbenchDependencies>['preview'] {
+          throw new Error(`unexpected preview boundary: ${SECRET}`);
+        },
+      }))
+      : new NodeLocalWorkbenchServerStarter();
+    const server = await starter.startServer({ projectRoot: root, initialDiscoveryResult: discovery });
     const request = async (route: string, body?: unknown, reference?: string, raw = false): Promise<HttpResult> => {
       const response = await fetch(new URL(route, server.url), body === undefined ? undefined : {
         method: 'POST', headers: { 'content-type': 'application/json', ...(reference ? { 'x-sibu-request-reference': reference } : {}) }, body: raw ? String(body) : JSON.stringify(body),
@@ -301,4 +311,39 @@ test('preview issue remains safe when the diagnostic sink fails', async () => {
       console.error = original;
     }
   });
+});
+
+test('unexpected preview request-boundary throw returns a safe correlated unknown issue', async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (line?: unknown) => lines.push(String(line));
+  try {
+    await withWorkbench({ mode: 'ready', throwAtPreviewBoundary: true }, async ({ post }) => {
+      const supplied = '123e4567-e89b-42d3-a456-426614174000';
+      const response = await post('/api/eval-runs/preview', selection, supplied);
+      const issue = response.payload.issue as Record<string, unknown>;
+      assert.equal(response.code, 500);
+      assert.equal(response.payload.status, 'error');
+      assert.equal(response.payload.reason, 'unknown-cause');
+      assert.equal(issue.stage, 'preview');
+      assert.equal(issue.outcome, 'failed');
+      assert.equal(issue.category, 'unknown');
+      assert.match(String(issue.explanation), /cause unknown/i);
+      assert.doesNotMatch(JSON.stringify(issue), /credential|runner|provider|\.env/i);
+      assert.equal(response.reference, supplied);
+      assert.equal(issue.reference, response.reference);
+
+      const events = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+      const terminalIssue = events.find((event) => event.event === 'local_evals_workbench_request_issue');
+      assert.equal(terminalIssue?.stage, 'preview');
+      assert.equal(terminalIssue?.reference, issue.reference);
+      assert.equal(terminalIssue?.reason, issue.category);
+      assert.equal(terminalIssue?.outcome, issue.outcome);
+      assert.ok(events.some((event) => event.event === 'local_evals_workbench_request_started' && event.reference === supplied));
+      assert.equal(response.body.includes(SECRET), false);
+      for (const line of lines) assert.equal(line.includes(SECRET), false);
+    });
+  } finally {
+    console.error = original;
+  }
 });
