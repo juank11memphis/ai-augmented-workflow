@@ -32,7 +32,7 @@ describe('Milestone progression written contract', () => {
     assert.match(scenario, /M-01 verified: M-02 becomes eligible automatically after plan identity and checks are rechecked/);
     assert.match(scenario, /M-01 unchecked or uncommitted: no M-02 dispatch/);
     ordered(gatekeeper, [
-      'prescribed check passed, scoped Task-ID commit verified, and post-commit progress recorded',
+      'prescribed check passed, **expected evidence supported**, scoped Task-ID commit verified, and post-commit progress recorded',
       'advance automatically **only to the next Milestone**',
       'recheck plan identity, ordered Task scope, and prescribed checks before dispatch',
     ]);
@@ -56,7 +56,7 @@ describe('Milestone progression written contract', () => {
     assert.match(failures, /Consequential architecture change at M-01: stop for human decision; no M-02 dispatch/);
     assert.match(gatekeeper, /blocked or unverified Task does not complete its Milestone.*stop without presenting a completion-as-success claim/i);
     assert.match(gatekeeper, /Stop and ask the human before further dispatch when ambiguity cannot be resolved.*consequential architecture, scope, dependency, security, privacy, or persisted-data change/i);
-    assert.match(gatekeeper, /Check failures unresolved after the worker's allowed focused fixes, stale identity, missing evidence, and other blockers also stop unattended work/i);
+    assert.match(gatekeeper, /Check failures unresolved after the worker's allowed focused fixes, stale identity, evidence gaps outside the bounded recovery above, and other blockers also stop unattended work/i);
     assert.match(gatekeeper, /Missing checks or stale identity stop dispatch/i);
   });
 
@@ -87,8 +87,8 @@ describe('Milestone progression written contract', () => {
       assert.match(wrapper, /Task-ID commit only after pass/i);
     }
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '205');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '61');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /AFK planner-reviewer revision loop.*Story PR/);
+    assert.equal(manifest.templateVersion, '206');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '62');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /post-commit Task evidence gaps.*plan-only review/);
   });
 });

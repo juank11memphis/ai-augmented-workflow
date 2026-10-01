@@ -28,7 +28,7 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /automatically revises actionable Story plan-review findings.*final Story review/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /post-commit evidence recovery.*human Story review/i);
     assert.match(contents, /planner automatically revises actionable review findings.*complete review finds no findings or unresolved risks.*accepts the exact plan automatically/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
@@ -323,7 +323,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /AFK planner-reviewer revision loop.*Story PR/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /post-commit Task evidence gaps.*plan-only review/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -369,7 +369,7 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /adjacent types and tests within a checked Task's owning area/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /evidence for every checked Task outcome before commit/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);
