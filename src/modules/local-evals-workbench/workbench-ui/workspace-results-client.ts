@@ -16,6 +16,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (!id || suite?.id === id || isActive() || startPending) return;
     suite = suites.find(item => item.id === id) || null;
     run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null; review = null;
+    if (typeof previewGeneration !== 'undefined') previewGeneration++;
+    if (typeof clearPreviewNotice === 'function') clearPreviewNotice();
     runGeneration++; historyGeneration++; detailGeneration++;
     if (typeof runtimeGeneration !== 'undefined') runtimeGeneration++;
     if (typeof strictRuntimeChoices !== 'undefined') strictRuntimeChoices = false;
