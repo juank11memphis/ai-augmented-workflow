@@ -81,6 +81,10 @@ describe('Milestone planner instruction and fixture contract', () => {
     assert.match(toolbox, /Do not add a Markdown plan header/);
     assert.match(toolbox, /## Goal[\s\S]*## Scope[\s\S]*## Files[\s\S]*## Done when/);
     assert.match(planner, /one ordered step file per bounded Task/);
+    assert.match(planner, /`## Files` lists expected touchpoints, not an exhaustive edit allowlist/);
+    assert.match(planner, /review-driven revision of an existing Story plan/i);
+    assert.match(toolbox, /Apply the smallest source-aligned fixes to affected step files/i);
+    assert.match(toolbox, /Omission of an adjacent file alone is not a scope blocker/);
     assert.match(planner, /current Story-level review and approval controls remain in force/);
   });
 

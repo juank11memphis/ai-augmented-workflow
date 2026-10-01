@@ -1,11 +1,11 @@
 {
-  "templateVersion": "203",
+  "templateVersion": "205",
   "templates": {
     "AGENTS.md": {
-      "version": "50",
+      "version": "51",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Allows automatic execution of an exact Story plan after a complete architecture review with no findings or unresolved risks; retains human decisions for findings and final Story review."
+        "Automatically revises actionable Story plan-review findings through the planner and retains human stops for material decisions and final Story review."
       ]
     },
     ".codex/config.toml": {
@@ -135,31 +135,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "29",
+      "version": "31",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Flags judgment needed before safe continuation for a human decision and reserves routine outcome review for the final Story PR."
+        "Accepts architecture-review findings for minimal, source-aligned revisions of an existing Story plan."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "17",
+      "version": "19",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Clarifies that Milestones group checked Tasks without routine human review; material judgments stop execution for a human."
+        "Revises only affected plan steps after a verified review, preserving completed Task evidence."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "59",
+      "version": "61",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Automatically accepts clean, risk-free architecture-reviewed Story plans and starts execution; findings or unresolved risks still require a human decision."
+        "Runs an AFK planner-reviewer revision loop without a fixed iteration limit and reports each review decision in the Story PR."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Adds bounded checked-Task execution with fixed checks, at most two focused fixes, passing Task-only commits, and durable blocker/progress reporting."
+        "Allows directly necessary adjacent types and tests within a checked Task's owning area, with validation and reporting."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -345,10 +345,10 @@
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Clarifies that the plan reviewer reports findings and risks but does not approve execution; only a complete risk-free packet permits main-agent automatic acceptance."
+        "Plan reviewer reports whether prior findings are resolved, persist, or were superseded without approving execution."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {
