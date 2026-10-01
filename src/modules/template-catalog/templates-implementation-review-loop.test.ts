@@ -34,23 +34,23 @@ describe('exact Story-plan review and conditional acceptance gate', () => {
     assert.match(gatekeeper, /Silence, a vague "clean" label, missing category, malformed packet, unassessed concern, or missing check is not a clean review/i);
   });
 
-  it('blocks unreviewed, deferred, revised, or stale plans but allows explicit accepted risk', () => {
-    assert.match(gatekeeper, /accept with explicitly visible warnings/i);
-    assert.match(gatekeeper, /request revision.*defer/i);
-    assert.match(gatekeeper, /warning does not automatically veto informed human acceptance/i);
-    assert.match(gatekeeper, /Revision returns to the planner and a fresh review cycle; deferral leaves execution stopped/i);
-    assert.match(gatekeeper, /finding or unresolved risk requires explicit human acceptance of that exact version before execution/i);
-    assert.match(gatekeeper, /missing review, missing\/ambiguous identity, changed plan, or missing applicable acceptance blocks executor dispatch/i);
+  it('revises actionable plan findings without a numeric loop cap or premature execution', () => {
+    assert.match(gatekeeper, /actionable, source-aligned finding or risk with a clear smallest adequate fix/i);
+    assert.match(gatekeeper, /send the reviewer packet, reviewed identity, and fix to `ai-implementation-planner`/i);
+    assert.match(gatekeeper, /planner—not the reviewer or code executor—revises only the affected plan content/i);
+    assert.match(gatekeeper, /fresh independent plan-only review/i);
+    assert.match(gatekeeper, /there is no fixed iteration limit/i);
+    assert.match(gatekeeper, /never dispatch a code executor during this loop/i);
+    assert.match(gatekeeper, /same finding remains without a substantive plan change or the latest review shows no progress; stop/i);
+    assert.match(gatekeeper, /stop for a finding or risk whose fix requires an unresolved product, architecture, security, privacy, persisted-data, dependency, or scope decision/i);
+    assert.match(gatekeeper, /explicit human acceptance of the unchanged reviewed identity is required to proceed with residual findings or risks/i);
     assert.match(gatekeeper, /compare it again immediately before each executor dispatch/i);
   });
 
   it('does not waive a missing Task check on either acceptance path', () => {
     assert.match(gatekeeper, /Before any executor dispatch, verify that every Task in the accepted plan has its own specific, objective, executable pass\/fail check/i);
-    assert.match(gatekeeper, /missing, vague, or non-executable Task check is a non-waivable plan defect/i);
-    assert.match(gatekeeper, /stop dispatch even if the review otherwise appears clean or the human accepted visible warnings/i);
-    assert.match(gatekeeper, /Return it to the planner to split or clarify the Task; if judgment is needed before safe continuation, stop for a human decision/i);
-    assert.match(gatekeeper, /fresh architecture review and apply the conditional decision to the revised plan/i);
-    assert.match(gatekeeper, /other genuinely waivable risks available for informed human acceptance/i);
+    assert.match(gatekeeper, /missing, vague, or non-executable Task check is a non-waivable plan defect: return it to the planner/i);
+    assert.match(gatekeeper, /Human acceptance cannot waive a missing Task check/i);
   });
 
   it('keeps final PR review distinct from plan acceptance and excludes runtime machinery', () => {
@@ -59,15 +59,18 @@ describe('exact Story-plan review and conditional acceptance gate', () => {
     assert.match(gatekeeper, /Acceptance alone permits approval metadata and any remaining eligible final Story commit/i);
     assert.match(gatekeeper, /There is no separate post-PR approval/i);
     assert.match(gatekeeper, /Do not add a runtime module or persistent hash helper/i);
-    assert.match(gatekeeper, /fresh independent plan-only architecture review and apply the same clean-review or human-decision rule to the revised identity before executor dispatch/i);
+    assert.match(gatekeeper, /fresh independent plan-only architecture review and use the same AFK finding\/revision loop and conditional acceptance before executor dispatch/i);
+    assert.match(gatekeeper, /\*\*Plan review history\*\*/i);
+    assert.match(gatekeeper, /number of independent review iterations, each finding and planner revision/i);
   });
 
   it('requires a fresh read-only reviewer and plain-language finding presentation', () => {
     assert.match(gatekeeper, /fresh `sibu-architecture-reviewer` exactly one Story and one plan folder/i);
     assert.match(gatekeeper, /source-verified \*\*start here\*\*/i);
     assert.match(gatekeeper, /independently verifies the full authoritative sources and plan/i);
-    assert.match(gatekeeper, /top-level bullet with three indented bullets.*What it means.*Why it matters.*Fix/i);
+    assert.match(gatekeeper, /At a stop, present each finding or unresolved risk.*What it means.*Why it matters.*Fix/i);
     assert.match(gatekeeper, /Preserve unresolved risks even when no blocking finding exists/i);
-    assert.match(reviewer, /main agent conditionally accepts an exact plan only after verifying a complete packet with no findings or unresolved risks; findings or risks require explicit human acceptance/i);
+    assert.match(reviewer, /Actionable findings return to the planner for a new plan version and independent review/i);
+    assert.match(reviewer, /Prior finding dispositions: <resolved \| persists \| superseded/i);
   });
 });
