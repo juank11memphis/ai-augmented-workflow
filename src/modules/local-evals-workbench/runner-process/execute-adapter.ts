@@ -31,7 +31,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
     const requestId = randomUUID();
     const request = Buffer.from(JSON.stringify({ protocolVersion: 1, requestId, operation: 'execute', runId: selection.runId,
       model: selection.model, judgeModel: selection.judgeModel ?? null, repeats: selection.repeats ?? 1, testCases: selection.cases }) + '\n');
-    if (request.length > this.limits.requestBytes) return { status: 'blocked', reason: 'input-unsafe' };
+    if (request.length > this.limits.requestBytes) return { status: 'blocked', reason: 'runner-request-too-large' };
     const started = Date.now();
     const log = (event: string, reason?: string): void => {
       try { this.logger?.record({ event, suiteId: selection.suite.id, reason, durationMs: Date.now() - started }); } catch { /* Noncritical sink. */ }

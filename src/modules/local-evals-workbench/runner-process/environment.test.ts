@@ -19,9 +19,12 @@ test('missing declared name is reported without its value or other environment d
   assert.deepEqual(result, { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: 'TEST_KEY' });
   assert.doesNotMatch(JSON.stringify(result), /private|secret-value|UNRELATED/);
 });
-test('unsafe declarations block without disclosing their names or values', () => {
+test('protected safe names are reported, but unchecked names and values are not', () => {
   for (const name of ['NODE_OPTIONS', 'NODE_PATH', 'LD_PRELOAD', 'SIBU_EVAL_MODE', 'TEST_KEY=secret-value', 'lowercase']) {
     const input: NormalizedEvalSuite = { ...suite, runner: { ...suite.runner, requiredEnvironment: [name] } };
-    assert.deepEqual(runnerEnvironment(input, { [name]: 'bad' }), { status: 'blocked', reason: 'input-unsafe' });
+    const result = runnerEnvironment(input, { [name]: 'SYNTHETIC_SECRET_VALUE' });
+    assert.deepEqual(result, { status: 'blocked', reason: 'required-setting-rejected',
+      ...(/^[A-Z_][A-Z0-9_]*$/.test(name) ? { rejectedSettingName: name } : {}) });
+    assert.doesNotMatch(JSON.stringify(result), /SYNTHETIC_SECRET_VALUE|secret-value|lowercase/);
   }
 });

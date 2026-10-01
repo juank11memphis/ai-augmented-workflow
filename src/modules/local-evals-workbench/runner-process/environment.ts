@@ -1,5 +1,5 @@
 import type { NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
-import { isDeclaredEnvironmentName, type RuntimeOutcome } from '../runtime-description.js';
+import { isDeclaredEnvironmentName, isSafeEnvironmentName, type RuntimeOutcome } from '../runtime-description.js';
 
 /** Only executable lookup and essential OS runtime variables are inherited. */
 const BASE_NAMES = ['PATH', 'HOME', 'TMPDIR', 'TEMP', 'SystemRoot'] as const;
@@ -13,7 +13,8 @@ export function runnerEnvironment(
   const secrets: string[] = [];
   for (const name of suite.runner.requiredEnvironment) {
     if (!isDeclaredEnvironmentName(name, suite.runner.requiredEnvironment) || FORBIDDEN_NAMES.has(name)) {
-      return { status: 'blocked', reason: 'input-unsafe' };
+      return { status: 'blocked', reason: 'required-setting-rejected',
+        ...(isSafeEnvironmentName(name) ? { rejectedSettingName: name } : {}) };
     }
     const value = source[name];
     if (!value) return { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: name };

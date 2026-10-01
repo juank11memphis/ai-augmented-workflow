@@ -57,7 +57,7 @@ test('rejects identity violations and terminates an idle runner within injected 
 test('request and stdout bounds refuse execution without returning truncated success', async () => {
   await withSelection(async (project, selection) => {
     const request = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS, requestBytes: 4 }).execute(selection, async () => undefined);
-    assert.deepEqual(request, { status: 'blocked', reason: 'input-unsafe' });
+    assert.deepEqual(request, { status: 'blocked', reason: 'runner-request-too-large' });
     const stdout = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS, stdoutBytes: 20 }).execute(selection, async () => undefined);
     assert.deepEqual(stdout, { status: 'error', reason: 'runner-limit' });
   });

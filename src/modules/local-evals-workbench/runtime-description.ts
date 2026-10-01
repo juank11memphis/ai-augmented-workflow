@@ -12,7 +12,8 @@ export type RuntimeDescription = {
 };
 
 export type RuntimeBlockReason =
-  | 'suite-unavailable' | 'runner-unavailable' | 'runner-invalid' | 'runner-timeout'
+  | 'suite-unavailable' | 'runner-unavailable' | 'runner-absent' | 'runner-start-failed'
+  | 'runner-exited' | 'runner-protocol-invalid' | 'runner-invalid' | 'runner-timeout'
   | 'environment-missing' | 'required-setting-rejected' | 'runner-request-too-large'
   | 'environment-undeclared' | 'capability-unsupported'
   | 'model-unavailable' | 'judge-unavailable' | 'case-unavailable'
