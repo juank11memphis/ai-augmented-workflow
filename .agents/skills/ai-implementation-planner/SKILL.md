@@ -194,6 +194,8 @@ Every step file must use this structure:
 
 Step files must be concrete, scoped, validation-oriented, and small enough for one AI coding pass. They must not include prerequisite reading, generic review tasks, or implementation scope absent from the story, Epic, BRD, or software design. Validation steps should sit close to the behavior they prove; under command-pattern guidance, handler/domain validation generally precedes adapter or transport validation. Done conditions should make expected validation evidence and residual risks reviewable.
 
+`## Files` lists expected touchpoints, not an exhaustive edit allowlist. Name the owning module or area in Scope. A Task may need directly related types, implementation, or tests there; plan the known dependencies, but do not require a new human decision solely because an adjacent file was not predicted. Keep unrelated modules and material product, architecture, security, privacy, data, or dependency changes outside this allowance.
+
 For this compatible planner-output increment, retain the four step headings above and use one ordered step file per bounded Task. Within those sections, include stable Task and Milestone IDs, Task status and dependencies, relevant Story acceptance criteria, distilled source decisions, exact optional source pointers, applicable skills, known files/area, and a specific executable pass/fail check with expected evidence for that Task. The first step also carries the compact Story/AC coverage and Milestone-outcome view, Task/status list, durable conventions, and a story-local non-Markdown progress-log location and entry shape. Do not create a Markdown plan header that the current executor would mistake for an executable step. A generic Story test or subjective review is not an executable Task check; split or clarify the Task. If subjective judgment is needed before safe continuation, flag a human-decision stop rather than hiding it at a Milestone boundary; otherwise reserve final outcome judgment for the Story PR.
 
 Use only flags declared by the Epic and Stories. Require explicit `Flags: none` for unflagged work. For flagged Tasks, require checks for both flag-off regression and flag-on behavior; include upstream-declared final removal and a no-reference check when applicable. An undeclared flag need blocks handoff rather than expanding scope. Do not activate plan architecture review, branch creation, Task commits, or PR flow in this Story 01 contract; the current Story-level review and approval controls remain in force.
@@ -207,7 +209,7 @@ Before considering planning complete, verify:
 - every Milestone has a reviewable outcome and ordered Task IDs, without a Task-count quota
 - every executable Task has its own objective check and expected evidence; missing or merely subjective checks block handoff
 - the flag inventory, off/on checks for declared flagged Tasks, and any upstream-declared removal no-reference check are explicit
-- every step names the file, module, command, or artifact to change when known
+- every step names expected files and the owning module or area when known, without treating the file list as exhaustive
 - validation steps are explicit enough to prove the story is complete and reflect the story's verification expectations
 - the plan preserves approved Deep Module, architecture, and UX boundaries
 - the plan does not add product or implementation scope beyond the source artifacts

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "203",
+  "templateVersion": "204",
   "templates": {
     "AGENTS.md": {
       "version": "50",
@@ -135,31 +135,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "29",
+      "version": "30",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Flags judgment needed before safe continuation for a human decision and reserves routine outcome review for the final Story PR."
+        "Treats planned file paths as expected touchpoints rather than an exhaustive edit allowlist."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "17",
+      "version": "18",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Clarifies that Milestones group checked Tasks without routine human review; material judgments stop execution for a human."
+        "Asks planners to name the owning area and known files without blocking directly necessary adjacent changes."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "59",
+      "version": "60",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Automatically accepts clean, risk-free architecture-reviewed Story plans and starts execution; findings or unresolved risks still require a human decision."
+        "Allows justified adjacent Task files within the owning area while retaining material-change review gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Adds bounded checked-Task execution with fixed checks, at most two focused fixes, passing Task-only commits, and durable blocker/progress reporting."
+        "Allows directly necessary adjacent types and tests within a checked Task's owning area, with validation and reporting."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

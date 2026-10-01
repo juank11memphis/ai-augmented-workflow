@@ -37,11 +37,19 @@ describe('checked Task execution template contract', () => {
     assert.match(toolbox, /at most \*\*two\*\* evidence-guided, in-scope fixes, rerunning that same check after each fix/i);
     assert.match(toolbox, /Do not retry an unchanged failing command, weaken or replace the check/i);
     assert.match(toolbox, /After two failed fixes, stop without marking done or making a completed-Task commit/i);
-    assert.match(toolbox, /Stop immediately for missing\/changed check, ambiguous or contradictory evidence, scope expansion/i);
+    assert.match(toolbox, /Stop immediately for missing\/changed check, ambiguous or contradictory evidence, work outside the owning area or accepted Task outcome/i);
+  });
+
+  it('treats planned paths as hints while keeping module and safety boundaries', () => {
+    assert.match(gatekeeper, /file list guides navigation, not an exhaustive edit allowlist/i);
+    assert.match(toolbox, /planned file paths as expected touchpoints, not an exhaustive edit allowlist/i);
+    assert.match(toolbox, /directly necessary adjacent type, implementation, or test within the owning module\/area/i);
+    assert.match(toolbox, /Explain and validate each unlisted file in the Task report/i);
+    assert.match(toolbox, /Stop for unrelated modules, destructive actions, secret or credential exposure/i);
   });
 
   it('allows only a passing scoped Task commit, then durable progress', () => {
-    assert.match(toolbox, /Only after every assigned check passes, stage \*\*only Task-owned eligible files\*\*/i);
+    assert.match(toolbox, /Only after every assigned check passes, stage \*\*only Task-owned eligible files\*\* \(including justified adjacent files\)/i);
     assert.match(toolbox, /inspect staged paths and diff for unrelated or ignored work/i);
     assert.match(toolbox, /one Conventional Commit referencing the Task ID on the Story branch/i);
     assert.match(toolbox, /Append a compact progress entry \*\*after\*\* commit with actual check command\/result, commit reference, gotchas, and decisions/i);
@@ -74,7 +82,7 @@ describe('checked Task execution template contract', () => {
     }
     assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /exact Story plan/);
     assert.match(manifest.templates['skills/ai-implementation-executor-toolbox/SKILL.md']?.changes.join('') ?? '', /Task/i);
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /clean, risk-free architecture-reviewed Story plans/);
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /justified adjacent Task files/);
     assert.match(readTemplate('AGENTS.md'), /checked-Task executor may commit only its scoped Task after the prescribed check passes/i);
   });
 });

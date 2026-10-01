@@ -101,6 +101,8 @@ Every step file must retain this exact section structure so the current executor
 - <Validation evidence this step should create, such as unit, acceptance/integration, edge/failure, regression, or justified deeper-check coverage>
 ```
 
+Treat `## Files` as expected touchpoints, not an exhaustive edit allowlist. Identify the owning module or area in Scope and include known shared types and tests, while allowing the executor to report directly necessary adjacent files there. Omission of an adjacent file alone is not a scope blocker; unrelated modules or material product, architecture, security, privacy, data, or dependency changes still require a decision.
+
 Milestone outcomes and final Story PR review are not substitutes for individual Task checks. Flag subjective decisions needed before safe continuation as human-decision stops; do not mark such a Task executable. Preserve the existing Story-level implementation review, approval, and commit controls; plan-version, review-state, branch, Task-commit, and PR execution belong to later Stories, not this planner-output increment.
 
 Each step's Done conditions should identify the confidence created by that step. Keep validation proportional: use deeper property/invariant, torture/fuzz, mutation, or manual QA checks only when the risk profile justifies them, and explain relevant skips briefly instead of adding test-theater.
