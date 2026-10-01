@@ -46,7 +46,7 @@ function browser() {
     startPending: false, startUncertain: false, activePanel: null,
     setupRegion: { hidden: false, querySelector: () => ({ disabled: false }) },
     isActive: () => context.run?.state === 'running', needsJudge: () => false,
-    refreshSetupControls() {}, status() {}, loadRuntime() {}, resetRepair() {},
+    refreshSetupControls() {}, status() {}, loadDiscovery() {}, loadRuntime() {}, resetRepair() {},
     json: async (url: string) => url.includes('/status?')
       ? new Promise(resolve => { resolvePoll = resolve; }) : new Promise(() => undefined),
     setTimeout: () => 0,

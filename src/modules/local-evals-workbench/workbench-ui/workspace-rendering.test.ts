@@ -54,3 +54,20 @@ it('renders contextual discovery recovery without embedding unsafe diagnostics',
     assert.match(html, /data-run-setup hidden/);
   }
 });
+
+it('keeps entry recovery in the suite context before setup and Results at phone, tablet, and desktop widths', () => {
+  const html = renderWorkspaceShell({ status: 'blocked', reason: 'unreadable-eval-suites', message: 'Unsafe detail', guidance: [], suites: [], diagnostics: [] });
+  const bodyMarkup = html.split('<body>')[1]?.split('<script')[0];
+  assert.ok(bodyMarkup, 'Expected body markup before workspace scripts');
+  const positions = ['class="app-header"', 'class="suite-rail"', 'id="suite-title"', 'data-discovery-notice', 'data-run-setup', 'data-results-container', 'data-detail']
+    .map(marker => bodyMarkup.indexOf(marker));
+  assert.ok(positions.every(position => position >= 0));
+  assert.ok(positions.every((position, index) => index === 0 || position > positions[index - 1]!));
+  assert.match(html, /data-discovery-announcement role="status"/);
+  assert.match(html, /data-issue-copy-status role="status"/);
+  assert.match(html, /@media\(max-width:699px\)/);
+  assert.match(html, /@media\(min-width:700px\)/);
+  assert.match(html, /@media\(min-width:1100px\)/);
+  assert.match(html, /\.suite-rail\{display:block/);
+  assert.doesNotMatch(html, /diagnostic-rail|diagnostic-history/);
+});

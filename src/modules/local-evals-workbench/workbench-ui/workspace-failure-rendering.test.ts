@@ -24,7 +24,7 @@ test('selected failure renders evidence first, escapes text, and never shows ano
     suite: { id: 'suite', testCases: [{ id: 'case', name: 'Case' }] }, run: { runId: 'run', testedModel: 'model', scope: 'all',
       cases: [{ caseId: 'case', attempts: [{ number: 2, outcome: 'failed' }] }] },
     selectedRunId: 'run', latestKnownRunId: 'run', detailGeneration: 0, historyGeneration: 0, activePanel: null, setup: { caseId: '' },
-    resetRepair() {}, repairMarkup: () => '<button>Analyze failure</button>', loadRuntime: async () => undefined,
+    resetRepair() {}, repairMarkup: () => '<button>Analyze failure</button>', loadDiscovery() {}, loadRuntime: async () => undefined,
     json: async (url: string) => url.includes('history') ? new Promise(() => undefined) : ({ status: 'ok', value: { evidenceStatus: 'available', evidence: url.includes('assertionId=')
       ? selected(new URL('http://localhost/?' + url.split('?')[1]).searchParams.get('assertionId') || 'a') : all } }),
   };
