@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
-import { acceptedRequestReference, discoveryIssue, unknownDiscoveryIssue } from './public-issue.js';
+import { acceptedRequestReference, discoveryIssue, invalidModelCheckIssue, modelCheckIssue, unknownDiscoveryIssue, unknownModelCheckIssue } from './public-issue.js';
 import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
+import type { RuntimeBlockReason } from '../runtime-description.js';
 
 const knownReasons = ['missing-evals-folder', 'no-eval-suites', 'unreadable-eval-suites', 'discovery-failed'] as const;
 const reference = '123e4567-e89b-42d3-a456-426614174000';
@@ -63,4 +64,37 @@ it('emits a safe correlated terminal event without unexpected payloads', () => {
     outcome: 'blocked', reason: 'unreadable-eval-suites', reference,
   });
   assert.doesNotMatch(messages[0] ?? '', /private|sk-secret/);
+});
+
+const modelReasons: readonly RuntimeBlockReason[] = [
+  'suite-unavailable', 'runner-unavailable', 'runner-absent', 'runner-start-failed',
+  'runner-exited', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout',
+  'environment-missing', 'required-setting-rejected', 'runner-request-too-large',
+  'environment-undeclared', 'capability-unsupported', 'model-unavailable',
+  'judge-unavailable', 'case-unavailable', 'repeats-invalid', 'artifact-unsafe',
+  'artifact-not-ignored', 'artifact-tracked', 'artifact-git-unavailable',
+  'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe',
+];
+
+it('maps every known model-check cause to bounded issue guidance', () => {
+  for (const reason of modelReasons) {
+    const issue = modelCheckIssue({ status: 'blocked', reason } as Parameters<typeof modelCheckIssue>[0], reference);
+    assert.equal(issue.stage, 'model-check');
+    assert.equal(issue.category, reason);
+    assert.equal(issue.reference, reference);
+    assert.ok(issue.title && issue.explanation && issue.nextStep && issue.recoveryAction);
+    assert.doesNotMatch(JSON.stringify(issue), /sk-secret|private\/project/);
+  }
+  assert.notEqual(modelCheckIssue({ status: 'blocked', reason: 'runner-request-too-large' }, reference).nextStep,
+    modelCheckIssue({ status: 'blocked', reason: 'required-setting-rejected' }, reference).nextStep);
+  assert.match(modelCheckIssue({ status: 'blocked', reason: 'input-unsafe' }, reference).explanation, /unclassified/);
+  assert.match(unknownModelCheckIssue(reference).explanation, /Cause unknown/);
+  assert.equal(invalidModelCheckIssue(reference).category, 'invalid-request');
+});
+
+it('includes only validated setting names in model-check user copy', () => {
+  const safe = modelCheckIssue({ status: 'blocked', reason: 'environment-missing', missingEnvironmentName: 'OPENAI_API_KEY' }, reference);
+  assert.match(safe.explanation, /OPENAI_API_KEY/);
+  const unsafe = modelCheckIssue({ status: 'blocked', reason: 'required-setting-rejected', rejectedSettingName: 'sk-secret' }, reference);
+  assert.doesNotMatch(JSON.stringify(unsafe), /sk-secret/);
 });

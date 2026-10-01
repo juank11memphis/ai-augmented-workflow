@@ -54,7 +54,7 @@ type Scenario = {
 type HttpResult = { readonly code: number; readonly body: string; readonly payload: Record<string, unknown> };
 
 async function withWorkbench(scenario: Scenario, run: (client: {
-  post(route: string, body: unknown): Promise<HttpResult>;
+  post(route: string, body: unknown, reference?: string): Promise<HttpResult>;
   get(route: string): Promise<HttpResult>;
   rewriteSuite(value: unknown): Promise<void>;
 }) => Promise<void>): Promise<void> {
@@ -86,16 +86,16 @@ async function withWorkbench(scenario: Scenario, run: (client: {
     assert.equal(discovery.status, 'ready');
     assert.equal(discovery.definitions.length, 1);
     const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: root, initialDiscoveryResult: discovery });
-    const request = async (route: string, body?: unknown): Promise<HttpResult> => {
+    const request = async (route: string, body?: unknown, reference?: string): Promise<HttpResult> => {
       const response = await fetch(new URL(route, server.url), body === undefined ? undefined : {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+        method: 'POST', headers: { 'content-type': 'application/json', ...(reference ? { 'x-sibu-request-reference': reference } : {}) }, body: JSON.stringify(body),
       });
       const raw = await response.text();
       return { code: response.status, body: raw, payload: JSON.parse(raw) as Record<string, unknown> };
     };
     try {
       await run({
-        post: (route, body) => request(route, body),
+        post: (route, body, reference) => request(route, body, reference),
         get: (route) => request(route),
         rewriteSuite: (value) => writeFile(suitePath, JSON.stringify(value)),
       });
@@ -139,10 +139,55 @@ test('local HTTP exposes only a validated, declared missing name and blocks Prev
   });
 });
 
+test('model-check HTTP issue and terminal event share safe reference and category', async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (line?: unknown) => lines.push(String(line));
+  try {
+    await withWorkbench({ mode: 'invalid' }, async ({ post }) => {
+      const supplied = '123e4567-e89b-42d3-a456-426614174000';
+      const response = await post('/api/eval-suites/describe', { suiteId: 'synthetic' }, supplied);
+      assert.equal(response.code, 422);
+      const issue = response.payload.issue as Record<string, unknown>;
+      assert.equal(issue.stage, 'model-check');
+      assert.equal(issue.category, 'runner-protocol-invalid');
+      assert.equal(issue.reference, supplied);
+      const event = lines.map((line) => JSON.parse(line) as Record<string, unknown>)
+        .find((line) => line.event === 'local_evals_workbench_request_issue');
+      assert.equal(event?.stage, issue.stage);
+      assert.equal(event?.reason, issue.category);
+      assert.equal(event?.reference, issue.reference);
+      assert.doesNotMatch(response.body + lines.join(''), /private-runner-stderr|private-test-value|private\/project|private-runner-exception/);
+      const replaced = await post('/api/eval-suites/describe', { suiteId: 'synthetic' }, 'secret-invalid-reference');
+      assert.notEqual((replaced.payload.issue as Record<string, unknown>).reference, 'secret-invalid-reference');
+    });
+  } finally {
+    console.error = original;
+  }
+});
+
+test('malformed model-check request stays safe when the terminal sink fails', async () => {
+  await withWorkbench({ mode: 'ready' }, async ({ post }) => {
+    const original = console.error;
+    console.error = () => { throw new Error('private-sink-failure'); };
+    try {
+      const response = await post('/api/eval-suites/describe', { unsafe: 'private-invalid-suite' }, 'not-a-reference');
+      assert.equal(response.code, 400);
+      const issue = response.payload.issue as Record<string, unknown>;
+      assert.equal(issue.category, 'invalid-request');
+      assert.equal(issue.stage, 'model-check');
+      assert.match(String(issue.reference), /^[a-f0-9-]{36}$/);
+      assert.doesNotMatch(response.body, /private-invalid-suite|private-sink-failure|not-a-reference/);
+    } finally {
+      console.error = original;
+    }
+  });
+});
+
 for (const scenario of [
   { name: 'no compatible models', setup: { mode: 'no-models' }, reason: 'model-unavailable' },
-  { name: 'runner cannot start', setup: { mode: 'crash' }, reason: 'runner-unavailable' },
-  { name: 'invalid runner output', setup: { mode: 'invalid' }, reason: 'runner-invalid' },
+  { name: 'runner exits early', setup: { mode: 'crash' }, reason: 'runner-exited' },
+  { name: 'invalid runner protocol', setup: { mode: 'invalid' }, reason: 'runner-protocol-invalid' },
   { name: 'unsupported capability', setup: { mode: 'unsupported', multiTurn: true }, reason: 'capability-unsupported' },
   { name: 'unavailable Judge Model', setup: { mode: 'no-judge', rubric: true }, reason: 'judge-unavailable' },
   { name: 'undeclared runner environment', setup: { mode: 'undeclared' }, reason: 'environment-undeclared' },
