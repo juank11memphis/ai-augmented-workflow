@@ -1,11 +1,11 @@
 {
-  "templateVersion": "205",
+  "templateVersion": "206",
   "templates": {
     "AGENTS.md": {
-      "version": "51",
+      "version": "52",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Automatically revises actionable Story plan-review findings through the planner and retains human stops for material decisions and final Story review."
+        "Checks each Task's expected evidence before completion and automatically plans bounded post-commit evidence recovery without waiving human Story review."
       ]
     },
     ".codex/config.toml": {
@@ -149,17 +149,17 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "61",
+      "version": "62",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Runs an AFK planner-reviewer revision loop without a fixed iteration limit and reports each review decision in the Story PR."
+        "Automatically recovers bounded post-commit Task evidence gaps through a new checked Task and fresh plan-only review while preserving safety stops."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "25",
+      "version": "26",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Allows directly necessary adjacent types and tests within a checked Task's owning area, with validation and reporting."
+        "Requires evidence for every checked Task outcome before commit, not only a passing test command."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

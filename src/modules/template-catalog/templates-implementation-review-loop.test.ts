@@ -12,6 +12,7 @@ describe('exact Story-plan review and conditional acceptance gate', () => {
     assert.match(gatekeeper, /independent read-only architecture review/i);
     assert.match(gatekeeper, /Do not send a code diff, changed-file list, executor validation summary/i);
     assert.match(gatekeeper, /Do not introduce automatic code review or a post-code architecture-review\/repair loop/i);
+    assert.match(gatekeeper, /This is a completion-evidence check, not an automatic implementation-code review/i);
     assert.doesNotMatch(gatekeeper, /## Automated implementation review loop/i);
     assert.match(gatekeeper, /preserve the human Story review/i);
   });
