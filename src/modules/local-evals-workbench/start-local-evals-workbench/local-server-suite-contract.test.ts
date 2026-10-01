@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import type { InternalEvalSuiteDiscoveryResult, NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
+import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader, type InternalEvalSuiteDiscoveryResult, type NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
 describe('local server suite contract boundaries', () => {
@@ -14,9 +17,14 @@ describe('local server suite contract boundaries', () => {
         fetch(`${server.url}api/eval-suites`).then((response) => response.text()),
       ]);
 
-      for (const browserPayload of [html, suites]) {
-        assert.doesNotMatch(browserPayload, /definitions|PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|src\/private-agent/);
+      const browserState = html.match(/<script type="application\/json" id="sibu-workspace-state">([^<]*)<\/script>/)?.[1];
+      assert.ok(browserState, 'Expected bootstrapped browser state');
+      for (const browserPayload of [browserState, suites]) {
+        assert.equal(/definitions|PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|src\/private-agent/.test(browserPayload), false,
+          'Public suite payload must exclude normalized contract contents');
       }
+      assert.equal(/PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|src\/private-agent/.test(html), false,
+        'Rendered HTML must exclude private suite contents');
       assert.match(html, /Skill authoring checks/);
       assert.equal((JSON.parse(suites) as { status: string }).status, 'ready');
     } finally {
@@ -41,6 +49,51 @@ describe('local server suite contract boundaries', () => {
       assert.doesNotMatch(body, /legacy predefined output/);
     } finally {
       await server.stop?.();
+    }
+  });
+
+  it('keeps empty and unreadable disposable suites distinct across discovery, HTTP, and HTML without writing artifacts', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-entry-contract-'));
+    const evals = path.join(root, 'evals');
+    try {
+      await mkdir(evals);
+      for (const [fixture, reason, title] of [
+        [null, 'no-eval-suites', 'No eval suites found'],
+        ['broken.json', 'unreadable-eval-suites', "Sibu couldn't read the eval suites"],
+      ] as const) {
+        if (fixture) await writeFile(path.join(evals, fixture), '{"token":"sk-synthetic-secret-marker"');
+        const before = await readdir(evals);
+        const result = await discoverConventionalEvalSuites(
+          { type: 'discover-conventional-eval-suites', projectRoot: root },
+          { discoveryReader: new NodeEvalSuiteDiscoveryReader(), logger: { info: () => undefined, warn: () => undefined } },
+        );
+        assert.equal(result.status, 'blocked');
+        if (result.status !== 'blocked') assert.fail('Expected blocked discovery');
+        assert.equal(result.reason, reason);
+        const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: root, initialDiscoveryResult: result });
+        try {
+          const [html, response] = await Promise.all([fetch(server.url).then(item => item.text()), fetch(`${server.url}api/eval-suites`)]);
+          const body = await response.text();
+          const payload = JSON.parse(body) as { reason: string; suites: unknown[]; issue: { category: string; reference: string } };
+          assert.equal(response.status, 200);
+          assert.equal(payload.reason, reason);
+          assert.equal(payload.issue.category, reason);
+          assert.match(payload.issue.reference, /^[a-f0-9-]{36}$/);
+          assert.deepEqual(payload.suites, []);
+          assert.match(html, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+          assert.match(html, /data-discovery-notice/);
+          assert.match(html, /data-results-container/);
+          assert.match(html, /data-run-setup hidden/);
+          const publicOutput = html + body + JSON.stringify([...response.headers]);
+          assert.equal(/sk-synthetic-secret-marker|sibu-entry-contract-/.test(publicOutput), false, 'Public output must not contain suite contents or the absolute fixture root');
+          assert.equal(html.includes('broken.json'), false, 'Browser markup must not include the suite filename');
+          assert.deepEqual(await readdir(evals), before);
+        } finally {
+          await server.stop?.();
+        }
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
     }
   });
 });

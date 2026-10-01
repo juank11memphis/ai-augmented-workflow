@@ -64,7 +64,7 @@ test('changing the failed-check control retains run identity through analysis an
     run: { runId: 'run-two', testedModel: 'provider:model/long', scope: 'all', cases: [{ caseId: 'case', attempts: [{ number: 2, outcome: 'failed' }] }], state: 'completed' },
     history: [{ runId: 'run-two' }], selectedRunId: 'run-two', latestKnownRunId: 'run-two', setup: { caseId: '' },
     runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
-    loadRuntime: async () => undefined, json: async (url: string) => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
+    loadDiscovery() {}, loadRuntime: async () => undefined, json: async (url: string) => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
       outcome: 'failed', assertions: url.includes('assertionId=') ? [{ id: 'failed-two', outcome: 'failed', actual: 'selected', expected: 'expected', diagnostics: [] }]
         : [{ id: 'failed-one', outcome: 'failed' }, { id: 'failed-two', outcome: 'failed' }], turns: [], tools: [], diagnostics: [], output: '',
     } } }),
@@ -120,7 +120,7 @@ test('compact Coverage traps keyboard focus, Escape returns focus, and discards 
     run: { runId: 'run-two', cases: [{ caseId: 'case', attempts: [{ number: 1, outcome: 'failed' }] }] },
     history: [{ runId: 'run-two' }], selectedRunId: 'run-two', latestKnownRunId: 'run-two', setup: { caseId: '' },
     runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
-    resetRepair: () => undefined, loadRuntime: async () => undefined,
+    resetRepair: () => undefined, loadDiscovery() {}, loadRuntime: async () => undefined,
     sheetSlot: { querySelector: () => ({}) }, openSheet: () => undefined, closeSheet: () => { closedDetails++; },
     json: async (url: string) => url.includes('history') ? new Promise(() => undefined) : new Promise(resolve => { resolveDetail = resolve; }),
     status: () => undefined };
@@ -159,7 +159,7 @@ test('medium result detail moves focus to a focusable heading and returns it to 
     run: { runId: 'run', testedModel: 'model', scope: 'all', cases: [{ caseId: 'case', attempts: [{ number: 1, outcome: 'failed' }] }] },
     history: [{ runId: 'run' }], selectedRunId: 'run', latestKnownRunId: 'run', setup: { caseId: '' },
     runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
-    resetRepair: () => undefined, repairMarkup: () => '', loadRuntime: async () => undefined,
+    resetRepair: () => undefined, repairMarkup: () => '', loadDiscovery() {}, loadRuntime: async () => undefined,
     sheetSlot: { querySelector: () => null },
     json: async () => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
       outcome: 'failed', assertions: [{ id: 'check', outcome: 'failed', actual: 'a', expected: 'b', diagnostics: [] }],
@@ -188,7 +188,7 @@ test('suite switch clears either open panel and stale selected detail before a n
       suite: { id: 'old', testCases: [{ id: 'old-case' }] }, run: null, history: [], selectedRunId: null, runtime: null, review: null,
       runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false,
       activePanel: panel, setup: {}, resetRepair() {}, isActive: () => false,
-      loadRuntime() {}, setRuntimeState() {}, json: async () => new Promise(() => undefined), status() {} };
+      loadDiscovery() {}, loadRuntime() {}, setRuntimeState() {}, json: async () => new Promise(() => undefined), status() {} };
     const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + '; renderWorkspace = () => {}; ({ selectSuite, getDetail: () => detail, getPanel: () => activePanel })', context) as {
       selectSuite(id: string): void; getDetail(): typeof detail; getPanel(): string | null;
     };
@@ -223,7 +223,7 @@ test('actual workspace rendering collapses setup for an accepted run and restore
     startPending: false, startUncertain: false, activePanel: null,
     isActive: () => Boolean(context.acceptedRunId || context.run && ['queued', 'running'].includes(context.run.state)),
     needsJudge: () => false, refreshSetupControls() {}, status: (value: string) => { nodes['[data-progress]']!.textContent = value; },
-    loadRuntime() {}, json: async () => new Promise(() => undefined) } as {
+    loadDiscovery() {}, loadRuntime() {}, json: async () => new Promise(() => undefined) } as {
       document: typeof document; URLSearchParams: typeof URLSearchParams; esc: typeof escape; one(selector: string): typeof nodes[string];
       suite: { id: string; name: string; description: string; testCases: { id: string; name: string }[] };
       run: null | { runId: string; state: string; createdAt: number; finishedAt: number; caseIds: string[];
@@ -233,7 +233,7 @@ test('actual workspace rendering collapses setup for an accepted run and restore
       runGeneration: number; historyGeneration: number; detailGeneration: number;
       startPending: boolean; startUncertain: boolean; activePanel: null;
       isActive(): boolean; needsJudge(): boolean; refreshSetupControls(): void; status(value: string): void;
-      loadRuntime(): void; json(): Promise<unknown>;
+      loadDiscovery(): void; loadRuntime(): void; json(): Promise<unknown>;
     };
   const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace })', context) as { renderWorkspace(): void };
   api.renderWorkspace();
@@ -276,7 +276,7 @@ for (const failure of ['unavailable', 'rejected'] as const) {
       run: { runId: 'run', testedModel: 'model', scope: 'all', cases: [{ caseId: 'case', attempts: [{ number: 1, outcome: 'failed' }] }] },
       history: [{ runId: 'run' }], selectedRunId: 'run', latestKnownRunId: 'run', setup: { caseId: '' },
       runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
-      loadRuntime: async () => undefined, status: () => undefined,
+      loadDiscovery() {}, loadRuntime: async () => undefined, status: () => undefined,
       openSheet: (_title: string, html: string) => { sheet.innerHTML = html; },
       json: async (url: string) => !url.includes('assertionId=') ? attemptEvidence
         : url.includes('failed-one') ? selectedEvidence('failed-one')

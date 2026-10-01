@@ -20,7 +20,7 @@ export type LocalEvalsWorkbenchBlockedResult = {
 
 export type LocalEvalsWorkbenchStartFailedResult = {
   readonly status: 'failed';
-  readonly reason: 'server-start-failed';
+  readonly reason: 'workflow-state-read-failed' | 'discovery-failed' | 'server-start-failed';
   readonly message: string;
   readonly guidance: readonly string[];
 };

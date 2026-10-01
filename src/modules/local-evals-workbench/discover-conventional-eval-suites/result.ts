@@ -13,7 +13,7 @@ export type EvalSuiteDiscoveryReadyResult = {
 
 export type EvalSuiteDiscoveryBlockedResult = {
   readonly status: 'blocked';
-  readonly reason: 'missing-evals-folder' | 'no-valid-eval-suites';
+  readonly reason: 'missing-evals-folder' | 'no-eval-suites' | 'unreadable-eval-suites' | 'discovery-failed';
   readonly message: string;
   readonly guidance: readonly string[];
   readonly suites: readonly EvalSuiteSummary[];
@@ -42,6 +42,8 @@ export type EvalSuiteModelOption = {
 
 export type EvalSuiteDiscoveryDiagnosticCode =
   | 'evals-folder-missing'
+  | 'evals-folder-unreadable'
+  | 'discovery-read-failed'
   | 'suite-file-read-failed'
   | 'suite-definition-malformed'
   | 'suite-definition-unsupported'

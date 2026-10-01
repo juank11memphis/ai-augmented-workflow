@@ -96,3 +96,77 @@ test('Clipboard absence or rejection leaves readable steps and a manual-select f
     assert.equal(browser.review.disabled, true);
   }
 });
+
+test('discovery responses preserve prior Results and copy only a validated server issue', async () => {
+  const reference = '123e4567-e89b-42d3-a456-426614174000';
+  let copied = '';
+  const browser = discoveryBrowser(async () => ({ json: async () => ({
+    status: 'blocked', reason: 'unreadable-eval-suites', suites: [], message: 'sk-secret',
+    issue: { stage: 'discovery', outcome: 'blocked', category: 'unreadable-eval-suites', reference,
+      explanation: 'private content', nextStep: 'sk-secret' },
+  }) }), { writeText: async text => { copied = text; } });
+  await browser.loadDiscovery();
+  assert.match(browser.host.nodes.heading.textContent, /couldn't read the eval suites/);
+  assert.match(browser.host.nodes.guidance.textContent, /Check the local eval workspace/);
+  assert.equal(browser.host.nodes.copy.hidden, false);
+  assert.equal(browser.results.textContent, 'Previous results');
+  browser.copy();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(copied, `Stage: discovery\nOutcome: blocked\nCategory: unreadable-eval-suites\nReference: ${reference}`);
+  assert.equal(browser.host.nodes.feedback.textContent, 'Issue details copied.');
+  assert.doesNotMatch(JSON.stringify(browser.host.nodes) + copied, /sk-secret|private content/);
+});
+
+test('lost and invalid discovery responses show communication guidance without a fabricated reference', async () => {
+  for (const [fetcher, expected] of [
+    [async () => { throw new Error('sk-secret'); }, /received no response/],
+    [async () => ({ json: async () => { throw new Error('sk-secret'); } }), /could not be read/],
+    [async () => ({ json: async () => ({ status: 'blocked', reason: 'no-eval-suites', suites: null }) }), /could not be read/],
+  ] as const) {
+    const browser = discoveryBrowser(fetcher);
+    await browser.loadDiscovery();
+    assert.match(browser.host.nodes.guidance.textContent, expected);
+    assert.match(browser.host.nodes.guidance.textContent, /matching terminal event may not exist/);
+    assert.equal(browser.host.nodes.copy.hidden, true);
+    assert.equal(browser.results.textContent, 'Previous results');
+    assert.doesNotMatch(JSON.stringify(browser.host.nodes), /sk-secret|Reference:/);
+  }
+});
+
+test('clipboard rejection retains selectable safe details and does not move focus', async () => {
+  const browser = discoveryBrowser(async () => ({ json: async () => ({ status: 'blocked', reason: 'no-eval-suites', suites: [],
+    issue: { stage: 'discovery', outcome: 'blocked', category: 'no-eval-suites', reference: '123e4567-e89b-42d3-a456-426614174000' } }) }),
+  { writeText: async () => { throw new Error('denied'); } });
+  await browser.loadDiscovery();
+  const focused = { id: 'copy' };
+  browser.document.activeElement = focused;
+  browser.copy();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(browser.host.nodes.details.textContent, /Reference:/);
+  assert.match(browser.host.nodes.feedback.textContent, /Select the issue details above instead/);
+  assert.equal(browser.document.activeElement, focused);
+});
+
+function discoveryBrowser(fetcher: () => Promise<unknown>, clipboard?: { writeText(text: string): Promise<void> }) {
+  const listeners = new Map<string, (event: { target: { closest(selector: string): unknown } }) => void>();
+  const node = () => ({ textContent: '', hidden: false });
+  const nodes = { heading: node(), guidance: node(), announcement: node(), details: node(), copy: node(), feedback: node() };
+  const bySelector: Record<string, (typeof nodes)[keyof typeof nodes]> = {
+    h3: nodes.heading, '[data-discovery-guidance]': nodes.guidance, '[data-discovery-announcement]': nodes.announcement, '[data-issue-details]': nodes.details,
+    '[data-action="copy-issue"]': nodes.copy, '[data-issue-copy-status]': nodes.feedback,
+  };
+  const host = { nodes, hidden: false, innerHTML: '', querySelector: (selector: string) => bySelector[selector], setAttribute: () => undefined };
+  const results = { textContent: 'Previous results' };
+  const document = {
+    activeElement: null as unknown,
+    getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
+    querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': {}, '[data-run-setup]': {},
+      '[data-discovery-notice]': host, '[data-results-container]': results, '[data-issue-copy-status]': nodes.feedback })[selector as '[data-workspace]'],
+    addEventListener: (name: string, listener: (event: { target: { closest(selector: string): unknown } }) => void) => listeners.set(name, listener),
+  };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return {loadDiscovery};})()', {
+    document, navigator: clipboard ? { clipboard } : {}, fetch: fetcher,
+  }) as { loadDiscovery(): Promise<void> };
+  return { ...api, host, results, document,
+    copy: () => listeners.get('click')?.({ target: { closest: () => ({ dataset: { action: 'copy-issue' } }) } }) };
+}

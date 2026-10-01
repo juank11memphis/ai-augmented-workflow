@@ -19,6 +19,54 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   const isActive = () => Boolean(acceptedRunId || run && ['queued', 'running'].includes(run.state));
   const json = async (url, options) => (await fetch(url, options)).json();
   const post = (url, body) => json(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const discoveryCopy = {
+    'missing-evals-folder': ['No eval suites found', 'Sibu could not find an evals folder.', 'Add an eval suite under evals/.'],
+    'no-eval-suites': ['No eval suites found', 'Sibu found no usable eval suites.', 'Add an eval suite under evals/.'],
+    'unreadable-eval-suites': ["Sibu couldn't read the eval suites", 'Suite definitions could not be used.', 'Check the local eval workspace and correct the suites.'],
+    'discovery-failed': ['Eval suite discovery failed', 'Sibu could not finish reading suites. Cause unknown.', 'Check project access, then try again.'],
+  };
+  const connectionCopy = {
+    noResponse: ['Connection to Sibu failed', 'The suite request received no response.', 'Check the connection and try reloading. A matching terminal event may not exist.'],
+    invalidResponse: ['Sibu sent an unusable response', 'The suite request could not be read.', 'Check the connection and try reloading. A matching terminal event may not exist.'],
+  };
+  let copyableIssue = null;
+  function safeDiscoveryIssue(payload) {
+    const issue = payload?.issue;
+    if (!issue || issue.stage !== 'discovery' || !['blocked', 'failed'].includes(issue.outcome) ||
+      issue.category !== payload.reason || !Object.hasOwn(discoveryCopy, issue.category) ||
+      typeof issue.reference !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(issue.reference)) return null;
+    return 'Stage: discovery\nOutcome: ' + issue.outcome + '\nCategory: ' + issue.category + '\nReference: ' + issue.reference.toLowerCase();
+  }
+  function showDiscoveryNotice(copy, issueDetails = null) {
+    const host = one('[data-discovery-notice]');
+    if (!host) return;
+    const [title, explanation, nextStep] = copy;
+    if (!host.querySelector('h3')) host.innerHTML = '<h3 tabindex="-1"></h3><p data-discovery-guidance></p><span data-discovery-announcement role="status" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></span><p data-issue-details></p><button type="button" data-action="copy-issue">Copy issue details</button><p data-issue-copy-status role="status"></p>';
+    const heading = host.querySelector('h3');
+    const changed = heading.textContent !== title || host.querySelector('[data-discovery-guidance]').textContent !== explanation + ' ' + nextStep;
+    copyableIssue = issueDetails;
+    heading.textContent = title;
+    host.querySelector('[data-discovery-guidance]').textContent = explanation + ' ' + nextStep;
+    const details = host.querySelector('[data-issue-details]');
+    details.textContent = issueDetails || '';
+    details.hidden = !issueDetails;
+    host.querySelector('[data-action="copy-issue"]').hidden = !issueDetails;
+    host.hidden = false;
+    if (changed) host.querySelector('[data-discovery-announcement]').textContent = title;
+  }
+  async function loadDiscovery() {
+    try {
+      const response = await fetch('/api/eval-suites');
+      let payload;
+      try { payload = await response.json(); } catch { showDiscoveryNotice(connectionCopy.invalidResponse); return; }
+      if (!payload || !Array.isArray(payload.suites) || !['ready', 'blocked'].includes(payload.status) ||
+        payload.status === 'blocked' && !Object.hasOwn(discoveryCopy, payload.reason)) {
+        showDiscoveryNotice(connectionCopy.invalidResponse); return;
+      }
+      if (payload.status === 'blocked') showDiscoveryNotice(discoveryCopy[payload.reason], safeDiscoveryIssue(payload));
+      else { const host = one('[data-discovery-notice]'); if (host) host.hidden = true; copyableIssue = null; }
+    } catch { showDiscoveryNotice(connectionCopy.noResponse); }
+  }
   const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId }, model: setup.model, judgeModel: needsJudge() ? setup.judgeModel || null : null, repeats: Number(setup.repeats) });
   function blockedModelMessage(reason, missingEnvironmentName) {
     switch (reason) {
@@ -176,6 +224,15 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
+    if (target.dataset.action === 'copy-issue' && copyableIssue) {
+      const details = copyableIssue;
+      const feedback = message => { const node = one('[data-issue-copy-status]'); if (node && copyableIssue === details) node.textContent = message; };
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
+          () => feedback('Copy failed. Select the issue details above instead.'));
+      } catch { feedback('Copy failed. Select the issue details above instead.'); }
+    }
     if (target.dataset.action === 'suite') selectSuite(target.dataset.suiteId);
     if (target.dataset.action === 'copy-steps') {
       const steps = runtimeState === 'blocked' ? runtimeMessage : '';

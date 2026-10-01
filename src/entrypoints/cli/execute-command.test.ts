@@ -78,6 +78,14 @@ describe('local evals CLI handler', () => {
       ['.sibu/state.json could not be parsed.', 'Run `sibu doctor` to inspect the workflow state.', 'Run `sibu sync` to review and repair managed workflow files.']
     );
   });
+
+  it('prints distinct observed-stage guidance for discovery and server failures', () => {
+    const discovery = formatStartLocalEvalsWorkbenchResult({ status: 'failed', reason: 'discovery-failed', message: 'Eval suite discovery failed; the cause is unknown.', guidance: ['Check project access and retry discovery.'] });
+    const server = formatStartLocalEvalsWorkbenchResult({ status: 'failed', reason: 'server-start-failed', message: 'Local server startup failed; the cause is unknown.', guidance: ['Retry startup.'] });
+    assert.match(discovery.join(' '), /discovery.*unknown/);
+    assert.match(server.join(' '), /server startup.*unknown/);
+    assert.doesNotMatch(discovery.join(' '), /port/);
+  });
 });
 
 describe('model route CLI', () => {

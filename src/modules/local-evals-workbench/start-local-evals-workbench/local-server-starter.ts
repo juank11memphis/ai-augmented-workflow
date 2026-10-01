@@ -21,6 +21,9 @@ import { parseStartRequest } from '../start-eval-run/request-parser.js';
 import { parseGetRunRequest } from '../get-eval-run/request-parser.js';
 import { parseListRunRequest } from '../list-eval-runs/request-parser.js';
 import { renderWorkspaceShell } from '../workbench-ui/workspace-layout.js';
+import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
+import { acceptedRequestReference, discoveryIssue, unknownDiscoveryIssue } from './public-issue.js';
+import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -33,6 +36,7 @@ type LocalHttpResponse = {
 type LocalHttpRequest = {
   readonly url?: string;
   readonly method?: string;
+  readonly headers?: Readonly<Record<string, string | readonly string[] | undefined>>;
   on?(event: 'data', listener: (chunk: Buffer | string) => void): void;
   on?(event: 'end', listener: () => void): void;
   on?(event: 'error', listener: () => void): void;
@@ -53,13 +57,21 @@ type LocalHttpServerFactory = (handler: LocalHttpRequestHandler) => LocalHttpSer
 export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStarterPort {
   constructor(
     private readonly createServer: LocalHttpServerFactory = createNodeHttpServer,
-    private readonly dependenciesFactory: (request: LocalWorkbenchServerStartRequest) => LocalWorkbenchRuntimeDependencies = createWorkbenchDependencies
+    private readonly dependenciesFactory: (request: LocalWorkbenchServerStartRequest) => LocalWorkbenchRuntimeDependencies = createWorkbenchDependencies,
+    private readonly logger: LocalEvalsWorkbenchLoggerPort = new SafeConsoleLocalEvalsLogger()
   ) {}
 
   async startServer(request: LocalWorkbenchServerStartRequest): Promise<LocalWorkbenchServerStartResult> {
     const runtimeDependencies = this.dependenciesFactory(request);
     const server = this.createServer((httpRequest, response) => {
-      void routeLocalRequest(httpRequest, response, request, runtimeDependencies);
+      const reference = acceptedRequestReference(httpRequest.headers?.['x-sibu-request-reference']);
+      void routeLocalRequest(httpRequest, response, request, runtimeDependencies, reference, this.logger).catch(() => {
+        if (httpRequest.url === '/api/eval-suites') {
+          const issue = unknownDiscoveryIssue(reference);
+          emitDiscoveryIssue(this.logger, issue);
+          try { writeJson(response, 500, { status: 'blocked', reason: 'discovery-failed', suites: [], diagnostics: [], issue }, reference); } catch { /* The response may already be closed. */ }
+        }
+      });
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -85,7 +97,7 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
   }
 }
 
-async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies): Promise<void> {
+async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies, reference: string, logger: LocalEvalsWorkbenchLoggerPort): Promise<void> {
   const publicDiscoveryResult = toPublicEvalSuiteDiscoveryResult(startRequest.initialDiscoveryResult);
   const url = new URL(request.url ?? '/', 'http://localhost');
   if (url.pathname === '/api/eval-runs/start') {
@@ -117,7 +129,13 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
     return;
   }
   if (request.url === '/api/eval-suites') {
-    writeJson(response, 200, publicDiscoveryResult);
+    if (publicDiscoveryResult.status === 'blocked') {
+      const issue = discoveryIssue(publicDiscoveryResult, reference);
+      emitDiscoveryIssue(logger, issue);
+      writeJson(response, 200, { ...publicDiscoveryResult, issue }, reference);
+    } else {
+      writeJson(response, 200, publicDiscoveryResult, reference);
+    }
     return;
   }
 
@@ -243,6 +261,12 @@ function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer
   return http.createServer((request, response) => handler(request, response));
 }
 
+function emitDiscoveryIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof discoveryIssue>): void {
+  try {
+    logger.warn({ event: 'local_evals_workbench_request_issue', stage: issue.stage, outcome: issue.outcome, reason: issue.category, reference: issue.reference });
+  } catch { /* A failed diagnostic sink must not change the response. */ }
+}
+
 async function readJsonBody(request: LocalHttpRequest): Promise<{ readonly status: 'ok'; readonly payload: unknown } | { readonly status: 'invalid'; readonly message: string }> {
   if (!request.on) return { status: 'invalid', message: 'Request body could not be read.' };
 
@@ -268,8 +292,8 @@ async function readJsonBody(request: LocalHttpRequest): Promise<{ readonly statu
   });
 }
 
-function writeJson(response: LocalHttpResponse, statusCode: number, payload: unknown): void {
-  response.writeHead(statusCode, jsonHeaders());
+function writeJson(response: LocalHttpResponse, statusCode: number, payload: unknown, reference?: string): void {
+  response.writeHead(statusCode, reference ? { ...jsonHeaders(), 'x-sibu-request-reference': reference } : jsonHeaders());
   response.end(JSON.stringify(payload));
 }
 

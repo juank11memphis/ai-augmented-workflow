@@ -69,7 +69,9 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     } else if (acceptedRunId) status('Run queued. Loading saved progress…');
     else if (suite) status('0/' + suite.testCases.length + ' complete');
     if (!suite) {
-      resultContainer.innerHTML = '<section class="empty" aria-labelledby="empty-title"><h2 id="empty-title">No eval suites yet</h2><p>Ask your coding agent:</p><blockquote>Create production-ready Sibu evals for this project.</blockquote><button type="button" data-action="copy-prompt">Copy prompt</button><p data-copy-status role="status"></p></section>';
+      resultContainer.innerHTML = discovery.status === 'blocked' && discovery.reason === 'unreadable-eval-suites'
+        ? '<section class="empty" aria-labelledby="results-title"><h2 id="results-title">Results</h2><p>Results are unavailable until suites can be read.</p></section>'
+        : '<section class="empty" aria-labelledby="empty-title"><h2 id="empty-title">No eval suites yet</h2><p>Ask your coding agent:</p><blockquote>Create production-ready Sibu evals for this project.</blockquote><button type="button" data-action="copy-prompt">Copy prompt</button><p data-copy-status role="status"></p></section>';
       detail.innerHTML = ''; return;
     }
     const rows = visibleCases.map(item => ({ ...item, status: run && !runIds.includes(item.id) ? { state: 'excluded', failed: 0, attempts: [] } : caseStatus(item.id) }))
@@ -230,5 +232,5 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   });
   document.addEventListener('input', event => { if (event.target.matches('[data-action="search"]')) { search = event.target.value; renderWorkspace(); } });
   setup.caseId = suite?.testCases[0]?.id || '';
-  void loadRuntime(); void loadHistory();
+  void loadDiscovery(); void loadRuntime(); void loadHistory();
 `;

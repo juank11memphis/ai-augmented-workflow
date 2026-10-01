@@ -40,3 +40,34 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.doesNotMatch(html, /Eval result matrix|variant-filter|coverage percentage/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
 });
+
+it('renders contextual discovery recovery without embedding unsafe diagnostics', () => {
+  for (const [reason, title] of [['no-eval-suites', 'No eval suites found'], ['unreadable-eval-suites', "Sibu couldn't read the eval suites"]] as const) {
+    const html = renderWorkspaceShell({ status: 'blocked', reason, message: 'sk-secret', guidance: ['private content'], suites: [],
+      diagnostics: [{ code: 'suite-file-read-failed', severity: 'error', location: '/private/project', message: 'sk-secret' }] });
+    assert.match(html, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(html, /data-discovery-notice/);
+    assert.match(html, /data-issue-details hidden/);
+    assert.match(html, /data-action="copy-issue" hidden/);
+    assert.doesNotMatch(html, /sk-secret|private content|\/private\/project/);
+    assert.match(html, /data-results-container/);
+    assert.match(html, /data-run-setup hidden/);
+  }
+});
+
+it('keeps entry recovery in the suite context before setup and Results at phone, tablet, and desktop widths', () => {
+  const html = renderWorkspaceShell({ status: 'blocked', reason: 'unreadable-eval-suites', message: 'Unsafe detail', guidance: [], suites: [], diagnostics: [] });
+  const bodyMarkup = html.split('<body>')[1]?.split('<script')[0];
+  assert.ok(bodyMarkup, 'Expected body markup before workspace scripts');
+  const positions = ['class="app-header"', 'class="suite-rail"', 'id="suite-title"', 'data-discovery-notice', 'data-run-setup', 'data-results-container', 'data-detail']
+    .map(marker => bodyMarkup.indexOf(marker));
+  assert.ok(positions.every(position => position >= 0));
+  assert.ok(positions.every((position, index) => index === 0 || position > positions[index - 1]!));
+  assert.match(html, /data-discovery-announcement role="status"/);
+  assert.match(html, /data-issue-copy-status role="status"/);
+  assert.match(html, /@media\(max-width:699px\)/);
+  assert.match(html, /@media\(min-width:700px\)/);
+  assert.match(html, /@media\(min-width:1100px\)/);
+  assert.match(html, /\.suite-rail\{display:block/);
+  assert.doesNotMatch(html, /diagnostic-rail|diagnostic-history/);
+});

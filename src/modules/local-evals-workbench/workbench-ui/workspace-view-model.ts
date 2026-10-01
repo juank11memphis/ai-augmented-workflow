@@ -3,6 +3,16 @@ import type { Manifest, HistoryEntry } from '../run-history/contracts.js';
 
 export type WorkspaceState = 'empty' | 'ready' | 'queued' | 'running' | 'completed' | 'partial' | 'blocked' | 'interrupted' | 'error';
 export type WorkspaceCase = { readonly id: string; readonly name: string; readonly status: string; readonly failedChecks: number; readonly checkCount: number; readonly attempts: number };
+export type DiscoveryNotice = { readonly title: string; readonly explanation: string; readonly nextStep: string };
+export function discoveryNotice(discovery: EvalSuiteDiscoveryResult): DiscoveryNotice | null {
+  if (discovery.status !== 'blocked') return null;
+  switch (discovery.reason) {
+    case 'missing-evals-folder': return { title: 'No eval suites found', explanation: 'Sibu could not find an evals folder.', nextStep: 'Add an eval suite under evals/.' };
+    case 'no-eval-suites': return { title: 'No eval suites found', explanation: 'Sibu found no usable eval suites.', nextStep: 'Add an eval suite under evals/.' };
+    case 'unreadable-eval-suites': return { title: "Sibu couldn't read the eval suites", explanation: 'Suite definitions could not be used.', nextStep: 'Check the local eval workspace and correct the suites.' };
+    case 'discovery-failed': return { title: 'Eval suite discovery failed', explanation: 'Sibu could not finish reading suites. Cause unknown.', nextStep: 'Check project access, then try again.' };
+  }
+}
 export type WorkspaceViewModel = {
   readonly suite: EvalSuiteSummary | null;
   readonly state: WorkspaceState;
@@ -16,6 +26,7 @@ export type WorkspaceViewModel = {
   readonly run: Manifest | null;
   readonly historical: boolean;
   readonly history: readonly HistoryEntry[];
+  readonly discoveryNotice: DiscoveryNotice | null;
 };
 
 export function createWorkspaceViewModel(input: {
@@ -45,7 +56,7 @@ export function createWorkspaceViewModel(input: {
   const unfinished = cases.length - passed - failed - excluded;
   const total = run?.cases.length ?? cases.length;
   const completed = total - unfinished;
-  return { suite, state, run, cases, passed, failed, unfinished, excluded, historical, history,
+  return { suite, state, run, cases, passed, failed, unfinished, excluded, historical, history, discoveryNotice: discoveryNotice(input.discovery),
     progress: `${completed}/${total} complete`,
     statusText: state === 'ready' ? `${cases.length} test cases ready` : state === 'empty' ? 'No eval suites yet'
       : `${state} · ${passed} passed · ${failed} failed · ${unfinished} not finished${excluded ? ` · ${excluded} excluded` : ''}`,

@@ -74,8 +74,50 @@ describe('discoverConventionalEvalSuites', () => {
       logger: new CapturingDiscoveryLogger(),
     });
     assert.equal(unsupported.status, 'blocked');
+    assert.equal(unsupported.reason, 'unreadable-eval-suites');
     assert.match(unsupported.guidance.join(' '), /version 2/i);
     assert.equal(unsupported.suites.length, 0);
+  });
+
+  it('distinguishes empty suites, unreadable definitions, and an unknown reader failure', async () => {
+    const emptyLogger = new CapturingDiscoveryLogger();
+    const empty = await discoverConventionalEvalSuites(command(), {
+      discoveryReader: reader([{ source: 'evals', payload: undefined, diagnostics: [{ code: 'suite-definition-malformed', reason: 'no-suite-definitions', severity: 'warning', location: 'evals', message: 'No JSON definitions.' }] }]),
+      logger: emptyLogger,
+    });
+    if (empty.status !== 'blocked') assert.fail('Expected empty discovery to be blocked');
+    assert.equal(empty.reason, 'no-eval-suites');
+    assert.match(empty.message, /No eval suites/);
+    assert.equal(emptyLogger.events.at(-1)?.event, 'eval_suite_discovery_completed');
+
+    const unreadableLogger = new CapturingDiscoveryLogger();
+    const unreadable = await discoverConventionalEvalSuites(command(), {
+      discoveryReader: reader([{ source: 'evals/bad.json', payload: undefined, diagnostics: [{ code: 'suite-file-read-failed', reason: 'sk-synthetic-secret-marker', severity: 'error', location: 'evals/bad.json', message: 'Cannot read suite.' }] }]),
+      logger: unreadableLogger,
+    });
+    if (unreadable.status !== 'blocked') assert.fail('Expected unreadable discovery to be blocked');
+    assert.equal(unreadable.reason, 'unreadable-eval-suites');
+    assert.doesNotMatch(unreadable.message, /No eval suites/);
+    assert.deepEqual((unreadableLogger.events.at(-1) as Extract<EvalSuiteDiscoveryLogEvent, { event: 'eval_suite_discovery_completed' }>).reasonCodes, ['suite-file-read-failed']);
+    assert.doesNotMatch(JSON.stringify(unreadableLogger.events), /sk-synthetic-secret-marker|bad\.json/);
+
+    const failedLogger = new CapturingDiscoveryLogger();
+    const failed = await discoverConventionalEvalSuites(command(), {
+      discoveryReader: { ...reader([]), readConventionalEvalSuites: async () => { throw new Error('sk-synthetic-secret-marker'); } },
+      logger: failedLogger,
+    });
+    if (failed.status !== 'blocked') assert.fail('Expected failed discovery to be blocked');
+    assert.equal(failed.reason, 'discovery-failed');
+    assert.match(failed.message, /underlying cause is unknown/);
+    assert.doesNotMatch(JSON.stringify({ result: failed, events: failedLogger.events }), /sk-synthetic-secret-marker/);
+  });
+
+  it('keeps the discovery outcome when the logging sink fails', async () => {
+    const result = await discoverConventionalEvalSuites(command(), {
+      discoveryReader: reader([{ source: 'evals/suite.json', payload: validSuite(), diagnostics: [] }]),
+      logger: { info: () => { throw new Error('sink unavailable'); }, warn: () => { throw new Error('sink unavailable'); } },
+    });
+    assert.equal(result.status, 'ready');
   });
 
   it('logs stable event names and safe counts, duration, outcomes, and reason codes only', async () => {
