@@ -1,6 +1,7 @@
 import type { AnalyzeFailedAssertionCommand } from './command.js';
-import type { AnalyzeFailedAssertionLoggerPort, AssistanceConfigPort, FailedAssertionRunArtifactReaderPort, FailureAnalysisLlmPort, FailureAnalysisStorePort } from './ports.js';
-import type { AnalyzeFailedAssertionBlockedResult, AnalyzeFailedAssertionResult } from './result.js';
+import { FailureAnalysisProviderError } from './ports.js';
+import type { AnalyzeFailedAssertionLogEvent, AnalyzeFailedAssertionLoggerPort, AssistanceConfigPort, FailedAssertionRunArtifactReaderPort, FailureAnalysisLlmPort, FailureAnalysisStorePort } from './ports.js';
+import type { AnalyzeFailedAssertionBlockedResult, AnalyzeFailedAssertionErrorResult, AnalyzeFailedAssertionResult } from './result.js';
 import { logicalId } from '../run-history/validation.js';
 import { supportedModelId } from '../repair-context/model-id.js';
 
@@ -16,37 +17,36 @@ export type AnalyzeFailedAssertionDependencies = {
 export async function analyzeFailedAssertion(command: AnalyzeFailedAssertionCommand, dependencies: AnalyzeFailedAssertionDependencies): Promise<AnalyzeFailedAssertionResult> {
   const startedAt = (dependencies.clock ?? Date.now)();
   const config = dependencies.assistanceConfig.getConfig();
-  const metadata = { suiteId: command.suiteId, runId: command.runId, attempt: command.attempt, testCaseId: command.testCaseId, modelId: command.evalRunModelId, assertionId: command.assertionId };
-  dependencies.logger.info({ event: 'failure_analysis_requested', ...metadata, assistanceModelLabel: config.assistanceModelLabel });
+  emit(dependencies.logger, 'info', { event: 'failure_analysis_requested', stage: 'analysis', outcome: 'started' });
 
   const blockedScope = validateScope(command);
-  if (blockedScope) return logBlocked(blockedScope, metadata, startedAt, dependencies);
+  if (blockedScope) return logBlocked(blockedScope, startedAt, dependencies);
 
   let selected;
   try {
     selected = await dependencies.artifactReader.read(command);
   } catch {
-    return logBlocked(blocked('missing-artifact', 'The selected saved evidence could not be read.'), metadata, startedAt, dependencies);
+    return logBlocked(blocked('missing-artifact', 'The selected saved evidence could not be read.'), startedAt, dependencies);
   }
   if (selected.status === 'blocked') return logBlocked(blocked(
     selected.reason === 'non-failed-assertion' ? 'non-failed-assertion' : 'missing-artifact',
     'The selected failed assertion is unavailable in this saved run.'
-  ), metadata, startedAt, dependencies);
+  ), startedAt, dependencies);
   if (selected.value.evidence.suiteId !== command.suiteId
     || selected.value.evidence.runId !== command.runId
     || selected.value.evidence.attempt !== command.attempt
     || selected.value.evidence.testCaseId !== command.testCaseId
     || selected.value.evidence.assertionId !== command.assertionId) {
-    return logBlocked(blocked('missing-assertion', 'The selected assertion no longer matches this saved run.'), metadata, startedAt, dependencies);
+    return logBlocked(blocked('missing-assertion', 'The selected assertion no longer matches this saved run.'), startedAt, dependencies);
   }
   if (selected.value.testedModel !== command.evalRunModelId
     || selected.value.evidence.evalRunModelId !== command.evalRunModelId
     || selected.value.runScope !== (command.runScope.type === 'all' ? 'all' : 'selected')) {
-    return logBlocked(blocked('invalid-scope', 'The selected model or scope does not match this saved run.'), metadata, startedAt, dependencies);
+    return logBlocked(blocked('invalid-scope', 'The selected model or scope does not match this saved run.'), startedAt, dependencies);
   }
   const evidence = selected.value.evidence;
   if (!config.hasOpenAiApiKey) {
-    dependencies.logger.warn({ event: 'failure_analysis_unavailable', ...metadata, assistanceModelLabel: config.assistanceModelLabel, reason: 'missing-openai-api-key', durationMs: elapsed(startedAt, dependencies) });
+    finish(dependencies, startedAt, { outcome: 'blocked', reason: 'missing-openai-api-key' });
     return {
       status: 'analysis-unavailable',
       reason: 'missing-openai-api-key',
@@ -60,11 +60,12 @@ export async function analyzeFailedAssertion(command: AnalyzeFailedAssertionComm
   try {
     const analysis = await dependencies.llm.analyzeFailure({ model: config.assistanceModelLabel, evidence });
     const analysisId = dependencies.analysisStore.save(command, analysis);
-    dependencies.logger.info({ event: 'failure_analysis_completed', ...metadata, assistanceModelLabel: config.assistanceModelLabel, durationMs: elapsed(startedAt, dependencies), outcome: 'analysis-ready' });
+    finish(dependencies, startedAt, { outcome: 'completed', reason: 'analysis-ready' });
     return { status: 'analysis-ready', analysisId, assistanceModelLabel: config.assistanceModelLabel, evidence, analysis };
-  } catch {
-    dependencies.logger.error({ event: 'failure_analysis_failed', ...metadata, assistanceModelLabel: config.assistanceModelLabel, reason: 'llm-failure', durationMs: elapsed(startedAt, dependencies) });
-    return { status: 'error', reason: 'llm-failure', message: 'Failure analysis could not be completed. Try again later.', assistanceModelLabel: config.assistanceModelLabel, evidence };
+  } catch (error) {
+    const reason = providerFailureReason(error);
+    finish(dependencies, startedAt, { outcome: 'failed', reason });
+    return { status: 'error', reason, message: 'Failure analysis could not be completed. Try again later.', assistanceModelLabel: config.assistanceModelLabel, evidence };
   }
 }
 
@@ -84,9 +85,32 @@ function blocked(reason: AnalyzeFailedAssertionBlockedResult['reason'], message:
   return { status: 'blocked', reason, message };
 }
 
-function logBlocked(result: AnalyzeFailedAssertionBlockedResult, metadata: { readonly suiteId: string; readonly runId: string; readonly attempt: number; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string }, startedAt: number, dependencies: AnalyzeFailedAssertionDependencies): AnalyzeFailedAssertionBlockedResult {
-  dependencies.logger.warn({ event: 'failure_analysis_blocked', ...metadata, reason: result.reason, durationMs: elapsed(startedAt, dependencies) });
+function logBlocked(result: AnalyzeFailedAssertionBlockedResult, startedAt: number, dependencies: AnalyzeFailedAssertionDependencies): AnalyzeFailedAssertionBlockedResult {
+  finish(dependencies, startedAt, { outcome: 'blocked', reason: result.reason });
   return result;
+}
+
+function providerFailureReason(error: unknown): AnalyzeFailedAssertionErrorResult['reason'] {
+  if (!(error instanceof FailureAnalysisProviderError)) return 'unknown';
+  switch (error.category) {
+    case 'authorization': return 'provider-authorization';
+    case 'rate-limit': return 'provider-rate-limit';
+    case 'timeout': return 'provider-timeout';
+    case 'unavailable': return 'provider-unavailable';
+    case 'invalid-response': return 'invalid-llm-response';
+    case 'unknown': return 'unknown';
+  }
+}
+
+type TerminalEvent = Extract<AnalyzeFailedAssertionLogEvent, { event: 'failure_analysis_finished' }>;
+
+function finish(dependencies: AnalyzeFailedAssertionDependencies, startedAt: number, outcome: Pick<TerminalEvent, 'outcome' | 'reason'>): void {
+  const event: TerminalEvent = { event: 'failure_analysis_finished', stage: 'analysis', ...outcome, durationMs: elapsed(startedAt, dependencies) };
+  emit(dependencies.logger, outcome.outcome === 'completed' ? 'info' : outcome.outcome === 'blocked' ? 'warn' : 'error', event);
+}
+
+function emit(logger: AnalyzeFailedAssertionLoggerPort, level: 'info' | 'warn' | 'error', event: AnalyzeFailedAssertionLogEvent): void {
+  try { logger[level](event); } catch { /* Diagnostics must not change the analysis result. */ }
 }
 
 function elapsed(startedAt: number, dependencies: AnalyzeFailedAssertionDependencies): number {
