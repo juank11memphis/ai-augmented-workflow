@@ -78,3 +78,40 @@ test('background execution event mapping retains real terminal categories withou
   }
   assert.equal(safeExecutionEvent({ event: 'eval_run_start_blocked', stage: 'execution', outcome: 'blocked', durationMs: 1 }, 'sk-secret', 'sk-secret/path').reference, undefined);
 });
+
+test('legacy input-unsafe describe issue stays unclassified without inventing a credential or provider cause', async () => {
+  const base = runtimeDependencies();
+  const suite = {
+    version: 2 as const, kind: 'sibu-eval-suite' as const, id: 'suite', name: 'Suite', description: 'Synthetic',
+    target: { id: 'target', kind: 'agent' as const, path: 'src/target.mjs' },
+    coverage: { categories: [], gaps: [] },
+    runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
+    testCases: [{ id: 'case', name: 'Case', turns: [{ role: 'user' as const, content: { type: 'inline' as const, text: 'Hi' } }],
+      toolMocks: [], assertions: [{ id: 'contains', type: 'output-contains' as const, expected: 'Hi' }], graders: [] }],
+  };
+  const describe = {
+    suites: { load: async () => suite },
+    runner: { describe: async () => ({ status: 'blocked' as const, reason: 'input-unsafe' as const,
+      stderr: 'sk-secret private runner stderr', rejectedSettingName: 'PRIVATE_API_KEY', providerContent: 'provider-secret' }) },
+  };
+  await withRoutes({ ...base, describe }, async (server, events) => {
+    const response = await server.renderJsonResponse('/api/eval-suites/describe', { suiteId: 'suite' });
+    assert.equal(response.statusCode, 422);
+    const payload = JSON.parse(response.body) as { status: string; reason: string; issue: {
+      stage: string; outcome: string; category: string; title: string; explanation: string; nextStep: string;
+      recoveryAction: string; reference: string;
+    } };
+    assert.equal(payload.status, 'blocked');
+    assert.equal(payload.reason, 'input-unsafe');
+    assert.equal(payload.issue.stage, 'model-check');
+    assert.equal(payload.issue.outcome, 'blocked');
+    assert.equal(payload.issue.category, 'input-unsafe');
+    assert.match(payload.issue.title, /input unsafe/i);
+    assert.match(payload.issue.explanation, /older unclassified model-check input/i);
+    assert.match(payload.issue.nextStep, /runner setup and request size/i);
+    assert.equal(payload.issue.recoveryAction, 'retry');
+    assert.match(payload.issue.reference, /^[a-f0-9-]{36}$/i);
+    assert.equal(response.headers['x-sibu-request-reference'], payload.issue.reference);
+    assert.doesNotMatch(response.body + JSON.stringify(events), /sk-secret|PRIVATE_API_KEY|provider-secret|credential|provider failure|missing setting|rejected setting/i);
+  });
+});
