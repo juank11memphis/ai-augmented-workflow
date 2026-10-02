@@ -243,14 +243,18 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
     }
     const previousDetail = detail.innerHTML;
-    if (!previousDetail.includes('detail-section')) showEvidenceState('Loading selected evidence…');
+    const switchingAssertion = requestedAssertionId !== null;
+    if (switchingAssertion) {
+      resetRepair();
+      showEvidenceState('Loading selected evidence for ' + requestedAssertionId + '…');
+    } else if (!previousDetail.includes('detail-section')) showEvidenceState('Loading selected evidence…');
     const query = new URLSearchParams({ ...current, attempt: String(attempt) });
     try {
       const payload = await json('/api/eval-runs/status?' + query);
       if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
       if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') {
         showReadNotice('evidence', payload.status === 'ok' ? null : payload);
-        if (previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
+        if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
         else showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
         return;
       }
@@ -262,7 +266,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
       if (selected.status !== 'ok' || selected.value.evidenceStatus !== 'available') {
         showReadNotice('evidence', selected.status === 'ok' ? null : selected);
-        if (previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
+        if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
         else showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
         return;
       }
@@ -298,7 +302,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       else detail.querySelector('h2')?.focus();
     } catch { if (generation === detailGeneration && !activePanel) {
       showReadNotice('evidence', null, true);
-      if (previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
+      if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
       else showEvidenceState('Selected evidence could not be loaded. Previous results remain available.');
     } }
   }

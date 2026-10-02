@@ -256,7 +256,7 @@ test('actual workspace rendering collapses setup for an accepted run and restore
 for (const failure of ['unavailable', 'rejected'] as const) {
   test(`compact assertion switch clears old evidence and proposal during deferred ${failure} read`, async () => {
     const listeners = new Map<string, ((event: unknown) => void)[]>();
-    const result = { innerHTML: '' }, detail = { innerHTML: '', hidden: false }, side = { hidden: true };
+    const result = { innerHTML: '<h2>Results</h2><p>Last known run</p>' }, detail = { innerHTML: '', hidden: false }, side = { hidden: true };
     const sheet = { innerHTML: '' };
     let finishRead!: (value: unknown) => void;
     let rejectRead!: (reason: Error) => void;
@@ -280,24 +280,37 @@ for (const failure of ['unavailable', 'rejected'] as const) {
       runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
       loadDiscovery() {}, loadRuntime: async () => undefined, status: () => undefined,
       openSheet: (_title: string, html: string) => { sheet.innerHTML = html; },
-      json: async (url: string) => !url.includes('assertionId=') ? attemptEvidence
+      post: async () => { throw new Error('No repair request should be sent'); },
+      json: async (url: string) => url.includes('/history?') ? new Promise(() => undefined)
+        : !url.includes('assertionId=') ? attemptEvidence
         : url.includes('failed-one') ? selectedEvidence('failed-one')
           : new Promise((resolve, reject) => { finishRead = resolve; rejectRead = reject; }),
     };
     const api = vm.runInNewContext(WORKSPACE_REPAIR_CLIENT + WORKSPACE_RESULTS_CLIENT
-      + ';({ inspectCase, stage: () => repairStage, seedProposal() { repairStage = "proposal"; repairProposal = { proposalId: "old", changeSummary: "OLD PROPOSAL" }; } })', context) as {
+      + ';({ inspectCase, stage: () => repairStage, proposal: () => repairProposal, selection: () => selectedFailure, markup: repairMarkup, notices: () => readNotices, showReadNotice, seedProposal() { repairStage = "proposal"; repairProposal = { proposalId: "old", changeSummary: "OLD PROPOSAL" }; } })', context) as {
       inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void>;
-      stage(): string; seedProposal(): void;
+      stage(): string; proposal(): unknown; selection(): unknown; markup(): string;
+      notices(): { history: unknown; evidence: { title: string; guidance: string } | null };
+      showReadNotice(stage: string, payload: unknown, disconnected?: boolean): void; seedProposal(): void;
     };
     await api.inspectCase('case', 1, 'failed-one');
     api.seedProposal();
+    api.showReadNotice('history', null, true);
     assert.match(sheet.innerHTML, /OLD EVIDENCE/);
+    assert.match(api.markup(), /OLD PROPOSAL/);
 
     const pending = api.inspectCase('case', 1, 'failed-two');
     assert.equal(api.stage(), 'idle');
+    assert.equal(api.proposal(), null);
+    assert.equal(api.selection(), null);
+    assert.doesNotMatch(api.markup(), /OLD PROPOSAL|Approve and apply/);
     assert.match(sheet.innerHTML, /Loading selected evidence for failed-two/);
     assert.equal(sheet.innerHTML, detail.innerHTML);
     assert.doesNotMatch(sheet.innerHTML, /OLD EVIDENCE|OLD PROPOSAL/);
+    assert.match(result.innerHTML, /Results.*Last known run/);
+    assert.equal(context.run.runId, 'run');
+    assert.equal(context.history[0]!.runId, 'run');
+    assert.ok(api.notices().history);
     await new Promise(resolve => setImmediate(resolve));
     assert.match(sheet.innerHTML, /Loading selected evidence for failed-two/);
 
@@ -307,5 +320,16 @@ for (const failure of ['unavailable', 'rejected'] as const) {
     assert.match(sheet.innerHTML, failure === 'unavailable' ? /Selected evidence is unavailable/ : /Selected evidence could not be loaded/);
     assert.equal(sheet.innerHTML, detail.innerHTML);
     assert.doesNotMatch(sheet.innerHTML, /OLD EVIDENCE|OLD PROPOSAL|NEW EVIDENCE/);
+    assert.equal(api.stage(), 'idle');
+    assert.equal(api.proposal(), null);
+    assert.equal(api.selection(), null);
+    assert.doesNotMatch(api.markup(), /OLD PROPOSAL|Approve and apply/);
+    assert.ok(api.notices().history);
+    assert.match(api.notices().evidence!.title, failure === 'unavailable' ? /Selected evidence could not be read/ : /Connection to Sibu failed/);
+    assert.match(api.notices().evidence!.guidance, failure === 'unavailable' ? /Recheck this read; the run outcome has not changed/
+      : /Recheck the read; a matching terminal event may not exist/);
+    assert.match(result.innerHTML, /Results.*Last known run/);
+    assert.equal(context.run.runId, 'run');
+    assert.equal(context.history[0]!.runId, 'run');
   });
 }
