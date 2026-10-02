@@ -346,8 +346,28 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     try {
       const response = await failureServer.renderJsonResponse('/api/failure-analysis', analysisPayload());
       assert.equal(response.statusCode, 502);
-      assert.match(response.body, /llm-failure/);
-      assert.doesNotMatch(response.body, /full model response|secret|raw prompt/);
+      const payload = JSON.parse(response.body) as {
+        readonly reason: string;
+        readonly issue: {
+          readonly stage: string;
+          readonly outcome: string;
+          readonly category: string;
+          readonly explanation: string;
+          readonly nextStep: string;
+          readonly reference: string;
+        };
+        readonly reference: string;
+      };
+      assert.equal(payload.reason, 'unknown');
+      assert.equal(payload.issue.stage, 'analysis');
+      assert.equal(payload.issue.outcome, 'failed');
+      assert.equal(payload.issue.category, 'unknown');
+      assert.match(payload.issue.explanation, /Cause unknown/i);
+      assert.match(payload.issue.nextStep, /report the issue using this reference/i);
+      assert.match(payload.issue.reference, /^[a-f0-9-]{36}$/);
+      assert.equal(payload.reference, payload.issue.reference);
+      assert.equal(response.headers['x-sibu-request-reference'], payload.issue.reference);
+      assert.doesNotMatch(response.body, /full model response|secret|raw prompt|\/repo/);
     } finally {
       await failureResult.stop?.();
     }
