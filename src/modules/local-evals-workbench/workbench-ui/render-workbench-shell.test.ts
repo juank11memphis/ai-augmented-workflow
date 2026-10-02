@@ -5,6 +5,8 @@ import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-sui
 import type { EvalCell, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
 import { createWorkbenchViewModel } from './view-model.js';
 import { renderWorkbenchShell } from './render-workbench-shell.js';
+import { renderWorkspaceShell } from './workspace-layout.js';
+import { WORKSPACE_STYLES } from './workspace-styles.js';
 import { WORKBENCH_CLIENT_SCRIPT } from './workbench-client.js';
 
 describe('WORKBENCH_CLIENT_SCRIPT', () => {
@@ -32,6 +34,24 @@ describe('WORKBENCH_CLIENT_SCRIPT', () => {
     assert.match(WORKBENCH_CLIENT_SCRIPT, /data-control=\"draft-proposal\"/);
     assert.doesNotMatch(WORKBENCH_CLIENT_SCRIPT, /automated repair|apply mutation|Ask about this failure/i);
   });
+});
+
+it('keeps the read notice in existing context across phone, tablet, and desktop DOM layouts', () => {
+  const html = renderWorkspaceShell(readyDiscovery());
+  const markup = html.slice(html.indexOf('<main class="workspace"'));
+  const context = markup.indexOf('<section class="context" aria-labelledby="suite-title">');
+  const notice = markup.indexOf('data-read-notice');
+  const setup = markup.indexOf('data-run-setup');
+  const results = markup.indexOf('data-results-container');
+  assert.ok(context < notice && notice < setup && setup < results);
+  assert.match(html, /data-read-notice hidden/);
+  assert.match(html, /data-read-announcement/);
+  assert.match(html, /data-action="recheck-read"/);
+  assert.match(html, /data-action="copy-read-issue" hidden/);
+  assert.doesNotMatch(html, /data-diagnostic-panel/);
+  assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\)/);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\)/);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\)/);
 });
 
 describe('renderWorkbenchShell', () => {
