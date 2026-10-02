@@ -41,14 +41,16 @@ export async function withOfflineWorkbench(run: (workbench: {
   readonly get: (route: string) => Promise<{ code: number; payload: Record<string, unknown> }>;
   readonly post: (route: string, body: unknown, reference?: string) => Promise<{ code: number; payload: Record<string, unknown>; headers: Headers }>;
   readonly setRunnerMode: (mode: string) => Promise<void>;
-}) => Promise<void>, logger?: LocalEvalsWorkbenchLoggerPort): Promise<void> {
+}) => Promise<void>, logger?: LocalEvalsWorkbenchLoggerPort, options: { readonly syntheticSecretInputs?: boolean } = {}): Promise<void> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-inline-run-'));
   try {
     await mkdir(path.join(root, 'evals'));
     await mkdir(path.join(root, 'src'));
     await writeFile(path.join(root, 'src/target.mjs'), 'export const target = null;\n');
-    await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify(offlineSuite));
-    await writeFile(path.join(root, 'evals/runner.mjs'), offlineRunner);
+    const suite = options.syntheticSecretInputs ? JSON.parse(JSON.stringify(offlineSuite)) as typeof offlineSuite : offlineSuite;
+    if (options.syntheticSecretInputs) suite.testCases[0]!.turns[0]!.content.text = 'private synthetic prompt payload';
+    await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify(suite));
+    await writeFile(path.join(root, 'evals/runner.mjs'), options.syntheticSecretInputs ? `${offlineRunner}\n// private synthetic runner content; metadata credential=sk-synthetic-secret` : offlineRunner);
     await writeFile(path.join(root, 'evals/mode.txt'), 'ready');
     await writeFile(path.join(root, '.gitignore'), '/evals/artifacts/\n');
     execFileSync('git', ['init', '-q'], { cwd: root });
