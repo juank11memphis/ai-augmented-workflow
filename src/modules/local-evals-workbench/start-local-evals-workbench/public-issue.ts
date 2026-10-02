@@ -115,7 +115,7 @@ const previewCopy: Record<RuntimeBlockReason, ModelCheckCopy> = {
 };
 
 // Start-specific wording: a blocked start does not mean execution failed.
-const startCopy: Record<StartReason, ModelCheckCopy> = {
+export const startCopy: Record<StartReason, ModelCheckCopy> = {
   'suite-unavailable': copy('Suite unavailable', 'The selected suite could not be used to start a run.', 'Check the suite definition, then review and start again.', 'edit-suites'),
   'runner-unavailable': copy('Runner unavailable', 'The suite runner could not be used to start a run.', 'Check the runner command, then review and start again.', 'edit-suites'),
   'runner-absent': copy('Runner not found', 'The configured runner was not found before queueing.', 'Install or correct the runner command, then review again.', 'edit-suites'),

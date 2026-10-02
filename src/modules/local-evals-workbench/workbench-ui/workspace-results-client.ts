@@ -45,7 +45,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       if (item.dataset.suiteId === suite?.id) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
     }
     for (const action of ['coverage','history']) one('[data-action="' + action + '"]').hidden = !suite;
-    setupRegion.hidden = !suite || isActive() || startPending || startUncertain;
+    setupRegion.hidden = !suite || isActive() || startPending;
+    const startForm = one('[data-start-form]'); if (startForm) startForm.hidden = startUncertain;
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
     refreshSetupControls();
@@ -100,7 +101,6 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       history = payload.value || [];
       latestKnownRunId = acceptedRunId || history[0]?.runId || latestKnownRunId;
       if (!selectedRunId) selectedRunId = history[0]?.runId || null;
-      startUncertain = false;
       renderWorkspace(); if (activePanel === 'history') { renderHistory(); focusPanel(); }
       if (!acceptedRunId && selectedRunId && run?.runId !== selectedRunId) void pollRun();
     } catch { if (generation === historyGeneration) status('Saved history could not be loaded.'); }
