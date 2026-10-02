@@ -71,6 +71,7 @@ For BRD and SDD context in the planner packet, read its verified **start here** 
 - For code-changing stories, include `node .agents/scripts/check-touched-source-file-lines.mjs` in validation expectations and require pass/fail evidence for the touched source-file size gate.
 - When likely touched source files are large, near 500 lines, already over the limit, or likely to exceed it, plan explicit cohesive refactoring steps or Done conditions before final file-size validation.
 - Use context-sensitive validation vocabulary: unit, acceptance/integration, edge/failure, regression, and deeper property/invariant, torture/fuzz, mutation, or manual QA checks when story risk justifies them. Include a short skip rationale and residual risks when a relevant deeper check is omitted.
+- Plan every feasible automated check, including browser end-to-end checks when the host has the needed capability. If a source calls for observations that require a human or unavailable interactive tooling, preserve them as an explicit **Human QA at Story review** checklist, not as a Task `Done when` item or executable check. State what remains unverified; do not imply deterministic DOM tests prove visual or assistive-technology behavior.
 - Create ordered story-local implementation step files under `<story-slug>.impl_plan/*.md`.
 - Never write production code, tests, templates, or unrelated documentation.
 - Never create or change product vision, Software Architecture Document, BRD, software design, UX, Epic, or User Story artifacts.
@@ -124,7 +125,7 @@ Treat `## Files` as expected touchpoints, not an exhaustive edit allowlist. Iden
 
 Milestone outcomes and final Story PR review are not substitutes for individual Task checks. Flag subjective decisions needed before safe continuation as human-decision stops; do not mark such a Task executable. Preserve the existing Story-level implementation review, approval, and commit controls; plan-version, review-state, branch, Task-commit, and PR execution belong to later Stories, not this planner-output increment.
 
-Each step's Done conditions should identify the confidence created by that step. Keep validation proportional: use deeper property/invariant, torture/fuzz, mutation, or manual QA checks only when the risk profile justifies them, and explain relevant skips briefly instead of adding test-theater.
+Each step's Done conditions should identify the confidence created by that step. Keep validation proportional: use deeper property/invariant, torture/fuzz, or mutation checks only when the risk profile justifies them, and explain relevant skips briefly instead of adding test-theater. Carry human-only QA to the final Story PR; it is not a checked-Task completion gate.
 
 ## Final result
 

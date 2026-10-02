@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
-import { acceptedRequestReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, modelCheckIssue, previewIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue } from './public-issue.js';
+import { acceptedRequestReference, acceptedStartReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, invalidStartIssue, modelCheckIssue, previewIssue, startIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue, unknownStartIssue } from './public-issue.js';
 import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
 import type { RuntimeBlockReason } from '../runtime-description.js';
 
@@ -120,4 +120,24 @@ it('maps every known preview cause with observed stage and safe recovery', () =>
   assert.equal(invalidPreviewIssue(reference).category, 'invalid-request');
   assert.equal(unavailablePreviewIssue(reference).category, 'runner-unavailable');
   assert.equal(unknownPreviewIssue(reference).category, 'unknown');
+});
+
+it('maps every known run-start block to stage-specific safe guidance', () => {
+  const storageReasons = ['invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable',
+    'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded', 'invalid-transition',
+    'owner-unknown', 'index-stale', 'review-stale', 'schedule-failed'] as const;
+  for (const reason of [...modelReasons, ...storageReasons]) {
+    const issue = startIssue({ status: 'blocked', reason }, reference);
+    assert.equal(issue.stage, 'run-start');
+    assert.equal(issue.outcome, 'blocked');
+    assert.equal(issue.category, reason);
+    assert.equal(issue.reference, reference);
+    assert.ok(issue.title && issue.explanation && issue.nextStep && issue.recoveryAction);
+    assert.doesNotMatch(JSON.stringify(issue), /sk-secret|private\/project/);
+  }
+  assert.match(startIssue({ status: 'blocked', reason: 'input-unsafe' }, reference).explanation, /unclassified/);
+  assert.match(unknownStartIssue(reference).explanation, /Cause unknown/);
+  assert.equal(invalidStartIssue(reference).category, 'invalid-request');
+  assert.equal(acceptedStartReference(reference), reference);
+  assert.notEqual(acceptedStartReference('injected-sk-secret'), 'injected-sk-secret');
 });

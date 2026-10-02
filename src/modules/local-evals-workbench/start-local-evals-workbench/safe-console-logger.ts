@@ -51,13 +51,19 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
     case 'local_evals_workbench_request_issue':
       return {
         event: event.event,
-        stage: event.stage === 'discovery' ? 'discovery' : event.stage === 'preview' ? 'preview' : 'model-check',
+        stage: event.stage === 'discovery' ? 'discovery' : event.stage === 'preview' ? 'preview' : event.stage === 'run-start' ? 'run-start' : 'model-check',
         outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
-        reason: event.stage === 'model-check' || event.stage === 'preview'
+        reason: event.stage === 'run-start' ? safeStartReason(event.reason)
+          : event.stage === 'model-check' || event.stage === 'preview'
           ? (isKnownModelCheckReason(event.reason) ? event.reason : 'unknown')
           : (isKnownPublicDiscoveryReason(event.reason) ? event.reason : 'unknown'),
         reference: safeReference(event.reference),
       };
+    case 'local_evals_workbench_run_start_queued':
+      return { event: event.event, stage: 'run-start', outcome: 'queued', reference: safeReference(event.reference), runId: safeRunId(event.runId) };
+    case 'local_evals_workbench_run_start_response_failed':
+      return { event: event.event, stage: 'run-start', outcome: 'uncertain', reason: 'response-write-failed',
+        reference: safeReference(event.reference), runId: safeRunId(event.runId) };
     case 'local_evals_workbench_request_started':
     case 'local_evals_workbench_request_completed':
       return { event: event.event, stage: 'preview', outcome: event.outcome, reference: safeReference(event.reference) };
@@ -100,6 +106,21 @@ const knownModelCheckReasons: ReadonlySet<RuntimeBlockReason | 'invalid-request'
 
 function isKnownModelCheckReason(reason: string): boolean {
   return knownModelCheckReasons.has(reason as RuntimeBlockReason | 'invalid-request');
+}
+
+const knownStartReasons: ReadonlySet<string> = new Set<string>([
+  ...knownModelCheckReasons, 'invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts',
+  'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt',
+  'limit-exceeded', 'invalid-transition', 'owner-unknown', 'index-stale',
+  'review-stale', 'schedule-failed', 'reference-reused', 'unknown',
+]);
+
+function safeStartReason(reason: string): string {
+  return knownStartReasons.has(reason) ? reason : 'unknown';
+}
+
+function safeRunId(value: string): string | undefined {
+  return /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(value) ? value : undefined;
 }
 
 function safeReference(value: string): string | undefined {

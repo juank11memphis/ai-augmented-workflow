@@ -5,6 +5,15 @@ import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
 import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 
+const startReference = '123e4567-e89b-42d3-a456-426614174000';
+const startNotice = () => {
+  const nodes = new Map<string, { textContent: string; hidden: boolean; focus(): void }>();
+  return { hidden: true, querySelector(key: string) {
+    if (!nodes.has(key)) nodes.set(key, { textContent: '', hidden: false, focus() {} });
+    return nodes.get(key);
+  } };
+};
+
 test('loading and known blocked reasons stay beside an unavailable model choice', async () => {
   const fields = { innerHTML: '' };
   const review = { disabled: false };
@@ -144,12 +153,13 @@ test('case switches and late discovery keep conditional Judge options and keyboa
 
 test('dismissing review during Start preserves visible blocked and uncertain outcomes without resubmitting', async () => {
   for (const outcome of ['blocked', 'network'] as const) {
-    let complete!: (value: { json(): Promise<unknown> }) => void;
+    let complete!: (value: { status: number; json(): Promise<unknown> }) => void;
     let fail!: (reason: Error) => void;
     let submissions = 0;
     const progress = { textContent: '' };
     const reviewStatus = { textContent: '' };
     const startButton = { disabled: false };
+    const notice = startNotice();
     const slot = { textContent: '', open: true, querySelector(selector: string): unknown {
       if (!this.open) return null;
       if (selector === '[data-action="start"]') return startButton;
@@ -157,9 +167,10 @@ test('dismissing review during Start preserves visible blocked and uncertain out
       return null;
     } };
     const document = { activeElement: null, getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
-      querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': slot, '[data-progress]': progress })[selector],
+      querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': slot, '[data-progress]': progress,
+        '[data-start-notice]': notice })[selector],
       addEventListener() {} };
-    const context = { document, resetRepair() {}, fetch: () => {
+    const context = { document, crypto: { randomUUID: () => startReference }, resetRepair() {}, fetch: () => {
       submissions++;
       return new Promise((resolve, reject) => { complete = resolve; fail = reject; });
     } };
@@ -172,17 +183,18 @@ test('dismissing review during Start preserves visible blocked and uncertain out
     const pending = api.startRun();
     api.closeSheet();
     slot.open = false;
-    if (outcome === 'blocked') complete({ json: async () => ({ status: 'blocked', reason: 'missing model' }) });
+    if (outcome === 'blocked') complete({ status: 422, json: async () => ({ status: 'blocked', reason: 'runner-timeout', reference: startReference,
+      issue: { stage: 'run-start', outcome: 'blocked', category: 'runner-timeout', reference: startReference, recoveryAction: 'retry' } }) });
     else fail(new Error('network failure'));
     await pending;
     assert.equal(submissions, 1);
     assert.equal(startButton.disabled, true);
     if (outcome === 'blocked') {
-      assert.match(progress.textContent, /Run was not started: missing model/);
+      assert.match(progress.textContent, /Run start blocked/);
       assert.equal(api.getState().review, null);
       assert.equal(api.getState().startUncertain, false);
     } else {
-      assert.match(progress.textContent, /Start status is uncertain. Check History/);
+      assert.match(progress.textContent, /Run start not confirmed. Check History/);
       assert.equal(api.getState().startUncertain, true);
     }
     await api.startRun();
@@ -210,9 +222,9 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
         '[data-detail]': detail, '[data-results-container]': {}, '[data-side-panel]': {},
         '[data-status-summary]': { focus() {} }, '[data-run-setup]': setupRegion })[selector],
       querySelectorAll: () => [], addEventListener() {} };
-    const context = { document, URLSearchParams, setTimeout: (callback: () => void) => { timers.push(callback); },
-      fetch: async (url: string) => ({ json: async () => {
-        if (url === '/api/eval-runs/start') return { status: 'queued', runId: 'accepted' };
+    const context = { document, crypto: { randomUUID: () => startReference }, URLSearchParams, setTimeout: (callback: () => void) => { timers.push(callback); },
+      fetch: async (url: string) => ({ status: 202, json: async () => {
+        if (url === '/api/eval-runs/start') return { status: 'queued', suiteId: 'suite', runId: 'accepted', reference: startReference };
         if (url.startsWith('/api/eval-runs/history')) { historyRequests++; return { status: 'unavailable' }; }
         if (url.startsWith('/api/eval-runs/status')) { statusRequests++; return responses.shift(); }
         return { status: 'ready', models: [], judgeModels: [] };
@@ -254,6 +266,23 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
     assert.equal(api.getState().isLatest, true);
     assert.equal(setupRegion.hidden, false);
   }
+});
+
+test('an empty History read cannot clear an unconfirmed start or unlock another POST', async () => {
+  let startPosts = 0;
+  const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
+    querySelector: (selector: string) => selector === '[data-workspace]' ? {} : null, addEventListener() {} };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + WORKSPACE_RESULTS_CLIENT
+    + '; renderWorkspace=()=>{}; return {loadHistory,startRun,prime(){startUncertain=true;review={request:{suiteId:"suite"},result:{}};},state:()=>startUncertain};})()',
+  { document, URLSearchParams, crypto: { randomUUID: () => startReference },
+    fetch: async (url: string) => { if (url === '/api/eval-runs/start') startPosts++; return { json: async () => ({ status: 'ok', value: [] }) }; } }) as {
+      loadHistory(): Promise<void>; startRun(): Promise<void>; prime(): void; state(): boolean;
+    };
+  api.prime();
+  await api.loadHistory();
+  assert.equal(api.state(), true);
+  await api.startRun();
+  assert.equal(startPosts, 0);
 });
 
 test('review uses the current preview, returns focus on Back and Escape, and ignores late previews', async () => {
@@ -330,15 +359,16 @@ test('double Start sends one reviewed snapshot and keeps setup collapsed until r
   const reviewStatus = { textContent: '' };
   const region = { hidden: false };
   const progress = { textContent: '' };
+  const notice = startNotice();
   const slot = { querySelector: (selector: string) => ({ '[data-action="start"]': button,
     '[data-review-status]': reviewStatus })[selector] };
   const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [] }] }) }),
     querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-run-setup]': region,
-      '[data-sheet-slot]': slot, '[data-progress]': progress })[selector], addEventListener() {} };
+      '[data-sheet-slot]': slot, '[data-progress]': progress, '[data-start-notice]': notice })[selector], addEventListener() {} };
   const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
     + '; return {startRun,setReview(value){review=value;}};})()', { document,
-    fetch: (_url: string, options: { body: string }) => { submissions++; submitted = JSON.parse(options.body);
-      return Promise.resolve({ json: () => new Promise(resolve => { finish = resolve; }) }); } }) as {
+    crypto: { randomUUID: () => startReference }, fetch: (_url: string, options: { body: string }) => { submissions++; submitted = JSON.parse(options.body);
+      return Promise.resolve({ status: 422, json: () => new Promise(resolve => { finish = resolve; }) }); } }) as {
       startRun(): Promise<void>; setReview(value: unknown): void;
     };
   api.setReview({ request: { suiteId: 'suite', scope: { type: 'all' }, model: 'tested', repeats: 2 },
@@ -353,10 +383,11 @@ test('double Start sends one reviewed snapshot and keeps setup collapsed until r
   assert.deepEqual(JSON.parse(JSON.stringify(submitted)), { suiteId: 'suite', scope: { type: 'all' }, model: 'tested', repeats: 2,
     review: { selectedCaseIds: ['case'], targetCalls: 2, judgeCalls: 0, totalCalls: 2,
       cost: { status: 'unavailable', reason: 'not estimated' } } });
-  finish({ status: 'blocked', reason: 'stale-review' });
+  finish({ status: 'blocked', reason: 'review-stale', reference: startReference,
+    issue: { stage: 'run-start', outcome: 'blocked', category: 'review-stale', reference: startReference, recoveryAction: 'retry' } });
   await pending;
   assert.equal(region.hidden, false);
-  assert.match(reviewStatus.textContent, /stale-review.*Check History/);
+  assert.match(progress.textContent, /Run start blocked/);
   await api.startRun();
   assert.equal(submissions, 1);
 });

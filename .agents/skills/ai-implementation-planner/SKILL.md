@@ -144,6 +144,7 @@ Before writing step files inline, read and apply:
 If a required skill path is missing, stop and report the blocker. If an optional relevant skill is not installed and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag the gap as a plan risk.
 
 Inline plans must preserve the same verification expectations given to planner workers. Turn the story's verification expectations and technical-design quality strategy into concrete validation steps, not only a generic final test command. Consider unit, acceptance/integration, edge/failure, and regression checks by default, and property/invariant, torture/fuzz, mutation, or manual QA only when the story risk justifies them. When a deeper check is relevant but omitted, include a short skip rationale and any residual risks.
+Run feasible automated UI/end-to-end checks when the host supports them. Keep source-required human-only or unavailable interactive observations as a **Human QA at Story review** checklist, not a Task check or `Done when`; label them unverified until the human reports observations at final review. Do not equate deterministic DOM assertions with live visual or assistive-technology QA.
 
 ## Repository-aware validation policy
 

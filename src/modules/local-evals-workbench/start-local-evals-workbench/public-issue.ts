@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { DescribeEvalSuiteRuntimeResult } from '../describe-eval-suite-runtime/result.js';
 import type { PreviewEvalRunResult, PreviewStage } from '../preview-eval-run/result.js';
+import type { StartEvalRunResult } from '../start-eval-run/result.js';
 import { isSafeEnvironmentName, type RuntimeBlockReason } from '../runtime-description.js';
 
 type BlockedDiscovery = Extract<EvalSuiteDiscoveryResult, { status: 'blocked' }>;
@@ -38,6 +39,17 @@ export type PublicPreviewIssue = {
   readonly observedStage?: PreviewStage;
   readonly outcome: 'blocked' | 'failed';
   readonly category: RuntimeBlockReason | 'invalid-request' | 'unknown';
+  readonly title: string;
+  readonly explanation: string;
+  readonly nextStep: string;
+  readonly recoveryAction: 'edit-suites' | 'retry' | 'report';
+  readonly reference: string;
+};
+type StartReason = Extract<StartEvalRunResult, { status: 'blocked' }>['reason'];
+export type PublicStartIssue = {
+  readonly stage: 'run-start';
+  readonly outcome: 'blocked' | 'failed';
+  readonly category: StartReason | 'invalid-request' | 'reference-reused' | 'unknown';
   readonly title: string;
   readonly explanation: string;
   readonly nextStep: string;
@@ -101,6 +113,73 @@ const previewCopy: Record<RuntimeBlockReason, ModelCheckCopy> = {
   'estimate-invalid': copy('Estimate invalid', 'The runner estimate could not be used.', 'Check the runner estimate response, then preview again.', 'edit-suites'),
   'input-unsafe': copy('Preview input unsafe', 'Sibu rejected older unclassified preview input.', 'Review runner setup and request size, then preview again.', 'retry'),
 };
+
+// Start-specific wording: a blocked start does not mean execution failed.
+export const startCopy: Record<StartReason, ModelCheckCopy> = {
+  'suite-unavailable': copy('Suite unavailable', 'The selected suite could not be used to start a run.', 'Check the suite definition, then review and start again.', 'edit-suites'),
+  'runner-unavailable': copy('Runner unavailable', 'The suite runner could not be used to start a run.', 'Check the runner command, then review and start again.', 'edit-suites'),
+  'runner-absent': copy('Runner not found', 'The configured runner was not found before queueing.', 'Install or correct the runner command, then review again.', 'edit-suites'),
+  'runner-start-failed': copy('Runner could not start', 'The configured runner failed before queueing.', 'Check the runner command and permissions, then review again.', 'edit-suites'),
+  'runner-exited': copy('Runner exited', 'The runner ended during run-start checks.', 'Check the runner operation, then review again.', 'retry'),
+  'runner-protocol-invalid': copy('Runner protocol invalid', 'The runner response did not follow the expected protocol.', 'Check runner compatibility, then review again.', 'edit-suites'),
+  'runner-invalid': copy('Runner response invalid', 'Sibu could not use the runner response.', 'Check the runner output format, then review again.', 'edit-suites'),
+  'runner-timeout': copy('Runner timed out', 'The runner did not answer run-start checks in time.', 'Check the runner, then review again.', 'retry'),
+  'environment-missing': copy('Required setting missing', 'This suite needs a required setting before a run can start.', 'Add or export the setting, restart Sibu Evals, then review again.', 'edit-suites'),
+  'required-setting-rejected': copy('Required setting rejected', 'The runner could not accept a required setting name.', 'Fix the suite required settings, then review again.', 'edit-suites'),
+  'runner-request-too-large': copy('Run-start check too large', 'Sibu could not send a run-start check because it was too large.', 'Copy issue details and report the problem.', 'report'),
+  'environment-undeclared': copy('Runner setting undeclared', 'The runner requires a setting not declared by this suite.', 'Declare the setting, then review again.', 'edit-suites'),
+  'capability-unsupported': copy('Capability unsupported', 'The runner does not support a selected case requirement.', 'Review suite and runner support, then review again.', 'edit-suites'),
+  'model-unavailable': copy('Model unavailable', 'The selected target model is not available.', 'Choose a compatible model, then review again.', 'edit-suites'),
+  'judge-unavailable': copy('Judge model unavailable', 'The selected cases need a compatible judge model.', 'Choose a compatible judge model, then review again.', 'edit-suites'),
+  'case-unavailable': copy('Case unavailable', 'A selected case could not be used.', 'Review the suite cases, then review again.', 'edit-suites'),
+  'repeats-invalid': copy('Repeat count invalid', 'The repeat count could not be used.', 'Correct the repeat count, then review again.', 'edit-suites'),
+  'artifact-unsafe': copy('Artifact location unsafe', 'The artifact location did not pass safety checks.', 'Correct the suite artifact location, then review again.', 'edit-suites'),
+  'artifact-not-ignored': copy('Artifact location not ignored', 'The artifact location is not Git-ignored.', 'Ignore the artifact location, then review again.', 'edit-suites'),
+  'artifact-tracked': copy('Artifact location tracked', 'The artifact location contains tracked files.', 'Move artifacts away from tracked files, then review again.', 'edit-suites'),
+  'artifact-git-unavailable': copy('Artifact safety unavailable', 'Sibu could not check Git tracking for artifacts.', 'Check Git access, then review again.', 'retry'),
+  'artifact-root-unsafe': copy('Artifact root unsafe', 'The artifact root did not pass safety checks.', 'Correct the artifact root, then review again.', 'edit-suites'),
+  'estimate-invalid': copy('Estimate invalid', 'The runner estimate could not be used.', 'Check runner estimate output, then review again.', 'edit-suites'),
+  'input-unsafe': copy('Run-start input unclassified', 'Sibu rejected older unclassified run-start input.', 'Review runner setup and request size, then review again.', 'retry'),
+  'invalid-input': copy('Run input invalid', 'The run store rejected the requested inputs.', 'Review the run setup, then try again.', 'retry'),
+  'unsafe-path': copy('Run location unsafe', 'The run store rejected an unsafe location.', 'Correct the artifact location, then review again.', 'edit-suites'),
+  'not-ignored': copy('Run location not ignored', 'The run location is not Git-ignored.', 'Ignore the artifact location, then review again.', 'edit-suites'),
+  'tracked-artifacts': copy('Tracked run artifacts', 'The run location contains tracked files.', 'Move artifacts away from tracked files, then review again.', 'edit-suites'),
+  'git-unavailable': copy('Git safety unavailable', 'Sibu could not check Git tracking before queueing.', 'Check Git access, then review again.', 'retry'),
+  'unverifiable-root': copy('Run root unverified', 'Sibu could not verify the run root before queueing.', 'Check project access, then review again.', 'retry'),
+  'unavailable': copy('Run start unavailable', 'Sibu could not complete run-start checks. Cause unknown.', 'Inspect History before another start if the response was interrupted.', 'report'),
+  'not-found': copy('Run record unavailable', 'A required run record could not be found.', 'Check History, then review again.', 'retry'),
+  'corrupt': copy('Run record unreadable', 'A required run record could not be read safely.', 'Check History and report the problem.', 'report'),
+  'limit-exceeded': copy('Run limit reached', 'The run store limit prevented queueing.', 'Check History and available run storage, then review again.', 'retry'),
+  'invalid-transition': copy('Run state conflict', 'The run store could not make the required state transition.', 'Check History and report the problem.', 'report'),
+  'owner-unknown': copy('Run ownership unknown', 'The run store could not verify ownership.', 'Check History and report the problem.', 'report'),
+  'index-stale': copy('Run index stale', 'The run index could not be trusted before queueing.', 'Check History, then review again.', 'retry'),
+  'review-stale': copy('Review changed', 'The current run estimate no longer matches the reviewed setup.', 'Review the current estimate before starting.', 'retry'),
+  'schedule-failed': copy('Run scheduling failed', 'The run record was created, but background scheduling failed.', 'Check History before trying another start.', 'report'),
+};
+
+export function startIssue(result: Extract<StartEvalRunResult, { status: 'blocked' }>, reference: string): PublicStartIssue {
+  return { stage: 'run-start', outcome: 'blocked', category: result.reason, ...startCopy[result.reason], reference };
+}
+
+export function invalidStartIssue(reference: string): PublicStartIssue {
+  return { stage: 'run-start', outcome: 'blocked', category: 'invalid-request',
+    ...copy('Run request invalid', 'Sibu could not read this run-start request.', 'Correct the request and review again.', 'retry'), reference };
+}
+
+export function reusedStartReferenceIssue(reference: string): PublicStartIssue {
+  return { stage: 'run-start', outcome: 'blocked', category: 'reference-reused',
+    ...copy('Run reference reused', 'This reference cannot identify one run start.', 'Check History; use a fresh reference only after resolving the previous attempt.', 'report'), reference };
+}
+
+export function unknownStartIssue(reference: string): PublicStartIssue {
+  return { stage: 'run-start', outcome: 'failed', category: 'unknown',
+    ...copy('Run start not confirmed', 'Sibu could not complete the start response. Cause unknown.', 'Check History before attempting another start.', 'report'), reference };
+}
+
+export function acceptedStartReference(value: unknown): string {
+  return typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value)
+    ? value.toLowerCase() : randomUUID();
+}
 
 export function previewIssue(result: Extract<PreviewEvalRunResult, { status: 'blocked' | 'error' }>, reference: string): PublicPreviewIssue {
   if (result.status === 'error') return { stage: 'preview', observedStage: result.stage, outcome: 'failed', category: 'unknown',

@@ -181,8 +181,10 @@ test('suite switch clears either open panel and stale selected detail before a n
     const result = { innerHTML: '' };
     const detail = { innerHTML: 'Old suite evidence', hidden: true };
     const removed: string[] = [];
-    const side = { innerHTML: 'Old ' + panel, hidden: false, removeAttribute: (name: string) => removed.push(name) };
+    const side = { innerHTML: 'Old ' + panel, hidden: false, removeAttribute: (name: string) => removed.push(name),
+      setAttribute() {}, querySelector: () => null };
     const context = { document: { querySelectorAll: () => [], addEventListener() {} },
+      matchMedia: () => ({ matches: false }), esc: escape, URLSearchParams,
       one: (selector: string) => ({ '[data-results-container]': result, '[data-detail]': detail, '[data-side-panel]': side })[selector],
       suites: [{ id: 'old', testCases: [{ id: 'old-case' }] }, { id: 'new', testCases: [{ id: 'new-case' }] }],
       suite: { id: 'old', testCases: [{ id: 'old-case' }] }, run: null, history: [], selectedRunId: null, runtime: null, review: null,

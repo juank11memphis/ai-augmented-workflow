@@ -23,6 +23,8 @@ Report in this order, even when a category has no finding:
 4. **Scope, acceptance-criteria coverage, and Task sizing:** every Story criterion has planned work; Tasks are bounded and ordered within reviewable Milestones.
 5. **Executable checks and failure handling:** each Task has its own concrete pass/fail command and expected evidence; missing, vague, or weakened checks are findings.
 
+For UI or accessibility work, distinguish feasible automated checks from human-only or unavailable interactive observations. A plan must run the former and carry source-required human observations as an explicit final-PR checklist with unverified status; do not require human QA in a checked Task, or treat automated DOM assertions as proof of live visual or screen-reader behavior. Deferring human QA to Story review is not omitting a source requirement.
+
 Tie each finding to a plan location, evidence, consequence, and smallest adequate fix. Distinguish a source-required constraint from a preference. For each unresolved risk, state whether a source-aligned fix is known or a material decision is needed. Do not propose added abstraction, dependencies, or speculative performance work as a fix to simplicity concerns. A clean review may retain unresolved risks. Do not silently repair the plan.
 
 On a revised plan, independently assess the whole exact version before reporting whether each previously supplied finding is resolved, persists, or was superseded, and report new findings separately. Prior findings are follow-up context, not a preselected verdict. Do not infer a fix from a claimed planner summary or implementation diff.

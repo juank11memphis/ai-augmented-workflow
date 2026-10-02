@@ -142,3 +142,104 @@ test('polling refresh preserves the exact focused input, query and selection', a
   assert.doesNotMatch(page.list.innerHTML, /Alpha case|Gamma case/);
   assert.equal(page.replacements(), 0);
 });
+
+const uncertainReference = '123e4567-e89b-42d3-a456-426614174003';
+function uncertainHistoryBrowser(reply: (url: string) => Promise<unknown>) {
+  const detail = { innerHTML: 'Saved prior evidence', hidden: false };
+  const notice = { hidden: false };
+  const side = { hidden: true, innerHTML: '', querySelector: () => null,
+    setAttribute() {}, removeAttribute() {} };
+  const document = { querySelectorAll: () => [], addEventListener() {} };
+  const prior = { runId: 'prior-run', state: 'completed', cases: [] };
+  const context = { document, URLSearchParams, matchMedia: () => ({ matches: false }), esc: (value: unknown) => String(value ?? ''),
+    one: (selector: string) => ({ '[data-results-container]': {}, '[data-detail]': detail,
+      '[data-side-panel]': side, '[data-start-notice]': notice })[selector],
+    suite: null as null | { id: string }, suites: [{ id: 'suite' }, { id: 'other' }],
+    run: prior, history: [{ runId: 'prior-run' }], selectedRunId: 'prior-run', latestKnownRunId: 'prior-run',
+    acceptedRunId: null, runtime: null, review: { request: { suiteId: 'suite' } }, setup: {},
+    runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false,
+    startUncertain: true, startReference: uncertainReference, startSuiteId: 'suite', activePanel: null,
+    safeRunId: (value: unknown) => typeof value === 'string' && /^[A-Za-z0-9-]+$/.test(value),
+    loadDiscovery() {}, loadRuntime() {}, resetRepair() {}, status() {},
+    json: reply, setTimeout() {}, isActive: () => false,
+  };
+  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT
+    + '; renderWorkspace = () => {}; ({ loadHistory, renderHistory, state:()=>({ startUncertain, startReference, run, selectedRunId, history }), switchSuite(){ suite={id:"other"}; historyGeneration++; } })', context) as {
+      loadHistory(): Promise<void>; renderHistory(): void; switchSuite(): void;
+      state(): { startUncertain: boolean; startReference: string | null; run: { runId: string }; selectedRunId: string;
+        history: { runId: string }[] };
+    };
+  context.suite = { id: 'suite' };
+  return { api, context, detail, notice, side, prior };
+}
+
+test('unconfirmed start stays locked for old, empty, unrelated same-suite, and unavailable correlation', async () => {
+  for (const rows of [[], [{ runId: 'prior-run' }], [{ runId: 'concurrent-run' }, { runId: 'prior-run' }]]) {
+    for (const correlation of [{ status: 'unconfirmed' }, { status: 'pending' }, { status: 'ambiguous' },
+      { status: 'confirmed', suiteId: 'suite', reference: uncertainReference, runId: 'not-listed' }]) {
+      const calls: string[] = [];
+      const page = uncertainHistoryBrowser(async url => { calls.push(url);
+        return url.includes('reference=') ? correlation : { status: 'ok', value: rows };
+      });
+      await page.api.loadHistory();
+      assert.equal(page.api.state().startUncertain, true);
+      assert.equal(page.api.state().run, page.prior);
+      assert.equal(page.api.state().selectedRunId, 'prior-run');
+      assert.equal(page.notice.hidden, false);
+      assert.equal(page.detail.innerHTML, 'Saved prior evidence');
+      assert.ok(calls.some(url => url.includes('reference=' + uncertainReference)));
+      assert.equal(calls.filter(url => url.includes('/status?')).length, 0);
+    }
+  }
+});
+
+test('History read error remains an unreadable History state and preserves prior result detail', async () => {
+  const page = uncertainHistoryBrowser(async () => { throw new Error('read failed'); });
+  page.api.renderHistory();
+  await page.api.loadHistory();
+  assert.match(page.side.innerHTML, /Saved History could not be read/);
+  assert.equal(page.api.state().startUncertain, true);
+  assert.equal(page.api.state().run, page.prior);
+  assert.equal(page.detail.innerHTML, 'Saved prior evidence');
+});
+
+test('only exact-reference, suite-matched History row with readable status resolves and selects saved run', async () => {
+  const calls: string[] = [];
+  const found = { runId: 'found-run', state: 'completed', cases: [] };
+  const page = uncertainHistoryBrowser(async url => { calls.push(url);
+    if (url.includes('reference=')) return { status: 'confirmed', suiteId: 'suite', reference: uncertainReference, runId: 'found-run' };
+    if (url.includes('/status?')) return { status: 'ok', value: { summary: found } };
+    return { status: 'ok', value: [{ runId: 'concurrent-run' }, { runId: 'found-run' }, { runId: 'prior-run' }] };
+  });
+  await page.api.loadHistory();
+  assert.equal(page.api.state().startUncertain, false);
+  assert.equal(page.api.state().startReference, null);
+  assert.equal(page.api.state().selectedRunId, 'found-run');
+  assert.equal(page.api.state().run?.runId, 'found-run');
+  assert.equal(page.notice.hidden, true);
+  assert.ok(page.api.state().history.some(row => row.runId === 'prior-run'));
+  assert.equal(calls.filter(url => url.includes('/status?')).length, 1);
+});
+
+test('contradictory or unreadable correlated status and stale suite response cannot resolve uncertainty', async () => {
+  for (const response of [{ status: 'blocked' }, { status: 'ok', value: { summary: { runId: 'other-run' } } }]) {
+    const page = uncertainHistoryBrowser(async url => url.includes('reference=')
+      ? { status: 'confirmed', suiteId: 'suite', reference: uncertainReference, runId: 'found-run' }
+      : url.includes('/status?') ? response : { status: 'ok', value: [{ runId: 'found-run' }] });
+    await page.api.loadHistory();
+    assert.equal(page.api.state().startUncertain, true);
+    assert.equal(page.api.state().run, page.prior);
+    assert.equal(page.detail.innerHTML, 'Saved prior evidence');
+  }
+  let release!: (value: unknown) => void;
+  const page = uncertainHistoryBrowser(async url => url.includes('reference=')
+    ? new Promise(resolve => { release = resolve; }) : { status: 'ok', value: [{ runId: 'found-run' }] });
+  const pending = page.api.loadHistory();
+  await new Promise(resolve => setImmediate(resolve));
+  page.api.switchSuite();
+  release({ status: 'confirmed', suiteId: 'suite', reference: uncertainReference, runId: 'found-run' });
+  await pending;
+  assert.equal(page.api.state().startUncertain, true);
+  assert.equal(page.api.state().run, page.prior);
+  assert.equal(page.notice.hidden, false);
+});

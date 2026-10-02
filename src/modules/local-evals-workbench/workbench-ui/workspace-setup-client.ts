@@ -1,3 +1,5 @@
+import { startCopy as safeStartCopy } from '../start-local-evals-workbench/public-issue.js';
+
 export const WORKSPACE_SETUP_CLIENT = String.raw`
   const root = document.querySelector('[data-workspace]');
   const discovery = JSON.parse(document.getElementById('sibu-workspace-state').textContent || '{}');
@@ -12,7 +14,9 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   let modelIssue = null;
   let previewIssueDetails = null;
   let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', repeats: 1 };
-  let sheetReturn = null, startPending = false, startUncertain = false, activePanel = null;
+  let sheetReturn = null, startPending = false, startUncertain = false, startReference = null, startSuiteId = null, activePanel = null;
+  let startIssueDetails = null;
+  const startCopy = ${JSON.stringify(safeStartCopy)};
   const one = selector => document.querySelector(selector);
   const sheetSlot = one('[data-sheet-slot]');
   const setupRegion = one('[data-run-setup]');
@@ -92,6 +96,32 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   };
   const safeSettingName = value => typeof value === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(value) && value.length <= 128;
   const safeReference = value => typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);
+  const safeRunId = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(value);
+  function showStartNotice(title, guidance, details = null, action = null) {
+    const notice = one('[data-start-notice]');
+    if (!notice) return;
+    const heading = notice.querySelector('[data-start-heading]');
+    const changed = heading.textContent !== title || notice.querySelector('[data-start-guidance]').textContent !== guidance;
+    heading.textContent = title;
+    notice.querySelector('[data-start-guidance]').textContent = guidance;
+    startIssueDetails = details;
+    const detail = notice.querySelector('[data-start-details]');
+    detail.textContent = details || ''; detail.hidden = !details;
+    notice.querySelector('[data-action="copy-start-issue"]').hidden = !details;
+    notice.querySelector('[data-action="review-start-again"]').hidden = action !== 'retry';
+    notice.querySelector('[data-action="open-history"]').hidden = action !== 'history';
+    notice.querySelector('[data-start-copy-status]').textContent = '';
+    notice.hidden = false;
+    if (changed) notice.querySelector('[data-start-announcement]').textContent = title;
+  }
+  function blockedStartIssue(payload) {
+    const issue = payload?.issue;
+    const copy = issue && Object.hasOwn(startCopy, issue.category) ? startCopy[issue.category] : null;
+    if (payload?.status !== 'blocked' || !copy || issue.stage !== 'run-start' || issue.outcome !== 'blocked' ||
+      issue.category !== payload.reason || issue.recoveryAction !== copy.recoveryAction || !safeReference(issue.reference) ||
+      !safeReference(payload.reference) || issue.reference.toLowerCase() !== payload.reference.toLowerCase()) return null;
+    return { copy, details: 'Stage: run-start\nOutcome: blocked\nCategory: ' + issue.category + '\nReference: ' + issue.reference.toLowerCase() };
+  }
   const previewStages = { selection: 'selection', description: 'runner description', 'artifact-readiness': 'artifact readiness', 'resolved-inputs': 'suite inputs', estimation: 'cost estimation' };
   const previewGuidance = {
     'suite-unavailable': 'Check the suite definition, then preview again.',
@@ -301,29 +331,52 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   async function startRun() {
     if (!review || startPending || startUncertain || isActive()) return;
+    const reference = globalThis.crypto?.randomUUID?.();
+    if (!safeReference(reference)) {
+      showStartNotice('Run start unavailable', 'Sibu could not prepare a safe start reference. Check browser support before reviewing again.');
+      return;
+    }
+    startReference = reference;
+    startSuiteId = suite.id;
     const { request, result } = review; startPending = true;
     if (setupRegion) setupRegion.hidden = true;
     status('Starting run…');
     const button = sheetSlot.querySelector('[data-action="start"]'); if (button) button.disabled = true;
     try {
-      const payload = await post('/api/eval-runs/start', { ...request, review: { selectedCaseIds: result.selectedCaseIds, targetCalls: result.targetCalls, judgeCalls: result.judgeCalls, totalCalls: result.totalCalls, cost: result.cost } });
-      if (payload.status !== 'queued') {
-        const message = 'Run was not started: ' + (payload.reason || 'review it again') + '. Check History before reviewing again.';
-        const reviewStatus = sheetSlot.querySelector('[data-review-status]');
-        if (reviewStatus) reviewStatus.textContent = message;
-        status(message); review = null; if (button) button.disabled = true;
+      const response = await fetch('/api/eval-runs/start', { method: 'POST', headers: { 'content-type': 'application/json', 'x-sibu-request-reference': reference },
+        body: JSON.stringify({ ...request, review: { selectedCaseIds: result.selectedCaseIds, targetCalls: result.targetCalls, judgeCalls: result.judgeCalls, totalCalls: result.totalCalls, cost: result.cost } }) });
+      const payload = await response.json();
+      if (response.status !== 202 || payload?.status !== 'queued' || !safeRunId(payload.runId) ||
+        payload.suiteId !== request.suiteId || !safeReference(payload.reference) || payload.reference.toLowerCase() !== reference.toLowerCase()) {
+        const blocked = response.status !== 202 && blockedStartIssue(payload);
+        if (blocked) {
+          showStartNotice(blocked.copy.title, blocked.copy.explanation + ' ' + blocked.copy.nextStep, blocked.details, blocked.copy.recoveryAction);
+          status('Run start blocked.');
+          review = null; startReference = null; startSuiteId = null;
+        } else {
+          startUncertain = true;
+          showStartNotice('Run start not confirmed', 'The response could not confirm the start. The run may already exist. Check History before starting another.', null, 'history');
+          status('Run start not confirmed. Check History.');
+        }
+        if (button) button.disabled = true;
         if (setupRegion) setupRegion.hidden = false;
+        const form = one('[data-start-form]'); if (form) form.hidden = startUncertain;
+        sheetSlot.textContent = ''; sheetReturn = null;
+        one('[data-start-notice]')?.querySelector('[data-start-heading]')?.focus?.();
         return;
       }
       selectedRunId = payload.runId; latestKnownRunId = payload.runId; acceptedRunId = payload.runId; run = null;
+      startReference = null; startSuiteId = null;
       closeSheet(); clearSelectedDetail(); renderWorkspace(); status('Run queued. Loading saved progress…');
       void pollRun(); void loadHistory();
     } catch {
       startUncertain = true;
-      const message = 'Start status is uncertain. Check History before starting again.';
-      const reviewStatus = sheetSlot.querySelector('[data-review-status]');
-      if (reviewStatus) reviewStatus.textContent = message;
-      status(message);
+      showStartNotice('Run start not confirmed', 'The connection ended before Sibu could confirm the start. The run may already exist. Check History before starting another. A matching terminal event may not exist.', null, 'history');
+      status('Run start not confirmed. Check History.');
+      if (setupRegion) setupRegion.hidden = false;
+      const form = one('[data-start-form]'); if (form) form.hidden = true;
+      sheetSlot.textContent = ''; sheetReturn = null;
+      one('[data-start-notice]')?.querySelector('[data-start-heading]')?.focus?.();
     }
     finally { startPending = false; if (button && review && !startUncertain) button.disabled = false; }
   }
@@ -357,6 +410,17 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
           () => feedback('Copy failed. Select the issue details above instead.'));
       } catch { feedback('Copy failed. Select the issue details above instead.'); }
     }
+    if (target.dataset.action === 'copy-start-issue' && startIssueDetails) {
+      const details = startIssueDetails;
+      const feedback = message => { const node = one('[data-start-copy-status]'); if (node && details === startIssueDetails) node.textContent = message; };
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
+          () => feedback('Copy failed. Select the issue details above instead.'));
+      } catch { feedback('Copy failed. Select the issue details above instead.'); }
+    }
+    if (target.dataset.action === 'open-history') { closeSheet(); renderHistory(); focusPanel(); void loadHistory(); }
+    if (target.dataset.action === 'review-start-again') { one('[data-start-notice]').hidden = true; showSetup(); }
     if (target.dataset.action === 'retry-model') void loadRuntime(true);
     if (target.dataset.action === 'copy-prompt') { navigator.clipboard?.writeText('Create production-ready Sibu evals for this project.').then(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Prompt copied.'; }).catch(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Copy failed. Select the prompt text instead.'; }); }
     if (target.dataset.action === 'close-sheet') closeSheet();

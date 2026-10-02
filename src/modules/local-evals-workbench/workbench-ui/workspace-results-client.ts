@@ -3,6 +3,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   const detail = one('[data-detail]');
   const side = one('[data-side-panel]');
   let panelReturn = null;
+  let historyReadError = false;
   let detailReturnCaseId = null;
   let failuresOnly = false, search = '';
   const latestRun = () => Boolean(selectedRunId && latestKnownRunId === selectedRunId);
@@ -45,7 +46,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       if (item.dataset.suiteId === suite?.id) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
     }
     for (const action of ['coverage','history']) one('[data-action="' + action + '"]').hidden = !suite;
-    setupRegion.hidden = !suite || isActive() || startPending || startUncertain;
+    setupRegion.hidden = !suite || isActive() || startPending;
+    const startForm = one('[data-start-form]'); if (startForm) startForm.hidden = startUncertain;
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
     refreshSetupControls();
@@ -96,14 +98,42 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     try {
       const payload = await json('/api/eval-runs/history?' + new URLSearchParams({ suiteId: current, limit: '50' }));
       if (generation !== historyGeneration || suite?.id !== current) return;
-      if (payload.status !== 'ok') { status('Saved history is unavailable. Check local artifact setup.'); return; }
+      if (payload.status !== 'ok') { showHistoryReadError(); return; }
+      historyReadError = false;
       history = payload.value || [];
       latestKnownRunId = acceptedRunId || history[0]?.runId || latestKnownRunId;
       if (!selectedRunId) selectedRunId = history[0]?.runId || null;
-      startUncertain = false;
       renderWorkspace(); if (activePanel === 'history') { renderHistory(); focusPanel(); }
       if (!acceptedRunId && selectedRunId && run?.runId !== selectedRunId) void pollRun();
-    } catch { if (generation === historyGeneration) status('Saved history could not be loaded.'); }
+      if (startUncertain && startReference && startSuiteId === current) {
+        await resolveUncertainStart(current, startReference, generation);
+      }
+    } catch { if (generation === historyGeneration && suite?.id === current) showHistoryReadError(); }
+  }
+  function showHistoryReadError() {
+    historyReadError = true;
+    status('Saved History could not be read. Previous results are still available.');
+    if (activePanel === 'history') renderHistory();
+  }
+  async function resolveUncertainStart(suiteId, reference, generation) {
+    try {
+      const correlation = await json('/api/eval-runs/history?' + new URLSearchParams({ suiteId, limit: '50', reference }));
+      if (generation !== historyGeneration || suite?.id !== suiteId || startReference !== reference || !startUncertain) return;
+      if (correlation.status !== 'confirmed' || correlation.suiteId !== suiteId ||
+        correlation.reference !== reference.toLowerCase() || !safeRunId(correlation.runId) ||
+        !history.some(item => item.runId === correlation.runId)) return;
+      const found = await json('/api/eval-runs/status?' + new URLSearchParams({ suiteId, runId: correlation.runId }));
+      if (generation !== historyGeneration || suite?.id !== suiteId || startReference !== reference || !startUncertain) return;
+      if (found.status !== 'ok' || found.value?.summary?.runId !== correlation.runId) return;
+      runGeneration++;
+      selectedRunId = correlation.runId; latestKnownRunId = history[0]?.runId || correlation.runId;
+      run = found.value.summary;
+      startUncertain = false; startReference = null; startSuiteId = null; review = null;
+      one('[data-start-notice]').hidden = true;
+      clearSelectedDetail(); renderWorkspace();
+      if (activePanel === 'history') renderHistory();
+      if (isActive()) void pollRun();
+    } catch { /* An unreadable correlation or status cannot confirm a start. */ }
   }
   async function pollRun() {
     if (!suite || !selectedRunId) return;
@@ -142,6 +172,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   function renderHistory() {
     openPanel('history');
     side.innerHTML = '<div class="section-heading"><h2 tabindex="-1">History</h2><button type="button" data-action="close-panel">Close</button></div>'
+      + (historyReadError ? '<p>Saved History could not be read. Previous results are still available.</p>' : '')
       + (history.length ? '<ol class="history-list">' + history.map(item => '<li><button type="button" data-action="history-run" data-run-id="' + esc(item.runId) + '"><strong>' + esc(new Date(item.createdAt).toLocaleString()) + '</strong><br>' + esc(item.testedModel) + ' · ' + esc(item.scope) + ' · ' + esc(item.repeats) + ' repeat(s)<br>' + esc(item.state) + ' / ' + esc(item.outcome) + ' · ' + esc(item.finishedAt ? Math.max(0, item.finishedAt-item.createdAt) + 'ms' : 'Duration unavailable') + ' · Cost ' + esc(item.cost == null ? 'unavailable' : item.cost) + '</button></li>').join('') + '</ol>' : '<p>No saved runs yet.</p>');
   }
   function renderCoverage() {
@@ -208,7 +239,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
     if (target.dataset.action === 'coverage') { detailGeneration++; renderCoverage(); }
-    if (target.dataset.action === 'history') { detailGeneration++; resetRepair(); detail.innerHTML = '<h2>Result detail</h2><p>Select a completed case to inspect it.</p>'; void loadHistory(); renderHistory(); focusPanel(); }
+    if (target.dataset.action === 'history') { void loadHistory(); renderHistory(); focusPanel(); }
     if (target.dataset.action === 'close-panel') closePanel();
     if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else { detailGeneration++; resetRepair(); detail.innerHTML = '<h2>Result detail</h2><p>Select a completed case to inspect it.</p>'; returnToResult(); } }
     if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }

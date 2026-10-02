@@ -11,6 +11,7 @@ import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-p
 import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
+import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 
 const offlineSuite = {
   version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline checks', description: 'Synthetic fixture',
@@ -31,22 +32,37 @@ let input=''; process.stdin.on('data',part=>input+=part); process.stdin.on('end'
     ? {runnerId:'offline',capabilities:['single-turn'],models:mode==='no-models'?[]:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[],costEstimation:true}
     : {targetCalls:request.testCases.length*request.repeats,judgeCalls:0,totalCalls:request.testCases.length*request.repeats,cost:request.model==='fake/available'
       ? {status:'available',amount:0.01,currency:'USD'} : {status:'unavailable',reason:'Provider pricing unavailable.'}};
-  if(request.operation==='execute') process.exit(3);
+  if(request.operation==='execute') {
+    if(mode!=='complete') process.exit(3);
+    let sequence=0;
+    const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:sequence++,type,runId:request.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+    emit('run-started',null,{model:request.model,judgeModel:null});
+    for(const item of request.testCases) {
+      emit('case-attempt-started',item.id,{});
+      emit('conversation-turn-completed',item.id,{turnIndex:0,role:'assistant',output:'synthetic saved output '+item.turns[0].content.text});
+      emit('case-attempt-completed',item.id,{status:'completed'});
+    }
+    emit('run-completed',null,{status:'completed'});
+    return;
+  }
   process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,type:request.operation==='describe'?'description':'estimate',runId:null,caseId:null,attempt:null,data})+'\\n');
 });`;
 
 export async function withOfflineWorkbench(run: (workbench: {
   readonly getHtml: () => Promise<string>;
-  readonly post: (route: string, body: unknown) => Promise<{ code: number; payload: Record<string, unknown> }>;
+  readonly get: (route: string) => Promise<{ code: number; payload: Record<string, unknown> }>;
+  readonly post: (route: string, body: unknown, reference?: string) => Promise<{ code: number; payload: Record<string, unknown>; headers: Headers }>;
   readonly setRunnerMode: (mode: string) => Promise<void>;
-}) => Promise<void>): Promise<void> {
+}) => Promise<void>, logger?: LocalEvalsWorkbenchLoggerPort, options: { readonly syntheticSecretInputs?: boolean } = {}): Promise<void> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-inline-run-'));
   try {
     await mkdir(path.join(root, 'evals'));
     await mkdir(path.join(root, 'src'));
     await writeFile(path.join(root, 'src/target.mjs'), 'export const target = null;\n');
-    await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify(offlineSuite));
-    await writeFile(path.join(root, 'evals/runner.mjs'), offlineRunner);
+    const suite = options.syntheticSecretInputs ? JSON.parse(JSON.stringify(offlineSuite)) as typeof offlineSuite : offlineSuite;
+    if (options.syntheticSecretInputs) suite.testCases[0]!.turns[0]!.content.text = 'private synthetic prompt payload';
+    await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify(suite));
+    await writeFile(path.join(root, 'evals/runner.mjs'), options.syntheticSecretInputs ? `${offlineRunner}\n// private synthetic runner content; metadata credential=sk-synthetic-secret` : offlineRunner);
     await writeFile(path.join(root, 'evals/mode.txt'), 'ready');
     await writeFile(path.join(root, '.gitignore'), '/evals/artifacts/\n');
     execFileSync('git', ['init', '-q'], { cwd: root });
@@ -55,13 +71,17 @@ export async function withOfflineWorkbench(run: (workbench: {
       { discoveryReader: new NodeEvalSuiteDiscoveryReader(), logger: { info: () => undefined, warn: () => undefined } }
     );
     assert.equal(discovery.status, 'ready');
-    const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: root, initialDiscoveryResult: discovery });
+    const server = await new NodeLocalWorkbenchServerStarter(undefined, undefined, logger).startServer({ projectRoot: root, initialDiscoveryResult: discovery });
     try {
       await run({
         getHtml: async () => (await fetch(server.url)).text(),
-        post: async (route, body) => {
-          const response = await fetch(new URL(route, server.url), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+        get: async (route) => {
+          const response = await fetch(new URL(route, server.url));
           return { code: response.status, payload: await response.json() as Record<string, unknown> };
+        },
+        post: async (route, body, reference) => {
+          const response = await fetch(new URL(route, server.url), { method: 'POST', headers: { 'content-type': 'application/json', ...(reference ? { 'x-sibu-request-reference': reference } : {}) }, body: JSON.stringify(body) });
+          return { code: response.status, payload: await response.json() as Record<string, unknown>, headers: response.headers };
         },
         setRunnerMode: (mode) => writeFile(path.join(root, 'evals/mode.txt'), mode),
       });
