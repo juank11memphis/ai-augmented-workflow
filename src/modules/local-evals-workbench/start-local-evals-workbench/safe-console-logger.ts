@@ -51,13 +51,16 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
     case 'local_evals_workbench_request_issue':
       return {
         event: event.event,
-        stage: event.stage === 'model-check' ? 'model-check' : 'discovery',
+        stage: event.stage === 'discovery' ? 'discovery' : event.stage === 'preview' ? 'preview' : 'model-check',
         outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
-        reason: event.stage === 'model-check'
+        reason: event.stage === 'model-check' || event.stage === 'preview'
           ? (isKnownModelCheckReason(event.reason) ? event.reason : 'unknown')
           : (isKnownPublicDiscoveryReason(event.reason) ? event.reason : 'unknown'),
         reference: safeReference(event.reference),
       };
+    case 'local_evals_workbench_request_started':
+    case 'local_evals_workbench_request_completed':
+      return { event: event.event, stage: 'preview', outcome: event.outcome, reference: safeReference(event.reference) };
     case 'local_evals_workbench_started':
       return {
         event: event.event,

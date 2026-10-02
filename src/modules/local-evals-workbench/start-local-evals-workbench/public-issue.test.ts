@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
-import { acceptedRequestReference, discoveryIssue, invalidModelCheckIssue, modelCheckIssue, unknownDiscoveryIssue, unknownModelCheckIssue } from './public-issue.js';
+import { acceptedRequestReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, modelCheckIssue, previewIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue } from './public-issue.js';
 import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
 import type { RuntimeBlockReason } from '../runtime-description.js';
 
@@ -97,4 +97,27 @@ it('includes only validated setting names in model-check user copy', () => {
   assert.match(safe.explanation, /OPENAI_API_KEY/);
   const unsafe = modelCheckIssue({ status: 'blocked', reason: 'required-setting-rejected', rejectedSettingName: 'sk-secret' }, reference);
   assert.doesNotMatch(JSON.stringify(unsafe), /sk-secret/);
+});
+
+it('maps every known preview cause with observed stage and safe recovery', () => {
+  for (const reason of modelReasons) {
+    const issue = previewIssue({ status: 'blocked', stage: 'estimation', reason }, reference);
+    assert.equal(issue.stage, 'preview');
+    assert.equal(issue.observedStage, 'estimation');
+    assert.equal(issue.category, reason);
+    assert.equal(issue.outcome, 'blocked');
+    assert.equal(issue.reference, reference);
+    assert.ok(issue.title && issue.explanation && issue.nextStep && issue.recoveryAction);
+    assert.doesNotMatch(JSON.stringify(issue), /sk-secret|private\/project/);
+  }
+  assert.notEqual(previewIssue({ status: 'blocked', stage: 'estimation', reason: 'runner-request-too-large' }, reference).nextStep,
+    previewIssue({ status: 'blocked', stage: 'description', reason: 'required-setting-rejected' }, reference).nextStep);
+  const unknown = previewIssue({ status: 'error', stage: 'resolved-inputs', reason: 'unknown-cause' }, reference);
+  assert.equal(unknown.outcome, 'failed');
+  assert.equal(unknown.category, 'unknown');
+  assert.equal(unknown.observedStage, 'resolved-inputs');
+  assert.match(unknown.explanation, /Cause unknown/);
+  assert.equal(invalidPreviewIssue(reference).category, 'invalid-request');
+  assert.equal(unavailablePreviewIssue(reference).category, 'runner-unavailable');
+  assert.equal(unknownPreviewIssue(reference).category, 'unknown');
 });

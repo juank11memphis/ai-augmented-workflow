@@ -299,7 +299,7 @@ test('review uses the current preview, returns focus on Back and Escape, and ign
   await first;
   assert.match(slot.innerHTML, /<dt>Scope<\/dt><dd>1 test case/);
   assert.match(slot.innerHTML, /<dt>Test case<\/dt><dd>Case A/);
-  assert.match(slot.innerHTML, /Cost unavailable: runner did not estimate/);
+  assert.match(slot.innerHTML, /Unavailable \(estimate not confirmed\)/);
   api.showSetup();
   assert.equal(document.activeElement, reviewButton);
   assert.equal(api.getReview(), null);

@@ -22,7 +22,7 @@ import { parseGetRunRequest } from '../get-eval-run/request-parser.js';
 import { parseListRunRequest } from '../list-eval-runs/request-parser.js';
 import { renderWorkspaceShell } from '../workbench-ui/workspace-layout.js';
 import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
-import { acceptedRequestReference, discoveryIssue, invalidModelCheckIssue, modelCheckIssue, unknownDiscoveryIssue, unknownModelCheckIssue } from './public-issue.js';
+import { acceptedRequestReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, modelCheckIssue, previewIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue } from './public-issue.js';
 import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
@@ -74,6 +74,10 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
           const issue = unknownModelCheckIssue(reference);
           emitRequestIssue(this.logger, issue);
           try { writeJson(response, 500, { status: 'blocked', reason: 'unknown', issue }, reference); } catch { /* The response may already be closed. */ }
+        } else if (httpRequest.url === '/api/eval-runs/preview') {
+          const issue = unknownPreviewIssue(reference);
+          emitRequestIssue(this.logger, issue);
+          try { writeJson(response, 500, { status: 'error', stage: 'selection', reason: 'unknown-cause', issue }, reference); } catch { /* The response may already be closed. */ }
         }
       });
     });
@@ -173,12 +177,30 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
     return;
   }
   if (request.url === '/api/eval-runs/preview' && request.method === 'POST') {
-    if (!dependencies.preview) { writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable' }); return; }
+    emitPreviewEvent(logger, 'local_evals_workbench_request_started', 'started', reference);
+    if (!dependencies.preview) {
+      const issue = unavailablePreviewIssue(reference);
+      emitRequestIssue(logger, issue);
+      writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable', issue }, reference);
+      return;
+    }
     const body = await readJsonBody(request);
     const command = body.status === 'ok' ? parsePreviewRequest(body.payload) : undefined;
-    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    if (!command) {
+      const issue = invalidPreviewIssue(reference);
+      emitRequestIssue(logger, issue);
+      writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', issue }, reference);
+      return;
+    }
     const result = await previewEvalRun(command, dependencies.preview);
-    writeJson(response, result.status === 'ready' ? 200 : 422, result);
+    if (result.status === 'ready') {
+      emitPreviewEvent(logger, 'local_evals_workbench_request_completed', 'completed', reference);
+      writeJson(response, 200, result, reference);
+    } else {
+      const issue = previewIssue(result, reference);
+      emitRequestIssue(logger, issue);
+      writeJson(response, result.status === 'error' ? 500 : 422, { ...result, issue }, reference);
+    }
     return;
   }
   if ((request.url === '/api/eval-suites/describe' || request.url === '/api/eval-runs/preview') && request.method !== 'POST') {
@@ -281,10 +303,14 @@ function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer
   return http.createServer((request, response) => handler(request, response));
 }
 
-function emitRequestIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof discoveryIssue> | ReturnType<typeof modelCheckIssue>): void {
+function emitRequestIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof discoveryIssue> | ReturnType<typeof modelCheckIssue> | ReturnType<typeof previewIssue>): void {
   try {
     logger.warn({ event: 'local_evals_workbench_request_issue', stage: issue.stage, outcome: issue.outcome, reason: issue.category, reference: issue.reference });
   } catch { /* A failed diagnostic sink must not change the response. */ }
+}
+
+function emitPreviewEvent(logger: LocalEvalsWorkbenchLoggerPort, event: 'local_evals_workbench_request_started' | 'local_evals_workbench_request_completed', outcome: 'started' | 'completed', reference: string): void {
+  try { logger.info({ event, stage: 'preview', outcome, reference }); } catch { /* A failed diagnostic sink must not change the response. */ }
 }
 
 function emitDiscoveryIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof discoveryIssue>): void {

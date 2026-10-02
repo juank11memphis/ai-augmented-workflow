@@ -1,6 +1,6 @@
 import type { PreviewEvalRunCommand } from './command.js';
-import type { PreviewEvalRunResult } from './result.js';
-import type { ArtifactReadinessPort, CaseInputResolverPort, PreviewLoggerPort, RunnerDescriptorPort, RunnerEstimatorPort, SuiteRuntimeRegistryPort } from './ports.js';
+import type { PreviewEvalRunResult, PreviewStage } from './result.js';
+import type { ArtifactReadinessPort, CaseInputResolverPort, PreviewOutcomeLoggerPort, RunnerDescriptorPort, RunnerEstimatorPort, SuiteRuntimeRegistryPort } from './ports.js';
 import { compatibleDescription, hasRubric, requiredCapabilities, type RuntimeBlockReason } from '../runtime-description.js';
 import type { NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
 import { MAX_RUN_REPEATS } from '../run-configuration.js';
@@ -12,17 +12,20 @@ export type PreviewEvalRunDependencies = {
   readonly runner: RunnerDescriptorPort & RunnerEstimatorPort;
   readonly artifacts: ArtifactReadinessPort;
   readonly inputs: CaseInputResolverPort;
-  readonly logger?: PreviewLoggerPort;
+  readonly logger?: PreviewOutcomeLoggerPort;
 };
 export async function previewEvalRun(command: PreviewEvalRunCommand, dependencies: PreviewEvalRunDependencies): Promise<PreviewEvalRunResult> {
   const started = Date.now();
-  const log = (event: string, reason?: string): void => {
-    try { dependencies.logger?.record({ event, suiteId: command.suiteId, reason, durationMs: Date.now() - started }); } catch { /* Noncritical sink. */ }
+  const log = (event: 'eval_preview_started' | 'eval_preview_blocked' | 'eval_preview_failed' | 'eval_preview_completed',
+    stage: 'preview' | PreviewStage, outcome: 'started' | 'blocked' | 'failed' | 'completed',
+    reason?: RuntimeBlockReason | 'unknown-cause'): void => {
+    try { dependencies.logger?.record({ event, stage, outcome, reason, durationMs: Date.now() - started }); } catch { /* Noncritical sink. */ }
   };
-  log('eval_preview_started');
+  log('eval_preview_started', 'preview', 'started');
+  let stage: PreviewStage = 'selection';
   const blocked = (reason: RuntimeBlockReason): PreviewEvalRunResult => {
-    log('eval_preview_blocked', reason);
-    return { status: 'blocked', reason };
+    log('eval_preview_blocked', stage, 'blocked', reason);
+    return { status: 'blocked', stage, reason };
   };
   try {
     const repeats = command.repeats ?? 1;
@@ -38,6 +41,7 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
       cases = [selected];
     }
     if (!cases.length) return blocked('case-unavailable');
+    stage = 'description';
     const description = await dependencies.runner.describe(suite);
     if (description.status === 'blocked') return blocked(description.reason);
     const compatibility = compatibleDescription(suite, description.value);
@@ -48,19 +52,25 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
     const judge = judgeRequired ? command.judgeModel : null;
     if (judgeRequired && (!judge || !description.value.judgeModels.includes(judge))) return blocked('judge-unavailable');
     if (!judgeRequired && command.judgeModel) return blocked('judge-unavailable');
+    stage = 'artifact-readiness';
     const readiness = await dependencies.artifacts.check();
     if (readiness.status === 'blocked') return blocked(readiness.reason);
+    stage = 'resolved-inputs';
     const resolved = await dependencies.inputs.resolve(cases);
     if (resolved.status === 'blocked') return blocked(resolved.reason);
+    stage = 'estimation';
     const estimate = await dependencies.runner.estimate(suite, { model: command.model, judgeModel: judge ?? null, repeats, testCases: resolved.value });
     if (estimate.status === 'blocked') return blocked(estimate.reason);
     if (!description.value.costEstimation && estimate.value.cost.status === 'available') return blocked('estimate-invalid');
-    log('eval_preview_completed');
+    log('eval_preview_completed', 'preview', 'completed');
     return {
       status: 'ready', suiteId: suite.id, selectedCaseIds: cases.map((testCase) => testCase.id),
       model: command.model, judgeModel: judge ?? null, repeats,
       targetCalls: estimate.value.targetCalls, judgeCalls: estimate.value.judgeCalls,
       totalCalls: estimate.value.totalCalls, cost: estimate.value.cost, requiresConfirmation: true,
     };
-  } catch { return blocked('runner-unavailable'); }
+  } catch {
+    log('eval_preview_failed', stage, 'failed', 'unknown-cause');
+    return { status: 'error', stage, reason: 'unknown-cause' };
+  }
 }

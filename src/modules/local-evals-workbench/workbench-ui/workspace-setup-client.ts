@@ -10,6 +10,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   let strictRuntimeChoices = false;
   let runtimeState = 'loading', runtimeMessage = 'Loading compatible models…';
   let modelIssue = null;
+  let previewIssueDetails = null;
   let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', repeats: 1 };
   let sheetReturn = null, startPending = false, startUncertain = false, activePanel = null;
   const one = selector => document.querySelector(selector);
@@ -91,6 +92,84 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   };
   const safeSettingName = value => typeof value === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(value) && value.length <= 128;
   const safeReference = value => typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);
+  const previewStages = { selection: 'selection', description: 'runner description', 'artifact-readiness': 'artifact readiness', 'resolved-inputs': 'suite inputs', estimation: 'cost estimation' };
+  const previewGuidance = {
+    'suite-unavailable': 'Check the suite definition, then preview again.',
+    'runner-unavailable': 'Check the runner command, then preview again.',
+    'runner-absent': 'Install or correct the runner command, then preview again.',
+    'runner-start-failed': 'Check the runner command and permissions, then preview again.',
+    'runner-exited': 'Check the runner operation, then preview again.',
+    'runner-protocol-invalid': 'Check runner compatibility, then preview again.',
+    'runner-invalid': 'Check the runner output format, then preview again.',
+    'runner-timeout': 'Check that the runner is working, then preview again.',
+    'environment-missing': 'Add or export the required setting, restart Sibu Evals, then preview again.',
+    'required-setting-rejected': 'Fix the suite required settings, then preview again.',
+    'runner-request-too-large': 'Copy issue details and report the problem.',
+    'environment-undeclared': 'Declare the required setting in the suite, then preview again.',
+    'capability-unsupported': 'Review suite and runner support, then preview again.',
+    'model-unavailable': 'Choose a compatible model, then preview again.',
+    'judge-unavailable': 'Choose a compatible judge model, then preview again.',
+    'case-unavailable': 'Review the suite cases, then preview again.',
+    'repeats-invalid': 'Correct the repeat count, then preview again.',
+    'artifact-unsafe': 'Correct the artifact location, then preview again.',
+    'artifact-not-ignored': 'Ignore the artifact location, then preview again.',
+    'artifact-tracked': 'Move artifacts away from tracked files, then preview again.',
+    'artifact-git-unavailable': 'Check Git access, then preview again.',
+    'artifact-root-unsafe': 'Correct the artifact root, then preview again.',
+    'estimate-invalid': 'Check the runner estimate response, then preview again.',
+    'input-unsafe': 'Review runner setup and request size, then preview again.',
+    'invalid-request': 'Correct the preview request, then preview again.',
+  };
+  const previewCause = {
+    'suite-unavailable': 'The selected suite is unavailable', 'runner-unavailable': 'The runner is unavailable',
+    'runner-absent': 'The runner was not found', 'runner-start-failed': 'The runner could not start',
+    'runner-exited': 'The runner exited', 'runner-protocol-invalid': 'The runner protocol was invalid',
+    'runner-invalid': 'The runner response was unusable', 'runner-timeout': 'The runner timed out',
+    'environment-missing': 'A required setting is missing', 'required-setting-rejected': 'A required setting was rejected',
+    'runner-request-too-large': 'The runner request was too large', 'environment-undeclared': 'A runner setting is undeclared',
+    'capability-unsupported': 'A selected capability is unsupported', 'model-unavailable': 'The model is unavailable',
+    'judge-unavailable': 'The Judge model is unavailable', 'case-unavailable': 'A selected case is unavailable',
+    'repeats-invalid': 'The repeat count is invalid', 'artifact-unsafe': 'The artifact location is unsafe',
+    'artifact-not-ignored': 'The artifact location is not ignored', 'artifact-tracked': 'The artifact location contains tracked files',
+    'artifact-git-unavailable': 'Artifact safety could not be checked', 'artifact-root-unsafe': 'The artifact root is unsafe',
+    'estimate-invalid': 'The runner estimate was unusable', 'input-unsafe': 'Older preview input was rejected without a precise cause',
+    'invalid-request': 'The preview request was invalid',
+  };
+  function clearPreviewNotice() {
+    previewIssueDetails = null;
+    const notice = one('[data-preview-notice]');
+    if (notice) notice.hidden = true;
+  }
+  function showPreviewNotice(title, guidance, details = null) {
+    const notice = one('[data-preview-notice]');
+    if (!notice) return;
+    previewIssueDetails = details;
+    notice.querySelector('[data-preview-heading]').textContent = title;
+    notice.querySelector('[data-preview-guidance]').textContent = guidance;
+    const detailNode = notice.querySelector('[data-preview-details]');
+    detailNode.textContent = details || '';
+    detailNode.hidden = !details;
+    notice.querySelector('[data-action="copy-preview-issue"]').hidden = !details;
+    notice.querySelector('[data-preview-copy-status]').textContent = '';
+    notice.hidden = false;
+    one('[data-setup-status]').textContent = title;
+    notice.querySelector('[data-preview-heading]').focus();
+  }
+  function previewFailure(result) {
+    const issue = result?.issue;
+    const blocked = result?.status === 'blocked';
+    const failed = result?.status === 'error';
+    const valid = issue?.stage === 'preview' && issue.outcome === (blocked ? 'blocked' : 'failed') &&
+      (blocked || failed) && safeReference(issue.reference) &&
+      (issue.observedStage === undefined || Object.hasOwn(previewStages, issue.observedStage)) &&
+      (result.stage === undefined || result.stage === issue.observedStage);
+    const category = valid && blocked && issue.category === result.reason && Object.hasOwn(previewGuidance, issue.category)
+      ? issue.category : valid && failed && issue.category === 'unknown' ? 'unknown' : null;
+    const stage = valid && issue.observedStage ? previewStages[issue.observedStage] : 'preview';
+    const details = category ? 'Stage: preview\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() : null;
+    if (category && category !== 'unknown') showPreviewNotice('Preview blocked', 'Blocked during ' + stage + ': ' + previewCause[category] + '. ' + previewGuidance[category], details);
+    else showPreviewNotice('Preview could not finish', 'Cause unknown during ' + stage + '. Preview again; if it repeats, check local diagnostics.', details);
+  }
   function modelNotice(payload, reason = payload?.reason) {
     const category = Object.hasOwn(modelCopy, reason) ? reason : 'unknown';
     const name = category === 'required-setting-rejected' ? payload?.rejectedSettingName : payload?.missingEnvironmentName;
@@ -167,13 +246,14 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     const judge = setupRegion.querySelector('[data-field="judge"]');
     setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel, repeats: Number(setupRegion.querySelector('[data-field="repeats"]')?.value || 1) };
     review = null; previewGeneration++;
+    clearPreviewNotice();
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
   }
   async function loadRuntime(userRetry = false) {
     if (!suite) return;
     const current = suite.id, generation = ++runtimeGeneration, hadModel = Boolean(setup.model), hadJudge = Boolean(setup.judgeModel);
-    runtime = null; review = null; modelIssue = null; previewGeneration++;
+    runtime = null; review = null; modelIssue = null; previewGeneration++; clearPreviewNotice();
     setRuntimeState('loading', 'Loading compatible models…');
     refreshSetupControls();
     try {
@@ -202,9 +282,9 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       const result = await post('/api/eval-runs/preview', request);
       if (descriptionGeneration !== runtimeGeneration || requestGeneration !== previewGeneration ||
         JSON.stringify(request) !== JSON.stringify(command()) || !setupRegion?.isConnected || startPending || startUncertain || isActive()) return;
-      if (result.status !== 'ready') { one('[data-setup-status]').textContent = 'Run cannot be reviewed: ' + (result.reason || 'check local setup'); return; }
+      if (result.status !== 'ready') { previewFailure(result); return; }
       review = { request, result };
-      const cost = result.cost?.status === 'available' ? result.cost.currency + ' ' + result.cost.amount : 'Cost unavailable: ' + (result.cost?.reason || 'estimate unavailable');
+      const cost = result.cost?.status === 'available' ? result.cost.currency + ' ' + result.cost.amount : 'Unavailable (estimate not confirmed)';
       const selectedCase = suite.testCases.find(item => item.id === result.selectedCaseIds[0]);
       const scope = request.scope.type === 'all' ? 'All ' + result.selectedCaseIds.length + ' cases' : '1 test case';
       const content = '<p>' + esc(suite.name) + '</p><dl><div><dt>Scope</dt><dd>' + esc(scope) + '</dd></div>'
@@ -214,7 +294,10 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
         + '<div><dt>Expected calls</dt><dd>' + esc(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + esc(cost) + '</dd></div></dl><p>Actual cost may vary.</p><p role="status" data-review-status></p>';
       sheetReturn = setupRegion.querySelector('[data-action="review"]') || sheetReturn;
       openSheet('Review run', content, '<button type="button" data-action="back-setup">Back</button><button class="primary" type="button" data-action="start">Start run</button>');
-    } catch { const node = one('[data-setup-status]'); if (descriptionGeneration === runtimeGeneration && requestGeneration === previewGeneration && node) node.textContent = 'Run preview could not finish. Try again.'; }
+    } catch { if (descriptionGeneration === runtimeGeneration && requestGeneration === previewGeneration &&
+      JSON.stringify(request) === JSON.stringify(command()) && setupRegion?.isConnected) {
+      showPreviewNotice('Preview not confirmed', 'The preview received no response. Check the connection and preview again. A matching terminal event may not exist.');
+    } }
   }
   async function startRun() {
     if (!review || startPending || startUncertain || isActive()) return;
@@ -264,6 +347,15 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
         Promise.resolve(navigator.clipboard.writeText(details)).then(() => { const node = feedback(); if (node) node.textContent = 'Issue details copied.'; },
           () => { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the issue details above instead.'; });
       } catch { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the issue details above instead.'; }
+    }
+    if (target.dataset.action === 'copy-preview-issue' && previewIssueDetails) {
+      const details = previewIssueDetails;
+      const feedback = message => { const node = one('[data-preview-copy-status]'); if (node && details === previewIssueDetails) node.textContent = message; };
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
+          () => feedback('Copy failed. Select the issue details above instead.'));
+      } catch { feedback('Copy failed. Select the issue details above instead.'); }
     }
     if (target.dataset.action === 'retry-model') void loadRuntime(true);
     if (target.dataset.action === 'copy-prompt') { navigator.clipboard?.writeText('Create production-ready Sibu evals for this project.').then(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Prompt copied.'; }).catch(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Copy failed. Select the prompt text instead.'; }); }

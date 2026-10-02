@@ -6,6 +6,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader } from '../discover-conventional-eval-suites/index.js';
+import { createWorkbenchDependencies } from '../workbench-composition.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
 const SECRET = 'private-test-value-713';
@@ -46,15 +47,17 @@ process.stdin.on('end', () => {
 
 type Scenario = {
   readonly mode: string;
+  readonly throwAtPreviewBoundary?: boolean;
   readonly requiredEnvironment?: readonly string[];
   readonly multiTurn?: boolean;
   readonly rubric?: boolean;
 };
 
-type HttpResult = { readonly code: number; readonly body: string; readonly payload: Record<string, unknown> };
+type HttpResult = { readonly code: number; readonly body: string; readonly payload: Record<string, unknown>; readonly reference: string | null };
 
 async function withWorkbench(scenario: Scenario, run: (client: {
   post(route: string, body: unknown, reference?: string): Promise<HttpResult>;
+  postRaw(route: string, body: string, reference?: string): Promise<HttpResult>;
   get(route: string): Promise<HttpResult>;
   rewriteSuite(value: unknown): Promise<void>;
 }) => Promise<void>): Promise<void> {
@@ -85,17 +88,26 @@ async function withWorkbench(scenario: Scenario, run: (client: {
     );
     assert.equal(discovery.status, 'ready');
     assert.equal(discovery.definitions.length, 1);
-    const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: root, initialDiscoveryResult: discovery });
-    const request = async (route: string, body?: unknown, reference?: string): Promise<HttpResult> => {
+    const starter = scenario.throwAtPreviewBoundary
+      ? new NodeLocalWorkbenchServerStarter(undefined, (request) => ({
+        ...createWorkbenchDependencies(request),
+        get preview(): ReturnType<typeof createWorkbenchDependencies>['preview'] {
+          throw new Error(`unexpected preview boundary: ${SECRET}`);
+        },
+      }))
+      : new NodeLocalWorkbenchServerStarter();
+    const server = await starter.startServer({ projectRoot: root, initialDiscoveryResult: discovery });
+    const request = async (route: string, body?: unknown, reference?: string, raw = false): Promise<HttpResult> => {
       const response = await fetch(new URL(route, server.url), body === undefined ? undefined : {
-        method: 'POST', headers: { 'content-type': 'application/json', ...(reference ? { 'x-sibu-request-reference': reference } : {}) }, body: JSON.stringify(body),
+        method: 'POST', headers: { 'content-type': 'application/json', ...(reference ? { 'x-sibu-request-reference': reference } : {}) }, body: raw ? String(body) : JSON.stringify(body),
       });
-      const raw = await response.text();
-      return { code: response.status, body: raw, payload: JSON.parse(raw) as Record<string, unknown> };
+      const responseBody = await response.text();
+      return { code: response.status, body: responseBody, payload: JSON.parse(responseBody) as Record<string, unknown>, reference: response.headers.get('x-sibu-request-reference') };
     };
     try {
       await run({
         post: (route, body, reference) => request(route, body, reference),
+        postRaw: (route, body, reference) => request(route, body, reference, true),
         get: (route) => request(route),
         rewriteSuite: (value) => writeFile(suitePath, JSON.stringify(value)),
       });
@@ -239,4 +251,99 @@ test('changed suite blocks stale Preview/Start without inventing a missing crede
     assert.equal(history.code, 200);
     assert.equal(history.payload.status, 'ok');
   });
+});
+
+test('preview HTTP correlates known blocks, invalid bodies, and ready outcome without leaking inputs', async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (line?: unknown) => lines.push(String(line));
+  try {
+    await withWorkbench({ mode: 'invalid' }, async ({ post, postRaw }) => {
+      const supplied = '123e4567-e89b-42d3-a456-426614174000';
+      const blocked = await post('/api/eval-runs/preview', selection, supplied);
+      const issue = blocked.payload.issue as Record<string, unknown>;
+      assert.equal(blocked.code, 422);
+      assert.equal(issue.stage, 'preview');
+      assert.equal(issue.observedStage, 'description');
+      assert.equal(issue.category, 'runner-protocol-invalid');
+      assert.equal(blocked.reference, supplied);
+      assert.equal(issue.reference, supplied);
+      for (const response of [
+        await postRaw('/api/eval-runs/preview', '{"secret":"private-test-value-713"', 'unsafe-private-reference'),
+        await postRaw('/api/eval-runs/preview', 'x'.repeat(65537), 'unsafe-private-reference'),
+      ]) {
+        assert.equal(response.code, 400);
+        assert.equal((response.payload.issue as Record<string, unknown>).stage, 'preview');
+        assert.equal((response.payload.issue as Record<string, unknown>).category, 'invalid-request');
+        assert.equal((response.payload.issue as Record<string, unknown>).reference, response.reference);
+        assert.match(response.reference ?? '', /^[a-f0-9-]{36}$/);
+      }
+      const events = lines.map((line) => JSON.parse(line) as Record<string, unknown>)
+        .filter((line) => line.stage === 'preview' && String(line.event).startsWith('local_evals_workbench_request_'));
+      assert.ok(events.some((line) => line.outcome === 'started' && line.reference === supplied));
+      assert.ok(events.some((line) => line.outcome === 'blocked' && line.reason === issue.category && line.reference === supplied));
+      assert.doesNotMatch(blocked.body + lines.join(''), /private-test-value|private-runner-stderr|private\/project|unsafe-private-reference/);
+    });
+    await withWorkbench({ mode: 'ready' }, async ({ post }) => {
+      const ready = await post('/api/eval-runs/preview', selection);
+      assert.equal(ready.code, 200);
+      assert.equal(ready.payload.status, 'ready');
+      assert.ok(lines.some((line) => {
+        const event = JSON.parse(line) as Record<string, unknown>;
+        return event.event === 'local_evals_workbench_request_completed' && event.reference === ready.reference;
+      }));
+    });
+  } finally {
+    console.error = original;
+  }
+});
+
+test('preview issue remains safe when the diagnostic sink fails', async () => {
+  await withWorkbench({ mode: 'ready' }, async ({ post }) => {
+    const original = console.error;
+    console.error = () => { throw new Error('private-sink-failure'); };
+    try {
+      const response = await post('/api/eval-runs/preview', { secret: 'private-test-value-713' });
+      assert.equal(response.code, 400);
+      assert.equal((response.payload.issue as Record<string, unknown>).stage, 'preview');
+      assert.doesNotMatch(response.body, /private-test-value|private-sink-failure/);
+    } finally {
+      console.error = original;
+    }
+  });
+});
+
+test('unexpected preview request-boundary throw returns a safe correlated unknown issue', async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (line?: unknown) => lines.push(String(line));
+  try {
+    await withWorkbench({ mode: 'ready', throwAtPreviewBoundary: true }, async ({ post }) => {
+      const supplied = '123e4567-e89b-42d3-a456-426614174000';
+      const response = await post('/api/eval-runs/preview', selection, supplied);
+      const issue = response.payload.issue as Record<string, unknown>;
+      assert.equal(response.code, 500);
+      assert.equal(response.payload.status, 'error');
+      assert.equal(response.payload.reason, 'unknown-cause');
+      assert.equal(issue.stage, 'preview');
+      assert.equal(issue.outcome, 'failed');
+      assert.equal(issue.category, 'unknown');
+      assert.match(String(issue.explanation), /cause unknown/i);
+      assert.doesNotMatch(JSON.stringify(issue), /credential|runner|provider|\.env/i);
+      assert.equal(response.reference, supplied);
+      assert.equal(issue.reference, response.reference);
+
+      const events = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+      const terminalIssue = events.find((event) => event.event === 'local_evals_workbench_request_issue');
+      assert.equal(terminalIssue?.stage, 'preview');
+      assert.equal(terminalIssue?.reference, issue.reference);
+      assert.equal(terminalIssue?.reason, issue.category);
+      assert.equal(terminalIssue?.outcome, issue.outcome);
+      assert.ok(events.some((event) => event.event === 'local_evals_workbench_request_started' && event.reference === supplied));
+      assert.equal(response.body.includes(SECRET), false);
+      for (const line of lines) assert.equal(line.includes(SECRET), false);
+    });
+  } finally {
+    console.error = original;
+  }
 });
