@@ -9,10 +9,49 @@ import { APPLY_APPROVED_REPAIR_MARKER } from '../apply-approved-eval-repair/inde
 import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
+import { queued } from '../run-history/test-fixtures.js';
 import './start-http-correlation.test.js';
+import './read-http.test.js';
 import { readyDiscovery, blockedDiscovery, runDependencies, FakeLocalHttpServer, runtimeDependencies, applyRepairDependencies, analysisPayload, proposalPayload, analysisDependencies, proposalDependencies, failedArtifact, withOfflineWorkbench } from './local-server-starter-test-fixture.js';
 
 describe('NodeLocalWorkbenchServerStarter', () => {
+  it('returns safe read issues without changing handler outcomes or logging successful polls', async () => {
+    const server = new FakeLocalHttpServer(4321);
+    const events: unknown[] = [];
+    let getCalls = 0;
+    const dependencies = { ...runtimeDependencies(),
+      get: async () => { getCalls++; return getCalls === 1
+        ? { status: 'blocked' as const, reason: 'corrupt' as const }
+        : { status: 'ok' as const, value: { summary: queued(), evidenceStatus: 'not-requested' as const } }; },
+      list: async () => ({ status: 'blocked' as const, reason: 'not-found' as const }),
+    };
+    const logger = { info: () => undefined, warn: (event: unknown) => events.push(event), error: () => undefined };
+    const starter = new NodeLocalWorkbenchServerStarter(handler => { server.handler = handler; return server; }, () => dependencies, logger);
+    const started = await starter.startServer({ projectRoot: '/private/project', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const bad = await server.renderGetResponse('/api/eval-runs/status?suiteId=secret-token');
+      const invalid = await server.renderGetResponse('/api/eval-runs/status?suiteId=sk-secret%2Fpath');
+      const oversized = await server.renderGetResponse('/api/eval-runs/history?suiteId=' + 'sk-secret'.repeat(10000));
+      const corrupt = await server.renderGetResponse('/api/eval-runs/status?suiteId=suite&runId=run-1', '123e4567-e89b-42d3-a456-426614174000');
+      const ready = await server.renderGetResponse('/api/eval-runs/status?suiteId=suite&runId=run-1');
+      const history = await server.renderGetResponse('/api/eval-runs/history?suiteId=suite');
+      assert.equal(bad.statusCode, 400);
+      assert.equal(invalid.statusCode, 400);
+      assert.equal(oversized.statusCode, 400);
+      assert.equal(corrupt.statusCode, 422);
+      assert.equal((JSON.parse(corrupt.body) as { issue: { reference: string } }).issue.reference, '123e4567-e89b-42d3-a456-426614174000');
+      assert.equal(ready.statusCode, 200);
+      assert.equal(history.statusCode, 422);
+      const issue = (JSON.parse(history.body) as { issue: { stage: string; category: string; reference: string } }).issue;
+      assert.deepEqual({ stage: issue.stage, category: issue.category }, { stage: 'history', category: 'not-found' });
+      assert.match(issue.reference, /^[a-f0-9-]{36}$/);
+      assert.equal(history.headers['x-sibu-request-reference'], issue.reference);
+      assert.equal((JSON.parse(corrupt.body) as { issue: { category: string } }).issue.category, 'corrupt');
+      assert.equal('issue' in JSON.parse(ready.body), false);
+      assert.equal(events.length, 5);
+      assert.doesNotMatch(JSON.stringify(events) + invalid.body + oversized.body + history.body, /sk-secret|private\/project/);
+    } finally { await started.stop?.(); }
+  });
   it('serves inline setup and passes offline Describe, Preview, and Start through authoritative handlers', async () => {
     await withOfflineWorkbench(async ({ getHtml, post, setRunnerMode }) => {
       const html = await getHtml();

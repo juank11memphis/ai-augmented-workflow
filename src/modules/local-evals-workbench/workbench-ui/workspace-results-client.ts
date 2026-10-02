@@ -4,6 +4,55 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   const side = one('[data-side-panel]');
   let panelReturn = null;
   let historyReadError = false;
+  let readNotices = { status: null, history: null, evidence: null };
+  let readIssueDetails = null;
+  const readCategories = new Set(['invalid-request', 'not-found', 'corrupt', 'unknown', 'unavailable',
+    'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable', 'unverifiable-root',
+    'limit-exceeded', 'invalid-transition', 'owner-unknown', 'index-stale']);
+  function readCopy(stage, payload, disconnected = false) {
+    if (disconnected) return { title: 'Connection to Sibu failed', guidance: 'Could not read ' + stage + '. Previous results remain available. Recheck the read; a matching terminal event may not exist.', details: null };
+    const issue = payload?.issue;
+    const issueStage = stage === 'evidence' ? 'status' : stage;
+    const valid = issue?.stage === issueStage && ['blocked', 'failed'].includes(issue.outcome)
+      && (readCategories.has(issue.category) || issue.category === 'input-unsafe')
+      && safeReference(issue.reference) && issue.category === payload.reason;
+    const category = valid ? issue.category === 'input-unsafe' ? 'unclassified' : issue.category : 'unknown';
+    const title = stage === 'history' ? 'Saved History could not be read' : stage === 'status' ? 'Run status could not be read' : 'Selected evidence could not be read';
+    const cause = category === 'unclassified' ? 'Older input was rejected without a precise cause. Review runner setup and request size.'
+      : category === 'unknown' ? 'Cause unknown.' : category === 'corrupt' ? 'The saved record is unreadable.'
+      : category === 'not-found' ? 'The requested record was not found.' : 'The read is unavailable.';
+    return { title, guidance: cause + ' Previous results remain available. Recheck this read; the run outcome has not changed.',
+      details: valid ? 'Stage: ' + issueStage + '\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() : null };
+  }
+  function showReadNotice(stage, payload, disconnected = false) {
+    readNotices[stage] = readCopy(stage, payload, disconnected);
+    renderReadNotice();
+  }
+  function clearReadNotice(stage) { readNotices[stage] = null; renderReadNotice(); }
+  function renderReadNotice() {
+    const notice = one('[data-read-notice]'); if (!notice) return;
+    const active = readNotices.status || readNotices.history || readNotices.evidence;
+    if (!active) { notice.hidden = true; readIssueDetails = null; return; }
+    const heading = one('[data-read-heading]');
+    const guidance = one('[data-read-guidance]');
+    const changed = heading.textContent !== active.title || guidance.textContent !== active.guidance;
+    heading.textContent = active.title; guidance.textContent = active.guidance;
+    readIssueDetails = active.details;
+    const details = one('[data-read-details]'); details.textContent = active.details || ''; details.hidden = !active.details;
+    one('[data-action="copy-read-issue"]').hidden = !active.details;
+    notice.hidden = false;
+    if (changed) one('[data-read-announcement]').textContent = active.title;
+  }
+  function runOutcomeCopy(summary) {
+    if (summary.state === 'queued' || summary.state === 'running') return summary.state;
+    const reason = (summary.diagnostics || []).find(value => ['runner-timeout', 'runner-protocol-invalid', 'input-unsafe'].includes(value));
+    if (reason === 'runner-timeout') return 'Runner did not answer in time. Check the runner; saved results remain available.';
+    if (reason === 'runner-protocol-invalid') return 'Runner response was unusable. Check runner compatibility; saved results remain available.';
+    if (reason === 'input-unsafe') return 'Run input was rejected without a precise cause. Review runner setup and request size; saved results remain available.';
+    return ({ completed: summary.outcome === 'failed' ? 'Completed with failed checks' : 'Completed',
+      blocked: 'Run blocked before completion', partial: 'Run partially completed',
+      interrupted: 'Run interrupted', error: 'Run could not complete' })[summary.state] || 'Run outcome unavailable';
+  }
   let detailReturnCaseId = null;
   let failuresOnly = false, search = '';
   const latestRun = () => Boolean(selectedRunId && latestKnownRunId === selectedRunId);
@@ -62,7 +111,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const unfinished = statuses.length - passed - failed;
     const excluded = run ? visibleCases.length - runIds.length : 0;
     const summary = !suite ? 'No eval suites yet' : !run ? acceptedRunId ? 'Run queued · loading progress' : suite.testCases.length + ' test cases ready'
-      : run.state + ' · ' + passed + ' passed · ' + failed + ' failed · ' + unfinished + ' not finished' + (excluded ? ' · ' + excluded + ' excluded' : '');
+      : runOutcomeCopy(run) + ' · ' + passed + ' passed · ' + failed + ' failed · ' + unfinished + ' not finished' + (excluded ? ' · ' + excluded + ' excluded' : '');
     one('[data-status-summary]').textContent = summary;
     if (run) {
       const done = statuses.length - unfinished;
@@ -98,21 +147,22 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     try {
       const payload = await json('/api/eval-runs/history?' + new URLSearchParams({ suiteId: current, limit: '50' }));
       if (generation !== historyGeneration || suite?.id !== current) return;
-      if (payload.status !== 'ok') { showHistoryReadError(); return; }
+      if (payload.status !== 'ok') { showHistoryReadError(payload); return; }
       historyReadError = false;
+      clearReadNotice('history');
       history = payload.value || [];
       latestKnownRunId = acceptedRunId || history[0]?.runId || latestKnownRunId;
       if (!selectedRunId) selectedRunId = history[0]?.runId || null;
-      renderWorkspace(); if (activePanel === 'history') { renderHistory(); focusPanel(); }
+      renderWorkspace(); if (activePanel === 'history') renderHistory();
       if (!acceptedRunId && selectedRunId && run?.runId !== selectedRunId) void pollRun();
       if (startUncertain && startReference && startSuiteId === current) {
         await resolveUncertainStart(current, startReference, generation);
       }
-    } catch { if (generation === historyGeneration && suite?.id === current) showHistoryReadError(); }
+    } catch { if (generation === historyGeneration && suite?.id === current) showHistoryReadError(null, true); }
   }
-  function showHistoryReadError() {
+  function showHistoryReadError(payload, disconnected = false) {
     historyReadError = true;
-    status('Saved History could not be read. Previous results are still available.');
+    showReadNotice('history', payload, disconnected);
     if (activePanel === 'history') renderHistory();
   }
   async function resolveUncertainStart(suiteId, reference, generation) {
@@ -141,20 +191,21 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     try {
       const payload = await json('/api/eval-runs/status?' + new URLSearchParams(current));
       if (generation !== runGeneration || suite?.id !== current.suiteId || selectedRunId !== current.runId) return;
-      if (payload.status !== 'ok') { status('Run status unavailable. Reconnecting…'); setTimeout(pollRun, 1200); return; }
-      const previous = run?.state;
+      if (payload.status !== 'ok') { showReadNotice('status', payload); setTimeout(pollRun, 1200); return; }
+      clearReadNotice('status');
+      const previous = run?.state, previousRunId = run?.runId;
       run = payload.value.summary;
+      if (previousRunId && previousRunId !== run.runId) clearSelectedDetail();
       const acceptedFinished = acceptedRunId === current.runId && !['queued', 'running'].includes(run.state);
       if (acceptedFinished) acceptedRunId = null;
       renderWorkspace();
       if (isActive()) setTimeout(pollRun, 700);
       else {
         if (acceptedFinished || previous && ['queued','running'].includes(previous)) {
-          if (!document.activeElement?.matches?.('[data-action="search"]')) one('[data-status-summary]').focus();
           void loadHistory();
         }
       }
-    } catch { if (generation === runGeneration) { status('Connection lost. Reconnecting to this run…'); setTimeout(pollRun, 1200); } }
+    } catch { if (generation === runGeneration) { showReadNotice('status', null, true); setTimeout(pollRun, 1200); } }
   }
   function openPanel(kind) {
     if (!panelReturn) panelReturn = document.activeElement;
@@ -172,7 +223,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   function renderHistory() {
     openPanel('history');
     side.innerHTML = '<div class="section-heading"><h2 tabindex="-1">History</h2><button type="button" data-action="close-panel">Close</button></div>'
-      + (historyReadError ? '<p>Saved History could not be read. Previous results are still available.</p>' : '')
+      + (historyReadError ? '<p>Saved History could not be read. Previous results are still available.</p><button type="button" data-action="recheck-history">Recheck History</button>' : '')
       + (history.length ? '<ol class="history-list">' + history.map(item => '<li><button type="button" data-action="history-run" data-run-id="' + esc(item.runId) + '"><strong>' + esc(new Date(item.createdAt).toLocaleString()) + '</strong><br>' + esc(item.testedModel) + ' · ' + esc(item.scope) + ' · ' + esc(item.repeats) + ' repeat(s)<br>' + esc(item.state) + ' / ' + esc(item.outcome) + ' · ' + esc(item.finishedAt ? Math.max(0, item.finishedAt-item.createdAt) + 'ms' : 'Duration unavailable') + ' · Cost ' + esc(item.cost == null ? 'unavailable' : item.cost) + '</button></li>').join('') + '</ol>' : '<p>No saved runs yet.</p>');
   }
   function renderCoverage() {
@@ -185,26 +236,41 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   }
   async function inspectCase(caseId, attempt, requestedAssertionId = null) {
     if (!run || !suite) return;
-    resetRepair();
     const current = { suiteId: suite.id, runId: run.runId, caseId }, generation = ++detailGeneration;
     function showEvidenceState(message) {
       const html = '<h2>Result detail</h2><p>' + esc(message) + '</p>';
       detail.innerHTML = html;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
     }
-    showEvidenceState(requestedAssertionId ? 'Loading selected evidence for ' + requestedAssertionId + '…' : 'Loading selected evidence…');
+    const previousDetail = detail.innerHTML;
+    const switchingAssertion = requestedAssertionId !== null;
+    if (switchingAssertion) {
+      resetRepair();
+      showEvidenceState('Loading selected evidence for ' + requestedAssertionId + '…');
+    } else if (!previousDetail.includes('detail-section')) showEvidenceState('Loading selected evidence…');
     const query = new URLSearchParams({ ...current, attempt: String(attempt) });
     try {
       const payload = await json('/api/eval-runs/status?' + query);
       if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
-      if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') { showEvidenceState('Selected evidence is unavailable.'); return; }
+      if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') {
+        showReadNotice('evidence', payload.status === 'ok' ? null : payload);
+        if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
+        else showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
+        return;
+      }
       const failed = payload.value.evidence.assertions.filter(item => item.outcome === 'failed');
       const rawResponse = payload.value.evidence.output;
       const assertionId = failed.find(item => item.id === requestedAssertionId)?.id || failed[0]?.id;
       if (assertionId) query.set('assertionId', assertionId);
       const selected = assertionId ? await json('/api/eval-runs/status?' + query) : payload;
       if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
-      if (selected.status !== 'ok' || selected.value.evidenceStatus !== 'available') { showEvidenceState('Selected evidence is unavailable.'); return; }
+      if (selected.status !== 'ok' || selected.value.evidenceStatus !== 'available') {
+        showReadNotice('evidence', selected.status === 'ok' ? null : selected);
+        if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
+        else showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
+        return;
+      }
+      clearReadNotice('evidence'); resetRepair();
       const evidence = selected.value.evidence;
       const assertion = assertionId ? evidence.assertions.find(item => item.id === assertionId) : evidence.assertions[0];
       const attempts = run.cases.find(item => item.caseId === caseId)?.attempts || [];
@@ -234,10 +300,29 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       detail.innerHTML = html;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
       else detail.querySelector('h2')?.focus();
-    } catch { if (generation === detailGeneration && !activePanel) showEvidenceState('Selected evidence could not be loaded.'); }
+    } catch { if (generation === detailGeneration && !activePanel) {
+      showReadNotice('evidence', null, true);
+      if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
+      else showEvidenceState('Selected evidence could not be loaded. Previous results remain available.');
+    } }
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
+    if (target.dataset.action === 'recheck-read') {
+      if (readNotices.status && selectedRunId) void pollRun();
+      else if (readNotices.history) void loadHistory();
+      else if (readNotices.evidence && detailReturnCaseId) {
+        const attempts = run?.cases.find(item => item.caseId === detailReturnCaseId)?.attempts || [];
+        void inspectCase(detailReturnCaseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1);
+      }
+    }
+    if (target.dataset.action === 'recheck-history') void loadHistory();
+    if (target.dataset.action === 'copy-read-issue' && readIssueDetails) {
+      const details = readIssueDetails;
+      if (!navigator.clipboard?.writeText) one('[data-read-copy-status]').textContent = 'Copy unavailable. Select the issue details above.';
+      else void navigator.clipboard.writeText(details).then(() => { one('[data-read-copy-status]').textContent = 'Issue details copied'; },
+        () => { one('[data-read-copy-status]').textContent = 'Copy unavailable. Select the issue details above.'; });
+    }
     if (target.dataset.action === 'coverage') { detailGeneration++; renderCoverage(); }
     if (target.dataset.action === 'history') { void loadHistory(); renderHistory(); focusPanel(); }
     if (target.dataset.action === 'close-panel') closePanel();
@@ -245,7 +330,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }
     if (target.dataset.action === 'history-run') {
       if (acceptedRunId) { status('Wait for the current run to finish before opening another run.'); return; }
-      selectedRunId = target.dataset.runId; run = null; clearSelectedDetail(); void pollRun();
+      selectedRunId = target.dataset.runId; void pollRun();
     }
   });
   document.addEventListener('change', event => {

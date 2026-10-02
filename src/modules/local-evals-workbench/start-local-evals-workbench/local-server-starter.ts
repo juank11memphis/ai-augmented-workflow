@@ -22,7 +22,7 @@ import { parseGetRunRequest } from '../get-eval-run/request-parser.js';
 import { parseListRunRequest } from '../list-eval-runs/request-parser.js';
 import { renderWorkspaceShell } from '../workbench-ui/workspace-layout.js';
 import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
-import { acceptedRequestReference, acceptedStartReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, invalidStartIssue, modelCheckIssue, previewIssue, reusedStartReferenceIssue, startIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue, unknownStartIssue } from './public-issue.js';
+import { acceptedRequestReference, acceptedStartReference, discoveryIssue, executionIssue, invalidModelCheckIssue, invalidPreviewIssue, invalidStartIssue, modelCheckIssue, previewIssue, readIssue, reusedStartReferenceIssue, startIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue, unknownStartIssue } from './public-issue.js';
 import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 import { StartReferenceRegistry } from './start-reference-registry.js';
 
@@ -92,6 +92,11 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
             emitRequestIssue(this.logger, issue);
             try { writeJson(response, 500, { status: 'error', reason: 'unknown', issue, reference }, reference); } catch { /* The response may already be closed. */ }
           }
+        } else if (httpRequest.url?.startsWith('/api/eval-runs/status') || httpRequest.url?.startsWith('/api/eval-runs/history')) {
+          const stage = httpRequest.url.startsWith('/api/eval-runs/status') ? 'status' : 'history';
+          const issue = readIssue(stage, 'unknown', reference);
+          emitReadIssue(this.logger, issue);
+          try { writeJson(response, 500, { status: 'blocked', reason: 'unavailable', issue }, reference); } catch { /* Response may already be closed. */ }
         }
       });
     });
@@ -147,16 +152,21 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
     return;
   }
   if (url.pathname === '/api/eval-runs/status') {
-    if (request.method !== 'GET') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' }); return; }
-    if (!dependencies.get) { writeJson(response, 503, { status: 'blocked', reason: 'unavailable' }); return; }
+    if (request.method !== 'GET') { const issue = readIssue('status', 'invalid-request', reference); emitReadIssue(logger, issue); writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed', issue }, reference); return; }
+    if (!dependencies.get) { const issue = readIssue('status', 'unavailable', reference); emitReadIssue(logger, issue); writeJson(response, 503, { status: 'blocked', reason: 'unavailable', issue }, reference); return; }
     const command = parseGetRunRequest(url);
-    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    if (!command) { const issue = readIssue('status', 'invalid-request', reference); emitReadIssue(logger, issue); writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', issue }, reference); return; }
     const result = await dependencies.get(command);
-    writeJson(response, result.status === 'ok' ? 200 : 422, result);
+    const issue = result.status === 'blocked' ? readIssue('status', result.reason, reference)
+      : result.value.evidenceStatus === 'unavailable' ? readIssue('status', result.warnings?.at(-1) ?? 'unavailable', reference)
+      : executionIssue(result.value.summary.state, result.value.summary.outcome, reference);
+    const reason = issue?.stage === 'status';
+    if (reason && issue) emitReadIssue(logger, issue);
+    writeJson(response, result.status === 'ok' ? 200 : 422, result.status === 'blocked' ? { status: 'blocked', reason: issue?.category, issue } : issue ? { ...result, issue } : result, reference);
     return;
   }
   if (url.pathname === '/api/eval-runs/history') {
-    if (request.method !== 'GET') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' }); return; }
+    if (request.method !== 'GET') { const issue = readIssue('history', 'invalid-request', reference); emitReadIssue(logger, issue); writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed', issue }, reference); return; }
     if (url.searchParams.has('reference')) {
       const suiteId = url.searchParams.get('suiteId');
       const lookupUrl = new URL(url);
@@ -170,11 +180,13 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
       writeJson(response, 200, match.status === 'confirmed' ? { ...match, suiteId: command.suiteId, reference: supplied.toLowerCase() } : match);
       return;
     }
-    if (!dependencies.list) { writeJson(response, 503, { status: 'blocked', reason: 'unavailable' }); return; }
+    if (!dependencies.list) { const issue = readIssue('history', 'unavailable', reference); emitReadIssue(logger, issue); writeJson(response, 503, { status: 'blocked', reason: 'unavailable', issue }, reference); return; }
     const command = parseListRunRequest(url);
-    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
+    if (!command) { const issue = readIssue('history', 'invalid-request', reference); emitReadIssue(logger, issue); writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', issue }, reference); return; }
     const result = await dependencies.list(command);
-    writeJson(response, result.status === 'ok' ? 200 : 422, result);
+    const issue = result.status === 'blocked' ? readIssue('history', result.reason, reference) : undefined;
+    if (issue) emitReadIssue(logger, issue);
+    writeJson(response, result.status === 'ok' ? 200 : 422, result.status === 'blocked' ? { status: 'blocked', reason: issue?.category, issue } : result, reference);
     return;
   }
   if (request.url === '/api/eval-suites') {
@@ -348,6 +360,11 @@ function emitRequestIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnTy
   try {
     logger.warn({ event: 'local_evals_workbench_request_issue', stage: issue.stage, outcome: issue.outcome, reason: issue.category, reference: issue.reference });
   } catch { /* A failed diagnostic sink must not change the response. */ }
+}
+
+function emitReadIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof readIssue>): void {
+  try { logger.warn({ event: 'local_evals_workbench_read_issue', stage: issue.stage, outcome: issue.outcome,
+    reason: issue.category, reference: issue.reference }); } catch { /* Noncritical sink. */ }
 }
 
 function emitPreviewEvent(logger: LocalEvalsWorkbenchLoggerPort, event: 'local_evals_workbench_request_started' | 'local_evals_workbench_request_completed', outcome: 'started' | 'completed', reference: string): void {

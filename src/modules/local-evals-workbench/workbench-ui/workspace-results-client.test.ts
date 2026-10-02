@@ -20,6 +20,9 @@ function browser() {
   const results = { querySelector: (selector: string) => parts[selector] ?? null,
     set innerHTML(_value: string) { replacements++; }, get innerHTML() { return ''; } };
   const statusSummary = { textContent: '', focus() { document.activeElement = null; } };
+  const read = { hidden: true };
+  const readHeading = { textContent: '' }, readGuidance = { textContent: '' }, readAnnouncement = { textContent: '' };
+  const readDetails = { textContent: '', hidden: true }, readCopy = { hidden: true };
   const nodes: Record<string, unknown> = {
     '[data-results-container]': results, '[data-detail]': { innerHTML: '', hidden: false },
     '[data-side-panel]': { hidden: true }, '[data-suite-title]': { textContent: '' },
@@ -27,10 +30,15 @@ function browser() {
     '[data-action="coverage"]': { hidden: false }, '[data-action="history"]': { hidden: false },
     '[data-latest-label]': { textContent: '' }, '[data-status-summary]': statusSummary,
     '[data-run-metrics]': { textContent: '' },
+    '[data-read-notice]': read, '[data-read-heading]': readHeading, '[data-read-guidance]': readGuidance,
+    '[data-read-announcement]': readAnnouncement, '[data-read-details]': readDetails,
+    '[data-action="copy-read-issue"]': readCopy, '[data-read-copy-status]': { textContent: '' },
   };
   let resolvePoll: ((value: unknown) => void) | undefined;
+  const copied: string[] = [];
   const context = {
     document, URLSearchParams, Date, one: (selector: string) => nodes[selector],
+    navigator: { clipboard: { async writeText(value: string) { copied.push(value); } } },
     esc: (value: unknown) => String(value).replace(/[&<>"']/g, char => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     })[char]!),
@@ -47,19 +55,25 @@ function browser() {
     setupRegion: { hidden: false, querySelector: () => ({ disabled: false }) },
     isActive: () => context.run?.state === 'running', needsJudge: () => false,
     refreshSetupControls() {}, status() {}, loadDiscovery() {}, loadRuntime() {}, resetRepair() {},
+    safeReference: (value: unknown) => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value),
+    matchMedia: () => ({ matches: false }),
     json: async (url: string) => url.includes('/status?')
       ? new Promise(resolve => { resolvePoll = resolve; }) : new Promise(() => undefined),
     setTimeout: () => 0,
   };
-  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, pollRun })', context) as {
-    renderWorkspace(): void; pollRun(): Promise<void>;
+  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, pollRun, loadHistory, inspectCase, runOutcomeCopy, state:()=>({run,history,selectedRunId,readNotices}) })', context) as {
+    renderWorkspace(): void; pollRun(): Promise<void>; loadHistory(): Promise<void>; inspectCase(caseId: string, attempt: number): Promise<void>;
+    runOutcomeCopy(summary: unknown): string; state(): { run: unknown; history: unknown[]; selectedRunId: string; readNotices: Record<string, unknown> };
   };
   function edit(value: string, start: number, end = start) {
     input.value = value; input.selectionStart = start; input.selectionEnd = end;
     listeners.get('input')?.({ target: input });
   }
-  return { api, context, document, input, section, count, list, empty, results,
-    replacements: () => replacements, edit, resolvePoll: () => resolvePoll };
+  return { api, context, document, input, section, count, list, empty, results, copied,
+    read, readHeading, readGuidance, readAnnouncement, readDetails, readCopy,
+    replacements: () => replacements, edit, resolvePoll: () => resolvePoll,
+    click(action: string) { listeners.get('click')?.({ target: { closest: () => ({ dataset: { action } }) } as unknown as SearchInput }); },
+  };
 }
 
 type SearchInput = { value: string; selectionStart: number; selectionEnd: number;
@@ -143,6 +157,111 @@ test('polling refresh preserves the exact focused input, query and selection', a
   assert.equal(page.replacements(), 0);
 });
 
+const reference = '123e4567-e89b-42d3-a456-426614174001';
+const saved = { runId: 'run', state: 'completed', outcome: 'failed', diagnostics: ['assertion-failed'],
+  caseIds: ['alpha'], createdAt: 1, finishedAt: 2, cost: null,
+  cases: [{ caseId: 'alpha', state: 'completed', attempts: [{ outcome: 'failed' }] }] };
+
+test('failed status polls retain terminal failed checks, list, selection and detail; recovery clears only status notice', async () => {
+  const page = browser();
+  page.context.run = saved; page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  page.context.history = [{ runId: 'run' }] as never[];
+  const detail = page.context.one('[data-detail]') as { innerHTML: string };
+  detail.innerHTML = '<section class="detail-section">Saved evidence</section>';
+  page.api.renderWorkspace(); page.input.focus();
+  const priorRows = page.list.innerHTML;
+  const blocked = { status: 'blocked', reason: 'corrupt', issue: { stage: 'status', outcome: 'blocked', category: 'corrupt', reference } };
+  const first = page.api.pollRun(); page.resolvePoll()?.(blocked); await first;
+  assert.equal(page.api.state().run, saved);
+  assert.equal(page.list.innerHTML, priorRows);
+  assert.equal(detail.innerHTML, '<section class="detail-section">Saved evidence</section>');
+  assert.equal(page.api.state().selectedRunId, 'run');
+  assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /failed checks/);
+  assert.match(page.readGuidance.textContent, /readable|unreadable/);
+  assert.doesNotMatch(page.readGuidance.textContent, /assertion failure|secret-token/);
+  assert.match(page.readDetails.textContent, /Stage: status\nOutcome: blocked\nCategory: corrupt\nReference:/);
+  assert.equal(page.document.activeElement, page.input);
+  const announcement = page.readAnnouncement.textContent;
+  const second = page.api.pollRun(); page.resolvePoll()?.(blocked); await second;
+  assert.equal(page.readAnnouncement.textContent, announcement);
+  const recovered = page.api.pollRun(); page.resolvePoll()?.({ status: 'ok', value: { summary: saved } }); await recovered;
+  assert.equal(page.read.hidden, true);
+  assert.equal(page.api.state().run, saved);
+  assert.equal(page.document.activeElement, page.input);
+});
+
+test('terminal outcomes and legacy input-unsafe are conservative and distinct from read faults', () => {
+  const page = browser();
+  for (const [state, expected] of [['completed', 'Completed with failed checks'], ['blocked', 'blocked'],
+    ['partial', 'partially'], ['interrupted', 'interrupted'], ['error', 'could not complete']] as const) {
+    assert.match(page.api.runOutcomeCopy({ ...saved, state }), new RegExp(expected, 'i'));
+  }
+  assert.match(page.api.runOutcomeCopy({ ...saved, state: 'error', diagnostics: ['runner-timeout'] }), /did not answer in time/);
+  assert.match(page.api.runOutcomeCopy({ ...saved, state: 'error', diagnostics: ['runner-protocol-invalid'] }), /protocol|compatibility/i);
+  const legacy = page.api.runOutcomeCopy({ ...saved, version: 1, state: 'blocked', diagnostics: ['input-unsafe'] });
+  assert.match(legacy, /without a precise cause.*runner setup and request size/i);
+  assert.doesNotMatch(legacy, /credential|provider|setting failure|secret-token/i);
+});
+
+test('History fault and network catch preserve saved rows; confirmed recovery clears only History notice', async () => {
+  const page = browser();
+  page.context.run = saved; page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  page.context.history = [{ runId: 'run', createdAt: 1, testedModel: 'model', scope: 'all', repeats: 1,
+    state: 'completed', outcome: 'failed', finishedAt: 2, cost: null }] as never[];
+  const previous = page.context.history;
+  page.context.json = async () => ({ status: 'blocked', reason: 'unavailable', issue: {
+    stage: 'history', outcome: 'blocked', category: 'unavailable', reference } });
+  await page.api.loadHistory();
+  assert.equal(page.api.state().history, previous);
+  assert.match(page.readHeading.textContent, /History/);
+  assert.match(page.readDetails.textContent, /Stage: history/);
+  page.context.json = async () => { throw new Error('secret-token'); };
+  await page.api.loadHistory();
+  assert.equal(page.api.state().history, previous);
+  assert.match(page.readGuidance.textContent, /matching terminal event may not exist/);
+  assert.equal(page.readDetails.textContent, '');
+  assert.doesNotMatch(page.readGuidance.textContent, /secret-token/);
+  page.context.json = async () => ({ status: 'ok', value: previous });
+  await page.api.loadHistory();
+  assert.equal(page.read.hidden, true);
+  assert.equal(page.api.state().run, saved);
+});
+
+test('version-1 input-unsafe issue is explicitly unclassified in guidance and copied-safe fields', async () => {
+  const page = browser(); page.context.run = saved;
+  page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  const poll = page.api.pollRun();
+  page.resolvePoll()?.({ status: 'blocked', reason: 'input-unsafe', version: 1,
+    issue: { stage: 'status', outcome: 'blocked', category: 'input-unsafe', reference,
+      private: 'secret-token', message: 'provider credential failure' } });
+  await poll;
+  assert.match(page.readGuidance.textContent, /without a precise cause/);
+  assert.match(page.readDetails.textContent, /Category: unclassified/);
+  assert.doesNotMatch(page.readGuidance.textContent + page.readDetails.textContent, /credential|provider|secret-token/i);
+  page.click('copy-read-issue');
+  await Promise.resolve();
+  assert.equal(page.copied.length, 1);
+  assert.equal(page.copied[0], page.readDetails.textContent);
+  assert.doesNotMatch(page.copied[0]!, /credential|provider|secret-token/i);
+  assert.equal(page.api.state().run, saved);
+});
+
+test('selected evidence remains visible when detail read fails without losing focus', async () => {
+  const page = browser(); page.context.run = saved;
+  page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  const detail = page.context.one('[data-detail]') as { innerHTML: string };
+  detail.innerHTML = '<section class="detail-section">Saved private evidence</section>';
+  page.input.focus();
+  page.context.json = async () => ({ status: 'blocked', reason: 'corrupt', issue: {
+    stage: 'status', outcome: 'blocked', category: 'corrupt', reference,
+    private: 'secret-token' } });
+  await page.api.inspectCase('alpha', 1);
+  assert.equal(detail.innerHTML, '<section class="detail-section">Saved private evidence</section>');
+  assert.equal(page.document.activeElement, page.input);
+  assert.match(page.readHeading.textContent, /evidence/);
+  assert.doesNotMatch(page.readGuidance.textContent + page.readDetails.textContent, /Saved private evidence|secret-token/);
+});
+
 const uncertainReference = '123e4567-e89b-42d3-a456-426614174003';
 function uncertainHistoryBrowser(reply: (url: string) => Promise<unknown>) {
   const detail = { innerHTML: 'Saved prior evidence', hidden: false };
@@ -198,6 +317,7 @@ test('History read error remains an unreadable History state and preserves prior
   page.api.renderHistory();
   await page.api.loadHistory();
   assert.match(page.side.innerHTML, /Saved History could not be read/);
+  assert.match(page.side.innerHTML, /Recheck History/);
   assert.equal(page.api.state().startUncertain, true);
   assert.equal(page.api.state().run, page.prior);
   assert.equal(page.detail.innerHTML, 'Saved prior evidence');
