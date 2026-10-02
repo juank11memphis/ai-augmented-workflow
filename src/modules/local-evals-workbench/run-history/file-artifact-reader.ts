@@ -14,11 +14,13 @@ export class FileArtifactReader implements ArtifactReaderPort {
     try {
       const candidates = await manifestCandidates(this.paths, suiteId, this.reader); if (candidates.status !== 'ok') return candidates;
       const entries: HistoryEntry[] = []; const warnings: Reason[] = [...(candidates.warnings ?? [])];
+      let unreadable: Reason | undefined;
       for (const runId of candidates.value) {
         const run = await this.summary(suiteId, runId);
         if (run.status === 'ok') { entries.push(compact(run.value)); warnings.push(...(run.warnings ?? [])); }
-        else warnings.push(run.reason);
+        else { warnings.push(run.reason); unreadable ??= run.reason; }
       }
+      if (candidates.value.length > 0 && entries.length === 0) return { status: 'blocked', reason: unreadable ?? 'unavailable' };
       return { status: 'ok', value: indexFrom(entries).entries.slice(0, limit), warnings: [...new Set(warnings)] };
     } catch (error) { return failure(error); }
   }

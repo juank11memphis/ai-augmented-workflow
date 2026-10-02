@@ -30,6 +30,32 @@ it('AC-08/10: bounded raw synthetic output survives fresh reads, stays ignored, 
     assert.equal(selected.status === 'ok' && selected.value.evidence?.output, marker);
   } finally { await p.cleanup(); }
 });
+it('reads version-1 input-unsafe manifest and attempt without migration or inferred provider cause', async () => {
+  const p = await project(); const logs: string[] = []; try {
+    const a = fixture(p.root); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail();
+    const id = run.value.runId;
+    assert.equal((await a.store.start('suite', id)).status, 'ok');
+    assert.equal((await a.store.append('suite', id, { ...evidence(id), diagnostics: ['input-unsafe'] })).status, 'ok');
+    assert.equal((await a.store.finalize('suite', id, 'blocked', ['input-unsafe'])).status, 'ok');
+    const manifestPath = path.join(p.root, 'evals/artifacts', a.paths.run('suite', id));
+    const attemptPath = path.join(p.root, 'evals/artifacts', a.paths.attempt('suite', id, 'case', 1));
+    const before = await Promise.all([readFile(manifestPath), readFile(attemptPath)]);
+    const history = createRunHistory(p.root, { log: line => logs.push(line) });
+    const detail = await history.get({ suiteId: 'suite', runId: id, selection: { caseId: 'case', attempt: 1 } });
+    const listed = await history.list({ suiteId: 'suite' });
+    assert.equal(detail.status, 'ok');
+    if (detail.status === 'ok') {
+      assert.equal(detail.value.summary.version, 1);
+      assert.equal(detail.value.summary.state, 'blocked');
+      assert.deepEqual(detail.value.summary.diagnostics, ['input-unsafe']);
+      assert.deepEqual(detail.value.evidence?.diagnostics, ['input-unsafe']);
+    }
+    assert.equal(listed.status === 'ok' && listed.value[0]?.state, 'blocked');
+    assert.equal(listed.status === 'ok' && listed.value[0]?.outcome, 'incomplete');
+    assert.deepEqual(await Promise.all([readFile(manifestPath), readFile(attemptPath)]), before);
+    assert.ok(!logs.join('').includes('credential') && !logs.join('').includes('provider'));
+  } finally { await p.cleanup(); }
+});
 it('an obsolete regular writer.lock neither blocks recovery/new writes nor gets removed', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));

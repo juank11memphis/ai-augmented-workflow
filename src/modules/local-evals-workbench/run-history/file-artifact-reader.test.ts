@@ -18,6 +18,15 @@ it('restores missing/stale index and reads summaries without opening any attempt
     await writeFile(path.join(p.root, 'evals/artifacts/suite/index.json'), '{broken'); assert.equal((await reader.list('suite', 1)).status, 'ok');
   } finally { await p.cleanup(); }
 });
+it('reports unreadable History candidates as blocked instead of empty success', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail();
+    await writeFile(path.join(p.root, 'evals/artifacts', a.paths.run('suite', run.value.runId)), '{broken');
+    const listed = await historyReader(a).list('suite', 10);
+    assert.deepEqual(listed, { status: 'blocked', reason: 'corrupt' });
+    assert.deepEqual(await historyReader(a).get('suite', run.value.runId), { status: 'blocked', reason: 'corrupt' });
+  } finally { await p.cleanup(); }
+});
 it('selected assertion excludes unrelated output, turns and assertions; missing evidence stays unavailable', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));
