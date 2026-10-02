@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
+import { WORKSPACE_STYLES } from './workspace-styles.js';
+import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character]!);
 
@@ -51,4 +53,13 @@ test('selected failure renders evidence first, escapes text, and never shows ano
   await api.inspectCase('case', 2, 'a');
   assert.match(detail.innerHTML, /No raw response was retained for this attempt/);
   assert.doesNotMatch(detail.innerHTML, /RAW RESPONSE OPENAI_API_KEY/);
+});
+
+test('proposal notice remains in existing result detail across phone, tablet, and desktop regions', () => {
+  assert.match(WORKSPACE_RESULTS_CLIENT, /<section data-repair-host aria-label="Guided repair">.*repairMarkup\(\)/s);
+  assert.match(WORKSPACE_REPAIR_CLIENT, /<section class="model-notice detail-section" data-proposal-notice aria-label="Repair Proposal">/);
+  assert.match(WORKSPACE_STYLES, /\.detail\{display:none\}.*\.sheet-overlay\{position:fixed/s);
+  assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\).*\.sheet:has\(\[data-action="close-detail"\]\)\{height:100dvh/s);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail\{display:block;grid-column:2\}/s);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\).*\.suite-rail\{display:block;grid-row:1\/4\}.*\[data-results-container\].*grid-column:2.*\.detail\{display:block;grid-column:3\}/s);
 });

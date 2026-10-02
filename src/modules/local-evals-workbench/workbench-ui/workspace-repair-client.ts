@@ -2,7 +2,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
   let selectedFailure = null;
   let repairStage = 'idle', repairAnalysis = null, repairAnalysisId = null, repairProposal = null, repairApplied = null;
   let repairMessage = '', repairPending = false, repairGeneration = 0, repairAffectedFiles = [], analysisIssueDetails = null;
-  let repairIssueCopy = null;
+  let repairIssueCopy = null, proposalIssueCopy = null, proposalIssueDetails = null, proposalAnnouncement = '';
   const analysisGuidance = {
     'missing-openai-api-key': ['Analysis unavailable', 'Analysis needs a local OpenAI API key.', 'Check local assistance setup, then try analysis again.'],
     'invalid-scope': ['Analysis selection invalid', 'This selection cannot be analyzed.', 'Select one failed assertion in a saved result.'],
@@ -31,10 +31,45 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       typeof issue.reference !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(issue.reference)) return null;
     return { copy: analysisGuidance[category], details: 'Stage: analysis\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() };
   }
+  const proposalGuidance = {
+    'missing-openai-api-key': ['Repair proposal unavailable', 'Drafting needs a local OpenAI API key.', 'Check local assistance setup, then try drafting again.', 'draft'],
+    'invalid-scope': ['Proposal selection invalid', 'The selected failure is outside this proposal scope.', 'Select one failed assertion in a saved result.', 'none'],
+    'unclear-direction': ['Repair direction unclear', 'The repair direction is not specific enough to draft safely.', 'Review the selected analysis, then try drafting again.', 'draft'],
+    'stale-analysis': ['Analysis no longer matches', 'The selected analysis does not match this failure and repair direction.', 'Analyze this failure again before drafting.', 'analysis'],
+    'missing-artifact': ['Proposal evidence unavailable', 'The saved run evidence could not be found.', 'Check the selected result and its saved evidence.', 'none'],
+    'missing-cell': ['Proposal result unavailable', 'The selected result cell could not be found.', 'Select a result with saved evidence.', 'none'],
+    'missing-assertion': ['Proposal assertion unavailable', 'The selected assertion could not be found.', 'Select a saved failed assertion.', 'none'],
+    'non-failed-assertion': ['Proposal needs a failure', 'The selected assertion did not fail.', 'Select a failed assertion.', 'none'],
+    'unsafe-target-files': ['Repair target unsafe', 'The proposed target could not be verified as safe.', 'Check the named project file before drafting again.', 'draft'],
+    'vague-proposal': ['Proposal rejected', 'The draft did not specify a safe concrete file change.', 'Review the repair direction and draft again.', 'draft'],
+    'provider-authorization': ['Proposal authorization failed', 'The provider rejected authorization.', 'Check local provider credentials and access before trying again.', 'draft'],
+    'provider-rate-limit': ['Proposal rate limited', 'The provider limited this request.', 'Wait before drafting again.', 'draft'],
+    'provider-timeout': ['Proposal timed out', 'The provider did not respond in time.', 'Try drafting again later.', 'draft'],
+    'provider-unavailable': ['Proposal service unavailable', 'The provider could not be reached or was unavailable.', 'Check service availability, then try again.', 'draft'],
+    'invalid-llm-response': ['Proposal response invalid', 'The provider response could not be used safely.', 'Try again. If it repeats, report this issue.', 'draft'],
+    'llm-failure': ['Proposal failed', 'Drafting could not finish. The provider cause is unknown.', 'Try again. If it repeats, report this issue.', 'draft'],
+    'unknown-cause': ['Proposal failed', 'Drafting could not finish. Cause unknown.', 'Check the selected result and try again.', 'draft'],
+    'invalid-request': ['Proposal request invalid', 'Sibu could not read this proposal request.', 'Correct the selection and try again.', 'none'],
+  };
+  const proposalUnavailable = ['missing-openai-api-key'];
+  const proposalBlocked = ['invalid-scope', 'unclear-direction', 'stale-analysis', 'missing-artifact', 'missing-cell', 'missing-assertion', 'non-failed-assertion', 'unsafe-target-files', 'invalid-request'];
+  const proposalRejected = ['vague-proposal', 'unsafe-target-files'];
+  const proposalFailed = ['provider-authorization', 'provider-rate-limit', 'provider-timeout', 'provider-unavailable', 'invalid-llm-response', 'llm-failure', 'unknown-cause'];
+  function safeProposalIssue(result) {
+    const issue = result?.issue, category = issue?.category;
+    const valid = issue?.stage === 'proposal' && issue.category === result.reason && Object.hasOwn(proposalGuidance, category)
+      && ((issue.outcome === 'blocked' && ((result.status === 'proposal-unavailable' && proposalUnavailable.includes(category))
+        || (result.status === 'blocked' && proposalBlocked.includes(category)) || (result.status === 'proposal-rejected' && proposalRejected.includes(category))))
+        || (issue.outcome === 'failed' && proposalFailed.includes(category) && result.status === 'error'))
+      && typeof issue.reference === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(issue.reference);
+    if (!valid) return null;
+    return { copy: proposalGuidance[category], details: 'Stage: proposal\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() };
+  }
   const selectionKey = selection => selection ? [selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId].join('|') : '';
   function resetRepair() {
     repairGeneration++; selectedFailure = null; repairStage = 'idle'; repairAnalysis = null; repairAnalysisId = null;
     repairProposal = null; repairApplied = null; repairMessage = ''; repairPending = false; repairAffectedFiles = []; analysisIssueDetails = null; repairIssueCopy = null;
+    proposalIssueCopy = null; proposalIssueDetails = null; proposalAnnouncement = '';
   }
   function repairMarkup() {
     if (!selectedFailure || !latestRun()) return '';
@@ -48,12 +83,19 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         + (analysisIssueDetails ? '<pre data-analysis-issue-details>' + esc(analysisIssueDetails) + '</pre><button type="button" data-action="copy-analysis-issue">Copy issue details</button><p data-analysis-copy-status></p>' : '')
         + notice + '</div>';
     }
-    if (repairStage === 'analysis') {
+    if (repairStage === 'analysis' || repairStage === 'proposal-error') {
       const analysis = repairAnalysis;
       const cause = analysis?.likelyCause || 'unclear_needs_human_judgment';
       const canDraft = cause !== 'model_nondeterminism' && cause !== 'unclear_needs_human_judgment';
-      return '<h3 tabindex="-1">AI analysis</h3><p>' + esc(analysis?.exactFailureExplanation || '') + '</p><p>Likely cause: ' + esc(cause.replaceAll('_', ' ')) + '</p><p>Evidence: ' + esc(analysis?.evidenceSummary || '') + '</p><p>Uncertainty: ' + esc(analysis?.uncertainty || '') + '</p>'
-        + (canDraft ? '<button type="button" data-action="draft-repair"' + pending + '>Draft repair</button>' : '<p>Review this uncertainty before choosing a repair target.</p>') + notice;
+      const analysisHtml = '<h3 tabindex="-1">AI analysis</h3><p>' + esc(analysis?.exactFailureExplanation || '') + '</p><p>Likely cause: ' + esc(cause.replaceAll('_', ' ')) + '</p><p>Evidence: ' + esc(analysis?.evidenceSummary || '') + '</p><p>Uncertainty: ' + esc(analysis?.uncertainty || '') + '</p>';
+      if (repairStage === 'proposal-error') {
+        const [title, explanation, nextStep, action] = proposalIssueCopy;
+        return analysisHtml + '<section class="model-notice detail-section" data-proposal-notice aria-label="Repair Proposal"><h3 tabindex="-1" data-proposal-heading>' + esc(title) + '</h3><p>' + esc(explanation + ' ' + nextStep) + '</p>'
+          + '<span class="live" role="status" data-proposal-announcement>' + esc(proposalAnnouncement) + '</span>'
+          + (action === 'analysis' ? '<button type="button" data-action="analyze-failure">Try analysis again</button>' : action === 'draft' && canDraft ? '<button type="button" data-action="draft-repair"' + pending + '>Try drafting again</button>' : '')
+          + (proposalIssueDetails ? '<pre data-proposal-issue-details>' + esc(proposalIssueDetails) + '</pre><button type="button" data-action="copy-proposal-issue">Copy issue details</button><p data-proposal-copy-status></p>' : '') + '</section>';
+      }
+      return analysisHtml + (canDraft ? '<button type="button" data-action="draft-repair"' + pending + '>Draft repair</button>' : '<p>Review this uncertainty before choosing a repair target.</p>') + notice;
     }
     if (repairStage === 'proposal' || repairStage === 'apply-blocked' || repairStage === 'apply-uncertain') {
       const proposal = repairProposal;
@@ -74,10 +116,13 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
   function renderRepair() {
     const activeAction = document.activeElement?.dataset?.action;
     const hosts = [...document.querySelectorAll('[data-repair-host]')];
-    hosts.forEach(node => { node.innerHTML = repairMarkup(); });
+    const activeHost = hosts.find(node => node.closest?.('[role="dialog"]')) || hosts[0];
+    hosts.forEach(node => { node.innerHTML = repairMarkup(); if (node !== activeHost) node.querySelector?.('[data-proposal-announcement]')?.replaceChildren?.(); });
+    const shouldFocusNotice = proposalAnnouncement && activeAction === 'draft-repair' && !activeHost?.querySelector?.('[data-action="draft-repair"]');
+    proposalAnnouncement = '';
     if (activeAction) {
-      const activeHost = hosts.find(node => node.closest?.('[role="dialog"]')) || hosts[0];
-      const next = activeHost?.querySelector?.('[data-action="' + activeAction + '"]') || activeHost?.querySelector?.('h3');
+      const next = shouldFocusNotice ? activeHost?.querySelector?.('[data-proposal-heading]')
+        : activeHost?.querySelector?.('[data-action="' + activeAction + '"]') || activeHost?.querySelector?.('h3');
       next?.focus?.();
     }
   }
@@ -91,7 +136,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       let result;
       if (kind === 'analysis') result = await post('/api/failure-analysis', current);
       else if (kind === 'proposal') {
-        if (!['analysis', 'apply-blocked', 'apply-uncertain'].includes(repairStage) || !repairAnalysis) return;
+        if (!['analysis', 'proposal-error', 'apply-blocked', 'apply-uncertain'].includes(repairStage) || !repairAnalysis) return;
         const cause = repairAnalysis.likelyCause;
         const direction = ['prompt_issue', 'eval_assertion_issue', 'fixture_input_issue'].includes(cause) ? cause : null;
         if (!direction) { repairMessage = 'A named repair direction is unavailable for this analysis.'; return; }
@@ -111,7 +156,14 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         repairStage = result.status === 'analysis-unavailable' ? 'unavailable' : 'retryable-error';
         repairMessage = repairIssueCopy[0];
       }
-      else if (kind === 'proposal' && result.status === 'proposal-ready') { repairProposal = result.proposal; repairStage = 'proposal'; repairMessage = ''; }
+      else if (kind === 'proposal' && result.status === 'proposal-ready') { repairProposal = result.proposal; proposalIssueCopy = null; proposalIssueDetails = null; repairStage = 'proposal'; repairMessage = ''; }
+      else if (kind === 'proposal') {
+        const safe = safeProposalIssue(result);
+        proposalIssueCopy = safe?.copy || proposalGuidance['unknown-cause'];
+        proposalIssueDetails = safe?.details || null;
+        repairProposal = null; repairStage = 'proposal-error'; repairMessage = '';
+        proposalAnnouncement = proposalIssueCopy[0];
+      }
       else if (kind === 'apply' && result.status === 'applied') { repairApplied = result; repairStage = 'applied'; repairMessage = 'Source run unchanged. Rerun to verify.'; }
       else if (kind === 'apply') { repairStage = result.status === 'error' ? 'apply-uncertain' : 'apply-blocked'; repairAffectedFiles = Array.isArray(result.changedFiles) ? result.changedFiles : []; repairMessage = result.message || 'The proposal could not be applied. Draft a fresh one.'; }
       else repairMessage = result.message || result.reason || 'This step is unavailable. Review the selected evidence and try again.';
@@ -122,7 +174,12 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
           repairMessage = 'Analysis connection failed';
         }
         if (kind === 'apply') repairStage = 'apply-uncertain';
-        if (kind !== 'analysis') repairMessage = 'The repair service could not finish. No new approval was sent automatically.';
+        if (kind === 'proposal') {
+          repairProposal = null; repairStage = 'proposal-error'; proposalIssueDetails = null;
+          proposalIssueCopy = ['Proposal connection failed', 'Sibu could not confirm whether drafting finished.', 'Check the connection before trying again. A matching terminal event may not exist.', 'draft'];
+          proposalAnnouncement = proposalIssueCopy[0]; repairMessage = '';
+        }
+        if (kind === 'apply') repairMessage = 'The repair service could not finish. No new approval was sent automatically.';
       }
     } finally {
       if (generation === repairGeneration && selectionKey(selectedFailure) === key) { repairPending = false; renderRepair(); }
@@ -143,6 +200,17 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
+    if (target.dataset.action === 'copy-proposal-issue' && proposalIssueDetails) {
+      const details = proposalIssueDetails, generation = repairGeneration, key = selectionKey(selectedFailure);
+      const feedback = message => { if (generation === repairGeneration && key === selectionKey(selectedFailure)) {
+        document.querySelector('[data-repair-host] [data-proposal-copy-status]')?.replaceChildren?.(message);
+      } };
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        void Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
+          () => feedback('Copy unavailable. Select the issue details above.'));
+      } catch { feedback('Copy unavailable. Select the issue details above.'); }
+    }
     if (target.dataset.action === 'copy-analysis-issue' && analysisIssueDetails) {
       const details = analysisIssueDetails, generation = repairGeneration, key = selectionKey(selectedFailure);
       const feedback = message => { if (generation === repairGeneration && key === selectionKey(selectedFailure)) {
