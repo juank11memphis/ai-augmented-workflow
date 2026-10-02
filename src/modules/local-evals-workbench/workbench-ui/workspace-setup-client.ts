@@ -14,7 +14,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   let modelIssue = null;
   let previewIssueDetails = null;
   let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', repeats: 1 };
-  let sheetReturn = null, startPending = false, startUncertain = false, startReference = null, activePanel = null;
+  let sheetReturn = null, startPending = false, startUncertain = false, startReference = null, startSuiteId = null, activePanel = null;
   let startIssueDetails = null;
   const startCopy = ${JSON.stringify(safeStartCopy)};
   const one = selector => document.querySelector(selector);
@@ -337,6 +337,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       return;
     }
     startReference = reference;
+    startSuiteId = suite.id;
     const { request, result } = review; startPending = true;
     if (setupRegion) setupRegion.hidden = true;
     status('Starting run…');
@@ -351,7 +352,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
         if (blocked) {
           showStartNotice(blocked.copy.title, blocked.copy.explanation + ' ' + blocked.copy.nextStep, blocked.details, blocked.copy.recoveryAction);
           status('Run start blocked.');
-          review = null; startReference = null;
+          review = null; startReference = null; startSuiteId = null;
         } else {
           startUncertain = true;
           showStartNotice('Run start not confirmed', 'The response could not confirm the start. The run may already exist. Check History before starting another.', null, 'history');
@@ -365,6 +366,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
         return;
       }
       selectedRunId = payload.runId; latestKnownRunId = payload.runId; acceptedRunId = payload.runId; run = null;
+      startReference = null; startSuiteId = null;
       closeSheet(); clearSelectedDetail(); renderWorkspace(); status('Run queued. Loading saved progress…');
       void pollRun(); void loadHistory();
     } catch {
