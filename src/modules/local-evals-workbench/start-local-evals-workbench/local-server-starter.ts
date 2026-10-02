@@ -25,6 +25,7 @@ import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
 import { acceptedRequestReference, acceptedStartReference, discoveryIssue, executionIssue, invalidModelCheckIssue, invalidPreviewIssue, invalidStartIssue, modelCheckIssue, previewIssue, readIssue, reusedStartReferenceIssue, startIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue, unknownStartIssue } from './public-issue.js';
 import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 import { StartReferenceRegistry } from './start-reference-registry.js';
+import { analysisIssue, invalidAnalysisIssue, unknownAnalysisIssue } from './analysis-public-issue.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -66,14 +67,20 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
     const runtimeDependencies = this.dependenciesFactory(request);
     const startReferences = new StartReferenceRegistry();
     const server = this.createServer((httpRequest, response) => {
+      let analysisTerminalReported = false;
       const isStart = httpRequest.url === '/api/eval-runs/start';
       const reference = isStart ? acceptedStartReference(httpRequest.headers?.['x-sibu-request-reference'])
         : acceptedRequestReference(httpRequest.headers?.['x-sibu-request-reference']);
-      void routeLocalRequest(httpRequest, response, request, runtimeDependencies, reference, this.logger, startReferences).catch(() => {
+      void routeLocalRequest(httpRequest, response, request, runtimeDependencies, reference, this.logger, startReferences,
+        () => { analysisTerminalReported = true; }).catch(() => {
         if (httpRequest.url === '/api/eval-suites') {
           const issue = unknownDiscoveryIssue(reference);
           emitDiscoveryIssue(this.logger, issue);
           try { writeJson(response, 500, { status: 'blocked', reason: 'discovery-failed', suites: [], diagnostics: [], issue }, reference); } catch { /* The response may already be closed. */ }
+        } else if (httpRequest.url === '/api/failure-analysis') {
+          const issue = unknownAnalysisIssue(reference);
+          if (!analysisTerminalReported) emitAnalysisBoundaryIssue(this.logger, issue);
+          try { writeJson(response, 500, { status: 'error', reason: 'unknown', issue, reference }, reference); } catch { /* Response may already be closed. */ }
         } else if (httpRequest.url === '/api/eval-suites/describe') {
           const issue = unknownModelCheckIssue(reference);
           emitRequestIssue(this.logger, issue);
@@ -124,7 +131,7 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
   }
 }
 
-async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies, reference: string, logger: LocalEvalsWorkbenchLoggerPort, startReferences: StartReferenceRegistry): Promise<void> {
+async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies, reference: string, logger: LocalEvalsWorkbenchLoggerPort, startReferences: StartReferenceRegistry, analysisTerminalReported: () => void): Promise<void> {
   const publicDiscoveryResult = toPublicEvalSuiteDiscoveryResult(startRequest.initialDiscoveryResult);
   const url = new URL(request.url ?? '/', 'http://localhost');
   if (url.pathname === '/api/eval-runs/start') {
@@ -262,7 +269,7 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
   }
 
   if (request.url === '/api/failure-analysis' && request.method === 'POST') {
-    await handleFailureAnalysisRequest(request, response, startRequest, dependencies.analysis);
+    await handleFailureAnalysisRequest(request, response, startRequest, dependencies.analysis, reference, logger, analysisTerminalReported);
     return;
   }
 
@@ -301,21 +308,44 @@ async function handleEvalRunRequest(request: LocalHttpRequest, response: LocalHt
   writeJson(response, result.status === 'completed' ? 200 : 422, result);
 }
 
-async function handleFailureAnalysisRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: AnalyzeFailedAssertionDependencies): Promise<void> {
+async function handleFailureAnalysisRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: AnalyzeFailedAssertionDependencies, reference: string, logger: LocalEvalsWorkbenchLoggerPort, terminalReported: () => void): Promise<void> {
   const body = await readJsonBody(request);
   if (body.status === 'invalid') {
-    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: body.message });
+    const issue = invalidAnalysisIssue(reference);
+    emitAnalysisBoundaryIssue(logger, issue);
+    terminalReported();
+    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: body.message, issue, reference }, reference);
     return;
   }
 
   const parsed = parseAnalyzeFailedAssertionRequest(startRequest.projectRoot, body.payload);
   if (parsed.status === 'invalid') {
-    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: parsed.message });
+    const issue = invalidAnalysisIssue(reference);
+    emitAnalysisBoundaryIssue(logger, issue);
+    terminalReported();
+    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: parsed.message, issue, reference }, reference);
     return;
   }
 
-  const result = await analyzeFailedAssertion(parsed.command, dependencies);
-  writeJson(response, result.status === 'analysis-ready' || result.status === 'analysis-unavailable' ? 200 : result.status === 'blocked' ? 422 : 502, result);
+  const result = await analyzeFailedAssertion(parsed.command, { ...dependencies, logger: {
+    info: event => { emitAnalysisHandlerEvent(logger, event, reference); if (event.event === 'failure_analysis_finished') terminalReported(); },
+    warn: event => { emitAnalysisHandlerEvent(logger, event, reference); if (event.event === 'failure_analysis_finished') terminalReported(); },
+    error: event => { emitAnalysisHandlerEvent(logger, event, reference); if (event.event === 'failure_analysis_finished') terminalReported(); },
+  } });
+  const issue = result.status === 'analysis-ready' ? undefined : analysisIssue(result, reference);
+  writeJson(response, result.status === 'analysis-ready' || result.status === 'analysis-unavailable' ? 200 : result.status === 'blocked' ? 422 : 502,
+    issue ? { ...result, issue, reference } : { ...result, reference }, reference);
+}
+
+function emitAnalysisHandlerEvent(logger: LocalEvalsWorkbenchLoggerPort, event: Parameters<AnalyzeFailedAssertionDependencies['logger']['info']>[0], reference: string): void {
+  try { logger[event.outcome === 'failed' ? 'error' : event.outcome === 'blocked' ? 'warn' : 'info']({ ...event, reference }); }
+  catch { /* Diagnostic sink is noncritical. */ }
+}
+
+function emitAnalysisBoundaryIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof invalidAnalysisIssue>): void {
+  try { logger.warn({ event: 'local_evals_workbench_analysis_boundary_issue', stage: 'analysis', outcome: issue.outcome,
+    reason: issue.category === 'invalid-request' ? 'invalid-request' : 'unknown', reference: issue.reference }); }
+  catch { /* Diagnostic sink is noncritical. */ }
 }
 
 async function handleRepairProposalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: DraftEvalRepairProposalDependencies): Promise<void> {

@@ -68,6 +68,14 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
       return { event: event.event, stage: event.stage === 'status' ? 'status' : 'history',
         outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
         reason: knownReadReasons.has(event.reason) ? event.reason : 'unknown', reference: safeReference(event.reference) };
+    case 'failure_analysis_requested':
+      return { event: event.event, stage: 'analysis', outcome: 'started', reference: safeReference(event.reference) };
+    case 'failure_analysis_finished':
+      return { event: event.event, stage: 'analysis', outcome: event.outcome === 'completed' ? 'completed' : event.outcome === 'blocked' ? 'blocked' : 'failed',
+        reason: knownAnalysisReasons.has(event.reason) ? event.reason : 'unknown', reference: safeReference(event.reference), durationMs: safeCount(event.durationMs) };
+    case 'local_evals_workbench_analysis_boundary_issue':
+      return { event: event.event, stage: 'analysis', outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
+        reason: event.reason === 'invalid-request' ? 'invalid-request' : 'unknown', reference: safeReference(event.reference) };
     case 'local_evals_workbench_request_started':
     case 'local_evals_workbench_request_completed':
       return { event: event.event, stage: 'preview', outcome: event.outcome, reference: safeReference(event.reference) };
@@ -121,6 +129,11 @@ const knownStartReasons: ReadonlySet<string> = new Set<string>([
 const knownReadReasons: ReadonlySet<string> = new Set(['invalid-request', 'invalid-input', 'unsafe-path', 'not-ignored',
   'tracked-artifacts', 'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',
   'invalid-transition', 'owner-unknown', 'index-stale', 'unknown']);
+const knownAnalysisReasons: ReadonlySet<string> = new Set([
+  'analysis-ready', 'missing-openai-api-key', 'invalid-scope', 'missing-artifact', 'missing-cell',
+  'missing-assertion', 'non-failed-assertion', 'provider-authorization', 'provider-rate-limit',
+  'provider-timeout', 'provider-unavailable', 'invalid-llm-response', 'llm-failure', 'unknown',
+]);
 
 function safeStartReason(reason: string): string {
   return knownStartReasons.has(reason) ? reason : 'unknown';
