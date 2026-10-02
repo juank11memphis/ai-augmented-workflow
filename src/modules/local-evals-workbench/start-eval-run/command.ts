@@ -2,6 +2,8 @@ import type { RunSelectionCommand } from '../run-configuration.js';
 
 /** The review snapshot is compared with a fresh server-side estimate before queuing. */
 export type StartEvalRunCommand = RunSelectionCommand & {
+  /** Accepted opaque diagnostic reference; never persisted with run evidence. */
+  readonly reference?: string;
   readonly review: {
     readonly selectedCaseIds: readonly string[];
     readonly targetCalls: number;

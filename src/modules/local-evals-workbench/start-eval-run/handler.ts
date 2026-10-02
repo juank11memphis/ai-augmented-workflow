@@ -5,13 +5,33 @@ import { compatibleDescription, hasRubric, requiredCapabilities } from '../runti
 import { logicalId } from '../run-history/validation.js';
 import { MAX_RUN_REPEATS } from '../run-configuration.js';
 
+const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
+const SAFE_REASONS = new Set([
+  'suite-unavailable', 'runner-unavailable', 'runner-absent', 'runner-start-failed', 'runner-exited',
+  'runner-protocol-invalid', 'runner-invalid', 'runner-timeout', 'environment-missing',
+  'required-setting-rejected', 'runner-request-too-large', 'environment-undeclared',
+  'capability-unsupported', 'model-unavailable', 'judge-unavailable', 'case-unavailable',
+  'repeats-invalid', 'artifact-unsafe', 'artifact-not-ignored', 'artifact-tracked',
+  'artifact-git-unavailable', 'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe',
+  'invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable',
+  'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',
+  'invalid-transition', 'owner-unknown', 'index-stale', 'review-stale', 'schedule-failed',
+]);
+
 export async function startEvalRun(command: StartEvalRunCommand, ports: StartEvalRunDependencies): Promise<StartEvalRunResult> {
   const began = Date.now();
-  const log = (event: string, reason?: string): void => {
-    try { ports.logger?.record({ event, suiteId: command.suiteId, reason, durationMs: Date.now() - began }); } catch { /* Noncritical sink. */ }
+  const reference = typeof command.reference === 'string' && SAFE_REFERENCE.test(command.reference) ? command.reference : undefined;
+  const log = (outcome: 'blocked' | 'queued', reason?: string, runId?: string): void => {
+    try {
+      ports.logger?.record({ event: outcome === 'queued' ? 'eval_run_queued' : 'eval_run_start_blocked',
+        stage: 'run-start', outcome, ...(reason ? { reason: SAFE_REASONS.has(reason) ? reason as Extract<StartEvalRunResult, { status: 'blocked' }>['reason'] : 'unavailable' } : {}),
+        ...(reference ? { reference } : {}), ...(runId && SAFE_RUN_ID.test(runId) ? { runId } : {}),
+        durationMs: Math.max(0, Date.now() - began) });
+    } catch { /* Noncritical sink. */ }
   };
   const blocked = (reason: Extract<StartEvalRunResult, { status: 'blocked' }>['reason']): StartEvalRunResult => {
-    log('eval_run_start_blocked', reason);
+    log('blocked', reason);
     return { status: 'blocked', reason };
   };
   try {
@@ -42,12 +62,12 @@ export async function startEvalRun(command: StartEvalRunCommand, ports: StartEva
     if (JSON.stringify(snapshot) !== JSON.stringify(command.review)) return blocked('review-stale');
     const queued = await ports.store.create({ suiteId: suite.id, caseIds: snapshot.selectedCaseIds, scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: command.model, judgeModel: judgeModel ?? null, repeats });
     if (queued.status === 'blocked') return blocked(queued.reason);
-    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model: command.model, judgeModel: judgeModel ?? null, repeats }); }
+    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model: command.model, judgeModel: judgeModel ?? null, repeats, ...(reference ? { reference } : {}) }); }
     catch {
       await ports.store.finalize(suite.id, queued.value.runId, 'error', ['schedule-failed']);
       return blocked('schedule-failed');
     }
-    log('eval_run_queued');
+    log('queued', undefined, queued.value.runId);
     return { status: 'queued', suiteId: suite.id, runId: queued.value.runId };
   } catch { return blocked('unavailable'); }
 }

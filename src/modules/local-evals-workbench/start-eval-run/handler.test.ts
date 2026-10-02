@@ -16,6 +16,9 @@ const command: StartEvalRunCommand = { suiteId: 'suite', model: 'fake', scope: {
 
 function harness() {
   const events: string[] = [];
+  const diagnostics: unknown[] = [];
+  const schedules: unknown[] = [];
+  const finalized: unknown[] = [];
   let next = 0;
   const ports: StartEvalRunDependencies = {
     suites: { async load() { events.push('load'); return suite; } },
@@ -26,10 +29,12 @@ function harness() {
     inputs: { async resolve(cases) { events.push('resolve'); return { status: 'ready', value: cases }; } },
     store: { async create() { events.push('create'); return { status: 'ok', value: { ...queued(), runId: 'run-' + ++next } }; },
       async start() { return { status: 'blocked', reason: 'unavailable' }; }, async append() { return { status: 'blocked', reason: 'unavailable' }; },
-      async finalize() { events.push('finalize'); return { status: 'ok', value: queued() }; } },
-    scheduler: { schedule() { events.push('schedule'); } },
+      async finalize(suiteId, runId, state, reasons) { events.push('finalize'); finalized.push({ suiteId, runId, state, reasons });
+        return { status: 'ok', value: queued() }; } },
+    scheduler: { schedule(selection) { events.push('schedule'); schedules.push(selection); } },
+    logger: { record(event) { diagnostics.push(event); } },
   };
-  return { ports, events };
+  return { ports, events, diagnostics, schedules, finalized };
 }
 
 test('freshly validates and queues before scheduling independent run identities', async () => {
@@ -40,12 +45,17 @@ test('freshly validates and queues before scheduling independent run identities'
   if (first.status !== 'queued' || second.status !== 'queued') return;
   assert.notEqual(first.runId, second.runId);
   assert.deepEqual(h.events.slice(0, 7), ['load', 'describe', 'readiness', 'resolve', 'estimate', 'create', 'schedule']);
+  assert.equal(h.events.filter(event => event === 'create').length, 2);
+  assert.equal(h.events.filter(event => event === 'schedule').length, 2);
+  assert.deepEqual(h.diagnostics.map(event => (event as { outcome: string }).outcome), ['queued', 'queued']);
 });
 
 test('rejects stale review and unsupported checks before creating a run', async () => {
   const stale = harness();
   assert.deepEqual(await startEvalRun({ ...command, review: { ...review, totalCalls: 2 } }, stale.ports), { status: 'blocked', reason: 'review-stale' });
   assert.ok(!stale.events.includes('create'));
+  assert.ok(!stale.events.includes('schedule'));
+  assert.deepEqual(stale.diagnostics.map(event => (event as { reason: string }).reason), ['review-stale']);
   const invalid = harness();
   assert.deepEqual(await startEvalRun({ ...command, repeats: 21 }, invalid.ports), { status: 'blocked', reason: 'input-unsafe' });
   assert.deepEqual(invalid.events, []);
@@ -76,4 +86,37 @@ test('scheduler failure marks the queued run error, not started', async () => {
   h.ports.scheduler.schedule = () => { throw new Error('synthetic'); };
   assert.deepEqual(await startEvalRun(command, h.ports), { status: 'blocked', reason: 'schedule-failed' });
   assert.deepEqual(h.events.slice(-2), ['create', 'finalize']);
+  assert.deepEqual(h.finalized, [{ suiteId: 'suite', runId: 'run-1', state: 'error', reasons: ['schedule-failed'] }]);
+  assert.equal(h.events.filter(event => event === 'schedule').length, 0);
+  assert.deepEqual(h.diagnostics.map(event => (event as { outcome: string; reason: string }).outcome + ':' + (event as { reason: string }).reason), ['blocked:schedule-failed']);
+});
+
+test('accepted reference reaches generated run handoff and diagnostics omit private inputs', async () => {
+  const h = harness();
+  const secret = 'SYNTHETIC_SECRET_DO_NOT_LOG';
+  const reference = '123e4567-e89b-42d3-a456-426614174000';
+  h.ports.suites.load = async () => ({ ...suite, name: secret, testCases: [{ ...one, name: secret }] });
+  const result = await startEvalRun({ ...command, reference }, h.ports);
+  assert.deepEqual(result, { status: 'queued', suiteId: 'suite', runId: 'run-1' });
+  assert.equal(h.schedules.length, 1);
+  assert.deepEqual(h.schedules.map(selection => ({ reference: (selection as { reference: string }).reference,
+    runId: (selection as { runId: string }).runId })), [{ reference, runId: 'run-1' }]);
+  assert.deepEqual(h.diagnostics, [{ event: 'eval_run_queued', stage: 'run-start', outcome: 'queued', reference,
+    runId: 'run-1', durationMs: (h.diagnostics[0] as { durationMs: number }).durationMs }]);
+  assert.ok(!JSON.stringify(h.diagnostics).includes(secret));
+  assert.ok(!JSON.stringify(h.diagnostics).includes('suiteId'));
+  assert.ok(!JSON.stringify(h.diagnostics).includes('testCases'));
+});
+
+test('unsafe reference and thrown secret never enter events; logging failures do not change outcome', async () => {
+  const secret = 'SYNTHETIC_SECRET_DO_NOT_LOG';
+  const blocked = harness();
+  blocked.ports.runner.describe = async () => { throw new Error(secret); };
+  assert.deepEqual(await startEvalRun({ ...command, reference: secret }, blocked.ports), { status: 'blocked', reason: 'unavailable' });
+  assert.equal(blocked.events.filter(event => event === 'schedule').length, 0);
+  assert.ok(!JSON.stringify(blocked.diagnostics).includes(secret));
+  const queued = harness();
+  assert.deepEqual(await startEvalRun(command, { ...queued.ports, logger: { record() { throw new Error(secret); } } }),
+    { status: 'queued', suiteId: 'suite', runId: 'run-1' });
+  assert.deepEqual(queued.events.slice(-2), ['create', 'schedule']);
 });

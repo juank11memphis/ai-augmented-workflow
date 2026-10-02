@@ -16,6 +16,8 @@ import { resolveSuiteInputs } from './resolved-suite-inputs.js';
 import { createRunHistory } from './run-history/composition.js';
 import { executeEvalRun } from './execute-eval-run/index.js';
 import type { StartEvalRunDependencies } from './start-eval-run/index.js';
+import type { PreviewLoggerPort } from './runtime-ports.js';
+import { logicalId } from './run-history/validation.js';
 import type { GetEvalRunCommand, GetEvalRunResult } from './get-eval-run/index.js';
 import type { ListEvalRunsCommand, ListEvalRunsResult } from './list-eval-runs/index.js';
 import { ProjectRunnerExecuteAdapter } from './runner-process/execute-adapter.js';
@@ -62,12 +64,26 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
     applyRepair: { proposalReader: new RepairProposalStoreReadinessAdapter(proposalStore), safety: fileMutator, workflowReadiness: new SibuManagedWorkflowReadinessAdapter(), mutator: fileMutator, logger },
     describe: { suites, runner, logger: previewLogger },
     preview: { suites, runner, artifacts: readiness, inputs, logger: previewLogger },
-    start: { suites, runner, artifacts: readiness, inputs, store: history.store, logger: previewLogger,
+    start: { suites, runner, artifacts: readiness, inputs, store: history.store,
+      logger: { record: event => { try { console.info(JSON.stringify(event)); } catch { /* Noncritical sink. */ } } },
       scheduler: { schedule(selection) {
         queueMicrotask(() => {
+          const backgroundLogger: PreviewLoggerPort = { record(event) {
+            try {
+              const started = event.event === 'eval_run_started';
+              console.info(JSON.stringify({ event: started ? 'eval_run_started' : 'eval_run_finished', stage: 'execution',
+                outcome: started ? 'started' : event.reason === 'completed' ? 'completed' : 'failed',
+                ...(!started && ['completed', 'error', 'interrupted'].includes(event.reason ?? '') ? { reason: event.reason } : {}),
+                ...(selection.reference ? { reference: selection.reference } : {}),
+                ...(logicalId(selection.runId) ? { runId: selection.runId } : {}),
+                ...(event.durationMs === undefined ? {} : { durationMs: event.durationMs }) }));
+            } catch { /* Noncritical sink. */ }
+          } };
           void executeEvalRun(selection, { runner: executor, store: history.store,
-            evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now, logger: previewLogger })
-            .catch(() => { try { previewLogger.record({ event: 'eval_run_background_failed', suiteId: selection.suite.id, reason: 'unavailable' }); } catch { /* Noncritical sink. */ } });
+            evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now, logger: backgroundLogger })
+            .catch(() => { try { console.info(JSON.stringify({ event: 'eval_run_background_failed', stage: 'execution', outcome: 'failed',
+              reason: 'unavailable', ...(selection.reference ? { reference: selection.reference } : {}),
+              ...(logicalId(selection.runId) ? { runId: selection.runId } : {}) })); } catch { /* Noncritical sink. */ } });
         });
       } },
     },
