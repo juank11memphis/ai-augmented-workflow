@@ -197,6 +197,19 @@ export class FakeLocalHttpServer {
     return { statusCode, headers, body };
   }
 
+  async renderGetResponse(url: string, reference?: string): Promise<FakeResponse> {
+    assert.ok(this.handler);
+    let statusCode = 0;
+    let headers: Record<string, string> = {};
+    let body = '';
+    this.handler({ url, method: 'GET', ...(reference ? { headers: { 'x-sibu-request-reference': reference } } : {}) }, {
+      writeHead: (status, values) => { statusCode = status; headers = values; },
+      end: value => { body = value; },
+    });
+    await new Promise(resolve => setImmediate(resolve));
+    return { statusCode, headers, body };
+  }
+
 
   async renderJsonResponse(url: string, payload: unknown): Promise<FakeResponse> {
     return this.renderRawResponse(url, JSON.stringify(payload));

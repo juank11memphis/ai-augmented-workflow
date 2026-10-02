@@ -17,6 +17,7 @@ import { createRunHistory } from './run-history/composition.js';
 import { executeEvalRun } from './execute-eval-run/index.js';
 import type { StartEvalRunDependencies } from './start-eval-run/index.js';
 import type { PreviewLoggerPort } from './runtime-ports.js';
+import type { ExecutionDiagnostic, ExecutionLoggerPort } from './execute-eval-run/ports.js';
 import { logicalId } from './run-history/validation.js';
 import type { GetEvalRunCommand, GetEvalRunResult } from './get-eval-run/index.js';
 import type { ListEvalRunsCommand, ListEvalRunsResult } from './list-eval-runs/index.js';
@@ -68,15 +69,9 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
       logger: { record: event => { try { console.info(JSON.stringify(event)); } catch { /* Noncritical sink. */ } } },
       scheduler: { schedule(selection) {
         queueMicrotask(() => {
-          const backgroundLogger: PreviewLoggerPort = { record(event) {
+          const backgroundLogger: ExecutionLoggerPort = { record(event) {
             try {
-              const started = event.event === 'eval_run_started';
-              console.info(JSON.stringify({ event: started ? 'eval_run_started' : 'eval_run_finished', stage: 'execution',
-                outcome: started ? 'started' : event.reason === 'completed' ? 'completed' : 'failed',
-                ...(!started && ['completed', 'error', 'interrupted'].includes(event.reason ?? '') ? { reason: event.reason } : {}),
-                ...(selection.reference ? { reference: selection.reference } : {}),
-                ...(logicalId(selection.runId) ? { runId: selection.runId } : {}),
-                ...(event.durationMs === undefined ? {} : { durationMs: event.durationMs }) }));
+              console.info(JSON.stringify(safeExecutionEvent(event, selection.reference, selection.runId)));
             } catch { /* Noncritical sink. */ }
           } };
           void executeEvalRun(selection, { runner: executor, store: history.store,
@@ -90,4 +85,16 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
     get: command => history.get(command),
     list: command => history.list(command),
   };
+}
+
+export function safeExecutionEvent(event: ExecutionDiagnostic, reference: string | undefined, runId: string): Record<string, string | number> {
+  const safeReasons = new Set(['completed', 'error', 'interrupted', 'runner-timeout', 'runner-protocol-invalid',
+    'runner-exited', 'runner-start-failed', 'runner-absent', 'runner-unavailable', 'unavailable',
+    'required-setting-rejected', 'runner-request-too-large', 'environment-missing', 'environment-undeclared',
+    'runner-limit', 'evidence-limit-exceeded', 'invalid-transition', 'limit-exceeded', 'corrupt']);
+  return { event: event.event, stage: 'execution', outcome: event.outcome,
+    ...(event.reason && safeReasons.has(event.reason) ? { reason: event.reason } : {}),
+    ...(reference && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(reference) ? { reference } : {}),
+    ...(logicalId(runId) ? { runId } : {}),
+    ...(Number.isFinite(event.durationMs) && event.durationMs >= 0 ? { durationMs: event.durationMs } : {}) };
 }

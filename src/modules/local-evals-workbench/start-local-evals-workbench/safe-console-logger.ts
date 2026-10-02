@@ -64,6 +64,10 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
     case 'local_evals_workbench_run_start_response_failed':
       return { event: event.event, stage: 'run-start', outcome: 'uncertain', reason: 'response-write-failed',
         reference: safeReference(event.reference), runId: safeRunId(event.runId) };
+    case 'local_evals_workbench_read_issue':
+      return { event: event.event, stage: event.stage === 'status' ? 'status' : 'history',
+        outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
+        reason: knownReadReasons.has(event.reason) ? event.reason : 'unknown', reference: safeReference(event.reference) };
     case 'local_evals_workbench_request_started':
     case 'local_evals_workbench_request_completed':
       return { event: event.event, stage: 'preview', outcome: event.outcome, reference: safeReference(event.reference) };
@@ -114,6 +118,9 @@ const knownStartReasons: ReadonlySet<string> = new Set<string>([
   'limit-exceeded', 'invalid-transition', 'owner-unknown', 'index-stale',
   'review-stale', 'schedule-failed', 'reference-reused', 'unknown',
 ]);
+const knownReadReasons: ReadonlySet<string> = new Set(['invalid-request', 'invalid-input', 'unsafe-path', 'not-ignored',
+  'tracked-artifacts', 'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',
+  'invalid-transition', 'owner-unknown', 'index-stale', 'unknown']);
 
 function safeStartReason(reason: string): string {
   return knownStartReasons.has(reason) ? reason : 'unknown';

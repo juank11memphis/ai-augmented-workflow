@@ -4,6 +4,7 @@ import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-sui
 import type { DescribeEvalSuiteRuntimeResult } from '../describe-eval-suite-runtime/result.js';
 import type { PreviewEvalRunResult, PreviewStage } from '../preview-eval-run/result.js';
 import type { StartEvalRunResult } from '../start-eval-run/result.js';
+import type { Reason, RunState } from '../run-history/contracts.js';
 import { isSafeEnvironmentName, type RuntimeBlockReason } from '../runtime-description.js';
 
 type BlockedDiscovery = Extract<EvalSuiteDiscoveryResult, { status: 'blocked' }>;
@@ -56,6 +57,52 @@ export type PublicStartIssue = {
   readonly recoveryAction: 'edit-suites' | 'retry' | 'report';
   readonly reference: string;
 };
+export type PublicReadIssue = {
+  readonly stage: 'status' | 'history';
+  readonly outcome: 'blocked' | 'failed';
+  readonly category: Reason | 'invalid-request' | 'unknown';
+  readonly title: string;
+  readonly explanation: string;
+  readonly nextStep: string;
+  readonly recoveryAction: 'edit-suites' | 'retry' | 'report';
+  readonly reference: string;
+};
+export type PublicExecutionIssue = Omit<PublicReadIssue, 'stage' | 'outcome' | 'category'> & {
+  readonly stage: 'execution';
+  readonly outcome: 'blocked' | 'failed' | 'partial' | 'interrupted';
+  readonly category: 'assertion-failed' | 'incomplete' | 'interrupted';
+};
+const readReasons = new Set<Reason>(['invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts',
+  'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',
+  'invalid-transition', 'owner-unknown', 'index-stale']);
+
+export function readIssue(stage: 'status' | 'history', reason: Reason | 'invalid-request' | 'unknown', reference: string): PublicReadIssue {
+  if (reason !== 'invalid-request' && reason !== 'unknown' && !readReasons.has(reason)) reason = 'unknown';
+  const label = stage === 'status' ? 'Run status' : 'History';
+  if (reason === 'invalid-request' || reason === 'invalid-input') return { stage, outcome: 'blocked', category: 'invalid-request',
+    ...copy(`${label} request invalid`, `Sibu could not read this ${stage} request.`, 'Correct the request and retry.', 'retry'), reference };
+  if (reason === 'not-found') return { stage, outcome: 'blocked', category: reason,
+    ...copy(`${label} not found`, `Sibu could not find the requested ${stage} record.`, 'Check History and retry.', 'retry'), reference };
+  if (reason === 'corrupt') return { stage, outcome: 'blocked', category: reason,
+    ...copy(`${label} unreadable`, `Sibu could not safely read the ${stage} record.`, 'Keep existing results and report the problem.', 'report'), reference };
+  if (reason === 'unknown') return { stage, outcome: 'failed', category: reason,
+    ...copy(`${label} read failed`, `Sibu could not finish reading ${stage}. Cause unknown.`, 'Keep existing results and retry the read.', 'retry'), reference };
+  return { stage, outcome: 'blocked', category: reason,
+    ...copy(`${label} unavailable`, `Sibu could not read ${stage} right now. The run outcome has not changed.`, 'Keep existing results and retry the read.', 'retry'), reference };
+}
+
+export function executionIssue(state: RunState, outcome: 'passed' | 'failed' | 'incomplete', reference: string): PublicExecutionIssue | undefined {
+  if (state === 'completed' && outcome === 'passed') return undefined;
+  if (state === 'queued' || state === 'running') return undefined;
+  if (state === 'completed' && outcome === 'failed') return { stage: 'execution', outcome: 'failed', category: 'assertion-failed',
+    ...copy('Run checks failed', 'The run completed with a failed check.', 'Inspect saved result evidence.', 'report'), reference };
+  if (state === 'interrupted') return { stage: 'execution', outcome: 'interrupted', category: 'interrupted',
+    ...copy('Run interrupted', 'The run stopped before completion.', 'Inspect saved results and the runner.', 'report'), reference };
+  if (state === 'partial') return { stage: 'execution', outcome: 'partial', category: 'incomplete',
+    ...copy('Run partially completed', 'Some result evidence is incomplete.', 'Inspect saved results and the runner.', 'report'), reference };
+  return { stage: 'execution', outcome: state === 'error' ? 'failed' : 'blocked', category: 'incomplete',
+    ...copy('Run could not complete', 'The run stopped without a complete result.', 'Inspect saved results and the runner.', 'report'), reference };
+}
 const copy = (title: string, explanation: string, nextStep: string, recoveryAction: ModelCheckCopy['recoveryAction']): ModelCheckCopy =>
   ({ title, explanation, nextStep, recoveryAction });
 

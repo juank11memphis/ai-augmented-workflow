@@ -91,3 +91,17 @@ it('allows only safe run-start correlation fields and contains sink failures', (
     stage: 'run-start', outcome: 'queued', reference: '123e4567-e89b-42d3-a456-426614174000', runId: 'run-1' })); }
   finally { console.error = original; }
 });
+
+it('allowlists read issue stage, reason, reference, and drops private extras', () => {
+  const messages: string[] = [];
+  const original = console.error;
+  console.error = message => messages.push(String(message));
+  try {
+    new SafeConsoleLocalEvalsLogger().warn(Object.assign({ event: 'local_evals_workbench_read_issue' as const,
+      stage: 'history' as const, outcome: 'blocked' as const, reason: 'corrupt' as const,
+      reference: '123e4567-e89b-42d3-a456-426614174000' }, { artifact: 'sk-secret private artifact' }));
+  } finally { console.error = original; }
+  assert.deepEqual(JSON.parse(messages[0] ?? '{}'), { level: 'warn', event: 'local_evals_workbench_read_issue',
+    stage: 'history', outcome: 'blocked', reason: 'corrupt', reference: '123e4567-e89b-42d3-a456-426614174000' });
+  assert.doesNotMatch(messages.join(' '), /sk-secret|private artifact/);
+});
