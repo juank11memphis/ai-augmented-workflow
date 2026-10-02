@@ -13,7 +13,7 @@ const selection: ExecutionSelection = { runId: 'run', model: 'synthetic',
     target: { id: 'target', kind: 'integration', path: 'src/target.mjs' }, coverage: { categories: [], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases: [testCase] }, cases: [testCase] };
 
-function harness(events: readonly ExecutionEvent[], outcome: 'completed' | 'error' | 'interrupted' | 'blocked' = 'completed') {
+function harness(events: readonly ExecutionEvent[], outcome: 'completed' | 'error' | 'interrupted' | 'blocked' = 'completed', reason?: string) {
   const writes: string[] = [];
   const attempts: Attempt[] = [];
   const manifest = queued();
@@ -28,7 +28,7 @@ function harness(events: readonly ExecutionEvent[], outcome: 'completed' | 'erro
   const runner = { async execute(_command: ExecutionSelection, consume: (event: ExecutionEvent) => Promise<void>) {
     writes.push('runner');
     for (const event of events) await consume(event);
-    return { status: outcome };
+    return { status: outcome, ...(reason ? { reason } : {}) };
   } };
   const evaluator = { evaluate: (_assertions: unknown, snapshot: { output: string; turns: readonly { id: string }[] }) => [{ id: 'check', kind: 'assertion' as const,
     outcome: snapshot.output.includes('actual') ? 'passed' as const : 'failed' as const, score: null,
@@ -173,4 +173,100 @@ test('validated grader progress survives a later invalid or missing result', asy
     assert.equal(h.attempts.at(-1)?.outcome, 'incomplete');
     assert.deepEqual(h.attempts.at(-1)?.assertions.map(item => item.id), ['first']);
   }
+});
+
+test('execution terminal states preserve assertion outcomes separately from runner failures', async () => {
+  const complete: ExecutionEvent[] = [{ type: 'case-started', caseId: 'case' },
+    { type: 'turn-completed', caseId: 'case', turnId: 't', output: 'wrong' },
+    { type: 'case-completed', caseId: 'case', status: 'completed' }, { type: 'run-completed', status: 'completed' }];
+  for (const [name, events, runnerStatus, reason, expectedState, expectedAttempt] of [
+    ['completed with failed assertion', complete, 'completed', undefined, 'completed', 'failed'],
+    ['blocked before attempt', [], 'blocked', 'runner-absent', 'blocked', undefined],
+    ['partial after completed attempt', complete.slice(0, -1), 'error', 'runner-exited', 'partial', 'failed'],
+    ['interrupted before attempt', [], 'interrupted', undefined, 'interrupted', undefined],
+    ['runner timeout before attempt', [], 'error', 'runner-timeout', 'error', undefined],
+    ['invalid protocol before attempt', [], 'error', 'runner-protocol-invalid', 'error', undefined],
+    ['startup failure before attempt', [], 'error', 'runner-start-failed', 'error', undefined],
+  ] as const) {
+    const h = harness(events, runnerStatus, reason);
+    const logs: { event: string; outcome: string; reason?: string }[] = [];
+    const result = await executeEvalRun(selection, { ...h, clock: () => 100,
+      logger: { record: event => { logs.push(event); } } });
+    assert.equal(result.status, expectedState, name);
+    assert.equal(result.reason, reason, name);
+    assert.equal(h.writes.at(-1), `finalize:${expectedState}`, name);
+    assert.equal(h.attempts.at(-1)?.outcome, expectedAttempt, name);
+    assert.equal(h.attempts.at(-1)?.version, expectedAttempt ? 1 : undefined, name);
+    assert.deepEqual(h.finalDiagnostics, reason ? [reason] : [], name);
+    assert.deepEqual(logs.map(event => event.event), ['eval_run_started', 'eval_run_finished'], name);
+    assert.equal(logs[1]?.outcome, expectedState === 'error' ? 'failed' : expectedState, name);
+    assert.equal(logs[1]?.reason, reason, name);
+  }
+});
+
+test('safe execution transitions correlate queued reference and run ID without leaking runner evidence', async () => {
+  const secret = 'SYNTHETIC_PRIVATE_MARKER';
+  const reference = '123e4567-e89b-42d3-a456-426614174000';
+  const h = harness([{ type: 'case-started', caseId: 'case' },
+    { type: 'turn-completed', caseId: 'case', turnId: 't', output: secret },
+    { type: 'tool-recorded', caseId: 'case', attempt: 1, toolId: 'tool', turnId: 't', position: 0,
+      name: 'lookup', arguments: secret, result: secret, outcome: 'error' }], 'error', 'runner-timeout');
+  const logs: unknown[] = [];
+  const result = await executeEvalRun({ ...selection, reference }, { ...h, clock: () => 100,
+    logger: { record: event => { logs.push(event); } } });
+  assert.deepEqual(result, { status: 'error', runId: 'run', reason: 'runner-timeout' });
+  assert.equal(h.attempts.at(-1)?.version, 1);
+  assert.equal(h.attempts.at(-1)?.outcome, 'incomplete');
+  assert.equal(h.attempts.at(-1)?.output, secret);
+  assert.equal(h.attempts.at(-1)?.tools[0]?.result, secret);
+  assert.deepEqual(logs, [
+    { event: 'eval_run_started', stage: 'execution', outcome: 'started', reference, runId: 'run', durationMs: 0 },
+    { event: 'eval_run_finished', stage: 'execution', outcome: 'failed', reason: 'runner-timeout', reference, runId: 'run', durationMs: 0 },
+  ]);
+  assert.doesNotMatch(JSON.stringify(logs), /SYNTHETIC_PRIVATE_MARKER|stderr|output|tools/);
+  const throwing = harness([], 'error', 'runner-protocol-invalid');
+  const persisted = await executeEvalRun({ ...selection, reference }, { ...throwing, clock: () => 100,
+    logger: { record() { throw new Error(secret); } } });
+  assert.deepEqual(persisted, { status: 'error', runId: 'run', reason: 'runner-protocol-invalid' });
+  assert.deepEqual(throwing.finalDiagnostics, ['runner-protocol-invalid']);
+});
+
+test('private stderr-like reasons and thrown errors never enter execution events', async () => {
+  const secret = 'SYNTHETIC_STDERR_SECRET';
+  const logs: unknown[] = [];
+  const logger = { record: (event: unknown) => { logs.push(event); } };
+  const failed = harness([], 'error', secret);
+  assert.deepEqual(await executeEvalRun(selection, { ...failed, clock: () => 100, logger }),
+    { status: 'error', runId: 'run', reason: 'unavailable' });
+  assert.deepEqual(failed.finalDiagnostics, ['unavailable']);
+  assert.deepEqual(logs.at(-1), { event: 'eval_run_finished', stage: 'execution', outcome: 'failed',
+    reason: 'unavailable', runId: 'run', durationMs: 0 });
+  assert.doesNotMatch(JSON.stringify(logs), /SYNTHETIC_STDERR_SECRET/);
+  const thrown = harness([]);
+  thrown.runner.execute = async () => { throw new Error(secret); };
+  const result = await executeEvalRun(selection, { ...thrown, clock: () => 100, logger });
+  assert.deepEqual(result, { status: 'error', runId: 'run', reason: 'runner-protocol-invalid' });
+  assert.doesNotMatch(JSON.stringify(logs), /SYNTHETIC_STDERR_SECRET/);
+});
+
+test('version-one summary and saved attempt evidence remain unchanged across finalization', async () => {
+  const h = harness([{ type: 'case-started', caseId: 'case' },
+    { type: 'turn-completed', caseId: 'case', turnId: 't', output: 'actual' },
+    { type: 'case-completed', caseId: 'case', status: 'completed' },
+    { type: 'run-completed', status: 'completed' }]);
+  const summary = queued();
+  let savedBefore = '';
+  h.store.finalize = async (_suite, _run, state, diagnostics) => {
+    savedBefore = JSON.stringify(h.attempts);
+    assert.equal(summary.version, 1);
+    assert.deepEqual(Object.keys(summary).includes('diagnosticIssue'), false);
+    assert.equal(state, 'completed');
+    assert.deepEqual(diagnostics, []);
+    return { status: 'ok', value: { ...summary, state, diagnostics: [], finishedAt: 100 } };
+  };
+  const result = await executeEvalRun(selection, { ...h, clock: () => 100 });
+  assert.equal(result.status, 'completed');
+  assert.equal(JSON.stringify(h.attempts), savedBefore);
+  assert.deepEqual(h.attempts.map(attempt => attempt.version), [1, 1, 1]);
+  assert.equal(h.attempts.at(-1)?.assertions[0]?.outcome, 'passed');
 });

@@ -7,6 +7,8 @@ export type ExecutionSelection = {
   readonly model: string;
   readonly judgeModel?: string | null;
   readonly repeats?: number;
+  /** Accepted request reference propagated from the queued start, never persisted. */
+  readonly reference?: string;
 };
 export type ExecutionEvent =
   | { readonly type: 'run-started' }

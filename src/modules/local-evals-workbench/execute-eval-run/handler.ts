@@ -8,6 +8,12 @@ import { boundedJson, attempt as validAttempt } from '../run-history/validation.
 import { LIMITS } from '../run-history/limits.js';
 
 const MAX_DIAGNOSTICS = 20;
+const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
+const SAFE_REASONS = new Set(['runner-absent', 'runner-unavailable', 'runner-start-failed', 'runner-exited',
+  'runner-protocol-invalid', 'runner-timeout', 'runner-limit', 'runner-request-too-large',
+  'required-setting-rejected', 'environment-missing', 'environment-undeclared', 'evidence-limit-exceeded',
+  'unavailable', 'invalid-transition', 'limit-exceeded', 'corrupt']);
 class PersistenceStopped extends Error {}
 class EvidenceLimitStopped extends Error {}
 type Current = { caseId: string; number: number; began: number; turns: TurnEvidence[]; tools: ToolEvidence[];
@@ -17,12 +23,17 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
   const { suite, runId, cases } = command;
   const repeats = command.repeats ?? 1;
   const began = ports.clock();
-  const log = (event: string, reason?: string): void => {
-    try { ports.logger?.record({ event, suiteId: suite.id, reason, durationMs: ports.clock() - began }); } catch { /* Noncritical sink. */ }
+  const log = (event: 'eval_run_started' | 'eval_run_finished' | 'eval_run_start_blocked' | 'eval_run_storage_failed',
+    outcome: 'started' | 'completed' | 'blocked' | 'partial' | 'interrupted' | 'failed', reason?: string): void => {
+    try { ports.logger?.record({ event, stage: 'execution', outcome,
+      ...(reason ? { reason: SAFE_REASONS.has(reason) ? reason : 'unavailable' } : {}),
+      ...(typeof command.reference === 'string' && SAFE_REFERENCE.test(command.reference) ? { reference: command.reference } : {}),
+      ...(SAFE_RUN_ID.test(runId) ? { runId } : {}), durationMs: Math.max(0, ports.clock() - began) });
+    } catch { /* Noncritical sink. */ }
   };
   const started = await ports.store.start(suite.id, runId);
-  if (started.status === 'blocked') return { status: 'blocked', runId, reason: started.reason };
-  log('eval_run_started');
+  if (started.status === 'blocked') { log('eval_run_start_blocked', 'blocked', started.reason); return { status: 'blocked', runId, reason: started.reason }; }
+  log('eval_run_started', 'started');
   let current: Current | undefined;
   const runDiagnostics: string[] = [];
   const addDiagnostic = (items: string[], code: string): void => { if (items.length < MAX_DIAGNOSTICS) items.push(code); };
@@ -85,7 +96,6 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         completed++;
         current = undefined;
         if (attemptNumber === repeats) { caseIndex++; attemptNumber = 1; } else attemptNumber++;
-        log('eval_case_attempt_completed');
       } else {
         addDiagnostic(current.diagnostics, 'case-error');
         await persist(evidence('incomplete'));
@@ -104,19 +114,20 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       : outcome.status === 'interrupted' ? 'interrupted'
       : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length * repeats ? 'completed'
       : completed ? 'partial' : 'error';
-    if (outcome.reason) addDiagnostic(runDiagnostics, outcome.reason);
+    const reason = outcome.reason ? SAFE_REASONS.has(outcome.reason) ? outcome.reason : 'unavailable' : undefined;
+    if (reason) addDiagnostic(runDiagnostics, reason);
     const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics);
-    if (finished.status === 'blocked') return { status: 'storage-failed', runId, reason: finished.reason };
-    log('eval_run_finished', status);
-    return { status, runId, ...(outcome.reason ? { reason: outcome.reason } : {}) };
+    if (finished.status === 'blocked') { log('eval_run_storage_failed', 'failed', finished.reason); return { status: 'storage-failed', runId, reason: finished.reason }; }
+    log('eval_run_finished', status === 'error' ? 'failed' : status, reason);
+    return { status, runId, ...(reason ? { reason } : {}) };
   } catch (error) {
-    if (error instanceof PersistenceStopped) return { status: 'storage-failed', runId };
+    if (error instanceof PersistenceStopped) { log('eval_run_storage_failed', 'failed', 'unavailable'); return { status: 'storage-failed', runId }; }
     const status = completed ? 'partial' : 'error';
-    const reason = error instanceof EvidenceLimitStopped ? 'evidence-limit-exceeded' : 'runner-invalid';
+    const reason = error instanceof EvidenceLimitStopped ? 'evidence-limit-exceeded' : 'runner-protocol-invalid';
     addDiagnostic(runDiagnostics, reason);
     const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics);
-    if (finished.status === 'blocked') return { status: 'storage-failed', runId, reason: finished.reason };
-    log('eval_run_finished', status);
+    if (finished.status === 'blocked') { log('eval_run_storage_failed', 'failed', finished.reason); return { status: 'storage-failed', runId, reason: finished.reason }; }
+    log('eval_run_finished', status === 'error' ? 'failed' : status, reason);
     return { status, runId, reason };
   }
 }

@@ -38,6 +38,7 @@ test('preserves preceding accepted events on abnormal process exit and rejects m
     const received: ExecutionEvent[] = [];
     const result = await new ProjectRunnerExecuteAdapter(project.root).execute(selection, async event => { received.push(event); });
     assert.equal(result.status, 'error');
+    assert.equal(result.reason, 'runner-exited');
     assert.equal(received.at(-1)?.type, 'case-completed');
   });
 });
@@ -50,7 +51,7 @@ test('rejects identity violations and terminates an idle runner within injected 
     const limits = { ...EXECUTE_LIMITS, startupMs: 100, idleMs: 100, overallMs: 400, cleanupMs: 50 };
     const result = await new ProjectRunnerExecuteAdapter(project.root, limits).execute(selection, async () => undefined);
     assert.equal(result.status, 'error');
-    assert.equal(result.reason, 'runner-invalid');
+    assert.equal(result.reason, 'runner-protocol-invalid');
   });
 });
 
@@ -118,7 +119,7 @@ test('protocol failure settles when a descendant keeps the runner output pipes o
     const started = Date.now();
     const result = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS,
       startupMs: 500, idleMs: 800, overallMs: 1000, cleanupMs: 60 }).execute(selection, async event => { received.push(event); });
-    assert.deepEqual(result, { status: 'error', reason: 'runner-invalid' });
+    assert.deepEqual(result, { status: 'error', reason: 'runner-protocol-invalid' });
     assert.equal(received.at(-1)?.type, 'case-completed');
     assert.ok(Date.now() - started < 700, 'protocol failure settles before the descendant closes its pipes');
   });
@@ -126,14 +127,17 @@ test('protocol failure settles when a descendant keeps the runner output pipes o
 
 test('stderr and retained output limits reject oversized evidence', async () => {
   await withSelection(async (project, selection) => {
-    await project.changeRunner(`process.stderr.write('x'.repeat(100)); setInterval(()=>{},1000);`);
-    const stderr = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS, stderrBytes: 10, cleanupMs: 40 }).execute(selection, async () => undefined);
+    await project.changeRunner(`process.stderr.write('SYNTHETIC_STDERR_SECRET'.repeat(10)); setInterval(()=>{},1000);`);
+    const logs: unknown[] = [];
+    const stderr = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS, stderrBytes: 10, cleanupMs: 40 },
+      process.env, { record: event => { logs.push(event); } }).execute(selection, async () => undefined);
     assert.deepEqual(stderr, { status: 'error', reason: 'runner-limit' });
+    assert.doesNotMatch(JSON.stringify(logs), /SYNTHETIC_STDERR_SECRET/);
     await project.changeRunner(`let raw=''; for await(const c of process.stdin) raw+=c; const q=JSON.parse(raw); let n=0;
       function emit(type,caseId,data){process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');}
       emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
       emit('conversation-turn-completed','first',{turnIndex:0,role:'assistant',output:'x'.repeat(9000)});`);
     const output = await new ProjectRunnerExecuteAdapter(project.root).execute(selection, async () => undefined);
-    assert.deepEqual(output, { status: 'error', reason: 'runner-invalid' });
+    assert.deepEqual(output, { status: 'error', reason: 'runner-protocol-invalid' });
   });
 });

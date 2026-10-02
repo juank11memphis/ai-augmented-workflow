@@ -34,7 +34,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
     if (request.length > this.limits.requestBytes) return { status: 'blocked', reason: 'runner-request-too-large' };
     const started = Date.now();
     const log = (event: string, reason?: string): void => {
-      try { this.logger?.record({ event, suiteId: selection.suite.id, reason, durationMs: Date.now() - started }); } catch { /* Noncritical sink. */ }
+      try { this.logger?.record({ event, reason, durationMs: Date.now() - started }); } catch { /* Noncritical sink. */ }
     };
     log('eval_runner_execute_started');
     const child = spawn(selection.suite.runner.command[0]!, selection.suite.runner.command.slice(1),
@@ -64,7 +64,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
     const resetIdle = (): void => { clearTimeout(idle); idle = setTimeout(() => abort('runner-timeout'), this.limits.idleMs); };
     resetIdle();
     const overall = setTimeout(() => abort('runner-timeout'), this.limits.overallMs);
-    child.on('error', () => abort('runner-unavailable'));
+    child.on('error', () => abort('runner-start-failed'));
     child.stdin.on('error', () => abort('runner-unavailable'));
     child.stderr.on('data', (chunk: Buffer) => {
       stderrBytes += chunk.length;
@@ -83,7 +83,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
             try { await consume(event); }
             catch (error) { consumerFailure = error; throw error; }
           });
-        } catch (error) { abort(error instanceof Error && error.message.includes('limit') ? 'runner-limit' : 'runner-invalid'); }
+        } catch (error) { abort(error instanceof Error && error.message.includes('limit') ? 'runner-limit' : 'runner-protocol-invalid'); }
       }
       return closed;
     };
@@ -91,9 +91,10 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       const code = await Promise.race([readAndClose(), aborted.then(() => null)]);
       if (consumerFailure) throw consumerFailure;
       if (!failure) {
-        try { stream.finish(); } catch { failure = 'runner-invalid'; }
+        try { stream.finish(); } catch { failure = 'runner-protocol-invalid'; }
       }
-      if (!failure && (!validator.completion || code !== 0)) failure = 'runner-invalid';
+      if (!failure && code !== 0) failure = 'runner-exited';
+      if (!failure && !validator.completion) failure = 'runner-protocol-invalid';
       const status = failure ? 'error' : validator.completion!;
       log('eval_runner_execute_finished', failure ?? status);
       return { status, ...(failure ? { reason: failure } : {}) };
