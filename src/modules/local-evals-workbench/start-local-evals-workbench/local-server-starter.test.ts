@@ -12,6 +12,7 @@ import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 import { queued } from '../run-history/test-fixtures.js';
 import './start-http-correlation.test.js';
 import './read-http.test.js';
+import './proposal-http.test.js';
 import { readyDiscovery, blockedDiscovery, runDependencies, FakeLocalHttpServer, runtimeDependencies, applyRepairDependencies, analysisPayload, proposalPayload, analysisDependencies, proposalDependencies, failedArtifact, withOfflineWorkbench } from './local-server-starter-test-fixture.js';
 
 describe('NodeLocalWorkbenchServerStarter', () => {
@@ -413,7 +414,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     try {
       const response = await failureServer.renderJsonResponse('/api/repair-proposals', proposalPayload());
       assert.equal(response.statusCode, 502);
-      assert.match(response.body, /llm-failure/);
+      assert.match(response.body, /unknown-cause/);
       assert.doesNotMatch(response.body, /full model response|secret|raw prompt/);
     } finally { await failureResult.stop?.(); }
   });

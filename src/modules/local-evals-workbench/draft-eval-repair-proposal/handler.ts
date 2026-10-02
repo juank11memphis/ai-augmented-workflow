@@ -25,7 +25,7 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
   const startedAt = (dependencies.clock ?? Date.now)();
   const log = (event: DraftRepairProposalLogEvent['event'], outcome: DraftRepairProposalLogEvent['outcome'], reason?: string, targetFileCount?: number): void => {
     const reference = dependencies.reference;
-    const safeReference = reference && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(reference) ? reference : undefined;
+    const safeReference = reference && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(reference) ? reference.toLowerCase() : undefined;
     const entry: DraftRepairProposalLogEvent = { event, stage: 'proposal', outcome,
       ...(reason ? { reason } : {}), ...(safeReference ? { reference: safeReference } : {}),
       durationMs: elapsed(startedAt, dependencies), ...(targetFileCount !== undefined ? { targetFileCount: Math.min(1, Math.max(0, targetFileCount)) } : {}) };
