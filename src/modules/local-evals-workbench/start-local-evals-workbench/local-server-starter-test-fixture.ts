@@ -33,14 +33,18 @@ let input=''; process.stdin.on('data',part=>input+=part); process.stdin.on('end'
     : {targetCalls:request.testCases.length*request.repeats,judgeCalls:0,totalCalls:request.testCases.length*request.repeats,cost:request.model==='fake/available'
       ? {status:'available',amount:0.01,currency:'USD'} : {status:'unavailable',reason:'Provider pricing unavailable.'}};
   if(request.operation==='execute') {
-    if(mode!=='complete') process.exit(3);
+    if(mode==='timeout') { setTimeout(()=>{},20000); return; }
+    if(mode==='protocol-invalid') { process.stdout.write('{invalid protocol\\n'); return; }
+    if(!['complete','assertion-failed','partial','interrupted'].includes(mode)) process.exit(3);
     let sequence=0;
     const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:sequence++,type,runId:request.runId,caseId,attempt:caseId?1:null,data})+'\\n');
     emit('run-started',null,{model:request.model,judgeModel:null});
     for(const item of request.testCases) {
       emit('case-attempt-started',item.id,{});
-      emit('conversation-turn-completed',item.id,{turnIndex:0,role:'assistant',output:'synthetic saved output '+item.turns[0].content.text});
+      emit('conversation-turn-completed',item.id,{turnIndex:0,role:'assistant',output:mode==='assertion-failed'?'synthetic wrong answer':'synthetic saved output hello '+item.turns[0].content.text});
       emit('case-attempt-completed',item.id,{status:'completed'});
+      if(mode==='partial') process.exit(3);
+      if(mode==='interrupted') { emit('run-completed',null,{status:'interrupted'}); return; }
     }
     emit('run-completed',null,{status:'completed'});
     return;
@@ -49,6 +53,7 @@ let input=''; process.stdin.on('data',part=>input+=part); process.stdin.on('end'
 });`;
 
 export async function withOfflineWorkbench(run: (workbench: {
+  readonly projectRoot: string;
   readonly getHtml: () => Promise<string>;
   readonly get: (route: string) => Promise<{ code: number; payload: Record<string, unknown> }>;
   readonly post: (route: string, body: unknown, reference?: string) => Promise<{ code: number; payload: Record<string, unknown>; headers: Headers }>;
@@ -74,6 +79,7 @@ export async function withOfflineWorkbench(run: (workbench: {
     const server = await new NodeLocalWorkbenchServerStarter(undefined, undefined, logger).startServer({ projectRoot: root, initialDiscoveryResult: discovery });
     try {
       await run({
+        projectRoot: root,
         getHtml: async () => (await fetch(server.url)).text(),
         get: async (route) => {
           const response = await fetch(new URL(route, server.url));
