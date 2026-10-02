@@ -1,6 +1,7 @@
 import type { InternalEvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import type { LocalWorkbenchHost } from './result.js';
 import type { RuntimeBlockReason } from '../runtime-description.js';
+import type { StartEvalRunResult } from '../start-eval-run/result.js';
 
 export type WorkflowStateStatus =
   | { readonly status: 'valid' }
@@ -37,7 +38,9 @@ export type LocalEvalsWorkbenchLogEvent =
   | { readonly event: 'local_evals_workbench_started'; readonly host: LocalWorkbenchHost; readonly port: number; readonly suiteCount: number; readonly discoveryStatus: 'ready' | 'blocked' }
   | { readonly event: 'local_evals_workbench_start_failed'; readonly reason: 'workflow-state-read-failed' | 'discovery-failed' | 'server-start-failed' }
   | { readonly event: 'local_evals_workbench_request_started' | 'local_evals_workbench_request_completed'; readonly stage: 'preview'; readonly outcome: 'started' | 'completed'; readonly reference: string }
-  | { readonly event: 'local_evals_workbench_request_issue'; readonly stage: 'discovery' | 'model-check' | 'preview'; readonly outcome: 'blocked' | 'failed'; readonly reason: 'missing-evals-folder' | 'no-eval-suites' | 'unreadable-eval-suites' | 'discovery-failed' | RuntimeBlockReason | 'invalid-request' | 'unknown'; readonly reference: string };
+  | { readonly event: 'local_evals_workbench_request_issue'; readonly stage: 'discovery' | 'model-check' | 'preview' | 'run-start'; readonly outcome: 'blocked' | 'failed'; readonly reason: 'missing-evals-folder' | 'no-eval-suites' | 'unreadable-eval-suites' | 'discovery-failed' | RuntimeBlockReason | Extract<StartEvalRunResult, { status: 'blocked' }>['reason'] | 'invalid-request' | 'unknown' | 'reference-reused'; readonly reference: string }
+  | { readonly event: 'local_evals_workbench_run_start_queued'; readonly stage: 'run-start'; readonly outcome: 'queued'; readonly reference: string; readonly runId: string }
+  | { readonly event: 'local_evals_workbench_run_start_response_failed'; readonly stage: 'run-start'; readonly outcome: 'uncertain'; readonly reason: 'response-write-failed'; readonly reference: string; readonly runId: string };
 
 export type LocalEvalsWorkbenchLoggerPort = {
   info(event: LocalEvalsWorkbenchLogEvent): void;

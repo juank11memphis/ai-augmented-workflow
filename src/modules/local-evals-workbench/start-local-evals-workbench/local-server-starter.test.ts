@@ -9,6 +9,7 @@ import { APPLY_APPROVED_REPAIR_MARKER } from '../apply-approved-eval-repair/inde
 import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
+import './start-http-correlation.test.js';
 import { readyDiscovery, blockedDiscovery, runDependencies, FakeLocalHttpServer, runtimeDependencies, applyRepairDependencies, analysisPayload, proposalPayload, analysisDependencies, proposalDependencies, failedArtifact, withOfflineWorkbench } from './local-server-starter-test-fixture.js';
 
 describe('NodeLocalWorkbenchServerStarter', () => {
@@ -39,7 +40,9 @@ describe('NodeLocalWorkbenchServerStarter', () => {
         ({ selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost });
       const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/unavailable' };
       const stale = await post('/api/eval-runs/start', { ...selection, review: review(all.payload) });
-      assert.deepEqual(stale.payload, { status: 'blocked', reason: 'review-stale' });
+      assert.equal(stale.payload.status, 'blocked');
+      assert.equal(stale.payload.reason, 'review-stale');
+      assert.equal((stale.payload.issue as { category: string }).category, 'review-stale');
       assert.equal(stale.code, 422);
 
       await setRunnerMode('no-models');

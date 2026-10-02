@@ -11,6 +11,7 @@ import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-p
 import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { StoredRunArtifact } from '../run-local-eval-suite/run-artifact-store.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
+import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 
 const offlineSuite = {
   version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline checks', description: 'Synthetic fixture',
@@ -37,9 +38,10 @@ let input=''; process.stdin.on('data',part=>input+=part); process.stdin.on('end'
 
 export async function withOfflineWorkbench(run: (workbench: {
   readonly getHtml: () => Promise<string>;
-  readonly post: (route: string, body: unknown) => Promise<{ code: number; payload: Record<string, unknown> }>;
+  readonly get: (route: string) => Promise<{ code: number; payload: Record<string, unknown> }>;
+  readonly post: (route: string, body: unknown, reference?: string) => Promise<{ code: number; payload: Record<string, unknown>; headers: Headers }>;
   readonly setRunnerMode: (mode: string) => Promise<void>;
-}) => Promise<void>): Promise<void> {
+}) => Promise<void>, logger?: LocalEvalsWorkbenchLoggerPort): Promise<void> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-inline-run-'));
   try {
     await mkdir(path.join(root, 'evals'));
@@ -55,13 +57,17 @@ export async function withOfflineWorkbench(run: (workbench: {
       { discoveryReader: new NodeEvalSuiteDiscoveryReader(), logger: { info: () => undefined, warn: () => undefined } }
     );
     assert.equal(discovery.status, 'ready');
-    const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: root, initialDiscoveryResult: discovery });
+    const server = await new NodeLocalWorkbenchServerStarter(undefined, undefined, logger).startServer({ projectRoot: root, initialDiscoveryResult: discovery });
     try {
       await run({
         getHtml: async () => (await fetch(server.url)).text(),
-        post: async (route, body) => {
-          const response = await fetch(new URL(route, server.url), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+        get: async (route) => {
+          const response = await fetch(new URL(route, server.url));
           return { code: response.status, payload: await response.json() as Record<string, unknown> };
+        },
+        post: async (route, body, reference) => {
+          const response = await fetch(new URL(route, server.url), { method: 'POST', headers: { 'content-type': 'application/json', ...(reference ? { 'x-sibu-request-reference': reference } : {}) }, body: JSON.stringify(body) });
+          return { code: response.status, payload: await response.json() as Record<string, unknown>, headers: response.headers };
         },
         setRunnerMode: (mode) => writeFile(path.join(root, 'evals/mode.txt'), mode),
       });

@@ -64,3 +64,30 @@ it('contains a throwing terminal sink', () => {
     console.error = original;
   }
 });
+
+it('allows only safe run-start correlation fields and contains sink failures', () => {
+  const messages: string[] = [];
+  const original = console.error;
+  console.error = (message?: unknown) => messages.push(String(message));
+  try {
+    const logger = new SafeConsoleLocalEvalsLogger();
+    logger.info(Object.assign({ event: 'local_evals_workbench_run_start_queued' as const, stage: 'run-start' as const,
+      outcome: 'queued' as const, reference: '123e4567-e89b-42d3-a456-426614174000', runId: 'run-1' },
+    { credential: 'sk-secret', prompt: 'private prompt', stderr: 'private stderr', modelOutput: 'private model output' }));
+    logger.warn(Object.assign({ event: 'local_evals_workbench_request_issue' as const, stage: 'run-start' as const,
+      outcome: 'blocked' as const, reason: 'review-stale' as const, reference: 'injected-sk-secret' }, { token: 'sk-secret' }));
+    logger.warn(Object.assign({ event: 'local_evals_workbench_run_start_response_failed' as const, stage: 'run-start' as const,
+      outcome: 'uncertain' as const, reason: 'response-write-failed' as const, reference: '123e4567-e89b-42d3-a456-426614174000', runId: 'run-1' },
+    { exception: 'sk-secret response closed' }));
+  } finally { console.error = original; }
+  assert.deepEqual(JSON.parse(messages[0] ?? '{}'), { level: 'info', event: 'local_evals_workbench_run_start_queued',
+    stage: 'run-start', outcome: 'queued', reference: '123e4567-e89b-42d3-a456-426614174000', runId: 'run-1' });
+  assert.equal(JSON.parse(messages[1] ?? '{}').reference, undefined);
+  assert.deepEqual(JSON.parse(messages[2] ?? '{}'), { level: 'warn', event: 'local_evals_workbench_run_start_response_failed',
+    stage: 'run-start', outcome: 'uncertain', reason: 'response-write-failed', reference: '123e4567-e89b-42d3-a456-426614174000', runId: 'run-1' });
+  assert.doesNotMatch(messages.join(' '), /sk-secret|private prompt|private stderr|private model output/);
+  console.error = () => { throw new Error('sink failed'); };
+  try { assert.doesNotThrow(() => new SafeConsoleLocalEvalsLogger().info({ event: 'local_evals_workbench_run_start_queued',
+    stage: 'run-start', outcome: 'queued', reference: '123e4567-e89b-42d3-a456-426614174000', runId: 'run-1' })); }
+  finally { console.error = original; }
+});

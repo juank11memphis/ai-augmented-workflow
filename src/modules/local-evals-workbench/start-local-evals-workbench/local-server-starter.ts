@@ -22,8 +22,9 @@ import { parseGetRunRequest } from '../get-eval-run/request-parser.js';
 import { parseListRunRequest } from '../list-eval-runs/request-parser.js';
 import { renderWorkspaceShell } from '../workbench-ui/workspace-layout.js';
 import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
-import { acceptedRequestReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, modelCheckIssue, previewIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue } from './public-issue.js';
+import { acceptedRequestReference, acceptedStartReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, invalidStartIssue, modelCheckIssue, previewIssue, reusedStartReferenceIssue, startIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue, unknownStartIssue } from './public-issue.js';
 import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
+import { StartReferenceRegistry } from './start-reference-registry.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -63,9 +64,12 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
 
   async startServer(request: LocalWorkbenchServerStartRequest): Promise<LocalWorkbenchServerStartResult> {
     const runtimeDependencies = this.dependenciesFactory(request);
+    const startReferences = new StartReferenceRegistry();
     const server = this.createServer((httpRequest, response) => {
-      const reference = acceptedRequestReference(httpRequest.headers?.['x-sibu-request-reference']);
-      void routeLocalRequest(httpRequest, response, request, runtimeDependencies, reference, this.logger).catch(() => {
+      const isStart = httpRequest.url === '/api/eval-runs/start';
+      const reference = isStart ? acceptedStartReference(httpRequest.headers?.['x-sibu-request-reference'])
+        : acceptedRequestReference(httpRequest.headers?.['x-sibu-request-reference']);
+      void routeLocalRequest(httpRequest, response, request, runtimeDependencies, reference, this.logger, startReferences).catch(() => {
         if (httpRequest.url === '/api/eval-suites') {
           const issue = unknownDiscoveryIssue(reference);
           emitDiscoveryIssue(this.logger, issue);
@@ -78,6 +82,16 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
           const issue = unknownPreviewIssue(reference);
           emitRequestIssue(this.logger, issue);
           try { writeJson(response, 500, { status: 'error', stage: 'selection', reason: 'unknown-cause', issue }, reference); } catch { /* The response may already be closed. */ }
+        } else if (isStart) {
+          const runId = startReferences.confirmedRunId(reference);
+          if (runId) {
+            try { this.logger.warn({ event: 'local_evals_workbench_run_start_response_failed', stage: 'run-start',
+              outcome: 'uncertain', reason: 'response-write-failed', reference, runId }); } catch { /* Noncritical sink. */ }
+          } else {
+            const issue = unknownStartIssue(reference);
+            emitRequestIssue(this.logger, issue);
+            try { writeJson(response, 500, { status: 'error', reason: 'unknown', issue, reference }, reference); } catch { /* The response may already be closed. */ }
+          }
         }
       });
     });
@@ -105,17 +119,31 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
   }
 }
 
-async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies, reference: string, logger: LocalEvalsWorkbenchLoggerPort): Promise<void> {
+async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies, reference: string, logger: LocalEvalsWorkbenchLoggerPort, startReferences: StartReferenceRegistry): Promise<void> {
   const publicDiscoveryResult = toPublicEvalSuiteDiscoveryResult(startRequest.initialDiscoveryResult);
   const url = new URL(request.url ?? '/', 'http://localhost');
   if (url.pathname === '/api/eval-runs/start') {
-    if (request.method !== 'POST') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' }); return; }
-    if (!dependencies.start) { writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable' }); return; }
+    if (request.method !== 'POST') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed', issue: invalidStartIssue(reference), reference }, reference); return; }
+    if (!dependencies.start) { const issue = startIssue({ status: 'blocked', reason: 'runner-unavailable' }, reference); emitRequestIssue(logger, issue); writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable', issue, reference }, reference); return; }
     const body = await readJsonBody(request);
     const command = body.status === 'ok' ? parseStartRequest(body.payload) : undefined;
-    if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
-    const result = await startEvalRun(command, dependencies.start);
-    writeJson(response, result.status === 'queued' ? 202 : 422, result);
+    if (!command) { const issue = invalidStartIssue(reference); emitRequestIssue(logger, issue); writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', issue, reference }, reference); return; }
+    if (!startReferences.reserve(reference, command.suiteId)) {
+      const issue = reusedStartReferenceIssue(reference);
+      emitRequestIssue(logger, issue);
+      writeJson(response, 409, { status: 'blocked', reason: 'reference-reused', issue, reference }, reference);
+      return;
+    }
+    const result = await startEvalRun({ ...command, reference }, { ...dependencies.start,
+      logger: { record: event => { if (event.outcome === 'blocked' && event.reason) emitRequestIssue(logger, startIssue({ status: 'blocked', reason: event.reason }, reference)); } } });
+    if (result.status === 'queued') {
+      if (/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(result.runId)) startReferences.confirm(reference, command.suiteId, result.runId);
+      try { logger.info({ event: 'local_evals_workbench_run_start_queued', stage: 'run-start', outcome: 'queued', reference, runId: result.runId }); } catch { /* Diagnostic sink is noncritical. */ }
+      writeJson(response, 202, { ...result, reference }, reference);
+    } else {
+      const issue = startIssue(result, reference);
+      writeJson(response, 422, { ...result, issue, reference }, reference);
+    }
     return;
   }
   if (url.pathname === '/api/eval-runs/status') {
@@ -129,6 +157,19 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
   }
   if (url.pathname === '/api/eval-runs/history') {
     if (request.method !== 'GET') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed' }); return; }
+    if (url.searchParams.has('reference')) {
+      const suiteId = url.searchParams.get('suiteId');
+      const lookupUrl = new URL(url);
+      lookupUrl.searchParams.delete('reference');
+      const command = parseListRunRequest(lookupUrl);
+      const supplied = url.searchParams.get('reference');
+      if (!command || url.searchParams.getAll('reference').length !== 1 || !supplied || acceptedStartReference(supplied) !== supplied.toLowerCase()) {
+        writeJson(response, 400, { status: 'unconfirmed' }); return;
+      }
+      const match = startReferences.resolve(supplied.toLowerCase(), suiteId!);
+      writeJson(response, 200, match.status === 'confirmed' ? { ...match, suiteId: command.suiteId, reference: supplied.toLowerCase() } : match);
+      return;
+    }
     if (!dependencies.list) { writeJson(response, 503, { status: 'blocked', reason: 'unavailable' }); return; }
     const command = parseListRunRequest(url);
     if (!command) { writeJson(response, 400, { status: 'blocked', reason: 'invalid-request' }); return; }
@@ -303,7 +344,7 @@ function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer
   return http.createServer((request, response) => handler(request, response));
 }
 
-function emitRequestIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof discoveryIssue> | ReturnType<typeof modelCheckIssue> | ReturnType<typeof previewIssue>): void {
+function emitRequestIssue(logger: LocalEvalsWorkbenchLoggerPort, issue: ReturnType<typeof discoveryIssue> | ReturnType<typeof modelCheckIssue> | ReturnType<typeof previewIssue> | ReturnType<typeof startIssue>): void {
   try {
     logger.warn({ event: 'local_evals_workbench_request_issue', stage: issue.stage, outcome: issue.outcome, reason: issue.category, reference: issue.reference });
   } catch { /* A failed diagnostic sink must not change the response. */ }
