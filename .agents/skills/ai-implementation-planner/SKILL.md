@@ -71,6 +71,8 @@ Do not create an implementation plan from a vague request, Epic brief, BRD, or s
 
 For a review-driven revision of an existing Story plan, the main agent also supplies the exact reviewed identity, the architecture reviewer's findings and smallest adequate fixes, and the plan folder. Revise only the affected plan content, preserve completed Task evidence and source authority, and return a concise finding-to-change account. Do not edit implementation code or declare the plan accepted. If a fix requires a material product, architecture, security, privacy, persisted-data, dependency, or scope decision, report the blocker instead of choosing it.
 
+For an executor-discovered bounded regression revision, the main agent instead supplies the accepted plan identity, failed check and attribution to an earlier checked Task in the same Story, smallest repair outcome, blocked Task and its inventoried uncommitted edits, and plan folder. Add one ordered follow-up checked Task before the blocked Task, with its own executable check and expected evidence; update affected dependencies and the Story-plan view while preserving completed Task evidence and unrelated scope. Do not require or invent a prior reviewer finding. Return the revised identity for a fresh independent plan-only review; stop for unclear attribution or a material decision.
+
 ## Required source context gate
 
 Before delegating or planning inline, verify these paths exist and are coherent:
@@ -111,6 +113,7 @@ Build a narrow planner packet for the worker. The packet must include:
 - Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
 - the source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, and applicable SAD/SDD module ownership and dependency constraints; for uncertain fine-grained references, give the full authoritative path and a locate-relevant-context instruction instead
 - for review-driven revision, the current plan folder and reviewed identity, the complete finding/risk packet, and a request to address actionable findings minimally while reporting any material-decision blocker
+- for executor-discovered bounded regression revision, the current plan folder and accepted identity, actual failed check, earlier same-Story Task attribution, bounded repair outcome, blocked Task and preserved-edit inventory, and a request for one ordered follow-up Task before the blocked Task without implementation edits
 - story verification expectations and any software design quality strategy context needed to plan validation steps
 - the source-verified Epic/Story flag inventory (`Flags: none` when unflagged), declared final-removal Story if any, and a stop instruction for any undeclared flag need
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
