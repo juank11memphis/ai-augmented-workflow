@@ -32,7 +32,19 @@ let input=''; process.stdin.on('data',part=>input+=part); process.stdin.on('end'
     ? {runnerId:'offline',capabilities:['single-turn'],models:mode==='no-models'?[]:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[],costEstimation:true}
     : {targetCalls:request.testCases.length*request.repeats,judgeCalls:0,totalCalls:request.testCases.length*request.repeats,cost:request.model==='fake/available'
       ? {status:'available',amount:0.01,currency:'USD'} : {status:'unavailable',reason:'Provider pricing unavailable.'}};
-  if(request.operation==='execute') process.exit(3);
+  if(request.operation==='execute') {
+    if(mode!=='complete') process.exit(3);
+    let sequence=0;
+    const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:sequence++,type,runId:request.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+    emit('run-started',null,{model:request.model,judgeModel:null});
+    for(const item of request.testCases) {
+      emit('case-attempt-started',item.id,{});
+      emit('conversation-turn-completed',item.id,{turnIndex:0,role:'assistant',output:'synthetic saved output '+item.turns[0].content.text});
+      emit('case-attempt-completed',item.id,{status:'completed'});
+    }
+    emit('run-completed',null,{status:'completed'});
+    return;
+  }
   process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,type:request.operation==='describe'?'description':'estimate',runId:null,caseId:null,attempt:null,data})+'\\n');
 });`;
 

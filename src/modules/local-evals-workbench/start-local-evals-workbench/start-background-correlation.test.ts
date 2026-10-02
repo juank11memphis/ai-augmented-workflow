@@ -20,6 +20,7 @@ async function reviewedStart(post: Parameters<Parameters<typeof withOfflineWorkb
 async function savedStatus(get: Parameters<Parameters<typeof withOfflineWorkbench>[0]>[0]['get'], runId: string) {
   for (let attempt = 0; attempt < 100; attempt++) {
     const response = await get(`/api/eval-runs/status?suiteId=offline&runId=${runId}`);
+    if (response.code === 422) { await delay(20); continue; } // The queued artifact may not be readable yet.
     assert.equal(response.code, 200);
     assert.equal(response.payload.status, 'ok');
     const summary = (response.payload.value as { summary: { state: string } }).summary;
@@ -27,6 +28,14 @@ async function savedStatus(get: Parameters<Parameters<typeof withOfflineWorkbenc
     await delay(20);
   }
   assert.fail('Background run did not reach a saved terminal status');
+}
+
+async function awaitFinished(finished: () => boolean) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    if (finished()) return;
+    await delay(20);
+  }
+  assert.fail('Background run did not finish persisting before fixture cleanup');
 }
 
 it('asserts the actual background terminal JSON start event matches the accepted HTTP reference and queued run ID', async () => {
@@ -42,6 +51,10 @@ it('asserts the actual background terminal JSON start event matches the accepted
       const runId = String(accepted.payload.runId);
       assert.match(runId, /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/);
       assert.equal(await savedStatus(get, runId), 'error'); // The disposable runner rejects execute.
+      await awaitFinished(() => lines.some(line => {
+        try { const event = JSON.parse(line) as { event?: string; runId?: string };
+          return event.event === 'eval_run_finished' && event.runId === runId; } catch { return false; }
+      }));
 
       const actualLine = lines.find(line => { try { return (JSON.parse(line) as { event?: string }).event === 'eval_run_started'; } catch { return false; } });
       assert.ok(actualLine, 'Actual background terminal start event was emitted');
@@ -61,7 +74,9 @@ it('asserts the actual background terminal JSON start event matches the accepted
 it('preserves the saved execution outcome when the background terminal sink throws', async () => {
   const originalInfo = console.info;
   let attempted = 0;
+  let finished = false;
   console.info = (line: unknown) => {
+    if (typeof line === 'string' && line.includes('"event":"eval_run_finished"')) finished = true;
     if (typeof line === 'string' && line.includes('"event":"eval_run_started"')) {
       attempted++;
       throw new Error(secret);
@@ -73,6 +88,7 @@ it('preserves the saved execution outcome when the background terminal sink thro
       assert.equal(accepted.code, 202);
       const runId = String(accepted.payload.runId);
       assert.equal(await savedStatus(get, runId), 'error');
+      await awaitFinished(() => finished);
       assert.equal(attempted, 1);
       const history = await get(`/api/eval-runs/history?suiteId=offline&reference=${reference}`);
       assert.deepEqual(history.payload, { status: 'confirmed', suiteId: 'offline', reference, runId });
