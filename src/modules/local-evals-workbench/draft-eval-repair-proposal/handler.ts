@@ -4,7 +4,7 @@ import { isConcreteInstruction } from './request-parser.js';
 import { ProposalProviderFailure, type DraftRepairProposalLogEvent, type DraftRepairProposalLoggerPort, type ProposalAssistanceConfigPort, type ProposalRunArtifactReaderPort, type RepairProposalLlmPort, type RepairProposalStorePort, type SafeProjectFileReaderPort } from './ports.js';
 import type { ProposalContextPort, ProposalAnalysisStorePort } from './ports.js';
 import { validateProjectFileTargets } from './project-file-safety.js';
-import { validateRepairProposalDraft } from './proposal-validation.js';
+import { UnsafeRepairProposalTargetError, validateRepairProposalDraft } from './proposal-validation.js';
 import { applySingleHunkDiff } from '../repair-context/single-hunk-diff.js';
 import type { DraftEvalRepairProposalBlockedResult, DraftEvalRepairProposalResult } from './result.js';
 
@@ -60,6 +60,9 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
     try { draft = await dependencies.llm.draftProposal({ model: config.assistanceModelLabel, evidence, repairDirection: command.repairDirection,
       priorAnalysis: { summary: priorAnalysis.evidenceSummary, likelyCause: priorAnalysis.likelyCause }, projectFiles: projectFiles.files });
     } catch (error) {
+      if (error instanceof UnsafeRepairProposalTargetError) {
+        return reject('unsafe-target-files', 'The proposed repair target is unsafe.', 1, log, assistanceModelLabel, evidence);
+      }
       const reason = error instanceof ProposalProviderFailure ? error.reason : 'unknown-cause';
       log('repair_proposal_failed', 'failed', reason);
       return { status: 'error', reason, message: 'Repair proposal could not be drafted. Inspect provider availability and try again later.', assistanceModelLabel, evidence };

@@ -5,6 +5,7 @@ import type { DraftEvalRepairProposalCommand } from './command.js';
 import type { SelectedFailureRead } from '../repair-context/selected-evidence.js';
 import { NodeSafeProjectFileReader } from './project-file-safety.js';
 import { ProposalProviderFailure, type DraftRepairProposalLogEvent, type ProposalProviderFailureReason } from './ports.js';
+import { UnsafeRepairProposalTargetError } from './proposal-validation.js';
 
 const command: DraftEvalRepairProposalCommand = { projectRoot: '/repo', suiteId: 'suite', runId: 'run-1',
   testCaseId: 'case-1', attempt: 2, evalRunModelId: 'model', runScope: { type: 'all' }, assertionId: 'a1', analysisId: 'analysis-1',
@@ -123,6 +124,7 @@ describe('draftEvalRepairProposal', () => {
     const cases: { options: Parameters<typeof dependencies>[0]; reason: string; expectedCalls: number }[] = [
       { options: { change: { kind: 'replacement', representation: 'before' } }, reason: 'vague-proposal', expectedCalls: 2 },
       { options: { targetFiles: ['../../secret'] }, reason: 'unsafe-target-files', expectedCalls: 2 },
+      { options: { providerError: new UnsafeRepairProposalTargetError() }, reason: 'unsafe-target-files', expectedCalls: 2 },
       { options: { providerError: new ProposalProviderFailure('provider-timeout') }, reason: 'provider-timeout', expectedCalls: 2 },
       { options: { providerError: new Error(secret) }, reason: 'unknown-cause', expectedCalls: 2 },
     ];
