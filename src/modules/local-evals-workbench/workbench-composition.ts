@@ -4,6 +4,7 @@ import { EnvironmentAssistanceConfig, OpenAiFailureAnalysisAdapter } from './ana
 import type { AnalyzeFailedAssertionDependencies } from './analyze-failed-assertion/index.js';
 import { InMemoryRepairProposalStore, NodeSafeProjectFileReader, OpenAiRepairProposalAdapter } from './draft-eval-repair-proposal/index.js';
 import type { DraftEvalRepairProposalDependencies } from './draft-eval-repair-proposal/index.js';
+import type { DraftRepairProposalLogEvent } from './draft-eval-repair-proposal/ports.js';
 import { NodeSafeProjectFileMutator, RepairProposalStoreReadinessAdapter, SibuManagedWorkflowReadinessAdapter } from './apply-approved-eval-repair/index.js';
 import type { ApplyApprovedEvalRepairDependencies } from './apply-approved-eval-repair/index.js';
 import type { LocalWorkbenchServerStartRequest } from './start-local-evals-workbench/ports.js';
@@ -43,6 +44,11 @@ export type LocalWorkbenchRuntimeDependencies = {
 export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
   const artifactStore = new InMemoryRunArtifactStore();
   const logger = { info: console.info, warn: console.warn, error: console.error };
+  const proposalLogger = {
+    info: (event: DraftRepairProposalLogEvent) => console.info(JSON.stringify(event)),
+    warn: (event: DraftRepairProposalLogEvent) => console.warn(JSON.stringify(event)),
+    error: (event: DraftRepairProposalLogEvent) => console.error(JSON.stringify(event)),
+  };
   const environment = loadEvalEnvironment(request.projectRoot);
   const assistanceConfig = new EnvironmentAssistanceConfig(environment);
   const config = assistanceConfig.getConfig();
@@ -61,7 +67,7 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
   return {
     run: { suiteRegistry: new DiscoveredEvalSuiteRegistry(request.initialDiscoveryResult.definitions), evalRunner: new UnavailableVersion2EvalSuiteRunner(), artifactStore, logger },
     analysis: { artifactReader: createSelectedFailureReader(history.get), assistanceConfig, llm: new OpenAiFailureAnalysisAdapter(config.apiKey ?? ''), analysisStore, logger },
-    proposal: { artifactReader: createSelectedFailureReader(history.get), assistanceConfig, analysisStore, context: { namedFiles: command => namedProposalContext(request.initialDiscoveryResult.definitions, request.initialDiscoveryResult.sourceBySuiteId, command) }, projectFileReader: new NodeSafeProjectFileReader(), llm: new OpenAiRepairProposalAdapter(config.apiKey ?? ''), proposalStore, logger },
+    proposal: { artifactReader: createSelectedFailureReader(history.get), assistanceConfig, analysisStore, context: { namedFiles: command => namedProposalContext(request.initialDiscoveryResult.definitions, request.initialDiscoveryResult.sourceBySuiteId, command) }, projectFileReader: new NodeSafeProjectFileReader(), llm: new OpenAiRepairProposalAdapter(config.apiKey ?? ''), proposalStore, logger: proposalLogger },
     applyRepair: { proposalReader: new RepairProposalStoreReadinessAdapter(proposalStore), safety: fileMutator, workflowReadiness: new SibuManagedWorkflowReadinessAdapter(), mutator: fileMutator, logger },
     describe: { suites, runner, logger: previewLogger },
     preview: { suites, runner, artifacts: readiness, inputs, logger: previewLogger },
