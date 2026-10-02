@@ -1,11 +1,11 @@
 {
-  "templateVersion": "206",
+  "templateVersion": "207",
   "templates": {
     "AGENTS.md": {
-      "version": "52",
+      "version": "53",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Checks each Task's expected evidence before completion and automatically plans bounded post-commit evidence recovery without waiving human Story review."
+        "Extends post-commit evidence recovery to bounded same-Story validation regressions without waiving human Story review."
       ]
     },
     ".codex/config.toml": {
@@ -135,31 +135,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "31",
+      "version": "32",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Accepts architecture-review findings for minimal, source-aligned revisions of an existing Story plan."
+        "Accepts a checked-Task validation regression for a bounded follow-up revision of the existing Story plan."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "19",
+      "version": "20",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Revises only affected plan steps after a verified review, preserving completed Task evidence."
+        "Plans a bounded checked-Task regression follow-up without rewriting completed Task evidence."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "62",
+      "version": "63",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Automatically recovers bounded post-commit Task evidence gaps through a new checked Task and fresh plan-only review while preserving safety stops."
+        "Recovers bounded post-commit Task evidence gaps and same-Story validation regressions through a new checked Task and fresh plan-only review while preserving safety stops."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "26",
+      "version": "27",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Requires evidence for every checked Task outcome before commit, not only a passing test command."
+        "Keeps a blocked checked Task's inventoried, disjoint edits untouched during a reviewed same-Story regression repair."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {

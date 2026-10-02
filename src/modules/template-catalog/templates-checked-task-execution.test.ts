@@ -6,6 +6,8 @@ import { readTemplate, readTemplateManifest } from './index.js';
 
 const gatekeeper = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
 const toolbox = readTemplate('skills/ai-implementation-executor-toolbox/SKILL.md');
+const planner = readTemplate('skills/ai-implementation-planner/SKILL.md');
+const plannerToolbox = readTemplate('skills/ai-implementation-planner-toolbox/SKILL.md');
 
 function fixture(name: string): string {
   return readFileSync(new URL(`./fixtures/checked-task-execution/${name}.md`, import.meta.url), 'utf8');
@@ -68,6 +70,24 @@ describe('checked Task execution template contract', () => {
     assert.match(gatekeeper, /Stop for non-convergence, an unexecutable check, failed prescribed validation/i);
     assert.match(gatekeeper, /does not authorize broad code review, a second commit for the original Task/i);
     assert.match(gatekeeper, /post-commit evidence gap and follow-up Task disposition/i);
+  });
+
+  it('plans a bounded same-Story regression repair without losing a blocked Task or its failed check', () => {
+    const agents = readTemplate('AGENTS.md');
+    const manifest = readTemplateManifest();
+
+    assert.match(agents, /bounded same-Story regression found by a failed check/i);
+    assert.match(agents, /Unresolved failures, material decisions, unsafe state, or non-convergence still stop/i);
+    assert.match(gatekeeper, /clearly attributable regression from an earlier checked Task in the same Story/i);
+    assert.match(gatekeeper, /Send the regression to `ai-implementation-planner` for a separate, ordered follow-up checked Task/i);
+    assert.match(gatekeeper, /fresh independent \*\*plan-only\*\* architecture review of the changed reviewable identity/i);
+    assert.match(gatekeeper, /preserved edits.*unstaged, and path-disjoint from the repair/i);
+    assert.match(gatekeeper, /resume the original Task in a fresh executor context.*rerun its failed check/i);
+    assert.match(toolbox, /Never modify, stage, or commit those preserved edits/i);
+    assert.match(planner, /Do not require or invent a prior reviewer finding/i);
+    assert.match(plannerToolbox, /failed check and evidence, attribution to an earlier checked Task in the same Story/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /same-Story validation regressions/i);
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /same-Story validation regressions/i);
   });
 
   it('requires declared flag checks and stops on an undeclared flag', () => {

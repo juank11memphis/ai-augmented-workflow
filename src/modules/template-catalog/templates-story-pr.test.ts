@@ -87,8 +87,8 @@ describe('Final Story PR written contract', () => {
     assert.match(description, /Hosted CI is pending; it has not been counted as passing/);
     assert.match(description, /not live agent behavior or pull-request hosting/);
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '206');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '62');
+    assert.equal(manifest.templateVersion, '207');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '63');
     assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /post-commit Task evidence gaps.*plan-only review/);
   });
 });
