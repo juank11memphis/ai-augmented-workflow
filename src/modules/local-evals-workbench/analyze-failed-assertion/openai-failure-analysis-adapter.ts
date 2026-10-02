@@ -1,5 +1,6 @@
 import { buildFailedAssertionAnalysisPrompt } from './prompt-builder.js';
-import type { FailureAnalysisLlmPort } from './ports.js';
+import { FailureAnalysisProviderError } from './ports.js';
+import type { FailureAnalysisLlmPort, FailureAnalysisProviderCategory } from './ports.js';
 import type { FailureAnalysis, FailureLikelyCause } from './result.js';
 
 export type OpenAiFailureAnalysisClient = {
@@ -10,17 +11,45 @@ export class FetchOpenAiFailureAnalysisClient implements OpenAiFailureAnalysisCl
   constructor(private readonly apiKey: string, private readonly fetchImpl: typeof fetch = fetch) {}
 
   async createResponse(request: { readonly model: string; readonly input: string }): Promise<{ readonly outputText: string }> {
-    const response = await this.fetchImpl('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${this.apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ model: request.model, input: request.input }),
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!response.ok) throw new Error('OpenAI failure analysis request failed.');
-    const body = await readBoundedResponse(response);
-    const payload = JSON.parse(body) as unknown;
-    return { outputText: extractOutputText(payload) };
+    let response: Response;
+    try {
+      response = await this.fetchImpl('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${this.apiKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ model: request.model, input: request.input }),
+        signal: AbortSignal.timeout(20_000),
+      });
+    } catch (error) {
+      throw new FailureAnalysisProviderError(fetchFailureCategory(error));
+    }
+    if (!response.ok) throw new FailureAnalysisProviderError(httpFailureCategory(response.status));
+    let body: string;
+    try {
+      body = await readBoundedResponse(response);
+    } catch (error) {
+      if (error instanceof FailureAnalysisProviderError) throw error;
+      throw new FailureAnalysisProviderError('unknown');
+    }
+    try {
+      const payload = JSON.parse(body) as unknown;
+      return { outputText: extractOutputText(payload) };
+    } catch {
+      throw new FailureAnalysisProviderError('invalid-response');
+    }
   }
+}
+
+function httpFailureCategory(status: number): FailureAnalysisProviderCategory {
+  if (status === 401 || status === 403) return 'authorization';
+  if (status === 429) return 'rate-limit';
+  if (status >= 500 && status <= 599) return 'unavailable';
+  return 'unknown';
+}
+
+function fetchFailureCategory(error: unknown): FailureAnalysisProviderCategory {
+  if (error instanceof DOMException && error.name === 'TimeoutError') return 'timeout';
+  if (error instanceof TypeError) return 'unavailable';
+  return 'unknown';
 }
 
 async function readBoundedResponse(response: Response): Promise<string> {
@@ -34,8 +63,8 @@ async function readBoundedResponse(response: Response): Promise<string> {
     if (next.done) return body + decoder.decode();
     bytes += next.value.byteLength;
     if (bytes > 16_000) {
-      await reader.cancel();
-      throw new Error('OpenAI failure analysis response exceeded its limit.');
+      try { await reader.cancel(); } catch { /* The observed size limit remains the failure cause. */ }
+      throw new FailureAnalysisProviderError('invalid-response');
     }
     body += decoder.decode(next.value, { stream: true });
   }
@@ -49,11 +78,14 @@ export class OpenAiFailureAnalysisAdapter implements FailureAnalysisLlmPort {
     const prompt = buildFailedAssertionAnalysisPrompt(request.evidence);
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const timedOut = new Promise<never>((_, reject) => {
-      timeout = setTimeout(() => reject(new Error('Failure analysis timed out.')), this.timeoutMs);
+      timeout = setTimeout(() => reject(new FailureAnalysisProviderError('timeout')), this.timeoutMs);
     });
-    let response;
+    let response: Awaited<ReturnType<OpenAiFailureAnalysisClient['createResponse']>>;
     try {
       response = await Promise.race([this.client.createResponse({ model: request.model, input: prompt, apiKey: this.apiKey }), timedOut]);
+    } catch (error) {
+      if (error instanceof FailureAnalysisProviderError) throw error;
+      throw new FailureAnalysisProviderError('unknown');
     } finally {
       clearTimeout(timeout);
     }
@@ -62,14 +94,19 @@ export class OpenAiFailureAnalysisAdapter implements FailureAnalysisLlmPort {
 }
 
 export function parseFailureAnalysis(outputText: string): FailureAnalysis {
-  if (outputText.length > 8_000) throw new Error('Failure analysis output exceeded its limit.');
-  const payload = JSON.parse(outputText) as unknown;
-  if (!isRecord(payload)) throw new Error('Failure analysis response must be an object.');
+  if (outputText.length > 8_000) throw new FailureAnalysisProviderError('invalid-response');
+  let payload: unknown;
+  try {
+    payload = JSON.parse(outputText) as unknown;
+  } catch {
+    throw new FailureAnalysisProviderError('invalid-response');
+  }
+  if (!isRecord(payload)) throw new FailureAnalysisProviderError('invalid-response');
   const exactFailureExplanation = readString(payload.exactFailureExplanation);
   const likelyCause = readLikelyCause(payload.likelyCause);
   const evidenceSummary = readString(payload.evidenceSummary);
   const uncertainty = readString(payload.uncertainty);
-  if (!exactFailureExplanation || !likelyCause || !evidenceSummary || !uncertainty) throw new Error('Failure analysis response is missing required fields.');
+  if (!exactFailureExplanation || !likelyCause || !evidenceSummary || !uncertainty) throw new FailureAnalysisProviderError('invalid-response');
   return { exactFailureExplanation, likelyCause, evidenceSummary, uncertainty };
 }
 
