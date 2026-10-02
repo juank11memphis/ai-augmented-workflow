@@ -1,19 +1,53 @@
 export const WORKSPACE_REPAIR_CLIENT = String.raw`
   let selectedFailure = null;
   let repairStage = 'idle', repairAnalysis = null, repairAnalysisId = null, repairProposal = null, repairApplied = null;
-  let repairMessage = '', repairPending = false, repairGeneration = 0, repairAffectedFiles = [];
+  let repairMessage = '', repairPending = false, repairGeneration = 0, repairAffectedFiles = [], analysisIssueDetails = null;
+  let repairIssueCopy = null;
+  const analysisGuidance = {
+    'missing-openai-api-key': ['Analysis unavailable', 'Analysis needs a local OpenAI API key.', 'Check local assistance setup, then try analysis again.'],
+    'invalid-scope': ['Analysis selection invalid', 'This selection cannot be analyzed.', 'Select one failed assertion in a saved result.'],
+    'missing-artifact': ['Analysis evidence unavailable', 'Saved run evidence could not be found.', 'Check the selected result and its saved evidence.'],
+    'missing-cell': ['Analysis result unavailable', 'The selected result could not be found.', 'Select a result with saved evidence.'],
+    'missing-assertion': ['Analysis assertion unavailable', 'The selected assertion could not be found.', 'Select a saved failed assertion.'],
+    'non-failed-assertion': ['Analysis needs a failure', 'The selected assertion did not fail.', 'Select a failed assertion.'],
+    'provider-authorization': ['Analysis authorization failed', 'The analysis provider rejected authorization.', 'Check local provider credentials and access, then try again.'],
+    'provider-rate-limit': ['Analysis rate limited', 'The analysis provider limited this request.', 'Wait before trying analysis again.'],
+    'provider-timeout': ['Analysis timed out', 'The analysis provider did not respond in time.', 'Try analysis again later.'],
+    'provider-unavailable': ['Analysis service unavailable', 'The analysis provider could not be reached or was unavailable.', 'Check service availability, then try again.'],
+    'invalid-llm-response': ['Analysis response invalid', 'The provider response could not be used safely.', 'Try again. If it repeats, report the issue.'],
+    'llm-failure': ['Analysis failed', 'The provider cause is unknown.', 'Try again. If it repeats, report the issue.'],
+    'invalid-request': ['Analysis request invalid', 'Sibu could not read this analysis request.', 'Select a saved failed assertion and try again.'],
+    unknown: ['Analysis failed', 'Cause unknown.', 'Try again. If it repeats, report the issue.'],
+  };
+  function safeAnalysisIssue(result) {
+    const issue = result?.issue;
+    const category = issue?.category;
+    const blocked = ['missing-openai-api-key', 'invalid-scope', 'missing-artifact', 'missing-cell', 'missing-assertion', 'non-failed-assertion', 'invalid-request'];
+    const failed = ['provider-authorization', 'provider-rate-limit', 'provider-timeout', 'provider-unavailable', 'invalid-llm-response', 'llm-failure', 'unknown'];
+    if (!issue || issue.stage !== 'analysis' || !Object.hasOwn(analysisGuidance, category) ||
+      issue.category !== result.reason ||
+      !((['analysis-unavailable', 'blocked'].includes(result.status) && issue.outcome === 'blocked' && blocked.includes(category)) ||
+        (result.status === 'error' && issue.outcome === 'failed' && failed.includes(category))) ||
+      typeof issue.reference !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(issue.reference)) return null;
+    return { copy: analysisGuidance[category], details: 'Stage: analysis\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() };
+  }
   const selectionKey = selection => selection ? [selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId].join('|') : '';
   function resetRepair() {
     repairGeneration++; selectedFailure = null; repairStage = 'idle'; repairAnalysis = null; repairAnalysisId = null;
-    repairProposal = null; repairApplied = null; repairMessage = ''; repairPending = false; repairAffectedFiles = [];
+    repairProposal = null; repairApplied = null; repairMessage = ''; repairPending = false; repairAffectedFiles = []; analysisIssueDetails = null; repairIssueCopy = null;
   }
   function repairMarkup() {
     if (!selectedFailure || !latestRun()) return '';
     const pending = repairPending ? ' disabled' : '';
     const notice = '<p role="status" aria-live="polite">' + esc(repairMessage) + '</p>';
     if (repairStage === 'idle' || repairStage === 'loading') return '<h3 tabindex="-1">Fix one failure</h3><p>Selected failed check: ' + esc(selectedFailure.assertionId) + '</p><button type="button" data-action="analyze-failure"' + pending + '>Analyze failure</button>' + notice;
-    if (repairStage === 'unavailable') return '<h3 tabindex="-1">Analysis unavailable</h3><p>Configure an OpenAI API key in the server environment, then check again. Local evidence remains available above.</p><button type="button" data-action="analyze-failure">Check again</button>' + notice;
-    if (repairStage === 'retryable-error') return '<h3 tabindex="-1">Analysis could not finish</h3><p>Local evidence remains available above.</p><button type="button" data-action="analyze-failure">Retry analysis</button>' + notice;
+    if (repairStage === 'unavailable' || repairStage === 'retryable-error') {
+      const [title, explanation, nextStep] = repairIssueCopy;
+      return '<div class="model-notice" data-analysis-notice><h3 tabindex="-1">' + esc(title) + '</h3><p>' + esc(explanation + ' ' + nextStep) + ' Your eval result is still here.</p>'
+        + '<button type="button" data-action="analyze-failure">Try analysis again</button>'
+        + (analysisIssueDetails ? '<pre data-analysis-issue-details>' + esc(analysisIssueDetails) + '</pre><button type="button" data-action="copy-analysis-issue">Copy issue details</button><p data-analysis-copy-status></p>' : '')
+        + notice + '</div>';
+    }
     if (repairStage === 'analysis') {
       const analysis = repairAnalysis;
       const cause = analysis?.likelyCause || 'unclear_needs_human_judgment';
@@ -51,7 +85,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (!selectedFailure || repairPending || !latestRun()) return;
     const current = { ...selectedFailure }, key = selectionKey(current), generation = ++repairGeneration;
     repairPending = true; repairMessage = kind === 'analysis' ? 'Analyzing the selected check…' : kind === 'proposal' ? 'Drafting one-file repair…' : 'Checking approval and file state…';
-    if (kind === 'analysis') repairStage = 'loading';
+    if (kind === 'analysis') { repairStage = 'loading'; analysisIssueDetails = null; repairIssueCopy = null; }
     renderRepair();
     try {
       let result;
@@ -70,18 +104,25 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       }
       if (generation !== repairGeneration || selectionKey(selectedFailure) !== key || !latestRun()) return;
       if (kind === 'analysis' && result.status === 'analysis-ready') { repairAnalysis = result.analysis; repairAnalysisId = result.analysisId; repairStage = 'analysis'; repairMessage = ''; }
-      else if (kind === 'analysis' && result.status === 'analysis-unavailable') { repairStage = 'unavailable'; repairMessage = result.message || 'Analysis unavailable.'; }
-      else if (kind === 'analysis' && result.status === 'error') { repairStage = 'retryable-error'; repairMessage = result.message || 'Analysis could not finish.'; }
-      else if (kind === 'analysis') { repairStage = 'retryable-error'; repairMessage = result.message || 'Selected analysis is no longer available. Review the evidence and try again.'; }
+      else if (kind === 'analysis') {
+        const safe = safeAnalysisIssue(result);
+        repairIssueCopy = safe?.copy || analysisGuidance.unknown;
+        analysisIssueDetails = safe?.details || null;
+        repairStage = result.status === 'analysis-unavailable' ? 'unavailable' : 'retryable-error';
+        repairMessage = repairIssueCopy[0];
+      }
       else if (kind === 'proposal' && result.status === 'proposal-ready') { repairProposal = result.proposal; repairStage = 'proposal'; repairMessage = ''; }
       else if (kind === 'apply' && result.status === 'applied') { repairApplied = result; repairStage = 'applied'; repairMessage = 'Source run unchanged. Rerun to verify.'; }
       else if (kind === 'apply') { repairStage = result.status === 'error' ? 'apply-uncertain' : 'apply-blocked'; repairAffectedFiles = Array.isArray(result.changedFiles) ? result.changedFiles : []; repairMessage = result.message || 'The proposal could not be applied. Draft a fresh one.'; }
       else repairMessage = result.message || result.reason || 'This step is unavailable. Review the selected evidence and try again.';
     } catch {
       if (generation === repairGeneration && selectionKey(selectedFailure) === key) {
-        if (kind === 'analysis') repairStage = 'retryable-error';
+        if (kind === 'analysis') {
+          repairStage = 'retryable-error'; repairIssueCopy = ['Analysis unavailable', "Sibu couldn't reach the analysis service.", 'Check the connection, then try analysis again. A matching terminal event may not exist.'];
+          repairMessage = 'Analysis connection failed';
+        }
         if (kind === 'apply') repairStage = 'apply-uncertain';
-        repairMessage = 'The repair service could not finish. No new approval was sent automatically.';
+        if (kind !== 'analysis') repairMessage = 'The repair service could not finish. No new approval was sent automatically.';
       }
     } finally {
       if (generation === repairGeneration && selectionKey(selectedFailure) === key) { repairPending = false; renderRepair(); }
@@ -102,6 +143,17 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
+    if (target.dataset.action === 'copy-analysis-issue' && analysisIssueDetails) {
+      const details = analysisIssueDetails, generation = repairGeneration, key = selectionKey(selectedFailure);
+      const feedback = message => { if (generation === repairGeneration && key === selectionKey(selectedFailure)) {
+        document.querySelector('[data-repair-host] [data-analysis-copy-status]')?.replaceChildren?.(message);
+      } };
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        void Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
+          () => feedback('Copy unavailable. Select the issue details above.'));
+      } catch { feedback('Copy unavailable. Select the issue details above.'); }
+    }
     if (target.dataset.action === 'analyze-failure') void requestRepair('analysis');
     if (target.dataset.action === 'draft-repair') void requestRepair('proposal');
     if (target.dataset.action === 'approve-repair') void requestRepair('apply');

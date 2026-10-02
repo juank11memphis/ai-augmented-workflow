@@ -74,3 +74,12 @@ it('keeps entry recovery in the suite context before setup and Results at phone,
   assert.match(html, /\.suite-rail\{display:block/);
   assert.doesNotMatch(html, /diagnostic-rail|diagnostic-history/);
 });
+
+it('keeps failure analysis notice in existing result detail instead of adding a diagnostic panel', () => {
+  const html = renderWorkspaceShell({ status: 'ready', diagnostics: [], suites: [] });
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /<section data-repair-host aria-label="Guided repair">.*repairMarkup\(\)/s);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /data-analysis-notice/);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /data-analysis-issue-details/);
+  assert.match(html, /data-results-container.*data-detail.*data-side-panel hidden/s);
+  assert.doesNotMatch(html, /diagnostic-rail|diagnostic-history|data-analysis-panel/);
+});
