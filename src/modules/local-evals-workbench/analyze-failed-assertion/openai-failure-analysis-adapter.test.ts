@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { OpenAiFailureAnalysisAdapter, type OpenAiFailureAnalysisClient } from './openai-failure-analysis-adapter.js';
+import { FetchOpenAiFailureAnalysisClient, OpenAiFailureAnalysisAdapter, type OpenAiFailureAnalysisClient } from './openai-failure-analysis-adapter.js';
 import { EnvironmentAssistanceConfig } from './assistance-config.js';
 import type { FailedAssertionEvidence } from './evidence.js';
+import { FailureAnalysisProviderError, type FailureAnalysisProviderCategory } from './ports.js';
+
+const privateMarkers = ['synthetic-key', 'synthetic-prompt', 'synthetic-output', 'synthetic-body'];
 
 describe('OpenAiFailureAnalysisAdapter', () => {
   it('parses valid fake LLM analysis', async () => {
@@ -40,16 +43,27 @@ describe('OpenAiFailureAnalysisAdapter', () => {
     assert.match(result.exactFailureExplanation, /OPENAI_API_KEY=synthetic/);
   });
 
-  it('rejects missing required fields and provider failures', async () => {
-    await assert.rejects(() => new OpenAiFailureAnalysisAdapter('secret', fakeClient([], JSON.stringify({ likelyCause: 'prompt_issue' }))).analyzeFailure({ model: 'analysis-model', evidence: evidence() }));
-    await assert.rejects(() => new OpenAiFailureAnalysisAdapter('secret', { createResponse: async () => { throw new Error('provider rejection full response'); } }).analyzeFailure({ model: 'analysis-model', evidence: evidence() }));
+  it('classifies an unrecognized client rejection as unknown without exposing its message', async () => {
+    const adapter = new OpenAiFailureAnalysisAdapter('synthetic-key', { createResponse: async () => {
+      throw new Error(privateMarkers.join(' '));
+    } });
+    await assertProviderFailure(() => adapter.analyzeFailure({ model: 'analysis-model', evidence: evidence() }), 'unknown');
   });
-  it('rejects malformed, invalid-cause, and oversized provider output', async () => {
-    for (const output of ['not-json', '', JSON.stringify({ exactFailureExplanation: 'Failure', likelyCause: 'invented', evidenceSummary: 'Evidence', uncertainty: 'Low' }),
+
+  it('does not infer a provider category from a project-runner exit message', async () => {
+    const adapter = new OpenAiFailureAnalysisAdapter('synthetic-key', { createResponse: async () => {
+      throw new Error('project runner exited 1: synthetic-body');
+    } });
+    await assertProviderFailure(() => adapter.analyzeFailure({ model: 'analysis-model', evidence: evidence() }), 'unknown');
+  });
+
+  it('classifies malformed, invalid-shape, and oversized analysis output as invalid response', async () => {
+    for (const output of ['synthetic-output not-json', '', JSON.stringify({ likelyCause: 'prompt_issue' }),
+      JSON.stringify({ exactFailureExplanation: 'Failure', likelyCause: 'invented', evidenceSummary: 'Evidence', uncertainty: 'Low' }),
       JSON.stringify({ exactFailureExplanation: 'X'.repeat(1_201), likelyCause: 'prompt_issue', evidenceSummary: 'Evidence', uncertainty: 'Low' }),
       'x'.repeat(8_001)]) {
-      await assert.rejects(() => new OpenAiFailureAnalysisAdapter('secret', fakeClient([], output))
-        .analyzeFailure({ model: 'analysis-model', evidence: evidence() }));
+      await assertProviderFailure(() => new OpenAiFailureAnalysisAdapter('synthetic-key', fakeClient([], output))
+        .analyzeFailure({ model: 'analysis-model', evidence: evidence() }), 'invalid-response');
     }
   });
   it('times out a stalled fake provider without retrying', async () => {
@@ -58,18 +72,45 @@ describe('OpenAiFailureAnalysisAdapter', () => {
       calls++;
       return new Promise(() => undefined);
     } }, 5);
-    await assert.rejects(() => adapter.analyzeFailure({ model: 'analysis-model', evidence: evidence() }), /timed out/);
+    await assertProviderFailure(() => adapter.analyzeFailure({ model: 'analysis-model', evidence: evidence() }), 'timeout');
     assert.equal(calls, 1);
   });
+
+  it('classifies observed HTTP authorization, rate limit, unavailability, and other statuses before reading the body', async () => {
+    for (const [status, category] of [[401, 'authorization'], [403, 'authorization'], [429, 'rate-limit'],
+      [500, 'unavailable'], [503, 'unavailable'], [400, 'unknown']] as const) {
+      const response = new Response('synthetic-body', { status });
+      Object.defineProperty(response, 'body', { get: () => { throw new Error('synthetic-body was read'); } });
+      const client = new FetchOpenAiFailureAnalysisClient('synthetic-key', async () => response);
+      await assertProviderFailure(() => client.createResponse({ model: 'analysis-model', input: 'synthetic-prompt' }), category);
+    }
+  });
+
+  it('classifies observed fetch timeout, network unavailability, and unclassified transport failures', async () => {
+    for (const [rejection, category] of [[new DOMException('synthetic-body', 'TimeoutError'), 'timeout'],
+      [new TypeError('synthetic-body'), 'unavailable'], [new Error('synthetic-body'), 'unknown']] as const) {
+      const client = new FetchOpenAiFailureAnalysisClient('synthetic-key', async () => { throw rejection; });
+      await assertProviderFailure(() => client.createResponse({ model: 'analysis-model', input: 'synthetic-prompt' }), category);
+    }
+  });
+
+  it('classifies malformed, missing-text, and oversized HTTP responses as invalid response', async () => {
+    for (const body of ['synthetic-body not-json', '{}', JSON.stringify({ output_text: 123 }),
+      JSON.stringify({ output: [{ content: [{ text: 123 }] }] }), 'x'.repeat(16_001)]) {
+      const client = new FetchOpenAiFailureAnalysisClient('synthetic-key', async () => new Response(body, { status: 200 }));
+      await assertProviderFailure(() => client.createResponse({ model: 'analysis-model', input: 'synthetic-prompt' }), 'invalid-response');
+    }
+  });
+
   it('bounds the HTTP body and keeps authentication outside the prompt', async () => {
     const requests: RequestInit[] = [];
-    const client = new (await import('./openai-failure-analysis-adapter.js')).FetchOpenAiFailureAnalysisClient('secret-key', async (_url, init) => {
+    const client = new FetchOpenAiFailureAnalysisClient('synthetic-key', async (_url, init) => {
       requests.push(init ?? {});
       return new Response('x'.repeat(16_001), { status: 200 });
     });
-    await assert.rejects(() => client.createResponse({ model: 'analysis-model', input: 'selected' }));
-    assert.equal((requests[0]?.headers as Record<string, string>).authorization, 'Bearer secret-key');
-    assert.doesNotMatch(String(requests[0]?.body), /secret-key/);
+    await assertProviderFailure(() => client.createResponse({ model: 'analysis-model', input: 'synthetic-prompt' }), 'invalid-response');
+    assert.equal((requests[0]?.headers as Record<string, string>).authorization, 'Bearer synthetic-key');
+    assert.doesNotMatch(String(requests[0]?.body), /synthetic-key/);
     assert.ok(requests[0]?.signal);
   });
 
@@ -78,6 +119,17 @@ describe('OpenAiFailureAnalysisAdapter', () => {
     assert.equal(new EnvironmentAssistanceConfig({ OPENAI_API_KEY: 'secret' }).getConfig().assistanceModelLabel, 'gpt-5-mini');
   });
 });
+
+async function assertProviderFailure(operation: () => Promise<unknown>, category: FailureAnalysisProviderCategory): Promise<void> {
+  await assert.rejects(operation, (error: unknown) => {
+    assert.ok(error instanceof FailureAnalysisProviderError);
+    assert.equal(error.category, category);
+    const exposed = `${String(error)} ${JSON.stringify(error)}`;
+    for (const marker of privateMarkers) assert.doesNotMatch(exposed, new RegExp(marker));
+    assert.deepEqual(Object.keys(error), ['category', 'name']);
+    return true;
+  });
+}
 
 function fakeClient(calls: { model: string; input: string; apiKey: string }[], outputText: string): OpenAiFailureAnalysisClient {
   return { createResponse: async (request) => { calls.push(request); return { outputText }; } };

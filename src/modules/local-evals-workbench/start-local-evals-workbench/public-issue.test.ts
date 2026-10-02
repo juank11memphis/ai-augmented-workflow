@@ -1,8 +1,34 @@
 import assert from 'node:assert/strict';
-import { it } from 'node:test';
+import { it, test } from 'node:test';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/index.js';
 import { acceptedRequestReference, acceptedStartReference, discoveryIssue, invalidModelCheckIssue, invalidPreviewIssue, invalidStartIssue, modelCheckIssue, previewIssue, startIssue, unavailablePreviewIssue, unknownDiscoveryIssue, unknownModelCheckIssue, unknownPreviewIssue, unknownStartIssue } from './public-issue.js';
+import { analysisIssue, invalidAnalysisIssue, unknownAnalysisIssue } from './analysis-public-issue.js';
+import type { AnalyzeFailedAssertionResult } from '../analyze-failed-assertion/result.js';
+
+test('analysis issues give every known reason distinct safe copy and read-only recovery', () => {
+  const reference = '123e4567-e89b-42d3-a456-426614174000';
+  const reasons = ['missing-openai-api-key', 'invalid-scope', 'missing-artifact', 'missing-cell', 'missing-assertion',
+    'non-failed-assertion', 'provider-authorization', 'provider-rate-limit', 'provider-timeout',
+    'provider-unavailable', 'invalid-llm-response', 'llm-failure', 'unknown'] as const;
+  for (const reason of reasons) {
+    const result = reason === 'missing-openai-api-key'
+      ? { status: 'analysis-unavailable', reason } as AnalyzeFailedAssertionResult
+      : ['invalid-scope', 'missing-artifact', 'missing-cell', 'missing-assertion', 'non-failed-assertion'].includes(reason)
+      ? { status: 'blocked', reason } as AnalyzeFailedAssertionResult
+      : { status: 'error', reason } as AnalyzeFailedAssertionResult;
+    if (result.status === 'analysis-ready') throw new Error('Invalid fixture');
+    const issue = analysisIssue(result, reference);
+    assert.equal(issue.category, reason);
+    assert.equal(issue.reference, reference);
+    assert.equal(issue.stage, 'analysis');
+    assert.ok(issue.explanation.length > 20 && issue.nextStep.length > 20);
+    assert.ok(['check-setup', 'retry', 'report'].includes(issue.recoveryAction));
+    assert.notEqual(issue.explanation, reason);
+  }
+  assert.equal(invalidAnalysisIssue(reference).category, 'invalid-request');
+  assert.match(unknownAnalysisIssue(reference).explanation, /Cause unknown/);
+});
 import { SafeConsoleLocalEvalsLogger } from './safe-console-logger.js';
 import type { RuntimeBlockReason } from '../runtime-description.js';
 

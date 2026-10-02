@@ -105,3 +105,26 @@ it('allowlists read issue stage, reason, reference, and drops private extras', (
     stage: 'history', outcome: 'blocked', reason: 'corrupt', reference: '123e4567-e89b-42d3-a456-426614174000' });
   assert.doesNotMatch(messages.join(' '), /sk-secret|private artifact/);
 });
+
+it('allowlists analysis event categories and references without private fields', () => {
+  const messages: string[] = [];
+  const original = console.error;
+  console.error = message => messages.push(String(message));
+  const reference = '123e4567-e89b-42d3-a456-426614174000';
+  try {
+    const logger = new SafeConsoleLocalEvalsLogger();
+    logger.info(Object.assign({ event: 'failure_analysis_requested' as const, stage: 'analysis' as const,
+      outcome: 'started' as const, reference }, { prompt: 'private prompt', rawId: 'private-id' }));
+    logger.error(Object.assign({ event: 'failure_analysis_finished' as const, stage: 'analysis' as const,
+      outcome: 'failed' as const, reason: 'provider-timeout' as const, durationMs: 5, reference },
+    { key: 'sk-secret', output: 'private output', providerBody: 'private body', projectContent: 'private project', model: 'private-model' }));
+    logger.warn(Object.assign({ event: 'local_evals_workbench_analysis_boundary_issue' as const, stage: 'analysis' as const,
+      outcome: 'blocked' as const, reason: 'invalid-request' as const, reference }, { error: 'sk-secret' }));
+  } finally { console.error = original; }
+  assert.deepEqual(messages.map(message => JSON.parse(message)), [
+    { level: 'info', event: 'failure_analysis_requested', stage: 'analysis', outcome: 'started', reference },
+    { level: 'error', event: 'failure_analysis_finished', stage: 'analysis', outcome: 'failed', reason: 'provider-timeout', reference, durationMs: 5 },
+    { level: 'warn', event: 'local_evals_workbench_analysis_boundary_issue', stage: 'analysis', outcome: 'blocked', reason: 'invalid-request', reference },
+  ]);
+  assert.doesNotMatch(messages.join(' '), /private|sk-secret/);
+});

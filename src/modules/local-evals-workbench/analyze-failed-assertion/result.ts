@@ -26,7 +26,7 @@ export type AnalyzeFailedAssertionBlockedResult = {
 
 export type AnalyzeFailedAssertionErrorResult = {
   readonly status: 'error';
-  readonly reason: 'llm-failure' | 'invalid-llm-response';
+  readonly reason: 'provider-authorization' | 'provider-rate-limit' | 'provider-timeout' | 'provider-unavailable' | 'invalid-llm-response' | 'unknown' | 'llm-failure';
   readonly message: string;
   readonly assistanceModelLabel: string;
   readonly evidence?: FailedAssertionEvidence;
