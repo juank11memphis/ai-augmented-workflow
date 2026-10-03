@@ -128,3 +128,24 @@ it('allowlists analysis event categories and references without private fields',
   ]);
   assert.doesNotMatch(messages.join(' '), /private|sk-secret/);
 });
+
+it('allowlists apply diagnostics and bounds changed-file counts', () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = value => lines.push(String(value));
+  const reference = '123e4567-e89b-42d3-a456-426614174000';
+  try {
+    const logger = new SafeConsoleLocalEvalsLogger();
+    logger.error(Object.assign({ event: 'local_evals_workbench_apply_event' as const, stage: 'repair-apply' as const,
+      outcome: 'uncertain' as const, reason: 'sk-secret arbitrary error', reference, changedFileCount: 999999 },
+    { proposalId: 'sk-secret', safeTargetPaths: ['/private/sk-secret'], unsafePaths: ['/private/sk-secret'], content: 'sk-secret' }));
+    logger.warn(Object.assign({ event: 'local_evals_workbench_apply_response_failed' as const,
+      stage: 'repair-apply' as const, outcome: 'uncertain' as const, reason: 'response-write-failed' as const, reference },
+    { error: 'sk-secret' }));
+  } finally { console.error = original; }
+  assert.deepEqual(JSON.parse(lines[0]!), { level: 'error', event: 'local_evals_workbench_apply_event',
+    stage: 'repair-apply', outcome: 'uncertain', reason: 'unknown', reference, changedFileCount: 10000 });
+  assert.deepEqual(JSON.parse(lines[1]!), { level: 'warn', event: 'local_evals_workbench_apply_response_failed',
+    stage: 'repair-apply', outcome: 'uncertain', reason: 'response-write-failed', reference });
+  assert.doesNotMatch(lines.join(' '), /sk-secret|private|proposalId|TargetPaths|unsafePaths/);
+});

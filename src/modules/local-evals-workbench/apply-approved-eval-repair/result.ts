@@ -33,8 +33,7 @@ export type ApprovedRepairBlockedReason =
   | 'stale-proposal'
   | 'wrong-project-root'
   | 'unsafe-target'
-  | 'unsafe-workflow-readiness'
-  | 'mutation-failure';
+  | 'unsafe-workflow-readiness';
 
 export type ApplyApprovedEvalRepairResult =
   | {
@@ -48,7 +47,7 @@ export type ApplyApprovedEvalRepairResult =
     }
   | {
       readonly status: 'blocked';
-      readonly reason: Exclude<ApprovedRepairBlockedReason, 'mutation-failure'>;
+      readonly reason: ApprovedRepairBlockedReason;
       readonly proposalId?: string;
       readonly changedFiles: readonly [];
       readonly changedFileCount: 0;
@@ -58,9 +57,11 @@ export type ApplyApprovedEvalRepairResult =
     }
   | {
       readonly status: 'error';
-      readonly reason: 'mutation-failure';
+      readonly reason: 'mutation-failure' | 'unexpected-port-failure';
       readonly proposalId: string;
       readonly changedFiles: readonly ApprovedRepairChangedFile[];
       readonly changedFileCount: number;
+      readonly mutationState?: 'not-attempted' | 'attempted-outcome-uncertain';
+      readonly inspectionPaths?: readonly string[];
       readonly message: string;
     };

@@ -15,19 +15,19 @@ export type ApplyApprovedEvalRepairDependencies = {
 };
 
 export async function applyApprovedEvalRepair(command: ApplyApprovedEvalRepairCommand, dependencies: ApplyApprovedEvalRepairDependencies): Promise<ApplyApprovedEvalRepairResult> {
+  const context = { proposalId: command.proposalId.trim(), startedAt: (dependencies.clock ?? Date.now)(), inspectionPaths: [] as string[], mutationState: 'not-attempted' as 'not-attempted' | 'attempted-outcome-uncertain' };
   try {
-    return await applyApprovedEvalRepairChecked(command, dependencies);
+    return await applyApprovedEvalRepairChecked(command, dependencies, context);
   } catch {
-    dependencies.logger.error({ event: 'approved_repair_failed', proposalId: command.proposalId, reason: 'unexpected-port-failure', targetFileCount: 0, safeTargetPaths: [], durationMs: 0 });
-    return { status: 'error', reason: 'mutation-failure', proposalId: command.proposalId, changedFiles: [], changedFileCount: 0,
-      message: 'The repair outcome is uncertain. Inspect the target before drafting another proposal.' };
+    return uncertain('unexpected-port-failure', [], context, dependencies);
   }
 }
 
-async function applyApprovedEvalRepairChecked(command: ApplyApprovedEvalRepairCommand, dependencies: ApplyApprovedEvalRepairDependencies): Promise<ApplyApprovedEvalRepairResult> {
-  const startedAt = (dependencies.clock ?? Date.now)();
-  const proposalId = command.proposalId.trim();
-  dependencies.logger.info({ event: 'approved_repair_requested', proposalId });
+type ApplyContext = { proposalId: string; startedAt: number; inspectionPaths: string[]; mutationState: 'not-attempted' | 'attempted-outcome-uncertain' };
+
+async function applyApprovedEvalRepairChecked(command: ApplyApprovedEvalRepairCommand, dependencies: ApplyApprovedEvalRepairDependencies, context: ApplyContext): Promise<ApplyApprovedEvalRepairResult> {
+  const { startedAt, proposalId } = context;
+  logSafely(() => dependencies.logger.info({ event: 'approved_repair_requested' }));
 
   if (!proposalId || !command.projectRoot.trim()) return block('invalid-request', 'Proposal id and project root are required. No project files changed.', dependencies, startedAt, proposalId || undefined);
   if (command.approvalMarker !== APPLY_APPROVED_REPAIR_MARKER) return block('missing-approval', 'Explicit approval is required before Sibu can change project files. No project files changed.', dependencies, startedAt, proposalId);
@@ -46,26 +46,27 @@ async function applyApprovedEvalRepairChecked(command: ApplyApprovedEvalRepairCo
   }
 
   const safety = await dependencies.safety.validateTargets(command.projectRoot, proposal.affectedProjectFiles);
-  if (safety.status === 'blocked') return block('unsafe-target', `${safety.reason} No project files changed.`, dependencies, startedAt, proposalId, proposal.affectedProjectFiles.length, safety.unsafePaths);
+  if (safety.status === 'blocked') return block('unsafe-target', 'Repair target is unsafe or unreadable. No project files changed.', dependencies, startedAt, proposalId, proposal.affectedProjectFiles.length, safety.unsafePaths);
+  if (safety.safeTargets.length !== 1 || safety.safeTargets[0] !== proposal.targetPrecondition.path) {
+    return block('unsafe-target', 'Repair target verification did not match the approved proposal. No project files changed.', dependencies, startedAt, proposalId);
+  }
+  context.inspectionPaths = [...safety.safeTargets];
 
   const readiness = await dependencies.workflowReadiness.checkReadiness(command.projectRoot, safety.safeTargets);
   if (readiness.status === 'blocked') return block('unsafe-workflow-readiness', `${readiness.message} No project files changed.`, dependencies, startedAt, proposalId, safety.safeTargets.length, readiness.affectedPaths, readiness.guidance);
 
   if (!dependencies.proposalReader.claimPendingProposal(proposalId)) return block('stale-proposal', 'This proposal was already applied or is being applied. Draft a fresh one. No project files changed.', dependencies, startedAt, proposalId);
+  context.mutationState = 'attempted-outcome-uncertain';
   const mutation = await dependencies.mutator.applyApprovedChange({ projectRoot: command.projectRoot, targetPaths: safety.safeTargets, approvedChange: proposal.proposedChange, targetPrecondition: proposal.targetPrecondition });
   if (mutation.status === 'failed') {
-    dependencies.logger.error({ event: 'approved_repair_failed', proposalId, reason: mutation.reason, targetFileCount: safety.safeTargets.length, safeTargetPaths: safety.safeTargets, durationMs: elapsed(startedAt, dependencies) });
-    return { status: 'error', reason: 'mutation-failure', proposalId, changedFiles: mutation.changedFiles, changedFileCount: mutation.changedFiles.length,
-      message: mutation.changedFiles.length ? 'The repair failed after a file changed. Inspect the file before retrying.' : 'The approved change could not be applied. No project files changed.' };
+    return uncertain('mutation-failure', mutation.changedFiles, context, dependencies);
   }
 
   if (mutation.changedFiles.length !== 1 || mutation.changedFiles[0]?.path !== proposal.targetPrecondition.path) {
-    dependencies.logger.error({ event: 'approved_repair_failed', proposalId, reason: 'unexpected-mutation-result', targetFileCount: safety.safeTargets.length, safeTargetPaths: safety.safeTargets, durationMs: elapsed(startedAt, dependencies) });
-    return { status: 'error', reason: 'mutation-failure', proposalId, changedFiles: mutation.changedFiles, changedFileCount: mutation.changedFiles.length,
-      message: 'The repair outcome is uncertain. Inspect the target before drafting another proposal.' };
+    return uncertain('mutation-failure', mutation.changedFiles, context, dependencies, 'unexpected-mutation-result');
   }
   const changedFiles = normalizeChangedFiles(mutation.changedFiles, proposal.changeSummary);
-  dependencies.logger.info({ event: 'approved_repair_applied', proposalId, targetFileCount: safety.safeTargets.length, changedFileCount: changedFiles.length, safeTargetPaths: changedFiles.map((file) => file.path), durationMs: elapsed(startedAt, dependencies) });
+  logSafely(() => dependencies.logger.info({ event: 'approved_repair_applied', targetFileCount: safety.safeTargets.length, changedFileCount: changedFiles.length, durationMs: elapsed(startedAt, dependencies) }));
   return {
     status: 'applied',
     proposalId,
@@ -98,9 +99,25 @@ function createRerunRecommendation(proposal: PendingApprovedRepairProposal): App
   };
 }
 
-function block(reason: Exclude<ApprovedRepairBlockedReason, 'mutation-failure'>, message: string, dependencies: ApplyApprovedEvalRepairDependencies, startedAt: number, proposalId?: string, targetFileCount?: number, unsafePaths?: readonly string[], guidance?: readonly string[]): ApplyApprovedEvalRepairResult {
-  dependencies.logger.warn({ event: 'approved_repair_blocked', proposalId, reason, targetFileCount, safeTargetPaths: unsafePaths, durationMs: elapsed(startedAt, dependencies) });
+function block(reason: ApprovedRepairBlockedReason, message: string, dependencies: ApplyApprovedEvalRepairDependencies, startedAt: number, proposalId?: string, targetFileCount?: number, unsafePaths?: readonly string[], guidance?: readonly string[]): ApplyApprovedEvalRepairResult {
+  logSafely(() => dependencies.logger.warn({ event: 'approved_repair_blocked', reason, targetFileCount, durationMs: elapsed(startedAt, dependencies) }));
   return { status: 'blocked', reason, proposalId, changedFiles: [], changedFileCount: 0, message, unsafePaths, guidance };
+}
+
+function uncertain(reason: 'mutation-failure' | 'unexpected-port-failure', changedFiles: readonly ApprovedRepairChangedFile[], context: ApplyContext, dependencies: ApplyApprovedEvalRepairDependencies, logReason: 'mutation-failure' | 'unexpected-mutation-result' | 'unexpected-port-failure' = reason): ApplyApprovedEvalRepairResult {
+  const inspectionPaths = [...new Set([...context.inspectionPaths, ...changedFiles.map((file) => file.path)])];
+  logSafely(() => dependencies.logger.error({ event: 'approved_repair_failed', reason: logReason, mutationState: context.mutationState, targetFileCount: context.inspectionPaths.length, changedFileCount: changedFiles.length, durationMs: elapsed(context.startedAt, dependencies) }));
+  return {
+    status: 'error', reason, proposalId: context.proposalId, changedFiles, changedFileCount: changedFiles.length,
+    mutationState: context.mutationState, inspectionPaths,
+    message: context.mutationState === 'attempted-outcome-uncertain'
+      ? `The repair outcome is not confirmed. Inspect ${inspectionPaths.join(', ')} before drafting another proposal; do not repeat this approved change.`
+      : 'The repair could not be started. Its cause is unknown; inspect the proposal before drafting another one.',
+  };
+}
+
+function logSafely(write: () => void): void {
+  try { write(); } catch { /* Logging must not change a repair outcome. */ }
 }
 
 function sameRoot(left: string, right: string): boolean {

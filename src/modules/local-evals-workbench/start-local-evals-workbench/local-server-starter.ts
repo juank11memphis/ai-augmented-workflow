@@ -7,7 +7,6 @@ import type { RunLocalEvalSuiteDependencies } from '../run-local-eval-suite/inde
 import { analyzeFailedAssertion, parseAnalyzeFailedAssertionRequest } from '../analyze-failed-assertion/index.js';
 import type { AnalyzeFailedAssertionDependencies } from '../analyze-failed-assertion/index.js';
 import { draftEvalRepairProposal, parseDraftEvalRepairProposalRequest } from '../draft-eval-repair-proposal/index.js';
-import { applyApprovedEvalRepair, parseApplyApprovedEvalRepairRequest } from '../apply-approved-eval-repair/index.js';
 import type { DraftEvalRepairProposalDependencies } from '../draft-eval-repair-proposal/index.js';
 import type { ApplyApprovedEvalRepairDependencies } from '../apply-approved-eval-repair/index.js';
 import type { LocalWorkbenchServerStarterPort, LocalWorkbenchServerStartRequest, LocalWorkbenchServerStartResult } from './ports.js';
@@ -27,6 +26,7 @@ import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 import { StartReferenceRegistry } from './start-reference-registry.js';
 import { analysisIssue, invalidAnalysisIssue, unknownAnalysisIssue } from './analysis-public-issue.js';
 import { invalidProposalIssue, proposalIssue, unknownProposalIssue } from './proposal-public-issue.js';
+import { emitApplyResponseFailure, handleApplyRepairRoute } from './apply-repair-route.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -87,6 +87,8 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
           const issue = unknownProposalIssue(reference);
           if (!proposalTerminalReported) emitProposalBoundaryIssue(this.logger, issue);
           try { writeJson(response, 500, { status: 'error', reason: 'unknown-cause', issue, reference }, reference); } catch { /* Response may already be closed. */ }
+        } else if (httpRequest.url === '/api/repair-proposals/apply') {
+          emitApplyResponseFailure(this.logger, reference);
         } else if (httpRequest.url === '/api/eval-suites/describe') {
           const issue = unknownModelCheckIssue(reference);
           emitRequestIssue(this.logger, issue);
@@ -285,7 +287,7 @@ async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpR
   }
 
   if (request.url === '/api/repair-proposals/apply' && request.method === 'POST') {
-    await handleApplyRepairProposalRequest(request, response, startRequest, dependencies.applyRepair);
+    await handleApplyRepairRoute(request, response, startRequest.projectRoot, dependencies.applyRepair, reference, logger, readJsonBody);
     return;
   }
   if (request.url === '/api/failure-analysis' || request.url === '/api/repair-proposals' || request.url === '/api/repair-proposals/apply') {
@@ -390,23 +392,6 @@ function emitProposalBoundaryIssue(logger: LocalEvalsWorkbenchLoggerPort, issue:
   try { logger[issue.outcome === 'failed' ? 'error' : 'warn']({ event: 'local_evals_workbench_proposal_boundary_issue', stage: 'proposal', outcome: issue.outcome,
     reason: issue.category === 'invalid-request' ? 'invalid-request' : 'unknown-cause', reference: issue.reference }); }
   catch { /* Diagnostic sink is noncritical. */ }
-}
-
-async function handleApplyRepairProposalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: ApplyApprovedEvalRepairDependencies): Promise<void> {
-  const body = await readJsonBody(request);
-  if (body.status === 'invalid') {
-    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: body.message });
-    return;
-  }
-
-  const parsed = parseApplyApprovedEvalRepairRequest(startRequest.projectRoot, body.payload);
-  if (parsed.status === 'invalid') {
-    writeJson(response, 400, { status: 'blocked', reason: 'invalid-request', message: parsed.message });
-    return;
-  }
-
-  const result = await applyApprovedEvalRepair(parsed.command, dependencies);
-  writeJson(response, result.status === 'applied' ? 200 : result.status === 'blocked' ? 422 : 500, result);
 }
 
 function createNodeHttpServer(handler: LocalHttpRequestHandler): LocalHttpServer {

@@ -30,10 +30,10 @@ export type ApprovedProjectFileMutatorPort = {
 };
 
 export type ApplyApprovedRepairLogEvent =
-  | { readonly event: 'approved_repair_requested'; readonly proposalId: string }
-  | { readonly event: 'approved_repair_blocked'; readonly proposalId?: string; readonly reason: string; readonly targetFileCount?: number; readonly safeTargetPaths?: readonly string[]; readonly durationMs: number }
-  | { readonly event: 'approved_repair_applied'; readonly proposalId: string; readonly targetFileCount: number; readonly changedFileCount: number; readonly safeTargetPaths: readonly string[]; readonly durationMs: number }
-  | { readonly event: 'approved_repair_failed'; readonly proposalId: string; readonly reason: string; readonly targetFileCount: number; readonly safeTargetPaths: readonly string[]; readonly durationMs: number };
+  | { readonly event: 'approved_repair_requested' }
+  | { readonly event: 'approved_repair_blocked'; readonly reason: string; readonly targetFileCount?: number; readonly durationMs: number }
+  | { readonly event: 'approved_repair_applied'; readonly targetFileCount: number; readonly changedFileCount: number; readonly durationMs: number }
+  | { readonly event: 'approved_repair_failed'; readonly reason: 'mutation-failure' | 'unexpected-mutation-result' | 'unexpected-port-failure'; readonly mutationState: 'not-attempted' | 'attempted-outcome-uncertain'; readonly targetFileCount: number; readonly changedFileCount: number; readonly durationMs: number };
 
 export type ApplyApprovedRepairLoggerPort = {
   info(event: ApplyApprovedRepairLogEvent): void;

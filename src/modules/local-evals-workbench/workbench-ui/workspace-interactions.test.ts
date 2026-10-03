@@ -35,7 +35,8 @@ test('selected repeat moves analysis → one-file proposal → explicit apply wi
       rationale: 'The selected check failed.', expectedEvalImpact: 'The case should verify first.',
       proposedChange: { kind: 'unified-diff', representation: '-unsafe\n+<verified>' },
     } };
-    return { status: 'applied', message: 'Not verified.', rerunRecommendation: { primaryAction: { suiteId: 'suite', evalRunModelId: 'model' } } };
+    return { status: 'applied', changedFiles: [{ path: 'prompts/agent.md' }], message: 'Not verified.',
+      rerunRecommendation: { primaryAction: { scope: 'test_case', suiteId: 'suite', testCaseId: 'case', evalRunModelId: 'model' } } };
   });
   await api.requestRepair('analysis');
   assert.equal(api.getStage(), 'analysis');
