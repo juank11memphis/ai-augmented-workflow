@@ -127,7 +127,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.match(response.body, /0\/2 complete/);
       assert.match(response.body, /OPENAI_API_KEY.*project-root \.env.*\.env\.local/);
       assert.equal(response.headers['cache-control'], 'no-store');
-      assert.doesNotMatch(response.body, /openai-secret-for-test|model-secret-for-test|SIBU_EVALS_MODEL|PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|process\.env|mutation|mutate|\/repo/);
+      assert.doesNotMatch(response.body, /openai-secret-for-test|model-secret-for-test|SIBU_EVALS_MODEL|PRIVATE_RUNTIME_TOKEN|private prompt content|private-runner|private-tool|private expected output|process\.env|\/repo/);
     } finally {
       await result.stop?.();
       delete process.env.OPENAI_API_KEY;

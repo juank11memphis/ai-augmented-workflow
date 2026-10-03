@@ -84,6 +84,30 @@ test('restored failure remains immutable through approval and distinct confirmed
       workflowReadiness: { checkReadiness: async () => ({ status: 'ready' as const }) }, mutator, logger };
     const applyCommand = { projectRoot: p.root, proposalId: proposal.proposal.proposalId,
       approvalMarker: APPLY_APPROVED_REPAIR_MARKER, suiteId: 'suite', runId, testCaseId: 'case', attempt: 2, assertionId: 'assertion' };
+    const original = await fs.readFile(path.join(p.root, 'prompts/agent.md'), 'utf8');
+    await fs.writeFile(path.join(p.root, '.env'), 'PRIVATE_REPAIR_TOKEN=sk-secret');
+    const withoutApproval = await applyApprovedEvalRepair({ ...applyCommand, approvalMarker: 'not-approved' }, deps);
+    assert.equal(withoutApproval.status, 'blocked');
+    assert.equal(withoutApproval.reason, 'missing-approval');
+    const wrongRoot = await applyApprovedEvalRepair({ ...applyCommand, projectRoot: path.dirname(p.root) }, deps);
+    assert.equal(wrongRoot.status, 'blocked');
+    assert.equal(wrongRoot.reason, 'wrong-project-root');
+    const pending = proposalStore.getPendingProposal(applyCommand.proposalId);
+    assert.ok(pending);
+    for (const unsafePath of ['../outside.md', '.env', 'config/private-key.pem']) {
+      const unsafe = { ...pending, affectedProjectFiles: [unsafePath],
+        targetPrecondition: { ...pending.targetPrecondition, path: unsafePath } };
+      const blocked = await applyApprovedEvalRepair(applyCommand, {
+        ...deps, proposalReader: { getPendingProposal: () => unsafe, claimPendingProposal: () => {
+          assert.fail('unsafe target must not claim approval');
+        } },
+      });
+      assert.equal(blocked.status, 'blocked', unsafePath);
+      assert.equal(blocked.reason, 'unsafe-target', unsafePath);
+    }
+    assert.equal(await fs.readFile(path.join(p.root, 'prompts/agent.md'), 'utf8'), original);
+    assert.equal(await fs.readFile(path.join(p.root, '.env'), 'utf8'), 'PRIVATE_REPAIR_TOKEN=sk-secret');
+    assert.ok(proposalStore.getPendingProposal(applyCommand.proposalId), 'blocked attempts do not consume the proposal');
     const applied = await applyApprovedEvalRepair(applyCommand, deps);
     assert.equal(applied.status, 'applied');
     if (applied.status === 'applied') assert.equal(applied.validationStatus, 'not-rerun');
