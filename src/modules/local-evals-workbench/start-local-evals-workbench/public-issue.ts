@@ -6,6 +6,30 @@ import type { PreviewEvalRunResult, PreviewStage } from '../preview-eval-run/res
 import type { StartEvalRunResult } from '../start-eval-run/result.js';
 import type { Reason, RunState } from '../run-history/contracts.js';
 import { isSafeEnvironmentName, type RuntimeBlockReason } from '../runtime-description.js';
+import type { ApplyApprovedEvalRepairResult } from '../apply-approved-eval-repair/result.js';
+
+export type PublicApplyIssue = {
+  readonly stage: 'repair-apply'; readonly outcome: 'blocked' | 'uncertain';
+  readonly category: string; readonly title: string; readonly explanation: string;
+  readonly nextStep: string; readonly recoveryAction: 'inspect' | 'revise'; readonly reference: string;
+};
+
+export function applyRepairIssue(result: Exclude<ApplyApprovedEvalRepairResult, { status: 'applied' }>, reference: string): PublicApplyIssue {
+  if (result.status === 'blocked') return { stage: 'repair-apply', outcome: 'blocked', category: result.reason,
+    title: 'Repair not applied', explanation: 'Sibu blocked this repair before changing project files.',
+    nextStep: 'Review the proposal and approval before drafting another repair.', recoveryAction: 'revise', reference };
+  return { stage: 'repair-apply', outcome: 'uncertain', category: result.reason,
+    title: 'Repair outcome not confirmed', explanation: 'Sibu could not confirm the file outcome.',
+    nextStep: 'Inspect the named project files before drafting another proposal. Do not repeat this approved change.',
+    recoveryAction: 'inspect', reference };
+}
+
+export function invalidApplyRepairIssue(reference: string): PublicApplyIssue {
+  return { stage: 'repair-apply', outcome: 'blocked', category: 'invalid-request', title: 'Repair request invalid',
+    explanation: 'Sibu could not read this repair request.', nextStep: 'Review the request before trying again.',
+    recoveryAction: 'revise', reference };
+}
+
 
 type BlockedDiscovery = Extract<EvalSuiteDiscoveryResult, { status: 'blocked' }>;
 type DiscoveryReason = BlockedDiscovery['reason'];

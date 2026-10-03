@@ -68,6 +68,15 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
       return { event: event.event, stage: event.stage === 'status' ? 'status' : 'history',
         outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
         reason: knownReadReasons.has(event.reason) ? event.reason : 'unknown', reference: safeReference(event.reference) };
+    case 'local_evals_workbench_apply_event':
+      return { event: event.event, stage: 'repair-apply',
+        outcome: knownApplyOutcomes.has(event.outcome) ? event.outcome : 'uncertain',
+        reason: event.reason && knownApplyReasons.has(event.reason) ? event.reason : event.reason ? 'unknown' : undefined,
+        reference: safeReference(event.reference),
+        changedFileCount: event.changedFileCount === undefined ? undefined : Math.min(safeCount(event.changedFileCount), 10000) };
+    case 'local_evals_workbench_apply_response_failed':
+      return { event: event.event, stage: 'repair-apply', outcome: 'uncertain', reason: 'response-write-failed',
+        reference: safeReference(event.reference) };
     case 'failure_analysis_requested':
       return { event: event.event, stage: 'analysis', outcome: 'started', reference: safeReference(event.reference) };
     case 'failure_analysis_finished':
@@ -142,6 +151,10 @@ const knownStartReasons: ReadonlySet<string> = new Set<string>([
 const knownReadReasons: ReadonlySet<string> = new Set(['invalid-request', 'invalid-input', 'unsafe-path', 'not-ignored',
   'tracked-artifacts', 'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',
   'invalid-transition', 'owner-unknown', 'index-stale', 'unknown']);
+const knownApplyOutcomes = new Set(['started', 'applied', 'blocked', 'uncertain']);
+const knownApplyReasons = new Set(['invalid-request', 'missing-approval', 'stale-proposal', 'wrong-project-root',
+  'unsafe-target', 'unsafe-workflow-readiness', 'mutation-failure', 'unexpected-mutation-result',
+  'unexpected-port-failure', 'unknown']);
 const knownAnalysisReasons: ReadonlySet<string> = new Set([
   'analysis-ready', 'missing-openai-api-key', 'invalid-scope', 'missing-artifact', 'missing-cell',
   'missing-assertion', 'non-failed-assertion', 'provider-authorization', 'provider-rate-limit',

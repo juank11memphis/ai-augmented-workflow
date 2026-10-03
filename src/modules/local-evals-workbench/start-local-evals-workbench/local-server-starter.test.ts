@@ -13,6 +13,7 @@ import { queued } from '../run-history/test-fixtures.js';
 import './start-http-correlation.test.js';
 import './read-http.test.js';
 import './proposal-http.test.js';
+import './apply-route-http.test.js';
 import { readyDiscovery, blockedDiscovery, runDependencies, FakeLocalHttpServer, runtimeDependencies, applyRepairDependencies, analysisPayload, proposalPayload, analysisDependencies, proposalDependencies, failedArtifact, withOfflineWorkbench } from './local-server-starter-test-fixture.js';
 
 describe('NodeLocalWorkbenchServerStarter', () => {
@@ -226,8 +227,6 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       await started.stop?.();
     }
   });
-
-
   it('runs all test cases through POST /api/eval-runs', async () => {
     const fakeServer = new FakeLocalHttpServer(4321);
     const calls: string[][] = [];
@@ -453,6 +452,37 @@ describe('NodeLocalWorkbenchServerStarter', () => {
     } finally { await result.stop?.(); }
   });
 
+  it('correlates partial apply uncertainty without leaking proposal text, paths, or thrown errors', async () => {
+    const server = new FakeLocalHttpServer(4321);
+    const events: unknown[] = [];
+    const reference = '123e4567-e89b-42d3-a456-426614174000';
+    const dependencies = applyRepairDependencies();
+    const starter = new NodeLocalWorkbenchServerStarter(handler => { server.handler = handler; return server; },
+      () => runtimeDependencies({ applyRepair: { ...dependencies, mutator: { applyApprovedChange: async () => ({
+        status: 'failed', reason: 'sk-secret thrown mutator error', changedFiles: [{ path: 'prompts/skill-authoring.md' }],
+      }) } } }), { info: event => events.push(event), warn: event => events.push(event), error: event => events.push(event) });
+    const started = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: readyDiscovery() });
+    try {
+      const selection = analysisPayload();
+      const request = { ...selection, proposalId: 'repair_1', approvalMarker: APPLY_APPROVED_REPAIR_MARKER,
+        privateText: 'sk-secret proposal text' };
+      const response = await server.renderJsonResponse('/api/repair-proposals/apply', request, reference);
+      const payload = JSON.parse(response.body) as { status: string; mutationState: string; inspectionPaths: string[];
+        issue: { stage: string; outcome: string; category: string; reference: string } };
+      assert.equal(response.statusCode, 500);
+      assert.equal(payload.status, 'error');
+      assert.equal(payload.mutationState, 'attempted-outcome-uncertain');
+      assert.deepEqual(payload.inspectionPaths, ['prompts/skill-authoring.md']);
+      assert.deepEqual(payload.issue, { stage: 'repair-apply', outcome: 'uncertain', category: 'mutation-failure', reference,
+        title: 'Repair outcome not confirmed', explanation: 'Sibu could not confirm the file outcome.',
+        nextStep: 'Inspect the named project files before drafting another proposal. Do not repeat this approved change.', recoveryAction: 'inspect' });
+      assert.equal(response.headers['x-sibu-request-reference'], reference);
+      const terminal = events.at(-1) as { outcome: string; reason: string; reference: string; changedFileCount: number };
+      assert.deepEqual({ outcome: terminal.outcome, reason: terminal.reason, reference: terminal.reference,
+        changedFileCount: terminal.changedFileCount }, { outcome: 'uncertain', reason: 'mutation-failure', reference, changedFileCount: 1 });
+      assert.doesNotMatch(JSON.stringify(events) + JSON.stringify(payload.issue), /sk-secret|prompts\/|proposalId|privateText/);
+    } finally { await started.stop?.(); }
+  });
 });
 
 async function requestDiscovery(server: FakeLocalHttpServer, reference: string): Promise<{ statusCode: number; headers: Record<string, string>; body: string }> {

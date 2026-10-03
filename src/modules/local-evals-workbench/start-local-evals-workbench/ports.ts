@@ -48,7 +48,9 @@ export type LocalEvalsWorkbenchLogEvent =
   | { readonly event: 'local_evals_workbench_request_issue'; readonly stage: 'discovery' | 'model-check' | 'preview' | 'run-start'; readonly outcome: 'blocked' | 'failed'; readonly reason: 'missing-evals-folder' | 'no-eval-suites' | 'unreadable-eval-suites' | 'discovery-failed' | RuntimeBlockReason | Extract<StartEvalRunResult, { status: 'blocked' }>['reason'] | 'invalid-request' | 'unknown' | 'reference-reused'; readonly reference: string }
   | { readonly event: 'local_evals_workbench_run_start_queued'; readonly stage: 'run-start'; readonly outcome: 'queued'; readonly reference: string; readonly runId: string }
   | { readonly event: 'local_evals_workbench_run_start_response_failed'; readonly stage: 'run-start'; readonly outcome: 'uncertain'; readonly reason: 'response-write-failed'; readonly reference: string; readonly runId: string }
-  | { readonly event: 'local_evals_workbench_read_issue'; readonly stage: 'status' | 'history'; readonly outcome: 'blocked' | 'failed'; readonly reason: Reason | 'invalid-request' | 'unknown'; readonly reference: string };
+  | { readonly event: 'local_evals_workbench_read_issue'; readonly stage: 'status' | 'history'; readonly outcome: 'blocked' | 'failed'; readonly reason: Reason | 'invalid-request' | 'unknown'; readonly reference: string }
+  | { readonly event: 'local_evals_workbench_apply_event'; readonly stage: 'repair-apply'; readonly outcome: 'started' | 'applied' | 'blocked' | 'uncertain'; readonly reason?: string; readonly reference: string; readonly changedFileCount?: number }
+  | { readonly event: 'local_evals_workbench_apply_response_failed'; readonly stage: 'repair-apply'; readonly outcome: 'uncertain'; readonly reason: 'response-write-failed'; readonly reference: string };
 
 export type LocalEvalsWorkbenchLoggerPort = {
   info(event: LocalEvalsWorkbenchLogEvent): void;
