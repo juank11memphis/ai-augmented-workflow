@@ -14,7 +14,7 @@ function harness(post: (url: string, body: Record<string, unknown>) => Promise<u
   const events: Record<string, (event: ClickEvent) => void> = {};
   const feedback = { textContent: '', replaceChildren(value: string) { this.textContent = value; } };
   const document = { activeElement: null as null | { dataset?: { action?: string }; focusName?: string },
-    querySelectorAll: () => [host], querySelector: (value: string) => value.includes('proposal-copy-status') ? feedback : null,
+    querySelectorAll: () => [host], querySelector: (value: string) => /(?:proposal|apply)-copy-status/.test(value) ? feedback : null,
     addEventListener: (kind: string, listener: (event: ClickEvent) => void) => { events[kind] = listener; } };
   const host = { innerHTML: '', closest: () => null, querySelector: (value: string) => {
     if (value.includes('data-proposal-announcement')) return { replaceChildren() { host.innerHTML = host.innerHTML.replace(/(<span class="live" role="status" data-proposal-announcement>).*?(<\/span>)/, '$1$2'); } };
@@ -38,6 +38,19 @@ const analysis = { status: 'analysis-ready', analysisId: 'analysis', analysis: {
   exactFailureExplanation: 'Selected check failed', evidenceSummary: 'Retained selected evidence', uncertainty: 'Low' } };
 const draftResponse = (status: string, category: string, outcome: string) => ({ status, reason: category,
   issue: proposalIssue(category, outcome), message: privateText, evidence: { output: privateText }, proposal: { changeSummary: privateText } });
+const applyResponse = (status: 'blocked' | 'error', category: string) => ({ status, reason: category,
+  issue: { stage: 'repair-apply', outcome: status === 'blocked' ? 'blocked' : 'uncertain', category, reference,
+    title: privateText, explanation: privateText, nextStep: privateText }, message: privateText,
+  changedFileCount: 99, changedFiles: [{ path: 'PRIVATE_PATH', content: privateText }] });
+const safeApplyDetails = (markup: string) => markup.match(/<pre data-apply-issue-details>(.*?)<\/pre>/s)?.[1];
+async function reachApply(response: unknown, clipboard?: { writeText(value: string): Promise<void> }) {
+  const urls: string[] = [];
+  const browser = harness(async url => { urls.push(url); if (url.endsWith('/apply') && response instanceof Error) throw response;
+    return url.includes('failure-analysis') ? analysis : url.endsWith('/apply') ? response : { status: 'proposal-ready', proposal: { ...proposal, changeSummary: privateText,
+      affectedProjectFiles: ['PRIVATE_PROPOSAL_PATH'], proposedChange: { ...proposal.proposedChange, representation: privateText } } }; }, clipboard);
+  await browser.api.requestRepair('analysis'); await browser.api.requestRepair('proposal'); await browser.api.requestRepair('apply');
+  return { ...browser, urls };
+}
 
 test('proposal review shows exact decision context and sends identity plus explicit approval only', async () => {
   const calls: { url: string; body: Record<string, unknown> }[] = [];
@@ -232,6 +245,59 @@ test('proposal copy is allowlisted, fallback stays selectable, and stale selecti
   stale.api.resetRepair(); stale.api.setSelection({ ...selected, assertionId: 'other' }); finishCopy();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(stale.feedback.textContent, '');
+});
+
+test('actual apply Copy click writes only four validated fields for blocked and uncertain outcomes', async () => {
+  for (const [status, category, outcome] of [['blocked', 'missing-approval', 'blocked'], ['error', 'mutation-failure', 'uncertain']] as const) {
+    const copied: string[] = [];
+    const browser = await reachApply(applyResponse(status, category), { writeText: async value => { copied.push(value); } });
+    const before = browser.api.markup();
+    const expected = `Stage: repair-apply\nOutcome: ${outcome}\nCategory: ${category}\nReference: ${reference}`;
+    assert.match(before, /data-action="copy-apply-issue"/);
+    assert.equal(safeApplyDetails(before), expected);
+    browser.click('copy-apply-issue');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(copied, [expected]);
+    assert.equal(browser.feedback.textContent, 'Issue details copied.');
+    assert.equal(browser.api.markup(), before, 'copy feedback does not replace the outcome notice');
+    assert.equal(browser.urls.filter(url => url.endsWith('/apply')).length, 1, 'copy does not reapply');
+    for (const secret of ['sk-secret', 'PRIVATE_', '99']) assert.doesNotMatch(copied[0]! + safeApplyDetails(before), new RegExp(secret));
+  }
+});
+
+test('malformed or missing apply issue never exposes Copy or fallback details', async () => {
+  const valid = applyResponse('error', 'mutation-failure');
+  for (const response of [
+    { ...valid, issue: { ...valid.issue, stage: 'proposal' } },
+    { ...valid, issue: { ...valid.issue, outcome: 'blocked' } },
+    { ...valid, issue: { ...valid.issue, category: privateText } },
+    { ...valid, issue: { ...valid.issue, reference: privateText } },
+    { ...valid, reason: 'missing-approval' },
+    { ...valid, issue: undefined },
+    undefined,
+  ]) {
+    const copied: string[] = [];
+    const browser = await reachApply(response, { writeText: async value => { copied.push(value); } });
+    assert.doesNotMatch(browser.api.markup(), /data-apply-issue-details|data-action="copy-apply-issue"/);
+    browser.click('copy-apply-issue');
+    assert.deepEqual(copied, []);
+    assert.equal(browser.feedback.textContent, '');
+  }
+  const lost = await reachApply(Error(privateText));
+  assert.doesNotMatch(lost.api.markup(), /data-apply-issue-details|data-action="copy-apply-issue"/);
+});
+
+test('apply clipboard rejection and unavailability retain selectable safe details without repeat apply', async () => {
+  for (const clipboard of [{ writeText: async (_: string) => { throw Error(privateText); } }, undefined]) {
+    const browser = await reachApply(applyResponse('error', 'unexpected-port-failure'), clipboard);
+    const details = safeApplyDetails(browser.api.markup());
+    browser.click('copy-apply-issue');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(details, `Stage: repair-apply\nOutcome: uncertain\nCategory: unexpected-port-failure\nReference: ${reference}`);
+    assert.match(browser.api.markup(), /<pre data-apply-issue-details>/);
+    assert.match(browser.feedback.textContent, /Select the issue details above/);
+    assert.equal(browser.urls.filter(url => url.endsWith('/apply')).length, 1);
+  }
 });
 
 test('failed draft has one concise live outcome, preserves notice, and moves focus only when the action disappears', async () => {

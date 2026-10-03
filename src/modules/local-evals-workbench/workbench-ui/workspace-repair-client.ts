@@ -2,7 +2,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
   let selectedFailure = null;
   let repairStage = 'idle', repairAnalysis = null, repairAnalysisId = null, repairProposal = null, repairApplied = null;
   let repairMessage = '', repairPending = false, repairGeneration = 0, repairAffectedFiles = [], analysisIssueDetails = null;
-  let repairIssueCopy = null, proposalIssueCopy = null, proposalIssueDetails = null, proposalAnnouncement = '';
+  let repairIssueCopy = null, proposalIssueCopy = null, proposalIssueDetails = null, proposalAnnouncement = '', applyIssueDetails = null;
   const analysisGuidance = {
     'missing-openai-api-key': ['Analysis unavailable', 'Analysis needs a local OpenAI API key.', 'Check local assistance setup, then try analysis again.'],
     'invalid-scope': ['Analysis selection invalid', 'This selection cannot be analyzed.', 'Select one failed assertion in a saved result.'],
@@ -65,11 +65,21 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (!valid) return null;
     return { copy: proposalGuidance[category], details: 'Stage: proposal\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() };
   }
+  function safeApplyIssue(result) {
+    const issue = result?.issue, category = issue?.category;
+    const blocked = ['invalid-request', 'missing-approval', 'stale-proposal', 'wrong-project-root', 'unsafe-target', 'unsafe-workflow-readiness'];
+    const uncertain = ['mutation-failure', 'unexpected-port-failure'];
+    if (!issue || issue.stage !== 'repair-apply' || issue.category !== result.reason ||
+      !((result.status === 'blocked' && issue.outcome === 'blocked' && blocked.includes(category)) ||
+        (result.status === 'error' && issue.outcome === 'uncertain' && uncertain.includes(category))) ||
+      typeof issue.reference !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(issue.reference)) return null;
+    return 'Stage: repair-apply\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase();
+  }
   const selectionKey = selection => selection ? [selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId].join('|') : '';
   function resetRepair() {
     repairGeneration++; selectedFailure = null; repairStage = 'idle'; repairAnalysis = null; repairAnalysisId = null;
     repairProposal = null; repairApplied = null; repairMessage = ''; repairPending = false; repairAffectedFiles = []; analysisIssueDetails = null; repairIssueCopy = null;
-    proposalIssueCopy = null; proposalIssueDetails = null; proposalAnnouncement = '';
+    proposalIssueCopy = null; proposalIssueDetails = null; proposalAnnouncement = ''; applyIssueDetails = null;
   }
   function repairMarkup() {
     if (!selectedFailure || !latestRun()) return '';
@@ -106,6 +116,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         + '<h4>Rationale</h4><p>' + esc(proposal?.rationale || '') + '</p><h4>Expected impact</h4><p>' + esc(proposal?.expectedEvalImpact || '') + '</p>'
         + (canApply ? '<button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button>' : '<button type="button" data-action="draft-repair"' + pending + '>Draft a fresh repair</button>')
         + '<button type="button" data-action="reject-repair"' + pending + '>Not now</button>' + notice
+        + (applyIssueDetails ? '<pre data-apply-issue-details>' + esc(applyIssueDetails) + '</pre><button type="button" data-action="copy-apply-issue">Copy issue details</button><p data-apply-copy-status></p>' : '')
         + (repairAffectedFiles.length ? '<section aria-label="Paths to inspect"><h4>Paths to inspect — application did not complete</h4><ul>'
           + repairAffectedFiles.map(file => '<li>' + esc(file.path) + '</li>').join('') + '</ul></section>' : '');
     }
@@ -131,6 +142,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     const current = { ...selectedFailure }, key = selectionKey(current), generation = ++repairGeneration;
     repairPending = true; repairMessage = kind === 'analysis' ? 'Analyzing the selected check…' : kind === 'proposal' ? 'Drafting one-file repair…' : 'Checking approval and file state…';
     if (kind === 'analysis') { repairStage = 'loading'; analysisIssueDetails = null; repairIssueCopy = null; }
+    if (kind === 'apply') applyIssueDetails = null;
     renderRepair();
     try {
       let result;
@@ -165,7 +177,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         proposalAnnouncement = proposalIssueCopy[0];
       }
       else if (kind === 'apply' && result.status === 'applied') { repairApplied = result; repairStage = 'applied'; repairMessage = 'Source run unchanged. Rerun to verify.'; }
-      else if (kind === 'apply') { repairStage = result.status === 'error' ? 'apply-uncertain' : 'apply-blocked'; repairAffectedFiles = Array.isArray(result.changedFiles) ? result.changedFiles : []; repairMessage = result.message || 'The proposal could not be applied. Draft a fresh one.'; }
+      else if (kind === 'apply') { applyIssueDetails = safeApplyIssue(result); repairStage = result.status === 'error' ? 'apply-uncertain' : 'apply-blocked'; repairAffectedFiles = Array.isArray(result.changedFiles) ? result.changedFiles : []; repairMessage = result.message || 'The proposal could not be applied. Draft a fresh one.'; }
       else repairMessage = result.message || result.reason || 'This step is unavailable. Review the selected evidence and try again.';
     } catch {
       if (generation === repairGeneration && selectionKey(selectedFailure) === key) {
@@ -200,6 +212,17 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
   }
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
+    if (target.dataset.action === 'copy-apply-issue' && applyIssueDetails) {
+      const details = applyIssueDetails, generation = repairGeneration, key = selectionKey(selectedFailure);
+      const feedback = message => { if (generation === repairGeneration && key === selectionKey(selectedFailure)) {
+        document.querySelector('[data-repair-host] [data-apply-copy-status]')?.replaceChildren?.(message);
+      } };
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        void Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
+          () => feedback('Copy unavailable. Select the issue details above.'));
+      } catch { feedback('Copy unavailable. Select the issue details above.'); }
+    }
     if (target.dataset.action === 'copy-proposal-issue' && proposalIssueDetails) {
       const details = proposalIssueDetails, generation = repairGeneration, key = selectionKey(selectedFailure);
       const feedback = message => { if (generation === repairGeneration && key === selectionKey(selectedFailure)) {
