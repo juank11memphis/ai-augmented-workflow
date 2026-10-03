@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
+import { WORKSPACE_STYLES } from './workspace-styles.js';
 
 const selected = { suiteId: 'suite', runId: 'run', testCaseId: 'case', attempt: 1, assertionId: 'failed', evalRunModelId: 'model', runScope: { type: 'all' } };
 const proposal = { proposalId: 'proposal', affectedProjectFiles: ['prompts/agent.md'], changeSummary: 'Require owner verification',
@@ -41,13 +42,14 @@ const draftResponse = (status: string, category: string, outcome: string) => ({ 
 const applyResponse = (status: 'blocked' | 'error', category: string) => ({ status, reason: category,
   issue: { stage: 'repair-apply', outcome: status === 'blocked' ? 'blocked' : 'uncertain', category, reference,
     title: privateText, explanation: privateText, nextStep: privateText }, message: privateText,
-  changedFileCount: 99, changedFiles: [{ path: 'PRIVATE_PATH', content: privateText }] });
+  changedFileCount: status === 'blocked' ? 0 : 99,
+  changedFiles: status === 'blocked' ? [] : [{ path: 'PRIVATE_PATH', content: privateText }] });
 const safeApplyDetails = (markup: string) => markup.match(/<pre data-apply-issue-details>(.*?)<\/pre>/s)?.[1];
 async function reachApply(response: unknown, clipboard?: { writeText(value: string): Promise<void> }) {
   const urls: string[] = [];
   const browser = harness(async url => { urls.push(url); if (url.endsWith('/apply') && response instanceof Error) throw response;
     return url.includes('failure-analysis') ? analysis : url.endsWith('/apply') ? response : { status: 'proposal-ready', proposal: { ...proposal, changeSummary: privateText,
-      affectedProjectFiles: ['PRIVATE_PROPOSAL_PATH'], proposedChange: { ...proposal.proposedChange, representation: privateText } } }; }, clipboard);
+      proposedChange: { ...proposal.proposedChange, representation: privateText } } }; }, clipboard);
   await browser.api.requestRepair('analysis'); await browser.api.requestRepair('proposal'); await browser.api.requestRepair('apply');
   return { ...browser, urls };
 }
@@ -96,19 +98,75 @@ test('uncertain application is not automatically resubmitted and stale proposal 
   assert.equal(applies, 1);
 });
 
-test('failed application displays affected and leftover temporary paths without claiming success', async () => {
+test('partial application keeps proposal and named inspection paths without claiming success', async () => {
   const { api } = harness(async url => {
     if (url.includes('failure-analysis')) return { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue' } };
-    if (url.endsWith('/apply')) return { status: 'error', message: 'The repair failed. Inspect affected paths.',
-      changedFiles: [{ path: 'prompts/agent.md' }, { path: 'prompts/agent.md.sibu-unsafe<name>.tmp' }] };
+    if (url.endsWith('/apply')) return { status: 'error', reason: 'mutation-failure', issue: applyResponse('error', 'mutation-failure').issue,
+      message: privateText, inspectionPaths: ['prompts/agent.md', 'prompts/agent.md.sibu-unsafe<name>.tmp', 'PRIVATE_PATH'],
+      changedFiles: [{ path: 'prompts/agent.md' }] };
     return { status: 'proposal-ready', proposal };
   });
   await api.requestRepair('analysis'); await api.requestRepair('proposal'); await api.requestRepair('apply');
   const markup = api.markup();
   assert.equal(api.stage(), 'apply-uncertain');
-  assert.match(markup, /Paths to inspect — application did not complete/);
+  assert.match(markup, /Repair outcome not confirmed/);
+  assert.match(markup, /data-action="view-repair-files"/);
+  assert.match(markup, /Files to inspect/);
   assert.match(markup, /prompts\/agent\.md\.sibu-unsafe&lt;name&gt;\.tmp/);
-  assert.doesNotMatch(markup, /Repair applied|Rerun this case|data-action="approve-repair"/);
+  assert.match(markup, /Require owner verification|Show full diff/);
+  assert.doesNotMatch(markup, /PRIVATE_PATH|sk-secret|Repair applied|Rerun this case|data-action="approve-repair"|Draft a fresh repair/);
+});
+
+test('confirmed block explains the supported reason and removes repeat approval', async () => {
+  const browser = await reachApply(applyResponse('blocked', 'missing-approval'));
+  const markup = browser.api.markup();
+  assert.equal(browser.api.stage(), 'apply-blocked');
+  assert.match(markup, /Repair blocked.*Approval for this concrete proposal was missing.*No project files changed/s);
+  assert.match(markup, /Show full diff/);
+  assert.doesNotMatch(markup, /View files to inspect|data-action="approve-repair"|99/);
+  assert.doesNotMatch(markup.match(/data-apply-notice.*?<\/section>/s)?.[0] ?? '', /PRIVATE_|sk-secret|prompts\/agent\.md/);
+  assert.equal(browser.urls.filter(url => url.endsWith('/apply')).length, 1);
+});
+
+test('lost and malformed apply responses stay uncertain with inspection control and no terminal claim', async () => {
+  for (const response of [Error(privateText), undefined, { status: 'blocked', reason: 'missing-approval',
+    changedFileCount: 99, changedFiles: [], issue: applyResponse('blocked', 'missing-approval').issue, message: privateText },
+  { status: 'blocked', reason: 'missing-approval', changedFileCount: 0, changedFiles: [], message: privateText }]) {
+    const browser = await reachApply(response);
+    const markup = browser.api.markup();
+    const notice = markup.match(/<section class="model-notice detail-section" data-apply-notice.*?<\/section>/s)?.[0] ?? '';
+    assert.equal(browser.api.stage(), 'apply-uncertain');
+    assert.match(markup, /Repair outcome not confirmed.*Sibu could not confirm.*View files to inspect/s);
+    assert.match(markup, /data-repair-files.*prompts\/agent\.md/s);
+    assert.doesNotMatch(markup, /No project files changed|data-action="approve-repair"|data-action="draft-repair"|data-action="copy-apply-issue"/);
+    assert.doesNotMatch(notice, /sk-secret|PRIVATE_|99|prompts\/agent\.md/);
+    assert.equal(browser.urls.filter(url => url.endsWith('/apply')).length, 1);
+  }
+});
+
+test('file inspection focuses the existing named-file area, not a new panel', async () => {
+  const browser = await reachApply(Error(privateText));
+  browser.click('view-repair-files');
+  assert.equal(browser.context.document.activeElement?.focusName, '[data-repair-files-heading]');
+  assert.equal((browser.api.markup().match(/data-repair-files/g) || []).length, 2);
+  assert.doesNotMatch(browser.api.markup(), /diagnostic-panel|data-side-panel/);
+});
+
+test('apply notice is announced once and focus changes only for the initiated approval', async () => {
+  const initiated = harness(async url => url.includes('failure-analysis') ? analysis : url.endsWith('/apply')
+    ? applyResponse('error', 'mutation-failure') : { status: 'proposal-ready', proposal });
+  await initiated.api.requestRepair('analysis'); await initiated.api.requestRepair('proposal');
+  initiated.context.document.activeElement = { dataset: { action: 'approve-repair' } };
+  await initiated.api.requestRepair('apply');
+  assert.equal(initiated.context.document.activeElement?.focusName, '[data-apply-heading]');
+  assert.equal((initiated.host.innerHTML.match(/role="status"/g) || []).length, 1);
+  assert.match(initiated.host.innerHTML, /data-apply-announcement>Repair outcome not confirmed<\/span>/);
+  initiated.context.document.activeElement = { focusName: 'typing outside repair' };
+  initiated.api.markup();
+  assert.equal(initiated.context.document.activeElement?.focusName, 'typing outside repair');
+  assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\)/);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\)/);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\)/);
 });
 
 test('case and suite rerun actions only prefill setup; neither starts a run', async () => {

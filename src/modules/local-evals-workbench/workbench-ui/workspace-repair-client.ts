@@ -75,6 +75,28 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       typeof issue.reference !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(issue.reference)) return null;
     return 'Stage: repair-apply\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase();
   }
+  function applyOutcome(result) {
+    if (result?.status === 'applied' && Array.isArray(result.changedFiles) && result.rerunRecommendation?.primaryAction) return 'applied';
+    if (result?.status === 'blocked' && result.changedFileCount === 0 && Array.isArray(result.changedFiles) && !result.changedFiles.length &&
+      safeApplyIssue(result)) return 'blocked';
+    return 'uncertain';
+  }
+  const applyBlockedGuidance = {
+    'invalid-request': 'Sibu could not read the approval request.',
+    'missing-approval': 'Approval for this concrete proposal was missing.',
+    'stale-proposal': 'This proposal no longer matches the selected failure.',
+    'wrong-project-root': 'The proposal belongs to a different project.',
+    'unsafe-target': 'The proposed project file could not be verified as safe.',
+    'unsafe-workflow-readiness': 'The project was not ready for a safe repair.',
+  };
+  function filesToInspect(result) {
+    const target = repairProposal?.affectedProjectFiles?.[0];
+    if (typeof target !== 'string' || !target || target.length > 240) return [];
+    const paths = [target, ...(Array.isArray(result?.inspectionPaths) ? result.inspectionPaths : []),
+      ...(Array.isArray(result?.changedFiles) ? result.changedFiles.map(file => file?.path) : [])];
+    return [...new Set(paths.filter(path => typeof path === 'string' && path.length <= 240 &&
+      (path === target || path.startsWith(target + '.sibu-') && !/[\\/\r\n]/.test(path.slice(target.length)))))];
+  }
   const selectionKey = selection => selection ? [selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId].join('|') : '';
   function resetRepair() {
     repairGeneration++; selectedFailure = null; repairStage = 'idle'; repairAnalysis = null; repairAnalysisId = null;
@@ -114,11 +136,15 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       return '<h3 tabindex="-1">Proposed repair</h3><p>1 file: ' + esc(proposal?.affectedProjectFiles?.[0] || '') + '</p><p>' + esc(proposal?.changeSummary || '') + '</p>'
         + '<section class="detail-section" aria-label="Exact proposed change"><h4>' + esc(change?.kind === 'unified-diff' ? 'Proposed diff' : 'Proposed replacement') + '</h4><pre>' + esc((change?.representation || '').split('\n').slice(0, 5).join('\n')) + '</pre><details><summary>' + (change?.kind === 'unified-diff' ? 'Show full diff' : 'Show full replacement') + '</summary><pre>' + esc(change?.representation || '') + '</pre></details></section>'
         + '<h4>Rationale</h4><p>' + esc(proposal?.rationale || '') + '</p><h4>Expected impact</h4><p>' + esc(proposal?.expectedEvalImpact || '') + '</p>'
-        + (canApply ? '<button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button>' : '<button type="button" data-action="draft-repair"' + pending + '>Draft a fresh repair</button>')
-        + '<button type="button" data-action="reject-repair"' + pending + '>Not now</button>' + notice
+        + (canApply ? '<button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button><button type="button" data-action="reject-repair"' + pending + '>Not now</button>' + notice : '')
+        + (canApply ? '' : '<section class="model-notice detail-section" data-apply-notice aria-label="Repair Proposal"><h4 tabindex="-1" data-apply-heading>'
+          + (repairStage === 'apply-blocked' ? 'Repair blocked' : 'Repair outcome not confirmed') + '</h4><p>' + esc(repairMessage) + '</p>'
+          + '<span class="live" role="status" data-apply-announcement>' + esc(repairMessage ? repairStage === 'apply-blocked' ? 'Repair blocked' : 'Repair outcome not confirmed' : '') + '</span>'
+          + (repairStage === 'apply-uncertain' ? '<p>Inspect the named files before drafting or applying another fix. No automatic retry.</p><button type="button" data-action="view-repair-files">View files to inspect</button>' : '')
+          + '</section>')
         + (applyIssueDetails ? '<pre data-apply-issue-details>' + esc(applyIssueDetails) + '</pre><button type="button" data-action="copy-apply-issue">Copy issue details</button><p data-apply-copy-status></p>' : '')
-        + (repairAffectedFiles.length ? '<section aria-label="Paths to inspect"><h4>Paths to inspect — application did not complete</h4><ul>'
-          + repairAffectedFiles.map(file => '<li>' + esc(file.path) + '</li>').join('') + '</ul></section>' : '');
+        + (repairAffectedFiles.length ? '<section data-repair-files aria-label="Files to inspect"><h4 tabindex="-1" data-repair-files-heading>Files to inspect</h4><ul>'
+          + repairAffectedFiles.map(path => '<li>' + esc(path) + '</li>').join('') + '</ul></section>' : '');
     }
     return '<h3 tabindex="-1">Repair applied</h3><p>The result is not verified until you rerun the eval.</p><ul>'
       + (repairApplied?.changedFiles || []).map(file => '<li>' + esc(file.path) + ' — ' + esc(file.summary || '') + '</li>').join('') + '</ul>'
@@ -128,11 +154,18 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     const activeAction = document.activeElement?.dataset?.action;
     const hosts = [...document.querySelectorAll('[data-repair-host]')];
     const activeHost = hosts.find(node => node.closest?.('[role="dialog"]')) || hosts[0];
-    hosts.forEach(node => { node.innerHTML = repairMarkup(); if (node !== activeHost) node.querySelector?.('[data-proposal-announcement]')?.replaceChildren?.(); });
+    hosts.forEach(node => {
+      node.innerHTML = repairMarkup();
+      if (node !== activeHost) {
+        node.querySelector?.('[data-proposal-announcement]')?.replaceChildren?.();
+        node.querySelector?.('[data-apply-announcement]')?.replaceChildren?.();
+      }
+    });
     const shouldFocusNotice = proposalAnnouncement && activeAction === 'draft-repair' && !activeHost?.querySelector?.('[data-action="draft-repair"]');
+    const shouldFocusApply = activeAction === 'approve-repair' && repairStage !== 'proposal' && !repairPending;
     proposalAnnouncement = '';
     if (activeAction) {
-      const next = shouldFocusNotice ? activeHost?.querySelector?.('[data-proposal-heading]')
+      const next = shouldFocusApply ? activeHost?.querySelector?.('[data-apply-heading]') : shouldFocusNotice ? activeHost?.querySelector?.('[data-proposal-heading]')
         : activeHost?.querySelector?.('[data-action="' + activeAction + '"]') || activeHost?.querySelector?.('h3');
       next?.focus?.();
     }
@@ -176,8 +209,14 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         repairProposal = null; repairStage = 'proposal-error'; repairMessage = '';
         proposalAnnouncement = proposalIssueCopy[0];
       }
-      else if (kind === 'apply' && result.status === 'applied') { repairApplied = result; repairStage = 'applied'; repairMessage = 'Source run unchanged. Rerun to verify.'; }
-      else if (kind === 'apply') { applyIssueDetails = safeApplyIssue(result); repairStage = result.status === 'error' ? 'apply-uncertain' : 'apply-blocked'; repairAffectedFiles = Array.isArray(result.changedFiles) ? result.changedFiles : []; repairMessage = result.message || 'The proposal could not be applied. Draft a fresh one.'; }
+      else if (kind === 'apply' && applyOutcome(result) === 'applied') { repairApplied = result; repairStage = 'applied'; repairMessage = 'Source run unchanged. Rerun to verify.'; }
+      else if (kind === 'apply') {
+        repairStage = applyOutcome(result) === 'blocked' ? 'apply-blocked' : 'apply-uncertain';
+        applyIssueDetails = repairStage === 'apply-blocked' || result?.status === 'error' ? safeApplyIssue(result) : null;
+        repairAffectedFiles = repairStage === 'apply-uncertain' ? filesToInspect(result) : [];
+        repairMessage = repairStage === 'apply-blocked' ? applyBlockedGuidance[result.reason] + ' No project files changed. Review the proposal and selected result before drafting another fix.'
+          : 'Sibu could not confirm whether the approved change was applied.';
+      }
       else repairMessage = result.message || result.reason || 'This step is unavailable. Review the selected evidence and try again.';
     } catch {
       if (generation === repairGeneration && selectionKey(selectedFailure) === key) {
@@ -185,13 +224,13 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
           repairStage = 'retryable-error'; repairIssueCopy = ['Analysis unavailable', "Sibu couldn't reach the analysis service.", 'Check the connection, then try analysis again. A matching terminal event may not exist.'];
           repairMessage = 'Analysis connection failed';
         }
-        if (kind === 'apply') repairStage = 'apply-uncertain';
+        if (kind === 'apply') { repairStage = 'apply-uncertain'; repairAffectedFiles = filesToInspect(null); }
         if (kind === 'proposal') {
           repairProposal = null; repairStage = 'proposal-error'; proposalIssueDetails = null;
           proposalIssueCopy = ['Proposal connection failed', 'Sibu could not confirm whether drafting finished.', 'Check the connection before trying again. A matching terminal event may not exist.', 'draft'];
           proposalAnnouncement = proposalIssueCopy[0]; repairMessage = '';
         }
-        if (kind === 'apply') repairMessage = 'The repair service could not finish. No new approval was sent automatically.';
+        if (kind === 'apply') repairMessage = 'Sibu could not confirm whether the approved change was applied. The connection failed; a matching terminal event may not exist.';
       }
     } finally {
       if (generation === repairGeneration && selectionKey(selectedFailure) === key) { repairPending = false; renderRepair(); }
@@ -222,6 +261,11 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         void Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
           () => feedback('Copy unavailable. Select the issue details above.'));
       } catch { feedback('Copy unavailable. Select the issue details above.'); }
+    }
+    if (target.dataset.action === 'view-repair-files' && repairStage === 'apply-uncertain') {
+      const hosts = [...document.querySelectorAll('[data-repair-host]')];
+      const host = hosts.find(node => node.closest?.('[role="dialog"]')) || hosts[0];
+      host?.querySelector?.('[data-repair-files-heading]')?.focus?.();
     }
     if (target.dataset.action === 'copy-proposal-issue' && proposalIssueDetails) {
       const details = proposalIssueDetails, generation = repairGeneration, key = selectionKey(selectedFailure);
