@@ -1,5 +1,5 @@
 {
-  "templateVersion": "207",
+  "templateVersion": "208",
   "templates": {
     "AGENTS.md": {
       "version": "53",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "63",
+      "version": "64",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Recovers bounded post-commit Task evidence gaps and same-Story validation regressions through a new checked Task and fresh plan-only review while preserving safety stops."
+        "Treats the user's approved-and-merged PR report as Story approval without a second confirmation, while merge alone still requires approval."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

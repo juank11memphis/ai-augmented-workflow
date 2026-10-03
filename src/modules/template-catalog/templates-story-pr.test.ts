@@ -43,6 +43,12 @@ describe('Final Story PR written contract', () => {
     assert.match(gatekeeper, /Acceptance alone permits approval metadata/);
   });
 
+  it('accepts an approved-and-merged PR report without a duplicate Story decision', () => {
+    assert.match(gatekeeper, /approved and merged.*in either order.*explicit Story acceptance/);
+    assert.match(gatekeeper, /verify the merge, record approval, and do not ask for a second Story decision/);
+    assert.match(gatekeeper, /A report of merge alone is not acceptance/);
+  });
+
   it('reports actual local and hosted check states without invented success', () => {
     assert.match(fixture('scenarios'), /passing is passing; failing is failing; pending is pending; unavailable is unavailable/);
     assert.match(gatekeeper, /distinguish passing, failing, pending, and unavailable CI checks as observed/);
@@ -71,8 +77,9 @@ describe('Final Story PR written contract', () => {
 
   it('rechecks feature continuation after merge without bypassing human gates', () => {
     assert.match(gatekeeper, /After a Story PR merge is confirmed, including a merge requested in a later turn, run this check again before ending the turn/);
-    assert.match(gatekeeper, /Do not treat the merge as Story approval: if the final human Story decision is still missing, stop at that gate/);
-    assert.match(gatekeeper, /continue without asking for a separate continuation confirmation; preserve every required plan review, applicable human decision, code-change permission, and blocker gate/);
+    assert.match(gatekeeper, /Do not treat a merge report alone as Story approval: if the final human Story decision is still missing, stop at that gate/);
+    assert.match(gatekeeper, /If the user reports both approval and merge for the identified Story PR, record approval and continue without asking for a separate Story or continuation confirmation/);
+    assert.match(gatekeeper, /continue without asking for a separate Story or continuation confirmation; preserve every required plan review, applicable human decision, code-change permission, and blocker gate/);
     assert.match(gatekeeper, /If no logical next Epic exists or every Epic has all stories approved, tell the user the feature appears ready and stop/);
   });
 
@@ -87,8 +94,8 @@ describe('Final Story PR written contract', () => {
     assert.match(description, /Hosted CI is pending; it has not been counted as passing/);
     assert.match(description, /not live agent behavior or pull-request hosting/);
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '207');
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '63');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /post-commit Task evidence gaps.*plan-only review/);
+    assert.equal(manifest.templateVersion, '208');
+    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '64');
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /approved-and-merged PR report.*Story approval/);
   });
 });

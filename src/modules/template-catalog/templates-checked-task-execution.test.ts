@@ -87,7 +87,7 @@ describe('checked Task execution template contract', () => {
     assert.match(planner, /Do not require or invent a prior reviewer finding/i);
     assert.match(plannerToolbox, /failed check and evidence, attribution to an earlier checked Task in the same Story/i);
     assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /same-Story validation regressions/i);
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /same-Story validation regressions/i);
+    assert.match(gatekeeper, /AFK recovery for a cross-Task validation regression/i);
   });
 
   it('requires declared flag checks and stops on an undeclared flag', () => {
@@ -115,7 +115,7 @@ describe('checked Task execution template contract', () => {
     }
     assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /post-commit evidence recovery/);
     assert.match(manifest.templates['skills/ai-implementation-executor-toolbox/SKILL.md']?.changes.join('') ?? '', /Task/i);
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /post-commit Task evidence gaps/);
+    assert.match(gatekeeper, /post-commit evidence gap/i);
     assert.match(readTemplate('AGENTS.md'), /checked-Task executor may commit only its scoped Task after the prescribed check passes/i);
   });
 });
