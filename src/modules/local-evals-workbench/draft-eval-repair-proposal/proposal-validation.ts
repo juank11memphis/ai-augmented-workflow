@@ -3,9 +3,17 @@ import { validateProjectFileTargets } from './project-file-safety.js';
 
 export type ProposalValidationResult = { readonly status: 'ok'; readonly proposal: RepairProposalDraft } | { readonly status: 'rejected'; readonly reason: 'vague-proposal' | 'unsafe-target-files'; readonly message: string };
 
+/** A parsed proposal target was rejected before it could reach persistence. */
+export class UnsafeRepairProposalTargetError extends Error {
+  readonly reason = 'unsafe-target-files' as const;
+  constructor() { super('Repair proposal response includes unsafe target files.'); }
+}
+
 export function validateRepairProposalDraft(projectRoot: string, draft: RepairProposalDraft): ProposalValidationResult {
   const targetValidation = validateProjectFileTargets(projectRoot, draft.affectedProjectFiles);
   if (targetValidation.status === 'blocked') return { status: 'rejected', reason: 'unsafe-target-files', message: targetValidation.reason };
+  if (targetValidation.paths.length !== 1) return { status: 'rejected', reason: 'unsafe-target-files', message: 'A repair must name exactly one project file.' };
+  if (draft.proposedChange.kind === 'instructions') return { status: 'rejected', reason: 'vague-proposal', message: 'The proposal must include a concrete diff or replacement.' };
   if (!isConcrete(draft.changeSummary) || !isConcrete(draft.rationale) || !isConcrete(draft.expectedEvalImpact) || !isConcrete(draft.proposedChange.representation)) {
     return { status: 'rejected', reason: 'vague-proposal', message: 'The proposal did not include concrete files, rationale, eval impact, and change details.' };
   }

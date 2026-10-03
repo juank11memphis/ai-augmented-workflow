@@ -4,6 +4,7 @@ import type { RuntimeBlockReason } from '../runtime-description.js';
 import type { StartEvalRunResult } from '../start-eval-run/result.js';
 import type { Reason } from '../run-history/contracts.js';
 import type { AnalyzeFailedAssertionLogEvent } from '../analyze-failed-assertion/ports.js';
+import type { DraftRepairProposalLogEvent } from '../draft-eval-repair-proposal/ports.js';
 
 export type WorkflowStateStatus =
   | { readonly status: 'valid' }
@@ -36,6 +37,8 @@ export type LocalWorkbenchServerStarterPort = {
 
 export type LocalEvalsWorkbenchLogEvent =
   | (AnalyzeFailedAssertionLogEvent & { readonly reference: string })
+  | (DraftRepairProposalLogEvent & { readonly reference: string })
+  | { readonly event: 'local_evals_workbench_proposal_boundary_issue'; readonly stage: 'proposal'; readonly outcome: 'blocked' | 'failed'; readonly reason: 'invalid-request' | 'unknown-cause'; readonly reference: string }
   | { readonly event: 'local_evals_workbench_analysis_boundary_issue'; readonly stage: 'analysis'; readonly outcome: 'blocked' | 'failed'; readonly reason: 'invalid-request' | 'unknown'; readonly reference: string }
   | { readonly event: 'local_evals_workbench_start_requested' }
   | { readonly event: 'local_evals_workbench_state_blocked'; readonly reason: 'missing-workflow-state' | 'invalid-workflow-state' }

@@ -153,7 +153,7 @@ type FakeResponse = {
   readonly body: string;
 };
 
-type FakeHandler = (request: { readonly url?: string; readonly method?: string; readonly on?: (event: string, listener: Function) => void }, response: {
+type FakeHandler = (request: { readonly url?: string; readonly method?: string; readonly headers?: Readonly<Record<string, string>>; readonly on?: (event: string, listener: Function) => void }, response: {
   writeHead(statusCode: number, headers: Record<string, string>): void;
   end(body: string): void;
 }) => void;
@@ -217,11 +217,11 @@ export class FakeLocalHttpServer {
   }
 
 
-  async renderJsonResponse(url: string, payload: unknown): Promise<FakeResponse> {
-    return this.renderRawResponse(url, JSON.stringify(payload));
+  async renderJsonResponse(url: string, payload: unknown, reference?: string): Promise<FakeResponse> {
+    return this.renderRawResponse(url, JSON.stringify(payload), reference);
   }
 
-  async renderRawResponse(url: string, bodyPayload: string): Promise<FakeResponse> {
+  async renderRawResponse(url: string, bodyPayload: string, reference?: string): Promise<FakeResponse> {
     assert.equal(this.closed, false);
     assert.ok(this.handler);
     let statusCode = 0;
@@ -231,6 +231,7 @@ export class FakeLocalHttpServer {
     const request = {
       url,
       method: 'POST',
+      ...(reference ? { headers: { 'x-sibu-request-reference': reference } } : {}),
       on: (event: string, listener: Function) => {
         listeners.set(event, [...(listeners.get(event) ?? []), listener]);
       },

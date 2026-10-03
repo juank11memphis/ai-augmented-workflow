@@ -76,6 +76,19 @@ function safeEvent(event: SafeLogEvent): Record<string, unknown> {
     case 'local_evals_workbench_analysis_boundary_issue':
       return { event: event.event, stage: 'analysis', outcome: event.outcome === 'blocked' ? 'blocked' : 'failed',
         reason: event.reason === 'invalid-request' ? 'invalid-request' : 'unknown', reference: safeReference(event.reference) };
+    case 'repair_proposal_requested':
+    case 'repair_proposal_unavailable':
+    case 'repair_proposal_drafted':
+    case 'repair_proposal_rejected':
+    case 'repair_proposal_blocked':
+    case 'repair_proposal_failed':
+      return { event: event.event, stage: 'proposal', outcome: event.outcome,
+        reason: event.reason && knownProposalReasons.has(event.reason) ? event.reason : undefined,
+        reference: safeReference(event.reference), durationMs: safeCount(event.durationMs ?? 0),
+        targetFileCount: event.targetFileCount === undefined ? undefined : safeCount(event.targetFileCount) };
+    case 'local_evals_workbench_proposal_boundary_issue':
+      return { event: event.event, stage: 'proposal', outcome: event.outcome,
+        reason: event.reason, reference: safeReference(event.reference) };
     case 'local_evals_workbench_request_started':
     case 'local_evals_workbench_request_completed':
       return { event: event.event, stage: 'preview', outcome: event.outcome, reference: safeReference(event.reference) };
@@ -133,6 +146,12 @@ const knownAnalysisReasons: ReadonlySet<string> = new Set([
   'analysis-ready', 'missing-openai-api-key', 'invalid-scope', 'missing-artifact', 'missing-cell',
   'missing-assertion', 'non-failed-assertion', 'provider-authorization', 'provider-rate-limit',
   'provider-timeout', 'provider-unavailable', 'invalid-llm-response', 'llm-failure', 'unknown',
+]);
+const knownProposalReasons: ReadonlySet<string> = new Set([
+  'missing-openai-api-key', 'invalid-scope', 'unclear-direction', 'stale-analysis',
+  'missing-artifact', 'missing-cell', 'missing-assertion', 'non-failed-assertion',
+  'unsafe-target-files', 'vague-proposal', 'provider-authorization', 'provider-rate-limit',
+  'provider-timeout', 'provider-unavailable', 'invalid-llm-response', 'llm-failure', 'unknown-cause',
 ]);
 
 function safeStartReason(reason: string): string {

@@ -56,13 +56,22 @@ export type RepairProposalStorePort = {
   getPendingProposal?(proposalId: string): StoredRepairProposal | undefined;
 };
 
-export type DraftRepairProposalLogEvent =
-  | { readonly event: 'repair_proposal_requested'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string }
-  | { readonly event: 'repair_proposal_unavailable'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly reason: string; readonly durationMs: number }
-  | { readonly event: 'repair_proposal_drafted'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly targetFileCount: number; readonly durationMs: number; readonly outcome: string }
-  | { readonly event: 'repair_proposal_rejected'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly reason: string; readonly targetFileCount: number; readonly durationMs: number }
-  | { readonly event: 'repair_proposal_blocked'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly reason: string; readonly durationMs: number }
-  | { readonly event: 'repair_proposal_failed'; readonly suiteId: string; readonly testCaseId: string; readonly modelId: string; readonly assertionId: string; readonly assistanceModelLabel: string; readonly reason: string; readonly durationMs: number };
+export type ProposalProviderFailureReason = 'provider-authorization' | 'provider-rate-limit' | 'provider-timeout' | 'provider-unavailable' | 'invalid-llm-response';
+
+/** Adapters may report only an observed category; raw provider details stay outside the command boundary. */
+export class ProposalProviderFailure extends Error {
+  constructor(readonly reason: ProposalProviderFailureReason) { super(reason); }
+}
+
+export type DraftRepairProposalLogEvent = {
+  readonly event: 'repair_proposal_requested' | 'repair_proposal_unavailable' | 'repair_proposal_drafted' | 'repair_proposal_rejected' | 'repair_proposal_blocked' | 'repair_proposal_failed';
+  readonly stage: 'proposal';
+  readonly outcome: 'started' | 'completed' | 'blocked' | 'failed';
+  readonly reason?: string;
+  readonly reference?: string;
+  readonly durationMs?: number;
+  readonly targetFileCount?: number;
+};
 
 export type DraftRepairProposalLoggerPort = {
   info(event: DraftRepairProposalLogEvent): void;

@@ -26,6 +26,12 @@ describe('validateProjectFileTargets', () => {
     if (duplicate.status === 'ok') assert.deepEqual(duplicate.paths, ['prompts/a.md']);
   });
 
+  it('never includes a private target or target content in the safety reason', () => {
+    const result = validateProjectFileTargets('/repo', ['../PRIVATE_TARGET_CONTENT']);
+    assert.equal(result.status, 'blocked');
+    if (result.status === 'blocked') assert.doesNotMatch(result.reason, /PRIVATE_TARGET_CONTENT/);
+  });
+
   it('never supplies conventional private-key content as provider context', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sibu-proposal-private-key-'));
     try {

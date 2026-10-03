@@ -34,7 +34,7 @@ export type DraftEvalRepairProposalRejectedResult = {
 
 export type DraftEvalRepairProposalErrorResult = {
   readonly status: 'error';
-  readonly reason: 'llm-failure' | 'invalid-llm-response';
+  readonly reason: 'llm-failure' | 'invalid-llm-response' | 'provider-authorization' | 'provider-rate-limit' | 'provider-timeout' | 'provider-unavailable' | 'unknown-cause';
   readonly message: string;
   readonly assistanceModelLabel: string;
   readonly evidence?: FailedAssertionEvidence;
