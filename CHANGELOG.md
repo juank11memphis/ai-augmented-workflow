@@ -4,6 +4,43 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 1.2.0 - 2026-10-05
+
+### Added
+- recover safely from repair uncertainty (#18)
+- explain repair-proposal failures (#17)
+- explain failure-analysis availability (#16)
+- recover bounded same-story validation regressions
+- preserve results through read faults (EWDT-S05-T04)
+- surface safe read issues and execution outcomes (EWDT-S05-T03)
+- clarify run start outcomes and recovery (EWDT-S04) (#13)
+- explain run preview outcomes safely (#12)
+- recover checked Task evidence gaps AFK (#11)
+- explain model-check failures safely (#10)
+- make Story planning and review less brittle (#9)
+- clarify workbench startup and suite discovery (#8)
+- auto-accept clean story plans
+- advance checked milestones without routine reviews
+- load project env files for workbench
+- guide blocked run setup (#6)
+- inline run setup and reviewed start (#5)
+
+### Changed
+- Merge pull request #15 from juank11memphis/feat/ewdt-s05-execution-result-diagnostics
+- prove disposable run diagnostics (EWDT-S05-T05)
+- Merge branch 'main' into feat/ewdt-s05-execution-result-diagnostics
+- Merge pull request #14 from juank11memphis/feat/workflow-afk-validation-recovery
+- cover legacy describe HTTP issue (EWDT-S05-T03b)
+- save bounded planner route
+
+### Fixed
+- clarify setting errors and sync update guidance
+- treat approved merged PR as Story approval
+- clear stale repair on assertion switch (EWDT-S05-T04b)
+- distinguish read faults from run outcomes (EWDT-S05-T02)
+- preserve execution outcome diagnostics (EWDT-S05-T01)
+- preserve result search editing (EWRU-S03-T01) (#7)
+
 ## 1.1.0 - 2026-09-29
 
 ### Added
