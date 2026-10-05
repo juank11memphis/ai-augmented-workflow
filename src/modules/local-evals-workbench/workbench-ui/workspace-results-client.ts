@@ -2,6 +2,24 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   const resultContainer = one('[data-results-container]');
   const detail = one('[data-detail]');
   const side = one('[data-side-panel]');
+  const workspace = one('[data-workspace]');
+  let taskView = 'results';
+  let setupReturn = null;
+  function showTaskView(view) {
+    if (view === 'new-run' && (!suite || isActive() || startPending)) return;
+    taskView = view;
+    workspace.dataset.taskView = view;
+    setupRegion.hidden = view !== 'new-run';
+    resultContainer.hidden = view === 'new-run';
+    if (view === 'new-run') {
+      setupReturn = document.activeElement;
+      one('#run-setup-title')?.focus();
+    } else {
+      const returnTarget = setupReturn;
+      setupReturn = null;
+      returnTarget?.focus();
+    }
+  }
   let panelReturn = null;
   let historyReadError = false;
   let readNotices = { status: null, history: null, evidence: null };
@@ -65,6 +83,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   function selectSuite(id) {
     if (!id || suite?.id === id || isActive() || startPending) return;
     suite = suites.find(item => item.id === id) || null;
+    if (taskView === 'new-run') showTaskView('results');
     run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null; review = null;
     if (typeof previewGeneration !== 'undefined') previewGeneration++;
     if (typeof clearPreviewNotice === 'function') clearPreviewNotice();
@@ -75,7 +94,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     clearSelectedDetail();
     activePanel = null; panelReturn = null; side.hidden = true; side.innerHTML = '';
     side.removeAttribute('role'); side.removeAttribute('aria-modal'); side.removeAttribute('aria-label');
-    detail.hidden = false; failuresOnly = false; search = '';
+    detail.hidden = true; failuresOnly = false; search = '';
     const searchInput = resultContainer.querySelector?.('[data-action="search"]');
     if (searchInput) searchInput.value = '';
     setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '', repeats: 1 };
@@ -94,8 +113,9 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     for (const item of document.querySelectorAll('[data-action="suite"]')) {
       if (item.dataset.suiteId === suite?.id) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
     }
-    for (const action of ['coverage','history']) one('[data-action="' + action + '"]').hidden = !suite;
-    setupRegion.hidden = !suite || isActive() || startPending;
+    for (const action of ['coverage','history','new-run']) { const control = one('[data-action="' + action + '"]'); if (control) control.hidden = !suite; }
+    if (taskView === 'new-run' && (isActive() || startPending)) showTaskView('results');
+    setupRegion.hidden = taskView !== 'new-run' || !suite;
     const startForm = one('[data-start-form]'); if (startForm) startForm.hidden = startUncertain;
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
@@ -125,7 +145,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       resultContainer.innerHTML = discovery.status === 'blocked' && discovery.reason === 'unreadable-eval-suites'
         ? '<section class="empty" aria-labelledby="results-title"><h2 id="results-title">Results</h2><p>Results are unavailable until suites can be read.</p></section>'
         : '<section class="empty" aria-labelledby="empty-title"><h2 id="empty-title">No eval suites yet</h2><p>Ask your coding agent:</p><blockquote>Create production-ready Sibu evals for this project.</blockquote><button type="button" data-action="copy-prompt">Copy prompt</button><p data-copy-status role="status"></p></section>';
-      detail.innerHTML = ''; return;
+    detail.innerHTML = ''; detail.hidden = true; return;
     }
     const rows = visibleCases.map(item => ({ ...item, status: run && !runIds.includes(item.id) ? { state: 'excluded', failed: 0, attempts: [] } : caseStatus(item.id) }))
       .filter(item => (!failuresOnly || item.status.state === 'failed') && item.name.toLowerCase().includes(search.toLowerCase()));
@@ -219,7 +239,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     detailReturnCaseId = null;
     button?.focus();
   }
-  function closePanel() { activePanel = null; side.hidden = true; side.removeAttribute('role'); side.removeAttribute('aria-modal'); side.removeAttribute('aria-label'); detail.hidden = false; const target = panelReturn; panelReturn = null; target?.focus(); }
+  function closePanel() { activePanel = null; side.hidden = true; side.removeAttribute('role'); side.removeAttribute('aria-modal'); side.removeAttribute('aria-label'); detail.hidden = !detailReturnCaseId; const target = panelReturn; panelReturn = null; target?.focus(); }
   function renderHistory() {
     openPanel('history');
     side.innerHTML = '<div class="section-heading"><h2 tabindex="-1">History</h2><button type="button" data-action="close-panel">Close</button></div>'
@@ -240,6 +260,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     function showEvidenceState(message) {
       const html = '<h2>Result detail</h2><p>' + esc(message) + '</p>';
       detail.innerHTML = html;
+      detail.hidden = false;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
     }
     const previousDetail = detail.innerHTML;
@@ -325,12 +346,19 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     }
     if (target.dataset.action === 'coverage') { detailGeneration++; renderCoverage(); }
     if (target.dataset.action === 'history') { void loadHistory(); renderHistory(); focusPanel(); }
+    if (target.dataset.action === 'new-run') showTaskView('new-run');
+    if (target.dataset.action === 'return-results') showTaskView('results');
     if (target.dataset.action === 'close-panel') closePanel();
-    if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else { detailGeneration++; resetRepair(); detail.innerHTML = '<h2>Result detail</h2><p>Select a completed case to inspect it.</p>'; returnToResult(); } }
+    if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else { detailGeneration++; resetRepair(); detail.innerHTML = ''; detail.hidden = true; returnToResult(); } }
     if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }
     if (target.dataset.action === 'history-run') {
       if (acceptedRunId) { status('Wait for the current run to finish before opening another run.'); return; }
-      selectedRunId = target.dataset.runId; void pollRun();
+      selectedRunId = target.dataset.runId;
+      clearSelectedDetail();
+      void pollRun();
+      if (taskView === 'new-run') showTaskView('results');
+      closePanel();
+      detail.hidden = true;
     }
   });
   document.addEventListener('change', event => {
@@ -339,6 +367,9 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (event.target.matches('[data-action="assertion-select"]')) void inspectCase(event.target.dataset.caseId, Number(event.target.dataset.attempt), event.target.value);
   });
   document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && taskView === 'new-run' && side.hidden && !sheetSlot.querySelector('[role="dialog"]')) {
+      event.preventDefault(); showTaskView('results'); return;
+    }
     if (side.hidden || side.getAttribute('role') !== 'dialog') return;
     if (event.key === 'Escape') { event.preventDefault(); closePanel(); return; }
     if (event.key !== 'Tab') return;
