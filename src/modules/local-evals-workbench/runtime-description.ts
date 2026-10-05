@@ -23,7 +23,8 @@ export type RuntimeBlockReason =
 export type RuntimeBlock =
   | { readonly status: 'blocked'; readonly reason: 'environment-missing'; readonly missingEnvironmentName?: string }
   | { readonly status: 'blocked'; readonly reason: 'required-setting-rejected'; readonly rejectedSettingName?: string }
-  | { readonly status: 'blocked'; readonly reason: Exclude<RuntimeBlockReason, 'environment-missing' | 'required-setting-rejected'> };
+  | { readonly status: 'blocked'; readonly reason: 'environment-undeclared'; readonly undeclaredEnvironmentName?: string }
+  | { readonly status: 'blocked'; readonly reason: Exclude<RuntimeBlockReason, 'environment-missing' | 'required-setting-rejected' | 'environment-undeclared'> };
 
 export type RuntimeOutcome<T> =
   | { readonly status: 'ready'; readonly value: T }
@@ -56,5 +57,9 @@ export function compatibleDescription(suite: NormalizedEvalSuite, description: R
   if (requiredCapabilities(suite.testCases).some((capability) => !description.capabilities.includes(capability))) return 'capability-unsupported';
   if (!description.models.length) return 'model-unavailable';
   if (hasRubric(suite.testCases) && !description.judgeModels.length) return 'judge-unavailable';
-  if (description.requiredEnvironment.some((name) => !suite.runner.requiredEnvironment.includes(name))) return 'environment-undeclared';
+  if (undeclaredEnvironmentName(suite, description)) return 'environment-undeclared';
+}
+
+export function undeclaredEnvironmentName(suite: NormalizedEvalSuite, description: RuntimeDescription): string | undefined {
+  return description.requiredEnvironment.find((name) => name !== 'SIBU_EVAL_MODE' && !suite.runner.requiredEnvironment.includes(name));
 }

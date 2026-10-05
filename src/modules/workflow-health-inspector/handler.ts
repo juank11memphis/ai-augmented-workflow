@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import { STATE_RELATIVE_PATH } from '../workflow-state-ledger/state-path.js';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import { sha256 } from '../../shared/hash.js';
-import { checkForLatestSibuVersion } from '../../support/version-advisory/index.js';
+import { checkForLatestSibuVersion, getNpmVersionAdvisoryLines } from '../../support/version-advisory/index.js';
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../support/interactive-guidance/index.js';
 import { hasReviewedTemplateVersion, readStateForDoctor } from '../workflow-state-ledger/index.js';
@@ -74,16 +74,7 @@ export async function handleDoctorProject(_command: DoctorProjectCommand): Promi
   process.exitCode = 1;
 }
 
-export function getNpmVersionAdvisoryLines(result: NpmVersionCheckResult): string[] {
-  if (result.status !== 'update-available') {
-    return [];
-  }
-
-  return [
-    `A newer Sibu version is available: ${result.latestVersion} (${result.currentVersion} installed).`,
-    'Update with `npm install -g @juancr11/sibu`.',
-  ];
-}
+export { getNpmVersionAdvisoryLines } from '../../support/version-advisory/index.js';
 
 export function getDoctorSyncNextStepLines(): string[] {
   return [

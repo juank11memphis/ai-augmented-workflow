@@ -111,9 +111,9 @@ it('maps every known model-check cause to bounded issue guidance', () => {
     assert.ok(issue.title && issue.explanation && issue.nextStep && issue.recoveryAction);
     assert.doesNotMatch(JSON.stringify(issue), /sk-secret|private\/project/);
   }
-  assert.notEqual(modelCheckIssue({ status: 'blocked', reason: 'runner-request-too-large' }, reference).nextStep,
-    modelCheckIssue({ status: 'blocked', reason: 'required-setting-rejected' }, reference).nextStep);
-  assert.match(modelCheckIssue({ status: 'blocked', reason: 'input-unsafe' }, reference).explanation, /unclassified/);
+  assert.notEqual(modelCheckIssue({ status: 'blocked', reason: 'runner-request-too-large' }, reference).explanation,
+    modelCheckIssue({ status: 'blocked', reason: 'required-setting-rejected' }, reference).explanation);
+  assert.match(modelCheckIssue({ status: 'blocked', reason: 'input-unsafe' }, reference).explanation, /could not safely check/);
   assert.match(unknownModelCheckIssue(reference).explanation, /Cause unknown/);
   assert.equal(invalidModelCheckIssue(reference).category, 'invalid-request');
 });
@@ -123,6 +123,13 @@ it('includes only validated setting names in model-check user copy', () => {
   assert.match(safe.explanation, /OPENAI_API_KEY/);
   const unsafe = modelCheckIssue({ status: 'blocked', reason: 'required-setting-rejected', rejectedSettingName: 'sk-secret' }, reference);
   assert.doesNotMatch(JSON.stringify(unsafe), /sk-secret/);
+  const internal = modelCheckIssue({ status: 'blocked', reason: 'required-setting-rejected', rejectedSettingName: 'SIBU_EVAL_MODE' }, reference);
+  assert.match(internal.explanation, /sets SIBU_EVAL_MODE automatically.*You do not need to set it/);
+  assert.match(internal.nextStep, /person who set up the suite/);
+  const undeclared = modelCheckIssue({ status: 'blocked', reason: 'environment-undeclared', undeclaredEnvironmentName: 'MODEL_API_KEY' }, reference);
+  assert.match(undeclared.explanation, /MODEL_API_KEY.*setup does not list it/);
+  const untrusted = modelCheckIssue({ status: 'blocked', reason: 'environment-undeclared', undeclaredEnvironmentName: 'KEY=secret-value' }, reference);
+  assert.doesNotMatch(JSON.stringify(untrusted), /secret-value/);
 });
 
 it('maps every known preview cause with observed stage and safe recovery', () => {

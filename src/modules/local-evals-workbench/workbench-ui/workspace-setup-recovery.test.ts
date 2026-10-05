@@ -3,7 +3,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 
-type BlockedResult = { status: 'blocked'; reason: string; issue?: unknown; missingEnvironmentName?: unknown; rejectedSettingName?: unknown; secretValue?: string; stderr?: string };
+type BlockedResult = { status: 'blocked'; reason: string; issue?: unknown; missingEnvironmentName?: unknown; rejectedSettingName?: unknown; undeclaredEnvironmentName?: unknown; secretValue?: string; stderr?: string };
 const reference = '123e4567-e89b-42d3-a456-426614174000';
 function issue(reason: string) { return { stage: 'model-check', outcome: 'blocked', category: reason, reference, title: 'sk-secret', explanation: 'private runner error' }; }
 
@@ -41,12 +41,12 @@ function blockedBrowser(result: BlockedResult, clipboard?: { writeText(text: str
 
 test('model-check categories render contextual safe copy with read-only recovery', async () => {
   const cases = [
-    ['environment-missing', /needs a required setting/], ['required-setting-rejected', /will not pass to a runner/],
+    ['environment-missing', /needs a required setting/], ['required-setting-rejected', /You do not need to set it/],
     ['runner-request-too-large', /too large/], ['runner-absent', /not found/], ['runner-start-failed', /could not start/],
-    ['runner-exited', /ended before/], ['runner-protocol-invalid', /expected protocol/], ['runner-invalid', /unusable description/],
-    ['runner-timeout', /did not answer in time/], ['capability-unsupported', /does not support a capability/],
-    ['model-unavailable', /no compatible models/], ['judge-unavailable', /no compatible Judge models/],
-    ['input-unsafe', /without a precise cause/], ['unknown', /Cause unknown/],
+    ['runner-exited', /stopped before/], ['runner-protocol-invalid', /could not understand/], ['runner-invalid', /could not use/],
+    ['runner-timeout', /too long to respond/], ['capability-unsupported', /does not support/],
+    ['model-unavailable', /no models available/], ['judge-unavailable', /no judge model available/],
+    ['input-unsafe', /could not safely check/], ['unknown', /could not check models/],
   ] as const;
   for (const [reason, expected] of cases) {
     const browser = blockedBrowser({ status: 'blocked', reason, issue: issue(reason), secretValue: 'sk-secret', stderr: 'private runner error' });
@@ -64,11 +64,14 @@ test('model-check categories render contextual safe copy with read-only recovery
 test('safe setting names, unchecked names, and malformed issue fields remain private', async () => {
   for (const [reason, name, expected] of [
     ['environment-missing', 'OPENAI_API_KEY', /needs OPENAI_API_KEY.*project-root \.env/],
-    ['required-setting-rejected', 'NODE_OPTIONS', /asks for NODE_OPTIONS/],
-    ['required-setting-rejected', 'bad-name<script>', /asks for a setting/],
+    ['required-setting-rejected', 'SIBU_EVAL_MODE', /sets SIBU_EVAL_MODE automatically.*You do not need to set it.*person who set up the suite/],
+    ['required-setting-rejected', 'NODE_OPTIONS', /requests NODE_OPTIONS.*You do not need to set it/],
+    ['required-setting-rejected', 'bad-name<script>', /requests a setting/],
+    ['environment-undeclared', 'MODEL_API_KEY', /needs MODEL_API_KEY.*setup does not list it/],
+    ['environment-undeclared', 'bad-name<script>', /needs a setting that its setup does not list/],
   ] as const) {
     const browser = blockedBrowser({ status: 'blocked', reason, issue: issue(reason),
-      missingEnvironmentName: name, rejectedSettingName: name });
+      missingEnvironmentName: name, rejectedSettingName: name, undeclaredEnvironmentName: name });
     await browser.api.loadRuntime();
     assert.match(browser.fields.innerHTML, expected);
     assert.doesNotMatch(browser.fields.innerHTML, /bad-name|<script>/);
@@ -142,7 +145,7 @@ test('Try again only describes, focuses a failed notice, and ignores an older bl
   await new Promise(resolve => setImmediate(resolve));
   requests[0]!.resolve({ status: 'blocked', reason: 'runner-absent', issue: issue('runner-absent') });
   await first;
-  assert.match(fields.innerHTML, /did not answer in time/);
+  assert.match(fields.innerHTML, /too long to respond/);
   assert.doesNotMatch(fields.innerHTML, /was not found/);
   assert.equal(focused, 1);
   assert.equal(review.disabled, true);

@@ -131,30 +131,30 @@ const copy = (title: string, explanation: string, nextStep: string, recoveryActi
   ({ title, explanation, nextStep, recoveryAction });
 
 const modelCheckCopy: Record<RuntimeBlockReason, ModelCheckCopy> = {
-  'suite-unavailable': copy('Suite unavailable', 'Sibu could not use this suite.', 'Check the suite definition, then retry.', 'edit-suites'),
-  'runner-unavailable': copy('Runner unavailable', 'The suite runner could not be used.', 'Check the runner command and retry.', 'edit-suites'),
-  'runner-absent': copy('Runner not found', 'The configured runner was not found.', 'Install or correct the runner command, then retry.', 'edit-suites'),
-  'runner-start-failed': copy('Runner could not start', 'The configured runner failed to start.', 'Check the runner command and permissions, then retry.', 'edit-suites'),
-  'runner-exited': copy('Runner exited', 'The runner ended before returning a model description.', 'Check the runner operation, then retry.', 'retry'),
-  'runner-protocol-invalid': copy('Runner protocol invalid', 'The runner response did not follow the expected protocol.', 'Check runner compatibility, then retry.', 'edit-suites'),
-  'runner-invalid': copy('Runner response invalid', 'Sibu could not use the runner response.', 'Check the runner output format, then retry.', 'edit-suites'),
-  'runner-timeout': copy('Runner timed out', 'The runner did not answer the model check in time.', 'Check that the runner is working, then retry.', 'retry'),
-  'environment-missing': copy('Required setting missing', 'This suite needs a required setting.', 'Add or export the setting, restart Sibu Evals, then retry.', 'edit-suites'),
-  'required-setting-rejected': copy('Required setting rejected', 'The runner could not accept a required setting name.', 'Fix the suite required settings, then retry.', 'edit-suites'),
-  'runner-request-too-large': copy('Model check too large', 'Sibu could not send the model check because it was too large.', 'Copy issue details and report the problem.', 'report'),
-  'environment-undeclared': copy('Runner setting undeclared', 'The runner requires a setting not declared by this suite.', 'Declare the required setting in the suite, then retry.', 'edit-suites'),
-  'capability-unsupported': copy('Capability unsupported', 'The runner does not support a capability this suite needs.', 'Review suite and runner support, then retry.', 'edit-suites'),
-  'model-unavailable': copy('No compatible models', 'The runner returned no compatible target models.', 'Review runner model support, then retry.', 'edit-suites'),
-  'judge-unavailable': copy('Judge model unavailable', 'The runner returned no compatible judge model.', 'Review runner judge support, then retry.', 'edit-suites'),
-  'case-unavailable': copy('Case unavailable', 'A selected case could not be used.', 'Review the suite cases, then retry.', 'edit-suites'),
-  'repeats-invalid': copy('Repeat count invalid', 'The suite repeat count could not be used.', 'Correct the suite repeat count, then retry.', 'edit-suites'),
-  'artifact-unsafe': copy('Artifact location unsafe', 'The artifact location did not pass safety checks.', 'Correct the suite artifact location, then retry.', 'edit-suites'),
-  'artifact-not-ignored': copy('Artifact location not ignored', 'The artifact location is not Git-ignored.', 'Ignore the artifact location, then retry.', 'edit-suites'),
-  'artifact-tracked': copy('Artifact location tracked', 'The artifact location contains tracked files.', 'Move artifacts away from tracked files, then retry.', 'edit-suites'),
-  'artifact-git-unavailable': copy('Artifact safety unavailable', 'Sibu could not check Git tracking for artifacts.', 'Check Git access, then retry.', 'retry'),
-  'artifact-root-unsafe': copy('Artifact root unsafe', 'The artifact root did not pass safety checks.', 'Correct the artifact root, then retry.', 'edit-suites'),
-  'estimate-invalid': copy('Estimate invalid', 'The runner estimate could not be used.', 'Check the runner estimate response, then retry.', 'edit-suites'),
-  'input-unsafe': copy('Model check input unsafe', 'Sibu rejected older unclassified model-check input.', 'Review runner setup and request size, then retry.', 'retry'),
+  'suite-unavailable': copy('Eval suite unavailable', 'Sibu could not open this eval suite.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'runner-unavailable': copy('Eval suite could not start', 'Sibu could not start this suite.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'runner-absent': copy('Required program not found', 'A program needed by this suite was not found.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'runner-start-failed': copy('Eval suite could not start', 'A program needed by this suite could not start.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'runner-exited': copy('Eval suite stopped', 'The suite stopped before Sibu could check its models.', 'Try again; if it keeps happening, share the issue details.', 'retry'),
+  'runner-protocol-invalid': copy('Eval suite response unreadable', 'Sibu could not understand the suite response.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'runner-invalid': copy('Eval suite response unusable', 'The suite returned information Sibu could not use.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'runner-timeout': copy('Eval suite took too long', 'The suite took too long to respond.', 'Try again; if it keeps happening, share the issue details.', 'retry'),
+  'environment-missing': copy('Setting needed', 'This suite needs a setting that has not been provided.', 'Ask the person who set up the suite which setting is needed.', 'edit-suites'),
+  'required-setting-rejected': copy('Eval suite setup needs fixing', 'This suite requests a setting Sibu cannot accept. You do not need to set it.', 'Share the issue details with the person who set up the suite.', 'edit-suites'),
+  'runner-request-too-large': copy('Model check could not start', 'The model check request was too large.', 'Share the issue details with the person who set up the suite.', 'report'),
+  'environment-undeclared': copy('Eval suite setup needs fixing', 'This suite needs a setting that its setup does not list.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'capability-unsupported': copy('Eval suite feature unavailable', 'This suite needs a feature its runner does not support.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'model-unavailable': copy('No models available', 'This suite has no models available to test.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'judge-unavailable': copy('Judge model unavailable', 'This suite has no judge model available for its checks.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'case-unavailable': copy('Eval case unavailable', 'A selected eval case could not be used.', 'Share the issue details with the person who set up the suite.', 'edit-suites'),
+  'repeats-invalid': copy('Repeat count invalid', 'The suite repeat count could not be used.', 'Share the issue details with the person who set up the suite.', 'edit-suites'),
+  'artifact-unsafe': copy('Result location unavailable', 'Sibu cannot safely save results at this location.', 'Share the issue details with the person who set up the suite.', 'edit-suites'),
+  'artifact-not-ignored': copy('Result location unavailable', 'The result location is not excluded from Git.', 'Share the issue details with the person who set up the suite.', 'edit-suites'),
+  'artifact-tracked': copy('Result location unavailable', 'The result location contains tracked files.', 'Share the issue details with the person who set up the suite.', 'edit-suites'),
+  'artifact-git-unavailable': copy('Result safety check unavailable', 'Sibu could not check whether result files are tracked by Git.', 'Try again; if it keeps happening, share the issue details.', 'retry'),
+  'artifact-root-unsafe': copy('Result location unavailable', 'Sibu cannot safely save results at this location.', 'Share the issue details with the person who set up the suite.', 'edit-suites'),
+  'estimate-invalid': copy('Cost estimate unavailable', 'Sibu could not use the cost estimate from this suite.', 'Share the issue details with the person who set it up.', 'edit-suites'),
+  'input-unsafe': copy('Model check could not start', 'Sibu could not safely check this suite.', 'Try again; if it keeps happening, share the issue details.', 'retry'),
 };
 
 // Separate exhaustive map: preview guidance must not inherit model-check wording.
@@ -277,12 +277,18 @@ export function unknownPreviewIssue(reference: string): PublicPreviewIssue {
 export function modelCheckIssue(result: Extract<DescribeEvalSuiteRuntimeResult, { status: 'blocked' }>, reference: string): PublicModelCheckIssue {
   const base = modelCheckCopy[result.reason];
   const name = result.reason === 'environment-missing' ? result.missingEnvironmentName
-    : result.reason === 'required-setting-rejected' ? result.rejectedSettingName : undefined;
+    : result.reason === 'required-setting-rejected' ? result.rejectedSettingName
+      : result.reason === 'environment-undeclared' ? result.undeclaredEnvironmentName : undefined;
   const safeName = isSafeEnvironmentName(name) ? name : undefined;
   return {
     stage: 'model-check', outcome: 'blocked', category: result.reason,
     ...base,
-    explanation: safeName && result.reason === 'environment-missing' ? `This suite needs ${safeName}.` : base.explanation,
+    explanation: safeName && result.reason === 'environment-missing' ? `This suite needs ${safeName}.`
+      : safeName === 'SIBU_EVAL_MODE' && result.reason === 'required-setting-rejected'
+        ? 'Sibu sets SIBU_EVAL_MODE automatically. You do not need to set it; this suite lists it by mistake.'
+        : safeName && result.reason === 'environment-undeclared'
+          ? `This suite needs ${safeName}, but its setup does not list it.`
+        : base.explanation,
     reference,
   };
 }

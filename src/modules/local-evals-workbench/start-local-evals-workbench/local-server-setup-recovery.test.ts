@@ -11,7 +11,7 @@ import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 
 const SECRET = 'private-test-value-713';
 const STDERR = 'private-runner-stderr-713';
-const UNCHECKED_NAME = 'UNDECLARED_PRIVATE_NAME';
+const UNDECLARED_NAME = 'MODEL_API_KEY';
 const PRIVATE_PATH = '/private/project/runner-713';
 const EXCEPTION = 'private-runner-exception-713';
 const MISSING_NAME = 'EWRU_TEST_MISSING_KEY';
@@ -34,7 +34,7 @@ process.stdin.on('end', () => {
     capabilities: mode === 'unsupported' ? ['single-turn'] : ['single-turn', 'multi-turn', 'rubric'],
     models: mode === 'no-models' ? [] : ['fake/target'],
     judgeModels: mode === 'no-judge' ? [] : ['fake/judge'],
-    requiredEnvironment: mode === 'undeclared' ? [${JSON.stringify(UNCHECKED_NAME)}] : [],
+    requiredEnvironment: mode === 'undeclared' ? [${JSON.stringify(UNDECLARED_NAME)}] : [],
     costEstimation: true,
   };
   const estimate = { targetCalls: 1, judgeCalls: 0, totalCalls: 1,
@@ -122,7 +122,7 @@ async function withWorkbench(scenario: Scenario, run: (client: {
 function assertSafe(response: HttpResult, allowedName?: string): void {
   assert.equal(response.code, 422);
   assert.equal(response.payload.status, 'blocked');
-  for (const forbidden of [SECRET, STDERR, UNCHECKED_NAME, PRIVATE_PATH, EXCEPTION, 'sibu-setup-recovery-']) {
+  for (const forbidden of [SECRET, STDERR, PRIVATE_PATH, EXCEPTION, 'sibu-setup-recovery-']) {
     assert.equal(response.body.includes(forbidden), false, `HTTP JSON leaked ${forbidden}`);
   }
   assert.equal('missingEnvironmentName' in response.payload, allowedName !== undefined);
@@ -209,6 +209,11 @@ for (const scenario of [
       const description = await post('/api/eval-suites/describe', { suiteId: 'synthetic' });
       assertSafe(description);
       assert.equal(description.payload.reason, scenario.reason);
+      if (scenario.reason === 'environment-undeclared') {
+        assert.equal(description.payload.undeclaredEnvironmentName, UNDECLARED_NAME);
+        const issue = description.payload.issue as { explanation: string };
+        assert.match(issue.explanation, /MODEL_API_KEY/);
+      }
       const preview = await post('/api/eval-runs/preview', selection);
       assertSafe(preview);
       assert.equal(preview.payload.reason, scenario.reason);

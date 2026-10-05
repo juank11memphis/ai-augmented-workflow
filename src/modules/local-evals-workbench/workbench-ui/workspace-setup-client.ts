@@ -75,24 +75,24 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId }, model: setup.model, judgeModel: needsJudge() ? setup.judgeModel || null : null, repeats: Number(setup.repeats) });
   const modelCopy = {
-    'suite-unavailable': 'This suite could not be used. Check its definition, then retry.',
-    'runner-unavailable': 'The runner could not be used. Check its command, then retry.',
-    'runner-absent': 'The runner was not found. Install or correct its command, then retry.',
-    'runner-start-failed': 'The runner could not start. Check its command and permissions, then retry.',
-    'runner-exited': 'The runner ended before describing models. Check it, then retry.',
-    'runner-protocol-invalid': 'The runner response did not follow the expected protocol. Check compatibility, then retry.',
-    'runner-invalid': 'The runner returned an unusable description. Check its output, then retry.',
-    'runner-timeout': 'Runner did not answer in time. Check that it can start, then retry.',
-    'required-setting-rejected': 'This suite asks for a setting Sibu will not pass to a runner. Remove it from required settings, then retry.',
-    'runner-request-too-large': 'Sibu could not send the model check because it was too large. Copy issue details and report the problem.',
-    'environment-undeclared': 'The runner needs a setting not declared by this suite. Declare it, then retry.',
+    'suite-unavailable': 'Sibu could not open this eval suite. Share the issue details with the person who set it up.',
+    'runner-unavailable': 'Sibu could not start this suite. Share the issue details with the person who set it up.',
+    'runner-absent': 'A program needed by this suite was not found. Share the issue details with the person who set it up.',
+    'runner-start-failed': 'A program needed by this suite could not start. Share the issue details with the person who set it up.',
+    'runner-exited': 'The suite stopped before Sibu could check its models. Try again; if it keeps happening, share the issue details.',
+    'runner-protocol-invalid': 'Sibu could not understand the suite’s response. Share the issue details with the person who set it up.',
+    'runner-invalid': 'The suite returned information Sibu could not use. Share the issue details with the person who set it up.',
+    'runner-timeout': 'The suite took too long to respond. Try again; if it keeps happening, share the issue details.',
+    'required-setting-rejected': 'This suite requests a setting that Sibu cannot accept. You do not need to set it. Share the issue details with the person who set up the suite.',
+    'runner-request-too-large': 'Sibu could not check models because the request was too large. Share the issue details with the person who set up the suite.',
+    'environment-undeclared': 'This suite needs a setting that its setup does not list. Ask the person who set up the suite to fix it.',
     'environment-missing': 'This suite needs a required setting. Add or export it, restart Sibu Evals, then retry.',
-    'capability-unsupported': 'The runner does not support a capability this suite needs. Review suite and runner support, then retry.',
-    'model-unavailable': 'The runner returned no compatible models. Review model support, then retry.',
-    'judge-unavailable': 'The runner returned no compatible Judge models. Review Judge support, then retry.',
-    'input-unsafe': 'Older model-check input was rejected without a precise cause. Review runner setup and request size, then retry.',
-    'invalid-request': 'Sibu could not read this model-check request. Correct it, then retry.',
-    'unknown': 'Cause unknown. Sibu could not complete the model check. Try again; if it repeats, copy the issue details.',
+    'capability-unsupported': 'This suite needs a feature its runner does not support. Share the issue details with the person who set it up.',
+    'model-unavailable': 'This suite has no models available to test. Share the issue details with the person who set it up.',
+    'judge-unavailable': 'This suite has no judge model available for its checks. Share the issue details with the person who set it up.',
+    'input-unsafe': 'Sibu could not safely check this suite. Try again; if it keeps happening, share the issue details.',
+    'invalid-request': 'Sibu could not read the model check. Try again; if it keeps happening, share the issue details.',
+    'unknown': 'Sibu could not check models. Try again; if it keeps happening, share the issue details.',
   };
   const safeSettingName = value => typeof value === 'string' && /^[A-Z_][A-Z0-9_]*$/.test(value) && value.length <= 128;
   const safeReference = value => typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);
@@ -202,9 +202,12 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   function modelNotice(payload, reason = payload?.reason) {
     const category = Object.hasOwn(modelCopy, reason) ? reason : 'unknown';
-    const name = category === 'required-setting-rejected' ? payload?.rejectedSettingName : payload?.missingEnvironmentName;
+    const name = category === 'required-setting-rejected' ? payload?.rejectedSettingName
+      : category === 'environment-undeclared' ? payload?.undeclaredEnvironmentName : payload?.missingEnvironmentName;
     let guidance = modelCopy[category];
-    if (safeSettingName(name) && category === 'required-setting-rejected') guidance = 'This suite asks for ' + name + ', which Sibu will not pass to a runner. Remove it from required settings, then retry.';
+    if (category === 'required-setting-rejected' && name === 'SIBU_EVAL_MODE') guidance = 'Sibu sets SIBU_EVAL_MODE automatically. You do not need to set it. This suite lists it by mistake; share the issue details with the person who set up the suite.';
+    else if (safeSettingName(name) && category === 'required-setting-rejected') guidance = 'This suite requests ' + name + ', which Sibu cannot accept. You do not need to set it. Share the issue details with the person who set up the suite.';
+    if (safeSettingName(name) && category === 'environment-undeclared') guidance = 'This suite needs ' + name + ', but its setup does not list it. Ask the person who set up the suite to fix it.';
     if (safeSettingName(name) && category === 'environment-missing') guidance = name === 'OPENAI_API_KEY'
       ? 'This suite needs OPENAI_API_KEY. Add it to project-root .env, or .env.local if .env is missing or has no key. You can also export it in the starting terminal. Restart Sibu Evals, then retry.'
       : 'This suite needs ' + name + '. Set it in the starting terminal, restart Sibu Evals, then retry.';

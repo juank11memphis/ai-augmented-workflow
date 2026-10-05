@@ -19,8 +19,13 @@ test('missing declared name is reported without its value or other environment d
   assert.deepEqual(result, { status: 'blocked', reason: 'environment-missing', missingEnvironmentName: 'TEST_KEY' });
   assert.doesNotMatch(JSON.stringify(result), /private|secret-value|UNRELATED/);
 });
+test('Sibu supplies its eval marker even when a suite redundantly declares it', () => {
+  const input: NormalizedEvalSuite = { ...suite, runner: { ...suite.runner, requiredEnvironment: ['SIBU_EVAL_MODE'] } };
+  const result = runnerEnvironment(input, { SIBU_EVAL_MODE: 'untrusted' });
+  assert.deepEqual(result, { status: 'ready', value: { values: { SIBU_EVAL_MODE: '1' }, secrets: [] } });
+});
 test('protected safe names are reported, but unchecked names and values are not', () => {
-  for (const name of ['NODE_OPTIONS', 'NODE_PATH', 'LD_PRELOAD', 'SIBU_EVAL_MODE', 'TEST_KEY=secret-value', 'lowercase']) {
+  for (const name of ['NODE_OPTIONS', 'NODE_PATH', 'LD_PRELOAD', 'TEST_KEY=secret-value', 'lowercase']) {
     const input: NormalizedEvalSuite = { ...suite, runner: { ...suite.runner, requiredEnvironment: [name] } };
     const result = runnerEnvironment(input, { [name]: 'SYNTHETIC_SECRET_VALUE' });
     assert.deepEqual(result, { status: 'blocked', reason: 'required-setting-rejected',

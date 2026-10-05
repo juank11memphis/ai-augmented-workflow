@@ -7,7 +7,23 @@ import { afterEach, describe, it } from 'node:test';
 import type { SibuState } from '../../shared/types.js';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SUPPORTED_AGENTS, getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 import { writeSibuState } from '../workflow-state-ledger/index.js';
-import { handleSyncProject } from './handler.js';
+import { getSyncVersionAdvisoryLines, handleSyncProject as runSyncProject } from './handler.js';
+
+const handleSyncProject = (command: Parameters<typeof runSyncProject>[0], dependencies: Parameters<typeof runSyncProject>[1] = {}) =>
+  runSyncProject(command, { checkForLatestSibuVersion: async () => ({
+    status: 'unavailable', checkedAt: '2026-01-01T00:00:00Z', packageName: '@juancr11/sibu', source: 'override', reason: 'override',
+  }), ...dependencies });
+
+it('sync advises package update only when a newer version is known', () => {
+  const available = getSyncVersionAdvisoryLines({
+    status: 'update-available', checkedAt: '2026-01-01T00:00:00Z', currentVersion: '1.1.0', latestVersion: '1.2.0',
+    packageName: '@juancr11/sibu', source: 'live',
+  });
+  assert.match(available.join(' '), /npm install -g @juancr11\/sibu.*updating Sibu is how you get Sibu Evals fixes/);
+  assert.deepEqual(getSyncVersionAdvisoryLines({
+    status: 'unavailable', checkedAt: '2026-01-01T00:00:00Z', packageName: '@juancr11/sibu', source: 'override', reason: 'override',
+  }), []);
+});
 
 const temporaryRoots: string[] = [];
 const originalCwd = process.cwd();
@@ -38,6 +54,7 @@ describe('handleSyncProject unsupported-agent cleanup', () => {
       { type: 'sync' },
       {
         renderIntro: async () => {},
+        checkForLatestSibuVersion: async () => { throw new Error('network unavailable'); },
         askForUnsupportedAgentCleanup: async () => {
           askedForCleanup = true;
           return false;

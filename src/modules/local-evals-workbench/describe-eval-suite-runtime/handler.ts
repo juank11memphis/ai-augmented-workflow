@@ -1,7 +1,7 @@
 import type { DescribeEvalSuiteRuntimeCommand } from './command.js';
 import type { DescribeEvalSuiteRuntimeResult } from './result.js';
 import type { PreviewLoggerPort, RunnerDescriptorPort, SuiteRuntimeRegistryPort } from './ports.js';
-import { compatibleDescription, hasRubric, isDeclaredEnvironmentName } from '../runtime-description.js';
+import { compatibleDescription, hasRubric, isDeclaredEnvironmentName, isSafeEnvironmentName, undeclaredEnvironmentName } from '../runtime-description.js';
 
 export type DescribeEvalSuiteRuntimeDependencies = {
   readonly suites: SuiteRuntimeRegistryPort;
@@ -34,7 +34,14 @@ export async function describeEvalSuiteRuntime(
       return { status: 'blocked', reason: described.reason };
     }
     const reason = compatibleDescription(suite, described.value);
-    if (reason) { log('eval_runtime_describe_blocked', reason); return { status: 'blocked', reason }; }
+    if (reason) {
+      log('eval_runtime_describe_blocked', reason);
+      if (reason === 'environment-undeclared') {
+        const name = undeclaredEnvironmentName(suite, described.value);
+        return { status: 'blocked', reason, ...(isSafeEnvironmentName(name) ? { undeclaredEnvironmentName: name } : {}) };
+      }
+      return { status: 'blocked', reason };
+    }
     log('eval_runtime_describe_completed');
     return { status: 'ready', suiteId: suite.id, models: described.value.models, judgeModels: described.value.judgeModels,
       rubricRequired: hasRubric(suite.testCases), rubricCaseIds: suite.testCases.filter((testCase) => hasRubric([testCase])).map((testCase) => testCase.id),

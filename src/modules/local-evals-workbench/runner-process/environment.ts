@@ -3,7 +3,7 @@ import { isDeclaredEnvironmentName, isSafeEnvironmentName, type RuntimeOutcome }
 
 /** Only executable lookup and essential OS runtime variables are inherited. */
 const BASE_NAMES = ['PATH', 'HOME', 'TMPDIR', 'TEMP', 'SystemRoot'] as const;
-const FORBIDDEN_NAMES = new Set(['SIBU_EVAL_MODE', 'NODE_OPTIONS', 'NODE_PATH', 'LD_PRELOAD', 'DYLD_INSERT_LIBRARIES']);
+const FORBIDDEN_NAMES = new Set(['NODE_OPTIONS', 'NODE_PATH', 'LD_PRELOAD', 'DYLD_INSERT_LIBRARIES']);
 export function runnerEnvironment(
   suite: NormalizedEvalSuite,
   source: NodeJS.ProcessEnv = process.env
@@ -12,6 +12,8 @@ export function runnerEnvironment(
   for (const name of BASE_NAMES) if (source[name]) values[name] = source[name];
   const secrets: string[] = [];
   for (const name of suite.runner.requiredEnvironment) {
+    // Sibu owns this marker; a redundant suite declaration must never override it.
+    if (name === 'SIBU_EVAL_MODE') continue;
     if (!isDeclaredEnvironmentName(name, suite.runner.requiredEnvironment) || FORBIDDEN_NAMES.has(name)) {
       return { status: 'blocked', reason: 'required-setting-rejected',
         ...(isSafeEnvironmentName(name) ? { rejectedSettingName: name } : {}) };

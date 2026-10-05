@@ -3,6 +3,8 @@ import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../workflow-state-ledger/state-path.js';
 import { getProjectContext } from '../../shared/paths.js';
+import { checkForLatestSibuVersion, getNpmVersionAdvisoryLines } from '../../support/version-advisory/index.js';
+import type { NpmVersionCheckResult } from '../../shared/types.js';
 import { askForMissingFrameworkSkills, askForNewArchitectureSkill, askForNewLanguageSkills, renderIntro } from '../../support/interactive-guidance/index.js';
 import { readStateForDoctor, writeStateFile } from '../workflow-state-ledger/index.js';
 import { readTemplateManifest } from '../template-catalog/index.js';
@@ -25,6 +27,7 @@ type SyncProjectDependencies = {
   askForSyncAction: typeof askForSyncAction;
   askForModelRouteReview: typeof askForModelRouteReview;
   reviewProjectModelRoutes: typeof reviewProjectModelRoutes;
+  checkForLatestSibuVersion: typeof checkForLatestSibuVersion;
 };
 
 const defaultSyncProjectDependencies: SyncProjectDependencies = {
@@ -36,6 +39,7 @@ const defaultSyncProjectDependencies: SyncProjectDependencies = {
   askForSyncAction,
   askForModelRouteReview,
   reviewProjectModelRoutes,
+  checkForLatestSibuVersion,
 };
 
 export async function handleSyncProject(_command: SyncProjectCommand, dependencies: Partial<SyncProjectDependencies> = {}): Promise<void> {
@@ -43,6 +47,10 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
 
   await syncDependencies.renderIntro();
   intro(chalk.cyan('Reviewing workflow updates'));
+  try {
+    const version = await syncDependencies.checkForLatestSibuVersion();
+    for (const line of getSyncVersionAdvisoryLines(version)) log.info(line);
+  } catch { /* Update advice must not block template review. */ }
 
   const { rootPath, statePath } = getProjectContext();
   const stateResult = readStateForDoctor(statePath);
@@ -170,6 +178,11 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
   const routesReviewed = await reviewRoutes(rootPath, syncDependencies);
   outro(routesReviewed ? chalk.green('Sync complete.') : chalk.yellow('Sync review incomplete.'));
   if (!routesReviewed) process.exitCode = 1;
+}
+
+export function getSyncVersionAdvisoryLines(result: NpmVersionCheckResult): string[] {
+  const lines = getNpmVersionAdvisoryLines(result);
+  return lines.length ? [...lines, 'Sync reviews project files; updating Sibu is how you get Sibu Evals fixes.'] : [];
 }
 
 async function reviewRoutes(rootPath: string, dependencies: SyncProjectDependencies): Promise<boolean> {

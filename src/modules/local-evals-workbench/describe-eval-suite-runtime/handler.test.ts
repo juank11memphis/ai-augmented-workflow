@@ -27,8 +27,28 @@ test('rubric suite requires compatible judge and capability', async () => {
 test('suite, environment and runner failures are focused blocks', async () => {
   const runner = { describe: async () => ({ status: 'ready' as const, value: { ...description, requiredEnvironment: ['KEY'] } }) };
   assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'none' }, { suites: { load: async () => undefined }, runner }), { status: 'blocked', reason: 'suite-unavailable' });
-  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner }), { status: 'blocked', reason: 'environment-undeclared' });
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner }), {
+    status: 'blocked', reason: 'environment-undeclared', undeclaredEnvironmentName: 'KEY',
+  });
   assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner: { describe: async () => { throw Error('secret'); } } }), { status: 'blocked', reason: 'runner-unavailable' });
+});
+
+test('Sibu-owned eval mode is compatible even when the runner lists it', async () => {
+  const runner = { describe: async () => ({ status: 'ready' as const, value: { ...description, requiredEnvironment: ['SIBU_EVAL_MODE'] } }) };
+  const result = await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner });
+  assert.equal(result.status, 'ready');
+});
+
+test('undeclared setting names are shared only when safe', async () => {
+  for (const [name, expected] of [
+    ['MODEL_API_KEY', 'MODEL_API_KEY'], ['BAD-NAME', undefined], ['KEY=secret-value', undefined], ['A'.repeat(129), undefined],
+  ] as const) {
+    const runner = { describe: async () => ({ status: 'ready' as const, value: { ...description, requiredEnvironment: [name] } }) };
+    const result = await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner });
+    assert.deepEqual(result, { status: 'blocked', reason: 'environment-undeclared',
+      ...(expected ? { undeclaredEnvironmentName: expected } : {}) });
+    assert.doesNotMatch(JSON.stringify(result), /secret-value|BAD-NAME/);
+  }
 });
 
 test('only a declared missing environment name crosses the Describe boundary', async () => {

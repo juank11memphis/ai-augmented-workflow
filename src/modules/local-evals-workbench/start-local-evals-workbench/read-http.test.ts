@@ -106,9 +106,9 @@ test('legacy input-unsafe describe issue stays unclassified without inventing a 
     assert.equal(payload.issue.stage, 'model-check');
     assert.equal(payload.issue.outcome, 'blocked');
     assert.equal(payload.issue.category, 'input-unsafe');
-    assert.match(payload.issue.title, /input unsafe/i);
-    assert.match(payload.issue.explanation, /older unclassified model-check input/i);
-    assert.match(payload.issue.nextStep, /runner setup and request size/i);
+    assert.match(payload.issue.title, /model check could not start/i);
+    assert.match(payload.issue.explanation, /could not safely check this suite/i);
+    assert.match(payload.issue.nextStep, /share the issue details/i);
     assert.equal(payload.issue.recoveryAction, 'retry');
     assert.match(payload.issue.reference, /^[a-f0-9-]{36}$/i);
     assert.equal(response.headers['x-sibu-request-reference'], payload.issue.reference);
