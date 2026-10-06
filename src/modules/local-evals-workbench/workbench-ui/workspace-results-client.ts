@@ -72,6 +72,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       interrupted: 'Run interrupted', error: 'Run could not complete' })[summary.state] || 'Run outcome unavailable';
   }
   let detailReturnCaseId = null;
+  let visibleDetailCaseId = null;
   let failuresOnly = false, search = '';
   const latestRun = () => Boolean(selectedRunId && latestKnownRunId === selectedRunId);
   function clearSelectedDetail() {
@@ -79,6 +80,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     resetRepair();
     detail.innerHTML = '<h2>Result detail</h2><p>Select a completed case to inspect it.</p>';
     detailReturnCaseId = null;
+    visibleDetailCaseId = null;
   }
   function selectSuite(id) {
     if (!id || suite?.id === id || isActive() || startPending) return;
@@ -104,7 +106,10 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const item = run?.cases.find(value => value.caseId === caseId);
     if (!item) return { state: 'not-run', failed: 0, attempts: [] };
     const failed = item.attempts.filter(value => value.outcome === 'failed').length;
-    return { state: item.state !== 'completed' ? item.state : failed ? 'failed' : item.attempts.every(value => value.outcome === 'passed') ? 'passed' : 'incomplete', failed, attempts: item.attempts };
+    const state = item.state === 'not-run' ? 'not-run' : item.state === 'incomplete'
+      ? run?.state === 'running' ? 'running' : 'incomplete'
+      : failed ? 'failed' : item.attempts.length && item.attempts.every(value => value.outcome === 'passed') ? 'passed' : 'incomplete';
+    return { state, failed, attempts: item.attempts };
   }
   function renderWorkspace() {
     one('[data-suite-title]').textContent = suite?.name || 'No eval suites yet';
@@ -120,7 +125,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
     refreshSetupControls();
-    const historical = run && history.length && !latestRun();
+    const historical = run && latestKnownRunId && !latestRun();
     one('[data-latest-label]').textContent = run ? (historical ? 'Past run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
     const runIds = run?.caseIds || [];
     const visibleCases = run ? [...runIds.map(id => suite?.testCases.find(item => item.id === id) || { id, name: id }),
@@ -135,10 +140,12 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     one('[data-status-summary]').textContent = summary;
     if (run) {
       const done = statuses.length - unfinished;
-      const current = run.cases.find(item => item.state === 'incomplete') || run.cases.find(item => item.state === 'not-run');
-      const elapsed = Math.max(0, ((run.finishedAt || Date.now()) - run.createdAt) / 1000).toFixed(1);
-      status(done + '/' + statuses.length + ' complete' + (isActive() && current ? ' · Current: ' + current.caseId : ''));
-      one('[data-run-metrics]').textContent = 'Elapsed ' + elapsed + 's · Cost ' + (run.cost == null ? 'unavailable' : run.cost);
+      status(done + '/' + statuses.length + ' complete');
+      const metrics = [];
+      if (run.finishedAt != null && run.createdAt != null) metrics.push('Elapsed ' + Math.max(0, (run.finishedAt - run.createdAt) / 1000).toFixed(1) + 's');
+      if (run.cost != null) metrics.push('Cost ' + run.cost);
+      if (run.testedModel) metrics.unshift('Model: ' + run.testedModel);
+      one('[data-run-metrics]').textContent = metrics.join(' · ');
     } else if (acceptedRunId) status('Run queued. Loading saved progress…');
     else if (suite) status('0/' + suite.testCases.length + ' complete');
     if (!suite) {
@@ -149,8 +156,12 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     }
     const rows = visibleCases.map(item => ({ ...item, status: run && !runIds.includes(item.id) ? { state: 'excluded', failed: 0, attempts: [] } : caseStatus(item.id) }))
       .filter(item => (!failuresOnly || item.status.state === 'failed') && item.name.toLowerCase().includes(search.toLowerCase()));
+    if (visibleDetailCaseId && !rows.some(item => item.id === visibleDetailCaseId)) {
+      if (matchMedia('(max-width:699px)').matches && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
+      clearSelectedDetail(); detail.hidden = true;
+    }
     if (!resultContainer.querySelector?.('.results')) {
-      resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search test cases"></label></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
+      resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search cases"></label></div><div class="result-head" aria-hidden="true"><span>Case</span><span>Result</span><span>Attempts</span></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
     }
     const count = resultContainer.querySelector?.('#results-title small');
     const list = resultContainer.querySelector?.('[data-result-list]');
@@ -158,7 +169,9 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const failureFilter = resultContainer.querySelector?.('[data-action="failures-only"]');
     if (count) count.textContent = String(rows.length);
     if (failureFilter) failureFilter.checked = failuresOnly;
-    if (list) list.innerHTML = rows.map(item => '<li><button type="button" data-action="case" data-case-id="' + esc(item.id) + '"' + (item.status.attempts.length ? '' : ' disabled') + ' aria-label="' + esc('Open ' + item.name + ', ' + item.status.state + ', ' + item.status.failed + ' failed attempts') + '"><span class="result-icon" aria-hidden="true">' + (item.status.state === 'passed' ? '✓' : item.status.state === 'failed' ? '✕' : '–') + '</span><span><strong>' + esc(item.name) + '</strong><small>' + esc(item.status.state) + ' · ' + item.status.failed + ' failed attempts · ' + item.status.attempts.length + ' attempts</small></span></button></li>').join('');
+    const focusedCase = list?.contains?.(document.activeElement) ? document.activeElement.closest?.('[data-action="case"]')?.dataset.caseId : null;
+    if (list) list.innerHTML = rows.map(item => '<li data-case-status="' + item.status.state + '"><button type="button" data-action="case" data-case-id="' + esc(item.id) + '"' + (item.status.attempts.length ? '' : ' disabled') + '><span class="result-icon" aria-hidden="true">' + (item.status.state === 'passed' ? '✓' : item.status.state === 'failed' ? '✕' : '–') + '</span><span class="result-name"><strong>' + esc(item.name) + '</strong></span><span class="result-status"><span class="result-label">Result: </span>' + esc(item.status.state.replaceAll('-', ' ')) + '</span><span class="result-attempts"><span class="result-label">Attempts: </span>' + item.status.attempts.length + (item.status.failed ? ' · ' + item.status.failed + ' failed' : '') + '</span>' + (item.status.attempts.length ? '<span class="result-open" aria-hidden="true">›</span>' : '') + '</button></li>').join('');
+    if (focusedCase) [...list.querySelectorAll('[data-action="case"]')].find(item => item.dataset.caseId === focusedCase)?.focus();
     if (empty) { empty.hidden = rows.length > 0; empty.textContent = search ? 'No test cases match this search.' : failuresOnly ? 'No failed results are visible.' : 'No results yet.'; }
   }
   async function loadHistory() {
@@ -213,6 +226,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       if (generation !== runGeneration || suite?.id !== current.suiteId || selectedRunId !== current.runId) return;
       if (payload.status !== 'ok') { showReadNotice('status', payload); setTimeout(pollRun, 1200); return; }
       clearReadNotice('status');
+      if (payload.value?.summary?.runId !== current.runId) { showReadNotice('status', null); return; }
       const previous = run?.state, previousRunId = run?.runId;
       run = payload.value.summary;
       if (previousRunId && previousRunId !== run.runId) clearSelectedDetail();
@@ -256,10 +270,10 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   }
   async function selectHistoryRun(runId) {
     if (!suite || !history.some(item => item.runId === runId)) return;
-    const current = { suiteId: suite.id, runId }, generation = ++runGeneration;
+    const current = { suiteId: suite.id, runId }, priorSelection = selectedRunId, generation = ++runGeneration;
     try {
       const payload = await json('/api/eval-runs/status?' + new URLSearchParams(current));
-      if (generation !== runGeneration || suite?.id !== current.suiteId || !history.some(item => item.runId === runId)) return;
+      if (generation !== runGeneration || suite?.id !== current.suiteId || selectedRunId !== priorSelection || !history.some(item => item.runId === runId)) return;
       if (payload.status !== 'ok' || payload.value?.summary?.runId !== runId) {
         showReadNotice('status', payload); return;
       }
@@ -272,11 +286,13 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       renderWorkspace();
       if (isActive()) setTimeout(pollRun, 700);
     } catch {
-      if (generation === runGeneration && suite?.id === current.suiteId) showReadNotice('status', null, true);
+      if (generation === runGeneration && suite?.id === current.suiteId && selectedRunId === priorSelection) showReadNotice('status', null, true);
     }
   }
   async function inspectCase(caseId, attempt, requestedAssertionId = null) {
     if (!run || !suite) return;
+    const switchingCase = visibleDetailCaseId !== null && visibleDetailCaseId !== caseId;
+    visibleDetailCaseId = caseId;
     const current = { suiteId: suite.id, runId: run.runId, caseId }, generation = ++detailGeneration;
     function showEvidenceState(message) {
       const html = '<h2>Result detail</h2><p>' + esc(message) + '</p>';
@@ -284,16 +300,16 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       detail.hidden = false;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
     }
-    const previousDetail = detail.innerHTML;
+    const previousDetail = switchingCase ? '' : detail.innerHTML;
     const switchingAssertion = requestedAssertionId !== null;
-    if (switchingAssertion) {
+    if (switchingCase || switchingAssertion) {
       resetRepair();
-      showEvidenceState('Loading selected evidence for ' + requestedAssertionId + '…');
+      showEvidenceState(switchingAssertion ? 'Loading selected evidence for ' + requestedAssertionId + '…' : 'Loading selected evidence…');
     } else if (!previousDetail.includes('detail-section')) showEvidenceState('Loading selected evidence…');
     const query = new URLSearchParams({ ...current, attempt: String(attempt) });
     try {
       const payload = await json('/api/eval-runs/status?' + query);
-      if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
+      if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId || visibleDetailCaseId !== caseId) return;
       if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') {
         showReadNotice('evidence', payload.status === 'ok' ? null : payload);
         if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
@@ -305,7 +321,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       const assertionId = failed.find(item => item.id === requestedAssertionId)?.id || failed[0]?.id;
       if (assertionId) query.set('assertionId', assertionId);
       const selected = assertionId ? await json('/api/eval-runs/status?' + query) : payload;
-      if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId) return;
+      if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId || visibleDetailCaseId !== caseId) return;
       if (selected.status !== 'ok' || selected.value.evidenceStatus !== 'available') {
         showReadNotice('evidence', selected.status === 'ok' ? null : selected);
         if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
@@ -342,7 +358,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       detail.innerHTML = html;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
       else detail.querySelector('h2')?.focus();
-    } catch { if (generation === detailGeneration && !activePanel) {
+    } catch { if (generation === detailGeneration && !activePanel && suite?.id === current.suiteId && run?.runId === current.runId && visibleDetailCaseId === caseId) {
       showReadNotice('evidence', null, true);
       if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
       else showEvidenceState('Selected evidence could not be loaded. Previous results remain available.');
@@ -370,7 +386,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (target.dataset.action === 'new-run') showTaskView('new-run');
     if (target.dataset.action === 'return-results') showTaskView('results');
     if (target.dataset.action === 'close-panel') closePanel();
-    if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else { detailGeneration++; resetRepair(); detail.innerHTML = ''; detail.hidden = true; returnToResult(); } }
+    if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else { detailGeneration++; resetRepair(); detail.innerHTML = ''; detail.hidden = true; visibleDetailCaseId = null; returnToResult(); } }
     if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }
     if (target.dataset.action === 'history-run') {
       if (acceptedRunId) { status('Wait for the current run to finish before opening another run.'); return; }

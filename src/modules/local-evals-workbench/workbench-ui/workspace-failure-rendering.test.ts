@@ -63,3 +63,38 @@ test('proposal notice remains in existing result detail across phone, tablet, an
   assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:2\}/s);
   assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\)\{.*?\.suite-rail\{display:block;grid-column:1;grid-row:1\/4\}.*?\[data-results-container\]\{grid-column:2\/4\}\.workspace:has\(\[data-detail\]:not\(\[hidden\]\)\) \[data-results-container\]\{grid-column:2\}\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
 });
+
+test('deferred selected evidence cannot resurrect old case detail or assistance after case, run, or suite selection', async () => {
+  for (const change of ['case', 'run', 'suite'] as const) {
+    const detail = { innerHTML: '', hidden: true, querySelector: () => ({ focus() {} }) };
+    const document = { addEventListener() {} };
+    let release!: (value: unknown) => void;
+    const evidence = (actual: string) => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
+      outcome: 'failed', assertions: [{ id: 'failed', outcome: 'failed', actual, expected: 'expected', diagnostics: [] }],
+      turns: [], tools: [], diagnostics: [], output: '' } } });
+    const context = { document, URLSearchParams, matchMedia: () => ({ matches: false }), esc: escape,
+      one: (selector: string) => ({ '[data-results-container]': {}, '[data-detail]': detail, '[data-side-panel]': { hidden: true } })[selector],
+      suite: { id: 'suite', testCases: [{ id: 'old', name: 'Old' }, { id: 'new', name: 'New' }] },
+      run: { runId: 'run', testedModel: 'model', scope: 'all', cases: [
+        { caseId: 'old', attempts: [{ number: 1, outcome: 'failed' }] }, { caseId: 'new', attempts: [{ number: 1, outcome: 'failed' }] }] },
+      selectedRunId: 'run', latestKnownRunId: 'run', detailGeneration: 0, historyGeneration: 0, activePanel: null, setup: { caseId: '' },
+      resetRepair() {}, repairMarkup: () => '<button>Analyze failure</button>', loadDiscovery() {}, loadRuntime() {},
+      json: async (url: string) => url.includes('/history?') ? new Promise(() => undefined)
+        : url.includes('caseId=old') && url.includes('assertionId=')
+        ? new Promise(resolve => { release = resolve; }) : evidence(url.includes('caseId=new') ? 'CURRENT' : 'OLD'),
+    };
+    const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ inspectCase })', context) as { inspectCase(id: string, attempt: number): Promise<void> };
+    const pending = api.inspectCase('old', 1);
+    await new Promise(resolve => setImmediate(resolve));
+    if (change === 'case') await api.inspectCase('new', 1);
+    else {
+      context[change === 'run' ? 'run' : 'suite'] = change === 'run'
+        ? { ...context.run, runId: 'different-run' } as never : { ...context.suite, id: 'different-suite' } as never;
+      detail.innerHTML = 'CURRENT';
+    }
+    release(evidence('STALE PRIVATE EVIDENCE'));
+    await pending;
+    assert.doesNotMatch(detail.innerHTML, /STALE PRIVATE EVIDENCE|Old.*Analyze failure/s, change);
+    assert.match(detail.innerHTML, /CURRENT/, change);
+  }
+});

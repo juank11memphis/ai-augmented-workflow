@@ -23,11 +23,12 @@ function browser() {
   const read = { hidden: true };
   const readHeading = { textContent: '' }, readGuidance = { textContent: '' }, readAnnouncement = { textContent: '' };
   const readDetails = { textContent: '', hidden: true }, readCopy = { hidden: true };
+  let sheetOpen = false, sheetCloses = 0; const sheetSlot = { querySelector: () => sheetOpen ? {} : null };
   let panelFocus = '';
   const side = { hidden: true, innerHTML: '', querySelector: (selector: string) => selector === 'h2' ? { focus: () => { panelFocus = 'heading'; } } : null,
     setAttribute() {}, removeAttribute() {} };
   const nodes: Record<string, unknown> = {
-    '[data-results-container]': results, '[data-detail]': { innerHTML: '', hidden: false },
+    '[data-results-container]': results, '[data-detail]': { innerHTML: '', hidden: true, querySelector: () => ({ focus() {} }) },
     '[data-side-panel]': side, '[data-suite-title]': { textContent: '' },
     '[data-suite-description]': { textContent: '' }, '[data-action="suite-select"]': { value: '' },
     '[data-action="coverage"]': { hidden: false }, '[data-action="history"]': { hidden: false },
@@ -58,8 +59,11 @@ function browser() {
     setupRegion: { hidden: false, querySelector: () => ({ disabled: false }) },
     isActive: () => context.run?.state === 'running', needsJudge: () => false,
     refreshSetupControls() {}, status() {}, loadDiscovery() {}, loadRuntime() {}, resetRepair() {},
+    repairMarkup: () => '<button data-action="analyze-failure">Analyze failure</button>',
+    selectedFailure: null,
     safeReference: (value: unknown) => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value),
     matchMedia: () => ({ matches: false }),
+    sheetSlot, openSheet: () => { sheetOpen = true; }, closeSheet: () => { sheetOpen = false; sheetCloses++; },
     json: async (url: string) => url.includes('/status?')
       ? new Promise(resolve => { resolvePoll = resolve; }) : new Promise(() => undefined),
     setTimeout: () => 0,
@@ -74,6 +78,7 @@ function browser() {
     listeners.get('input')?.({ target: input });
   }
   return { api, context, document, input, section, count, list, empty, results, side, copied,
+    sheet: { isOpen: () => sheetOpen, closes: () => sheetCloses },
     panelFocus: () => panelFocus,
     read, readHeading, readGuidance, readAnnouncement, readDetails, readCopy,
     replacements: () => replacements, edit, resolvePoll: () => resolvePoll,
@@ -117,7 +122,12 @@ test('end and middle edits, deletion, caret and selection retain one input while
   assert.equal(page.input.selectionEnd, 6);
   assert.equal(page.replacements(), 0);
 });
-
+test('poll rejects a mismatched run snapshot without replacing selected results', async () => {
+  const page = browser(); page.context.run = saved; page.context.selectedRunId = 'run';
+  const poll = page.api.pollRun(); page.resolvePoll()?.({ status: 'ok', value: { summary: { ...saved, runId: 'other' } } }); await poll;
+  assert.equal(page.api.state().run, saved); assert.equal(page.api.state().selectedRunId, 'run');
+  assert.match(page.readHeading.textContent, /Run status/);
+});
 test('no-match copy retains an editable query and clearing restores all rows and count', () => {
   const page = browser();
   page.api.renderWorkspace();
@@ -134,6 +144,76 @@ test('no-match copy retains an editable query and clearing restores all rows and
   assert.equal(page.empty.hidden, true);
   for (const name of ['Alpha case', 'Beta case', 'Gamma case']) assert.match(page.list.innerHTML, new RegExp(name));
   assert.equal(page.replacements(), 0);
+});
+test('selected-run browser summary uses selected scope, not filtered rows or recorded-case count', () => {
+  const page = browser();
+  page.context.run = { ...saved, state: 'running', caseIds: ['alpha', 'beta'], finishedAt: undefined,
+    cases: [{ caseId: 'alpha', state: 'completed', attempts: [{ outcome: 'failed' }, { outcome: 'passed' }] }] } as never;
+  page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  page.api.renderWorkspace();
+  assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /1 failed · 1 not finished · 1 excluded/);
+  assert.match(page.list.innerHTML, /Attempts: <\/span>2 · 1 failed/);
+  assert.match(page.list.innerHTML, /Result: <\/span>failed/);
+  assert.match(page.list.innerHTML, /excluded/);
+  assert.equal((page.context.one('[data-run-metrics]') as { textContent: string }).textContent, '');
+  page.edit('Gamma', 3);
+  assert.equal(page.count.textContent, '1');
+  assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /1 failed · 1 not finished/);
+  page.context.latestKnownRunId = 'newer'; page.api.renderWorkspace();
+  assert.match((page.context.one('[data-latest-label]') as { textContent: string }).textContent, /Past run/);
+});
+test('browser keeps not-run, running, incomplete, failed, and passed distinct without private summary data', () => {
+  const page = browser();
+  const summary = page.context.one('[data-status-summary]') as { textContent: string };
+  const metrics = page.context.one('[data-run-metrics]') as { textContent: string };
+  page.context.run = { ...saved, state: 'running', diagnostics: ['private output'], caseIds: ['alpha', 'beta', 'gamma'],
+    finishedAt: undefined, cases: [
+      { caseId: 'alpha', state: 'incomplete', attempts: [{ outcome: 'incomplete' }] },
+      { caseId: 'beta', state: 'not-run', attempts: [] },
+      { caseId: 'gamma', state: 'completed', attempts: [{ outcome: 'passed' }] },
+    ] } as never;
+  page.api.renderWorkspace();
+  assert.match(page.list.innerHTML, /running/);
+  assert.match(page.list.innerHTML, /not run/);
+  assert.match(page.list.innerHTML, /passed/);
+  assert.doesNotMatch(summary.textContent + page.list.innerHTML + metrics.textContent, /private output/);
+  page.context.run = { ...saved, state: 'interrupted', finishedAt: undefined, caseIds: ['alpha', 'beta', 'gamma'],
+    cases: [{ caseId: 'alpha', state: 'incomplete', attempts: [{ outcome: 'incomplete' }] }] } as never;
+  page.api.renderWorkspace();
+  assert.match(page.list.innerHTML, /incomplete/);
+  assert.doesNotMatch(page.list.innerHTML, /running/);
+  assert.equal(metrics.textContent, '');
+});
+test('filtered rows preserve saved outcomes and an inspectable attempt opens existing detail and assistance', async () => {
+  const page = browser();
+  page.context.run = { ...saved, testedModel: 'chosen-model', caseIds: ['alpha', 'beta'], cases: [
+    { caseId: 'alpha', state: 'completed', attempts: [{ number: 1, outcome: 'failed' }] },
+  ] } as never;
+  page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  const evidence = { outcome: 'failed', output: 'private raw', assertions: [], turns: [], tools: [], diagnostics: [] };
+  page.context.json = async () => ({ status: 'ok', value: { evidenceStatus: 'available', evidence } });
+  page.api.renderWorkspace();
+  assert.match(page.list.innerHTML, /data-case-id="alpha"/);
+  assert.match(page.list.innerHTML, /data-case-id="beta" disabled/);
+  assert.match(page.list.innerHTML, /Result: <\/span>failed/);
+  assert.match(page.list.innerHTML, /Result: <\/span>not run/);
+  assert.doesNotMatch(page.list.innerHTML, /private raw/);
+  assert.match((page.context.one('[data-run-metrics]') as { textContent: string }).textContent, /Model: chosen-model/);
+  page.edit('beta', 4);
+  assert.equal(page.count.textContent, '1');
+  assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /1 failed · 1 not finished/);
+  page.edit('', 0);
+  await page.api.inspectCase('alpha', 1);
+  const detail = page.context.one('[data-detail]') as { innerHTML: string; hidden: boolean };
+  assert.equal(detail.hidden, false);
+  assert.match(detail.innerHTML, /data-repair-host aria-label="Guided repair"/);
+  assert.match(detail.innerHTML, /Analyze failure/);
+  page.context.matchMedia = () => ({ matches: true });
+  await page.api.inspectCase('alpha', 1); assert.equal(page.sheet.isOpen(), true);
+  page.edit('beta', 4);
+  assert.equal(page.sheet.isOpen(), false); assert.equal(page.sheet.closes(), 1);
+  assert.equal(detail.hidden, true); assert.doesNotMatch(detail.innerHTML, /Analyze failure/);
+  assert.match(page.list.innerHTML, /Beta case/); assert.doesNotMatch(page.list.innerHTML, /Alpha case/);
 });
 
 test('polling refresh preserves the exact focused input, query and selection', async () => {
@@ -291,6 +371,7 @@ test('version-1 input-unsafe issue is explicitly unclassified in guidance and co
   assert.match(page.readGuidance.textContent, /without a precise cause/);
   assert.match(page.readDetails.textContent, /Category: unclassified/);
   assert.doesNotMatch(page.readGuidance.textContent + page.readDetails.textContent, /credential|provider|secret-token/i);
+  assert.doesNotMatch(page.readAnnouncement.textContent, /credential|provider|secret-token/i);
   page.click('copy-read-issue');
   await Promise.resolve();
   assert.equal(page.copied.length, 1);
