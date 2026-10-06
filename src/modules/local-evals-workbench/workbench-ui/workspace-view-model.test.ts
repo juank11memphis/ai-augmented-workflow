@@ -13,7 +13,7 @@ const discovery: EvalSuiteDiscoveryResult = {
 };
 const run: Manifest = {
   version: 1, runId: 'run-1', suiteId: 'suite', caseIds: ['safe', 'unsafe'], scope: 'all',
-  testedModel: 'one-model', judgeModel: null, repeats: 1, state: 'partial',
+  testedModel: 'one-model', judgeModel: null, state: 'partial',
   owner: { pid: 1, token: 'x' }, createdAt: 1, updatedAt: 2, finishedAt: 2,
   outcome: 'incomplete', calls: null, cost: null, diagnostics: [],
   cases: [
@@ -26,7 +26,7 @@ it('models empty, ready, partial and read-only historical states without false p
   assert.equal(createWorkspaceViewModel({ discovery: { status: 'blocked', reason: 'missing-evals-folder', message: 'No suites', guidance: [], suites: [], diagnostics: [] } }).state, 'empty');
   assert.equal(createWorkspaceViewModel({ discovery }).state, 'ready');
   const model = createWorkspaceViewModel({ discovery, run, history: [
-    { runId: 'run-2', suiteId: 'suite', state: 'completed', createdAt: 3, updatedAt: 3, finishedAt: 3, outcome: 'passed', testedModel: 'one-model', judgeModel: null, scope: 'all', repeats: 1, calls: 2, cost: null },
+    { runId: 'run-2', suiteId: 'suite', state: 'completed', createdAt: 3, updatedAt: 3, finishedAt: 3, outcome: 'passed', testedModel: 'one-model', judgeModel: null, scope: 'all', calls: 2, cost: null },
   ] });
   assert.equal(model.state, 'partial');
   assert.equal(model.historical, true);
@@ -86,7 +86,7 @@ it('counts attempts and failures, excludes unselected cases, and never projects 
     ] }] };
   const model = createWorkspaceViewModel({ discovery, run: privateRun, history: [
     { runId: 'newer', suiteId: 'suite', state: 'completed', createdAt: 3, updatedAt: 3, finishedAt: 3,
-      outcome: 'passed', testedModel: 'one-model', judgeModel: null, scope: 'all', repeats: 1, calls: 2, cost: null },
+      outcome: 'passed', testedModel: 'one-model', judgeModel: null, scope: 'all', calls: 2, cost: null },
   ] });
   assert.equal(model.historical, true);
   assert.deepEqual([model.passed, model.failed, model.unfinished, model.excluded], [0, 1, 0, 1]);

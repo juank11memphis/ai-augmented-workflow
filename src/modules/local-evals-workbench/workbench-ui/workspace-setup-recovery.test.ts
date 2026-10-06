@@ -130,7 +130,7 @@ test('blocked preview preserves previous results, names preview stage, and never
   const results = { textContent: 'Previous results' };
   const region = { isConnected: true, querySelector(key: string) {
     return ({ 'input[name="scope"]:checked': { value: 'all' }, '[data-field="case"]': { value: 'case' },
-      '[data-field="model"]': { value: 'model' }, '[data-field="repeats"]': { value: '1' },
+      '[data-field="model"]': { value: 'model' },
       '[data-action="review"]': { disabled: false } })[key as '[data-field="model"]'];
   } };
   const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', name: 'Suite', testCases: [{ id: 'case', name: 'Case' }] }] }) }),

@@ -84,7 +84,6 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Select compatible evaluation models**: let users choose one compatible Model Under Evaluation per run and a separate Judge Model when rubric-based grading requires one.
 - **Run focused eval scope**: let users run either all test cases in a suite or one selected test case so repairs can be validated in small loops.
 - **Execute real AI behavior**: exercise the Evaluation Target with suite inputs so results come from actual single-turn, multi-turn, and mocked-tool behavior rather than predefined outputs.
-- **Repeat nondeterministic cases**: let users optionally repeat a case to expose unstable behavior while keeping one execution as the default.
 - **Preview run consumption**: show expected model-call volume and estimated cost before the user starts a run.
 - **Show eval result status**: make suite, test case, and assertion/grader outcomes visible through a local matrix/list result experience.
 - **Preserve isolated run evidence**: retain local outputs, scores, tool traces, and diagnostics across dashboard sessions without allowing run artifacts into normal source-control tracking or ordinary LLM context.

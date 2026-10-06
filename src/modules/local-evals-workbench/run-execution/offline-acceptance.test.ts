@@ -43,7 +43,7 @@ test('offline target execution persists real output and changed integration chan
     };
     const before = project.git('status', '--porcelain');
     try {
-      const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', repeats: 1, judgeModel: null };
+      const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null };
       const preview = await post('/api/eval-runs/preview', command);
       assert.equal(preview.code, 200);
       const review = preview.value;
@@ -115,8 +115,8 @@ test('offline target execution persists real output and changed integration chan
         cases: { caseId: string; attempts: { outcome: string; rubricScores?: number[] }[] }[] }; evidence?: { outcome: string;
         turns: { content: string }[]; tools: { outcome: string }[]; assertions: { id: string; outcome: string; score: number | null; judgeModel?: string }[] } } };
     };
-    const run = async (caseId: string, repeats: number, judgeModel: string | null) => {
-      const command = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: caseId }, model: 'fake', repeats, judgeModel };
+    const run = async (caseId: string, judgeModel: string | null) => {
+      const command = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: caseId }, model: 'fake', judgeModel };
       const preview = await post('/api/eval-runs/preview', command);
       assert.equal(preview.code, 200, JSON.stringify(preview.value));
       const review = preview.value;
@@ -133,34 +133,24 @@ test('offline target execution persists real output and changed integration chan
     };
     try {
       const before = project.git('status', '--porcelain');
-      const blocked = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'multi' }, model: 'fake', repeats: 1, judgeModel: null });
+      const blocked = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'multi' }, model: 'fake', judgeModel: null });
       assert.equal(blocked.value.reason, 'judge-unavailable');
-      const multi = await run('multi', 1, 'fake-judge');
+      const multi = await run('multi', 'fake-judge');
       assert.equal(multi.summary.state, 'completed');
       const multiDetail = await get(multi.runId, 'multi');
       assert.equal(multiDetail.value.evidence?.turns.length, 2);
       assert.deepEqual(multiDetail.value.evidence?.tools.map(item => item.outcome), ['result', 'error', 'unexpected-response']);
       assert.ok(multiDetail.value.evidence?.assertions.every(item => item.outcome === 'passed'));
       assert.equal(multiDetail.value.evidence?.assertions.find(item => item.id === 'quality')?.judgeModel, 'fake-judge');
-      const repeatedMulti = await run('multi', 2, 'fake-judge');
-      assert.deepEqual(repeatedMulti.summary.cases[0]?.attempts.map(item => item.outcome), ['passed', 'passed']);
+      assert.deepEqual(multi.summary.cases[0]?.attempts.map(item => item.outcome), ['passed']);
       await project.clearStateBetweenTurns();
-      const stateCleared = await run('multi', 1, 'fake-judge');
+      const stateCleared = await run('multi', 'fake-judge');
       assert.equal(stateCleared.summary.outcome, 'failed');
       assert.equal((await get(stateCleared.runId, 'multi')).value.evidence?.assertions.find(item => item.id === 'turn-output')?.outcome, 'failed');
       await project.restoreRunner();
-      const flaky = await run('flaky', 2, 'fake-judge');
-      assert.equal(flaky.summary.outcome, 'failed');
-      assert.deepEqual(flaky.summary.cases[0]?.attempts.map(item => item.outcome), ['passed', 'failed']);
-      assert.deepEqual(flaky.summary.cases[0]?.attempts.flatMap(item => item.rubricScores ?? []), [0.9, 0.6]);
-      assert.equal(flaky.summary.calls, 4);
-      assert.equal(flaky.summary.cost, 0.04);
-      assert.equal((await get(flaky.runId, 'flaky', 2)).value.evidence?.outcome, 'failed');
-      const interrupted = await run('interrupt', 2, null);
-      assert.equal(interrupted.summary.state, 'partial');
-      assert.equal(interrupted.summary.outcome, 'incomplete');
-      assert.deepEqual(interrupted.summary.cases[0]?.attempts.map(item => item.outcome), ['passed', 'incomplete']);
-      assert.equal((await get(interrupted.runId, 'interrupt', 1)).value.evidence?.outcome, 'passed');
+      const single = await run('flaky', 'fake-judge');
+      assert.deepEqual(single.summary.cases[0]?.attempts.map(item => item.outcome), ['passed']);
+      assert.deepEqual(single.summary.cases[0]?.attempts.flatMap(item => item.rubricScores ?? []), [0.9]);
       assert.equal(project.git('status', '--porcelain'), before);
     } finally { await server.stop?.(); }
   } finally { await project.cleanup(); }

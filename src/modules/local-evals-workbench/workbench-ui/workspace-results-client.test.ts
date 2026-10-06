@@ -254,8 +254,8 @@ test('History labels latest and past, preserves selection on failed read, and re
   const past = { ...saved, runId: 'past-run' };
   page.context.run = saved; page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
   page.context.history = [
-    { runId: 'run', createdAt: 2, testedModel: 'model', scope: 'all', repeats: 1, state: 'completed', outcome: 'failed', cost: null },
-    { runId: 'past-run', createdAt: 1, testedModel: 'model', scope: 'all', repeats: 1, state: 'completed', outcome: 'failed', cost: null },
+    { runId: 'run', createdAt: 2, testedModel: 'model', scope: 'all', state: 'completed', outcome: 'failed', cost: null },
+    { runId: 'past-run', createdAt: 1, testedModel: 'model', scope: 'all', state: 'completed', outcome: 'failed', cost: null },
   ] as never[];
   page.api.renderWorkspace();
   const selected = page.api.state().selectedRunId;
@@ -341,7 +341,7 @@ test('terminal outcomes and legacy input-unsafe are conservative and distinct fr
 test('History fault and network catch preserve saved rows; confirmed recovery clears only History notice', async () => {
   const page = browser();
   page.context.run = saved; page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
-  page.context.history = [{ runId: 'run', createdAt: 1, testedModel: 'model', scope: 'all', repeats: 1,
+  page.context.history = [{ runId: 'run', createdAt: 1, testedModel: 'model', scope: 'all',
     state: 'completed', outcome: 'failed', finishedAt: 2, cost: null }] as never[];
   const previous = page.context.history;
   page.context.json = async () => ({ status: 'blocked', reason: 'unavailable', issue: {

@@ -1,8 +1,8 @@
 export const WORKSPACE_RUN_REVIEW_CLIENT = String.raw`
   async function showReview() {
     readSetup();
-    if (!runtime || !setup.model || needsJudge() && !setup.judgeModel || !Number.isInteger(setup.repeats) || setup.repeats < 1 || setup.repeats > 20) {
-      one('[data-setup-status]').textContent = needsJudge() && !setup.judgeModel ? 'Choose a compatible Judge model.' : 'Choose a compatible model and repeat count from 1 to 20.'; return;
+    if (!runtime || !setup.model || needsJudge() && !setup.judgeModel) {
+      one('[data-setup-status]').textContent = needsJudge() && !setup.judgeModel ? 'Choose a compatible Judge model.' : 'Choose a compatible model.'; return;
     }
     const request = command(), descriptionGeneration = runtimeGeneration, requestGeneration = ++previewGeneration;
     one('[data-setup-status]').textContent = 'Checking calls and cost…';
@@ -17,7 +17,7 @@ export const WORKSPACE_RUN_REVIEW_CLIENT = String.raw`
       const scope = request.scope.type === 'all' ? 'All ' + result.selectedCaseIds.length + ' cases' : '1 test case';
       const content = '<p>' + esc(suite.name) + '</p><dl><div><dt>Scope</dt><dd>' + esc(scope) + '</dd></div>'
         + (request.scope.type === 'test_case' ? '<div><dt>Test case</dt><dd>' + esc(selectedCase?.name || request.scope.testCaseId) + '</dd></div>' : '')
-        + '<div><dt>Repeats</dt><dd>' + esc(result.repeats) + '</dd></div><div><dt>Model</dt><dd>' + esc(result.model) + '</dd></div>'
+        + '<div><dt>Model</dt><dd>' + esc(result.model) + '</dd></div>'
         + (result.judgeModel ? '<div><dt>Judge</dt><dd>' + esc(result.judgeModel) + '</dd></div>' : '')
         + '<div><dt>Expected calls</dt><dd>' + esc(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + esc(cost) + '</dd></div></dl><p>Actual cost may vary.</p><p role="status" data-review-status></p>';
       sheetReturn = setupRegion.querySelector('[data-action="review"]') || sheetReturn;

@@ -95,14 +95,14 @@ test('diagnostics are bounded, persisted on partial attempts and finalized for i
   assert.deepEqual(h.finalDiagnostics, Array.from({ length: 20 }, (_, index) => `issue-${index}`));
 });
 
-test('sequential repeats retain turns, mocked success/error/unexpected tools, rubric and custom results', async () => {
+test('single attempt retains turns, mocked tools, rubric and custom results', async () => {
   const deepCase = { ...testCase, turns: [testCase.turns[0]!, testCase.turns[0]!],
     assertions: [{ id: 'order', type: 'tool-call-sequence' as const, tools: ['lookup', 'verify'] },
       { id: 'turn', type: 'turn-output' as const, turnIndex: 1, operator: 'contains' as const, expected: 'verified' }],
     graders: [{ id: 'custom', type: 'custom' as const, name: 'safe' },
       { id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
   const events: ExecutionEvent[] = [{ type: 'run-started' }];
-  for (const attempt of [1, 2]) events.push(
+  for (const attempt of [1]) events.push(
     { type: 'case-started', caseId: 'case', attempt },
     { type: 'turn-completed', caseId: 'case', attempt, turnId: `turn-${attempt}-1`, turnIndex: 0, output: 'checking' },
     { type: 'tool-recorded', caseId: 'case', attempt, toolId: `tool-${attempt}-1`, turnId: `turn-${attempt}-1`, position: 0, name: 'lookup', arguments: '{}', outcome: 'result', result: '{}' },
@@ -114,16 +114,16 @@ test('sequential repeats retain turns, mocked success/error/unexpected tools, ru
   );
   events.push({ type: 'run-completed', status: 'completed' });
   const h = harness(events);
-  const result = await executeEvalRun({ ...selection, cases: [deepCase], judgeModel: 'judge', repeats: 2 }, { ...h, evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now });
+  const result = await executeEvalRun({ ...selection, cases: [deepCase], judgeModel: 'judge' }, { ...h, evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now });
   assert.equal(result.status, 'completed');
   const completed = h.attempts.filter(item => item.outcome !== 'incomplete');
-  assert.deepEqual(completed.map(item => [item.number, item.outcome]), [[1, 'passed'], [2, 'failed']]);
-  assert.deepEqual(completed[1]?.tools.map(item => item.outcome), ['result', 'unexpected-response']);
-  assert.deepEqual(completed[1]?.assertions.map(item => item.outcome), ['passed', 'passed', 'passed', 'failed']);
-  assert.deepEqual(completed.map(item => item.calls), [3, 3]);
+  assert.deepEqual(completed.map(item => [item.number, item.outcome]), [[1, 'passed']]);
+  assert.deepEqual(completed[0]?.tools.map(item => item.outcome), ['result', 'error']);
+  assert.deepEqual(completed[0]?.assertions.map(item => item.outcome), ['passed', 'passed', 'passed', 'passed']);
+  assert.deepEqual(completed.map(item => item.calls), [3]);
 });
 
-test('malformed grader and interrupted repeat cannot publish a passed run', async () => {
+test('malformed grader and interrupted run cannot publish a passed run', async () => {
   const deepCase = { ...testCase, graders: [{ id: 'custom', type: 'custom' as const, name: 'safe' }] };
   const base: ExecutionEvent[] = [{ type: 'case-started', caseId: 'case', attempt: 1 },
     { type: 'turn-completed', caseId: 'case', attempt: 1, turnId: 'turn-1', output: 'actual' }];
@@ -131,7 +131,7 @@ test('malformed grader and interrupted repeat cannot publish a passed run', asyn
   assert.equal((await executeEvalRun({ ...selection, cases: [deepCase] }, { ...malformed, clock: Date.now })).status, 'error');
   const interrupted = harness([...base, { type: 'grader-completed', caseId: 'case', attempt: 1, checkId: 'custom', grader: 'custom', passed: true, score: null, evidence: 'safe', diagnostics: [] },
     { type: 'case-completed', caseId: 'case', attempt: 1, status: 'completed' }], 'interrupted');
-  assert.equal((await executeEvalRun({ ...selection, cases: [deepCase], repeats: 2 }, { ...interrupted, clock: Date.now })).status, 'interrupted');
+  assert.equal((await executeEvalRun({ ...selection, cases: [deepCase] }, { ...interrupted, clock: Date.now })).status, 'interrupted');
 });
 
 test('event-count and byte limits finalize honestly while retaining the last bounded checkpoint', async () => {

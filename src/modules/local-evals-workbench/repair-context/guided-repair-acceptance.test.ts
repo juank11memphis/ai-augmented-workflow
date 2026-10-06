@@ -20,7 +20,7 @@ import { startEvalRun } from '../start-eval-run/handler.js';
 import type { NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
 
 const logger = { info() {}, warn() {}, error() {} };
-const selection = { suiteId: 'suite', testCaseId: 'case', attempt: 2, assertionId: 'assertion',
+const selection = { suiteId: 'suite', testCaseId: 'case', attempt: 1, assertionId: 'assertion',
   evalRunModelId: 'synthetic', runScope: { type: 'all' as const } };
 
 test('restored failure remains immutable through approval and distinct confirmed case and suite reruns', async () => {
@@ -29,16 +29,15 @@ test('restored failure remains immutable through approval and distinct confirmed
     await fs.mkdir(path.join(p.root, 'prompts'));
     await fs.writeFile(path.join(p.root, 'prompts/agent.md'), 'before');
     const history = createRunHistory(p.root);
-    const first = await history.store.create({ ...config, repeats: 2 });
-    const second = await history.store.create({ ...config, repeats: 2 });
+    const first = await history.store.create({ ...config });
+    const second = await history.store.create({ ...config });
     assert.equal(first.status, 'ok'); assert.equal(second.status, 'ok');
     if (first.status !== 'ok' || second.status !== 'ok') return;
     for (const [runId, sentinel] of [[first.value.runId, 'OTHER_RUN'], [second.value.runId, 'SELECTED_RUN']] as const) {
       assert.equal((await history.store.start('suite', runId)).status, 'ok');
-      const pass = evidence(runId);
-      assert.equal((await history.store.append('suite', runId, pass)).status, 'ok');
-      const failed = { ...pass, number: 2, outcome: 'failed' as const,
-        assertions: [{ ...pass.assertions[0]!, outcome: 'failed' as const, score: 0.3, threshold: 0.8, actual: sentinel,
+      const base = evidence(runId);
+      const failed = { ...base, outcome: 'failed' as const,
+        assertions: [{ ...base.assertions[0]!, outcome: 'failed' as const, score: 0.3, threshold: 0.8, actual: sentinel,
           expected: 'safe behavior', diagnostics: ['selected failure'] }] };
       assert.equal((await history.store.append('suite', runId, failed)).status, 'ok');
       assert.equal((await history.store.finalize('suite', runId, 'completed')).status, 'ok');
@@ -83,7 +82,7 @@ test('restored failure remains immutable through approval and distinct confirmed
     const deps = { proposalReader: new RepairProposalStoreReadinessAdapter(proposalStore), safety: mutator,
       workflowReadiness: { checkReadiness: async () => ({ status: 'ready' as const }) }, mutator, logger };
     const applyCommand = { projectRoot: p.root, proposalId: proposal.proposal.proposalId,
-      approvalMarker: APPLY_APPROVED_REPAIR_MARKER, suiteId: 'suite', runId, testCaseId: 'case', attempt: 2, assertionId: 'assertion' };
+      approvalMarker: APPLY_APPROVED_REPAIR_MARKER, suiteId: 'suite', runId, testCaseId: 'case', attempt: 1, assertionId: 'assertion' };
     const original = await fs.readFile(path.join(p.root, 'prompts/agent.md'), 'utf8');
     await fs.writeFile(path.join(p.root, '.env'), 'PRIVATE_REPAIR_TOKEN=sk-secret');
     const withoutApproval = await applyApprovedEvalRepair({ ...applyCommand, approvalMarker: 'not-approved' }, deps);
@@ -114,7 +113,7 @@ test('restored failure remains immutable through approval and distinct confirmed
     assert.equal(await fs.readFile(path.join(p.root, 'prompts/agent.md'), 'utf8'), 'Verify before action.');
     assert.equal((await applyApprovedEvalRepair(applyCommand, deps)).status, 'blocked');
     assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'run.json'), 'utf8'), beforeManifest);
-    const sourceAttempt = await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'cases/case/2.json'), 'utf8');
+    const sourceAttempt = await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'cases/case/1.json'), 'utf8');
     const suite: NormalizedEvalSuite = { version: 2, kind: 'sibu-eval-suite', id: 'suite', name: 'Suite', description: 'Offline',
       target: { id: 'target', kind: 'agent', path: 'prompts/agent.md' }, coverage: { categories: [], gaps: [] },
       runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
@@ -129,7 +128,7 @@ test('restored failure remains immutable through approval and distinct confirmed
       artifacts: { check: async () => ({ status: 'ready' as const, value: null }) }, store: history.store,
       scheduler: { schedule: ({ runId: scheduledId }: { runId: string }) => { scheduled.push(scheduledId); } } };
     for (const scope of [{ type: 'test_case' as const, testCaseId: 'case' }, { type: 'all' as const }]) {
-      const selection = { suiteId: 'suite', scope, model: 'synthetic', judgeModel: null, repeats: 2 };
+      const selection = { suiteId: 'suite', scope, model: 'synthetic', judgeModel: null };
       const preview = await previewEvalRun(selection, runPorts);
       assert.equal(preview.status, 'ready');
       assert.equal(scheduled.length, scope.type === 'test_case' ? 0 : 1, 'preview never schedules');
@@ -144,7 +143,6 @@ test('restored failure remains immutable through approval and distinct confirmed
       const rerunEvidence = { ...evidence(started.runId), outcome: scope.type === 'all' ? 'failed' as const : 'passed' as const,
         assertions: [{ ...evidence(started.runId).assertions[0]!, outcome: scope.type === 'all' ? 'failed' as const : 'passed' as const }] };
       assert.equal((await history.store.append('suite', started.runId, rerunEvidence)).status, 'ok');
-      assert.equal((await history.store.append('suite', started.runId, { ...rerunEvidence, number: 2 })).status, 'ok');
       assert.equal((await history.store.finalize('suite', started.runId, 'completed')).status, 'ok');
       const read = await history.get({ suiteId: 'suite', runId: started.runId });
       assert.equal(read.status, 'ok');
@@ -152,6 +150,6 @@ test('restored failure remains immutable through approval and distinct confirmed
     }
     assert.equal(new Set(scheduled).size, 2);
     assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'run.json'), 'utf8'), beforeManifest);
-    assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'cases/case/2.json'), 'utf8'), sourceAttempt);
+    assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'cases/case/1.json'), 'utf8'), sourceAttempt);
   } finally { await p.cleanup(); }
 });

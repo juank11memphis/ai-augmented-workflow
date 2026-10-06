@@ -19,7 +19,7 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
   }
   const runPanel = () => root.querySelector('[data-run-panel]');
   function lockCurrentRun(locked) {
-    for (const node of root.querySelectorAll('[data-control="suite"], [data-control="suite-option"], [data-control="model"], [data-control="run"], [data-control="retry-run"], [data-control="retry-cell"], [data-control="rerun-recommendation"], [data-control="preview-start"], [data-control="test-case"], [data-control="judge"], [data-control="repeats"], input[name="runScope"]')) node.disabled = locked;
+    for (const node of root.querySelectorAll('[data-control="suite"], [data-control="suite-option"], [data-control="model"], [data-control="run"], [data-control="retry-run"], [data-control="retry-cell"], [data-control="rerun-recommendation"], [data-control="preview-start"], [data-control="test-case"], [data-control="judge"], input[name="runScope"]')) node.disabled = locked;
   }
   function runLabel(manifest) {
     const done = manifest.cases.filter(item => item.state === 'completed').length;

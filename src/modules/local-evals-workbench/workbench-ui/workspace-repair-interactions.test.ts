@@ -22,7 +22,7 @@ function harness(post: (url: string, body: Record<string, unknown>) => Promise<u
     if (value.includes('data-action=') && !host.innerHTML.includes(value.slice(1, -1))) return null;
     return { focus() { document.activeElement = { dataset: { action: value.match(/data-action="([^"]+)/)?.[1] }, focusName: value }; } };
   } };
-  const context = { document, navigator: clipboard ? { clipboard } : {}, post, esc, latestRun: () => true, suite: { id: 'suite' }, run: { judgeModel: null, repeats: 2 },
+  const context = { document, navigator: clipboard ? { clipboard } : {}, post, esc, latestRun: () => true, suite: { id: 'suite' }, run: { judgeModel: null },
     setup: {}, strictRuntimeChoices: false, loadRuntime: async (): Promise<void> => undefined, showSetup: () => undefined };
   const api = vm.runInNewContext(WORKSPACE_REPAIR_CLIENT + ';({ setSelection(value){selectedFailure=value;}, requestRepair, resetRepair, markup:repairMarkup, stage:()=>repairStage, rerunAfterRepair })', context) as {
     setSelection(value: unknown): void; requestRepair(kind: string): Promise<void>; resetRepair(): void; markup(): string; stage(): string; rerunAfterRepair(scope: string): Promise<void>;
@@ -266,7 +266,7 @@ test('case and suite rerun actions only prefill setup; neither starts a run', as
   });
   await api.requestRepair('analysis'); await api.requestRepair('proposal'); await api.requestRepair('apply');
   await api.rerunAfterRepair('case');
-  assert.deepEqual(JSON.parse(JSON.stringify(context.setup)), { scope: 'one', caseId: 'case', model: 'model', judgeModel: '', repeats: 2 });
+  assert.deepEqual(JSON.parse(JSON.stringify(context.setup)), { scope: 'one', caseId: 'case', model: 'model', judgeModel: '' });
   assert.equal(context.strictRuntimeChoices, true);
   assert.equal(urls.filter(url => url.includes('/eval-runs/')).length, 0);
   api.setSelection(selected);

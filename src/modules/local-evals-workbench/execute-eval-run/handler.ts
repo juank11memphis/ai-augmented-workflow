@@ -21,7 +21,6 @@ type Current = { caseId: string; number: number; began: number; turns: TurnEvide
 
 export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: ExecuteEvalRunDependencies): Promise<ExecuteEvalRunResult> {
   const { suite, runId, cases } = command;
-  const repeats = command.repeats ?? 1;
   const began = ports.clock();
   const log = (event: 'eval_run_started' | 'eval_run_finished' | 'eval_run_start_blocked' | 'eval_run_storage_failed',
     outcome: 'started' | 'completed' | 'blocked' | 'partial' | 'interrupted' | 'failed', reason?: string): void => {
@@ -95,7 +94,7 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
           event.calls ?? null, event.cost ?? null));
         completed++;
         current = undefined;
-        if (attemptNumber === repeats) { caseIndex++; attemptNumber = 1; } else attemptNumber++;
+        caseIndex++;
       } else {
         addDiagnostic(current.diagnostics, 'case-error');
         await persist(evidence('incomplete'));
@@ -112,7 +111,7 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     const outcome = await ports.runner.execute(command, consume);
     const status: Exclude<RunState, 'queued' | 'running'> = outcome.status === 'blocked' && completed === 0 ? 'blocked'
       : outcome.status === 'interrupted' ? 'interrupted'
-      : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length * repeats ? 'completed'
+      : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length ? 'completed'
       : completed ? 'partial' : 'error';
     const reason = outcome.reason ? SAFE_REASONS.has(outcome.reason) ? outcome.reason : 'unavailable' : undefined;
     if (reason) addDiagnostic(runDiagnostics, reason);

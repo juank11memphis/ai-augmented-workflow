@@ -45,10 +45,10 @@ test('diagnostics retain their validated case identity without exposing payloads
     { type: 'diagnostic', code: 'case-warning', caseId: 'case', attempt: 1 });
 });
 
-test('deep protocol validates ordered attempts, tools, grader IDs, and selected Judge Model', () => {
+test('deep protocol validates one ordered attempt, tools, grader IDs, and selected Judge Model', () => {
   const deep = { ...singleCase, turns: [singleCase.turns[0]!, singleCase.turns[0]!],
     graders: [{ id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
-  const selected: ExecutionSelection = { ...selection, cases: [deep], judgeModel: 'judge', repeats: 2 };
+  const selected: ExecutionSelection = { ...selection, cases: [deep], judgeModel: 'judge' };
   const make = () => new ExecuteEventValidator('request', selected);
   const envelope = (sequence: number, type: string, attempt: number | null, data: unknown) => ({ protocolVersion: 1,
     requestId: 'request', sequence, type, runId: 'run', caseId: attempt === null ? null : 'case', attempt, data });
@@ -61,7 +61,7 @@ test('deep protocol validates ordered attempts, tools, grader IDs, and selected 
   const complete = envelope(6, 'case-attempt-completed', 1, { status: 'completed', calls: 3, cost: 0.01 });
   const valid = make();
   for (const item of [start, begun, turn, tool, turn2, rubric, complete]) valid.accept(item);
-  assert.equal(valid.accept(envelope(7, 'case-attempt-started', 2, {})).type, 'case-started');
+  assert.throws(() => valid.accept(envelope(7, 'case-attempt-started', 2, {})));
   const prefix = [start, begun, turn];
   for (const bad of [
     { ...tool, data: { ...(tool.data as object), position: 1 } },

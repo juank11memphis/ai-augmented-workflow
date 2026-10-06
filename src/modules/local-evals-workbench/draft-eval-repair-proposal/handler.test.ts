@@ -11,7 +11,7 @@ const command: DraftEvalRepairProposalCommand = { projectRoot: '/repo', suiteId:
   testCaseId: 'case-1', attempt: 2, evalRunModelId: 'model', runScope: { type: 'all' }, assertionId: 'a1', analysisId: 'analysis-1',
   repairDirection: { type: 'prompt_issue' } };
 const selected: SelectedFailureRead = { status: 'ready', value: {
-  testedModel: 'model', judgeModel: null, repeats: 2, runScope: 'all',
+  testedModel: 'model', judgeModel: null, runScope: 'all',
   evidence: { suiteId: 'suite', runId: 'run-1', attempt: 2, testCaseId: 'case-1', evalRunModelId: 'model',
     evalRunModelLabel: 'model', assertionId: 'a1', assertionLabel: 'a1', assertionKind: 'assertion',
     assertionMessage: 'failed', actualOutputPreview: 'selected actual', expectedPreview: 'selected expected',

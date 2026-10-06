@@ -4,7 +4,7 @@ import { InMemoryRepairProposalStore } from './proposal-store.js';
 
 const request = {
   projectRoot: '/repo', suiteId: 'suite', runId: 'run-one', testCaseId: 'case', attempt: 2,
-  evalRunModelId: 'model', judgeModel: null, repeats: 2, assertionId: 'a2',
+  evalRunModelId: 'model', judgeModel: null, assertionId: 'a2',
   targetPrecondition: { status: 'present' as const, path: 'prompts/agent.md', digest: 'digest', content: 'before', preview: 'before' },
   proposal: { affectedProjectFiles: ['prompts/agent.md'], changeSummary: 'Require verification before action.',
     rationale: 'The selected failed check missed verification.', expectedEvalImpact: 'The focused case should verify first.',

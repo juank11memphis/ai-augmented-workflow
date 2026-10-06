@@ -113,7 +113,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     detail.hidden = true; failuresOnly = false; search = '';
     const searchInput = resultContainer.querySelector?.('[data-action="search"]');
     if (searchInput) searchInput.value = '';
-    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '', repeats: 1 };
+    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '' };
     renderWorkspace(); void loadRuntime(); void loadHistory();
   }
   function caseStatus(caseId) {
@@ -272,7 +272,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     openPanel('history');
     side.innerHTML = '<div class="section-heading"><h2 tabindex="-1">History</h2><button type="button" data-action="close-panel">Close</button></div>'
       + (historyReadError ? '<p>Saved History could not be read. Previous results are still available.</p><button type="button" data-action="recheck-history">Recheck History</button>' : '')
-      + (history.length ? '<ol class="history-list">' + history.map((item, index) => '<li><button type="button" data-action="history-run" data-run-id="' + esc(item.runId) + '"' + (selectedRunId === item.runId ? ' aria-current="true"' : '') + '><strong>' + (index === 0 ? 'Latest run · ' : 'Past run · ') + esc(new Date(item.createdAt).toLocaleString()) + '</strong><br>' + esc(item.testedModel) + ' · ' + esc(item.scope) + ' · ' + esc(item.repeats) + ' repeat(s)<br>' + esc(item.state) + ' / ' + esc(item.outcome) + ' · ' + esc(item.finishedAt ? Math.max(0, item.finishedAt-item.createdAt) + 'ms' : 'Duration unavailable') + ' · Cost ' + esc(item.cost == null ? 'unavailable' : item.cost) + '</button></li>').join('') + '</ol>' : '<p>No saved runs yet.</p>');
+      + (history.length ? '<ol class="history-list">' + history.map((item, index) => '<li><button type="button" data-action="history-run" data-run-id="' + esc(item.runId) + '"' + (selectedRunId === item.runId ? ' aria-current="true"' : '') + '><strong>' + (index === 0 ? 'Latest run · ' : 'Past run · ') + esc(new Date(item.createdAt).toLocaleString()) + '</strong><br>' + esc(item.testedModel) + ' · ' + esc(item.scope) + '<br>' + esc(item.state) + ' / ' + esc(item.outcome) + ' · ' + esc(item.finishedAt ? Math.max(0, item.finishedAt-item.createdAt) + 'ms' : 'Duration unavailable') + ' · Cost ' + esc(item.cost == null ? 'unavailable' : item.cost) + '</button></li>').join('') + '</ol>' : '<p>No saved runs yet.</p>');
   }
   function renderCoverage() {
     openPanel('coverage');

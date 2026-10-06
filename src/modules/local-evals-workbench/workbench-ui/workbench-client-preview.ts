@@ -20,7 +20,6 @@ export const WORKBENCH_CLIENT_PREVIEW_SECTION = {
       'model-unavailable': 'Choose a compatible Model Under Evaluation.',
       'judge-unavailable': 'Choose a compatible Judge Model for rubric checks.',
       'case-unavailable': 'The selected Eval Test Case is unavailable.',
-      'repeats-invalid': 'Choose a whole repeat count from 1 to 20.',
       'artifact-not-ignored': 'Add the root /evals/artifacts/ Git ignore rule before running.',
       'artifact-tracked': 'Eval artifacts are tracked by Git. Remove them from tracking before running.',
       'artifact-git-unavailable': 'Git could not verify the artifact area.',
@@ -48,11 +47,10 @@ export const WORKBENCH_CLIENT_PREVIEW_SECTION = {
     if (field) field.hidden = !selectionRequiresJudge(selectedScope());
   }
   function currentPreviewCommand(scope) {
-    const repeatInput = control('repeats')?.value;
     const selected = scope || selectedScope();
     return { suiteId: state.selectedSuiteId, scope: selected, model: control('model')?.value || '',
       judgeModel: selectionRequiresJudge(selected) ? control('judge')?.value || null : null,
-      repeats: repeatInput === undefined ? 1 : Number(repeatInput) };
+    };
   }
   async function loadRuntimeDescription() {
     const generation = ++descriptionGeneration;
@@ -115,7 +113,7 @@ export const WORKBENCH_CLIENT_PREVIEW_SECTION = {
     const cost = result.cost.status === 'available'
       ? h(result.cost.currency + ' ' + String(result.cost.amount)) + ' estimated'
       : 'Cost unavailable: ' + h(result.cost.reason);
-    slot.innerHTML = '<div class="cell-dialog-overlay" data-preview-overlay><section class="cell-dialog" role="dialog" aria-modal="true" aria-labelledby="preview-title"><h2 id="preview-title">Review run</h2><dl class="summary"><div><dt>Scope</dt><dd>' + h(caseLabel) + '</dd></div><div><dt>Repeats</dt><dd>' + h(result.repeats) + '</dd></div><div><dt>Model Under Evaluation</dt><dd>' + h(result.model) + '</dd></div>' + (result.judgeModel ? '<div><dt>Judge Model</dt><dd>' + h(result.judgeModel) + '</dd></div>' : '') + '<div><dt>Target calls</dt><dd>' + h(result.targetCalls) + '</dd></div><div><dt>Judge calls</dt><dd>' + h(result.judgeCalls) + '</dd></div><div><dt>Total calls</dt><dd>' + h(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + cost + '</dd></div></dl><p>Actual cost may vary.</p><div class="preview-actions"><button type="button" data-control="preview-back">Back</button><button type="button" data-control="preview-start">Start run</button></div></section></div>';
+    slot.innerHTML = '<div class="cell-dialog-overlay" data-preview-overlay><section class="cell-dialog" role="dialog" aria-modal="true" aria-labelledby="preview-title"><h2 id="preview-title">Review run</h2><dl class="summary"><div><dt>Scope</dt><dd>' + h(caseLabel) + '</dd></div><div><dt>Model Under Evaluation</dt><dd>' + h(result.model) + '</dd></div>' + (result.judgeModel ? '<div><dt>Judge Model</dt><dd>' + h(result.judgeModel) + '</dd></div>' : '') + '<div><dt>Target calls</dt><dd>' + h(result.targetCalls) + '</dd></div><div><dt>Judge calls</dt><dd>' + h(result.judgeCalls) + '</dd></div><div><dt>Total calls</dt><dd>' + h(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + cost + '</dd></div></dl><p>Actual cost may vary.</p><div class="preview-actions"><button type="button" data-control="preview-back">Back</button><button type="button" data-control="preview-start">Start run</button></div></section></div>';
     control('preview-back')?.focus();
   }
   function closeReview() {

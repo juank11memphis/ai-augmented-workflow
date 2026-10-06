@@ -3,7 +3,6 @@ import type { StartEvalRunResult } from './result.js';
 import type { StartEvalRunDependencies } from './ports.js';
 import { compatibleDescription, hasRubric, requiredCapabilities } from '../runtime-description.js';
 import { logicalId } from '../run-history/validation.js';
-import { MAX_RUN_REPEATS } from '../run-configuration.js';
 
 const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
@@ -12,7 +11,7 @@ const SAFE_REASONS = new Set([
   'runner-protocol-invalid', 'runner-invalid', 'runner-timeout', 'environment-missing',
   'required-setting-rejected', 'runner-request-too-large', 'environment-undeclared',
   'capability-unsupported', 'model-unavailable', 'judge-unavailable', 'case-unavailable',
-  'repeats-invalid', 'artifact-unsafe', 'artifact-not-ignored', 'artifact-tracked',
+  'artifact-unsafe', 'artifact-not-ignored', 'artifact-tracked',
   'artifact-git-unavailable', 'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe',
   'invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable',
   'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',
@@ -35,8 +34,7 @@ export async function startEvalRun(command: StartEvalRunCommand, ports: StartEva
     return { status: 'blocked', reason };
   };
   try {
-    const repeats = command.repeats ?? 1;
-    if (!logicalId(command.suiteId) || !command.model || !Number.isSafeInteger(repeats) || repeats < 1 || repeats > MAX_RUN_REPEATS) return blocked('input-unsafe');
+    if (!logicalId(command.suiteId) || !command.model) return blocked('input-unsafe');
     const suite = await ports.suites.load(command.suiteId);
     if (!suite) return blocked('suite-unavailable');
     const selectedId = command.scope.type === 'test_case' ? command.scope.testCaseId : undefined;
@@ -55,14 +53,14 @@ export async function startEvalRun(command: StartEvalRunCommand, ports: StartEva
     if (ready.status === 'blocked') return blocked(ready.reason);
     const inputs = await ports.inputs.resolve(cases);
     if (inputs.status === 'blocked') return blocked(inputs.reason);
-    const estimate = await ports.runner.estimate(suite, { model: command.model, judgeModel: judgeModel ?? null, repeats, testCases: inputs.value });
+    const estimate = await ports.runner.estimate(suite, { model: command.model, judgeModel: judgeModel ?? null, testCases: inputs.value });
     if (estimate.status === 'blocked') return blocked(estimate.reason);
     if (!description.value.costEstimation && estimate.value.cost.status === 'available') return blocked('estimate-invalid');
     const snapshot = { selectedCaseIds: cases.map(item => item.id), ...estimate.value };
     if (JSON.stringify(snapshot) !== JSON.stringify(command.review)) return blocked('review-stale');
-    const queued = await ports.store.create({ suiteId: suite.id, caseIds: snapshot.selectedCaseIds, scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: command.model, judgeModel: judgeModel ?? null, repeats });
+    const queued = await ports.store.create({ suiteId: suite.id, caseIds: snapshot.selectedCaseIds, scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: command.model, judgeModel: judgeModel ?? null });
     if (queued.status === 'blocked') return blocked(queued.reason);
-    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model: command.model, judgeModel: judgeModel ?? null, repeats, ...(reference ? { reference } : {}) }); }
+    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model: command.model, judgeModel: judgeModel ?? null, ...(reference ? { reference } : {}) }); }
     catch {
       await ports.store.finalize(suite.id, queued.value.runId, 'error', ['schedule-failed']);
       return blocked('schedule-failed');

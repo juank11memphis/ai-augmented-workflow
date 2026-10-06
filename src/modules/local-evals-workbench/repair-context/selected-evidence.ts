@@ -13,7 +13,6 @@ export type SelectedFailure = {
   readonly evidence: FailedAssertionEvidence;
   readonly testedModel: string;
   readonly judgeModel: string | null;
-  readonly repeats: number;
   readonly runScope: 'all' | 'selected';
 };
 
@@ -115,7 +114,7 @@ export function createSelectedFailureReader(getRun: (command: GetEvalRunCommand)
       }
       if (JSON.stringify(projected).length > MAX_TOTAL) return { status: 'blocked', reason: 'missing-evidence' };
       return { status: 'ready', value: { evidence: projected, testedModel: summary.testedModel,
-        judgeModel: summary.judgeModel, repeats: summary.repeats, runScope: summary.scope } };
+        judgeModel: summary.judgeModel, runScope: summary.scope } };
     },
   };
 }

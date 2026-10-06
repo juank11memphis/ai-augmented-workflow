@@ -35,7 +35,7 @@ test('describe and estimate use declared environment, cwd and protocol without m
     const adapter = new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS, { PATH: process.env.PATH, TEST_KEY: 'secret-123', UNRELATED_SENTINEL: 'not-forwarded' });
     const description = await adapter.describe(suite);
     assert.equal(description.status, 'ready', JSON.stringify(description));
-    const estimate = await adapter.estimate(suite, { model: 'fake/target', judgeModel: null, repeats: 1, testCases: suite.testCases });
+    const estimate = await adapter.estimate(suite, { model: 'fake/target', judgeModel: null, testCases: suite.testCases });
     assert.equal(estimate.status, 'ready');
     if (estimate.status === 'ready') assert.equal(estimate.value.totalCalls, 1);
   });

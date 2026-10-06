@@ -133,7 +133,7 @@ const knownModelCheckReasons: ReadonlySet<RuntimeBlockReason | 'invalid-request'
   'runner-exited', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout',
   'environment-missing', 'required-setting-rejected', 'runner-request-too-large',
   'environment-undeclared', 'capability-unsupported', 'model-unavailable',
-  'judge-unavailable', 'case-unavailable', 'repeats-invalid', 'artifact-unsafe',
+  'judge-unavailable', 'case-unavailable', 'artifact-unsafe',
   'artifact-not-ignored', 'artifact-tracked', 'artifact-git-unavailable',
   'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe', 'invalid-request',
 ]);

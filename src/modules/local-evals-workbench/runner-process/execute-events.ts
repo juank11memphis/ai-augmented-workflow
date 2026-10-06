@@ -111,8 +111,7 @@ export class ExecuteEventValidator {
         || data.status === 'completed' && (this.turns !== selected.turns.length || this.graders.size !== selected.graders.length)) throw new Error('invalid-case-end');
       this.activeCase = undefined;
       if (data.status === 'completed') {
-        if (this.attemptNumber === (this.selection.repeats ?? 1)) { this.caseIndex++; this.attemptNumber = 1; }
-        else this.attemptNumber++;
+        this.caseIndex++;
       } else this.failedCase = true;
       return { type: 'case-completed', caseId, attempt: raw.attempt as number, status: data.status,
         ...(data.calls !== undefined ? { calls: data.calls as number | null } : {}),

@@ -13,31 +13,31 @@ test('describe and estimate are side-effect-free and identify separate models/ca
   const description = await handleRequest({ protocolVersion: 1, requestId: 'describe-1', operation: 'describe' }, fixture.ports);
   assert.deepEqual(description.events[0]?.data.models, ['fake/target']);
   assert.deepEqual(description.events[0]?.data.judgeModels, ['fake/judge']);
-  const estimate = await handleRequest(command(cases, 'estimate', 2), fixture.ports);
-  assert.deepEqual(estimate.events[0]?.data, { targetCalls: 10, judgeCalls: 2, totalCalls: 12, cost: { status: 'unavailable', reason: 'Synthetic fixture has no provider pricing.' } });
+  const estimate = await handleRequest(command(cases, 'estimate'), fixture.ports);
+  assert.deepEqual(estimate.events[0]?.data, { targetCalls: 5, judgeCalls: 1, totalCalls: 6, cost: { status: 'unavailable', reason: 'Synthetic fixture has no provider pricing.' } });
   assert.deepEqual(fixture.counts, { target: 0, model: 0, judge: 0, production: 0 });
 });
 
-test('bounded case/repeat/turn invariants preserve selected order, identity and state isolation', async () => {
+test('bounded case/turn invariants preserve selected order, identity and state isolation', async () => {
   const { handleRequest, createTestPorts } = await fixtureModules();
   const cases = (await suite()).testCases;
-  for (const count of [1, 2, 4]) for (const repeats of [1, 2, 3]) {
+  for (const count of [1, 2, 4]) {
     const selected = cases.slice(0, count).reverse();
     const fixture = createTestPorts();
-    const result = await handleRequest(command(selected, 'execute', repeats), fixture.ports);
+    const result = await handleRequest(command(selected, 'execute'), fixture.ports);
     assert.equal(result.status, 'completed');
     assert.equal(result.events[0]?.type, 'run-started');
     assert.equal(result.events.at(-1)?.type, 'run-completed');
-    assert.deepEqual(result.events.filter((event) => event.type === 'case-attempt-started').map((event) => [event.caseId, event.attempt]), selected.flatMap((item) => Array.from({ length: repeats }, (_, index) => [item.id, index + 1])));
-    assert.deepEqual(fixture.observations.historyLengths, selected.flatMap((item) => Array.from({ length: repeats }, () => item.turns.map((_, index) => index * 2 + 1)).flat()));
+    assert.deepEqual(result.events.filter((event) => event.type === 'case-attempt-started').map((event) => [event.caseId, event.attempt]), selected.map((item) => [item.id, 1]));
+    assert.deepEqual(fixture.observations.historyLengths, selected.flatMap((item) => item.turns.map((_, index) => index * 2 + 1)));
     result.events.forEach((event, index) => {
       assert.equal(event.sequence, index); assert.equal(event.runId, 'run-1'); assert.equal(event.requestId, 'request-1');
       if (!['run-started', 'run-completed'].includes(event.type)) { assert.ok(event.caseId); assert.ok(event.attempt); }
     });
-    assert.equal(fixture.counts.model, selected.reduce((count, item) => count + item.turns.length, 0) * repeats);
+    assert.equal(fixture.counts.model, selected.reduce((count, item) => count + item.turns.length, 0));
     assert.ok(fixture.observations.models.every((model) => model === 'fake/target'));
     assert.equal(fixture.counts.production, 0);
-    assert.equal(result.events.filter((event) => event.type === 'case-attempt-completed').length, count * repeats);
+    assert.equal(result.events.filter((event) => event.type === 'case-attempt-completed').length, count);
   }
 });
 
@@ -90,7 +90,7 @@ test('local fixture process implements all operations with pure NDJSON and uncha
   const root = await project(t);
   const before = await fs.readFile(path.join(root, 'project-target.mjs'));
   const cases = (await suite()).testCases;
-  for (const request of [{ protocolVersion: 1, requestId: 'describe-1', operation: 'describe' }, command(cases, 'estimate'), command(cases, 'execute', 2)]) {
+  for (const request of [{ protocolVersion: 1, requestId: 'describe-1', operation: 'describe' }, command(cases, 'estimate'), command(cases, 'execute')]) {
     const result = await invoke(root, request);
     assert.equal(result.code, 0); assert.equal(result.stderr, '');
     assert.ok(result.events.length > 0);

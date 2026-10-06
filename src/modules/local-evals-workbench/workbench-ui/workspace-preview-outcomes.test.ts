@@ -20,14 +20,13 @@ function harness(preview: () => Promise<unknown>) {
   const notice = { hidden: true, querySelector: (key: string) => nodes.get(key) };
   const status = { textContent: '' };
   const reviewAction = { disabled: false, focus() { focused = 'review'; } };
-  const controls = { scope: 'all', caseId: 'case', model: 'model', judge: '', repeats: '1' };
+  const controls = { scope: 'all', caseId: 'case', model: 'model', judge: '' };
   const region = { isConnected: true, hidden: false, querySelector(key: string) {
     if (key === '[data-action="review"]') return reviewAction;
     if (key === 'input[name="scope"]:checked') return { value: controls.scope };
     if (key === '[data-field="case"]') return { value: controls.caseId };
     if (key === '[data-field="model"]') return { value: controls.model };
     if (key === '[data-field="judge"]') return null;
-    if (key === '[data-field="repeats"]') return { value: controls.repeats };
     return null;
   } };
   const sheet = { innerHTML: '', textContent: '', querySelector: (key: string) => key === 'button' ? { focus() { focused = 'sheet'; } } :
@@ -97,7 +96,7 @@ test('unknown cause and lost response do not invent a terminal reference or star
 
 test('unavailable cost remains reviewable but only explicit Start submits a run', async () => {
   const browser = harness(async () => ({ status: 'ready', selectedCaseIds: ['case'], model: 'model', judgeModel: null,
-    repeats: 1, targetCalls: 1, judgeCalls: 0, totalCalls: 1, cost: { status: 'unavailable', reason: secret } }));
+    targetCalls: 1, judgeCalls: 0, totalCalls: 1, cost: { status: 'unavailable', reason: secret } }));
   await browser.api.showReview();
   assert.match(browser.sheet.innerHTML, /Review run|Estimated cost/);
   assert.match(browser.sheet.innerHTML, /Unavailable \(estimate not confirmed\)/);
@@ -112,7 +111,7 @@ test('changed selection invalidates an in-flight preview and clears an earlier n
   const browser = harness(() => new Promise(resolve => { finish = resolve; }));
   const pending = browser.api.showReview();
   await new Promise(resolve => setImmediate(resolve));
-  browser.controls.repeats = '2';
+  browser.controls.model = 'another-model';
   browser.api.readSetup();
   finish({ status: 'blocked', stage: 'selection', reason: 'case-unavailable', issue: {
     stage: 'preview', observedStage: 'selection', outcome: 'blocked', category: 'case-unavailable', reference } });
@@ -173,7 +172,7 @@ function startHarness(response: () => Promise<{ status: number; json(): Promise<
 }
 
 test('every known run-start block uses allowlisted title, explanation, next step and permitted action', async () => {
-  assert.equal(Object.keys(startCopy).length, 39);
+  assert.equal(Object.keys(startCopy).length, 38);
   for (const [reason, copy] of Object.entries(startCopy)) {
     const browser = startHarness(async () => ({ status: 422, json: async () => ({ status: 'blocked', reason, reference,
       issue: { stage: 'run-start', outcome: 'blocked', category: reason, reference,

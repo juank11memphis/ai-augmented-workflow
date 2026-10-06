@@ -48,7 +48,6 @@ export type RepairProposalStorePort = {
     readonly attempt: number;
     readonly evalRunModelId: string;
     readonly judgeModel: string | null;
-    readonly repeats: number;
     readonly assertionId: string;
     readonly targetPrecondition: ProjectFileState;
     readonly proposal: Omit<RepairProposalPreview, 'proposalId' | 'approvalState'>;

@@ -58,13 +58,13 @@ function emit(type,caseId,attempt,data) { process.stdout.write(JSON.stringify({p
   runId:request.operation==='execute'?request.runId:null,caseId,attempt,data})+'\\n'); }
 if (request.operation==='describe') emit('description',null,null,{runnerId:'deep-offline',capabilities:['single-turn','multi-turn','tool-mocks','custom','rubric'],models:['fake'],judgeModels:['fake-judge'],requiredEnvironment:[],costEstimation:true});
 else if (request.operation==='estimate') {
-  const targetCalls=request.testCases.reduce((n,item)=>n+item.turns.length*request.repeats,0);
-  const judgeCalls=request.testCases.reduce((n,item)=>n+item.graders.filter(check=>check.type==='rubric').length*request.repeats,0);
+  const targetCalls=request.testCases.reduce((n,item)=>n+item.turns.length,0);
+  const judgeCalls=request.testCases.reduce((n,item)=>n+item.graders.filter(check=>check.type==='rubric').length,0);
   emit('estimate',null,null,{targetCalls,judgeCalls,totalCalls:targetCalls+judgeCalls,cost:{status:'available',amount:(targetCalls+judgeCalls)*0.01,currency:'USD'}});
 } else if (request.operation==='execute') {
   if (process.env.SIBU_EVAL_MODE!=='1') process.exit(3);
   emit('run-started',null,null,{model:request.model,judgeModel:request.judgeModel});
-  for (const item of request.testCases) for (let attempt=1;attempt<=request.repeats;attempt++) {
+  for (const item of request.testCases) { const attempt=1;
     emit('case-attempt-started',item.id,attempt,{}); let position=0; const conversationState={};
     for (let turnIndex=0;turnIndex<item.turns.length;turnIndex++) {
       const turnId='turn-'+(turnIndex+1); const calls=[];
@@ -77,10 +77,10 @@ else if (request.operation==='estimate') {
     }
     for(const grader of item.graders) {
       if(grader.type==='custom') emit('custom-assertion-completed',item.id,attempt,{checkId:grader.id,passed:true,score:null,evidence:'synthetic safe',diagnostics:[]});
-      else { const score=item.id==='flaky' && attempt===2?0.6:0.9;
+      else { const score=0.9;
         emit('rubric-judgment-completed',item.id,attempt,{checkId:grader.id,passed:score>=grader.threshold,score,threshold:grader.threshold,judgeModel:request.judgeModel,evidence:'synthetic quality',diagnostics:[]}); }
     }
-    if(item.id==='interrupt' && attempt===2) process.exit(7);
+    if(item.id==='interrupt') process.exit(7);
     emit('case-attempt-completed',item.id,attempt,{status:'completed',calls:item.turns.length+item.graders.length,cost:(item.turns.length+item.graders.length)*0.01});
   }
   emit('run-completed',null,null,{status:'completed'});
@@ -95,7 +95,7 @@ export async function target(caseId,turnIndex,attempt,input,mock,state){
   if(caseId==='multi' && turnIndex===0){ const lookup=await mock('lookup',{id:1}); state.lookupFound=lookup.value.found; return 'lookup complete'; }
   if(caseId==='multi' && turnIndex===1){ const error=await mock('errorTool',{id:1}); const unexpected=await mock('unexpectedTool',{id:1});
     return state.lookupFound && error.type==='error' && unexpected.type==='unexpected-response' ? 'verified after lookup' : 'missing prior context'; }
-  return caseId==='flaky' && attempt===2 ? 'unstable' : 'verified';
+  return 'verified';
 }\n`);
   await project.changeRunner(deepRunner);
   const makeMock = (id: string, type: string, value: object) => ({ id, tool: id, input: { id: 1 }, outcome: { type, ...value } });

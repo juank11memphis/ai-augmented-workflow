@@ -2,16 +2,16 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
   name: 'events',
   source: String.raw`  root.addEventListener('change', (event) => {
     const target = event.target;
-    if (runUnavailable() && target.matches('[data-control="suite"], [data-control="model"], [data-control="test-case"], [data-control="judge"], [data-control="repeats"], input[name="runScope"]')) return;
+    if (runUnavailable() && target.matches('[data-control="suite"], [data-control="model"], [data-control="test-case"], [data-control="judge"], input[name="runScope"]')) return;
     if (target.matches('[data-control="suite"]')) { selectSuite(target.value); }
     if (target.matches('[data-control="model"]')) { state = { ...state, selectedEvalRunModel: target.value }; invalidateReview(); selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); }
     if (target.matches('input[name="runScope"]')) { state = { ...state, runScope: selectedScope() }; invalidateReview(); renderTestCasePicker(); syncJudgeVisibility(); }
     if (target.matches('[data-control="test-case"]')) { state = { ...state, runScope: { type: 'test_case', testCaseId: target.value } }; invalidateReview(); syncJudgeVisibility(); }
-    if (target.matches('[data-control="judge"]') || target.matches('[data-control="repeats"]')) invalidateReview();
+    if (target.matches('[data-control="judge"]')) invalidateReview();
     if (target.matches('[data-control="failures-only"]')) { filters.failuresOnly = target.checked; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); }
     if (target.matches('[data-control="variant"]')) { const checked = [...root.querySelectorAll('[data-control="variant"]:checked')].map((input) => input.value); filters.visibleVariantIds = checked.length ? checked : filters.visibleVariantIds.slice(0, 1); selectedCell = null; activeAssertionId = null; renderFilters(); renderResults(); renderSelectedCell(); }
   });
-  root.addEventListener('input', (event) => { if (event.target.matches('[data-control="repeats"]') && !runUnavailable()) invalidateReview(); if (event.target.matches('[data-control="search"]')) { filters.searchQuery = event.target.value; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); } });
+  root.addEventListener('input', (event) => { if (event.target.matches('[data-control="search"]')) { filters.searchQuery = event.target.value; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); } });
   root.addEventListener('click', async (event) => {
     const suiteOption = event.target.closest('[data-control="suite-option"]');
     if (suiteOption) { if (!runUnavailable()) selectSuite(suiteOption.dataset.suiteId); return; }

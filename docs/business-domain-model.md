@@ -86,7 +86,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Model Under Evaluation**: the single compatible model selected by the user to produce behavior during an Eval Run.
 - **Judge Model**: the separately selected model that evaluates rubric-based criteria when deterministic assertions are insufficient.
 - **Assertion / Grader**: the rule, rubric, or evaluator that judges a test case output. Assertions are deterministic or declared checks; graders may include rubric or LLM-judged checks.
-- **Eval Run**: one execution of an eval suite or one selected eval test case against a single Model Under Evaluation, optionally repeating cases to expose nondeterministic behavior.
+- **Eval Run**: one execution of an eval suite or one selected eval test case against a single Model Under Evaluation; each selected case runs once.
 - **Eval Result**: the output, assertion/grader outcomes, diagnostics, metrics, and artifacts produced by an eval run.
 - **Failed Assertion**: one assertion or grader outcome that did not pass for a specific test case result.
 - **Failure Analysis**: a user-requested LLM explanation of one failed assertion at a time, grounded in the exact output, expected/reference context, and assertion/grader evidence.
@@ -479,7 +479,7 @@ define focused task
 - An **Eval Coverage Plan** has confirmed targets, applicable coverage categories, proposed scenarios, grader approaches, Coverage Gaps, and user approval state.
 - An **Eval Suite** has an identifier, name, purpose, Evaluation Target, test cases, assertions/graders, fixtures, coverage summary, model/run configuration, and run artifact location.
 - An **Eval Test Case** has an identifier, name, one or more interaction turns, input variables or fixture reference, expected/reference context, applicable tool expectations, and assertion/grader outcomes after a run.
-- An **Eval Run** has one Model Under Evaluation, an optional Judge Model, selected scope, repeat count, estimated call volume and cost, and retained results.
+- An **Eval Run** has one Model Under Evaluation, an optional Judge Model, selected scope, estimated call volume and cost, and retained results.
 - A **Failure Analysis** has one active failed assertion, evidence, likely cause classification, confidence/uncertainty, conversation history, and source eval result.
 - A **Repair Proposal** has affected project file paths, proposed change summary, rationale, expected eval impact, approval state, and mutation result.
 - A **Maintainer Release** has a git range, proposed version, changelog section, package metadata update, validation result, tag, publish result, and recovery state.
@@ -630,7 +630,6 @@ define focused task
 - When a suite is generated, Sibu should document applicable coverage categories and any known Coverage Gaps.
 - When a user runs evals, Sibu should support both all-test-case and single-test-case scope.
 - When a user prepares an Eval Run, Sibu should offer compatible models, require one Model Under Evaluation, allow a separate Judge Model for rubrics, and show expected model-call volume and estimated cost before execution.
-- When nondeterminism matters, the user should be able to repeat a case while retaining one run as the default.
 - When an eval result has multiple failed assertions, the Failure Workbench should analyze and discuss only one selected failed assertion at a time.
 - When LLM-backed analysis is requested, Sibu should use server-side credentials from the project or shell environment, including `OPENAI_API_KEY`, and use `SIBU_EVALS_MODEL` when provided.
 - When credentials are missing, Sibu should keep non-LLM eval inspection available and explain why analysis/proposal drafting is unavailable.
@@ -662,7 +661,7 @@ define focused task
 4. **Coverage Approved**: the user accepts the plan before suite artifacts are generated.
 5. **Eval Suites Generated**: Sibu creates immediately runnable project-owned suites and test-support artifacts without changing production behavior.
 6. **Eval Workspace Discovered**: Sibu finds project-owned eval suites in the conventional evals area.
-7. **Eval Scope and Models Selected**: the user chooses a suite, all cases or one case, one compatible Model Under Evaluation, an optional Judge Model, and any repeat count.
+7. **Eval Scope and Models Selected**: the user chooses a suite, all cases or one case, one compatible Model Under Evaluation, and an optional Judge Model.
 8. **Run Previewed**: Sibu shows expected model-call volume and estimated cost.
 9. **Eval Run Completed**: Sibu records output, assertion/grader results, diagnostics, metrics, tool interactions, and run artifacts.
 10. **Failure Selected**: the user opens one failed result and selects one failed assertion as the active work item.

@@ -25,7 +25,7 @@ export class FileArtifactReader implements ArtifactReaderPort {
     } catch (error) { return failure(error); }
   }
   async get(suiteId: string, runId: string, selection?: Selection): Promise<Outcome<RunDetail>> {
-    if (![suiteId, runId].every(logicalId) || selection && (!logicalId(selection.caseId) || !integer(selection.attempt, LIMITS.repeats) || selection.attempt < 1 || selection.assertionId !== undefined && !logicalId(selection.assertionId))) return { status: 'blocked', reason: 'invalid-input' };
+    if (![suiteId, runId].every(logicalId) || selection && (!logicalId(selection.caseId) || selection.attempt !== 1 || selection.assertionId !== undefined && !logicalId(selection.assertionId))) return { status: 'blocked', reason: 'invalid-input' };
     try {
       const summary = await this.summary(suiteId, runId); if (summary.status !== 'ok') return summary;
       if (!selection) return { status: 'ok', value: { summary: summary.value, evidenceStatus: 'not-requested' }, warnings: summary.warnings };

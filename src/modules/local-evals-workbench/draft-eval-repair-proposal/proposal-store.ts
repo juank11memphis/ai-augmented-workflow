@@ -22,7 +22,6 @@ export class InMemoryRepairProposalStore implements RepairProposalStorePort {
         attempt: request.attempt,
         evalRunModelId: request.evalRunModelId,
         judgeModel: request.judgeModel,
-        repeats: request.repeats,
         assertionId: request.assertionId,
       },
     };

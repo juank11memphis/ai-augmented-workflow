@@ -275,7 +275,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     const action = scope === 'case' ? repairApplied.rerunRecommendation?.primaryAction : repairApplied.rerunRecommendation?.alternateActions?.find(item => item.scope === 'suite');
     if (!action || action.suiteId !== suite?.id) return;
     setup = { scope: scope === 'case' ? 'one' : 'all', caseId: selectedFailure.testCaseId,
-      model: action.evalRunModelId, judgeModel: run.judgeModel || '', repeats: run.repeats || 1 };
+      model: action.evalRunModelId, judgeModel: run.judgeModel || '' };
     resetRepair();
     const generation = repairGeneration, suiteId = suite.id;
     strictRuntimeChoices = true;

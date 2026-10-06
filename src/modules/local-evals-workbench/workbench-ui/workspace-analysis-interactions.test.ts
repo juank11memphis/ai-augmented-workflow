@@ -22,7 +22,7 @@ function harness(post: (url: string, body: unknown) => Promise<unknown>, clipboa
     querySelector: (value: string) => value.includes('copy-status') ? feedback : null,
     addEventListener(name: string, listener: (event: { target: { closest(): { dataset: { action: string } } } }) => void) { listeners.set(name, listener); } };
   const api = vm.runInNewContext(WORKSPACE_REPAIR_CLIENT + ';({ setSelection(value){selectedFailure=value;}, resetRepair, requestRepair, markup:repairMarkup, stage:()=>repairStage })',
-    { document, navigator: clipboard ? { clipboard } : {}, post, esc: escape, latestRun: () => true, suite: { id: 'suite' }, run: { judgeModel: null, repeats: 2 } }) as {
+    { document, navigator: clipboard ? { clipboard } : {}, post, esc: escape, latestRun: () => true, suite: { id: 'suite' }, run: { judgeModel: null } }) as {
       setSelection(value: unknown): void; resetRepair(): void; requestRepair(kind: string): Promise<void>; markup(): string; stage(): string;
     };
   api.setSelection(selection('a'));

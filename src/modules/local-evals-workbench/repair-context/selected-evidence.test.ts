@@ -6,7 +6,7 @@ import type { GetEvalRunResult } from '../get-eval-run/index.js';
 const selection: FailureSelection = { suiteId: 'suite', runId: 'run-two', testCaseId: 'case', attempt: 2, assertionId: 'a2' };
 const summary = {
   version: 1 as const, suiteId: 'suite', runId: 'run-two', caseIds: ['case'], scope: 'all' as const,
-  testedModel: 'model', judgeModel: null, repeats: 2, state: 'completed' as const,
+  testedModel: 'model', judgeModel: null, state: 'completed' as const,
   owner: { pid: 1, token: 'owner' }, createdAt: 1, updatedAt: 2, finishedAt: 2,
   outcome: 'failed' as const, calls: 2, cost: null, diagnostics: [],
   cases: [{ caseId: 'case', state: 'completed' as const, attempts: [

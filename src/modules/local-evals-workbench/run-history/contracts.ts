@@ -8,7 +8,7 @@ export type Liveness = 'live' | 'stopped' | 'unknown';
 export interface OwnerPort { readonly identity: Owner; check(owner: Owner): Promise<Liveness> }
 export type RunConfiguration = {
   readonly suiteId: string; readonly caseIds: readonly string[]; readonly scope: 'all' | 'selected';
-  readonly testedModel: string; readonly judgeModel: string | null; readonly repeats: number;
+  readonly testedModel: string; readonly judgeModel: string | null;
 };
 export type AttemptSummary = { readonly number: number; readonly outcome: CheckOutcome; readonly durationMs: number; readonly calls: number | null; readonly cost: number | null;
   readonly rubricScores?: readonly number[] };
@@ -35,7 +35,7 @@ export type Attempt = {
   readonly truncated: boolean; readonly diagnostics: readonly string[]; readonly turns: readonly TurnEvidence[];
   readonly tools: readonly ToolEvidence[]; readonly assertions: readonly AssertionEvidence[];
 };
-export type HistoryEntry = Pick<Manifest, 'runId' | 'suiteId' | 'state' | 'createdAt' | 'updatedAt' | 'finishedAt' | 'outcome' | 'testedModel' | 'judgeModel' | 'scope' | 'repeats' | 'calls' | 'cost'>;
+export type HistoryEntry = Pick<Manifest, 'runId' | 'suiteId' | 'state' | 'createdAt' | 'updatedAt' | 'finishedAt' | 'outcome' | 'testedModel' | 'judgeModel' | 'scope' | 'calls' | 'cost'>;
 export type HistoryIndex = { readonly version: 1; readonly entries: readonly HistoryEntry[] };
 export type Selection = { readonly caseId: string; readonly attempt: number; readonly assertionId?: string };
 export type RunDetail = { readonly summary: Manifest; readonly evidence?: Attempt; readonly evidenceStatus: 'not-requested' | 'available' | 'unavailable' };

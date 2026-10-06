@@ -17,7 +17,7 @@ export type ProposedRepairChange = { readonly kind: 'unified-diff' | 'replacemen
 export type RepairProposalApprovalState = 'pending';
 export type RepairProposalSourceFailureScope = {
   readonly suiteId: string; readonly runId: string; readonly testCaseId: string; readonly attempt: number;
-  readonly evalRunModelId: string; readonly judgeModel: string | null; readonly repeats: number; readonly assertionId: string;
+  readonly evalRunModelId: string; readonly judgeModel: string | null; readonly assertionId: string;
 };
 export type RepairProposalPreview = {
   readonly proposalId: string; readonly affectedProjectFiles: readonly string[]; readonly changeSummary: string;

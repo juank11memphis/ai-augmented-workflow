@@ -216,7 +216,7 @@ function proposal(overrides: Partial<PendingApprovedRepairProposal> = {}): Pendi
     proposedChange: approvedChange,
     approvalState: 'pending',
     targetPrecondition: { status: 'absent', path: overrides.affectedProjectFiles?.[0] ?? 'prompts/skill.md' },
-    sourceFailureScope: { suiteId: 'skill-authoring', runId: 'run-1', testCaseId: 'missing-skill-boundary', attempt: 1, evalRunModelId: 'gpt-5-mini', judgeModel: null, repeats: 1, assertionId: 'a1' },
+    sourceFailureScope: { suiteId: 'skill-authoring', runId: 'run-1', testCaseId: 'missing-skill-boundary', attempt: 1, evalRunModelId: 'gpt-5-mini', judgeModel: null, assertionId: 'a1' },
     ...overrides,
   };
 }

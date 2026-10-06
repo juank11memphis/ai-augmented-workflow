@@ -110,7 +110,7 @@ it('renders safe labeled results with only inspectable actions and no broad evid
     coverage: { categories: [], gaps: [] },
   }] }, run: { version: 1, suiteId: 'suite', runId: 'run', caseIds: ['a"<', 'b'], state: 'completed',
     owner: { pid: 1, token: 'test' }, createdAt: 1, updatedAt: 2, finishedAt: 2,
-    testedModel: 'model', judgeModel: null, scope: 'all', repeats: 1, outcome: 'failed', calls: null, cost: null,
+    testedModel: 'model', judgeModel: null, scope: 'all', outcome: 'failed', calls: null, cost: null,
     cases: [{ caseId: 'a"<', state: 'completed', attempts: [
       { number: 1, outcome: 'failed', durationMs: 1, calls: 0, cost: null },
       { number: 2, outcome: 'passed', durationMs: 1, calls: 0, cost: null },

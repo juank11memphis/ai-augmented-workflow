@@ -26,7 +26,7 @@ const runner = `let body=''; process.stdin.on('data',chunk=>body+=chunk); proces
   if(process.env.SIBU_EVAL_MODE!=='1'||request.operation==='execute') process.exit(3);
   const data=request.operation==='describe'
     ? {runnerId:'offline',capabilities:['single-turn'],models:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[],costEstimation:true}
-    : {targetCalls:request.repeats,judgeCalls:0,totalCalls:request.repeats,cost:request.model==='fake/available'
+    : {targetCalls:1,judgeCalls:0,totalCalls:1,cost:request.model==='fake/available'
       ? {status:'available',amount:0.01,currency:'USD'} : {status:'unavailable',reason:'Provider pricing unavailable.'}};
   process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,
     type:request.operation==='describe'?'description':'estimate',runId:null,caseId:null,attempt:null,data})+'\\n');
@@ -59,9 +59,9 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
       const described = await post('/api/eval-suites/describe', { suiteId: 'offline' });
       assert.equal(described.code, 200);
       assert.deepEqual(described.payload.models, ['fake/available', 'fake/unavailable']);
-      const available = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available', repeats: 2 });
+      const available = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
       assert.equal(available.code, 200);
-      assert.equal(available.payload.totalCalls, 2);
+      assert.equal(available.payload.totalCalls, 1);
       assert.equal((available.payload.cost as { status: string }).status, 'available');
       const unavailable = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'case' }, model: 'fake/unavailable' });
       assert.equal(unavailable.code, 200);

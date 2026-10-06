@@ -10,7 +10,7 @@ function detail(): RunDetail {
     evidenceStatus: 'available',
     summary: {
       version: 1, suiteId: 'suite', runId: 'run', caseIds: ['case'], scope: 'all', testedModel: 'model',
-      judgeModel: null, repeats: 2, state: 'completed', owner: { pid: 1, token: 'fixture' },
+      judgeModel: null, state: 'completed', owner: { pid: 1, token: 'fixture' },
       createdAt: 1, updatedAt: 2, finishedAt: 2, outcome: 'failed', calls: null, cost: null,
       diagnostics: [], cases: [{ caseId: 'case', state: 'completed', attempts: [
         { number: 2, outcome: 'failed', durationMs: 1, calls: null, cost: null },

@@ -1,5 +1,4 @@
 import type { StartEvalRunCommand } from './command.js';
-import { MAX_RUN_REPEATS } from '../run-configuration.js';
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -7,11 +6,10 @@ const keys = (value: Record<string, unknown>, allowed: readonly string[]): boole
 const count = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0;
 
 export function parseStartRequest(value: unknown): StartEvalRunCommand | undefined {
-  if (!object(value) || !keys(value, ['suiteId', 'scope', 'model', 'judgeModel', 'repeats', 'review'])
+  if (!object(value) || !keys(value, ['suiteId', 'scope', 'model', 'judgeModel', 'review'])
     || typeof value.suiteId !== 'string' || !ID.test(value.suiteId)
     || typeof value.model !== 'string' || !ID.test(value.model)
     || value.judgeModel !== null && value.judgeModel !== undefined && (typeof value.judgeModel !== 'string' || !ID.test(value.judgeModel))
-    || value.repeats !== undefined && (!Number.isSafeInteger(value.repeats) || typeof value.repeats !== 'number' || value.repeats < 1 || value.repeats > MAX_RUN_REPEATS)
     || !object(value.scope) || !object(value.review)) return undefined;
   const scope = value.scope;
   if (!(scope.type === 'all' && keys(scope, ['type'])
@@ -27,7 +25,7 @@ export function parseStartRequest(value: unknown): StartEvalRunCommand | undefin
     && Number.isFinite(cost.amount) && cost.amount >= 0 && typeof cost.currency === 'string' && /^[A-Z]{3}$/.test(cost.currency)
     || cost.status === 'unavailable' && keys(cost, ['status', 'reason']) && typeof cost.reason === 'string' && cost.reason.length <= 160)) return undefined;
   return {
-    suiteId: value.suiteId, model: value.model, judgeModel: (value.judgeModel as string | null | undefined) ?? null, repeats: (value.repeats as number | undefined) ?? 1,
+    suiteId: value.suiteId, model: value.model, judgeModel: (value.judgeModel as string | null | undefined) ?? null,
     scope: scope.type === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: scope.testCaseId as string },
     review: { selectedCaseIds: review.selectedCaseIds as string[], targetCalls: review.targetCalls,
       judgeCalls: review.judgeCalls, totalCalls: review.totalCalls, cost: cost as StartEvalRunCommand['review']['cost'] },

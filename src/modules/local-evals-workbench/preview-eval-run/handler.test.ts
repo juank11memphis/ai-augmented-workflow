@@ -26,12 +26,11 @@ function dependencies(): PreviewEvalRunDependencies & { calls: { estimate: numbe
     },
   };
 }
-test('preview returns reviewable unavailable cost and defaults to one repeat', async () => {
+test('preview returns reviewable unavailable cost', async () => {
   const deps = dependencies();
   const result = await previewEvalRun({ suiteId: 'suite', scope: { type: 'all' }, model: 'fake/target' }, deps);
   assert.equal(result.status, 'ready');
   if (result.status === 'ready') {
-    assert.equal(result.repeats, 1);
     assert.deepEqual(result.selectedCaseIds, ['case']);
     assert.deepEqual(result.cost, { status: 'unavailable', reason: 'Provider pricing unavailable.' });
     assert.equal(result.requiresConfirmation, true);
@@ -42,10 +41,6 @@ test('selection and readiness blocks skip estimate', async () => {
   for (const command of [
     { suiteId: 'suite', scope: { type: 'test_case' as const, testCaseId: 'missing' }, model: 'fake/target' },
     { suiteId: 'suite', scope: { type: 'all' as const }, model: 'wrong' },
-    { suiteId: 'suite', scope: { type: 'all' as const }, model: 'fake/target', repeats: 0 },
-    { suiteId: 'suite', scope: { type: 'all' as const }, model: 'fake/target', repeats: 21 },
-    { suiteId: 'suite', scope: { type: 'all' as const }, model: 'fake/target', repeats: 1.5 },
-    { suiteId: 'suite', scope: { type: 'all' as const }, model: 'fake/target', repeats: Infinity },
   ]) {
     const deps = dependencies();
     assert.equal((await previewEvalRun(command, deps)).status, 'blocked');

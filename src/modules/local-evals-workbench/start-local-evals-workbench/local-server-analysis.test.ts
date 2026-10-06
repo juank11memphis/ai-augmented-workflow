@@ -20,7 +20,7 @@ test('HTTP analysis adapts one saved selection and leaves evidence visible witho
   const events: LocalEvalsWorkbenchLogEvent[] = [];
   let sinkFails = false;
   const analysis: AnalyzeFailedAssertionDependencies = {
-    artifactReader: { read: async selected => { calls.push(selected); return { status: 'ready', value: { testedModel: 'model', judgeModel: null, repeats: 2, runScope: 'all', evidence } }; } },
+    artifactReader: { read: async selected => { calls.push(selected); return { status: 'ready', value: { testedModel: 'model', judgeModel: null, runScope: 'all', evidence } }; } },
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: hasKey, assistanceModelLabel: 'assist', apiKey: hasKey ? 'private-key' : undefined }) },
     llm: { analyzeFailure: async request => { calls.push(request); if (providerFails) throw new Error('private response');
       return { exactFailureExplanation: 'Failed', likelyCause: 'prompt_issue', evidenceSummary: 'Selected evidence', uncertainty: 'Low' }; } },
@@ -83,7 +83,7 @@ test('HTTP analysis exposes observed provider categories without inferring from 
   let failure: unknown;
   const events: LocalEvalsWorkbenchLogEvent[] = [];
   const analysis: AnalyzeFailedAssertionDependencies = {
-    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'model', judgeModel: null, repeats: 2, runScope: 'all', evidence } }) },
+    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'model', judgeModel: null, runScope: 'all', evidence } }) },
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: true, assistanceModelLabel: 'assist', apiKey: 'sk-secret' }) },
     llm: { analyzeFailure: async () => { throw failure; } },
     analysisStore: { save: () => 'analysis-1' }, logger: { info() {}, warn() {}, error() {} },
@@ -124,7 +124,7 @@ test('malformed input and unexpected pre-handler failure report only analysis bo
   const events: LocalEvalsWorkbenchLogEvent[] = [];
   let configFails = false;
   const analysis: AnalyzeFailedAssertionDependencies = {
-    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'model', judgeModel: null, repeats: 2, runScope: 'all', evidence } }) },
+    artifactReader: { read: async () => ({ status: 'ready', value: { testedModel: 'model', judgeModel: null, runScope: 'all', evidence } }) },
     assistanceConfig: { getConfig: () => { if (configFails) throw Error('sk-secret private provider body');
       return { hasOpenAiApiKey: true, assistanceModelLabel: 'assist' }; } },
     llm: { analyzeFailure: async () => { throw Error('should not call provider'); } },

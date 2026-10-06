@@ -15,11 +15,11 @@ const outcome = (v: unknown) => enumValue(v, ['passed', 'failed', 'incomplete'])
 const state = (v: unknown): v is string => enumValue(v, ['queued', 'running', 'completed', 'partial', 'blocked', 'error', 'interrupted']);
 export const active = (v: string) => v === 'queued' || v === 'running';
 function keys(v: Record<string, unknown>, allowed: string) { return Object.keys(v).every(k => allowed.split(' ').includes(k)); }
-const configKeys = 'suiteId caseIds scope testedModel judgeModel repeats';
-const entryKeys = 'runId suiteId state createdAt updatedAt finishedAt outcome testedModel judgeModel scope repeats calls cost';
+const configKeys = 'suiteId caseIds scope testedModel judgeModel';
+const entryKeys = 'runId suiteId state createdAt updatedAt finishedAt outcome testedModel judgeModel scope calls cost';
 export function configuration(v: unknown): v is RunConfiguration & Record<string, unknown> {
   return record(v) && logicalId(v.suiteId) && ids(v.caseIds) && v.caseIds.length > 0 && enumValue(v.scope, ['all', 'selected'])
-    && text(v.testedModel) && v.testedModel.length > 0 && (v.judgeModel === null || text(v.judgeModel)) && integer(v.repeats, LIMITS.repeats) && v.repeats > 0;
+    && text(v.testedModel) && v.testedModel.length > 0 && (v.judgeModel === null || text(v.judgeModel));
 }
 function entry(v: unknown): boolean {
   return record(v) && logicalId(v.suiteId) && logicalId(v.runId) && state(v.state) && outcome(v.outcome)
@@ -28,17 +28,17 @@ function entry(v: unknown): boolean {
     && (active(v.state) ? v.finishedAt === null : v.finishedAt !== null)
     && (v.state === 'completed' || v.outcome === 'incomplete')
     && text(v.testedModel) && (v.judgeModel === null || text(v.judgeModel)) && enumValue(v.scope, ['all', 'selected'])
-    && integer(v.repeats, LIMITS.repeats) && v.repeats > 0 && calls(v.calls) && amount(v.cost);
+    && calls(v.calls) && amount(v.cost);
 }
 export function manifest(v: unknown): v is Manifest {
   if (!record(v) || !configuration(v) || !entry(v) || v.version !== 1 || !keys(v, `${configKeys} ${entryKeys} version owner diagnostics cases`)
     || !record(v.owner) || !keys(v.owner, 'pid token') || !integer(v.owner.pid) || v.owner.pid < 1 || !logicalId(v.owner.token)
     || !texts(v.diagnostics) || !Array.isArray(v.cases) || v.cases.length !== v.caseIds.length) return false;
   return v.cases.every((c, i) => record(c) && keys(c, 'caseId state attempts') && c.caseId === v.caseIds[i]
-    && enumValue(c.state, ['not-run', 'incomplete', 'completed']) && Array.isArray(c.attempts) && c.attempts.length <= v.repeats
+    && enumValue(c.state, ['not-run', 'incomplete', 'completed']) && Array.isArray(c.attempts) && c.attempts.length <= 1
     && c.attempts.every((a, n) => record(a) && keys(a, 'number outcome durationMs calls cost rubricScores') && a.number === n + 1 && outcome(a.outcome) && integer(a.durationMs) && calls(a.calls) && amount(a.cost)
       && (a.rubricScores === undefined || Array.isArray(a.rubricScores) && a.rubricScores.length <= LIMITS.evidenceItems && a.rubricScores.every(score => typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 1)))
-    && c.state === (c.attempts.length === 0 ? 'not-run' : c.attempts.length === v.repeats && c.attempts.every(a => a.outcome !== 'incomplete') ? 'completed' : 'incomplete'))
+    && c.state === (c.attempts.length === 0 ? 'not-run' : c.attempts.length === 1 && c.attempts.every(a => a.outcome !== 'incomplete') ? 'completed' : 'incomplete'))
     && (v.state !== 'queued' || v.cases.every(c => c.attempts.length === 0))
     && validTotals(v)
     && (v.state !== 'completed' || v.cases.every(c => c.state === 'completed') && v.outcome === (v.cases.some(c => c.attempts.some((a: unknown) => record(a) && a.outcome === 'failed')) ? 'failed' : 'passed'));
@@ -58,7 +58,7 @@ function validTotals(v: Record<string, unknown>): boolean {
 }
 export function attempt(v: unknown): v is Attempt {
   if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics turns tools assertions') || v.version !== 1
-    || ![v.suiteId, v.runId, v.caseId].every(logicalId) || !integer(v.number, LIMITS.repeats) || v.number < 1 || !outcome(v.outcome)
+    || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
     || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(v.diagnostics)) return false;
   if (!Array.isArray(v.turns) || v.turns.length > LIMITS.evidenceItems || !v.turns.every(t => record(t) && keys(t, 'id role content') && logicalId(t.id) && enumValue(t.role, ['user', 'assistant', 'system', 'tool']) && text(t.content))
     || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result turnId position outcome') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result)

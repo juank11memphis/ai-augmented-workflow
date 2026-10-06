@@ -26,7 +26,7 @@ export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, Runner
   }
   async estimate(suite: NormalizedEvalSuite, input: {
     readonly model: string; readonly judgeModel: string | null;
-    readonly repeats: number; readonly testCases: readonly NormalizedEvalTestCase[];
+    readonly testCases: readonly NormalizedEvalTestCase[];
   }): Promise<RuntimeOutcome<ConsumptionEstimate>> {
     const outcome = await this.invoke(suite, { operation: 'estimate', ...input }, 'estimate');
     return outcome.status === 'blocked' ? outcome : validateEstimate(outcome.value.data, outcome.value.secrets);

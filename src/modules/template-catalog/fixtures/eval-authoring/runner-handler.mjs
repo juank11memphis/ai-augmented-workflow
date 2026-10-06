@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from 'node:util';
 
 // Fixture-only command/result contract; no Sibu runtime execution implementation.
 // Command: protocolVersion, requestId, operation, optional runId, model,
-// judgeModel, repeats, normalized inline testCases. Result: ordered events/status.
+// judgeModel and normalized inline testCases. Result: ordered events/status.
 // Ports: createTarget(mockDispatch), judge({model,rubric,output}), custom({name,output}).
 const identifier = /^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,79}$/;
 const capabilities = ['single-turn', 'multi-turn', 'tool-mocks', 'custom', 'rubric'];
@@ -31,7 +31,7 @@ function validate(command, evalMode) {
   safeEvidence(command.requestId);
   if (command.operation === 'describe') return;
   if (!['estimate', 'execute'].includes(command.operation) || !models.includes(command.model)) throw new Error('invalid-request');
-  if (!Number.isInteger(command.repeats) || command.repeats < 1 || command.repeats > 5) throw new Error('invalid-request');
+  if ('repeats' in command) throw new Error('invalid-request');
   if (!Array.isArray(command.testCases) || command.testCases.length === 0 || command.testCases.length > 10) throw new Error('invalid-request');
   if (command.operation === 'execute' && !identifier.test(command.runId ?? '')) throw new Error('invalid-request');
   if (command.operation === 'execute') safeEvidence(command.runId);
@@ -73,8 +73,8 @@ export async function handleRequest(command, ports, { evalMode = '1' } = {}) {
     return { status: 'completed', events };
   }
   if (command.operation === 'estimate') {
-    const targetCalls = command.testCases.reduce((sum, item) => sum + item.turns.length, 0) * command.repeats;
-    const judgeCalls = command.testCases.reduce((sum, item) => sum + item.graders.filter((grader) => grader.type === 'rubric').length, 0) * command.repeats;
+    const targetCalls = command.testCases.reduce((sum, item) => sum + item.turns.length, 0);
+    const judgeCalls = command.testCases.reduce((sum, item) => sum + item.graders.filter((grader) => grader.type === 'rubric').length, 0);
     emit('estimate', { targetCalls, judgeCalls, totalCalls: targetCalls + judgeCalls, cost: { status: 'unavailable', reason: 'Synthetic fixture has no provider pricing.' } });
     return { status: 'completed', events };
   }
@@ -82,7 +82,7 @@ export async function handleRequest(command, ports, { evalMode = '1' } = {}) {
   emit('run-started', { model: command.model, judgeModel: command.judgeModel });
   try {
     for (const item of command.testCases) {
-      for (let attempt = 1; attempt <= command.repeats; attempt += 1) {
+      const attempt = 1;
         identity = { runId: command.runId, caseId: item.id, attempt };
         emit('case-attempt-started', {});
         let cursor = 0;
@@ -114,7 +114,6 @@ export async function handleRequest(command, ports, { evalMode = '1' } = {}) {
           }
         }
         emit('case-attempt-completed', { status: 'completed' });
-      }
     }
   } catch {
     emit('run-diagnostic', { code: 'execution-failed', message: 'Runner attempt failed safely.' });

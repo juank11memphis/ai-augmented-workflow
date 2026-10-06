@@ -69,9 +69,6 @@ function renderControls(viewModel: WorkbenchViewModel): string {
     <label class="field" data-preview-judge hidden>Judge model
       <select name="judgeModel" data-control="judge"></select>
     </label>
-    <details data-preview-repeats><summary>Repeat cases</summary><label class="field">Repeats
-      <input type="number" data-control="repeats" min="1" max="20" step="1" value="1">
-    </label></details>
     <p data-preview-status role="status" aria-live="polite"></p>
     <div data-preview-dialog-slot></div>
     <section data-run-panel aria-label="Selected run" hidden></section>

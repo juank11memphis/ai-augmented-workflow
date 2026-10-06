@@ -14,7 +14,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   let runtimeState = 'loading', runtimeMessage = 'Loading compatible models…';
   let modelIssue = null;
   let previewIssueDetails = null;
-  let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', repeats: 1 };
+  let setup = { scope: 'all', caseId: '', model: '', judgeModel: '' };
   let sheetReturn = null, startPending = false, startUncertain = false, startReference = null, startSuiteId = null, activePanel = null;
   let startIssueDetails = null;
   const startCopy = ${JSON.stringify(safeStartCopy)};
@@ -74,7 +74,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       else { const host = one('[data-discovery-notice]'); if (host) host.hidden = true; copyableIssue = null; }
     } catch { showDiscoveryNotice(connectionCopy.noResponse); }
   }
-  const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId }, model: setup.model, judgeModel: needsJudge() ? setup.judgeModel || null : null, repeats: Number(setup.repeats) });
+  const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId }, model: setup.model, judgeModel: needsJudge() ? setup.judgeModel || null : null });
   const modelCopy = {
     'suite-unavailable': 'Sibu could not open this eval suite. Share the issue details with the person who set it up.',
     'runner-unavailable': 'Sibu could not start this suite. Share the issue details with the person who set it up.',
@@ -141,7 +141,6 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     'model-unavailable': 'Choose a compatible model, then preview again.',
     'judge-unavailable': 'Choose a compatible judge model, then preview again.',
     'case-unavailable': 'Review the suite cases, then preview again.',
-    'repeats-invalid': 'Correct the repeat count, then preview again.',
     'artifact-unsafe': 'Correct the artifact location, then preview again.',
     'artifact-not-ignored': 'Ignore the artifact location, then preview again.',
     'artifact-tracked': 'Move artifacts away from tracked files, then preview again.',
@@ -160,7 +159,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     'runner-request-too-large': 'The runner request was too large', 'environment-undeclared': 'A runner setting is undeclared',
     'capability-unsupported': 'A selected capability is unsupported', 'model-unavailable': 'The model is unavailable',
     'judge-unavailable': 'The Judge model is unavailable', 'case-unavailable': 'A selected case is unavailable',
-    'repeats-invalid': 'The repeat count is invalid', 'artifact-unsafe': 'The artifact location is unsafe',
+    'artifact-unsafe': 'The artifact location is unsafe',
     'artifact-not-ignored': 'The artifact location is not ignored', 'artifact-tracked': 'The artifact location contains tracked files',
     'artifact-git-unavailable': 'Artifact safety could not be checked', 'artifact-root-unsafe': 'The artifact root is unsafe',
     'estimate-invalid': 'The runner estimate was unusable', 'input-unsafe': 'Older preview input was rejected without a precise cause',
@@ -258,8 +257,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
         ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p>Review run unavailable</p><p role="status" data-model-copy-status></p></div></div>'
         : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
       + '<details><summary>Model support</summary><p>Tests can use models supported by this suite. Sibu\'s built-in analysis and repair help currently uses OpenAI. More providers are planned.</p></details>'
-      + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '')
-      + '<details><summary>Repeat cases</summary><label class="field">Repeats<input type="number" data-field="repeats" min="1" max="20" step="1" value="' + esc(setup.repeats) + '"></label></details>';
+      + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '');
   }
   function showSetup() {
     if (!suite || isActive() || startPending || startUncertain) return;
@@ -281,7 +279,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   function readSetup() {
     const judge = setupRegion.querySelector('[data-field="judge"]');
-    setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel, repeats: Number(setupRegion.querySelector('[data-field="repeats"]')?.value || 1) };
+    setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel };
     if (review && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
     review = null; previewGeneration++;
     clearPreviewNotice();

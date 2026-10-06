@@ -5,8 +5,8 @@ import { BoundedArtifactReader } from './bounded-artifact-reader.js';
 import { historyIndex, manifest } from './validation.js';
 import { LIMITS } from './limits.js';
 export function compact(run: Manifest): HistoryEntry {
-  const { runId, suiteId, state, createdAt, updatedAt, finishedAt, outcome, testedModel, judgeModel, scope, repeats, calls, cost } = run;
-  return { runId, suiteId, state, createdAt, updatedAt, finishedAt, outcome, testedModel, judgeModel, scope, repeats, calls, cost };
+  const { runId, suiteId, state, createdAt, updatedAt, finishedAt, outcome, testedModel, judgeModel, scope, calls, cost } = run;
+  return { runId, suiteId, state, createdAt, updatedAt, finishedAt, outcome, testedModel, judgeModel, scope, calls, cost };
 }
 export function indexFrom(entries: readonly HistoryEntry[]): HistoryIndex {
   const sorted = [...new Map(entries.map(e => [e.runId, e])).values()]

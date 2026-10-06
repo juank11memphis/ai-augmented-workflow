@@ -91,7 +91,7 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
     }
     if (proposedContent === current.value.content) return reject('vague-proposal', 'The proposal makes no file change. Draft a concrete repair.', 1, log, assistanceModelLabel, evidence);
     if (Buffer.byteLength(proposedContent, 'utf8') > 32 * 1024) return reject('vague-proposal', 'The proposed file exceeds the supported size. Draft a smaller one-file change.', 1, log, assistanceModelLabel, evidence);
-    const proposal = await dependencies.proposalStore.savePendingProposal({ projectRoot: command.projectRoot, suiteId: command.suiteId, runId: command.runId, testCaseId: command.testCaseId, attempt: command.attempt, evalRunModelId: selected.value.testedModel, judgeModel: selected.value.judgeModel, repeats: selected.value.repeats, assertionId: command.assertionId, targetPrecondition: current.value, proposal: validation.proposal });
+    const proposal = await dependencies.proposalStore.savePendingProposal({ projectRoot: command.projectRoot, suiteId: command.suiteId, runId: command.runId, testCaseId: command.testCaseId, attempt: command.attempt, evalRunModelId: selected.value.testedModel, judgeModel: selected.value.judgeModel, assertionId: command.assertionId, targetPrecondition: current.value, proposal: validation.proposal });
     log('repair_proposal_drafted', 'completed', undefined, proposal.affectedProjectFiles.length);
     return { status: 'proposal-ready', assistanceModelLabel: config.assistanceModelLabel, evidence, proposal };
   } catch {

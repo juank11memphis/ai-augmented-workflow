@@ -1,5 +1,5 @@
 {
-  "templateVersion": "208",
+  "templateVersion": "209",
   "templates": {
     "AGENTS.md": {
       "version": "53",
@@ -373,10 +373,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "1",
+      "version": "2",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Adds schema-aligned suites and an independently versioned runner protocol with isolated mock tools and offline test guidance."
+        "Removes repeat counts from runner requests; each selected eval case now runs once."
       ]
     }
   }

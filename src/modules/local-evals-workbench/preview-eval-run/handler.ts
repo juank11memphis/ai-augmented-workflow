@@ -3,10 +3,8 @@ import type { PreviewEvalRunResult, PreviewStage } from './result.js';
 import type { ArtifactReadinessPort, CaseInputResolverPort, PreviewOutcomeLoggerPort, RunnerDescriptorPort, RunnerEstimatorPort, SuiteRuntimeRegistryPort } from './ports.js';
 import { compatibleDescription, hasRubric, requiredCapabilities, type RuntimeBlockReason } from '../runtime-description.js';
 import type { NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
-import { MAX_RUN_REPEATS } from '../run-configuration.js';
 
 /** Hard upper bound avoids surprising spend and unsafe call arithmetic. */
-export const MAX_PREVIEW_REPEATS = MAX_RUN_REPEATS;
 export type PreviewEvalRunDependencies = {
   readonly suites: SuiteRuntimeRegistryPort;
   readonly runner: RunnerDescriptorPort & RunnerEstimatorPort;
@@ -28,8 +26,6 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
     return { status: 'blocked', stage, reason };
   };
   try {
-    const repeats = command.repeats ?? 1;
-    if (!Number.isSafeInteger(repeats) || repeats < 1 || repeats > MAX_PREVIEW_REPEATS) return blocked('repeats-invalid');
     const suite = await dependencies.suites.load(command.suiteId);
     if (!suite) return blocked('suite-unavailable');
     let cases: readonly NormalizedEvalTestCase[];
@@ -59,13 +55,13 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
     const resolved = await dependencies.inputs.resolve(cases);
     if (resolved.status === 'blocked') return blocked(resolved.reason);
     stage = 'estimation';
-    const estimate = await dependencies.runner.estimate(suite, { model: command.model, judgeModel: judge ?? null, repeats, testCases: resolved.value });
+    const estimate = await dependencies.runner.estimate(suite, { model: command.model, judgeModel: judge ?? null, testCases: resolved.value });
     if (estimate.status === 'blocked') return blocked(estimate.reason);
     if (!description.value.costEstimation && estimate.value.cost.status === 'available') return blocked('estimate-invalid');
     log('eval_preview_completed', 'preview', 'completed');
     return {
       status: 'ready', suiteId: suite.id, selectedCaseIds: cases.map((testCase) => testCase.id),
-      model: command.model, judgeModel: judge ?? null, repeats,
+      model: command.model, judgeModel: judge ?? null,
       targetCalls: estimate.value.targetCalls, judgeCalls: estimate.value.judgeCalls,
       totalCalls: estimate.value.totalCalls, cost: estimate.value.cost, requiresConfirmation: true,
     };

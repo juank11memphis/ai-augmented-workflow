@@ -11,32 +11,23 @@ it('rejects fabricated completion, duplicate attempts and terminal mutation; par
   assert.equal(done.value.outcome, 'passed'); assert.equal(transition(done.value, 'running', 104).status, 'blocked');
   const partial = transition(progress.value, 'partial', 104); assert.equal(partial.status === 'ok' && partial.value.outcome, 'incomplete');
 });
-it('seed 0x17: 100 generated repeated runs preserve counter and terminal invariants', async () => {
+it('seed 0x17: generated single-attempt runs preserve terminal invariants', async () => {
   const { manifest } = await import('./validation.js'); let seed = 0x17;
   for (let sequence = 0; sequence < 100; sequence++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    const repeats = seed % 10 + 1; let current = { ...queued(), repeats };
+    let current = queued();
     const start = transition(current, 'running', 101); if (start.status !== 'ok') return assert.fail(); current = start.value;
-    for (let n = 1; n <= repeats; n++) {
-      const attempt = { ...evidence(), number: n, outcome: n === repeats && sequence % 2 ? 'failed' as const : 'passed' as const };
-      const next = appendAttempt(current, attempt, 101 + n); assert.equal(next.status, 'ok'); if (next.status !== 'ok') return;
-      current = next.value; assert.ok(manifest(current)); assert.equal(current.calls, n);
-      assert.equal(transition(current, 'completed', 200).status, n === repeats ? 'ok' : 'blocked');
-    }
+    const attempt = { ...evidence(), outcome: seed % 2 ? 'failed' as const : 'passed' as const,
+      assertions: seed % 2 ? [{ ...evidence().assertions[0]!, outcome: 'failed' as const }] : evidence().assertions };
+    const next = appendAttempt(current, attempt, 102); assert.equal(next.status, 'ok'); if (next.status !== 'ok') return;
+    current = next.value; assert.ok(manifest(current)); assert.equal(current.calls, 1);
+    assert.equal(appendAttempt(current, { ...attempt, number: 2 }, 103).status, 'blocked');
     const done = transition(current, 'completed', 200); assert.ok(done.status === 'ok');
-    if (done.status === 'ok') { assert.equal(done.value.outcome, sequence % 2 ? 'failed' : 'passed'); assert.equal(transition(done.value, 'running', 201).status, 'blocked'); }
+    if (done.status === 'ok') { assert.equal(done.value.outcome, seed % 2 ? 'failed' : 'passed'); assert.equal(transition(done.value, 'running', 201).status, 'blocked'); }
   }
 });
 
-it('fault injection: a failed required check or omitted repeat cannot aggregate to passed', () => {
-  const run = { ...queued(), repeats: 2 };
-  const started = transition(run, 'running', 101); assert.equal(started.status, 'ok'); if (started.status !== 'ok') return;
-  const first = appendAttempt(started.value, evidence(), 102); assert.equal(first.status, 'ok'); if (first.status !== 'ok') return;
-  assert.equal(transition(first.value, 'completed', 103).status, 'blocked');
-  const failed = { ...evidence(), number: 2, outcome: 'failed' as const,
-    assertions: [{ ...evidence().assertions[0]!, outcome: 'failed' as const }] };
-  const second = appendAttempt(first.value, failed, 103); assert.equal(second.status, 'ok'); if (second.status !== 'ok') return;
-  const done = transition(second.value, 'completed', 104); assert.equal(done.status, 'ok');
-  if (done.status === 'ok') assert.equal(done.value.outcome, 'failed');
-  assert.equal(transition(first.value, 'partial', 104).status, 'ok');
+it('a missing attempt cannot complete a run', () => {
+  const started = transition(queued(), 'running', 101); assert.equal(started.status, 'ok'); if (started.status !== 'ok') return;
+  assert.equal(transition(started.value, 'completed', 103).status, 'blocked');
 });

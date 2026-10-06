@@ -132,7 +132,7 @@ test('status and History read faults recover without rewriting previous or legac
     const runId = await reviewedStart(workbench, references.old);
     const prior = await savedEvidence(workbench, runId);
     const history = createRunHistory(workbench.projectRoot);
-    const legacy = await history.store.create({ suiteId: 'offline', caseIds: ['first'], scope: 'all', testedModel: 'fake/available', judgeModel: null, repeats: 1 });
+    const legacy = await history.store.create({ suiteId: 'offline', caseIds: ['first'], scope: 'all', testedModel: 'fake/available', judgeModel: null });
     assert.equal(legacy.status, 'ok');
     if (legacy.status !== 'ok') return;
     const legacyId = legacy.value.runId;

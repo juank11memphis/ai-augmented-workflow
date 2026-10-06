@@ -67,7 +67,7 @@ function browser(
       if (route === '/api/eval-runs/start') { starts.push(requests.at(-1)?.body); return { json: async () => ({ status: 'queued', suiteId: 'suite', runId: 'run' }) }; }
       if (route.endsWith('/describe')) return { json: async () => ({ status: 'ready', models: ['fake/model'], judgeModels: options.rubric || options.mixed ? ['fake/judge'] : [], rubricRequired: !!(options.rubric || options.mixed), rubricCaseIds: options.mixed ? ['rubric'] : options.rubric ? ['case', 'rubric'] : [] }) };
       const response = { json: async () => options.onPreview ? options.onPreview(JSON.parse(requestOptions!.body) as PreviewEvalRunCommand) : ({ status: 'ready', suiteId: 'suite', selectedCaseIds: ['case'], model: 'fake/model', judgeModel: null,
-        repeats: 1, targetCalls: 1, judgeCalls: 0, totalCalls: 1, cost, requiresConfirmation: true }) };
+        targetCalls: 1, judgeCalls: 0, totalCalls: 1, cost, requiresConfirmation: true }) };
       if (!options.deferPreview) return response;
       return new Promise<typeof response>((resolve) => { releasePreview = () => resolve(response); });
     },

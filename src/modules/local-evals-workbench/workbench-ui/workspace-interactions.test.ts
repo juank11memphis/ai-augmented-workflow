@@ -15,7 +15,7 @@ function harness(post: (url: string, body: unknown) => Promise<unknown>) {
   const host = { innerHTML: '' };
   const document = { querySelectorAll: () => [host], addEventListener() {} };
   const context = { document, post, esc: escape, latestRun: () => true,
-    suite: { id: 'suite' }, run: { judgeModel: null, repeats: 2 },
+    suite: { id: 'suite' }, run: { judgeModel: null },
     setup: {}, loadRuntime: async () => undefined, showSetup() {} };
   const api = vm.runInNewContext(WORKSPACE_REPAIR_CLIENT + ';({ setSelection(value){selectedFailure=value;}, resetRepair, requestRepair, renderRepair, markup:repairMarkup, getStage:()=>repairStage })', context) as {
     setSelection(value: unknown): void; resetRepair(): void; requestRepair(kind: string): Promise<void>;

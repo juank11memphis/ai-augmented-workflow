@@ -19,8 +19,8 @@ export async function suite() {
         throw new Error('Invalid test fixture');
     return result.suite;
 }
-export function command(testCases, operation = 'execute', repeats = 1) {
-    return { protocolVersion: 1, requestId: 'request-1', operation, runId: 'run-1', model: 'fake/target', judgeModel: testCases.some((item) => item.graders.some((grader) => grader.type === 'rubric')) ? 'fake/judge' : null, repeats, testCases };
+export function command(testCases, operation = 'execute') {
+    return { protocolVersion: 1, requestId: 'request-1', operation, runId: 'run-1', model: 'fake/target', judgeModel: testCases.some((item) => item.graders.some((grader) => grader.type === 'rubric')) ? 'fake/judge' : null, testCases };
 }
 export async function project(t) {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sibu-authoring-fixture-'));

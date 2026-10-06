@@ -82,7 +82,7 @@ test('rerun runtime refresh never silently replaces an unavailable prior model',
 
 test('case switches and late discovery keep conditional Judge options and keyboard focus in sync', async () => {
   const listeners = new Map<string, (event: { target: { matches: (selector: string) => boolean } }) => void>();
-  const controls = { scope: 'one', caseId: 'plain', model: '', judge: '', repeats: '1' };
+  const controls = { scope: 'one', caseId: 'plain', model: '', judge: '' };
   const document: { activeElement: unknown; getElementById: (id: string) => { textContent: string }; querySelector: (selector: string) => unknown;
     addEventListener: (name: string, listener: (event: { target: { matches: (selector: string) => boolean } }) => void) => void } = {
     activeElement: null,
@@ -101,7 +101,6 @@ test('case switches and late discovery keep conditional Judge options and keyboa
     if (selector === '[data-field="case"]') return { value: controls.caseId };
     if (selector === '[data-field="model"]') return { value: controls.model };
     if (selector === '[data-field="judge"]') return fields.innerHTML.includes('data-field="judge"') ? { value: controls.judge } : null;
-    if (selector === '[data-field="repeats"]') return { value: controls.repeats };
     return null;
   } };
   let finishDiscovery!: (value: unknown) => void;
@@ -232,7 +231,7 @@ test('accepted run polls despite unavailable history, retains the run lock, and 
     const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + WORKSPACE_RESULTS_CLIENT + WORKSPACE_REPAIR_CLIENT
       + '; renderWorkspace = () => { document.querySelector("[data-run-setup]").hidden = isActive() || startPending || startUncertain; };'
       + ' return { startRun, showSetup, rerunAfterRepair, setReview(value){review=value;}, primeRepair(){'
-      + ' run={runId:"old",state:"completed",judgeModel:null,repeats:1}; selectedRunId="old"; history=[{runId:"old"}];'
+      + ' run={runId:"old",state:"completed",judgeModel:null}; selectedRunId="old"; history=[{runId:"old"}];'
       + ' selectedFailure={suiteId:"suite",runId:"old",testCaseId:"case"}; repairStage="applied";'
       + ' repairApplied={rerunRecommendation:{primaryAction:{suiteId:"suite",evalRunModelId:"model"}}}; },'
       + ' getState:()=>({acceptedRunId,selectedRunId,latestKnownRunId,run,repairStage,isLatest:latestRun()}) }; })()', context) as {
@@ -287,7 +286,7 @@ test('an empty History read cannot clear an unconfirmed start or unlock another 
 
 test('review uses the current preview, returns focus on Back and Escape, and ignores late previews', async () => {
   const listeners = new Map<string, (event: { key: string; preventDefault(): void }) => void>();
-  const controls = { scope: 'one', caseId: 'case-a', model: 'tested', judge: '', repeats: '1' };
+  const controls = { scope: 'one', caseId: 'case-a', model: 'tested', judge: '' };
   const requests: { resolve(value: unknown): void }[] = [];
   const reviewButton = { focus() { document.activeElement = reviewButton; }, disabled: false };
   const sheetButton = { focus() { document.activeElement = sheetButton; } };
@@ -302,7 +301,6 @@ test('review uses the current preview, returns focus on Back and Escape, and ign
     if (selector === '[data-field="case"]') return { value: controls.caseId };
     if (selector === '[data-field="model"]') return { value: controls.model };
     if (selector === '[data-field="judge"]') return null;
-    if (selector === '[data-field="repeats"]') return { value: controls.repeats };
     return null;
   } };
   const setupStatus = { textContent: '' };
@@ -320,7 +318,7 @@ test('review uses the current preview, returns focus on Back and Escape, and ign
   { document, setupRegion: region, resetRepair() {}, fetch: async () => ({ json: () => new Promise(resolve => requests.push({ resolve })) }) }) as {
     showReview(): Promise<void>; showSetup(): void; closeSheet(): void; getReview(): unknown;
   };
-  const ready = { status: 'ready', selectedCaseIds: ['case-a'], repeats: 1, model: 'tested', judgeModel: null,
+  const ready = { status: 'ready', selectedCaseIds: ['case-a'], model: 'tested', judgeModel: null,
     totalCalls: 2, targetCalls: 2, judgeCalls: 0, cost: { status: 'unavailable', reason: 'runner did not estimate' } };
   const first = api.showReview();
   await new Promise(resolve => setImmediate(resolve));
@@ -371,7 +369,7 @@ test('double Start sends one reviewed snapshot and keeps setup collapsed until r
       return Promise.resolve({ status: 422, json: () => new Promise(resolve => { finish = resolve; }) }); } }) as {
       startRun(): Promise<void>; setReview(value: unknown): void;
     };
-  api.setReview({ request: { suiteId: 'suite', scope: { type: 'all' }, model: 'tested', repeats: 2 },
+  api.setReview({ request: { suiteId: 'suite', scope: { type: 'all' }, model: 'tested' },
     result: { selectedCaseIds: ['case'], targetCalls: 2, judgeCalls: 0, totalCalls: 2,
       cost: { status: 'unavailable', reason: 'not estimated' } } });
   const pending = api.startRun();
@@ -380,7 +378,7 @@ test('double Start sends one reviewed snapshot and keeps setup collapsed until r
   assert.equal(region.hidden, true);
   assert.equal(button.disabled, true);
   assert.match(progress.textContent, /Starting run/);
-  assert.deepEqual(JSON.parse(JSON.stringify(submitted)), { suiteId: 'suite', scope: { type: 'all' }, model: 'tested', repeats: 2,
+  assert.deepEqual(JSON.parse(JSON.stringify(submitted)), { suiteId: 'suite', scope: { type: 'all' }, model: 'tested',
     review: { selectedCaseIds: ['case'], targetCalls: 2, judgeCalls: 0, totalCalls: 2,
       cost: { status: 'unavailable', reason: 'not estimated' } } });
   finish({ status: 'blocked', reason: 'review-stale', reference: startReference,
@@ -393,7 +391,7 @@ test('double Start sends one reviewed snapshot and keeps setup collapsed until r
 });
 
 test('whole-suite and one-case setup require a current review before the existing start endpoint', async () => {
-  const controls = { scope: 'one', caseId: 'plain', model: 'tested', judge: '', repeats: '1' };
+  const controls = { scope: 'one', caseId: 'plain', model: 'tested', judge: '' };
   const requests: { url: string; body: Record<string, unknown> }[] = [];
   const reviewButton = { disabled: false, focus() { document.activeElement = this; } };
   const heading = { focus() { document.activeElement = this; } };
@@ -413,7 +411,6 @@ test('whole-suite and one-case setup require a current review before the existin
     if (key === '[data-field="case"]') return { value: controls.caseId };
     if (key === '[data-field="model"]') return { value: controls.model };
     if (key === '[data-field="judge"]') return fields.innerHTML.includes('data-field="judge"') ? { value: controls.judge } : null;
-    if (key === '[data-field="repeats"]') return { value: controls.repeats };
     return null;
   } };
   const progress = { textContent: '' };
@@ -430,8 +427,8 @@ test('whole-suite and one-case setup require a current review before the existin
     if (url === '/api/eval-runs/preview') {
       const scope = body.scope as { type: string; testCaseId?: string };
       const selectedCaseIds = scope.type === 'all' ? ['plain', 'rubric'] : [scope.testCaseId];
-      const calls = selectedCaseIds.length * (body.repeats as number);
-      return { json: async () => ({ status: 'ready', selectedCaseIds, repeats: body.repeats, model: body.model,
+      const calls = selectedCaseIds.length;
+      return { json: async () => ({ status: 'ready', selectedCaseIds, model: body.model,
         judgeModel: body.judgeModel, targetCalls: calls, judgeCalls: body.judgeModel ? calls : 0,
         totalCalls: body.judgeModel ? calls * 2 : calls, cost: { status: 'available', currency: 'USD', amount: '0.42' } }) };
     }
@@ -453,7 +450,7 @@ test('whole-suite and one-case setup require a current review before the existin
   await api.startRun();
   assert.equal(requests.filter(item => item.url === '/api/eval-runs/start').length, 0);
   await api.showReview();
-  assert.deepEqual(JSON.parse(JSON.stringify(requests.at(-1)?.body)), { suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'plain' }, model: 'tested', judgeModel: null, repeats: 1 });
+  assert.deepEqual(JSON.parse(JSON.stringify(requests.at(-1)?.body)), { suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'plain' }, model: 'tested', judgeModel: null });
   assert.match(slot.innerHTML, /<dt>Scope<\/dt><dd>1 test case/);
   assert.match(slot.innerHTML, /<dt>Test case<\/dt><dd>Plain/);
   assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>1/);
@@ -464,12 +461,12 @@ test('whole-suite and one-case setup require a current review before the existin
   assert.equal(document.activeElement, reviewButton);
   controls.caseId = 'rubric'; api.readSetup(); api.refreshSetupControls();
   assert.match(fields.innerHTML, /data-field="judge"/);
-  controls.judge = 'judge'; controls.repeats = '2'; api.readSetup();
+  controls.judge = 'judge'; api.readSetup();
   await api.showReview();
   assert.match(slot.innerHTML, /<dt>Test case<\/dt><dd>Rubric/);
   assert.match(slot.innerHTML, /<dt>Judge<\/dt><dd>judge/);
-  assert.match(slot.innerHTML, /<dt>Repeats<\/dt><dd>2/);
-  assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>4/);
+  assert.doesNotMatch(slot.innerHTML, /Repeats/);
+  assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>2/);
   assert.match(slot.innerHTML, /<dt>Estimated cost<\/dt><dd>USD 0.42/);
   controls.model = 'other'; api.readSetup();
   assert.equal(api.state().review, null);
@@ -479,10 +476,10 @@ test('whole-suite and one-case setup require a current review before the existin
   assert.equal(requests.filter(item => item.url === '/api/eval-runs/start').length, 0);
   controls.scope = 'all'; api.readSetup(); api.refreshSetupControls();
   await api.showReview();
-  assert.deepEqual(JSON.parse(JSON.stringify(requests.at(-1)?.body)), { suiteId: 'suite', scope: { type: 'all' }, model: 'other', judgeModel: 'judge', repeats: 2 });
+  assert.deepEqual(JSON.parse(JSON.stringify(requests.at(-1)?.body)), { suiteId: 'suite', scope: { type: 'all' }, model: 'other', judgeModel: 'judge' });
   assert.match(slot.innerHTML, /<dt>Scope<\/dt><dd>All 2 cases/);
   assert.match(slot.innerHTML, /<dt>Model<\/dt><dd>other/);
-  assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>8/);
+  assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>4/);
   assert.match(slot.innerHTML, /data-action="back-setup"/);
   assert.match(slot.innerHTML, /data-action="start"/);
   await api.startRun();

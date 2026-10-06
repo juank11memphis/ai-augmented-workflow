@@ -14,17 +14,17 @@ test('one persisted failed check survives reader restart and analysis never muta
   try {
     const first = fixture(workspace.root);
     const configuration = { suiteId: 'suite', caseIds: ['case', 'other-case'], scope: 'all' as const,
-      testedModel: 'synthetic', judgeModel: null, repeats: 2 };
+      testedModel: 'synthetic', judgeModel: null };
     const created = await first.store.create(configuration);
     assert.equal(created.status, 'ok');
     if (created.status !== 'ok') return;
     const runId = created.value.runId;
     assert.equal((await first.store.start('suite', runId)).status, 'ok');
     for (const caseId of configuration.caseIds) {
-      for (const number of [1, 2]) {
-        const target = caseId === 'case' && number === 2;
+      {
+        const target = caseId === 'case';
         const base = baseEvidence(runId);
-        const attempt = { ...base, caseId, number, outcome: target ? 'failed' as const : 'passed' as const,
+        const attempt = { ...base, caseId, outcome: target ? 'failed' as const : 'passed' as const,
           output: target ? 'RAW RESPONSE OPENAI_API_KEY=synthetic-local-only' : 'OTHER ATTEMPT OUTPUT',
           turns: [{ id: 'turn', role: 'assistant' as const, content: target ? 'SELECTED TURN' : 'OTHER TURN' },
             { id: 'unlinked', role: 'user' as const, content: 'UNLINKED TURN' }],
@@ -38,7 +38,7 @@ test('one persisted failed check survives reader restart and analysis never muta
       }
     }
     assert.equal((await first.store.finalize('suite', runId, 'completed')).status, 'ok');
-    const other = await first.store.create({ ...configuration, caseIds: ['other-case'], repeats: 1 });
+    const other = await first.store.create({ ...configuration, caseIds: ['other-case'] });
     assert.equal(other.status, 'ok');
     if (other.status === 'ok') {
       await first.store.start('suite', other.value.runId);
@@ -48,15 +48,15 @@ test('one persisted failed check survives reader restart and analysis never muta
       assert.equal((await first.store.append('suite', other.value.runId, otherAttempt)).status, 'ok');
       assert.equal((await first.store.finalize('suite', other.value.runId, 'completed')).status, 'ok');
     }
-    const file = path.join(workspace.root, 'evals/artifacts', first.paths.attempt('suite', runId, 'case', 2));
+    const file = path.join(workspace.root, 'evals/artifacts', first.paths.attempt('suite', runId, 'case', 1));
     const before = await readFile(file);
     const reopened = fixture(workspace.root);
     const history = new FileArtifactReader(reopened.paths, reopened.reader);
     const selectedReader = createSelectedFailureReader(async command => history.get(command.suiteId, command.runId, command.selection));
-    const localDetail = await history.get('suite', runId, { caseId: 'case', attempt: 2 });
+    const localDetail = await history.get('suite', runId, { caseId: 'case', attempt: 1 });
     assert.equal(localDetail.status, 'ok');
     if (localDetail.status === 'ok') assert.match(localDetail.value.evidence?.output ?? '', /RAW RESPONSE OPENAI_API_KEY=synthetic-local-only/);
-    const command = { projectRoot: workspace.root, suiteId: 'suite', runId, attempt: 2, testCaseId: 'case',
+    const command = { projectRoot: workspace.root, suiteId: 'suite', runId, attempt: 1, testCaseId: 'case',
       evalRunModelId: 'synthetic', runScope: { type: 'all' as const }, assertionId: 'assertion' };
     const providerCalls: unknown[] = [];
     let hasKey = false;
@@ -84,7 +84,7 @@ test('one persisted failed check survives reader restart and analysis never muta
     assert.match(sent, /SELECTED ACTUAL OPENAI_API_KEY=synthetic-selected|SELECTED TURN|SELECTED TOOL/);
     assert.doesNotMatch(sent, /OTHER RUN ACTUAL|OTHER ACTUAL|OTHER ASSERTION|OTHER TURN|UNLINKED TURN|synthetic-local-only|private-key/);
     assert.deepEqual(await readFile(file), before);
-    assert.equal((await selectedReader.read({ suiteId: 'suite', runId: 'missing', testCaseId: 'case', attempt: 2, assertionId: 'assertion' })).status, 'blocked');
+    assert.equal((await selectedReader.read({ suiteId: 'suite', runId: 'missing', testCaseId: 'case', attempt: 1, assertionId: 'assertion' })).status, 'blocked');
   } finally {
     await workspace.cleanup();
   }
