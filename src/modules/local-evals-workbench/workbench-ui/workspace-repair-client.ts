@@ -65,6 +65,14 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (!valid) return null;
     return { copy: proposalGuidance[category], details: 'Stage: proposal\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() };
   }
+  function reviewableProposal(proposal) {
+    return proposal && typeof proposal.proposalId === 'string' && proposal.proposalId.length > 0
+      && Array.isArray(proposal.affectedProjectFiles) && proposal.affectedProjectFiles.length === 1
+      && typeof proposal.affectedProjectFiles[0] === 'string' && proposal.affectedProjectFiles[0].length > 0
+      && ['changeSummary', 'rationale', 'expectedEvalImpact'].every(field => typeof proposal[field] === 'string' && proposal[field].length > 0)
+      && ['unified-diff', 'replacement'].includes(proposal.proposedChange?.kind)
+      && typeof proposal.proposedChange.representation === 'string' && proposal.proposedChange.representation.length > 0;
+  }
   function safeApplyIssue(result) {
     const issue = result?.issue, category = issue?.category;
     const blocked = ['invalid-request', 'missing-approval', 'stale-proposal', 'wrong-project-root', 'unsafe-target', 'unsafe-workflow-readiness'];
@@ -147,10 +155,10 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       const proposal = repairProposal;
       const change = proposal?.proposedChange;
       const canApply = repairStage === 'proposal';
-      return '<h3 tabindex="-1">Proposed repair</h3><p>1 file: ' + esc(proposal?.affectedProjectFiles?.[0] || '') + '</p><p>' + esc(proposal?.changeSummary || '') + '</p>'
-        + '<section class="detail-section" aria-label="Exact proposed change"><h4>' + esc(change?.kind === 'unified-diff' ? 'Proposed diff' : 'Proposed replacement') + '</h4><pre>' + esc((change?.representation || '').split('\n').slice(0, 5).join('\n')) + '</pre><details><summary>' + (change?.kind === 'unified-diff' ? 'Show full diff' : 'Show full replacement') + '</summary><pre>' + esc(change?.representation || '') + '</pre></details></section>'
+      return '<section class="repair-proposal" aria-label="Proposed repair"><h3 tabindex="-1">Proposed repair</h3><p><strong>File</strong> ' + esc(proposal?.affectedProjectFiles?.[0] || '') + '</p><p>' + esc(proposal?.changeSummary || '') + '</p>'
+        + '<section class="detail-section" aria-label="Exact proposed change"><h4>Change preview</h4><pre>' + esc((change?.representation || '').split('\n').slice(0, 5).join('\n')) + '</pre><details><summary>Show full change</summary><pre>' + esc(change?.representation || '') + '</pre></details></section>'
         + '<h4>Rationale</h4><p>' + esc(proposal?.rationale || '') + '</p><h4>Expected impact</h4><p>' + esc(proposal?.expectedEvalImpact || '') + '</p>'
-        + (canApply ? '<button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button><button type="button" data-action="reject-repair"' + pending + '>Not now</button>' + notice : '')
+        + (canApply ? '<div class="repair-decisions"><button type="button" data-action="reject-repair"' + pending + '>Not now</button><button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button></div>' + notice : '')
         + (canApply ? '' : '<section class="model-notice detail-section" data-apply-notice aria-label="Repair Proposal"><h4 tabindex="-1" data-apply-heading>'
           + (repairStage === 'apply-blocked' ? 'Repair blocked' : 'Repair outcome not confirmed') + '</h4><p>' + esc(repairMessage) + '</p>'
           + '<span class="live" role="status" data-apply-announcement>' + esc(repairMessage ? repairStage === 'apply-blocked' ? 'Repair blocked' : 'Repair outcome not confirmed' : '') + '</span>'
@@ -158,7 +166,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
           + '</section>')
         + (applyIssueDetails ? '<pre data-apply-issue-details>' + esc(applyIssueDetails) + '</pre><button type="button" data-action="copy-apply-issue">Copy issue details</button><p data-apply-copy-status></p>' : '')
         + (repairAffectedFiles.length ? '<section data-repair-files aria-label="Files to inspect"><h4 tabindex="-1" data-repair-files-heading>Files to inspect</h4><ul>'
-          + repairAffectedFiles.map(path => '<li>' + esc(path) + '</li>').join('') + '</ul></section>' : '');
+          + repairAffectedFiles.map(path => '<li>' + esc(path) + '</li>').join('') + '</ul></section>' : '') + '</section>';
     }
     return '<h3 tabindex="-1">Repair applied</h3><p>The result is not verified until you rerun the eval.</p><ul>'
       + (repairApplied?.changedFiles || []).map(file => '<li>' + esc(file.path) + ' — ' + esc(file.summary || '') + '</li>').join('') + '</ul>'
@@ -215,10 +223,10 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         repairStage = result.status === 'analysis-unavailable' ? 'unavailable' : 'retryable-error';
         repairMessage = repairIssueCopy[0];
       }
-      else if (kind === 'proposal' && result.status === 'proposal-ready') { repairProposal = result.proposal; proposalIssueCopy = null; proposalIssueDetails = null; repairStage = 'proposal'; repairMessage = ''; }
+      else if (kind === 'proposal' && result?.status === 'proposal-ready' && reviewableProposal(result.proposal)) { repairProposal = result.proposal; proposalIssueCopy = null; proposalIssueDetails = null; repairStage = 'proposal'; repairMessage = ''; }
       else if (kind === 'proposal') {
         const safe = safeProposalIssue(result);
-        proposalIssueCopy = safe?.copy || proposalGuidance['unknown-cause'];
+        proposalIssueCopy = safe?.copy || ['Proposal response invalid', 'Sibu could not display this draft safely.', 'Review the selected analysis, then try drafting again.', 'draft'];
         proposalIssueDetails = safe?.details || null;
         repairProposal = null; repairStage = 'proposal-error'; repairMessage = '';
         proposalAnnouncement = proposalIssueCopy[0];
@@ -306,7 +314,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (target.dataset.action === 'analyze-failure') void requestRepair('analysis');
     if (target.dataset.action === 'draft-repair') void requestRepair('proposal');
     if (target.dataset.action === 'approve-repair') void requestRepair('apply');
-    if (target.dataset.action === 'reject-repair') { repairGeneration++; repairProposal = null; repairStage = 'analysis'; repairMessage = 'Proposal set aside. The selected evidence remains available.'; renderRepair(); }
+    if (target.dataset.action === 'reject-repair' && repairStage === 'proposal' && currentFailureSelected()) { repairGeneration++; repairProposal = null; repairStage = 'analysis'; repairMessage = 'Proposal set aside. The selected evidence remains available.'; renderRepair(); }
     if (target.dataset.action === 'rerun-case') void rerunAfterRepair('case');
     if (target.dataset.action === 'rerun-suite') void rerunAfterRepair('suite');
   });
