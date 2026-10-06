@@ -9,7 +9,7 @@ import type { RuntimeDescription, RuntimeOutcome } from '../runtime-description.
 import type { RuntimeBlockReason } from '../runtime-description.js';
 import { runnerEnvironment } from './environment.js';
 import { BoundedNdjsonParser } from './ndjson-parser.js';
-import { validateDescription, validateEnvelope } from './description-validation.js';
+import { validateDescription, validateEnvelope, validatedFailureReason } from './description-validation.js';
 import { validateEstimate, type ConsumptionEstimate } from './estimate-validation.js';
 import { PREVIEW_PROCESS_LIMITS, type PreviewProcessLimits } from './limits.js';
 
@@ -78,7 +78,11 @@ export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, Runner
         settled = true;
         clearTimeout(startup); clearTimeout(idle); clearTimeout(overall); clearTimeout(forcedKill); clearTimeout(cleanupTimeout);
         if (failureReason || exitCode !== 0) {
-          const reason = failureReason ?? 'runner-exited';
+          let reason: RuntimeBlockReason = failureReason ?? 'runner-exited';
+          if (!failureReason) {
+            try { reason = validatedFailureReason(parser.finish(), requestId) ?? reason; }
+            catch { /* No complete, trustworthy diagnostic; retain the observed process exit. */ }
+          }
           this.log({ event: 'eval_runner_process_blocked', suiteId: suite.id, reason, durationMs: Date.now() - startedAt });
           resolve({ status: 'blocked', reason });
           return;

@@ -103,6 +103,23 @@ test('stderr overflow and idle timeout after partial output terminate safely', a
     });
   }
 });
+test('a validated runner rejection survives a nonzero exit without exposing runner text', async () => {
+  const source = `let body=''; process.stdin.on('data', part => body += part); process.stdin.on('end', () => {
+    const request = JSON.parse(body);
+    process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,type:'run-diagnostic',runId:null,caseId:null,attempt:null,
+      data:{code:'invalid-request',message:'private-value /private/runner'}})+'\\n');
+    process.exitCode = 1;
+  });`;
+  await fixture(source, async (root) => {
+    const logs: unknown[] = [];
+    const adapter = new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS,
+      { PATH: process.env.PATH, TEST_KEY: 'private-value' }, { record: entry => logs.push(entry) });
+    const result = await adapter.estimate(suite, { model: 'fake/target', judgeModel: null, testCases: suite.testCases });
+    assert.deepEqual(result, { status: 'blocked', reason: 'runner-request-invalid' });
+    assert.match(JSON.stringify(logs), /runner-request-invalid/);
+    assert.doesNotMatch(JSON.stringify({ result, logs }), /private-value|\/private\/runner/);
+  });
+});
 test('runner stderr and paths never replace stable process-failure reasons or enter logs', async () => {
   await fixture(`process.stderr.write('private-value /private/runner'); process.exit(2);`, async (root) => {
     const logs: unknown[] = [];

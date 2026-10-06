@@ -29,6 +29,13 @@ process.stdin.on('end', () => {
     process.stdout.write('invalid runner output\\n');
     return;
   }
+  if (mode === 'reject-estimate' && request.operation === 'estimate') {
+    process.stdout.write(JSON.stringify({ protocolVersion: 1, requestId: request.requestId,
+      sequence: 0, type: 'run-diagnostic', runId: null, caseId: null, attempt: null,
+      data: { code: 'invalid-request', message: ${JSON.stringify(SECRET)} } }) + '\\n');
+    process.exitCode = 1;
+    return;
+  }
   const data = {
     runnerId: 'synthetic',
     capabilities: mode === 'unsupported' ? ['single-turn'] : ['single-turn', 'multi-turn', 'rubric'],
@@ -297,6 +304,33 @@ test('preview HTTP correlates known blocks, invalid bodies, and ready outcome wi
         const event = JSON.parse(line) as Record<string, unknown>;
         return event.event === 'local_evals_workbench_request_completed' && event.reference === ready.reference;
       }));
+    });
+  } finally {
+    console.error = original;
+  }
+});
+
+test('preview reports a validated runner request rejection to the user and correlated admin log', async () => {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (line?: unknown) => lines.push(String(line));
+  try {
+    await withWorkbench({ mode: 'reject-estimate' }, async ({ post }) => {
+      const response = await post('/api/eval-runs/preview', selection);
+      const issue = response.payload.issue as Record<string, unknown>;
+      assert.equal(response.code, 422);
+      assert.equal(issue.stage, 'preview');
+      assert.equal(issue.observedStage, 'estimation');
+      assert.equal(issue.category, 'runner-request-invalid');
+      assert.equal(issue.reference, response.reference);
+      assert.equal(issue.title, 'Runner rejected preview request');
+      assert.match(String(issue.explanation), /could not use the preview request/i);
+      assert.ok(lines.some((line) => {
+        const event = JSON.parse(line) as Record<string, unknown>;
+        return event.event === 'local_evals_workbench_request_issue' && event.stage === 'preview'
+          && event.reason === 'runner-request-invalid' && event.reference === response.reference;
+      }));
+      assert.doesNotMatch(response.body + lines.join(''), /private-test-value-713/);
     });
   } finally {
     console.error = original;

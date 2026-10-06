@@ -94,7 +94,7 @@ it('emits a safe correlated terminal event without unexpected payloads', () => {
 
 const modelReasons: readonly RuntimeBlockReason[] = [
   'suite-unavailable', 'runner-unavailable', 'runner-absent', 'runner-start-failed',
-  'runner-exited', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout',
+  'runner-exited', 'runner-request-invalid', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout',
   'environment-missing', 'required-setting-rejected', 'runner-request-too-large',
   'environment-undeclared', 'capability-unsupported', 'model-unavailable',
   'judge-unavailable', 'case-unavailable', 'artifact-unsafe',

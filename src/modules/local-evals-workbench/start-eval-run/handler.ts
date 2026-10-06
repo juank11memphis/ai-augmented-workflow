@@ -8,7 +8,7 @@ const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
 const SAFE_REASONS = new Set([
   'suite-unavailable', 'runner-unavailable', 'runner-absent', 'runner-start-failed', 'runner-exited',
-  'runner-protocol-invalid', 'runner-invalid', 'runner-timeout', 'environment-missing',
+  'runner-request-invalid', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout', 'environment-missing',
   'required-setting-rejected', 'runner-request-too-large', 'environment-undeclared',
   'capability-unsupported', 'model-unavailable', 'judge-unavailable', 'case-unavailable',
   'artifact-unsafe', 'artifact-not-ignored', 'artifact-tracked',

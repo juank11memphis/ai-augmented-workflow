@@ -130,7 +130,7 @@ function isKnownPublicDiscoveryReason(reason: string): boolean {
 
 const knownModelCheckReasons: ReadonlySet<RuntimeBlockReason | 'invalid-request'> = new Set([
   'suite-unavailable', 'runner-unavailable', 'runner-absent', 'runner-start-failed',
-  'runner-exited', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout',
+  'runner-exited', 'runner-request-invalid', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout',
   'environment-missing', 'required-setting-rejected', 'runner-request-too-large',
   'environment-undeclared', 'capability-unsupported', 'model-unavailable',
   'judge-unavailable', 'case-unavailable', 'artifact-unsafe',

@@ -13,6 +13,7 @@ export const WORKBENCH_CLIENT_PREVIEW_SECTION = {
       'suite-unavailable': 'This Eval Suite is unavailable. Refresh the workbench after checking its definition.',
       'runner-unavailable': 'The project runner could not be started. Check its declared file and local setup.',
       'runner-invalid': 'The project runner returned an invalid response.',
+      'runner-request-invalid': 'The runner reported an invalid request. Update it to the current Sibu request contract.',
       'runner-timeout': 'The project runner did not respond in time.',
       'environment-missing': 'A declared runner environment variable is missing.',
       'environment-undeclared': 'The runner requires an environment name not declared by this suite.',

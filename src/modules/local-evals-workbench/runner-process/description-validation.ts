@@ -27,3 +27,11 @@ export function validateEnvelope(event: unknown, requestId: string, type: 'descr
     return { status: 'blocked', reason: 'runner-invalid' };
   return { status: 'ready', value: event.data };
 }
+
+/** Only a validated, fixed diagnostic code may cross the runner process boundary. */
+export function validatedFailureReason(event: unknown, requestId: string): 'runner-request-invalid' | undefined {
+  if (!record(event) || event.protocolVersion !== 1 || event.requestId !== requestId
+    || event.sequence !== 0 || event.type !== 'run-diagnostic' || event.runId !== null
+    || event.caseId !== null || event.attempt !== null || !record(event.data)) return undefined;
+  return event.data.code === 'invalid-request' ? 'runner-request-invalid' : undefined;
+}

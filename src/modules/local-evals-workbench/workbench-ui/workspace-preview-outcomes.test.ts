@@ -172,7 +172,7 @@ function startHarness(response: () => Promise<{ status: number; json(): Promise<
 }
 
 test('every known run-start block uses allowlisted title, explanation, next step and permitted action', async () => {
-  assert.equal(Object.keys(startCopy).length, 38);
+  assert.equal(Object.keys(startCopy).length, 39);
   for (const [reason, copy] of Object.entries(startCopy)) {
     const browser = startHarness(async () => ({ status: 422, json: async () => ({ status: 'blocked', reason, reference,
       issue: { stage: 'run-start', outcome: 'blocked', category: reason, reference,
