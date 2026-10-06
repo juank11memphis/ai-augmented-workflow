@@ -231,8 +231,10 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     if (heading) heading.focus(); else sheetSlot.querySelector('button')?.focus();
   }
   function closeSheet() {
+    const closingCase = Boolean(sheetSlot.querySelector('[data-action="close-detail"]'));
     if (review) { review = null; previewGeneration++; }
     detailGeneration++; resetRepair(); sheetSlot.textContent = '';
+    if (closingCase && typeof closeCaseDetail === 'function') { closeCaseDetail(); sheetReturn = null; return; }
     const target = sheetReturn; sheetReturn = null; target?.focus();
   }
   function trapSheet(event) {
