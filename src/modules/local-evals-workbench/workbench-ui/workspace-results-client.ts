@@ -143,6 +143,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       const metrics = [];
       if (run.finishedAt != null && run.createdAt != null) metrics.push('Elapsed ' + Math.max(0, (run.finishedAt - run.createdAt) / 1000).toFixed(1) + 's');
       if (run.cost != null) metrics.push('Cost ' + run.cost);
+      if (run.testedModel) metrics.unshift('Model: ' + run.testedModel);
       one('[data-run-metrics]').textContent = metrics.join(' · ');
     } else if (acceptedRunId) status('Run queued. Loading saved progress…');
     else if (suite) status('0/' + suite.testCases.length + ' complete');
@@ -155,7 +156,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const rows = visibleCases.map(item => ({ ...item, status: run && !runIds.includes(item.id) ? { state: 'excluded', failed: 0, attempts: [] } : caseStatus(item.id) }))
       .filter(item => (!failuresOnly || item.status.state === 'failed') && item.name.toLowerCase().includes(search.toLowerCase()));
     if (!resultContainer.querySelector?.('.results')) {
-      resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search test cases"></label></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
+      resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search cases"></label></div><div class="result-head" aria-hidden="true"><span>Case</span><span>Result</span><span>Attempts</span></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
     }
     const count = resultContainer.querySelector?.('#results-title small');
     const list = resultContainer.querySelector?.('[data-result-list]');
@@ -163,7 +164,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const failureFilter = resultContainer.querySelector?.('[data-action="failures-only"]');
     if (count) count.textContent = String(rows.length);
     if (failureFilter) failureFilter.checked = failuresOnly;
-    if (list) list.innerHTML = rows.map(item => '<li><button type="button" data-action="case" data-case-id="' + esc(item.id) + '"' + (item.status.attempts.length ? '' : ' disabled') + ' aria-label="' + esc('Open ' + item.name + ', ' + item.status.state + ', ' + item.status.failed + ' failed attempts') + '"><span class="result-icon" aria-hidden="true">' + (item.status.state === 'passed' ? '✓' : item.status.state === 'failed' ? '✕' : '–') + '</span><span><strong>' + esc(item.name) + '</strong><small>' + esc(item.status.state) + ' · ' + item.status.failed + ' failed attempts · ' + item.status.attempts.length + ' attempts</small></span></button></li>').join('');
+    if (list) list.innerHTML = rows.map(item => '<li data-case-status="' + item.status.state + '"><button type="button" data-action="case" data-case-id="' + esc(item.id) + '"' + (item.status.attempts.length ? '' : ' disabled') + '><span class="result-icon" aria-hidden="true">' + (item.status.state === 'passed' ? '✓' : item.status.state === 'failed' ? '✕' : '–') + '</span><span class="result-name"><strong>' + esc(item.name) + '</strong></span><span class="result-status"><span class="result-label">Result: </span>' + esc(item.status.state.replaceAll('-', ' ')) + '</span><span class="result-attempts"><span class="result-label">Attempts: </span>' + item.status.attempts.length + (item.status.failed ? ' · ' + item.status.failed + ' failed' : '') + '</span>' + (item.status.attempts.length ? '<span class="result-open" aria-hidden="true">›</span>' : '') + '</button></li>').join('');
     if (empty) { empty.hidden = rows.length > 0; empty.textContent = search ? 'No test cases match this search.' : failuresOnly ? 'No failed results are visible.' : 'No results yet.'; }
   }
   async function loadHistory() {

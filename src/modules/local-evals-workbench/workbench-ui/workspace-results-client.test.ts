@@ -27,7 +27,7 @@ function browser() {
   const side = { hidden: true, innerHTML: '', querySelector: (selector: string) => selector === 'h2' ? { focus: () => { panelFocus = 'heading'; } } : null,
     setAttribute() {}, removeAttribute() {} };
   const nodes: Record<string, unknown> = {
-    '[data-results-container]': results, '[data-detail]': { innerHTML: '', hidden: false },
+    '[data-results-container]': results, '[data-detail]': { innerHTML: '', hidden: true, querySelector: () => ({ focus() {} }) },
     '[data-side-panel]': side, '[data-suite-title]': { textContent: '' },
     '[data-suite-description]': { textContent: '' }, '[data-action="suite-select"]': { value: '' },
     '[data-action="coverage"]': { hidden: false }, '[data-action="history"]': { hidden: false },
@@ -58,6 +58,8 @@ function browser() {
     setupRegion: { hidden: false, querySelector: () => ({ disabled: false }) },
     isActive: () => context.run?.state === 'running', needsJudge: () => false,
     refreshSetupControls() {}, status() {}, loadDiscovery() {}, loadRuntime() {}, resetRepair() {},
+    repairMarkup: () => '<button data-action="analyze-failure">Analyze failure</button>',
+    selectedFailure: null,
     safeReference: (value: unknown) => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value),
     matchMedia: () => ({ matches: false }),
     json: async (url: string) => url.includes('/status?')
@@ -143,8 +145,8 @@ test('selected-run browser summary uses selected scope, not filtered rows or rec
   page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
   page.api.renderWorkspace();
   assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /1 failed · 1 not finished · 1 excluded/);
-  assert.match(page.list.innerHTML, /2 attempts/);
-  assert.match(page.list.innerHTML, /1 failed attempts/);
+  assert.match(page.list.innerHTML, /Attempts: <\/span>2 · 1 failed/);
+  assert.match(page.list.innerHTML, /Result: <\/span>failed/);
   assert.match(page.list.innerHTML, /excluded/);
   assert.equal((page.context.one('[data-run-metrics]') as { textContent: string }).textContent, '');
   page.edit('Gamma', 3);
@@ -166,7 +168,7 @@ test('browser keeps not-run, running, incomplete, failed, and passed distinct wi
     ] } as never;
   page.api.renderWorkspace();
   assert.match(page.list.innerHTML, /running/);
-  assert.match(page.list.innerHTML, /not-run/);
+  assert.match(page.list.innerHTML, /not run/);
   assert.match(page.list.innerHTML, /passed/);
   assert.doesNotMatch(summary.textContent + page.list.innerHTML + metrics.textContent, /private output/);
   page.context.run = { ...saved, state: 'interrupted', finishedAt: undefined, caseIds: ['alpha', 'beta', 'gamma'],
@@ -175,6 +177,32 @@ test('browser keeps not-run, running, incomplete, failed, and passed distinct wi
   assert.match(page.list.innerHTML, /incomplete/);
   assert.doesNotMatch(page.list.innerHTML, /running/);
   assert.equal(metrics.textContent, '');
+});
+
+test('filtered rows preserve saved outcomes and an inspectable attempt opens existing detail and assistance', async () => {
+  const page = browser();
+  page.context.run = { ...saved, testedModel: 'chosen-model', caseIds: ['alpha', 'beta'], cases: [
+    { caseId: 'alpha', state: 'completed', attempts: [{ number: 1, outcome: 'failed' }] },
+  ] } as never;
+  page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  const evidence = { outcome: 'failed', output: 'private raw', assertions: [], turns: [], tools: [], diagnostics: [] };
+  page.context.json = async () => ({ status: 'ok', value: { evidenceStatus: 'available', evidence } });
+  page.api.renderWorkspace();
+  assert.match(page.list.innerHTML, /data-case-id="alpha"/);
+  assert.match(page.list.innerHTML, /data-case-id="beta" disabled/);
+  assert.match(page.list.innerHTML, /Result: <\/span>failed/);
+  assert.match(page.list.innerHTML, /Result: <\/span>not run/);
+  assert.doesNotMatch(page.list.innerHTML, /private raw/);
+  assert.match((page.context.one('[data-run-metrics]') as { textContent: string }).textContent, /Model: chosen-model/);
+  page.edit('beta', 4);
+  assert.equal(page.count.textContent, '1');
+  assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /1 failed · 1 not finished/);
+  page.edit('', 0);
+  await page.api.inspectCase('alpha', 1);
+  const detail = page.context.one('[data-detail]') as { innerHTML: string; hidden: boolean };
+  assert.equal(detail.hidden, false);
+  assert.match(detail.innerHTML, /data-repair-host aria-label="Guided repair"/);
+  assert.match(detail.innerHTML, /Analyze failure/);
 });
 
 test('polling refresh preserves the exact focused input, query and selection', async () => {
