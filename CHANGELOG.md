@@ -4,6 +4,17 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 1.3.0 - 2026-10-06
+
+### Added
+- carry one failure through safe repair decision (EUX-S04) (#22)
+- focus selected case evidence (EUX-S03) (#21)
+- make run results scannable (EUX-S02) (#20)
+- focus local workbench run preparation (#19)
+
+### Changed
+- verify Story PR sections before review
+
 ## 1.2.0 - 2026-10-05
 
 ### Added
