@@ -47,6 +47,30 @@ test('unavailable credentials and provider errors keep explicit recovery instead
   assert.match(api.markup(), /Fixed\?/);
 });
 
+test('ready analysis separates grounded fields, escapes private evidence, and offers a draft only for a supported direction', async () => {
+  const { api, host, resultRegion } = harness(async () => ({ status: 'analysis-ready', analysisId: 'analysis', analysis: {
+    likelyCause: 'prompt_issue', exactFailureExplanation: '<selected explanation>', evidenceSummary: '<private excerpt>', uncertainty: 'May be nondeterministic',
+  } }));
+  await api.requestRepair('analysis');
+  assert.match(host.innerHTML, /data-analysis-detail aria-label="Analysis for selected failed check"/);
+  assert.match(host.innerHTML, /Analysis · a.*What happened.*&lt;selected explanation&gt;.*Likely cause.*prompt issue.*Evidence.*&lt;private excerpt&gt;.*Uncertainty.*May be nondeterministic.*Draft repair/s);
+  assert.doesNotMatch(host.innerHTML, /<selected explanation>|<private excerpt>|data-analysis-notice/);
+  assert.equal(resultRegion.innerHTML, '<h2>Results</h2><h2>History</h2><p>FAILED ASSERTION / PRIVATE OUTPUT</p>');
+});
+
+test('uncertain or unsupported analysis retains its fields and result without suggesting a safe draft', async () => {
+  for (const cause of ['model_nondeterminism', 'unclear_needs_human_judgment', 'unexpected_direction']) {
+    const { api, host, resultRegion } = harness(async () => ({ status: 'analysis-ready', analysisId: 'analysis', analysis: {
+      likelyCause: cause, exactFailureExplanation: 'Selected failure', evidenceSummary: 'Selected evidence', uncertainty: 'Direction is not established',
+    } }));
+    await api.requestRepair('analysis');
+    assert.match(host.innerHTML, /What happened.*Selected failure.*Evidence.*Selected evidence.*Uncertainty.*Direction is not established/s);
+    assert.match(host.innerHTML, /Review this uncertainty before choosing a repair target/);
+    assert.doesNotMatch(host.innerHTML, /data-action="draft-repair"/);
+    assert.match(resultRegion.innerHTML, /FAILED ASSERTION \/ PRIVATE OUTPUT/);
+  }
+});
+
 test('A to B to A discards both late analysis success and failure', async () => {
   const pending: ((value: unknown) => void)[] = [];
   const { api } = harness(async () => new Promise(resolve => { pending.push(resolve); }));
@@ -75,6 +99,7 @@ test('known provider and invalid-response categories show separate inline remedi
     assert.match(api.markup(), new RegExp(wording));
     assert.match(api.markup(), /data-analysis-notice.*Try analysis again.*data-analysis-issue-details/s);
     assert.doesNotMatch(api.markup(), /PRIVATE OUTPUT|sk-secret|UNTRUSTED/);
+    assert.doesNotMatch(api.markup(), /data-action="draft-repair"/);
   }
 });
 
@@ -88,6 +113,7 @@ test('all blocked analysis categories retain selected evidence and Results/Histo
     assert.match(host.innerHTML, /data-analysis-issue-details/);
     assert.equal(resultRegion.innerHTML, '<h2>Results</h2><h2>History</h2><p>FAILED ASSERTION / PRIVATE OUTPUT</p>');
     assert.doesNotMatch(host.innerHTML, /PRIVATE OUTPUT/);
+    assert.doesNotMatch(host.innerHTML, /data-action="draft-repair"/);
   }
 });
 
@@ -135,9 +161,11 @@ test('copy confirms success and missing clipboard keeps safe details readable', 
 });
 
 test('lost response is a communication failure and cannot imply a provider outcome', async () => {
-  const { api } = harness(async () => { throw Error('private provider body'); });
+  const { api, resultRegion } = harness(async () => { throw Error('private provider body'); });
   await api.requestRepair('analysis');
   assert.match(api.markup(), /couldn&#39;t reach the analysis service|couldn.t reach the analysis service/);
   assert.match(api.markup(), /matching terminal event may not exist/);
   assert.doesNotMatch(api.markup(), /provider body|provider rejected|data-analysis-issue-details/);
+  assert.doesNotMatch(api.markup(), /data-action="draft-repair"/);
+  assert.match(resultRegion.innerHTML, /FAILED ASSERTION \/ PRIVATE OUTPUT/);
 });

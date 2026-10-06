@@ -26,8 +26,8 @@ export const WORKSPACE_CASE_DETAIL_CLIENT = String.raw`
       + attemptChoices + failedChoices
       + (selectedCheck ? '<p class="detail-check-status">Selected check: ' + esc(selectedCheck.id) + ' · ' + esc(selectedCheck.outcome) + '</p>'
         : '<p class="detail-check-status">No failed check in this attempt.</p>')
-      + '<div class="detail-evidence"><section class="detail-section"><h3>What happened</h3><p>' + esc(actual) + '</p></section>'
-      + '<section class="detail-section"><h3>Expected</h3><p>' + esc(expected) + '</p></section></div>'
+      + '<div class="detail-evidence"><section class="detail-section" aria-label="Actual result"><h3>What happened</h3><p>' + esc(actual) + '</p></section>'
+      + '<section class="detail-section" aria-label="Expected result"><h3>Expected</h3><p>' + esc(expected) + '</p></section></div>'
       + (selectedCheck?.score == null && selectedCheck?.threshold == null ? '' : '<p class="detail-score">'
         + (selectedCheck.score == null ? 'Score unavailable' : 'Score ' + esc(selectedCheck.score)) + ' · '
         + (selectedCheck.threshold == null ? 'Threshold unavailable' : 'Threshold ' + esc(selectedCheck.threshold)) + '</p>')

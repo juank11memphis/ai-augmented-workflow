@@ -65,6 +65,14 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (!valid) return null;
     return { copy: proposalGuidance[category], details: 'Stage: proposal\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() };
   }
+  function reviewableProposal(proposal) {
+    return proposal && typeof proposal.proposalId === 'string' && proposal.proposalId.length > 0
+      && Array.isArray(proposal.affectedProjectFiles) && proposal.affectedProjectFiles.length === 1
+      && typeof proposal.affectedProjectFiles[0] === 'string' && proposal.affectedProjectFiles[0].length > 0
+      && ['changeSummary', 'rationale', 'expectedEvalImpact'].every(field => typeof proposal[field] === 'string' && proposal[field].length > 0)
+      && ['unified-diff', 'replacement'].includes(proposal.proposedChange?.kind)
+      && typeof proposal.proposedChange.representation === 'string' && proposal.proposedChange.representation.length > 0;
+  }
   function safeApplyIssue(result) {
     const issue = result?.issue, category = issue?.category;
     const blocked = ['invalid-request', 'missing-approval', 'stale-proposal', 'wrong-project-root', 'unsafe-target', 'unsafe-workflow-readiness'];
@@ -76,7 +84,13 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     return 'Stage: repair-apply\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase();
   }
   function applyOutcome(result) {
-    if (result?.status === 'applied' && Array.isArray(result.changedFiles) && result.rerunRecommendation?.primaryAction) return 'applied';
+    const files = result?.changedFiles;
+    const primary = result?.rerunRecommendation?.primaryAction;
+    if (result?.status === 'applied' && Number.isInteger(result.changedFileCount) && result.changedFileCount > 0
+      && Array.isArray(files) && files.length === result.changedFileCount
+      && files.every(file => typeof file?.path === 'string' && file.path.length > 0)
+      && primary?.scope === 'test_case' && primary.suiteId === selectedFailure?.suiteId
+      && primary.testCaseId === selectedFailure?.testCaseId && typeof primary.evalRunModelId === 'string' && primary.evalRunModelId.length > 0) return 'applied';
     if (result?.status === 'blocked' && result.changedFileCount === 0 && Array.isArray(result.changedFiles) && !result.changedFiles.length &&
       safeApplyIssue(result)) return 'blocked';
     return 'uncertain';
@@ -97,14 +111,23 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     return [...new Set(paths.filter(path => typeof path === 'string' && path.length <= 240 &&
       (path === target || path.startsWith(target + '.sibu-') && !/[\\/\r\n]/.test(path.slice(target.length)))))];
   }
-  const selectionKey = selection => selection ? [selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId].join('|') : '';
+  const selectionKey = selection => selection ? JSON.stringify([selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId]) : '';
+  function currentFailureSelected() {
+    if (!selectedFailure || !latestRun()) return false;
+    if (typeof detailSelection !== 'undefined') {
+      if (!detailSelection || selectionKey(selectedFailure) !== selectionKey({ ...detailSelection, testCaseId: detailSelection.caseId })) return false;
+    }
+    if (typeof selectedRunId !== 'undefined' && selectedFailure.runId !== selectedRunId) return false;
+    if (typeof suite !== 'undefined' && selectedFailure.suiteId !== suite?.id) return false;
+    return true;
+  }
   function resetRepair() {
     repairGeneration++; selectedFailure = null; repairStage = 'idle'; repairAnalysis = null; repairAnalysisId = null;
     repairProposal = null; repairApplied = null; repairMessage = ''; repairPending = false; repairAffectedFiles = []; analysisIssueDetails = null; repairIssueCopy = null;
     proposalIssueCopy = null; proposalIssueDetails = null; proposalAnnouncement = ''; applyIssueDetails = null;
   }
   function repairMarkup() {
-    if (!selectedFailure || !latestRun()) return '';
+    if (!currentFailureSelected()) return '';
     const pending = repairPending ? ' disabled' : '';
     const notice = '<p role="status" aria-live="polite">' + esc(repairMessage) + '</p>';
     if (repairStage === 'idle' || repairStage === 'loading') return '<h3 tabindex="-1">Fix one failure</h3><p>Selected failed check: ' + esc(selectedFailure.assertionId) + '</p><button type="button" data-action="analyze-failure"' + pending + '>Analyze failure</button>' + notice;
@@ -118,8 +141,13 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (repairStage === 'analysis' || repairStage === 'proposal-error') {
       const analysis = repairAnalysis;
       const cause = analysis?.likelyCause || 'unclear_needs_human_judgment';
-      const canDraft = cause !== 'model_nondeterminism' && cause !== 'unclear_needs_human_judgment';
-      const analysisHtml = '<h3 tabindex="-1">AI analysis</h3><p>' + esc(analysis?.exactFailureExplanation || '') + '</p><p>Likely cause: ' + esc(cause.replaceAll('_', ' ')) + '</p><p>Evidence: ' + esc(analysis?.evidenceSummary || '') + '</p><p>Uncertainty: ' + esc(analysis?.uncertainty || '') + '</p>';
+      const canDraft = ['prompt_issue', 'eval_assertion_issue', 'fixture_input_issue'].includes(cause);
+      const analysisHtml = '<section class="detail-section" data-analysis-detail aria-label="Analysis for selected failed check">'
+        + '<h3 tabindex="-1">Analysis · ' + esc(selectedFailure.assertionId) + '</h3>'
+        + '<h4>What happened</h4><p>' + esc(analysis?.exactFailureExplanation || '') + '</p>'
+        + '<h4>Likely cause</h4><p>' + esc(cause.replaceAll('_', ' ')) + '</p>'
+        + '<h4>Evidence</h4><p>' + esc(analysis?.evidenceSummary || '') + '</p>'
+        + '<h4>Uncertainty</h4><p>' + esc(analysis?.uncertainty || '') + '</p></section>';
       if (repairStage === 'proposal-error') {
         const [title, explanation, nextStep, action] = proposalIssueCopy;
         return analysisHtml + '<section class="model-notice detail-section" data-proposal-notice aria-label="Repair Proposal"><h3 tabindex="-1" data-proposal-heading>' + esc(title) + '</h3><p>' + esc(explanation + ' ' + nextStep) + '</p>'
@@ -133,10 +161,10 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       const proposal = repairProposal;
       const change = proposal?.proposedChange;
       const canApply = repairStage === 'proposal';
-      return '<h3 tabindex="-1">Proposed repair</h3><p>1 file: ' + esc(proposal?.affectedProjectFiles?.[0] || '') + '</p><p>' + esc(proposal?.changeSummary || '') + '</p>'
-        + '<section class="detail-section" aria-label="Exact proposed change"><h4>' + esc(change?.kind === 'unified-diff' ? 'Proposed diff' : 'Proposed replacement') + '</h4><pre>' + esc((change?.representation || '').split('\n').slice(0, 5).join('\n')) + '</pre><details><summary>' + (change?.kind === 'unified-diff' ? 'Show full diff' : 'Show full replacement') + '</summary><pre>' + esc(change?.representation || '') + '</pre></details></section>'
+      return '<section class="repair-proposal" aria-label="Proposed repair"><h3 tabindex="-1">Proposed repair</h3><p><strong>File</strong> ' + esc(proposal?.affectedProjectFiles?.[0] || '') + '</p><p>' + esc(proposal?.changeSummary || '') + '</p>'
+        + '<section class="detail-section" aria-label="Exact proposed change"><h4>Change preview</h4><pre aria-label="Proposed change preview">' + esc((change?.representation || '').split('\n').slice(0, 5).join('\n')) + '</pre><details><summary>Show full change</summary><pre aria-label="Full proposed change">' + esc(change?.representation || '') + '</pre></details></section>'
         + '<h4>Rationale</h4><p>' + esc(proposal?.rationale || '') + '</p><h4>Expected impact</h4><p>' + esc(proposal?.expectedEvalImpact || '') + '</p>'
-        + (canApply ? '<button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button><button type="button" data-action="reject-repair"' + pending + '>Not now</button>' + notice : '')
+        + (canApply ? '<div class="repair-decisions"><button type="button" data-action="reject-repair"' + pending + '>Not now</button><button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button></div>' + notice : '')
         + (canApply ? '' : '<section class="model-notice detail-section" data-apply-notice aria-label="Repair Proposal"><h4 tabindex="-1" data-apply-heading>'
           + (repairStage === 'apply-blocked' ? 'Repair blocked' : 'Repair outcome not confirmed') + '</h4><p>' + esc(repairMessage) + '</p>'
           + '<span class="live" role="status" data-apply-announcement>' + esc(repairMessage ? repairStage === 'apply-blocked' ? 'Repair blocked' : 'Repair outcome not confirmed' : '') + '</span>'
@@ -144,14 +172,18 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
           + '</section>')
         + (applyIssueDetails ? '<pre data-apply-issue-details>' + esc(applyIssueDetails) + '</pre><button type="button" data-action="copy-apply-issue">Copy issue details</button><p data-apply-copy-status></p>' : '')
         + (repairAffectedFiles.length ? '<section data-repair-files aria-label="Files to inspect"><h4 tabindex="-1" data-repair-files-heading>Files to inspect</h4><ul>'
-          + repairAffectedFiles.map(path => '<li>' + esc(path) + '</li>').join('') + '</ul></section>' : '');
+          + repairAffectedFiles.map(path => '<li>' + esc(path) + '</li>').join('') + '</ul></section>' : '') + '</section>';
     }
-    return '<h3 tabindex="-1">Repair applied</h3><p>The result is not verified until you rerun the eval.</p><ul>'
+    const suiteRerun = repairApplied?.rerunRecommendation?.alternateActions?.some(action => action.scope === 'suite'
+      && action.suiteId === selectedFailure.suiteId && typeof action.evalRunModelId === 'string' && action.evalRunModelId.length > 0);
+    return '<h3 tabindex="-1">Repair applied</h3><p>Changed files:</p><p>The result is not verified until you rerun the eval.</p><ul>'
       + (repairApplied?.changedFiles || []).map(file => '<li>' + esc(file.path) + ' — ' + esc(file.summary || '') + '</li>').join('') + '</ul>'
-      + '<button class="primary" type="button" data-action="rerun-case">Rerun this case</button><button type="button" data-action="rerun-suite">Rerun all cases</button>' + notice;
+      + '<button class="primary" type="button" data-action="rerun-case">Rerun this case</button>'
+      + (suiteRerun ? '<button type="button" data-action="rerun-suite">Rerun all cases</button>' : '') + notice;
   }
   function renderRepair() {
     const activeAction = document.activeElement?.dataset?.action;
+    const initiatedRepair = ['analyze-failure', 'draft-repair', 'approve-repair', 'reject-repair'].includes(activeAction);
     const hosts = [...document.querySelectorAll('[data-repair-host]')];
     const activeHost = hosts.find(node => node.closest?.('[role="dialog"]')) || hosts[0];
     hosts.forEach(node => {
@@ -163,15 +195,17 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     });
     const shouldFocusNotice = proposalAnnouncement && activeAction === 'draft-repair' && !activeHost?.querySelector?.('[data-action="draft-repair"]');
     const shouldFocusApply = activeAction === 'approve-repair' && repairStage !== 'proposal' && !repairPending;
+    const shouldFocusProposal = activeAction === 'draft-repair' && repairStage === 'proposal' && !repairPending;
     proposalAnnouncement = '';
-    if (activeAction) {
+    if (initiatedRepair) {
       const next = shouldFocusApply ? activeHost?.querySelector?.('[data-apply-heading]') : shouldFocusNotice ? activeHost?.querySelector?.('[data-proposal-heading]')
+        : shouldFocusProposal ? activeHost?.querySelector?.('.repair-proposal h3')
         : activeHost?.querySelector?.('[data-action="' + activeAction + '"]') || activeHost?.querySelector?.('h3');
       next?.focus?.();
     }
   }
   async function requestRepair(kind) {
-    if (!selectedFailure || repairPending || !latestRun()) return;
+    if (!currentFailureSelected() || repairPending) return;
     const current = { ...selectedFailure }, key = selectionKey(current), generation = ++repairGeneration;
     repairPending = true; repairMessage = kind === 'analysis' ? 'Analyzing the selected check…' : kind === 'proposal' ? 'Drafting one-file repair…' : 'Checking approval and file state…';
     if (kind === 'analysis') { repairStage = 'loading'; analysisIssueDetails = null; repairIssueCopy = null; }
@@ -181,7 +215,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       let result;
       if (kind === 'analysis') result = await post('/api/failure-analysis', current);
       else if (kind === 'proposal') {
-        if (!['analysis', 'proposal-error', 'apply-blocked', 'apply-uncertain'].includes(repairStage) || !repairAnalysis) return;
+        if (!['analysis', 'proposal-error', 'apply-blocked'].includes(repairStage) || !repairAnalysis) return;
         const cause = repairAnalysis.likelyCause;
         const direction = ['prompt_issue', 'eval_assertion_issue', 'fixture_input_issue'].includes(cause) ? cause : null;
         if (!direction) { repairMessage = 'A named repair direction is unavailable for this analysis.'; return; }
@@ -192,7 +226,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
           testCaseId: current.testCaseId, attempt: current.attempt, assertionId: current.assertionId,
           proposalId: repairProposal.proposalId, approvalMarker: 'approve-concrete-repair-proposal' });
       }
-      if (generation !== repairGeneration || selectionKey(selectedFailure) !== key || !latestRun()) return;
+      if (generation !== repairGeneration || selectionKey(selectedFailure) !== key || !currentFailureSelected()) return;
       if (kind === 'analysis' && result.status === 'analysis-ready') { repairAnalysis = result.analysis; repairAnalysisId = result.analysisId; repairStage = 'analysis'; repairMessage = ''; }
       else if (kind === 'analysis') {
         const safe = safeAnalysisIssue(result);
@@ -201,10 +235,10 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         repairStage = result.status === 'analysis-unavailable' ? 'unavailable' : 'retryable-error';
         repairMessage = repairIssueCopy[0];
       }
-      else if (kind === 'proposal' && result.status === 'proposal-ready') { repairProposal = result.proposal; proposalIssueCopy = null; proposalIssueDetails = null; repairStage = 'proposal'; repairMessage = ''; }
+      else if (kind === 'proposal' && result?.status === 'proposal-ready' && reviewableProposal(result.proposal)) { repairProposal = result.proposal; proposalIssueCopy = null; proposalIssueDetails = null; repairStage = 'proposal'; repairMessage = ''; }
       else if (kind === 'proposal') {
         const safe = safeProposalIssue(result);
-        proposalIssueCopy = safe?.copy || proposalGuidance['unknown-cause'];
+        proposalIssueCopy = safe?.copy || ['Proposal response invalid', 'Sibu could not display this draft safely.', 'Review the selected analysis, then try drafting again.', 'draft'];
         proposalIssueDetails = safe?.details || null;
         repairProposal = null; repairStage = 'proposal-error'; repairMessage = '';
         proposalAnnouncement = proposalIssueCopy[0];
@@ -219,7 +253,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       }
       else repairMessage = result.message || result.reason || 'This step is unavailable. Review the selected evidence and try again.';
     } catch {
-      if (generation === repairGeneration && selectionKey(selectedFailure) === key) {
+      if (generation === repairGeneration && selectionKey(selectedFailure) === key && currentFailureSelected()) {
         if (kind === 'analysis') {
           repairStage = 'retryable-error'; repairIssueCopy = ['Analysis unavailable', "Sibu couldn't reach the analysis service.", 'Check the connection, then try analysis again. A matching terminal event may not exist.'];
           repairMessage = 'Analysis connection failed';
@@ -233,7 +267,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         if (kind === 'apply') repairMessage = 'Sibu could not confirm whether the approved change was applied. The connection failed; a matching terminal event may not exist.';
       }
     } finally {
-      if (generation === repairGeneration && selectionKey(selectedFailure) === key) { repairPending = false; renderRepair(); }
+      if (generation === repairGeneration && selectionKey(selectedFailure) === key && currentFailureSelected()) { repairPending = false; renderRepair(); }
     }
   }
   async function rerunAfterRepair(scope) {
@@ -292,7 +326,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (target.dataset.action === 'analyze-failure') void requestRepair('analysis');
     if (target.dataset.action === 'draft-repair') void requestRepair('proposal');
     if (target.dataset.action === 'approve-repair') void requestRepair('apply');
-    if (target.dataset.action === 'reject-repair') { repairGeneration++; repairProposal = null; repairStage = 'analysis'; repairMessage = 'Proposal set aside. The selected evidence remains available.'; renderRepair(); }
+    if (target.dataset.action === 'reject-repair' && repairStage === 'proposal' && currentFailureSelected()) { repairGeneration++; repairProposal = null; repairStage = 'analysis'; repairMessage = 'Proposal set aside. The selected evidence remains available.'; renderRepair(); }
     if (target.dataset.action === 'rerun-case') void rerunAfterRepair('case');
     if (target.dataset.action === 'rerun-suite') void rerunAfterRepair('suite');
   });

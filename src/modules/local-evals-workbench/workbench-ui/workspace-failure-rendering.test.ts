@@ -69,6 +69,31 @@ test('proposal notice remains in existing result detail across phone, tablet, an
   assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\)\{.*?\.suite-rail\{display:block;grid-column:1;grid-row:1\/4\}.*?\[data-results-container\]\{grid-column:2\/4\}\.workspace:has\(\[data-detail\]:not\(\[hidden\]\)\) \[data-results-container\]\{grid-column:2\}\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
 });
 
+test('focused evidence and repair stay labeled, disclosed, and contained at each breakpoint', () => {
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /aria-label="Actual result".*aria-label="Expected result"/s);
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>All checks/);
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>Diagnostics and trace/);
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>Bounded raw response/);
+  assert.match(WORKSPACE_REPAIR_CLIENT, /<details><summary>Show full change<\/summary><pre aria-label="Full proposed change">/);
+  assert.match(WORKSPACE_STYLES, /\.detail-evidence>section,\[data-repair-host\],\.repair-proposal.*max-width:100%/);
+  assert.match(WORKSPACE_STYLES, /\.repair-proposal pre,\.detail-secondary pre\{width:100%;max-width:100%;overflow:auto/);
+  assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\).*\.sheet:has\(\[data-action="close-detail"\]\).*width:100vw/s);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:2\}/s);
+  assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
+  assert.match(WORKSPACE_RESULTS_CLIENT, /function closeCaseDetail\(\).*?returnToResult\(\)/s);
+});
+
+test('a long selected output is escaped inside the bounded evidence region', () => {
+  const render = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + ';renderCaseDetail', { esc: escape, repairMarkup: () => '' }) as (value: unknown) => string;
+  const longOutput = '<private>' + 'folder/'.repeat(150);
+  const html = render({ suiteName: 'Suite', runId: 'run', caseId: 'case', caseName: 'Case', attempt: 1,
+    attempts: [{ number: 1, outcome: 'failed' }], evidence: { outcome: 'failed', assertions: [], diagnostics: [],
+      turns: [], tools: [], output: longOutput }, selectedCheck: null, latest: true });
+  assert.match(html, /class="detail-evidence".*aria-label="Actual result".*&lt;private&gt;/s);
+  assert.doesNotMatch(html, /<private>/);
+  assert.match(html, /<details class="detail-section"><summary>Bounded raw response<\/summary>/);
+});
+
 test('deferred selected evidence cannot resurrect old case detail or assistance after case, run, or suite selection', async () => {
   for (const change of ['case', 'run', 'suite'] as const) {
     const detail = { innerHTML: '', hidden: true, querySelector: () => ({ focus() {} }) };
