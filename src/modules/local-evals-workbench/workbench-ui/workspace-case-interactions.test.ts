@@ -172,7 +172,9 @@ test('each suite, run, case, attempt, and assertion change discards assistance b
         url.includes('assertionId=other') ? 'other' : 'failed'), false, async (url, body) => {
       calls.push({ url, body });
       return url.includes('failure-analysis') ? { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue' } }
-        : { status: 'proposal-ready', proposal: { proposalId: 'old', affectedProjectFiles: ['prompts/agent.md'], proposedChange: { representation: 'OLD PROPOSAL' } } };
+        : { status: 'proposal-ready', proposal: { proposalId: 'old', affectedProjectFiles: ['prompts/agent.md'],
+          changeSummary: 'OLD PROPOSAL', rationale: 'Selected failure needs repair.', expectedEvalImpact: 'Selected check should pass.',
+          proposedChange: { kind: 'unified-diff', representation: 'OLD PROPOSAL' } } };
     });
     await app.api.inspectCase('a', 1, 'failed');
     await app.api.requestRepair('analysis');
@@ -181,6 +183,8 @@ test('each suite, run, case, attempt, and assertion change discards assistance b
       evalRunModelId: 'model', runScope: { type: 'all' },
     });
     await app.api.requestRepair('proposal');
+    assert.equal(app.api.state().repairStage, 'proposal', change);
+    assert.match(app.api.markup(), /OLD PROPOSAL/, change);
     assert.match(app.api.markup(), /Approve and apply/);
     if (change === 'suite') {
       app.context.suites = [{ ...app.context.suite }, { id: 'next', name: 'Next', testCases: [] }];
