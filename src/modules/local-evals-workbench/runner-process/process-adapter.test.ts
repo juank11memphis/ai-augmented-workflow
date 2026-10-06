@@ -14,7 +14,7 @@ const suite: NormalizedEvalSuite = {
   runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: ['TEST_KEY'] },
   testCases: [{ id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Hi' } }], toolMocks: [], assertions: [{ id: 'contains', type: 'output-contains', expected: 'Hi' }], graders: [] }],
 };
-const data = { runnerId: 'fake', capabilities: ['single-turn'], models: ['fake/target'], judgeModels: [], requiredEnvironment: ['TEST_KEY'], costEstimation: true };
+const data = { runnerId: 'fake', capabilities: ['single-turn'], models: ['fake/target'], judgeModels: [], requiredEnvironment: ['TEST_KEY'] };
 const event = (requestId: string, type = 'description', body: unknown = data): string =>
   JSON.stringify({ protocolVersion: 1, requestId, sequence: 0, type, runId: null, caseId: null, attempt: null, data: body }) + '\n';
 async function fixture(source: string, run: (root: string) => Promise<void>): Promise<void> {
@@ -28,16 +28,13 @@ async function fixture(source: string, run: (root: string) => Promise<void>): Pr
 const validRunner = `let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => {
   const request = JSON.parse(input);
   if (process.env.SIBU_EVAL_MODE !== '1' || process.env.UNRELATED_SENTINEL) process.exit(9);
-  process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,type:request.operation==='describe'?'description':'estimate',runId:null,caseId:null,attempt:null,data:request.operation==='describe'?${JSON.stringify(data)}:{targetCalls:1,judgeCalls:0,totalCalls:1,cost:{status:'available',amount:0.01,currency:'USD'}}})+'\\n');
+  process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,type:'description',runId:null,caseId:null,attempt:null,data:${JSON.stringify(data)}})+'\\n');
 });`;
-test('describe and estimate use declared environment, cwd and protocol without model calls', async () => {
+test('describe uses declared environment, cwd and protocol without model calls', async () => {
   await fixture(validRunner, async (root) => {
     const adapter = new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS, { PATH: process.env.PATH, TEST_KEY: 'secret-123', UNRELATED_SENTINEL: 'not-forwarded' });
     const description = await adapter.describe(suite);
     assert.equal(description.status, 'ready', JSON.stringify(description));
-    const estimate = await adapter.estimate(suite, { model: 'fake/target', judgeModel: null, testCases: suite.testCases });
-    assert.equal(estimate.status, 'ready');
-    if (estimate.status === 'ready') assert.equal(estimate.value.totalCalls, 1);
   });
 });
 test('missing environment, invalid event, crash, timeout and oversized output block safely', async () => {
@@ -114,7 +111,7 @@ test('a validated runner rejection survives a nonzero exit without exposing runn
     const logs: unknown[] = [];
     const adapter = new ProjectRunnerProcessAdapter(root, PREVIEW_PROCESS_LIMITS,
       { PATH: process.env.PATH, TEST_KEY: 'private-value' }, { record: entry => logs.push(entry) });
-    const result = await adapter.estimate(suite, { model: 'fake/target', judgeModel: null, testCases: suite.testCases });
+    const result = await adapter.describe(suite);
     assert.deepEqual(result, { status: 'blocked', reason: 'runner-request-invalid' });
     assert.match(JSON.stringify(logs), /runner-request-invalid/);
     assert.doesNotMatch(JSON.stringify({ result, logs }), /private-value|\/private\/runner/);

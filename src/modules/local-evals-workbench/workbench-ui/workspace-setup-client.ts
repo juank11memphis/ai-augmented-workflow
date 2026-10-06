@@ -1,5 +1,5 @@
 import { startCopy as safeStartCopy } from '../start-local-evals-workbench/public-issue.js';
-import { WORKSPACE_RUN_REVIEW_CLIENT } from './workspace-run-review-client.js';
+import { WORKSPACE_RUN_START_CLIENT } from './workspace-run-start-client.js';
 
 export const WORKSPACE_SETUP_CLIENT = String.raw`
   const root = document.querySelector('[data-workspace]');
@@ -8,12 +8,11 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   const suites = discovery.suites || [];
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   let suite = suites[0] || null;
-  let run = null, history = [], selectedRunId = null, latestKnownRunId = null, acceptedRunId = null, runtime = null, review = null;
-  let runGeneration = 0, historyGeneration = 0, detailGeneration = 0, runtimeGeneration = 0, previewGeneration = 0;
+  let run = null, history = [], selectedRunId = null, latestKnownRunId = null, acceptedRunId = null, runtime = null;
+  let runGeneration = 0, historyGeneration = 0, detailGeneration = 0, runtimeGeneration = 0;
   let strictRuntimeChoices = false;
   let runtimeState = 'loading', runtimeMessage = 'Loading compatible models…';
   let modelIssue = null;
-  let previewIssueDetails = null;
   let setup = { scope: 'all', caseId: '', model: '', judgeModel: '' };
   let sheetReturn = null, startPending = false, startUncertain = false, startReference = null, startSuiteId = null, activePanel = null;
   let startIssueDetails = null;
@@ -110,7 +109,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     const detail = notice.querySelector('[data-start-details]');
     detail.textContent = details || ''; detail.hidden = !details;
     notice.querySelector('[data-action="copy-start-issue"]').hidden = !details;
-    notice.querySelector('[data-action="review-start-again"]').hidden = action !== 'retry';
+    notice.querySelector('[data-action="retry-start"]').hidden = action !== 'retry';
     notice.querySelector('[data-action="open-history"]').hidden = action !== 'history';
     notice.querySelector('[data-start-copy-status]').textContent = '';
     notice.hidden = false;
@@ -123,84 +122,6 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       issue.category !== payload.reason || issue.recoveryAction !== copy.recoveryAction || !safeReference(issue.reference) ||
       !safeReference(payload.reference) || issue.reference.toLowerCase() !== payload.reference.toLowerCase()) return null;
     return { copy, details: 'Stage: run-start\nOutcome: blocked\nCategory: ' + issue.category + '\nReference: ' + issue.reference.toLowerCase() };
-  }
-  const previewStages = { selection: 'selection', description: 'runner description', 'artifact-readiness': 'artifact readiness', 'resolved-inputs': 'suite inputs', estimation: 'cost estimation' };
-  const previewGuidance = {
-    'suite-unavailable': 'Check the suite definition, then preview again.',
-    'runner-unavailable': 'Check the runner command, then preview again.',
-    'runner-absent': 'Install or correct the runner command, then preview again.',
-    'runner-start-failed': 'Check the runner command and permissions, then preview again.',
-    'runner-exited': 'Check the runner operation, then preview again.',
-    'runner-request-invalid': 'Update the runner to the current Sibu request contract, then preview again.',
-    'runner-protocol-invalid': 'Check runner compatibility, then preview again.',
-    'runner-invalid': 'Check the runner output format, then preview again.',
-    'runner-timeout': 'Check that the runner is working, then preview again.',
-    'environment-missing': 'Add or export the required setting, restart Sibu Evals, then preview again.',
-    'required-setting-rejected': 'Fix the suite required settings, then preview again.',
-    'runner-request-too-large': 'Copy issue details and report the problem.',
-    'environment-undeclared': 'Declare the required setting in the suite, then preview again.',
-    'capability-unsupported': 'Review suite and runner support, then preview again.',
-    'model-unavailable': 'Choose a compatible model, then preview again.',
-    'judge-unavailable': 'Choose a compatible judge model, then preview again.',
-    'case-unavailable': 'Review the suite cases, then preview again.',
-    'artifact-unsafe': 'Correct the artifact location, then preview again.',
-    'artifact-not-ignored': 'Ignore the artifact location, then preview again.',
-    'artifact-tracked': 'Move artifacts away from tracked files, then preview again.',
-    'artifact-git-unavailable': 'Check Git access, then preview again.',
-    'artifact-root-unsafe': 'Correct the artifact root, then preview again.',
-    'estimate-invalid': 'Check the runner estimate response, then preview again.',
-    'input-unsafe': 'Review runner setup and request size, then preview again.',
-    'invalid-request': 'Correct the preview request, then preview again.',
-  };
-  const previewCause = {
-    'suite-unavailable': 'The selected suite is unavailable', 'runner-unavailable': 'The runner is unavailable',
-    'runner-absent': 'The runner was not found', 'runner-start-failed': 'The runner could not start',
-    'runner-exited': 'The runner exited without a usable diagnostic; cause unknown', 'runner-request-invalid': 'The runner reported an invalid preview request', 'runner-protocol-invalid': 'The runner protocol was invalid',
-    'runner-invalid': 'The runner response was unusable', 'runner-timeout': 'The runner timed out',
-    'environment-missing': 'A required setting is missing', 'required-setting-rejected': 'A required setting was rejected',
-    'runner-request-too-large': 'The runner request was too large', 'environment-undeclared': 'A runner setting is undeclared',
-    'capability-unsupported': 'A selected capability is unsupported', 'model-unavailable': 'The model is unavailable',
-    'judge-unavailable': 'The Judge model is unavailable', 'case-unavailable': 'A selected case is unavailable',
-    'artifact-unsafe': 'The artifact location is unsafe',
-    'artifact-not-ignored': 'The artifact location is not ignored', 'artifact-tracked': 'The artifact location contains tracked files',
-    'artifact-git-unavailable': 'Artifact safety could not be checked', 'artifact-root-unsafe': 'The artifact root is unsafe',
-    'estimate-invalid': 'The runner estimate was unusable', 'input-unsafe': 'Older preview input was rejected without a precise cause',
-    'invalid-request': 'The preview request was invalid',
-  };
-  function clearPreviewNotice() {
-    previewIssueDetails = null;
-    const notice = one('[data-preview-notice]');
-    if (notice) notice.hidden = true;
-  }
-  function showPreviewNotice(title, guidance, details = null) {
-    const notice = one('[data-preview-notice]');
-    if (!notice) return;
-    previewIssueDetails = details;
-    notice.querySelector('[data-preview-heading]').textContent = title;
-    notice.querySelector('[data-preview-guidance]').textContent = guidance;
-    const detailNode = notice.querySelector('[data-preview-details]');
-    detailNode.textContent = details || '';
-    detailNode.hidden = !details;
-    notice.querySelector('[data-action="copy-preview-issue"]').hidden = !details;
-    notice.querySelector('[data-preview-copy-status]').textContent = '';
-    notice.hidden = false;
-    one('[data-setup-status]').textContent = title;
-    notice.querySelector('[data-preview-heading]').focus();
-  }
-  function previewFailure(result) {
-    const issue = result?.issue;
-    const blocked = result?.status === 'blocked';
-    const failed = result?.status === 'error';
-    const valid = issue?.stage === 'preview' && issue.outcome === (blocked ? 'blocked' : 'failed') &&
-      (blocked || failed) && safeReference(issue.reference) &&
-      (issue.observedStage === undefined || Object.hasOwn(previewStages, issue.observedStage)) &&
-      (result.stage === undefined || result.stage === issue.observedStage);
-    const category = valid && blocked && issue.category === result.reason && Object.hasOwn(previewGuidance, issue.category)
-      ? issue.category : valid && failed && issue.category === 'unknown' ? 'unknown' : null;
-    const stage = valid && issue.observedStage ? previewStages[issue.observedStage] : 'preview';
-    const details = category ? 'Stage: preview\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase() : null;
-    if (category && category !== 'unknown') showPreviewNotice('Preview blocked', 'Blocked during ' + stage + ': ' + previewCause[category] + '. ' + previewGuidance[category], details);
-    else showPreviewNotice('Preview could not finish', 'Cause unknown during ' + stage + '. Preview again; if it repeats, check local diagnostics.', details);
   }
   function modelNotice(payload, reason = payload?.reason) {
     const category = Object.hasOwn(modelCopy, reason) ? reason : 'unknown';
@@ -233,7 +154,6 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   function closeSheet() {
     const closingCase = Boolean(sheetSlot.querySelector('[data-action="close-detail"]'));
-    if (review) { review = null; previewGeneration++; }
     detailGeneration++; resetRepair(); sheetSlot.textContent = '';
     if (closingCase && typeof closeCaseDetail === 'function') { closeCaseDetail(); sheetReturn = null; return; }
     const target = sheetReturn; sheetReturn = null; target?.focus();
@@ -256,7 +176,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     return '<fieldset><legend>Run scope</legend><label><input type="radio" name="scope" value="all"' + (setup.scope === 'all' ? ' checked' : '') + '> All ' + esc(suite?.testCases.length || 0) + ' cases</label><label><input type="radio" name="scope" value="one"' + (setup.scope === 'one' ? ' checked' : '') + '> One case</label></fieldset>'
       + '<label class="field" data-case-field' + (setup.scope === 'one' ? '' : ' hidden') + '>Test case<select data-field="case">' + cases + '</select></label>'
       + (runtimeState === 'blocked'
-        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p>Review run unavailable</p><p role="status" data-model-copy-status></p></div></div>'
+        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p>Start run unavailable</p><p role="status" data-model-copy-status></p></div></div>'
         : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
       + '<details><summary>Model support</summary><p>Tests can use models supported by this suite. Sibu\'s built-in analysis and repair help currently uses OpenAI. More providers are planned.</p></details>'
       + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '');
@@ -264,9 +184,8 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   function showSetup() {
     if (!suite || isActive() || startPending || startUncertain) return;
     resetRepair();
-    review = null; previewGeneration++;
     if (sheetSlot.querySelector('[role="dialog"]')) closeSheet();
-    setupRegion.querySelector('[data-action="review"]')?.focus();
+    setupRegion.querySelector('[data-action="start"]')?.focus();
   }
   function refreshSetupControls() {
     const fields = setupRegion?.querySelector('[data-setup-fields]');
@@ -275,24 +194,20 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     const selector = focused?.name === 'scope' ? 'input[name="scope"][value="' + setup.scope + '"]'
       : focused?.dataset?.field ? '[data-field="' + focused.dataset.field + '"]' : null;
     fields.innerHTML = setupMarkup();
-    const reviewAction = setupRegion.querySelector('[data-action="review"]');
-    if (reviewAction) reviewAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
+    const startAction = setupRegion.querySelector('[data-action="start"]');
+    if (startAction) startAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
     if (selector) fields.querySelector(selector)?.focus();
   }
   function readSetup() {
     const judge = setupRegion.querySelector('[data-field="judge"]');
     setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel };
-    if (review && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
-    review = null; previewGeneration++;
-    clearPreviewNotice();
-    const reviewAction = setupRegion.querySelector('[data-action="review"]');
-    if (reviewAction) reviewAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
+    const startAction = setupRegion.querySelector('[data-action="start"]');
+    if (startAction) startAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
   }
   async function loadRuntime(userRetry = false) {
     if (!suite) return;
     const current = suite.id, generation = ++runtimeGeneration, hadModel = Boolean(setup.model), hadJudge = Boolean(setup.judgeModel);
-    if (review && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
-    runtime = null; review = null; modelIssue = null; previewGeneration++; clearPreviewNotice();
+    runtime = null; modelIssue = null;
     setRuntimeState('loading', 'Loading compatible models…');
     refreshSetupControls();
     try {
@@ -304,13 +219,13 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       if (!(payload.models || []).includes(setup.model)) setup.model = strictRuntimeChoices || hadModel ? '' : payload.models[0];
       if (!(payload.judgeModels || []).includes(setup.judgeModel)) setup.judgeModel = strictRuntimeChoices || hadJudge ? '' : payload.judgeModels?.[0] || '';
       setRuntimeState('ready', (strictRuntimeChoices || hadModel || hadJudge) && (!setup.model || needsJudge() && !setup.judgeModel)
-        ? 'Previous model choice is unavailable. Choose compatible models before review.' : 'Compatible models ready.');
-      if (strictRuntimeChoices && (!setup.model || needsJudge() && !setup.judgeModel)) status('Previous model choice is unavailable. Choose compatible models before review.');
+        ? 'Previous model choice is unavailable. Choose compatible models before starting.' : 'Compatible models ready.');
+      if (strictRuntimeChoices && (!setup.model || needsJudge() && !setup.judgeModel)) status('Previous model choice is unavailable. Choose compatible models before starting.');
       strictRuntimeChoices = false;
       refreshSetupControls();
     } catch { if (suite?.id === current && generation === runtimeGeneration) { modelIssue = { guidance: 'Cause unknown. The model check received no response. Check the connection and try again. A matching terminal event may not exist.', details: null }; setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); } }
   }
-  ${WORKSPACE_RUN_REVIEW_CLIENT}
+  ${WORKSPACE_RUN_START_CLIENT}
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
     if (target.dataset.action === 'copy-issue' && copyableIssue) {
@@ -332,15 +247,6 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
           () => { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the issue details above instead.'; });
       } catch { const node = feedback(); if (node) node.textContent = 'Copy failed. Select the issue details above instead.'; }
     }
-    if (target.dataset.action === 'copy-preview-issue' && previewIssueDetails) {
-      const details = previewIssueDetails;
-      const feedback = message => { const node = one('[data-preview-copy-status]'); if (node && details === previewIssueDetails) node.textContent = message; };
-      try {
-        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
-        Promise.resolve(navigator.clipboard.writeText(details)).then(() => feedback('Issue details copied.'),
-          () => feedback('Copy failed. Select the issue details above instead.'));
-      } catch { feedback('Copy failed. Select the issue details above instead.'); }
-    }
     if (target.dataset.action === 'copy-start-issue' && startIssueDetails) {
       const details = startIssueDetails;
       const feedback = message => { const node = one('[data-start-copy-status]'); if (node && details === startIssueDetails) node.textContent = message; };
@@ -351,12 +257,10 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       } catch { feedback('Copy failed. Select the issue details above instead.'); }
     }
     if (target.dataset.action === 'open-history') { closeSheet(); renderHistory(); focusPanel(); void loadHistory(); }
-    if (target.dataset.action === 'review-start-again') { one('[data-start-notice]').hidden = true; showSetup(); }
+    if (target.dataset.action === 'retry-start') { one('[data-start-notice]').hidden = true; showSetup(); }
     if (target.dataset.action === 'retry-model') void loadRuntime(true);
     if (target.dataset.action === 'copy-prompt') { navigator.clipboard?.writeText('Create production-ready Sibu evals for this project.').then(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Prompt copied.'; }).catch(() => { const node = one('[data-copy-status]'); if (node) node.textContent = 'Copy failed. Select the prompt text instead.'; }); }
     if (target.dataset.action === 'close-sheet') closeSheet();
-    if (target.dataset.action === 'review') void showReview();
-    if (target.dataset.action === 'back-setup') showSetup();
     if (target.dataset.action === 'start') void startRun();
   });
   document.addEventListener('keydown', event => { if (sheetSlot.querySelector('[role="dialog"]')) trapSheet(event); });

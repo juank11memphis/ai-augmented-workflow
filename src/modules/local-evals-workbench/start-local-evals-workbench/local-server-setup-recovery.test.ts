@@ -29,7 +29,7 @@ process.stdin.on('end', () => {
     process.stdout.write('invalid runner output\\n');
     return;
   }
-  if (mode === 'reject-estimate' && request.operation === 'estimate') {
+  if (mode === 'reject-describe' && request.operation === 'describe') {
     process.stdout.write(JSON.stringify({ protocolVersion: 1, requestId: request.requestId,
       sequence: 0, type: 'run-diagnostic', runId: null, caseId: null, attempt: null,
       data: { code: 'invalid-request', message: ${JSON.stringify(SECRET)} } }) + '\\n');
@@ -42,14 +42,11 @@ process.stdin.on('end', () => {
     models: mode === 'no-models' ? [] : ['fake/target'],
     judgeModels: mode === 'no-judge' ? [] : ['fake/judge'],
     requiredEnvironment: mode === 'undeclared' ? [${JSON.stringify(UNDECLARED_NAME)}] : [],
-    costEstimation: true,
   };
-  const estimate = { targetCalls: 1, judgeCalls: 0, totalCalls: 1,
-    cost: { status: 'unavailable', reason: 'Synthetic price unavailable.' } };
   process.stdout.write(JSON.stringify({ protocolVersion: 1, requestId: request.requestId,
-    sequence: 0, type: request.operation === 'describe' ? 'description' : 'estimate',
+    sequence: 0, type: 'description',
     runId: null, caseId: null, attempt: null,
-    data: request.operation === 'describe' ? data : estimate }) + '\\n');
+    data }) + '\\n');
 });`;
 
 type Scenario = {
@@ -137,8 +134,6 @@ function assertSafe(response: HttpResult, allowedName?: string): void {
 }
 
 const selection = { suiteId: 'synthetic', scope: { type: 'all' }, model: 'fake/target' };
-const review = { selectedCaseIds: ['case'], targetCalls: 1, judgeCalls: 0, totalCalls: 1,
-  cost: { status: 'unavailable', reason: 'Synthetic price unavailable.' } };
 
 test('local HTTP exposes only a validated, declared missing name and blocks Preview/Start', async () => {
   await withWorkbench({ mode: 'ready', requiredEnvironment: [MISSING_NAME] }, async ({ post, get }) => {
@@ -148,7 +143,7 @@ test('local HTTP exposes only a validated, declared missing name and blocks Prev
     const preview = await post('/api/eval-runs/preview', selection);
     assertSafe(preview);
     assert.equal(preview.payload.reason, 'environment-missing');
-    const start = await post('/api/eval-runs/start', { ...selection, review });
+    const start = await post('/api/eval-runs/start', selection);
     assertSafe(start);
     assert.equal(start.payload.reason, 'environment-missing');
     const history = await get('/api/eval-runs/history?suiteId=synthetic');
@@ -224,7 +219,7 @@ for (const scenario of [
       const preview = await post('/api/eval-runs/preview', selection);
       assertSafe(preview);
       assert.equal(preview.payload.reason, scenario.reason);
-      const start = await post('/api/eval-runs/start', { ...selection, review });
+      const start = await post('/api/eval-runs/start', selection);
       assertSafe(start);
       assert.equal(start.payload.reason, scenario.reason);
       const history = await get('/api/eval-runs/history?suiteId=synthetic');
@@ -242,18 +237,11 @@ test('changed suite blocks stale Preview/Start without inventing a missing crede
     const readyPreview = await post('/api/eval-runs/preview', selection);
     assert.equal(readyPreview.code, 200);
     assert.equal(readyPreview.payload.status, 'ready');
-    const reviewed = {
-      selectedCaseIds: readyPreview.payload.selectedCaseIds,
-      targetCalls: readyPreview.payload.targetCalls,
-      judgeCalls: readyPreview.payload.judgeCalls,
-      totalCalls: readyPreview.payload.totalCalls,
-      cost: readyPreview.payload.cost,
-    };
     await rewriteSuite({ invalid: `${EXCEPTION} ${PRIVATE_PATH} ${SECRET}` });
     for (const [route, body] of [
       ['/api/eval-suites/describe', { suiteId: 'synthetic' }],
       ['/api/eval-runs/preview', selection],
-      ['/api/eval-runs/start', { ...selection, review: reviewed }],
+      ['/api/eval-runs/start', selection],
     ] as const) {
       const response = await post(route, body);
       assertSafe(response);
@@ -315,12 +303,12 @@ test('preview reports a validated runner request rejection to the user and corre
   const original = console.error;
   console.error = (line?: unknown) => lines.push(String(line));
   try {
-    await withWorkbench({ mode: 'reject-estimate' }, async ({ post }) => {
+    await withWorkbench({ mode: 'reject-describe' }, async ({ post }) => {
       const response = await post('/api/eval-runs/preview', selection);
       const issue = response.payload.issue as Record<string, unknown>;
       assert.equal(response.code, 422);
       assert.equal(issue.stage, 'preview');
-      assert.equal(issue.observedStage, 'estimation');
+      assert.equal(issue.observedStage, 'description');
       assert.equal(issue.category, 'runner-request-invalid');
       assert.equal(issue.reference, response.reference);
       assert.equal(issue.title, 'Runner rejected preview request');

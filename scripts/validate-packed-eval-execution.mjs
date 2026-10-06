@@ -11,7 +11,7 @@ async function validateInstalledWorkbenchPage(serverUrl) {
   const html = await response.text();
   assert.match(html, /<section\b[^>]*data-run-setup\b[^>]*>/);
   assert.match(html, /<div\b[^>]*data-setup-fields\b[^>]*>/);
-  assert.match(html, /<button\b[^>]*data-action="review"/);
+  assert.match(html, /<button\b[^>]*data-action="start"/);
   assert.match(html, /data-results-container/);
 
   const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map(match => match[1]);
@@ -39,7 +39,7 @@ async function validateInstalledWorkbenchPage(serverUrl) {
   assert.match(client, /data-action="copy-model-issue"/);
   assert.match(client, /Stage: model-check/);
   assert.match(client, /safeReference\(issue\.reference\)/);
-  assert.match(client, /data-action="review"[\s\S]*?disabled = Boolean\(runtimeState !== 'ready'/);
+  assert.match(client, /data-action="start"[\s\S]*?disabled = Boolean\(runtimeState !== 'ready'/);
   assert.match(client, /Issue details copied\./);
   assert.match(client, /Copy failed\. Select the issue details above instead\./);
   console.log('Packed installed workbench GET / page, styles, client recovery, and Copy issue details smoke passed.');
@@ -70,8 +70,7 @@ export async function validatePackedEvalExecution({ workspace, installedPackageR
 let body=''; for await(const chunk of process.stdin) body += chunk; const q=JSON.parse(body);
 let n=0; function emit(type,caseId,data){process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,sequence:n++,type,
 runId:q.operation==='execute'?q.runId:null,caseId,attempt:caseId?1:null,data})+'\\n');}
-if(q.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn'],models:['fake'],judgeModels:[],requiredEnvironment:[],costEstimation:true});
-else if(q.operation==='estimate') emit('estimate',null,{targetCalls:1,judgeCalls:0,totalCalls:1,cost:{status:'unavailable',reason:'Provider pricing unavailable.'}});
+if(q.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn'],models:['fake'],judgeModels:[],requiredEnvironment:[]});
 else if(q.operation==='execute'){emit('run-started',null,{model:q.model,judgeModel:null});emit('case-attempt-started','case',{});
 emit('conversation-turn-completed','case',{turnIndex:0,role:'assistant',output:target(q.testCases[0].turns[0].content.text,q.model)});
 emit('case-attempt-completed','case',{status:'completed'});emit('run-completed',null,{status:'completed'});}
@@ -93,12 +92,12 @@ else process.exit(2);
   };
   try {
     await validateInstalledWorkbenchPage(server.url);
-    const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null, repeats: 1 };
+    const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null };
     assert.equal((await post('/api/eval-suites/describe', { suiteId: 'offline' })).code, 200);
     const preview = await post('/api/eval-runs/preview', command);
     assert.equal(preview.code, 200);
-    const { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost } = preview.value;
-    const started = await post('/api/eval-runs/start', { ...command, review: { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost } });
+    assert.deepEqual(preview.value.selectedCaseIds, ['case']);
+    const started = await post('/api/eval-runs/start', command);
     assert.equal(started.code, 202);
     const query = new URLSearchParams({ suiteId: 'offline', runId: started.value.runId });
     let status;

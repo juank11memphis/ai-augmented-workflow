@@ -87,7 +87,7 @@ describe('Milestone progression written contract', () => {
       assert.match(wrapper, /Task-ID commit only after pass/i);
     }
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '210');
+    assert.equal(manifest.templateVersion, '211');
     assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '64');
     assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /approved-and-merged PR report.*Story approval/);
   });

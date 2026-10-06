@@ -12,10 +12,10 @@ const SAFE_REASONS = new Set([
   'required-setting-rejected', 'runner-request-too-large', 'environment-undeclared',
   'capability-unsupported', 'model-unavailable', 'judge-unavailable', 'case-unavailable',
   'artifact-unsafe', 'artifact-not-ignored', 'artifact-tracked',
-  'artifact-git-unavailable', 'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe',
+  'artifact-git-unavailable', 'artifact-root-unsafe', 'input-unsafe',
   'invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable',
   'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',
-  'invalid-transition', 'owner-unknown', 'index-stale', 'review-stale', 'schedule-failed',
+  'invalid-transition', 'owner-unknown', 'index-stale', 'schedule-failed',
 ]);
 
 export async function startEvalRun(command: StartEvalRunCommand, ports: StartEvalRunDependencies): Promise<StartEvalRunResult> {
@@ -53,12 +53,7 @@ export async function startEvalRun(command: StartEvalRunCommand, ports: StartEva
     if (ready.status === 'blocked') return blocked(ready.reason);
     const inputs = await ports.inputs.resolve(cases);
     if (inputs.status === 'blocked') return blocked(inputs.reason);
-    const estimate = await ports.runner.estimate(suite, { model: command.model, judgeModel: judgeModel ?? null, testCases: inputs.value });
-    if (estimate.status === 'blocked') return blocked(estimate.reason);
-    if (!description.value.costEstimation && estimate.value.cost.status === 'available') return blocked('estimate-invalid');
-    const snapshot = { selectedCaseIds: cases.map(item => item.id), ...estimate.value };
-    if (JSON.stringify(snapshot) !== JSON.stringify(command.review)) return blocked('review-stale');
-    const queued = await ports.store.create({ suiteId: suite.id, caseIds: snapshot.selectedCaseIds, scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: command.model, judgeModel: judgeModel ?? null });
+    const queued = await ports.store.create({ suiteId: suite.id, caseIds: cases.map(item => item.id), scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: command.model, judgeModel: judgeModel ?? null });
     if (queued.status === 'blocked') return blocked(queued.reason);
     try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model: command.model, judgeModel: judgeModel ?? null, ...(reference ? { reference } : {}) }); }
     catch {

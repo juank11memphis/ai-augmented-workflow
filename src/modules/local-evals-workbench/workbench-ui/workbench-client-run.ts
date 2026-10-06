@@ -19,7 +19,7 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
   }
   const runPanel = () => root.querySelector('[data-run-panel]');
   function lockCurrentRun(locked) {
-    for (const node of root.querySelectorAll('[data-control="suite"], [data-control="suite-option"], [data-control="model"], [data-control="run"], [data-control="retry-run"], [data-control="retry-cell"], [data-control="rerun-recommendation"], [data-control="preview-start"], [data-control="test-case"], [data-control="judge"], input[name="runScope"]')) node.disabled = locked;
+    for (const node of root.querySelectorAll('[data-control="suite"], [data-control="suite-option"], [data-control="model"], [data-control="run"], [data-control="retry-run"], [data-control="retry-cell"], [data-control="rerun-recommendation"], [data-control="test-case"], [data-control="judge"], input[name="runScope"]')) node.disabled = locked;
   }
   function runLabel(manifest) {
     const done = manifest.cases.filter(item => item.state === 'completed').length;
@@ -74,14 +74,13 @@ export const WORKBENCH_CLIENT_RUN_SECTION = {
       }
     }
   }
-  async function startReviewedRun(command, review) {
+  async function startRunDirect(command) {
     if (runUnavailable()) return false;
     runPhase = 'pending';
     lockCurrentRun(true);
     try {
       const response = await fetch('/api/eval-runs/start', { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...command, review: { selectedCaseIds: review.selectedCaseIds, targetCalls: review.targetCalls,
-          judgeCalls: review.judgeCalls, totalCalls: review.totalCalls, cost: review.cost } }) });
+        body: JSON.stringify(command) });
       const result = await response.json();
       if (result.status !== 'queued') { previewStatus(previewBlockMessage(result.reason)); return false; }
       selectedRun = { suiteId: result.suiteId, runId: result.runId };

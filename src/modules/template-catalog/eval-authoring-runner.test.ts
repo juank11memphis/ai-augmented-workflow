@@ -6,15 +6,14 @@ const { command, fixtureModules, invoke, project, suite } = await import(
   new URL('../../../src/modules/template-catalog/fixtures/eval-authoring/test-support.mjs', import.meta.url).href
 ) as typeof import('./fixtures/eval-authoring/test-support.mjs');
 
-test('describe and estimate are side-effect-free and identify separate models/call costs', async () => {
+test('describe is side-effect-free and identifies separate models', async () => {
   const { handleRequest, createTestPorts } = await fixtureModules();
   const fixture = createTestPorts();
   const cases = (await suite()).testCases;
   const description = await handleRequest({ protocolVersion: 1, requestId: 'describe-1', operation: 'describe' }, fixture.ports);
   assert.deepEqual(description.events[0]?.data.models, ['fake/target']);
   assert.deepEqual(description.events[0]?.data.judgeModels, ['fake/judge']);
-  const estimate = await handleRequest(command(cases, 'estimate'), fixture.ports);
-  assert.deepEqual(estimate.events[0]?.data, { targetCalls: 5, judgeCalls: 1, totalCalls: 6, cost: { status: 'unavailable', reason: 'Synthetic fixture has no provider pricing.' } });
+  assert.equal((await handleRequest(command(cases, 'estimate'), fixture.ports)).status, 'error');
   assert.deepEqual(fixture.counts, { target: 0, model: 0, judge: 0, production: 0 });
 });
 
@@ -90,7 +89,7 @@ test('local fixture process implements all operations with pure NDJSON and uncha
   const root = await project(t);
   const before = await fs.readFile(path.join(root, 'project-target.mjs'));
   const cases = (await suite()).testCases;
-  for (const request of [{ protocolVersion: 1, requestId: 'describe-1', operation: 'describe' }, command(cases, 'estimate'), command(cases, 'execute')]) {
+  for (const request of [{ protocolVersion: 1, requestId: 'describe-1', operation: 'describe' }, command(cases, 'execute')]) {
     const result = await invoke(root, request);
     assert.equal(result.code, 0); assert.equal(result.stderr, '');
     assert.ok(result.events.length > 0);

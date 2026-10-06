@@ -218,7 +218,7 @@ test('actual workspace rendering keeps setup closed for accepted and completed r
     '[data-latest-label]', '[data-status-summary]',
     '[data-run-metrics]', '[data-progress]']) nodes[selector] = { textContent: '', innerHTML: '' };
   const reviewAction = { disabled: false };
-  nodes['[data-run-setup]'] = { hidden: false, querySelector: selector => selector === '[data-action="review"]' ? reviewAction : null };
+  nodes['[data-run-setup]'] = { hidden: false, querySelector: selector => selector === '[data-action="start"]' ? reviewAction : null };
   const document = { querySelectorAll: () => [], addEventListener() {} };
   const context = { document, URLSearchParams, esc: escape, one: (selector: string) => nodes[selector],
     suite: { id: 'suite', name: 'Suite', description: '', testCases: [{ id: 'case', name: 'Case' }] },

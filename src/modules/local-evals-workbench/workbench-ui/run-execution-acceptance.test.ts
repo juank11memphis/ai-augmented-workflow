@@ -74,28 +74,27 @@ test('pending start blocks duplicate submission and suite navigation; rejected r
   const context = { root, state: { selectedSuiteId: 'suite', discovery: { suites: [] } }, URLSearchParams, Date,
     sessionStorage: { getItem() { return null; }, setItem() {} }, h: String, setTimeout() {}, previewStatus() {}, previewBlockMessage: String,
     loadRuntimeDescription() {},
-    fetch: async (url: string) => url.includes('/start') ? (++startCalls === 1 ? startResponse : { json: async () => ({ status: 'blocked', reason: 'review-stale' }) })
+    fetch: async (url: string) => url.includes('/start') ? (++startCalls === 1 ? startResponse : { json: async () => ({ status: 'blocked', reason: 'input-unsafe' }) })
       : { json: async () => ({ status: 'ok', value: { summary: { state: 'queued', cases: [], createdAt: Date.now(), finishedAt: null } } }) },
   };
   const api = vm.runInNewContext(WORKBENCH_CLIENT_RUN_SECTION.source + WORKBENCH_CLIENT_EVENTS_SECTION.source
-    + ';({ startReviewedRun, renderSelectedRun, selectSuite, phase: () => runPhase })', context) as {
-    startReviewedRun(command: unknown, review: unknown): Promise<boolean>; renderSelectedRun(value: unknown): void;
+    + ';({ startRunDirect, renderSelectedRun, selectSuite, phase: () => runPhase })', context) as {
+    startRunDirect(command: unknown): Promise<boolean>; renderSelectedRun(value: unknown): void;
     selectSuite(suiteId: string): void; phase(): string;
   };
-  const review = { selectedCaseIds: [], targetCalls: 0, judgeCalls: 0, totalCalls: 0, cost: null };
-  const pending = api.startReviewedRun({ suiteId: 'suite' }, review);
+  const pending = api.startRunDirect({ suiteId: 'suite' });
   assert.equal(api.phase(), 'pending');
   assert.ok(controls.every(control => control.disabled));
   api.selectSuite('other');
   assert.equal(context.state.selectedSuiteId, 'suite');
-  assert.equal(await api.startReviewedRun({ suiteId: 'suite' }, review), false);
+  assert.equal(await api.startRunDirect({ suiteId: 'suite' }), false);
   assert.equal(startCalls, 1);
   resolveStart({ json: async () => ({ status: 'queued', suiteId: 'suite', runId: 'run' }) });
   assert.equal(await pending, true);
   assert.equal(api.phase(), 'active');
   api.renderSelectedRun({ state: 'completed', cases: [], createdAt: Date.now(), finishedAt: Date.now() });
   assert.equal(api.phase(), 'idle');
-  assert.equal(await api.startReviewedRun({ suiteId: 'suite' }, review), false);
+  assert.equal(await api.startRunDirect({ suiteId: 'suite' }), false);
   assert.equal(api.phase(), 'idle');
   assert.ok(controls.every(control => !control.disabled));
 });

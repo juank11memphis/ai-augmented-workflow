@@ -28,10 +28,7 @@ const offlineRunner = `import { readFileSync } from 'node:fs';
 let input=''; process.stdin.on('data',part=>input+=part); process.stdin.on('end',()=>{
   const request=JSON.parse(input), mode=readFileSync('evals/mode.txt','utf8');
   if(process.env.SIBU_EVAL_MODE!=='1'||mode==='failure') process.exit(3);
-  const data=request.operation==='describe'
-    ? {runnerId:'offline',capabilities:['single-turn'],models:mode==='no-models'?[]:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[],costEstimation:true}
-    : {targetCalls:request.testCases.length,judgeCalls:0,totalCalls:request.testCases.length,cost:request.model==='fake/available'
-      ? {status:'available',amount:0.01,currency:'USD'} : {status:'unavailable',reason:'Provider pricing unavailable.'}};
+  const data={runnerId:'offline',capabilities:['single-turn'],models:mode==='no-models'?[]:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[]};
   if(request.operation==='execute') {
     if(mode==='timeout') { setTimeout(()=>{},20000); return; }
     if(mode==='protocol-invalid') { process.stdout.write('{invalid protocol\\n'); return; }
@@ -49,7 +46,8 @@ let input=''; process.stdin.on('data',part=>input+=part); process.stdin.on('end'
     emit('run-completed',null,{status:'completed'});
     return;
   }
-  process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,type:request.operation==='describe'?'description':'estimate',runId:null,caseId:null,attempt:null,data})+'\\n');
+  if(request.operation!=='describe') process.exit(3);
+  process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,type:'description',runId:null,caseId:null,attempt:null,data})+'\\n');
 });`;
 
 export async function withOfflineWorkbench(run: (workbench: {

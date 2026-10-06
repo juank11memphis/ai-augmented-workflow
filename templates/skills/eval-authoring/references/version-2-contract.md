@@ -89,13 +89,9 @@ Requests use exactly one `operation`, independently versioned `protocolVersion: 
 { "protocolVersion": 1, "requestId": "describe-1", "operation": "describe" }
 ```
 
-Describe emits one `description` event. Its `data` contains `runnerId`, `capabilities` (subset of `single-turn`, `multi-turn`, `tool-mocks`, `custom`, `rubric`), `models`, `judgeModels`, `requiredEnvironment` (names only), and `costEstimation` (boolean). It performs no target/model/judge calls or external actions. Rubric selections require a compatible separately selected Judge Model; no default to the tested model.
+Describe emits one `description` event. Its `data` contains `runnerId`, `capabilities` (subset of `single-turn`, `multi-turn`, `tool-mocks`, `custom`, `rubric`), `models`, `judgeModels`, and `requiredEnvironment` (names only). It performs no target/model/judge calls or external actions. Rubric selections require a compatible separately selected Judge Model; no default to the tested model.
 
-```json
-{ "protocolVersion": 1, "requestId": "estimate-1", "operation": "estimate", "model": "fake/target", "judgeModel": "fake/judge", "testCases": [{ "id": "greet", "name": "Greet", "turns": [{ "role": "user", "content": { "type": "inline", "text": "Hello." } }], "toolMocks": [], "assertions": [], "graders": [{ "id": "tone", "type": "rubric", "rubric": { "type": "inline", "text": "Respond politely." }, "threshold": 0.8 }] }] }
-```
-
-For estimate and execute, `testCases` contains the nonempty selected normalized version-2 case objects (not IDs); Sibu resolves file content to inline values before invoking the runner. A project runner that checks selected cases against reviewed suite definitions must compare them with safely resolved reviewed cases, not raw file references. `judgeModel` is null when no rubrics are selected. Each selected case runs once. Estimate emits one `estimate` event with `targetCalls`, `judgeCalls`, `totalCalls`, and `cost`: `{ "status": "available", "amount": 0.01, "currency": "USD" }` or `{ "status": "unavailable", "reason": "Provider pricing unavailable." }`. Call counts are nonnegative integers based on selected turns, tools, and grading; explain estimation assumptions in setup notes. Estimate never invokes model/judge/tools to discover prices or counts.
+For execute, `testCases` contains the nonempty selected normalized version-2 case objects (not IDs); Sibu resolves file content to inline values before invoking the runner. A project runner that checks selected cases against suite definitions must compare them with safely resolved suite cases, not raw file references. `judgeModel` is null when no rubrics are selected. Each selected case runs once. Starting a run may make paid model calls; no call count or cost estimate is provided.
 
 ```json
 { "protocolVersion": 1, "requestId": "execute-1", "operation": "execute", "runId": "run-1", "model": "fake/target", "judgeModel": "fake/judge", "testCases": [{ "id": "greet", "name": "Greet", "turns": [{ "role": "user", "content": { "type": "inline", "text": "Hello." } }], "toolMocks": [], "assertions": [], "graders": [{ "id": "tone", "type": "rubric", "rubric": { "type": "inline", "text": "Respond politely." }, "threshold": 0.8 }] }] }
@@ -113,7 +109,7 @@ Event `type` and `data` contracts:
 
 | Type | Data |
 | --- | --- |
-| `description`, `estimate` | Shapes above |
+| `description` | Shape above |
 | `run-started` | `model`, `judgeModel` |
 | `case-attempt-started` | `{}` |
 | `tool-interaction-recorded` | `position`, `tool`, `arguments` (JSON), `outcome` (mock outcome or `{ "type": "rejected", "code": "tool-mismatch" }`) |
@@ -138,6 +134,6 @@ Before every artifact read/write, require project-root-contained lexical paths a
 
 ## Conventional proof and handoff
 
-Generate ordinary runner tests with injected fake model/judge ports and production-client sentinels. Prove describe/estimate make zero calls; selected models/cases reach the target once; multi-turn state resets; tool success/error/unexpected outcomes, selection, arguments/order and unknown/mismatched calls stay isolated. Demonstrate the sentinel detects an intentionally bypassed mock seam. Check malformed requests, output purity, bounds, safe errors, root/symlink escapes, environment names versus values, fixture provenance and unchanged production bytes. These tests do not prove live-agent compliance or arbitrary framework support. Then run the Sibu preview contract check from the project root: `node .agents/skills/eval-authoring/scripts/check-preview-contract.mjs --suite <suite-id> --model <target-model> --judge <judge-model>` (omit `--judge` when no rubric is selected). The check uses Sibu's actual input resolution and estimate request without executing a run or calling a model. A blocked check is not runnable proof.
+Generate ordinary runner tests with injected fake model/judge ports and production-client sentinels. Prove describe makes zero calls; selected models/cases reach the target once; multi-turn state resets; tool success/error/unexpected outcomes, selection, arguments/order and unknown/mismatched calls stay isolated. Demonstrate the sentinel detects an intentionally bypassed mock seam. Check malformed requests, output purity, bounds, safe errors, root/symlink escapes, environment names versus values, fixture provenance and unchanged production bytes. These tests do not prove live-agent compliance or arbitrary framework support. Then run the Sibu preview contract check from the project root: `node .agents/skills/eval-authoring/scripts/check-preview-contract.mjs --suite <suite-id> --model <target-model> --judge <judge-model>` (omit `--judge` when no rubric is selected). The check uses Sibu's actual input resolution without executing a run or calling a model. A blocked check is not runnable proof.
 
 Preserve existing Git rules and append root `/evals/artifacts/` only when needed. Verify effective ignore (`git check-ignore --no-index evals/artifacts/probe.json`) and no tracked contents (`git ls-files -- evals/artifacts`). A later negating rule, missing Git or tracked artifacts needs user guidance; never delete/untrack automatically. Do not create results or tracked placeholders. Keep ignored artifacts out of ordinary agent context. End with created paths, prerequisites, conventional test results, retained coverage gaps and a later direct-protocol invocation guide; do not execute the suite while authoring.

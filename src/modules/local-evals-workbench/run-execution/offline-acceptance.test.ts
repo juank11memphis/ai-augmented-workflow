@@ -46,17 +46,13 @@ test('offline target execution persists real output and changed integration chan
       const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null };
       const preview = await post('/api/eval-runs/preview', command);
       assert.equal(preview.code, 200);
-      const review = preview.value;
-      const start = await post('/api/eval-runs/start', { ...command, review: { selectedCaseIds: review.selectedCaseIds, targetCalls: review.targetCalls,
-        judgeCalls: review.judgeCalls, totalCalls: review.totalCalls, cost: review.cost } });
+      const start = await post('/api/eval-runs/start', command);
       assert.equal(start.code, 202, JSON.stringify(start.value));
       const runId = start.value.runId as string;
       const oneCommand = { ...command, scope: { type: 'test_case', testCaseId: 'first' } };
       const onePreview = await post('/api/eval-runs/preview', oneCommand);
       assert.equal(onePreview.code, 200);
-      const oneReview = onePreview.value;
-      const parallelStart = await post('/api/eval-runs/start', { ...oneCommand, review: { selectedCaseIds: oneReview.selectedCaseIds,
-        targetCalls: oneReview.targetCalls, judgeCalls: oneReview.judgeCalls, totalCalls: oneReview.totalCalls, cost: oneReview.cost } });
+      const parallelStart = await post('/api/eval-runs/start', oneCommand);
       assert.equal(parallelStart.code, 202);
       assert.notEqual(parallelStart.value.runId, runId);
       const status = await terminal(runId);
@@ -73,8 +69,7 @@ test('offline target execution persists real output and changed integration chan
       const one = await terminal(parallelStart.value.runId as string);
       assert.equal(one.value.summary.state, 'completed');
       await project.changeTarget();
-      const second = await post('/api/eval-runs/start', { ...command, review: { selectedCaseIds: review.selectedCaseIds, targetCalls: review.targetCalls,
-        judgeCalls: review.judgeCalls, totalCalls: review.totalCalls, cost: review.cost } });
+      const second = await post('/api/eval-runs/start', command);
       assert.equal(second.code, 202);
       assert.notEqual(second.value.runId, runId);
       const changed = await terminal(second.value.runId as string);
@@ -85,8 +80,7 @@ test('offline target execution persists real output and changed integration chan
       const changedSchema = await get('offline', second.value.runId as string, 'schema');
       assert.equal(changedSchema.value.evidence!.assertions.find(assertion => assertion.id === 'basic')?.outcome, 'failed');
       await project.crashOnSecond();
-      const crashed = await post('/api/eval-runs/start', { ...command, review: { selectedCaseIds: review.selectedCaseIds, targetCalls: review.targetCalls,
-        judgeCalls: review.judgeCalls, totalCalls: review.totalCalls, cost: review.cost } });
+      const crashed = await post('/api/eval-runs/start', command);
       assert.equal(crashed.code, 202);
       const partial = await terminal(crashed.value.runId as string);
       assert.equal(partial.value.summary.state, 'partial');
@@ -119,9 +113,7 @@ test('offline target execution persists real output and changed integration chan
       const command = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: caseId }, model: 'fake', judgeModel };
       const preview = await post('/api/eval-runs/preview', command);
       assert.equal(preview.code, 200, JSON.stringify(preview.value));
-      const review = preview.value;
-      const start = await post('/api/eval-runs/start', { ...command, review: { selectedCaseIds: review.selectedCaseIds,
-        targetCalls: review.targetCalls, judgeCalls: review.judgeCalls, totalCalls: review.totalCalls, cost: review.cost } });
+      const start = await post('/api/eval-runs/start', command);
       assert.equal(start.code, 202, JSON.stringify(start.value));
       const runId = start.value.runId as string;
       for (let tries = 0; tries < 120; tries++) {

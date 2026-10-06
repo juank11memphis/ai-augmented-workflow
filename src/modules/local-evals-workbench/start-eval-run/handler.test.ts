@@ -10,9 +10,7 @@ const one = { id: 'case', name: 'Case', turns: [{ role: 'user' as const, content
 const suite = { version: 2 as const, kind: 'sibu-eval-suite' as const, id: 'suite', name: 'Suite', description: '',
   target: { id: 'target', kind: 'integration' as const, path: 'src/target.mjs' }, coverage: { categories: [], gaps: [] },
   runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases: [one] };
-const review = { selectedCaseIds: ['case'], targetCalls: 1, judgeCalls: 0, totalCalls: 1,
-  cost: { status: 'unavailable' as const, reason: 'Provider pricing unavailable.' } };
-const command: StartEvalRunCommand = { suiteId: 'suite', model: 'fake', scope: { type: 'all' }, judgeModel: null, review };
+const command: StartEvalRunCommand = { suiteId: 'suite', model: 'fake', scope: { type: 'all' }, judgeModel: null };
 
 function harness() {
   const events: string[] = [];
@@ -23,8 +21,7 @@ function harness() {
   const ports: StartEvalRunDependencies = {
     suites: { async load() { events.push('load'); return suite; } },
     runner: { async describe() { events.push('describe'); return { status: 'ready', value: { runnerId: 'runner', capabilities: ['single-turn'] as const,
-      models: ['fake'], judgeModels: [], requiredEnvironment: [], costEstimation: true } }; },
-      async estimate() { events.push('estimate'); return { status: 'ready', value: { targetCalls: 1, judgeCalls: 0, totalCalls: 1, cost: review.cost } }; } },
+      models: ['fake'], judgeModels: [], requiredEnvironment: [] } }; } },
     artifacts: { async check() { events.push('readiness'); return { status: 'ready', value: null }; } },
     inputs: { async resolve(cases) { events.push('resolve'); return { status: 'ready', value: cases }; } },
     store: { async create() { events.push('create'); return { status: 'ok', value: { ...queued(), runId: 'run-' + ++next } }; },
@@ -44,38 +41,30 @@ test('freshly validates and queues before scheduling independent run identities'
   assert.equal(first.status, 'queued'); assert.equal(second.status, 'queued');
   if (first.status !== 'queued' || second.status !== 'queued') return;
   assert.notEqual(first.runId, second.runId);
-  assert.deepEqual(h.events.slice(0, 7), ['load', 'describe', 'readiness', 'resolve', 'estimate', 'create', 'schedule']);
+  assert.deepEqual(h.events.slice(0, 6), ['load', 'describe', 'readiness', 'resolve', 'create', 'schedule']);
   assert.equal(h.events.filter(event => event === 'create').length, 2);
   assert.equal(h.events.filter(event => event === 'schedule').length, 2);
   assert.deepEqual(h.diagnostics.map(event => (event as { outcome: string }).outcome), ['queued', 'queued']);
 });
 
-test('rejects stale review and unsupported checks before creating a run', async () => {
-  const stale = harness();
-  assert.deepEqual(await startEvalRun({ ...command, review: { ...review, totalCalls: 2 } }, stale.ports), { status: 'blocked', reason: 'review-stale' });
-  assert.ok(!stale.events.includes('create'));
-  assert.ok(!stale.events.includes('schedule'));
-  assert.deepEqual(stale.diagnostics.map(event => (event as { reason: string }).reason), ['review-stale']);
+test('rejects invalid selection before creating a run', async () => {
   const invalid = harness();
   assert.deepEqual(await startEvalRun({ ...command, model: '' }, invalid.ports), { status: 'blocked', reason: 'input-unsafe' });
   assert.deepEqual(invalid.events, []);
 });
 
-test('reviewed Judge Model reaches queued configuration and scheduler', async () => {
+test('selected Judge Model reaches queued configuration and scheduler', async () => {
   const h = harness();
   const rubricCase = { ...one, graders: [{ id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'good' }, threshold: 0.8 }] };
   h.ports.suites.load = async () => ({ ...suite, testCases: [rubricCase] });
   h.ports.runner.describe = async () => ({ status: 'ready', value: { runnerId: 'runner', capabilities: ['single-turn', 'rubric'] as const,
-    models: ['fake'], judgeModels: ['judge'], requiredEnvironment: [], costEstimation: true } });
-  h.ports.runner.estimate = async () => ({ status: 'ready', value: { targetCalls: 1,
-    judgeCalls: 1, totalCalls: 2, cost: review.cost } });
+    models: ['fake'], judgeModels: ['judge'], requiredEnvironment: [] } });
   let created: unknown;
   let scheduled: unknown;
   const originalCreate = h.ports.store.create;
   h.ports.store.create = async input => { created = input; return originalCreate(input); };
   h.ports.scheduler.schedule = selection => { scheduled = selection; };
-  const deepReview = { ...review, targetCalls: 1, judgeCalls: 1, totalCalls: 2 };
-  const result = await startEvalRun({ ...command, judgeModel: 'judge', review: deepReview }, h.ports);
+  const result = await startEvalRun({ ...command, judgeModel: 'judge' }, h.ports);
   assert.equal(result.status, 'queued');
   assert.deepEqual(created && { judgeModel: (created as { judgeModel: string }).judgeModel }, { judgeModel: 'judge' });
   assert.deepEqual(scheduled && { judgeModel: (scheduled as { judgeModel: string }).judgeModel }, { judgeModel: 'judge' });

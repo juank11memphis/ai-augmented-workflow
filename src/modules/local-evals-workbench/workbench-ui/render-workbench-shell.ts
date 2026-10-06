@@ -62,7 +62,7 @@ function renderControls(viewModel: WorkbenchViewModel): string {
       ${viewModel.runScopeOptions.map((option) => `<label><input type="radio" name="runScope" value="${option.type}" ${inputChecked(option.selected)} ${disabled(option.disabled)}> ${escapeHtml(option.label)}</label>`).join('')}
     </fieldset>
     ${renderTestCasePicker(viewModel)}
-    <button type="button" data-control="run" ${disabled(viewModel.controlsDisabled)}>Review run</button>
+    <button type="button" data-control="run" ${disabled(viewModel.controlsDisabled)}>Start run</button>
     <label class="field">Model
       <select name="evalRunModel" data-control="model" ${disabled(viewModel.controlsDisabled)}>${renderModelOptions(viewModel.modelOptions)}</select>
     </label>
@@ -70,7 +70,6 @@ function renderControls(viewModel: WorkbenchViewModel): string {
       <select name="judgeModel" data-control="judge"></select>
     </label>
     <p data-preview-status role="status" aria-live="polite"></p>
-    <div data-preview-dialog-slot></div>
     <section data-run-panel aria-label="Selected run" hidden></section>
     <dl class="summary" aria-label="Run summary">
       <div><dt>Pass rate</dt><dd data-bind="pass-rate">${escapeHtml(viewModel.summary.passRateLabel)}</dd></div>

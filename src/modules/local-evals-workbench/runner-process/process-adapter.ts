@@ -2,18 +2,16 @@ import { spawn } from 'node:child_process';
 import { realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { declaredRunnerFile, type NormalizedEvalSuite, type NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
+import { declaredRunnerFile, type NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
 import type { PreviewLoggerPort, RunnerDescriptorPort } from '../runtime-ports.js';
-import type { RunnerEstimatorPort } from '../run-configuration.js';
 import type { RuntimeDescription, RuntimeOutcome } from '../runtime-description.js';
 import type { RuntimeBlockReason } from '../runtime-description.js';
 import { runnerEnvironment } from './environment.js';
 import { BoundedNdjsonParser } from './ndjson-parser.js';
 import { validateDescription, validateEnvelope, validatedFailureReason } from './description-validation.js';
-import { validateEstimate, type ConsumptionEstimate } from './estimate-validation.js';
 import { PREVIEW_PROCESS_LIMITS, type PreviewProcessLimits } from './limits.js';
 
-export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, RunnerEstimatorPort {
+export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort {
   constructor(
     private readonly projectRoot: string,
     private readonly limits: PreviewProcessLimits = PREVIEW_PROCESS_LIMITS,
@@ -24,17 +22,10 @@ export class ProjectRunnerProcessAdapter implements RunnerDescriptorPort, Runner
     const outcome = await this.invoke(suite, { operation: 'describe' }, 'description');
     return outcome.status === 'blocked' ? outcome : validateDescription(outcome.value.data, outcome.value.secrets);
   }
-  async estimate(suite: NormalizedEvalSuite, input: {
-    readonly model: string; readonly judgeModel: string | null;
-    readonly testCases: readonly NormalizedEvalTestCase[];
-  }): Promise<RuntimeOutcome<ConsumptionEstimate>> {
-    const outcome = await this.invoke(suite, { operation: 'estimate', ...input }, 'estimate');
-    return outcome.status === 'blocked' ? outcome : validateEstimate(outcome.value.data, outcome.value.secrets);
-  }
   private async invoke(
     suite: NormalizedEvalSuite,
     payload: Record<string, unknown>,
-    eventType: 'description' | 'estimate'
+    eventType: 'description'
   ): Promise<RuntimeOutcome<{ readonly data: unknown; readonly secrets: readonly string[] }>> {
     const environment = runnerEnvironment(suite, this.environment);
     if (environment.status === 'blocked') return environment;

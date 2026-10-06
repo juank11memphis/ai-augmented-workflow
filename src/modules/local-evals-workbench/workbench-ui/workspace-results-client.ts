@@ -100,9 +100,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (!id || suite?.id === id || isActive() || startPending) return;
     suite = suites.find(item => item.id === id) || null;
     if (taskView === 'new-run') showTaskView('results');
-    run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null; review = null;
-    if (typeof previewGeneration !== 'undefined') previewGeneration++;
-    if (typeof clearPreviewNotice === 'function') clearPreviewNotice();
+    run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null;
     runGeneration++; historyGeneration++; detailGeneration++;
     if (typeof runtimeGeneration !== 'undefined') runtimeGeneration++;
     if (typeof strictRuntimeChoices !== 'undefined') strictRuntimeChoices = false;
@@ -136,8 +134,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (taskView === 'new-run' && (isActive() || startPending)) showTaskView('results');
     setupRegion.hidden = taskView !== 'new-run' || !suite;
     const startForm = one('[data-start-form]'); if (startForm) startForm.hidden = startUncertain;
-    const reviewAction = setupRegion.querySelector('[data-action="review"]');
-    if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
+    const startAction = setupRegion.querySelector('[data-action="start"]');
+    if (startAction) startAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
     refreshSetupControls();
     const historical = run && latestKnownRunId && !latestRun();
     one('[data-latest-label]').textContent = run ? (historical ? 'Past run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
@@ -225,7 +223,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       runGeneration++;
       selectedRunId = correlation.runId; latestKnownRunId = history[0]?.runId || correlation.runId;
       run = found.value.summary;
-      startUncertain = false; startReference = null; startSuiteId = null; review = null;
+      startUncertain = false; startReference = null; startSuiteId = null;
       one('[data-start-notice]').hidden = true;
       clearSelectedDetail(); renderWorkspace();
       if (activePanel === 'history') renderHistory();

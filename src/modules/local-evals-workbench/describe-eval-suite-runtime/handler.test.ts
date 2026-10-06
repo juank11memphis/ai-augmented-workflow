@@ -10,10 +10,10 @@ const suite: NormalizedEvalSuite = {
   runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
   testCases: [{ id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Hi' } }], toolMocks: [], assertions: [{ id: 'contains', type: 'output-contains', expected: 'Hi' }], graders: [] }],
 };
-const description = { runnerId: 'fake', capabilities: ['single-turn'] as const, models: ['fake/target'], judgeModels: [], requiredEnvironment: [], costEstimation: false };
+const description = { runnerId: 'fake', capabilities: ['single-turn'] as const, models: ['fake/target'], judgeModels: [], requiredEnvironment: [] };
 test('describe exposes independent compatible choices without calling execution', async () => {
   const result = await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner: { describe: async () => ({ status: 'ready', value: description }) } });
-  assert.deepEqual(result, { status: 'ready', suiteId: 'suite', models: ['fake/target'], judgeModels: [], rubricRequired: false, rubricCaseIds: [], costEstimation: false });
+  assert.deepEqual(result, { status: 'ready', suiteId: 'suite', models: ['fake/target'], judgeModels: [], rubricRequired: false, rubricCaseIds: [] });
 });
 test('rubric suite requires compatible judge and capability', async () => {
   const rubric = { ...suite, testCases: [{ ...suite.testCases[0]!, graders: [{ id: 'r', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'Safe' }, threshold: 0.8 }] }] };

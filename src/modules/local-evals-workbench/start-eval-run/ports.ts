@@ -1,6 +1,6 @@
 import type { NormalizedEvalSuite, NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
 import type { ArtifactStorePort } from '../run-history/contracts.js';
-import type { ArtifactReadinessPort, CaseInputResolverPort, RunnerEstimatorPort } from '../run-configuration.js';
+import type { ArtifactReadinessPort, CaseInputResolverPort } from '../run-configuration.js';
 import type { RunnerDescriptorPort, SuiteRuntimeRegistryPort } from '../runtime-ports.js';
 import type { StartEvalRunResult } from './result.js';
 
@@ -31,7 +31,7 @@ export interface RunSchedulerPort {
 
 export type StartEvalRunDependencies = {
   readonly suites: SuiteRuntimeRegistryPort;
-  readonly runner: RunnerDescriptorPort & RunnerEstimatorPort;
+  readonly runner: RunnerDescriptorPort;
   readonly inputs: CaseInputResolverPort;
   readonly artifacts: ArtifactReadinessPort;
   readonly store: ArtifactStorePort;

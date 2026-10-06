@@ -10,15 +10,11 @@ import { queued } from '../run-history/test-fixtures.js';
 const first = '123e4567-e89b-42d3-a456-426614174000';
 const second = '123e4567-e89b-42d3-a456-426614174001';
 const missing = '123e4567-e89b-42d3-a456-426614174002';
-const review = (value: Record<string, unknown>) => ({ selectedCaseIds: value.selectedCaseIds, targetCalls: value.targetCalls,
-  judgeCalls: value.judgeCalls, totalCalls: value.totalCalls, cost: value.cost });
 
 it('returns a confirmed queue reference and resolves only its exact History association', async () => {
   await withOfflineWorkbench(async ({ post, get }) => {
     const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/available' };
-    const preview = await post('/api/eval-runs/preview', selection);
-    assert.equal(preview.code, 200);
-    const payload = { ...selection, review: review(preview.payload) };
+    const payload = selection;
     const [a, b] = await Promise.all([post('/api/eval-runs/start', payload, first), post('/api/eval-runs/start', payload, second)]);
     assert.equal(a.code, 202);
     assert.equal(a.payload.reference, first);
@@ -45,7 +41,7 @@ it('returns a confirmed queue reference and resolves only its exact History asso
   });
 });
 
-it('distinguishes stale review, malformed input, and unknown associations without reflecting secrets', async () => {
+it('rejects obsolete review payloads and malformed input without reflecting secrets', async () => {
   await withOfflineWorkbench(async ({ post, get }) => {
     const bad = await post('/api/eval-runs/start', { token: 'OPENAI_API_KEY=sk-secret', prompt: 'private prompt' }, 'injected-sk-secret');
     assert.equal(bad.code, 400);
@@ -53,11 +49,11 @@ it('distinguishes stale review, malformed input, and unknown associations withou
     assert.match(String(bad.payload.reference), /^[a-f0-9-]{36}$/);
     assert.doesNotMatch(JSON.stringify(bad.payload) + JSON.stringify([...bad.headers]), /sk-secret|private prompt|injected/);
 
-    const stale = await post('/api/eval-runs/start', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available',
-      review: { selectedCaseIds: ['first'], targetCalls: 1, judgeCalls: 0, totalCalls: 1, cost: { status: 'available', amount: 0.01, currency: 'USD' } } }, first);
-    assert.equal(stale.code, 422);
-    const issue = stale.payload.issue as Record<string, unknown>;
-    assert.deepEqual([issue.stage, issue.outcome, issue.category, issue.reference], ['run-start', 'blocked', 'review-stale', first]);
+    const legacy = await post('/api/eval-runs/start', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available',
+      review: { selectedCaseIds: ['first'] } }, first);
+    assert.equal(legacy.code, 400);
+    const issue = legacy.payload.issue as Record<string, unknown>;
+    assert.deepEqual([issue.stage, issue.outcome, issue.category, issue.reference], ['run-start', 'blocked', 'invalid-request', first]);
     assert.ok(issue.title && issue.explanation && issue.nextStep && issue.recoveryAction);
     assert.deepEqual((await get(`/api/eval-runs/history?suiteId=offline&reference=${first}`)).payload, { status: 'unconfirmed' });
   });
@@ -79,11 +75,10 @@ it('keeps blocked and queued HTTP outcomes unchanged when the terminal logger th
   const brokenLogger = { info: () => { throw new Error('sk-secret'); }, warn: () => { throw new Error('sk-secret'); }, error: () => { throw new Error('sk-secret'); } };
   await withOfflineWorkbench(async ({ post }) => {
     const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/available' };
-    const preview = await post('/api/eval-runs/preview', selection);
     const invalid = await post('/api/eval-runs/start', { prompt: 'private prompt' }, first);
     assert.equal(invalid.code, 400);
     assert.equal((invalid.payload.issue as { category: string }).category, 'invalid-request');
-    const queued = await post('/api/eval-runs/start', { ...selection, review: review(preview.payload) }, second);
+    const queued = await post('/api/eval-runs/start', selection, second);
     assert.equal(queued.code, 202);
     assert.equal(queued.payload.reference, second);
     assert.doesNotMatch(JSON.stringify(queued.payload) + JSON.stringify(invalid.payload), /sk-secret|private prompt/);
@@ -102,9 +97,7 @@ it('does not rewrite a queued run as blocked when response writing fails', async
   const start: StartEvalRunDependencies = {
     suites: { load: async () => suite },
     runner: { describe: async () => ({ status: 'ready', value: { runnerId: 'runner', capabilities: ['single-turn'], models: ['fake'],
-      judgeModels: [], requiredEnvironment: [], costEstimation: true } }),
-    estimate: async () => ({ status: 'ready', value: { targetCalls: 1, judgeCalls: 0, totalCalls: 1,
-      cost: { status: 'unavailable', reason: 'Provider pricing unavailable.' } } }) },
+      judgeModels: [], requiredEnvironment: [] } }) },
     artifacts: { check: async () => ({ status: 'ready', value: null }) },
     inputs: { resolve: async () => ({ status: 'ready', value: cases }) },
     store: { create: async () => ({ status: 'ok', value: { ...queued(), runId: 'run-1' } }),
@@ -121,9 +114,7 @@ it('does not rewrite a queued run as blocked when response writing fails', async
     const request = { url: '/api/eval-runs/start', method: 'POST', headers: { 'x-sibu-request-reference': first },
       on: (event: string, callback: Function) => { listeners.set(event, callback); } };
     fake.handler?.(request, { writeHead: () => { writes++; throw new Error('sk-secret response closed'); }, end: () => assert.fail('closed response') });
-    listeners.get('data')?.(JSON.stringify({ suiteId: 'suite', model: 'fake', scope: { type: 'all' }, review: {
-      selectedCaseIds: ['case'], targetCalls: 1, judgeCalls: 0, totalCalls: 1,
-      cost: { status: 'unavailable', reason: 'Provider pricing unavailable.' } } }));
+    listeners.get('data')?.(JSON.stringify({ suiteId: 'suite', model: 'fake', scope: { type: 'all' } }));
     listeners.get('end')?.();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(scheduled, 1);

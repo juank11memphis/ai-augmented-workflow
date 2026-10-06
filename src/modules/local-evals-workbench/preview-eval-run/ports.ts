@@ -1,5 +1,5 @@
 export type { RunnerDescriptorPort, SuiteRuntimeRegistryPort } from '../runtime-ports.js';
-export type { RunnerEstimatorPort, ArtifactReadinessPort, CaseInputResolverPort } from '../run-configuration.js';
+export type { ArtifactReadinessPort, CaseInputResolverPort } from '../run-configuration.js';
 import type { RuntimeBlockReason } from '../runtime-description.js';
 import type { PreviewStage } from './result.js';
 

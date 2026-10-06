@@ -8,7 +8,6 @@ export type RuntimeDescription = {
   readonly models: readonly string[];
   readonly judgeModels: readonly string[];
   readonly requiredEnvironment: readonly string[];
-  readonly costEstimation: boolean;
 };
 
 export type RuntimeBlockReason =
@@ -18,7 +17,7 @@ export type RuntimeBlockReason =
   | 'environment-undeclared' | 'capability-unsupported'
   | 'model-unavailable' | 'judge-unavailable' | 'case-unavailable'
   | 'artifact-unsafe' | 'artifact-not-ignored' | 'artifact-tracked'
-  | 'artifact-git-unavailable' | 'artifact-root-unsafe' | 'estimate-invalid' | 'input-unsafe';
+  | 'artifact-git-unavailable' | 'artifact-root-unsafe' | 'input-unsafe';
 
 export type RuntimeBlock =
   | { readonly status: 'blocked'; readonly reason: 'environment-missing'; readonly missingEnvironmentName?: string }

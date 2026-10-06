@@ -135,7 +135,7 @@ const knownModelCheckReasons: ReadonlySet<RuntimeBlockReason | 'invalid-request'
   'environment-undeclared', 'capability-unsupported', 'model-unavailable',
   'judge-unavailable', 'case-unavailable', 'artifact-unsafe',
   'artifact-not-ignored', 'artifact-tracked', 'artifact-git-unavailable',
-  'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe', 'invalid-request',
+  'artifact-root-unsafe', 'input-unsafe', 'invalid-request',
 ]);
 
 function isKnownModelCheckReason(reason: string): boolean {
@@ -146,7 +146,7 @@ const knownStartReasons: ReadonlySet<string> = new Set<string>([
   ...knownModelCheckReasons, 'invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts',
   'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt',
   'limit-exceeded', 'invalid-transition', 'owner-unknown', 'index-stale',
-  'review-stale', 'schedule-failed', 'reference-reused', 'unknown',
+  'schedule-failed', 'reference-reused', 'unknown',
 ]);
 const knownReadReasons: ReadonlySet<string> = new Set(['invalid-request', 'invalid-input', 'unsafe-path', 'not-ignored',
   'tracked-artifacts', 'git-unavailable', 'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded',

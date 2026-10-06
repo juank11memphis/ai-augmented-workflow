@@ -121,9 +121,7 @@ test('restored failure remains immutable through approval and distinct confirmed
         assertions: [{ id: 'assertion', type: 'output-contains', expected: 'yes' }], graders: [] }] };
     const scheduled: string[] = [];
     const runner = { describe: async () => ({ status: 'ready' as const, value: { runnerId: 'offline', capabilities: ['single-turn' as const],
-      models: ['synthetic'], judgeModels: [], requiredEnvironment: [], costEstimation: true } }),
-    estimate: async () => ({ status: 'ready' as const, value: { targetCalls: 1, judgeCalls: 0, totalCalls: 1,
-      cost: { status: 'available' as const, amount: 0, currency: 'USD' } } }) };
+      models: ['synthetic'], judgeModels: [], requiredEnvironment: [] } }) };
     const runPorts = { suites: { load: async () => suite }, runner, inputs: { resolve: async () => ({ status: 'ready' as const, value: suite.testCases }) },
       artifacts: { check: async () => ({ status: 'ready' as const, value: null }) }, store: history.store,
       scheduler: { schedule: ({ runId: scheduledId }: { runId: string }) => { scheduled.push(scheduledId); } } };
@@ -133,8 +131,7 @@ test('restored failure remains immutable through approval and distinct confirmed
       assert.equal(preview.status, 'ready');
       assert.equal(scheduled.length, scope.type === 'test_case' ? 0 : 1, 'preview never schedules');
       if (preview.status !== 'ready') continue;
-      const started = await startEvalRun({ ...selection, review: { selectedCaseIds: preview.selectedCaseIds, targetCalls: preview.targetCalls,
-        judgeCalls: preview.judgeCalls, totalCalls: preview.totalCalls, cost: preview.cost } }, runPorts);
+      const started = await startEvalRun(selection, runPorts);
       assert.equal(started.status, 'queued');
       if (started.status !== 'queued') continue;
       assert.notEqual(started.runId, runId);

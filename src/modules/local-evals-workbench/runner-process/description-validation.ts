@@ -10,17 +10,16 @@ export function validateDescription(data: unknown, secrets: readonly string[]): 
   if (!record(data) || typeof data.runnerId !== 'string' || !ID.test(data.runnerId)
     || !names(data.models, ID) || !names(data.judgeModels, ID)
     || !names(data.requiredEnvironment, ENV) || !names(data.capabilities, ID)
-    || data.capabilities.some((capability) => !CAPABILITIES.includes(capability))
-    || typeof data.costEstimation !== 'boolean') return { status: 'blocked', reason: 'runner-invalid' };
+    || data.capabilities.some((capability) => !CAPABILITIES.includes(capability))) return { status: 'blocked', reason: 'runner-invalid' };
   if (secrets.some((secret) => JSON.stringify(data).includes(secret))) return { status: 'blocked', reason: 'runner-invalid' };
   return { status: 'ready', value: {
     runnerId: data.runnerId,
     capabilities: data.capabilities as RuntimeDescription['capabilities'],
     models: data.models, judgeModels: data.judgeModels,
-    requiredEnvironment: data.requiredEnvironment, costEstimation: data.costEstimation,
+    requiredEnvironment: data.requiredEnvironment,
   } };
 }
-export function validateEnvelope(event: unknown, requestId: string, type: 'description' | 'estimate'): RuntimeOutcome<unknown> {
+export function validateEnvelope(event: unknown, requestId: string, type: 'description'): RuntimeOutcome<unknown> {
   if (!record(event) || event.protocolVersion !== 1 || event.requestId !== requestId
     || event.sequence !== 0 || event.type !== type || event.runId !== null
     || event.caseId !== null || event.attempt !== null || !record(event.data))

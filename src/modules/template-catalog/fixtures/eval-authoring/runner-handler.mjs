@@ -30,7 +30,7 @@ function validate(command, evalMode) {
   if (evalMode !== '1' || !command || command.protocolVersion !== 1 || !identifier.test(command.requestId ?? '')) throw new Error('invalid-request');
   safeEvidence(command.requestId);
   if (command.operation === 'describe') return;
-  if (!['estimate', 'execute'].includes(command.operation) || !models.includes(command.model)) throw new Error('invalid-request');
+  if (command.operation !== 'execute' || !models.includes(command.model)) throw new Error('invalid-request');
   if ('repeats' in command) throw new Error('invalid-request');
   if (!Array.isArray(command.testCases) || command.testCases.length === 0 || command.testCases.length > 10) throw new Error('invalid-request');
   if (command.operation === 'execute' && !identifier.test(command.runId ?? '')) throw new Error('invalid-request');
@@ -69,13 +69,7 @@ export async function handleRequest(command, ports, { evalMode = '1' } = {}) {
     return { status: 'error', events };
   }
   if (command.operation === 'describe') {
-    emit('description', { runnerId: 'synthetic-support', capabilities, models, judgeModels, requiredEnvironment: [], costEstimation: false });
-    return { status: 'completed', events };
-  }
-  if (command.operation === 'estimate') {
-    const targetCalls = command.testCases.reduce((sum, item) => sum + item.turns.length, 0);
-    const judgeCalls = command.testCases.reduce((sum, item) => sum + item.graders.filter((grader) => grader.type === 'rubric').length, 0);
-    emit('estimate', { targetCalls, judgeCalls, totalCalls: targetCalls + judgeCalls, cost: { status: 'unavailable', reason: 'Synthetic fixture has no provider pricing.' } });
+    emit('description', { runnerId: 'synthetic-support', capabilities, models, judgeModels, requiredEnvironment: [] });
     return { status: 'completed', events };
   }
   identity.runId = command.runId;

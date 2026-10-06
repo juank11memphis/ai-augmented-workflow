@@ -20,12 +20,7 @@ const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 
 type Workbench = Parameters<Parameters<typeof withOfflineWorkbench>[0]>[0];
 
 async function reviewedStart(workbench: Workbench, reference: string) {
-  const preview = await workbench.post('/api/eval-runs/preview', selection);
-  assert.equal(preview.code, 200);
-  const { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost } = preview.payload;
-  const accepted = await workbench.post('/api/eval-runs/start', { ...selection,
-    review: { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost },
-  }, reference);
+  const accepted = await workbench.post('/api/eval-runs/start', selection, reference);
   assert.equal(accepted.code, 202);
   assert.equal(accepted.payload.reference, reference);
   return String(accepted.payload.runId);
@@ -228,13 +223,8 @@ test('lost response keeps one saved run, exact History association and prior evi
       assert.equal(background.length, 1);
       assert.equal(background[0]?.runId, lostRunId);
       assert.doesNotMatch(terminal.join('\n'), secret);
-      const preview = await workbench.post('/api/eval-runs/preview', selection);
-      assert.equal(preview.code, 200);
       await workbench.setRunnerMode('no-models');
-      const { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost } = preview.payload;
-      const blocked = await workbench.post('/api/eval-runs/start', { ...selection,
-        review: { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost },
-      }, references.absent);
+      const blocked = await workbench.post('/api/eval-runs/start', selection, references.absent);
       assert.equal(blocked.code, 422);
       assert.equal(blocked.payload.status, 'blocked');
       const issue = blocked.payload.issue as { stage: string; outcome: string; category: string; reference: string; recoveryAction: string };

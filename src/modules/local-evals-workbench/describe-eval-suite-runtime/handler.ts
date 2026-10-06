@@ -44,8 +44,7 @@ export async function describeEvalSuiteRuntime(
     }
     log('eval_runtime_describe_completed');
     return { status: 'ready', suiteId: suite.id, models: described.value.models, judgeModels: described.value.judgeModels,
-      rubricRequired: hasRubric(suite.testCases), rubricCaseIds: suite.testCases.filter((testCase) => hasRubric([testCase])).map((testCase) => testCase.id),
-      costEstimation: described.value.costEstimation };
+      rubricRequired: hasRubric(suite.testCases), rubricCaseIds: suite.testCases.filter((testCase) => hasRubric([testCase])).map((testCase) => testCase.id) };
   } catch {
     log('eval_runtime_describe_blocked', 'runner-unavailable');
     return { status: 'blocked', reason: 'runner-unavailable' };

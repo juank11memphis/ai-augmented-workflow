@@ -23,13 +23,10 @@ const suite = {
 };
 const runner = `let body=''; process.stdin.on('data',chunk=>body+=chunk); process.stdin.on('end',()=>{
   const request=JSON.parse(body);
-  if(process.env.SIBU_EVAL_MODE!=='1'||request.operation==='execute') process.exit(3);
-  const data=request.operation==='describe'
-    ? {runnerId:'offline',capabilities:['single-turn'],models:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[],costEstimation:true}
-    : {targetCalls:1,judgeCalls:0,totalCalls:1,cost:request.model==='fake/available'
-      ? {status:'available',amount:0.01,currency:'USD'} : {status:'unavailable',reason:'Provider pricing unavailable.'}};
+  if(process.env.SIBU_EVAL_MODE!=='1'||request.operation!=='describe') process.exit(3);
+  const data={runnerId:'offline',capabilities:['single-turn'],models:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[]};
   process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,
-    type:request.operation==='describe'?'description':'estimate',runId:null,caseId:null,attempt:null,data})+'\\n');
+    type:'description',runId:null,caseId:null,attempt:null,data})+'\\n');
 });`;
 async function project(run: (root: string) => Promise<void>): Promise<void> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-preview-integration-'));
@@ -61,11 +58,10 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
       assert.deepEqual(described.payload.models, ['fake/available', 'fake/unavailable']);
       const available = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
       assert.equal(available.code, 200);
-      assert.equal(available.payload.totalCalls, 1);
-      assert.equal((available.payload.cost as { status: string }).status, 'available');
+      assert.deepEqual(available.payload.selectedCaseIds, ['case']);
       const unavailable = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'case' }, model: 'fake/unavailable' });
       assert.equal(unavailable.code, 200);
-      assert.equal((unavailable.payload.cost as { status: string }).status, 'unavailable');
+      assert.deepEqual(unavailable.payload.selectedCaseIds, ['case']);
       const missingCase = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'missing' }, model: 'fake/available' });
       assert.equal(missingCase.payload.status, 'blocked');
       assert.equal(missingCase.payload.stage, 'selection');
@@ -132,8 +128,6 @@ test('preview retains observed runner boundary categories without guessing a pro
       ...selected, runner: { ...selected.runner, requiredEnvironment: ['NODE_OPTIONS'] },
     });
     await expectBlocked('runner-request-too-large', 'description', selected, 4);
-    await writeFile(runnerPath, runner.replace("const data=request.operation==='describe'", "if(request.operation==='estimate') process.exit(2); const data=request.operation==='describe'"));
-    await expectBlocked('runner-exited', 'estimation');
     assert.doesNotMatch(JSON.stringify(events), /provider|credential|SYNTHETIC_SECRET_MARKER/i);
   });
 });
@@ -142,8 +136,7 @@ test('legacy unclassified runner result stays unclassified at the observed previ
   const selected = suite as NormalizedEvalSuite;
   const result = await previewEvalRun({ suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' }, {
     suites: { load: async () => selected },
-    runner: { describe: async () => ({ status: 'blocked', reason: 'input-unsafe' }),
-      estimate: async () => { throw new Error('estimate must not run'); } },
+    runner: { describe: async () => ({ status: 'blocked', reason: 'input-unsafe' }) },
     artifacts: { check: async () => { throw new Error('artifacts must not run'); } },
     inputs: { resolve: async () => { throw new Error('inputs must not run'); } },
   });

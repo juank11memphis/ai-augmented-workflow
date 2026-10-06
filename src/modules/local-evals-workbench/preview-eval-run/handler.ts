@@ -1,13 +1,12 @@
 import type { PreviewEvalRunCommand } from './command.js';
 import type { PreviewEvalRunResult, PreviewStage } from './result.js';
-import type { ArtifactReadinessPort, CaseInputResolverPort, PreviewOutcomeLoggerPort, RunnerDescriptorPort, RunnerEstimatorPort, SuiteRuntimeRegistryPort } from './ports.js';
+import type { ArtifactReadinessPort, CaseInputResolverPort, PreviewOutcomeLoggerPort, RunnerDescriptorPort, SuiteRuntimeRegistryPort } from './ports.js';
 import { compatibleDescription, hasRubric, requiredCapabilities, type RuntimeBlockReason } from '../runtime-description.js';
 import type { NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
 
-/** Hard upper bound avoids surprising spend and unsafe call arithmetic. */
 export type PreviewEvalRunDependencies = {
   readonly suites: SuiteRuntimeRegistryPort;
-  readonly runner: RunnerDescriptorPort & RunnerEstimatorPort;
+  readonly runner: RunnerDescriptorPort;
   readonly artifacts: ArtifactReadinessPort;
   readonly inputs: CaseInputResolverPort;
   readonly logger?: PreviewOutcomeLoggerPort;
@@ -54,16 +53,10 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
     stage = 'resolved-inputs';
     const resolved = await dependencies.inputs.resolve(cases);
     if (resolved.status === 'blocked') return blocked(resolved.reason);
-    stage = 'estimation';
-    const estimate = await dependencies.runner.estimate(suite, { model: command.model, judgeModel: judge ?? null, testCases: resolved.value });
-    if (estimate.status === 'blocked') return blocked(estimate.reason);
-    if (!description.value.costEstimation && estimate.value.cost.status === 'available') return blocked('estimate-invalid');
     log('eval_preview_completed', 'preview', 'completed');
     return {
       status: 'ready', suiteId: suite.id, selectedCaseIds: cases.map((testCase) => testCase.id),
       model: command.model, judgeModel: judge ?? null,
-      targetCalls: estimate.value.targetCalls, judgeCalls: estimate.value.judgeCalls,
-      totalCalls: estimate.value.totalCalls, cost: estimate.value.cost, requiresConfirmation: true,
     };
   } catch {
     log('eval_preview_failed', stage, 'failed', 'unknown-cause');

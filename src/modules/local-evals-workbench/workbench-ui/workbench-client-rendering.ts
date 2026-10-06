@@ -76,7 +76,7 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
   function renderRunButton(disabled) {
     const run = control('run');
     if (!run) return;
-    run.textContent = disabled ? 'Reviewing...' : 'Review run';
+    run.textContent = disabled ? 'Starting...' : 'Start run';
     run.disabled = disabled || !runtimeReady || runUnavailable();
   }
 

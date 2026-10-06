@@ -59,7 +59,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       const html = await getHtml();
       assert.match(html, /data-run-setup/);
       assert.match(html, /data-setup-fields/);
-      assert.match(html, /data-action="review"/);
+      assert.match(html, /data-action="start"/);
       assert.match(html, /data-action="new-run"/);
       assert.doesNotMatch(html, /selection-sheet/);
 
@@ -70,22 +70,13 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       const all = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
       assert.equal(all.code, 200);
       assert.deepEqual(all.payload.selectedCaseIds, ['first', 'second']);
-      assert.equal(all.payload.totalCalls, 2);
-      assert.equal((all.payload.cost as { status: string }).status, 'available');
 
       const one = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/unavailable' });
       assert.equal(one.code, 200);
       assert.deepEqual(one.payload.selectedCaseIds, ['first']);
-      assert.equal(one.payload.totalCalls, 1);
-      assert.equal((one.payload.cost as { status: string }).status, 'unavailable');
-      const review = ({ selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost }: typeof one.payload) =>
-        ({ selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost });
       const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/unavailable' };
-      const stale = await post('/api/eval-runs/start', { ...selection, review: review(all.payload) });
-      assert.equal(stale.payload.status, 'blocked');
-      assert.equal(stale.payload.reason, 'review-stale');
-      assert.equal((stale.payload.issue as { category: string }).category, 'review-stale');
-      assert.equal(stale.code, 422);
+      const legacyReview = await post('/api/eval-runs/start', { ...selection, review: { selectedCaseIds: ['first'] } });
+      assert.equal(legacyReview.code, 400);
 
       await setRunnerMode('no-models');
       const noModels = await post('/api/eval-suites/describe', { suiteId: 'offline' });
@@ -97,7 +88,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.doesNotMatch(JSON.stringify(failure.payload), /evals\/runner|\/tmp\/|secret/);
 
       await setRunnerMode('ready');
-      const started = await post('/api/eval-runs/start', { ...selection, review: review(one.payload) });
+      const started = await post('/api/eval-runs/start', selection);
       assert.equal(started.code, 202);
       assert.equal(started.payload.status, 'queued');
       assert.equal(started.payload.suiteId, 'offline');
@@ -123,7 +114,7 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.match(response.body, /Eval Suite/);
       assert.match(response.body, /Skill authoring checks/);
       assert.match(response.body, /Run scope/);
-      assert.match(response.body, /Review run/);
+      assert.match(response.body, /Start run/);
       assert.match(response.body, /Model/);
       assert.match(response.body, /0\/2 complete/);
       assert.match(response.body, /OPENAI_API_KEY.*project-root \.env.*\.env\.local/);

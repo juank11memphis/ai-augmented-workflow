@@ -9,8 +9,7 @@ const request=JSON.parse(body);
 let sequence=0;
 function emit(type,caseId,data) { process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:sequence++,type,
   runId:request.operation==='execute'?request.runId:null,caseId,attempt:caseId?1:null,data})+'\\n'); }
-if (request.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn'],models:['fake'],judgeModels:[],requiredEnvironment:[],costEstimation:true});
-else if (request.operation==='estimate') emit('estimate',null,{targetCalls:request.testCases.length,judgeCalls:0,totalCalls:request.testCases.length,cost:{status:'unavailable',reason:'Provider pricing unavailable.'}});
+if (request.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn'],models:['fake'],judgeModels:[],requiredEnvironment:[]});
 else if (request.operation==='execute') {
   if (process.env.SIBU_EVAL_MODE!=='1') process.exit(3);
   emit('run-started',null,{model:request.model,judgeModel:null});
@@ -56,12 +55,8 @@ let body=''; for await (const chunk of process.stdin) body += chunk;
 const request=JSON.parse(body); let sequence=0;
 function emit(type,caseId,attempt,data) { process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:sequence++,type,
   runId:request.operation==='execute'?request.runId:null,caseId,attempt,data})+'\\n'); }
-if (request.operation==='describe') emit('description',null,null,{runnerId:'deep-offline',capabilities:['single-turn','multi-turn','tool-mocks','custom','rubric'],models:['fake'],judgeModels:['fake-judge'],requiredEnvironment:[],costEstimation:true});
-else if (request.operation==='estimate') {
-  const targetCalls=request.testCases.reduce((n,item)=>n+item.turns.length,0);
-  const judgeCalls=request.testCases.reduce((n,item)=>n+item.graders.filter(check=>check.type==='rubric').length,0);
-  emit('estimate',null,null,{targetCalls,judgeCalls,totalCalls:targetCalls+judgeCalls,cost:{status:'available',amount:(targetCalls+judgeCalls)*0.01,currency:'USD'}});
-} else if (request.operation==='execute') {
+if (request.operation==='describe') emit('description',null,null,{runnerId:'deep-offline',capabilities:['single-turn','multi-turn','tool-mocks','custom','rubric'],models:['fake'],judgeModels:['fake-judge'],requiredEnvironment:[]});
+else if (request.operation==='execute') {
   if (process.env.SIBU_EVAL_MODE!=='1') process.exit(3);
   emit('run-started',null,null,{model:request.model,judgeModel:request.judgeModel});
   for (const item of request.testCases) { const attempt=1;

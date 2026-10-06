@@ -99,7 +99,7 @@ const modelReasons: readonly RuntimeBlockReason[] = [
   'environment-undeclared', 'capability-unsupported', 'model-unavailable',
   'judge-unavailable', 'case-unavailable', 'artifact-unsafe',
   'artifact-not-ignored', 'artifact-tracked', 'artifact-git-unavailable',
-  'artifact-root-unsafe', 'estimate-invalid', 'input-unsafe',
+  'artifact-root-unsafe', 'input-unsafe',
 ];
 
 it('maps every known model-check cause to bounded issue guidance', () => {
@@ -134,16 +134,16 @@ it('includes only validated setting names in model-check user copy', () => {
 
 it('maps every known preview cause with observed stage and safe recovery', () => {
   for (const reason of modelReasons) {
-    const issue = previewIssue({ status: 'blocked', stage: 'estimation', reason }, reference);
+    const issue = previewIssue({ status: 'blocked', stage: 'description', reason }, reference);
     assert.equal(issue.stage, 'preview');
-    assert.equal(issue.observedStage, 'estimation');
+    assert.equal(issue.observedStage, 'description');
     assert.equal(issue.category, reason);
     assert.equal(issue.outcome, 'blocked');
     assert.equal(issue.reference, reference);
     assert.ok(issue.title && issue.explanation && issue.nextStep && issue.recoveryAction);
     assert.doesNotMatch(JSON.stringify(issue), /sk-secret|private\/project/);
   }
-  assert.notEqual(previewIssue({ status: 'blocked', stage: 'estimation', reason: 'runner-request-too-large' }, reference).nextStep,
+  assert.notEqual(previewIssue({ status: 'blocked', stage: 'description', reason: 'runner-request-too-large' }, reference).nextStep,
     previewIssue({ status: 'blocked', stage: 'description', reason: 'required-setting-rejected' }, reference).nextStep);
   const unknown = previewIssue({ status: 'error', stage: 'resolved-inputs', reason: 'unknown-cause' }, reference);
   assert.equal(unknown.outcome, 'failed');
@@ -158,7 +158,7 @@ it('maps every known preview cause with observed stage and safe recovery', () =>
 it('maps every known run-start block to stage-specific safe guidance', () => {
   const storageReasons = ['invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable',
     'unverifiable-root', 'unavailable', 'not-found', 'corrupt', 'limit-exceeded', 'invalid-transition',
-    'owner-unknown', 'index-stale', 'review-stale', 'schedule-failed'] as const;
+    'owner-unknown', 'index-stale', 'schedule-failed'] as const;
   for (const reason of [...modelReasons, ...storageReasons]) {
     const issue = startIssue({ status: 'blocked', reason }, reference);
     assert.equal(issue.stage, 'run-start');

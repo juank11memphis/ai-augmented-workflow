@@ -9,12 +9,7 @@ const secret = 'OPENAI_API_KEY=sk-synthetic-secret';
 const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/available' };
 
 async function reviewedStart(post: Parameters<Parameters<typeof withOfflineWorkbench>[0]>[0]['post']) {
-  const preview = await post('/api/eval-runs/preview', selection);
-  assert.equal(preview.code, 200);
-  const { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost } = preview.payload;
-  return post('/api/eval-runs/start', { ...selection,
-    review: { selectedCaseIds, targetCalls, judgeCalls, totalCalls, cost },
-  }, reference);
+  return post('/api/eval-runs/start', selection, reference);
 }
 
 async function savedStatus(get: Parameters<Parameters<typeof withOfflineWorkbench>[0]>[0]['get'], runId: string) {

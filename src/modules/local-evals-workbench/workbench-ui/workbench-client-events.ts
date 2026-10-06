@@ -4,10 +4,9 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     const target = event.target;
     if (runUnavailable() && target.matches('[data-control="suite"], [data-control="model"], [data-control="test-case"], [data-control="judge"], input[name="runScope"]')) return;
     if (target.matches('[data-control="suite"]')) { selectSuite(target.value); }
-    if (target.matches('[data-control="model"]')) { state = { ...state, selectedEvalRunModel: target.value }; invalidateReview(); selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); }
-    if (target.matches('input[name="runScope"]')) { state = { ...state, runScope: selectedScope() }; invalidateReview(); renderTestCasePicker(); syncJudgeVisibility(); }
-    if (target.matches('[data-control="test-case"]')) { state = { ...state, runScope: { type: 'test_case', testCaseId: target.value } }; invalidateReview(); syncJudgeVisibility(); }
-    if (target.matches('[data-control="judge"]')) invalidateReview();
+    if (target.matches('[data-control="model"]')) { state = { ...state, selectedEvalRunModel: target.value }; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); }
+    if (target.matches('input[name="runScope"]')) { state = { ...state, runScope: selectedScope() }; renderTestCasePicker(); syncJudgeVisibility(); }
+    if (target.matches('[data-control="test-case"]')) { state = { ...state, runScope: { type: 'test_case', testCaseId: target.value } }; syncJudgeVisibility(); }
     if (target.matches('[data-control="failures-only"]')) { filters.failuresOnly = target.checked; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderResults(); renderSelectedCell(); }
     if (target.matches('[data-control="variant"]')) { const checked = [...root.querySelectorAll('[data-control="variant"]:checked')].map((input) => input.value); filters.visibleVariantIds = checked.length ? checked : filters.visibleVariantIds.slice(0, 1); selectedCell = null; activeAssertionId = null; renderFilters(); renderResults(); renderSelectedCell(); }
   });
@@ -22,8 +21,6 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     if (event.target.matches('[data-control="analyze-failure"]')) { await analyzeFailure(); return; }
     if (event.target.matches('[data-control="draft-proposal"]')) { await draftProposal(); return; }
     if (event.target.matches('[data-control="apply-proposal"]')) { await applyProposal(event.target.dataset.proposalId); return; }
-    if (event.target.matches('[data-control="preview-back"]')) { closeReview(); return; }
-    if (event.target.matches('[data-control="preview-start"]')) { await confirmReviewedRun(); return; }
     if (event.target.matches('[data-control="rerun-recommendation"]')) { await rerunRecommended(event.target.dataset.rerunScope === 'suite'); return; }
     if (event.target.matches('[data-control="retry-cell"]')) { if (runUnavailable()) return; const cell = selectedCell; const scope = cell ? { type: 'test_case', testCaseId: cell.testCaseId } : selectedScope(); state = { ...state, selectedEvalRunModel: cell?.modelId || state.selectedEvalRunModel, runScope: scope }; selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); await runEval(scope); return; }
     if (!event.target.matches('[data-control="run"]') && !event.target.matches('[data-control="retry-run"]')) return;
@@ -44,7 +41,6 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
     proposalState = { status: 'idle' };
     state = { ...state, selectedSuiteId: suiteId, runScope: { type: 'all' } };
     rememberSuite(suiteId);
-    invalidateReview();
     renderReady();
     restoreSelectedRun();
     void loadRuntimeDescription();
@@ -53,7 +49,10 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
   async function runEval(scopeOverride) {
     if (runUnavailable()) return;
     const scope = scopeOverride || selectedScope();
-    await openRunPreview(scope);
+    if (!runtimeReady) { previewStatus('Compatible models are not ready.'); return; }
+    const command = currentRunCommand(scope);
+    if (!command.model) { previewStatus('Choose a compatible Model before starting.'); return; }
+    await startRunDirect(command);
   }
   async function analyzeFailure() {
     const cell = selectedCell && findCell(selectedCell);
@@ -146,8 +145,6 @@ export const WORKBENCH_CLIENT_EVENTS_SECTION = {
 
 
   root.addEventListener('keydown', (event) => {
-    if (reviewedPreview && event.key === 'Escape') { event.preventDefault(); closeReview(); return; }
-    if (reviewedPreview && event.key === 'Tab') { trapReviewFocus(event); return; }
     if (selectedCell && event.key === 'Escape') { event.preventDefault(); selectedCell = null; activeAssertionId = null; analysisState = { status: 'idle' }; proposalState = { status: 'idle' }; renderSelectedCell(); return; }
     if (selectedCell && event.key === 'Tab') { trapDrawerFocus(event); return; }
     const cellButton = event.target.closest?.('[data-cell-button]');

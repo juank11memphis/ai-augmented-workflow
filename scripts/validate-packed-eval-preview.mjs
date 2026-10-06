@@ -26,13 +26,10 @@ export async function validatePackedEvalPreview({ workspace, installedPackageRoo
 process.stdin.on('data', chunk => body += chunk);
 process.stdin.on('end', () => {
   const request = JSON.parse(body);
-  if (process.env.SIBU_EVAL_MODE !== '1' || request.operation === 'execute') process.exit(3);
-  const description = {runnerId:'offline',capabilities:['single-turn'],models:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[],costEstimation:true};
-  const estimate = {targetCalls:1,judgeCalls:0,totalCalls:1,cost:request.model === 'fake/available'
-    ? {status:'available',amount:0.01,currency:'USD'} : {status:'unavailable',reason:'Provider pricing unavailable.'}};
+  if (process.env.SIBU_EVAL_MODE !== '1' || request.operation !== 'describe') process.exit(3);
+  const description = {runnerId:'offline',capabilities:['single-turn'],models:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[]};
   process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,
-    type:request.operation === 'describe' ? 'description':'estimate',runId:null,caseId:null,attempt:null,
-    data:request.operation === 'describe' ? description:estimate})+'\\n');
+    type:'description',runId:null,caseId:null,attempt:null,data:description})+'\\n');
 });`);
   execFileSync('git', ['init', '-q'], { cwd: projectRoot });
   const installed = (relative) => pathToFileURL(path.join(installedPackageRoot, 'bin/modules/local-evals-workbench', relative)).href;
@@ -49,11 +46,12 @@ process.stdin.on('end', () => {
   const described = await describeEvalSuiteRuntime({ suiteId: 'offline' }, { suites, runner });
   assert.equal(described.status, 'ready');
   const dependencies = { suites, runner, artifacts: new PreviewArtifactReadiness(projectRoot), inputs: { resolve: (cases) => resolveSuiteInputs(projectRoot, cases) } };
-  for (const [model, status] of [['fake/available', 'available'], ['fake/unavailable', 'unavailable']]) {
+  for (const model of ['fake/available', 'fake/unavailable']) {
     const result = await previewEvalRun({ suiteId: 'offline', scope: { type: 'all' }, model }, dependencies);
     assert.equal(result.status, 'ready');
-    assert.equal(result.cost.status, status);
-    assert.equal(result.totalCalls, 1);
+    assert.deepEqual(result.selectedCaseIds, ['case']);
+    assert.equal('cost' in result, false);
+    assert.equal('totalCalls' in result, false);
   }
   console.log('Packed offline eval describe/preview smoke passed.');
 }

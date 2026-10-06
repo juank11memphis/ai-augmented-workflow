@@ -66,7 +66,7 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /<legend>Run scope<\/legend>/);
     assert.match(html, /class="field test-case-picker" hidden>Test case/);
     assert.match(html, /<option value="names-artifact" >Names artifact<\/option>/);
-    assert.match(html, /<button[^>]*>Review run<\/button>/);
+    assert.match(html, /<button[^>]*>Start run<\/button>/);
     assert.match(html, /<label class="field">Model/);
     assert.match(html, /<optgroup label="GPT-4 family">/);
     assert.match(html, /GPT-4o mini · ~\$0\.15 in \/ \$0\.60 out per 1M/);
@@ -84,7 +84,7 @@ describe('renderWorkbenchShell', () => {
 
     assert.match(html, /class="field test-case-picker" >Test case/);
     assert.match(html, /<option value="missing-skill-boundary" selected>Missing skill boundary<\/option>/);
-    assert.match(html, /Review run/);
+    assert.match(html, /Start run/);
   });
 
   it('renders phone cards and desktop matrix with color-independent status cues', () => {

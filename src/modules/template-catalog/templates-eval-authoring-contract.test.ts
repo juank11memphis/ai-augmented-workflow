@@ -86,19 +86,19 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.match(metadata?.changes.join(' ') ?? '', /resolved-case comparison/);
+  assert.match(metadata?.changes.join(' ') ?? '', /estimate requests/);
 });
 
 test('protocol examples and evidence define independent version, identity and ordering', () => {
   const examples = [...reference.matchAll(/```json\n([\s\S]*?)\n```/g)].map((match) => JSON.parse(match[1]!));
-  assert.deepEqual(examples.slice(1, 4).map((item) => item.operation), ['describe', 'estimate', 'execute']);
+  assert.deepEqual(examples.slice(1, 3).map((item) => item.operation), ['describe', 'execute']);
   for (const item of examples.slice(1)) assert.equal(item.protocolVersion, 1);
-  for (const item of examples.slice(2, 4)) {
+  for (const item of examples.slice(2, 3)) {
     assert.equal(validateEvalSuiteContract({ ...example(), testCases: item.testCases }).status, 'valid');
     assert.equal(item.judgeModel, 'fake/judge');
     assert.equal('repeats' in item, false);
   }
-  for (const requirement of ['judgeModels', 'costEstimation', 'targetCalls', 'judgeCalls', 'totalCalls', 'unavailable', 'runId', 'caseId', 'attempt', 'sequence', 'redaction uncertainty', 'hidden chain-of-thought', 'not a claim that dashboard', 'Sibu-owned deterministic']) {
+  for (const requirement of ['judgeModels', 'runId', 'caseId', 'attempt', 'sequence', 'redaction uncertainty', 'hidden chain-of-thought', 'not a claim that dashboard', 'Sibu-owned deterministic']) {
     assert.ok(reference.includes(requirement), requirement);
   }
 });

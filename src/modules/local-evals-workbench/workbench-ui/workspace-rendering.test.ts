@@ -26,7 +26,7 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(html, /data-action="history"/);
   assert.match(html, /data-run-setup/);
   assert.match(html, /data-setup-fields/);
-  assert.match(html, /data-action="review"/);
+  assert.match(html, /data-action="start"/);
   assert.match(html, /data-action="new-run"/);
   assert.match(html, /data-run-setup hidden/);
   assert.match(html, /data-detail hidden/);

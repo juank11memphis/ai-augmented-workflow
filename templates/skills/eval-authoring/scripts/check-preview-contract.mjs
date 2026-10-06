@@ -70,8 +70,7 @@ async function main() {
       throw new Error(`preview-blocked:${String(category).slice(0, 80)}`);
     }
     console.log(JSON.stringify({ status: 'ready', suiteId: result.suiteId,
-      selectedCaseIds: result.selectedCaseIds, targetCalls: result.targetCalls,
-      judgeCalls: result.judgeCalls, totalCalls: result.totalCalls }));
+      selectedCaseIds: result.selectedCaseIds }));
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'unknown';
     console.error(`Sibu preview contract check failed: ${reason === 'usage'
