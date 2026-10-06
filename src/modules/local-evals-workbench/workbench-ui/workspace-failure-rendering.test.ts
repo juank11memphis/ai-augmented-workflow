@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
+import { WORKSPACE_CASE_DETAIL_CLIENT } from './workspace-case-detail.js';
 import { WORKSPACE_STYLES } from './workspace-styles.js';
 import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 
@@ -17,10 +18,12 @@ test('selected failure renders evidence first, escapes text, and never shows ano
     { id: 'grader', outcome: 'passed', score: 0.9, threshold: 0.8, actual: 'GRADER RESULT', expected: 'rubric', diagnostics: ['grader diagnostic'] },
     { id: 'pending', outcome: 'incomplete', actual: '', expected: 'later', diagnostics: [] },
   ], turns: [], tools: [], diagnostics: ['ATTEMPT DIAGNOSTIC'], output: '<RAW RESPONSE OPENAI_API_KEY=synthetic>' };
-  const selected = (id: string) => ({ outcome: 'failed', assertions: [{ id, outcome: 'failed', actual: id === 'a' ? '<selected actual>' : 'B ACTUAL',
-    expected: 'EXPECTED', score: 0.2, threshold: 0.8, diagnostics: ['selected diagnostic'] }],
+  const selected = (id: string) => ({ outcome: 'failed', assertions: all.assertions.map(check => check.id === id
+    ? { ...check, actual: id === 'a' ? '<selected actual>' : 'B ACTUAL', expected: 'EXPECTED',
+      score: 0.2, threshold: 0.8, diagnostics: ['selected diagnostic'] } : check),
   turns: [{ id: 'linked', role: 'assistant', content: 'SELECTED TURN' }],
-  tools: [{ id: 'tool', name: 'verify', outcome: 'result', arguments: 'SELECTED TOOL', result: 'ok' }], diagnostics: [], output: '' });
+  tools: [{ id: 'tool', name: 'verify', outcome: 'result', arguments: 'SELECTED TOOL', result: 'ok' }],
+  diagnostics: all.diagnostics, output: all.output });
   const context = { document, URL, URLSearchParams, matchMedia: () => ({ matches: false }), esc: escape,
     one: (selector: string) => ({ '[data-results-container]': { innerHTML: '' }, '[data-detail]': detail, '[data-side-panel]': { hidden: true } })[selector],
     suite: { id: 'suite', testCases: [{ id: 'case', name: 'Case' }] }, run: { runId: 'run', testedModel: 'model', scope: 'all',
@@ -30,18 +33,19 @@ test('selected failure renders evidence first, escapes text, and never shows ano
     json: async (url: string) => url.includes('history') ? new Promise(() => undefined) : ({ status: 'ok', value: { evidenceStatus: 'available', evidence: url.includes('assertionId=')
       ? selected(new URL('http://localhost/?' + url.split('?')[1]).searchParams.get('assertionId') || 'a') : all } }),
   };
-  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({inspectCase})', context) as { inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void> };
+  const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT + ';({inspectCase})', context) as { inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void> };
   await api.inspectCase('case', 2);
   assert.match(detail.innerHTML, /Failed check 1 of 2/);
   assert.match(detail.innerHTML, /&lt;selected actual&gt;/);
   assert.doesNotMatch(detail.innerHTML, /<selected actual>|<RAW RESPONSE/);
   assert.match(detail.innerHTML, /All checks \(4\).*grader.*passed.*Score 0.9.*Threshold 0.8.*GRADER RESULT.*grader diagnostic.*pending.*incomplete/s);
   assert.match(detail.innerHTML, /Attempt diagnostics.*ATTEMPT DIAGNOSTIC/s);
+  assert.match(detail.innerHTML, /Conversation turns and tool trace.*SELECTED TURN.*SELECTED TOOL/s);
   assert.match(detail.innerHTML, /Bounded raw response.*&lt;RAW RESPONSE OPENAI_API_KEY=synthetic&gt;/);
   assert.doesNotMatch(detail.innerHTML, /No raw response was retained/);
   const actual = detail.innerHTML.indexOf('<h3>What happened</h3>');
   const expected = detail.innerHTML.indexOf('<h3>Expected</h3>');
-  const trace = detail.innerHTML.indexOf('<summary>Conversation turns and tool trace</summary>');
+  const trace = detail.innerHTML.indexOf('<summary>Diagnostics and trace</summary>');
   const action = detail.innerHTML.indexOf('Analyze failure');
   assert.ok(actual < expected && expected < trace && trace < action);
   assert.match(detail.innerHTML, /Score 0.2 · Threshold 0.8|Score 0.2.*Threshold 0.8/);
@@ -56,7 +60,8 @@ test('selected failure renders evidence first, escapes text, and never shows ano
 });
 
 test('proposal notice remains in existing result detail across phone, tablet, and desktop regions', () => {
-  assert.match(WORKSPACE_RESULTS_CLIENT, /<section data-repair-host aria-label="Guided repair">.*repairMarkup\(\)/s);
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<section data-repair-host aria-label="Guided repair">.*repairMarkup\(\)/s);
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /latest && selectedCheck \? '<section data-repair-host/);
   assert.match(WORKSPACE_REPAIR_CLIENT, /<section class="model-notice detail-section" data-proposal-notice aria-label="Repair Proposal">/);
   assert.match(WORKSPACE_STYLES, /\.detail\{display:none\}.*\.sheet-overlay\{position:fixed/s);
   assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\).*\.sheet:has\(\[data-action="close-detail"\]\)\{height:100dvh/s);
@@ -83,7 +88,7 @@ test('deferred selected evidence cannot resurrect old case detail or assistance 
         : url.includes('caseId=old') && url.includes('assertionId=')
         ? new Promise(resolve => { release = resolve; }) : evidence(url.includes('caseId=new') ? 'CURRENT' : 'OLD'),
     };
-    const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ inspectCase })', context) as { inspectCase(id: string, attempt: number): Promise<void> };
+    const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT + ';({ inspectCase })', context) as { inspectCase(id: string, attempt: number): Promise<void> };
     const pending = api.inspectCase('old', 1);
     await new Promise(resolve => setImmediate(resolve));
     if (change === 'case') await api.inspectCase('new', 1);
