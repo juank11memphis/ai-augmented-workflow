@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
+import { WORKSPACE_CASE_DETAIL_CLIENT } from './workspace-case-detail.js';
 import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
 
@@ -150,13 +151,13 @@ test('medium result detail moves focus to a focusable heading and returns it to 
   const document = { activeElement: null as unknown, querySelectorAll: () => [],
     addEventListener: (name: string, listener: (event: unknown) => void) => listeners.set(name, [...listeners.get(name) ?? [], listener]) };
   const row = { dataset: { caseId: 'case' }, focus() { document.activeElement = row; } };
-  const heading = { focus() { if (detail.innerHTML.includes('<h2 tabindex="-1">Result detail</h2>')) document.activeElement = heading; } };
+  const heading = { focus() { if (detail.innerHTML.includes('<h2 tabindex="-1">Case · failed</h2>')) document.activeElement = heading; } };
   const result = { innerHTML: '', querySelectorAll: () => [row] };
   const detail = { innerHTML: '', hidden: false, querySelector: (selector: string) => selector === 'h2' ? heading : null };
   const side = { hidden: true };
   const context = { document, URLSearchParams, matchMedia: () => ({ matches: false }), esc: escape,
     one: (selector: string) => ({ '[data-results-container]': result, '[data-detail]': detail, '[data-side-panel]': side })[selector],
-    suite: { id: 'suite', testCases: [{ id: 'case', name: 'Case' }] }, suites: [],
+    suite: { id: 'suite', name: 'Suite', testCases: [{ id: 'case', name: 'Case' }] }, suites: [],
     run: { runId: 'run', testedModel: 'model', scope: 'all', cases: [{ caseId: 'case', attempts: [{ number: 1, outcome: 'failed' }] }] },
     history: [{ runId: 'run' }], selectedRunId: 'run', latestKnownRunId: 'run', setup: { caseId: '' },
     runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
@@ -165,13 +166,14 @@ test('medium result detail moves focus to a focusable heading and returns it to 
     json: async () => ({ status: 'ok', value: { evidenceStatus: 'available', evidence: {
       outcome: 'failed', assertions: [{ id: 'check', outcome: 'failed', actual: 'a', expected: 'b', diagnostics: [] }],
       turns: [], tools: [], diagnostics: [], output: '' } } }), status: () => undefined };
-  vm.runInNewContext(WORKSPACE_RESULTS_CLIENT, context);
+  vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT, context);
   const click = (action: string, caseId = '') => {
     for (const listener of listeners.get('click') ?? []) listener({ target: { closest: () => ({ dataset: { action, caseId } }) } });
   };
   document.activeElement = row;
   click('case', 'case');
   await new Promise(resolve => setImmediate(resolve));
+  assert.match(detail.innerHTML, /<h2 tabindex="-1">Case · failed<\/h2>/);
   assert.equal(document.activeElement, heading);
   click('close-detail');
   assert.equal(document.activeElement, row);
@@ -323,13 +325,14 @@ for (const failure of ['unavailable', 'rejected'] as const) {
       runGeneration: 0, historyGeneration: 0, detailGeneration: 0, startPending: false, activePanel: null,
       loadDiscovery() {}, loadRuntime: async () => undefined, status: () => undefined,
       openSheet: (_title: string, html: string) => { sheet.innerHTML = html; },
+      sheetSlot: { querySelector: () => null },
       post: async () => { throw new Error('No repair request should be sent'); },
       json: async (url: string) => url.includes('/history?') ? new Promise(() => undefined)
         : !url.includes('assertionId=') ? attemptEvidence
         : url.includes('failed-one') ? selectedEvidence('failed-one')
           : new Promise((resolve, reject) => { finishRead = resolve; rejectRead = reject; }),
     };
-    const api = vm.runInNewContext(WORKSPACE_REPAIR_CLIENT + WORKSPACE_RESULTS_CLIENT
+    const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_REPAIR_CLIENT + WORKSPACE_RESULTS_CLIENT
       + ';({ inspectCase, stage: () => repairStage, proposal: () => repairProposal, selection: () => selectedFailure, markup: repairMarkup, notices: () => readNotices, showReadNotice, seedProposal() { repairStage = "proposal"; repairProposal = { proposalId: "old", changeSummary: "OLD PROPOSAL" }; } })', context) as {
       inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void>;
       stage(): string; proposal(): unknown; selection(): unknown; markup(): string;
@@ -347,15 +350,15 @@ for (const failure of ['unavailable', 'rejected'] as const) {
     assert.equal(api.proposal(), null);
     assert.equal(api.selection(), null);
     assert.doesNotMatch(api.markup(), /OLD PROPOSAL|Approve and apply/);
-    assert.match(sheet.innerHTML, /Loading selected evidence for failed-two/);
+    assert.match(sheet.innerHTML, /Loading selected evidence…/);
     assert.equal(sheet.innerHTML, detail.innerHTML);
-    assert.doesNotMatch(sheet.innerHTML, /OLD EVIDENCE|OLD PROPOSAL/);
+    assert.doesNotMatch(sheet.innerHTML, /OLD EVIDENCE|OLD PROPOSAL|NEW EVIDENCE/);
     assert.match(result.innerHTML, /Results.*Last known run/);
     assert.equal(context.run.runId, 'run');
     assert.equal(context.history[0]!.runId, 'run');
     assert.ok(api.notices().history);
     await new Promise(resolve => setImmediate(resolve));
-    assert.match(sheet.innerHTML, /Loading selected evidence for failed-two/);
+    assert.match(sheet.innerHTML, /Loading selected evidence…/);
 
     if (failure === 'unavailable') finishRead({ status: 'ok', value: { evidenceStatus: 'unavailable' } });
     else rejectRead(new Error('read failed'));

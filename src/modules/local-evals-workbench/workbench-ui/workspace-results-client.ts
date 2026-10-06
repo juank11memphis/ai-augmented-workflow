@@ -73,11 +73,25 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   }
   let detailReturnCaseId = null;
   let visibleDetailCaseId = null;
+  let detailSelection = null;
+  let displayedDetailKey = null;
+  let detailListScroll = null;
   let failuresOnly = false, search = '';
   const latestRun = () => Boolean(selectedRunId && latestKnownRunId === selectedRunId);
+  const detailKey = value => value && [value.suiteId, value.runId, value.caseId, value.attempt, value.assertionId || ''].join('|');
+  function closeCaseDetail() {
+    detailGeneration++; resetRepair(); clearReadNotice('evidence');
+    detailSelection = null; displayedDetailKey = null; visibleDetailCaseId = null;
+    detail.innerHTML = ''; detail.hidden = true;
+    const list = resultContainer.querySelector?.('[data-result-list]');
+    if (list && detailListScroll !== null) list.scrollTop = detailListScroll;
+    detailListScroll = null;
+    returnToResult();
+  }
   function clearSelectedDetail() {
     detailGeneration++;
     resetRepair();
+    clearReadNotice('evidence'); detailSelection = null; displayedDetailKey = null;
     detail.innerHTML = '<h2>Result detail</h2><p>Select a completed case to inspect it.</p>';
     detailReturnCaseId = null;
     visibleDetailCaseId = null;
@@ -158,7 +172,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       .filter(item => (!failuresOnly || item.status.state === 'failed') && item.name.toLowerCase().includes(search.toLowerCase()));
     if (visibleDetailCaseId && !rows.some(item => item.id === visibleDetailCaseId)) {
       if (matchMedia('(max-width:699px)').matches && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
-      clearSelectedDetail(); detail.hidden = true;
+      else closeCaseDetail();
     }
     if (!resultContainer.querySelector?.('.results')) {
       resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search cases"></label></div><div class="result-head" aria-hidden="true"><span>Case</span><span>Result</span><span>Attempts</span></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
@@ -291,77 +305,63 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   }
   async function inspectCase(caseId, attempt, requestedAssertionId = null) {
     if (!run || !suite) return;
-    const switchingCase = visibleDetailCaseId !== null && visibleDetailCaseId !== caseId;
+    const current = { suiteId: suite.id, runId: run.runId, caseId, attempt, assertionId: requestedAssertionId };
+    const priorKey = detailKey(detailSelection);
+    const nextKey = detailKey(current);
+    const changed = priorKey !== nextKey;
     visibleDetailCaseId = caseId;
-    const current = { suiteId: suite.id, runId: run.runId, caseId }, generation = ++detailGeneration;
+    detailSelection = current;
+    const generation = ++detailGeneration;
+    const stillSelected = () => generation === detailGeneration && !activePanel && suite?.id === current.suiteId
+      && run?.runId === current.runId && detailKey(detailSelection) === nextKey;
     function showEvidenceState(message) {
       const html = '<h2>Result detail</h2><p>' + esc(message) + '</p>';
       detail.innerHTML = html;
       detail.hidden = false;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
     }
-    const previousDetail = switchingCase ? '' : detail.innerHTML;
-    const switchingAssertion = requestedAssertionId !== null;
-    if (switchingCase || switchingAssertion) {
-      resetRepair();
-      showEvidenceState(switchingAssertion ? 'Loading selected evidence for ' + requestedAssertionId + '…' : 'Loading selected evidence…');
-    } else if (!previousDetail.includes('detail-section')) showEvidenceState('Loading selected evidence…');
-    const query = new URLSearchParams({ ...current, attempt: String(attempt) });
+    const priorDetail = displayedDetailKey === nextKey ? detail.innerHTML : null;
+    if (changed) { resetRepair(); clearReadNotice('evidence'); }
+    if (!priorDetail) showEvidenceState('Loading selected evidence…');
+    const query = new URLSearchParams({ suiteId: current.suiteId, runId: current.runId, caseId, attempt: String(attempt) });
     try {
       const payload = await json('/api/eval-runs/status?' + query);
-      if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId || visibleDetailCaseId !== caseId) return;
-      if (payload.status !== 'ok' || payload.value.evidenceStatus !== 'available') {
+      if (!stillSelected()) return;
+      if (payload.status !== 'ok' || payload.value?.evidenceStatus !== 'available') {
         showReadNotice('evidence', payload.status === 'ok' ? null : payload);
-        if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
-        else showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
+        if (!priorDetail) showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
         return;
       }
       const failed = payload.value.evidence.assertions.filter(item => item.outcome === 'failed');
-      const rawResponse = payload.value.evidence.output;
-      const assertionId = failed.find(item => item.id === requestedAssertionId)?.id || failed[0]?.id;
+      const assertionId = requestedAssertionId === null ? failed[0]?.id : failed.find(item => item.id === requestedAssertionId)?.id;
       if (assertionId) query.set('assertionId', assertionId);
       const selected = assertionId ? await json('/api/eval-runs/status?' + query) : payload;
-      if (generation !== detailGeneration || activePanel || suite?.id !== current.suiteId || run?.runId !== current.runId || visibleDetailCaseId !== caseId) return;
-      if (selected.status !== 'ok' || selected.value.evidenceStatus !== 'available') {
+      if (!stillSelected()) return;
+      if (selected.status !== 'ok' || selected.value?.evidenceStatus !== 'available'
+        || assertionId && !selected.value.evidence.assertions.some(item => item.id === assertionId && item.outcome === 'failed')) {
         showReadNotice('evidence', selected.status === 'ok' ? null : selected);
-        if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
-        else showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
+        if (!priorDetail) showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
         return;
       }
       clearReadNotice('evidence'); resetRepair();
+      detailSelection = { ...current, assertionId: assertionId || null };
+      displayedDetailKey = detailKey(detailSelection);
       const evidence = selected.value.evidence;
-      const assertion = assertionId ? evidence.assertions.find(item => item.id === assertionId) : evidence.assertions[0];
+      const assertion = assertionId ? evidence.assertions.find(item => item.id === assertionId) : null;
       const attempts = run.cases.find(item => item.caseId === caseId)?.attempts || [];
-      const attemptChoices = '<label class="field">Attempt<select data-action="attempt-select" data-case-id="' + esc(caseId) + '">' + attempts.map(item => '<option value="' + esc(item.number) + '"' + (item.number === attempt ? ' selected' : '') + '>Attempt ' + esc(item.number) + ' — ' + esc(item.outcome) + '</option>').join('') + '</select></label>';
-      const failedChoices = failed.length ? '<label class="field">Failed check ' + (failed.findIndex(item => item.id === assertionId) + 1) + ' of ' + failed.length + '<select data-action="assertion-select" data-case-id="' + esc(caseId) + '" data-attempt="' + esc(attempt) + '">' + failed.map(item => '<option value="' + esc(item.id) + '"' + (item.id === assertionId ? ' selected' : '') + '>' + esc(item.id) + '</option>').join('') + '</select></label>' : '';
       selectedFailure = latestRun() && assertionId ? { suiteId: suite.id, runId: run.runId, testCaseId: caseId, attempt, assertionId, evalRunModelId: run.testedModel, runScope: run.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: caseId } } : null;
-      const trace = evidence.turns.map(item => '<p>' + esc(item.role) + ': ' + esc(item.content) + '</p>').join('') + evidence.tools.map(item => '<p>Tool ' + esc(item.name) + ': ' + esc(item.outcome || 'result') + ' · ' + esc(item.arguments) + ' · ' + esc(item.result) + '</p>').join('');
-      const allChecks = payload.value.evidence.assertions.map(item => '<li><strong>' + esc(item.id) + '</strong> — ' + esc(item.outcome)
-        + (item.score == null ? '' : ' · Score ' + esc(item.score) + (item.threshold == null ? '' : ' · Threshold ' + esc(item.threshold)))
-        + '<p>Actual: ' + esc(item.actual || 'Not reported.') + '</p><p>Expected: ' + esc(item.expected || 'Not reported.') + '</p>'
-        + (item.diagnostics.length ? '<ul>' + item.diagnostics.map(message => '<li>' + esc(message) + '</li>').join('') + '</ul>' : '') + '</li>').join('');
-      const attemptDiagnostics = payload.value.evidence.diagnostics.map(item => '<p>' + esc(item) + '</p>').join('');
-      const html = '<div class="section-heading"><h2 tabindex="-1">Result detail</h2><button type="button" data-action="close-detail">Close</button></div>'
-        + (latestRun() ? '' : '<p class="readonly">Historical run · read-only</p>')
-        + '<h3>' + esc(suite.testCases.find(item => item.id === caseId)?.name || caseId) + '</h3><p>' + esc(evidence.outcome) + ' · ' + failed.length + ' failed checks</p>'
-        + attemptChoices + failedChoices
-        + '<section class="detail-section"><h3>What happened</h3><p>' + esc(assertion?.actual || 'No actual behavior reported.') + '</p>' + (assertion?.score == null ? '' : '<p>Score ' + esc(assertion.score) + (assertion.threshold == null ? '' : ' · Threshold ' + esc(assertion.threshold)) + '</p>') + '</section>'
-        + '<section class="detail-section"><h3>Expected</h3><p>' + esc(assertion?.expected || 'No expected behavior reported.') + '</p></section>'
-        + '<details class="detail-section"><summary>All checks (' + payload.value.evidence.assertions.length + ')</summary>' + (allChecks ? '<ul>' + allChecks + '</ul>' : '<p>No checks reported.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Conversation turns and tool trace</summary>' + (trace || '<p>No trace reported.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Diagnostics</summary>' + ((assertion?.diagnostics || []).map(item => '<p>' + esc(item) + '</p>').join('') || '<p>No selected diagnostics.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Attempt diagnostics</summary>' + (attemptDiagnostics || '<p>No attempt diagnostics.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Bounded raw response</summary>'
-        + (payload.value.evidence.truncated ? '<p>Saved response was truncated.</p>' : '')
-        + '<pre>' + esc(rawResponse || 'No raw response was retained for this attempt.') + '</pre></details>'
-        + '<section data-repair-host aria-label="Guided repair">' + repairMarkup() + '</section>';
+      const html = renderCaseDetail({ suiteName: suite.name, runId: run.runId, caseId,
+        caseName: suite.testCases.find(item => item.id === caseId)?.name || caseId,
+        attempt, attempts, evidence, selectedCheck: assertion, latest: latestRun() });
       detail.innerHTML = html;
-      if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
+      if (matchMedia('(max-width:699px)').matches) {
+        openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
+        sheetSlot.querySelector('.sheet .section-heading + h2')?.focus?.();
+      }
       else detail.querySelector('h2')?.focus();
-    } catch { if (generation === detailGeneration && !activePanel && suite?.id === current.suiteId && run?.runId === current.runId && visibleDetailCaseId === caseId) {
+    } catch { if (stillSelected()) {
       showReadNotice('evidence', null, true);
-      if (!switchingAssertion && previousDetail.includes('detail-section')) detail.innerHTML = previousDetail;
-      else showEvidenceState('Selected evidence could not be loaded. Previous results remain available.');
+      if (!priorDetail) showEvidenceState('Selected evidence could not be loaded. Previous results remain available.');
     } }
   }
   document.addEventListener('click', event => {
@@ -369,9 +369,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (target.dataset.action === 'recheck-read') {
       if (readNotices.status && selectedRunId) void pollRun();
       else if (readNotices.history) void loadHistory();
-      else if (readNotices.evidence && detailReturnCaseId) {
-        const attempts = run?.cases.find(item => item.caseId === detailReturnCaseId)?.attempts || [];
-        void inspectCase(detailReturnCaseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1);
+      else if (readNotices.evidence && detailSelection) {
+        void inspectCase(detailSelection.caseId, detailSelection.attempt, detailSelection.assertionId);
       }
     }
     if (target.dataset.action === 'recheck-history') void loadHistory();
@@ -386,8 +385,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (target.dataset.action === 'new-run') showTaskView('new-run');
     if (target.dataset.action === 'return-results') showTaskView('results');
     if (target.dataset.action === 'close-panel') closePanel();
-    if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else { detailGeneration++; resetRepair(); detail.innerHTML = ''; detail.hidden = true; visibleDetailCaseId = null; returnToResult(); } }
-    if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }
+    if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else closeCaseDetail(); }
+    if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; detailListScroll = resultContainer.querySelector?.('[data-result-list]')?.scrollTop ?? null; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }
     if (target.dataset.action === 'history-run') {
       if (acceptedRunId) { status('Wait for the current run to finish before opening another run.'); return; }
       void selectHistoryRun(target.dataset.runId);

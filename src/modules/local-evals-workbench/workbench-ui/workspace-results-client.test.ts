@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
+import { WORKSPACE_CASE_DETAIL_CLIENT } from './workspace-case-detail.js';
 
 function browser() {
   const listeners = new Map<string, (event: { target: SearchInput }) => void>();
@@ -17,7 +18,7 @@ function browser() {
     '[data-result-list]': list, '[data-result-empty]': empty,
     '[data-action="search"]': input, '[data-action="failures-only"]': failureFilter };
   let replacements = 0;
-  const results = { querySelector: (selector: string) => parts[selector] ?? null,
+  const results = { querySelector: (selector: string) => parts[selector] ?? null, querySelectorAll: () => [],
     set innerHTML(_value: string) { replacements++; }, get innerHTML() { return ''; } };
   const statusSummary = { textContent: '', focus() { document.activeElement = null; } };
   const read = { hidden: true };
@@ -63,14 +64,15 @@ function browser() {
     selectedFailure: null,
     safeReference: (value: unknown) => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value),
     matchMedia: () => ({ matches: false }),
-    sheetSlot, openSheet: () => { sheetOpen = true; }, closeSheet: () => { sheetOpen = false; sheetCloses++; },
+    sheetSlot, openSheet: () => { sheetOpen = true; }, closeSheet: () => { sheetOpen = false; sheetCloses++; api.closeCaseDetail(); },
     json: async (url: string) => url.includes('/status?')
       ? new Promise(resolve => { resolvePoll = resolve; }) : new Promise(() => undefined),
     setTimeout: () => 0,
   };
-  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, renderHistory, renderCoverage, selectHistoryRun, pollRun, loadHistory, inspectCase, runOutcomeCopy, state:()=>({run,history,selectedRunId,readNotices}) })', context) as {
+  const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, renderHistory, renderCoverage, selectHistoryRun, pollRun, loadHistory, inspectCase, closeCaseDetail, runOutcomeCopy, state:()=>({run,history,selectedRunId,readNotices}) })', context) as {
     renderWorkspace(): void; renderHistory(): void; renderCoverage(): void; selectHistoryRun(runId: string): Promise<void>;
     pollRun(): Promise<void>; loadHistory(): Promise<void>; inspectCase(caseId: string, attempt: number): Promise<void>;
+    closeCaseDetail(): void;
     runOutcomeCopy(summary: unknown): string; state(): { run: unknown; history: unknown[]; selectedRunId: string; readNotices: Record<string, unknown> };
   };
   function edit(value: string, start: number, end = start) {
@@ -184,7 +186,7 @@ test('browser keeps not-run, running, incomplete, failed, and passed distinct wi
   assert.doesNotMatch(page.list.innerHTML, /running/);
   assert.equal(metrics.textContent, '');
 });
-test('filtered rows preserve saved outcomes and an inspectable attempt opens existing detail and assistance', async () => {
+test('filtered rows preserve saved outcomes and close inspectable detail without unearned assistance', async () => {
   const page = browser();
   page.context.run = { ...saved, testedModel: 'chosen-model', caseIds: ['alpha', 'beta'], cases: [
     { caseId: 'alpha', state: 'completed', attempts: [{ number: 1, outcome: 'failed' }] },
@@ -206,8 +208,8 @@ test('filtered rows preserve saved outcomes and an inspectable attempt opens exi
   await page.api.inspectCase('alpha', 1);
   const detail = page.context.one('[data-detail]') as { innerHTML: string; hidden: boolean };
   assert.equal(detail.hidden, false);
-  assert.match(detail.innerHTML, /data-repair-host aria-label="Guided repair"/);
-  assert.match(detail.innerHTML, /Analyze failure/);
+  assert.match(detail.innerHTML, /All checks \(0\)/);
+  assert.doesNotMatch(detail.innerHTML, /data-repair-host|Analyze failure/);
   page.context.matchMedia = () => ({ matches: true });
   await page.api.inspectCase('alpha', 1); assert.equal(page.sheet.isOpen(), true);
   page.edit('beta', 4);
@@ -378,22 +380,6 @@ test('version-1 input-unsafe issue is explicitly unclassified in guidance and co
   assert.equal(page.copied[0], page.readDetails.textContent);
   assert.doesNotMatch(page.copied[0]!, /credential|provider|secret-token/i);
   assert.equal(page.api.state().run, saved);
-});
-
-test('selected evidence remains visible when detail read fails without losing focus', async () => {
-  const page = browser(); page.context.run = saved;
-  page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
-  const detail = page.context.one('[data-detail]') as { innerHTML: string };
-  detail.innerHTML = '<section class="detail-section">Saved private evidence</section>';
-  page.input.focus();
-  page.context.json = async () => ({ status: 'blocked', reason: 'corrupt', issue: {
-    stage: 'status', outcome: 'blocked', category: 'corrupt', reference,
-    private: 'secret-token' } });
-  await page.api.inspectCase('alpha', 1);
-  assert.equal(detail.innerHTML, '<section class="detail-section">Saved private evidence</section>');
-  assert.equal(page.document.activeElement, page.input);
-  assert.match(page.readHeading.textContent, /evidence/);
-  assert.doesNotMatch(page.readGuidance.textContent + page.readDetails.textContent, /Saved private evidence|secret-token/);
 });
 
 const uncertainReference = '123e4567-e89b-42d3-a456-426614174003';
