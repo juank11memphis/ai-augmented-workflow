@@ -23,6 +23,7 @@ function browser() {
   const read = { hidden: true };
   const readHeading = { textContent: '' }, readGuidance = { textContent: '' }, readAnnouncement = { textContent: '' };
   const readDetails = { textContent: '', hidden: true }, readCopy = { hidden: true };
+  let sheetOpen = false, sheetCloses = 0; const sheetSlot = { querySelector: () => sheetOpen ? {} : null };
   let panelFocus = '';
   const side = { hidden: true, innerHTML: '', querySelector: (selector: string) => selector === 'h2' ? { focus: () => { panelFocus = 'heading'; } } : null,
     setAttribute() {}, removeAttribute() {} };
@@ -62,6 +63,7 @@ function browser() {
     selectedFailure: null,
     safeReference: (value: unknown) => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value),
     matchMedia: () => ({ matches: false }),
+    sheetSlot, openSheet: () => { sheetOpen = true; }, closeSheet: () => { sheetOpen = false; sheetCloses++; },
     json: async (url: string) => url.includes('/status?')
       ? new Promise(resolve => { resolvePoll = resolve; }) : new Promise(() => undefined),
     setTimeout: () => 0,
@@ -76,6 +78,7 @@ function browser() {
     listeners.get('input')?.({ target: input });
   }
   return { api, context, document, input, section, count, list, empty, results, side, copied,
+    sheet: { isOpen: () => sheetOpen, closes: () => sheetCloses },
     panelFocus: () => panelFocus,
     read, readHeading, readGuidance, readAnnouncement, readDetails, readCopy,
     replacements: () => replacements, edit, resolvePoll: () => resolvePoll,
@@ -119,7 +122,12 @@ test('end and middle edits, deletion, caret and selection retain one input while
   assert.equal(page.input.selectionEnd, 6);
   assert.equal(page.replacements(), 0);
 });
-
+test('poll rejects a mismatched run snapshot without replacing selected results', async () => {
+  const page = browser(); page.context.run = saved; page.context.selectedRunId = 'run';
+  const poll = page.api.pollRun(); page.resolvePoll()?.({ status: 'ok', value: { summary: { ...saved, runId: 'other' } } }); await poll;
+  assert.equal(page.api.state().run, saved); assert.equal(page.api.state().selectedRunId, 'run');
+  assert.match(page.readHeading.textContent, /Run status/);
+});
 test('no-match copy retains an editable query and clearing restores all rows and count', () => {
   const page = browser();
   page.api.renderWorkspace();
@@ -137,7 +145,6 @@ test('no-match copy retains an editable query and clearing restores all rows and
   for (const name of ['Alpha case', 'Beta case', 'Gamma case']) assert.match(page.list.innerHTML, new RegExp(name));
   assert.equal(page.replacements(), 0);
 });
-
 test('selected-run browser summary uses selected scope, not filtered rows or recorded-case count', () => {
   const page = browser();
   page.context.run = { ...saved, state: 'running', caseIds: ['alpha', 'beta'], finishedAt: undefined,
@@ -155,7 +162,6 @@ test('selected-run browser summary uses selected scope, not filtered rows or rec
   page.context.latestKnownRunId = 'newer'; page.api.renderWorkspace();
   assert.match((page.context.one('[data-latest-label]') as { textContent: string }).textContent, /Past run/);
 });
-
 test('browser keeps not-run, running, incomplete, failed, and passed distinct without private summary data', () => {
   const page = browser();
   const summary = page.context.one('[data-status-summary]') as { textContent: string };
@@ -178,7 +184,6 @@ test('browser keeps not-run, running, incomplete, failed, and passed distinct wi
   assert.doesNotMatch(page.list.innerHTML, /running/);
   assert.equal(metrics.textContent, '');
 });
-
 test('filtered rows preserve saved outcomes and an inspectable attempt opens existing detail and assistance', async () => {
   const page = browser();
   page.context.run = { ...saved, testedModel: 'chosen-model', caseIds: ['alpha', 'beta'], cases: [
@@ -203,6 +208,12 @@ test('filtered rows preserve saved outcomes and an inspectable attempt opens exi
   assert.equal(detail.hidden, false);
   assert.match(detail.innerHTML, /data-repair-host aria-label="Guided repair"/);
   assert.match(detail.innerHTML, /Analyze failure/);
+  page.context.matchMedia = () => ({ matches: true });
+  await page.api.inspectCase('alpha', 1); assert.equal(page.sheet.isOpen(), true);
+  page.edit('beta', 4);
+  assert.equal(page.sheet.isOpen(), false); assert.equal(page.sheet.closes(), 1);
+  assert.equal(detail.hidden, true); assert.doesNotMatch(detail.innerHTML, /Analyze failure/);
+  assert.match(page.list.innerHTML, /Beta case/); assert.doesNotMatch(page.list.innerHTML, /Alpha case/);
 });
 
 test('polling refresh preserves the exact focused input, query and selection', async () => {
@@ -360,6 +371,7 @@ test('version-1 input-unsafe issue is explicitly unclassified in guidance and co
   assert.match(page.readGuidance.textContent, /without a precise cause/);
   assert.match(page.readDetails.textContent, /Category: unclassified/);
   assert.doesNotMatch(page.readGuidance.textContent + page.readDetails.textContent, /credential|provider|secret-token/i);
+  assert.doesNotMatch(page.readAnnouncement.textContent, /credential|provider|secret-token/i);
   page.click('copy-read-issue');
   await Promise.resolve();
   assert.equal(page.copied.length, 1);
