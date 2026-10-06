@@ -4,7 +4,6 @@ import vm from 'node:vm';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
 import { WORKSPACE_CASE_DETAIL_CLIENT } from './workspace-case-detail.js';
 import { WORKSPACE_STYLES } from './workspace-styles.js';
-import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character]!);
 
@@ -29,8 +28,8 @@ test('selected failure renders evidence first, escapes text, and never shows ano
     suite: { id: 'suite', testCases: [{ id: 'case', name: 'Case' }] }, run: { runId: 'run', testedModel: 'model', scope: 'all',
       cases: [{ caseId: 'case', attempts: [{ number: 2, outcome: 'failed' }] }] },
     selectedRunId: 'run', latestKnownRunId: 'run', detailGeneration: 0, historyGeneration: 0, activePanel: null, setup: { caseId: '' },
-    resetRepair() {}, repairMarkup: () => '<button>Analyze failure</button>', loadDiscovery() {}, loadRuntime: async () => undefined,
-    json: async (url: string) => url.includes('history') ? new Promise(() => undefined) : ({ status: 'ok', value: { evidenceStatus: 'available', evidence: url.includes('assertionId=')
+    loadDiscovery() {}, loadRuntime: async () => undefined,
+    json: async (url: string) => url.includes('history') ? new Promise(() => undefined) : ({ status: 'ok', value: { evidenceStatus: 'available', reviewArtifactPath: 'evals/artifacts/suite/run/cases/case/2.json', evidence: url.includes('assertionId=')
       ? selected(new URL('http://localhost/?' + url.split('?')[1]).searchParams.get('assertionId') || 'a') : all } }),
   };
   const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT + ';({inspectCase})', context) as { inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void> };
@@ -46,8 +45,9 @@ test('selected failure renders evidence first, escapes text, and never shows ano
   const actual = detail.innerHTML.indexOf('<h3>What happened</h3>');
   const expected = detail.innerHTML.indexOf('<h3>Expected</h3>');
   const trace = detail.innerHTML.indexOf('<summary>Diagnostics and trace</summary>');
-  const action = detail.innerHTML.indexOf('Analyze failure');
+  const action = detail.innerHTML.indexOf('Review with your LLM');
   assert.ok(actual < expected && expected < trace && trace < action);
+  assert.doesNotMatch(detail.innerHTML, /Analyze failure|Draft repair|Approve and apply/);
   assert.match(detail.innerHTML, /Score 0.2 · Threshold 0.8|Score 0.2.*Threshold 0.8/);
   await api.inspectCase('case', 2, 'b');
   assert.match(detail.innerHTML, /Failed check 2 of 2|B ACTUAL/);
@@ -59,24 +59,23 @@ test('selected failure renders evidence first, escapes text, and never shows ano
   assert.doesNotMatch(detail.innerHTML, /RAW RESPONSE OPENAI_API_KEY/);
 });
 
-test('proposal notice remains in existing result detail across phone, tablet, and desktop regions', () => {
-  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<section data-repair-host aria-label="Guided repair">.*repairMarkup\(\)/s);
-  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /latest && selectedCheck \? '<section data-repair-host/);
-  assert.match(WORKSPACE_REPAIR_CLIENT, /<section class="model-notice detail-section" data-proposal-notice aria-label="Repair Proposal">/);
+test('review handoff remains in existing result detail across phone, tablet, and desktop regions', () => {
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /Review with a repo-aware LLM/);
+  assert.doesNotMatch(WORKSPACE_CASE_DETAIL_CLIENT, /data-repair-host|Analyze failure|Approve and apply/);
   assert.match(WORKSPACE_STYLES, /\.detail\{display:none\}.*\.sheet-overlay\{position:fixed/s);
   assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\).*\.sheet:has\(\[data-action="close-detail"\]\)\{height:100dvh/s);
   assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:2\}/s);
   assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\)\{.*?\.suite-rail\{display:block;grid-column:1;grid-row:1\/4\}.*?\[data-results-container\]\{grid-column:2\/4\}\.workspace:has\(\[data-detail\]:not\(\[hidden\]\)\) \[data-results-container\]\{grid-column:2\}\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
 });
 
-test('focused evidence and repair stay labeled, disclosed, and contained at each breakpoint', () => {
+test('focused evidence and review handoff stay labeled, disclosed, and contained at each breakpoint', () => {
   assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /aria-label="Actual result".*aria-label="Expected result"/s);
   assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>All checks/);
   assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>Diagnostics and trace/);
   assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>Bounded raw response/);
-  assert.match(WORKSPACE_REPAIR_CLIENT, /<details><summary>Show full change<\/summary><pre aria-label="Full proposed change">/);
-  assert.match(WORKSPACE_STYLES, /\.detail-evidence>section,\[data-repair-host\],\.repair-proposal.*max-width:100%/);
-  assert.match(WORKSPACE_STYLES, /\.repair-proposal pre,\.detail-secondary pre\{width:100%;max-width:100%;overflow:auto/);
+  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /aria-label="Review with a repo-aware LLM"/);
+  assert.match(WORKSPACE_STYLES, /\.detail-evidence>section\{min-width:0;max-width:100%/);
+  assert.match(WORKSPACE_STYLES, /\.detail-secondary pre\{width:100%;max-width:100%;overflow:auto/);
   assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\).*\.sheet:has\(\[data-action="close-detail"\]\).*width:100vw/s);
   assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:2\}/s);
   assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);

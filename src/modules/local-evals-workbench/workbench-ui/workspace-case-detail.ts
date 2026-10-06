@@ -1,6 +1,6 @@
 /** Browser-side presentation only; every saved value crosses the shared esc boundary. */
 export const WORKSPACE_CASE_DETAIL_CLIENT = String.raw`
-  function renderCaseDetail({ suiteName, runId, caseId, caseName, attempt, attempts, evidence, selectedCheck, latest }) {
+  function renderCaseDetail({ suiteName, runId, caseId, caseName, attempt, attempts, evidence, selectedCheck, latest, reviewArtifactPath }) {
     const failed = evidence.assertions.filter(check => check.outcome === 'failed');
     const attemptChoices = '<label class="field">Attempt<select data-action="attempt-select" data-case-id="' + esc(caseId) + '">'
       + attempts.map(item => '<option value="' + esc(item.number) + '"' + (item.number === attempt ? ' selected' : '')
@@ -40,6 +40,14 @@ export const WORKSPACE_CASE_DETAIL_CLIENT = String.raw`
       + '<details class="detail-section"><summary>Bounded raw response</summary>'
       + (evidence.truncated ? '<p>Saved response was truncated.</p>' : '')
       + '<pre>' + esc(evidence.output || 'No raw response was retained for this attempt.') + '</pre></details></div>'
-      + (latest && selectedCheck ? '<section data-repair-host aria-label="Guided repair">' + repairMarkup() + '</section>' : '');
+      + (reviewArtifactPath ? '<section class="detail-section" aria-label="Review with a repo-aware LLM"><h3>Review with your LLM</h3>'
+        + '<p>Ask an LLM with access to this repo to review this saved case artifact and its referenced project files. Treat current files as potentially changed since the run.</p>'
+        + '<p><strong>Artifact path:</strong> <code>' + esc(reviewArtifactPath) + '</code></p>'
+        + (evidence.truncated ? '<p>Saved output was truncated; the artifact cannot show the full response.</p>' : '')
+        + (evidence.review?.suitePath ? '' : '<p>Suite file path unavailable; locate the suite by its ID.</p>')
+        + (evidence.review?.targetPath ? '' : '<p>Target file path unavailable.</p>')
+        + (evidence.review?.runnerPath ? '' : '<p>Runner file path unavailable.</p>')
+        + (evidence.review?.omittedInputPathCount > 0 ? '<p>' + esc(evidence.review.omittedInputPathCount) + ' input file paths omitted from the artifact.</p>' : '')
+        + '</section>' : '<p>Review handoff unavailable for this older run; saved evidence remains inspectable.</p>');
   }
 `;

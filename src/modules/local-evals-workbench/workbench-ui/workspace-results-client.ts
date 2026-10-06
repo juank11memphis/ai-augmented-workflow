@@ -80,7 +80,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   const latestRun = () => Boolean(selectedRunId && latestKnownRunId === selectedRunId);
   const detailKey = value => value && [value.suiteId, value.runId, value.caseId, value.attempt, value.assertionId || ''].join('|');
   function closeCaseDetail() {
-    detailGeneration++; resetRepair(); clearReadNotice('evidence');
+    detailGeneration++; clearReadNotice('evidence');
     detailSelection = null; displayedDetailKey = null; visibleDetailCaseId = null;
     detail.innerHTML = ''; detail.hidden = true;
     const list = resultContainer.querySelector?.('[data-result-list]');
@@ -90,7 +90,6 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   }
   function clearSelectedDetail() {
     detailGeneration++;
-    resetRepair();
     clearReadNotice('evidence'); detailSelection = null; displayedDetailKey = null;
     detail.innerHTML = '<h2>Result detail</h2><p>Select a completed case to inspect it.</p>';
     detailReturnCaseId = null;
@@ -319,7 +318,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
     }
     const priorDetail = displayedDetailKey === nextKey ? detail.innerHTML : null;
-    if (changed) { resetRepair(); clearReadNotice('evidence'); }
+    if (changed) clearReadNotice('evidence');
     if (!priorDetail) showEvidenceState('Loading selected evidence…');
     const query = new URLSearchParams({ suiteId: current.suiteId, runId: current.runId, caseId, attempt: String(attempt) });
     try {
@@ -341,16 +340,15 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
         if (!priorDetail) showEvidenceState('Selected evidence is unavailable. Previous results remain available.');
         return;
       }
-      clearReadNotice('evidence'); resetRepair();
+      clearReadNotice('evidence');
       detailSelection = { ...current, assertionId: assertionId || null };
       displayedDetailKey = detailKey(detailSelection);
       const evidence = selected.value.evidence;
       const assertion = assertionId ? evidence.assertions.find(item => item.id === assertionId) : null;
       const attempts = run.cases.find(item => item.caseId === caseId)?.attempts || [];
-      selectedFailure = latestRun() && assertionId ? { suiteId: suite.id, runId: run.runId, testCaseId: caseId, attempt, assertionId, evalRunModelId: run.testedModel, runScope: run.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: caseId } } : null;
       const html = renderCaseDetail({ suiteName: suite.name, runId: run.runId, caseId,
         caseName: suite.testCases.find(item => item.id === caseId)?.name || caseId,
-        attempt, attempts, evidence, selectedCheck: assertion, latest: latestRun() });
+        attempt, attempts, evidence, selectedCheck: assertion, latest: latestRun(), reviewArtifactPath: selected.value.reviewArtifactPath });
       detail.innerHTML = html;
       if (matchMedia('(max-width:699px)').matches) {
         openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');

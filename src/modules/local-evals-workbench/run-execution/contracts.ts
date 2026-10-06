@@ -6,6 +6,7 @@ export type ExecutionSelection = {
   readonly cases: readonly NormalizedEvalTestCase[];
   readonly model: string;
   readonly judgeModel?: string | null;
+  readonly suitePath?: string;
   /** Accepted request reference propagated from the queued start, never persisted. */
   readonly reference?: string;
 };

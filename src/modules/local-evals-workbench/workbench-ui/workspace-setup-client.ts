@@ -154,7 +154,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   function closeSheet() {
     const closingCase = Boolean(sheetSlot.querySelector('[data-action="close-detail"]'));
-    detailGeneration++; resetRepair(); sheetSlot.textContent = '';
+    detailGeneration++; sheetSlot.textContent = '';
     if (closingCase && typeof closeCaseDetail === 'function') { closeCaseDetail(); sheetReturn = null; return; }
     const target = sheetReturn; sheetReturn = null; target?.focus();
   }
@@ -178,12 +178,11 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       + (runtimeState === 'blocked'
         ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p>Start run unavailable</p><p role="status" data-model-copy-status></p></div></div>'
         : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
-      + '<details><summary>Model support</summary><p>Tests can use models supported by this suite. Sibu\'s built-in analysis and repair help currently uses OpenAI. More providers are planned.</p></details>'
+      + '<details><summary>Model support</summary><p>Tests can use models supported by this suite.</p></details>'
       + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '');
   }
   function showSetup() {
     if (!suite || isActive() || startPending || startUncertain) return;
-    resetRepair();
     if (sheetSlot.querySelector('[role="dialog"]')) closeSheet();
     setupRegion.querySelector('[data-action="start"]')?.focus();
   }

@@ -40,7 +40,8 @@ export class FileArtifactReader implements ArtifactReaderPort {
         || evidence.durationMs !== referenced.durationMs || evidence.calls !== referenced.calls || evidence.cost !== referenced.cost
         || JSON.stringify(evidence.assertions.filter(item => item.judgeModel !== undefined && item.score !== null).map(item => item.score)) !== JSON.stringify(referenced.rubricScores ?? [])) return unavailable('corrupt');
       const selected = selectEvidence(evidence, selection.assertionId);
-      return selected ? { status: 'ok', value: { summary: summary.value, evidence: selected, evidenceStatus: 'available' }, warnings: summary.warnings } : unavailable('not-found');
+      return selected ? { status: 'ok', value: { summary: summary.value, evidence: selected, evidenceStatus: 'available',
+        ...(evidence.review ? { reviewArtifactPath: `evals/artifacts/${this.paths.attempt(suiteId, runId, selection.caseId, selection.attempt)}` } : {}) }, warnings: summary.warnings } : unavailable('not-found');
     } catch (error) { return failure(error); }
   }
   private async summary(suiteId: string, runId: string): Promise<Outcome<Manifest>> {

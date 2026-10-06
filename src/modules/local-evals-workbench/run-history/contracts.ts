@@ -34,11 +34,15 @@ export type Attempt = {
   readonly calls: number | null; readonly cost: number | null; readonly output: string;
   readonly truncated: boolean; readonly diagnostics: readonly string[]; readonly turns: readonly TurnEvidence[];
   readonly tools: readonly ToolEvidence[]; readonly assertions: readonly AssertionEvidence[];
+  /** Repo-relative sources for a repo-aware reviewer; saved outputs and check results are above. */
+  readonly review?: { readonly runPath: string; readonly suitePath: string | null; readonly targetPath: string | null; readonly runnerPath: string | null;
+    readonly inputPaths: readonly string[]; readonly omittedInputPathCount: number; readonly context: 'current-repo-files' };
 };
 export type HistoryEntry = Pick<Manifest, 'runId' | 'suiteId' | 'state' | 'createdAt' | 'updatedAt' | 'finishedAt' | 'outcome' | 'testedModel' | 'judgeModel' | 'scope' | 'calls' | 'cost'>;
 export type HistoryIndex = { readonly version: 1; readonly entries: readonly HistoryEntry[] };
 export type Selection = { readonly caseId: string; readonly attempt: number; readonly assertionId?: string };
-export type RunDetail = { readonly summary: Manifest; readonly evidence?: Attempt; readonly evidenceStatus: 'not-requested' | 'available' | 'unavailable' };
+export type RunDetail = { readonly summary: Manifest; readonly evidence?: Attempt; readonly evidenceStatus: 'not-requested' | 'available' | 'unavailable';
+  readonly reviewArtifactPath?: string };
 export interface ArtifactSafetyPort { check(relativePaths?: readonly string[]): Promise<Outcome<null>> }
 export interface ArtifactReaderPort {
   list(suiteId: string, limit: number): Promise<Outcome<readonly HistoryEntry[]>>;

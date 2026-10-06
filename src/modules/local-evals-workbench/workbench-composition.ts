@@ -93,7 +93,7 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
               console.info(JSON.stringify(safeExecutionEvent(event, selection.reference, selection.runId)));
             } catch { /* Noncritical sink. */ }
           } };
-          void executeEvalRun(selection, { runner: executor, store: history.store,
+          void executeEvalRun({ ...selection, suitePath: request.initialDiscoveryResult.sourceBySuiteId?.[selection.suite.id] }, { runner: executor, store: history.store,
             evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now, logger: backgroundLogger })
             .catch(() => { try { console.info(JSON.stringify({ event: 'eval_run_background_failed', stage: 'execution', outcome: 'failed',
               reason: 'unavailable', ...(selection.reference ? { reference: selection.reference } : {}),

@@ -6,6 +6,7 @@ import type { ExecutionEvent } from '../run-execution/contracts.js';
 import { normalizeGraderOutcome, normalizeGraderOutcomes } from '../run-execution/attempt-evidence.js';
 import { boundedJson, attempt as validAttempt } from '../run-history/validation.js';
 import { LIMITS } from '../run-history/limits.js';
+import { reviewSources } from './review-sources.js';
 
 const MAX_DIAGNOSTICS = 20;
 const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -49,7 +50,8 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     if (!current) throw new Error('missing-attempt');
     return { version: 1, suiteId: suite.id, runId, caseId: current.caseId, number: current.number, outcome,
       durationMs: Math.max(0, ports.clock() - current.began), calls, cost, output: current.output,
-      truncated: false, diagnostics: [...current.diagnostics], turns: [...current.turns], tools: [...current.tools], assertions };
+      truncated: false, diagnostics: [...current.diagnostics], turns: [...current.turns], tools: [...current.tools], assertions,
+      review: reviewSources(command, current.caseId) };
   };
   const consume = async (event: ExecutionEvent): Promise<void> => {
     if (terminal) throw new Error('event-after-terminal');

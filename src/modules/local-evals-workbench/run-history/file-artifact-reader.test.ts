@@ -38,6 +38,22 @@ it('selected assertion excludes unrelated output, turns and assertions; missing 
     const missing = await reader.get('suite', id, { caseId: 'case', attempt: 1 }); assert.equal(missing.status === 'ok' && missing.value.evidenceStatus, 'unavailable');
   } finally { await p.cleanup(); }
 });
+it('returns a repo-relative review artifact path only for review-ready attempts', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail();
+    const id = run.value.runId; await a.store.start('suite', id);
+    assert.equal((await a.store.append('suite', id, { ...evidence(id), review: {
+      runPath: `evals/artifacts/suite/${id}/run.json`, suitePath: 'evals/suite.json', targetPath: 'src/target.ts', runnerPath: 'evals/runner.mjs',
+      inputPaths: ['evals/fixtures/case.json'], omittedInputPathCount: 0, context: 'current-repo-files',
+    } })).status, 'ok');
+    const selected = await historyReader(a).get('suite', id, { caseId: 'case', attempt: 1, assertionId: 'assertion' });
+    assert.equal(selected.status, 'ok');
+    if (selected.status === 'ok') {
+      assert.equal(selected.value.reviewArtifactPath, `evals/artifacts/suite/${id}/cases/case/1.json`);
+      assert.equal(selected.value.evidence?.review?.suitePath, 'evals/suite.json');
+    }
+  } finally { await p.cleanup(); }
+});
 it('selects historical IDs and restores latest ordering across terminal partial runs with safe mapped IDs', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const ids: string[] = [];

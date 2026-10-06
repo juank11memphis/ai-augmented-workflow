@@ -9,10 +9,10 @@ type Evidence = { outcome: string; assertions: Check[]; output: string; truncate
   diagnostics: string[]; turns: { role: string; content: string }[];
   tools: { name: string; outcome: string; arguments: string; result: string }[] };
 type Detail = { suiteName: string; runId: string; caseId: string; caseName: string; attempt: number;
-  attempts: { number: number; outcome: string }[]; evidence: Evidence; selectedCheck: Check | null; latest: boolean };
+  attempts: { number: number; outcome: string }[]; evidence: Evidence; selectedCheck: Check | null; latest: boolean; reviewArtifactPath?: string };
 
-const render = new Function('esc', 'repairMarkup', `${WORKSPACE_CASE_DETAIL_CLIENT}\nreturn renderCaseDetail;`)(
-  (value: unknown) => escapeHtml(String(value ?? '')), () => '<button data-action="analyze-failure">Analyze failure</button>',
+const render = new Function('esc', `${WORKSPACE_CASE_DETAIL_CLIENT}\nreturn renderCaseDetail;`)(
+  (value: unknown) => escapeHtml(String(value ?? '')),
 ) as (detail: Detail) => string;
 
 const failedCheck: Check = { id: 'policy-match', outcome: 'failed', score: 0.2, threshold: 0.8,
@@ -23,7 +23,7 @@ const base: Detail = {
   evidence: { outcome: 'failed', assertions: [failedCheck], output: '<private-raw>', truncated: false,
     diagnostics: ['<private-attempt-diagnostic>'], turns: [{ role: 'assistant', content: '<private-turn>' }],
     tools: [{ name: 'lookup', outcome: 'result', arguments: '<private-args>', result: '<private-result>' }] },
-  selectedCheck: failedCheck, latest: true,
+  selectedCheck: failedCheck, latest: true, reviewArtifactPath: 'evals/artifacts/support/run-7/cases/refund/1.json',
 };
 
 it('renders run and case identity, labeled attempt and failed-check controls, selected status, and available metrics', () => {
@@ -35,7 +35,8 @@ it('renders run and case identity, labeled attempt and failed-check controls, se
   assert.match(html, /Selected check: policy-match · failed/);
   assert.match(html, /What happened.*Expected/s);
   assert.match(html, /Score 0.2 · Threshold 0.8/);
-  assert.match(html, /data-action="analyze-failure"/);
+  assert.match(html, /Review with your LLM.*evals\/artifacts\/support\/run-7\/cases\/refund\/1.json/s);
+  assert.doesNotMatch(html, /Analyze failure|Draft repair|Approve and apply/);
 });
 
 it('escapes private evidence only in intentional detail and discloses all checks, diagnostics, trace, and raw response', () => {

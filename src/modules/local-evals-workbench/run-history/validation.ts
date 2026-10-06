@@ -57,9 +57,16 @@ function validTotals(v: Record<string, unknown>): boolean {
   return true;
 }
 export function attempt(v: unknown): v is Attempt {
-  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics turns tools assertions') || v.version !== 1
+  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics turns tools assertions review') || v.version !== 1
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
     || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(v.diagnostics)) return false;
+  if (v.review !== undefined && (!record(v.review) || !keys(v.review, 'runPath suitePath targetPath runnerPath inputPaths omittedInputPathCount context')
+    || v.review.context !== 'current-repo-files' || !reviewPath(v.review.runPath)
+    || v.review.targetPath !== null && !reviewPath(v.review.targetPath)
+    || v.review.suitePath !== null && !reviewPath(v.review.suitePath)
+    || v.review.runnerPath !== null && !reviewPath(v.review.runnerPath)
+    || !Array.isArray(v.review.inputPaths) || v.review.inputPaths.length > LIMITS.evidenceItems
+    || !v.review.inputPaths.every(reviewPath) || !integer(v.review.omittedInputPathCount))) return false;
   if (!Array.isArray(v.turns) || v.turns.length > LIMITS.evidenceItems || !v.turns.every(t => record(t) && keys(t, 'id role content') && logicalId(t.id) && enumValue(t.role, ['user', 'assistant', 'system', 'tool']) && text(t.content))
     || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result turnId position outcome') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result)
       && (t.turnId === undefined || logicalId(t.turnId)) && (t.position === undefined || integer(t.position, LIMITS.evidenceItems))
@@ -79,6 +86,11 @@ export function attempt(v: unknown): v is Attempt {
       && ids(a.turnIds, LIMITS.evidenceItems) && a.turnIds.every(id => turns.includes(id)) && ids(a.toolIds, LIMITS.evidenceItems) && a.toolIds.every(id => tools.includes(id)))
     && new Set(v.assertions.map(a => a.id)).size === v.assertions.length
     && (v.outcome !== 'passed' || v.assertions.length > 0 && v.assertions.every(a => a.outcome === 'passed'));
+}
+function reviewPath(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 400 && !value.startsWith('/') && !value.includes('\\')
+    && !/[\u0000-\u001f\u007f]/.test(value)
+    && value.split('/').every(part => part !== '' && part !== '.' && part !== '..');
 }
 export function historyIndex(v: unknown): v is HistoryIndex {
   return record(v) && keys(v, 'version entries') && v.version === 1 && Array.isArray(v.entries) && v.entries.length <= LIMITS.history

@@ -34,8 +34,7 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(html, /id="run-setup-title" tabindex="-1"/);
   assert.match(html, /data-results-container/);
   assert.match(WORKSPACE_CLIENT_SCRIPT, /<summary>Model support<\/summary>/);
-  assert.match(WORKSPACE_CLIENT_SCRIPT, /Sibu\\'s built-in analysis and repair help currently uses OpenAI/);
-  assert.match(WORKSPACE_CLIENT_SCRIPT, /More providers are planned/);
+  assert.doesNotMatch(WORKSPACE_CLIENT_SCRIPT, /\/api\/(failure-analysis|repair-proposals)/);
   assert.match(WORKSPACE_CLIENT_SCRIPT, /Model being tested.*model-notice.*retry-model/s);
   assert.match(WORKSPACE_CLIENT_SCRIPT, /copy-model-issue/);
   assert.match(html, /\.model-notice\{border:1px/);
@@ -82,11 +81,10 @@ it('keeps entry recovery in the suite context before setup and Results at phone,
   assert.doesNotMatch(html, /diagnostic-rail|diagnostic-history/);
 });
 
-it('keeps failure analysis notice in existing result detail instead of adding a diagnostic panel', () => {
+it('keeps review handoff in existing result detail without in-app analysis or repair controls', () => {
   const html = renderWorkspaceShell({ status: 'ready', diagnostics: [], suites: [] });
-  assert.match(WORKSPACE_CLIENT_SCRIPT, /<section data-repair-host aria-label="Guided repair">.*repairMarkup\(\)/s);
-  assert.match(WORKSPACE_CLIENT_SCRIPT, /data-analysis-notice/);
-  assert.match(WORKSPACE_CLIENT_SCRIPT, /data-analysis-issue-details/);
+  assert.match(WORKSPACE_CLIENT_SCRIPT, /Review with your LLM/);
+  assert.doesNotMatch(WORKSPACE_CLIENT_SCRIPT, /Analyze failure|Draft repair|Approve and apply|data-repair-host/);
   assert.match(html, /data-results-container.*data-detail.*data-side-panel hidden/s);
   assert.doesNotMatch(html, /diagnostic-rail|diagnostic-history|data-analysis-panel/);
 });

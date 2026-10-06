@@ -46,6 +46,8 @@ test('starts before runner, checkpoints output, grades actual evidence and final
   assert.equal(h.attempts.at(-1)?.output, 'actual response');
   assert.equal(h.attempts.at(-1)?.assertions[0]?.outcome, 'passed');
   assert.equal(h.attempts.at(-1)?.calls, null);
+  assert.deepEqual(h.attempts.at(-1)?.review, { runPath: 'evals/artifacts/suite/run/run.json', suitePath: null, targetPath: 'src/target.mjs',
+    runnerPath: 'evals/runner.mjs', inputPaths: [], omittedInputPathCount: 0, context: 'current-repo-files' });
 });
 
 test('runner failure retains completed evidence and terminal state is partial', async () => {

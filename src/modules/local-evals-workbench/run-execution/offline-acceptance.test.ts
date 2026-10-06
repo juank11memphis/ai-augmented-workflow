@@ -20,7 +20,8 @@ test('offline target execution persists real output and changed integration chan
     const get = async (suiteId: string, runId: string, caseId?: string) => {
       const query = new URLSearchParams({ suiteId, runId, ...(caseId ? { caseId, attempt: '1' } : {}) });
       const response = await fetch(new URL('/api/eval-runs/status?' + query, server.url));
-      return await response.json() as { status: string; value: { summary: { state: string }; evidence?: { output: string; outcome: string;
+      return await response.json() as { status: string; value: { summary: { state: string }; reviewArtifactPath?: string; evidence?: { output: string; outcome: string;
+        review?: { runPath: string; suitePath: string | null; targetPath: string | null; runnerPath: string | null; inputPaths: string[] };
         assertions: { id: string; outcome: string; diagnostics: string[] }[] } } };
     };
     const terminal = async (runId: string) => {
@@ -60,6 +61,12 @@ test('offline target execution persists real output and changed integration chan
       const detail = await get('offline', runId, 'first');
       assert.match(detail.value.evidence!.output, /fake:GOOD:SYNTHETIC_SECRET_SENTINEL-first/);
       assert.equal(detail.value.evidence!.outcome, 'passed');
+      assert.equal(detail.value.reviewArtifactPath, `evals/artifacts/offline/${runId}/cases/first/1.json`);
+      assert.deepEqual(detail.value.evidence!.review, { runPath: `evals/artifacts/offline/${runId}/run.json`,
+        suitePath: 'evals/offline.json', targetPath: 'src/target.mjs', runnerPath: 'evals/runner.mjs', inputPaths: [],
+        omittedInputPathCount: 0, context: 'current-repo-files' });
+      const savedReview = JSON.parse(await readFile(path.join(project.root, detail.value.reviewArtifactPath!), 'utf8')) as { review: unknown };
+      assert.deepEqual(savedReview.review, detail.value.evidence!.review);
       const schemaDetail = await get('offline', runId, 'schema');
       assert.match(schemaDetail.value.evidence!.output, /SYNTHETIC_SECRET_SENTINEL-schema/);
       assert.deepEqual(schemaDetail.value.evidence!.assertions.map(({ id, outcome, diagnostics }) => ({ id, outcome, diagnostics })), [

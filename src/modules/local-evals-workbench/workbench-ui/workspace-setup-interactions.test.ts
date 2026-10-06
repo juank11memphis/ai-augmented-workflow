@@ -3,7 +3,6 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
-import { WORKSPACE_REPAIR_CLIENT } from './workspace-repair-client.js';
 
 const startReference = '123e4567-e89b-42d3-a456-426614174000';
 const startNotice = () => {
