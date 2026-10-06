@@ -98,7 +98,7 @@ it('keeps an unselected pane hidden and provides compact, medium, and expanded s
   assert.match(html, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:2\}/s);
   assert.match(html, /@media\(min-width:1100px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
   assert.match(html, /\[data-results-container\]\{grid-column:2\/4\}/);
-  assert.match(html, /\.detail-secondary pre\{max-width:100%;overflow:auto\}/);
+  assert.match(html, /\.detail\[data-detail-view="pane"\]\{min-width:0\}/);
 });
 
 it('renders safe labeled results with only inspectable actions and no broad evidence', () => {

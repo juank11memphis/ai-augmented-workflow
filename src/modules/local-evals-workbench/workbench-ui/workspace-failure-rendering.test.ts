@@ -7,7 +7,7 @@ import { WORKSPACE_STYLES } from './workspace-styles.js';
 
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character]!);
 
-test('selected failure renders evidence first, escapes text, and never shows another assertion trace', async () => {
+test('selected failure keeps check navigation and review handoff without showing saved evidence', async () => {
   const detail = { innerHTML: '', querySelector: () => null };
   const listeners = new Map<string, ((event: unknown) => void)[]>();
   const document = { addEventListener: (name: string, listener: (event: unknown) => void) => listeners.set(name, [...listeners.get(name) ?? [], listener]) };
@@ -35,27 +35,18 @@ test('selected failure renders evidence first, escapes text, and never shows ano
   const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT + ';({inspectCase})', context) as { inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void> };
   await api.inspectCase('case', 2);
   assert.match(detail.innerHTML, /Failed check 1 of 2/);
-  assert.match(detail.innerHTML, /&lt;selected actual&gt;/);
-  assert.doesNotMatch(detail.innerHTML, /<selected actual>|<RAW RESPONSE/);
-  assert.match(detail.innerHTML, /All checks \(4\).*grader.*passed.*Score 0.9.*Threshold 0.8.*GRADER RESULT.*grader diagnostic.*pending.*incomplete/s);
-  assert.match(detail.innerHTML, /Attempt diagnostics.*ATTEMPT DIAGNOSTIC/s);
-  assert.match(detail.innerHTML, /Conversation turns and tool trace.*SELECTED TURN.*SELECTED TOOL/s);
-  assert.match(detail.innerHTML, /Bounded raw response.*&lt;RAW RESPONSE OPENAI_API_KEY=synthetic&gt;/);
-  assert.doesNotMatch(detail.innerHTML, /No raw response was retained/);
-  const actual = detail.innerHTML.indexOf('<h3>What happened</h3>');
-  const expected = detail.innerHTML.indexOf('<h3>Expected</h3>');
-  const trace = detail.innerHTML.indexOf('<summary>Diagnostics and trace</summary>');
-  const action = detail.innerHTML.indexOf('Review with your LLM');
-  assert.ok(actual < expected && expected < trace && trace < action);
+  assert.match(detail.innerHTML, /Selected check: a · failed/);
+  assert.match(detail.innerHTML, /Review with your LLM.*evals\/artifacts\/suite\/run\/cases\/case\/2.json/s);
+  assert.doesNotMatch(detail.innerHTML, /selected actual|B ACTUAL|EXPECTED|GRADER RESULT|ATTEMPT DIAGNOSTIC|SELECTED TURN|SELECTED TOOL|RAW RESPONSE|All checks|Diagnostics and trace|Bounded raw response|What happened/);
   assert.doesNotMatch(detail.innerHTML, /Analyze failure|Draft repair|Approve and apply/);
   assert.match(detail.innerHTML, /Score 0.2 · Threshold 0.8|Score 0.2.*Threshold 0.8/);
   await api.inspectCase('case', 2, 'b');
-  assert.match(detail.innerHTML, /Failed check 2 of 2|B ACTUAL/);
-  assert.match(detail.innerHTML, /What happened<\/h3><p>B ACTUAL/);
-  assert.match(detail.innerHTML, /&lt;RAW RESPONSE OPENAI_API_KEY=synthetic&gt;/);
+  assert.match(detail.innerHTML, /Failed check 2 of 2/);
+  assert.match(detail.innerHTML, /Selected check: b · failed/);
+  assert.doesNotMatch(detail.innerHTML, /B ACTUAL|RAW RESPONSE/);
   all.output = '';
   await api.inspectCase('case', 2, 'a');
-  assert.match(detail.innerHTML, /No raw response was retained for this attempt/);
+  assert.match(detail.innerHTML, /Review with your LLM/);
   assert.doesNotMatch(detail.innerHTML, /RAW RESPONSE OPENAI_API_KEY/);
 });
 
@@ -68,29 +59,26 @@ test('review handoff remains in existing result detail across phone, tablet, and
   assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\)\{.*?\.suite-rail\{display:block;grid-column:1;grid-row:1\/4\}.*?\[data-results-container\]\{grid-column:2\/4\}\.workspace:has\(\[data-detail\]:not\(\[hidden\]\)\) \[data-results-container\]\{grid-column:2\}\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
 });
 
-test('focused evidence and review handoff stay labeled, disclosed, and contained at each breakpoint', () => {
-  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /aria-label="Actual result".*aria-label="Expected result"/s);
-  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>All checks/);
-  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>Diagnostics and trace/);
-  assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /<details class="detail-section"><summary>Bounded raw response/);
+test('review handoff stays labeled and contained at each breakpoint', () => {
   assert.match(WORKSPACE_CASE_DETAIL_CLIENT, /aria-label="Review with a repo-aware LLM"/);
-  assert.match(WORKSPACE_STYLES, /\.detail-evidence>section\{min-width:0;max-width:100%/);
-  assert.match(WORKSPACE_STYLES, /\.detail-secondary pre\{width:100%;max-width:100%;overflow:auto/);
+  assert.doesNotMatch(WORKSPACE_CASE_DETAIL_CLIENT, /What happened|Expected result|All checks|Diagnostics and trace|Bounded raw response/);
+  assert.match(WORKSPACE_STYLES, /\.detail\[data-detail-view="pane"\]\{min-width:0\}/);
   assert.match(WORKSPACE_STYLES, /@media\(max-width:699px\).*\.sheet:has\(\[data-action="close-detail"\]\).*width:100vw/s);
   assert.match(WORKSPACE_STYLES, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:2\}/s);
   assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
   assert.match(WORKSPACE_RESULTS_CLIENT, /function closeCaseDetail\(\).*?returnToResult\(\)/s);
 });
 
-test('a long selected output is escaped inside the bounded evidence region', () => {
+test('a long saved response stays out of the UI while its review artifact is linked', () => {
   const render = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + ';renderCaseDetail', { esc: escape, repairMarkup: () => '' }) as (value: unknown) => string;
   const longOutput = '<private>' + 'folder/'.repeat(150);
   const html = render({ suiteName: 'Suite', runId: 'run', caseId: 'case', caseName: 'Case', attempt: 1,
     attempts: [{ number: 1, outcome: 'failed' }], evidence: { outcome: 'failed', assertions: [], diagnostics: [],
-      turns: [], tools: [], output: longOutput }, selectedCheck: null, latest: true });
-  assert.match(html, /class="detail-evidence".*aria-label="Actual result".*&lt;private&gt;/s);
+      turns: [], tools: [], output: longOutput }, selectedCheck: null, latest: true,
+    reviewArtifactPath: 'evals/artifacts/suite/run/cases/case/1.json' });
+  assert.match(html, /Review with your LLM.*evals\/artifacts\/suite\/run\/cases\/case\/1.json/s);
   assert.doesNotMatch(html, /<private>/);
-  assert.match(html, /<details class="detail-section"><summary>Bounded raw response<\/summary>/);
+  assert.doesNotMatch(html, /&lt;private&gt;|folder\/|Bounded raw response/);
 });
 
 test('deferred selected evidence cannot resurrect old case detail or assistance after case, run, or suite selection', async () => {
@@ -124,6 +112,6 @@ test('deferred selected evidence cannot resurrect old case detail or assistance 
     release(evidence('STALE PRIVATE EVIDENCE'));
     await pending;
     assert.doesNotMatch(detail.innerHTML, /STALE PRIVATE EVIDENCE|Old.*Analyze failure/s, change);
-    assert.match(detail.innerHTML, /CURRENT/, change);
+    assert.match(detail.innerHTML, change === 'case' ? /New · failed/ : /CURRENT/, change);
   }
 });

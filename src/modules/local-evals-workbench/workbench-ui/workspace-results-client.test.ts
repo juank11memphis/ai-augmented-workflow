@@ -208,7 +208,8 @@ test('filtered rows preserve saved outcomes and close inspectable detail without
   await page.api.inspectCase('alpha', 1);
   const detail = page.context.one('[data-detail]') as { innerHTML: string; hidden: boolean };
   assert.equal(detail.hidden, false);
-  assert.match(detail.innerHTML, /All checks \(0\)/);
+  assert.match(detail.innerHTML, /Review handoff unavailable for this older run/);
+  assert.doesNotMatch(detail.innerHTML, /All checks|Bounded raw response|private raw/);
   assert.doesNotMatch(detail.innerHTML, /data-repair-host|Analyze failure/);
   page.context.matchMedia = () => ({ matches: true });
   await page.api.inspectCase('alpha', 1); assert.equal(page.sheet.isOpen(), true);
