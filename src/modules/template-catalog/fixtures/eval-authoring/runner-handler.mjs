@@ -80,13 +80,15 @@ export async function handleRequest(command, ports, { evalMode = '1' } = {}) {
         identity = { runId: command.runId, caseId: item.id, attempt };
         emit('case-attempt-started', {});
         let cursor = 0;
+        let turnId;
+        let pendingTools = [];
         const dispatch = async (tool, args) => {
           const mock = item.toolMocks[cursor];
           if (!mock || mock.tool !== tool || !isDeepStrictEqual(mock.input, args)) {
-            emit('tool-interaction-recorded', { position: cursor, tool, arguments: args, outcome: { type: 'rejected', code: 'tool-mismatch' } });
             throw new Error('tool-mismatch');
           }
-          emit('tool-interaction-recorded', { position: cursor++, tool, arguments: args, outcome: mock.outcome });
+          pendingTools.push({ toolId: mock.id, turnId, position: cursor++, name: tool,
+            arguments: args, outcome: mock.outcome.type, result: mock.outcome });
           return mock.outcome;
         };
         // Replacement happens before framework initialization/capture.
@@ -94,13 +96,16 @@ export async function handleRequest(command, ports, { evalMode = '1' } = {}) {
         const history = [];
         let output = '';
         for (const [turnIndex, turn] of item.turns.entries()) {
+          turnId = `turn-${turnIndex + 1}`;
+          pendingTools = [];
           output = await target.turn(history, turn, command.model);
-          emit('conversation-turn-completed', { turnIndex, role: 'assistant', output });
+          emit('conversation-turn-completed', { turnIndex, turnId, role: 'assistant', output });
+          for (const trace of pendingTools) emit('tool-interaction-recorded', trace);
         }
         for (const grader of item.graders) {
-          const base = { id: grader.id, diagnostics: [], artifactReferences: [] };
+          const base = { checkId: grader.id, diagnostics: [] };
           if (grader.type === 'custom') {
-            emit('custom-assertion-completed', { ...base, ...await ports.custom({ name: grader.name, output }) });
+            emit('custom-assertion-completed', { ...base, score: null, ...await ports.custom({ name: grader.name, output }) });
           } else {
             const judgment = await ports.judge({ model: command.judgeModel, rubric: grader.rubric.text, output });
             if (!Number.isFinite(judgment.score) || judgment.score < 0 || judgment.score > 1) throw new Error('unsafe-judgment');

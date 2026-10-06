@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
+import { ExecuteEventValidator } from '../local-evals-workbench/runner-process/execute-events.js';
 const { command, fixtureModules, invoke, project, suite } = await import(
   new URL('../../../src/modules/template-catalog/fixtures/eval-authoring/test-support.mjs', import.meta.url).href
 ) as typeof import('./fixtures/eval-authoring/test-support.mjs');
@@ -47,9 +48,28 @@ test('target dispatch records exact tool order, arguments and all mock outcomes 
   const result = await handleRequest(command([item]), fixture.ports);
   assert.equal(result.status, 'completed');
   const traces = result.events.filter((event) => event.type === 'tool-interaction-recorded');
-  assert.deepEqual(traces.map((event) => event.data), item.toolMocks.map((mock, position) => ({ position, tool: mock.tool, arguments: mock.input, outcome: mock.outcome })));
+  assert.deepEqual(traces.map((event) => event.data), item.toolMocks.map((mock, position) => ({
+    toolId: mock.id, turnId: 'turn-1', position, name: mock.tool, arguments: mock.input,
+    outcome: mock.outcome.type, result: mock.outcome,
+  })));
   assert.match(String(result.events.find((event) => event.type === 'conversation-turn-completed')?.data.output), /result,error,unexpected-response/);
   assert.equal(fixture.counts.production, 0);
+});
+
+test('fixture execute events satisfy the workbench validator for all case types', async () => {
+  const { handleRequest, createTestPorts } = await fixtureModules();
+  const normalizedSuite = await suite();
+  const cases = normalizedSuite.testCases;
+  const selected = command(cases);
+  assert.ok(selected.runId);
+  assert.ok(selected.model);
+  const result = await handleRequest(selected, createTestPorts().ports);
+  assert.equal(result.status, 'completed');
+  const validator = new ExecuteEventValidator(selected.requestId, {
+    runId: selected.runId, suite: normalizedSuite, cases, model: selected.model, judgeModel: selected.judgeModel,
+  });
+  for (const event of result.events) validator.accept(event);
+  assert.equal(validator.completion, 'completed');
 });
 
 test('undeclared, mismatched, extra and out-of-order calls fail closed; bypass sentinel is sensitive', async () => {

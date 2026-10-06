@@ -1,6 +1,6 @@
 # Version-2 suite and project runner authoring contract
 
-Read this reference before generation. The suite schema is enforced by Sibu's public `validateEvalSuiteContract` API (Local Evals Workbench). Do not create another validator or use the illustrative SDD shorthand. The wire protocol below is an explicit authoring contract for future adapter reuse, not a claim that dashboard version-2 execution is already implemented. A generated project runner must be directly runnable through stdin/stdout independently of dashboard support.
+Read this reference before generation. The suite schema is enforced by Sibu's public `validateEvalSuiteContract` API (Local Evals Workbench). Do not create another validator or use the illustrative SDD shorthand. The wire protocol below must match the Local Evals Workbench's execute-event validator. A generated project runner must be directly runnable through stdin/stdout independently of dashboard support.
 
 ## Suite schema
 
@@ -112,15 +112,15 @@ Event `type` and `data` contracts:
 | `description` | Shape above |
 | `run-started` | `model`, `judgeModel` |
 | `case-attempt-started` | `{}` |
-| `tool-interaction-recorded` | `position`, `tool`, `arguments` (JSON), `outcome` (mock outcome or `{ "type": "rejected", "code": "tool-mismatch" }`) |
-| `conversation-turn-completed` | `turnIndex` (zero-based input turn), `role` (`assistant`), `output` (bounded redacted string) |
-| `custom-assertion-completed` | `id`, `passed` (boolean), `evidence` (bounded string), `diagnostics` (safe codes), `artifactReferences` (contained relative paths) |
-| `rubric-judgment-completed` | Custom result fields plus `judgeModel`, `score`, `threshold`; `passed` equals `score >= threshold` |
+| `conversation-turn-completed` | `turnIndex` (zero-based input turn), optional unique `turnId`, `role` (`assistant`), `output` (bounded redacted string) |
+| `tool-interaction-recorded` | Unique `toolId`, prior `turnId`, zero-based `position`, `name`, `arguments` (bounded JSON), `outcome` (`result`, `error`, or `unexpected-response`), `result` (bounded JSON mock outcome) |
+| `custom-assertion-completed` | `checkId`, `passed` (boolean), `score` (0–1 or `null`), nonempty `evidence` (at most 500 UTF-8 bytes), `diagnostics` (safe strings) |
+| `rubric-judgment-completed` | Custom result fields plus `judgeModel`, numeric `score` (0–1), `threshold`; `passed` equals `score >= threshold` |
 | `case-attempt-completed` | `status`: `completed` or `error` |
 | `run-diagnostic` | `code` (safe reason code), `message` (fixed safe summary) |
 | `run-completed` | `status`: `completed`, `error`, or `interrupted` |
 
-Execute order: `run-started`, then each selected case once in selection order: attempt started; tool events in dispatch order and completed turns in turn order; custom/rubric events in grader order; attempt completed. Finish with run completed. Tool events may precede the turn completion that requested them. Diagnostics may occur within the active attempt or at run scope. A failed attempt emits a diagnostic, attempt error, and run error; never fabricate missing evidence or mark incomplete work completed. Completed means execution finished, not a Sibu deterministic-assertion pass.
+Execute order: `run-started`, then each selected case once in selection order: attempt started; completed turns in turn order, followed by their tool events in dispatch order; custom/rubric events in grader order; attempt completed. Finish with run completed. Buffer tool traces until their turn-completed event has established the `turnId`. On a mismatched or undeclared tool call, fail the attempt safely rather than emitting a rejected tool event. Diagnostics may occur within the active attempt or at run scope. A failed attempt emits a diagnostic, attempt error, and run error; never fabricate missing evidence or mark incomplete work completed. Completed means execution finished, not a Sibu deterministic-assertion pass. Do not emit undeclared event data fields such as `id` or `artifactReferences` for grader results.
 
 For malformed requests emit only a safe `run-diagnostic` with code `invalid-request` and fixed message, null execution identities, and the original request ID when it passes the safe ID check (otherwise `invalid-request`); exit nonzero. A placeholder ID for a safe received ID prevents Sibu from correlating the diagnostic. Runtime errors retain active identities, emit terminal error events, and exit nonzero. Never emit raw exceptions, prompts, credentials, full model responses or hidden chain-of-thought. Retain only concise rubric evidence, bounded custom results and normalized turns/traces authorized for retention; redaction uncertainty must fail closed.
 

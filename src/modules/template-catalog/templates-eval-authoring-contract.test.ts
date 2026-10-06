@@ -86,7 +86,7 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.match(metadata?.changes.join(' ') ?? '', /estimate requests/);
+  assert.match(metadata?.changes.join(' ') ?? '', /workbench validator/);
 });
 
 test('protocol examples and evidence define independent version, identity and ordering', () => {
@@ -98,7 +98,7 @@ test('protocol examples and evidence define independent version, identity and or
     assert.equal(item.judgeModel, 'fake/judge');
     assert.equal('repeats' in item, false);
   }
-  for (const requirement of ['judgeModels', 'runId', 'caseId', 'attempt', 'sequence', 'redaction uncertainty', 'hidden chain-of-thought', 'not a claim that dashboard', 'Sibu-owned deterministic']) {
+  for (const requirement of ['judgeModels', 'runId', 'caseId', 'attempt', 'sequence', 'redaction uncertainty', 'hidden chain-of-thought', 'execute-event validator', 'Sibu-owned deterministic']) {
     assert.ok(reference.includes(requirement), requirement);
   }
 });
