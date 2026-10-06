@@ -4,6 +4,25 @@ This file is the canonical source for Sibu release notes.
 Every release should update this changelog and the matching GitHub Release.
 Write or update the changelog entry first, then publish the matching GitHub Release from that same summary.
 
+## 1.4.0 - 2026-10-06
+
+### Added
+- hand off case evidence for repo-aware review
+- summarize failure cause and suggested fix
+- provide selected context for guided repairs
+- start runs without review or estimates
+- gate authored suites on real preview check
+
+### Changed
+- simplify case result details
+
+### Removed
+- remove repeat-case runs
+
+### Fixed
+- align authored runner events with validator
+- surface safe runner request failures
+
 ## 1.3.0 - 2026-10-06
 
 ### Added

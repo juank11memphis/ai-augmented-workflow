@@ -139,6 +139,7 @@ else process.exit(2);
     const adapter = new OpenAiFailureAnalysisAdapter('fake-key', { createResponse: async request => {
       packedPrompt = request.input;
       return { outputText: JSON.stringify({ exactFailureExplanation: 'Schema mismatch', likelyCause: 'eval_assertion_issue',
+        suggestedFix: 'Update the schema expectation to match the intended output.',
         evidenceSummary: 'Selected schema check failed', uncertainty: 'Low' }) };
     } });
     await adapter.analyzeFailure({ model: 'fake-assistance', evidence: selected.value.evidence });

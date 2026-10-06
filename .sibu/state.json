@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "201",
+  "templateVersion": "212",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-09-30T16:29:45.677Z",
+  "updatedAt": "2026-10-06T22:38:29.546Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -109,8 +109,9 @@
     "AGENTS.md": {
       "template": "AGENTS.md",
       "templateVersion": "49",
-      "sha256": "a2aed18a16be71c92263ec0d74898b9786db7d5cc97daa6fef2e37841578bd12",
-      "status": "managed"
+      "sha256": "ee3138ea9521e96c1853bec9c1a49404f447133b79bd191c83157f5273a54afe",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "53"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
@@ -200,14 +201,16 @@
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
       "templateVersion": "28",
-      "sha256": "5e5cb5da1595271e7e6ef29203ea51568ea158c40571cb086436183c7bd12add",
-      "status": "managed"
+      "sha256": "f0e7d66adb1e7623d2048f4572d84b83142b853aae9d0f2a4514c7c770da5e0c",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "32"
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
       "templateVersion": "16",
-      "sha256": "a18f7a27dab258bc213f74be9d0c74539b0a300c6729eb86b6de0601baeb4c8f",
-      "status": "managed"
+      "sha256": "9c33cc9b74cbf5e82a4cecda8aa84faff02e7f8f77cd738b234c28e0fd15084a",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "20"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
       "template": ".codex/agents/sibu-implementation-planner.toml",
@@ -218,20 +221,23 @@
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
       "templateVersion": "57",
-      "sha256": "436521cef41ccc4a966430b6806f7bf1cb3054a241ac0cb2769b341a24cdc6fb",
-      "status": "managed"
+      "sha256": "a39859552c137e7b396f9c739a5c2be6e785f7904dc386d6bceb3e24800654a5",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "64"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
       "templateVersion": "24",
-      "sha256": "6dde3975a951339f10f18ed65d2b21b4da8b657b3f4698daef680063c0913e2e",
-      "status": "managed"
+      "sha256": "343c647d1dfffe7ea8701e3639598fd799ec0831d769ee26465263b9eff4ed81",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "27"
     },
     ".agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md",
       "templateVersion": "4",
-      "sha256": "5dd0946606674221154da7ac81ec5703e2fdaefd925d04760fccc7e658a829c7",
-      "status": "managed"
+      "sha256": "a2128bc8bcbd6fb6c0937bff42fb19a1f041081089da4d1c7ddf781e8fb2173a",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "6"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
       "template": ".codex/agents/sibu-implementation-executor.toml",
@@ -247,14 +253,14 @@
     },
     ".agents/skills/eval-authoring/SKILL.md": {
       "template": "skills/eval-authoring/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "b70f614c3d9b6735db5456d3a499b20e7e4e698cd64299166d38f842c4c9185e",
+      "templateVersion": "6",
+      "sha256": "9cbc0405edfbe05ad7d108cc0bc98ef30fe20091739e17f5c67e4ed4ccf4e427",
       "status": "managed"
     },
     ".agents/skills/eval-authoring/references/version-2-contract.md": {
       "template": "skills/eval-authoring/references/version-2-contract.md",
-      "templateVersion": "1",
-      "sha256": "a73e934dbaeaa1890fdb4737b8652c7bda457b627e568ff454b727e01d029538",
+      "templateVersion": "5",
+      "sha256": "6271cb98766cdbee4dbe15c1907c43aaac15b49a3b96354e839824c242a78bc9",
       "status": "managed"
     },
     ".agents/skills/feature-idea-capture/SKILL.md": {
@@ -395,6 +401,12 @@
       "sha256": "ef5f7e5aac1cbe00e866ab72e472dcd349535a5d14852e4bbfac0dfa5de78085",
       "status": "unmanaged",
       "reason": "Stopped by `sibu mcp stop`."
+    },
+    ".agents/skills/eval-authoring/scripts/check-preview-contract.mjs": {
+      "template": "skills/eval-authoring/scripts/check-preview-contract.mjs",
+      "templateVersion": "2",
+      "sha256": "359520adb23b517410b47e5c81b353a9c7f198cf2a55f9211152165488663145",
+      "status": "managed"
     }
   }
 }

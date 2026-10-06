@@ -1,6 +1,6 @@
 # Version-2 suite and project runner authoring contract
 
-Read this reference before generation. The suite schema is enforced by Sibu's public `validateEvalSuiteContract` API (Local Evals Workbench). Do not create another validator or use the illustrative SDD shorthand. The wire protocol below is an explicit authoring contract for future adapter reuse, not a claim that dashboard version-2 execution is already implemented. A generated project runner must be directly runnable through stdin/stdout independently of dashboard support.
+Read this reference before generation. The suite schema is enforced by Sibu's public `validateEvalSuiteContract` API (Local Evals Workbench). Do not create another validator or use the illustrative SDD shorthand. The wire protocol below must match the Local Evals Workbench's execute-event validator. A generated project runner must be directly runnable through stdin/stdout independently of dashboard support.
 
 ## Suite schema
 
@@ -79,7 +79,7 @@ The synthetic content files contain: `inputs/lookup.txt`: `Find synthetic order 
 
 ## Independent runner protocol: version 1
 
-One UTF-8 JSON request per process on stdin; NDJSON on stdout only. Diagnostics go to bounded stderr, never mixed with protocol output. Use project-root cwd, a validated command argument array with `shell: false`, base process environment plus declared environment names only, and explicit `SIBU_EVAL_MODE=1` for every operation. Environment values never enter requests, files, diagnostics or events. Reject unsupported versions, malformed requests, unknown models, empty selections, duplicate cases, invalid repeats and missing eval mode before target initialization. Requests/events are untrusted; bound input, lines, total output, traces and stderr, and enforce startup/idle/overall timeouts in the caller. Stop/terminate on protocol violations and report interruption honestly.
+One UTF-8 JSON request per process on stdin; NDJSON on stdout only. Diagnostics go to bounded stderr, never mixed with protocol output. Use project-root cwd, a validated command argument array with `shell: false`, base process environment plus declared environment names only, and explicit `SIBU_EVAL_MODE=1` for every operation. Environment values never enter requests, files, diagnostics or events. Reject unsupported versions, malformed requests, unknown models, empty selections, duplicate cases, unsupported repeat fields and missing eval mode before target initialization. Requests/events are untrusted; bound input, lines, total output, traces and stderr, and enforce startup/idle/overall timeouts in the caller. Stop/terminate on protocol violations and report interruption honestly.
 
 ### Commands and results first
 
@@ -89,16 +89,12 @@ Requests use exactly one `operation`, independently versioned `protocolVersion: 
 { "protocolVersion": 1, "requestId": "describe-1", "operation": "describe" }
 ```
 
-Describe emits one `description` event. Its `data` contains `runnerId`, `capabilities` (subset of `single-turn`, `multi-turn`, `tool-mocks`, `custom`, `rubric`), `models`, `judgeModels`, `requiredEnvironment` (names only), and `costEstimation` (boolean). It performs no target/model/judge calls or external actions. Rubric selections require a compatible separately selected Judge Model; no default to the tested model.
+Describe emits one `description` event. Its `data` contains `runnerId`, `capabilities` (subset of `single-turn`, `multi-turn`, `tool-mocks`, `custom`, `rubric`), `models`, `judgeModels`, and `requiredEnvironment` (names only). It performs no target/model/judge calls or external actions. Rubric selections require a compatible separately selected Judge Model; no default to the tested model.
+
+For execute, `testCases` contains the nonempty selected normalized version-2 case objects (not IDs); Sibu resolves file content to inline values before invoking the runner. A project runner that checks selected cases against suite definitions must compare them with safely resolved suite cases, not raw file references. `judgeModel` is null when no rubrics are selected. Each selected case runs once. Starting a run may make paid model calls; no call count or cost estimate is provided.
 
 ```json
-{ "protocolVersion": 1, "requestId": "estimate-1", "operation": "estimate", "model": "fake/target", "judgeModel": "fake/judge", "repeats": 2, "testCases": [{ "id": "greet", "name": "Greet", "turns": [{ "role": "user", "content": { "type": "inline", "text": "Hello." } }], "toolMocks": [], "assertions": [], "graders": [{ "id": "tone", "type": "rubric", "rubric": { "type": "inline", "text": "Respond politely." }, "threshold": 0.8 }] }] }
-```
-
-For estimate and execute, `testCases` contains the nonempty selected normalized version-2 case objects (not IDs); resolve file content safely before invoking the handler. `judgeModel` is null when no rubrics are selected. `repeats` is a positive bounded integer. Estimate emits one `estimate` event with `targetCalls`, `judgeCalls`, `totalCalls`, and `cost`: `{ "status": "available", "amount": 0.01, "currency": "USD" }` or `{ "status": "unavailable", "reason": "Provider pricing unavailable." }`. Call counts are nonnegative integers based on selected turns, tools, grading and repeats; explain estimation assumptions in setup notes. Estimate never invokes model/judge/tools to discover prices or counts.
-
-```json
-{ "protocolVersion": 1, "requestId": "execute-1", "operation": "execute", "runId": "run-1", "model": "fake/target", "judgeModel": "fake/judge", "repeats": 2, "testCases": [{ "id": "greet", "name": "Greet", "turns": [{ "role": "user", "content": { "type": "inline", "text": "Hello." } }], "toolMocks": [], "assertions": [], "graders": [{ "id": "tone", "type": "rubric", "rubric": { "type": "inline", "text": "Respond politely." }, "threshold": 0.8 }] }] }
+{ "protocolVersion": 1, "requestId": "execute-1", "operation": "execute", "runId": "run-1", "model": "fake/target", "judgeModel": "fake/judge", "testCases": [{ "id": "greet", "name": "Greet", "turns": [{ "role": "user", "content": { "type": "inline", "text": "Hello." } }], "toolMocks": [], "assertions": [], "graders": [{ "id": "tone", "type": "rubric", "rubric": { "type": "inline", "text": "Respond politely." }, "threshold": 0.8 }] }] }
 ```
 
 ### Event envelope and ordered evidence
@@ -113,20 +109,20 @@ Event `type` and `data` contracts:
 
 | Type | Data |
 | --- | --- |
-| `description`, `estimate` | Shapes above |
+| `description` | Shape above |
 | `run-started` | `model`, `judgeModel` |
 | `case-attempt-started` | `{}` |
-| `tool-interaction-recorded` | `position`, `tool`, `arguments` (JSON), `outcome` (mock outcome or `{ "type": "rejected", "code": "tool-mismatch" }`) |
-| `conversation-turn-completed` | `turnIndex` (zero-based input turn), `role` (`assistant`), `output` (bounded redacted string) |
-| `custom-assertion-completed` | `id`, `passed` (boolean), `evidence` (bounded string), `diagnostics` (safe codes), `artifactReferences` (contained relative paths) |
-| `rubric-judgment-completed` | Custom result fields plus `judgeModel`, `score`, `threshold`; `passed` equals `score >= threshold` |
+| `conversation-turn-completed` | `turnIndex` (zero-based input turn), optional unique `turnId`, `role` (`assistant`), `output` (bounded redacted string) |
+| `tool-interaction-recorded` | Unique `toolId`, prior `turnId`, zero-based `position`, `name`, `arguments` (bounded JSON), `outcome` (`result`, `error`, or `unexpected-response`), `result` (bounded JSON mock outcome) |
+| `custom-assertion-completed` | `checkId`, `passed` (boolean), `score` (0–1 or `null`), nonempty `evidence` (at most 500 UTF-8 bytes), `diagnostics` (safe strings) |
+| `rubric-judgment-completed` | Custom result fields plus `judgeModel`, numeric `score` (0–1), `threshold`; `passed` equals `score >= threshold` |
 | `case-attempt-completed` | `status`: `completed` or `error` |
 | `run-diagnostic` | `code` (safe reason code), `message` (fixed safe summary) |
 | `run-completed` | `status`: `completed`, `error`, or `interrupted` |
 
-Execute order: `run-started`, then each selected case in selection order, each repeat in increasing order: attempt started; tool events in dispatch order and completed turns in turn order; custom/rubric events in grader order; attempt completed. Finish with run completed. Tool events may precede the turn completion that requested them. Diagnostics may occur within the active attempt or at run scope. A failed attempt emits a diagnostic, attempt error, and run error; never fabricate missing evidence or mark incomplete work completed. Completed means execution finished, not a Sibu deterministic-assertion pass. Required checks failing any attempt must not be hidden by averaging.
+Execute order: `run-started`, then each selected case once in selection order: attempt started; completed turns in turn order, followed by their tool events in dispatch order; custom/rubric events in grader order; attempt completed. Finish with run completed. Buffer tool traces until their turn-completed event has established the `turnId`. On a mismatched or undeclared tool call, fail the attempt safely rather than emitting a rejected tool event. Diagnostics may occur within the active attempt or at run scope. A failed attempt emits a diagnostic, attempt error, and run error; never fabricate missing evidence or mark incomplete work completed. Completed means execution finished, not a Sibu deterministic-assertion pass. Do not emit undeclared event data fields such as `id` or `artifactReferences` for grader results.
 
-For malformed requests emit only a safe `run-diagnostic` with code `invalid-request` and fixed message, null execution identities, and a sanitized request ID (or `invalid-request`); exit nonzero. Runtime errors retain active identities, emit terminal error events, and exit nonzero. Never emit raw exceptions, prompts, credentials, full model responses or hidden chain-of-thought. Retain only concise rubric evidence, bounded custom results and normalized turns/traces authorized for retention; redaction uncertainty must fail closed.
+For malformed requests emit only a safe `run-diagnostic` with code `invalid-request` and fixed message, null execution identities, and the original request ID when it passes the safe ID check (otherwise `invalid-request`); exit nonzero. A placeholder ID for a safe received ID prevents Sibu from correlating the diagnostic. Runtime errors retain active identities, emit terminal error events, and exit nonzero. Never emit raw exceptions, prompts, credentials, full model responses or hidden chain-of-thought. Retain only concise rubric evidence, bounded custom results and normalized turns/traces authorized for retention; redaction uncertainty must fail closed.
 
 ## Project-owned implementation
 
@@ -138,6 +134,6 @@ Before every artifact read/write, require project-root-contained lexical paths a
 
 ## Conventional proof and handoff
 
-Generate ordinary runner tests with injected fake model/judge ports and production-client sentinels. Prove describe/estimate make zero calls; selected models/cases/repeats reach the target; multi-turn state resets; tool success/error/unexpected outcomes, selection, arguments/order and unknown/mismatched calls stay isolated. Demonstrate the sentinel detects an intentionally bypassed mock seam. Check malformed requests, output purity, bounds, safe errors, root/symlink escapes, environment names versus values, fixture provenance and unchanged production bytes. These tests do not prove live-agent compliance or arbitrary framework support.
+Generate ordinary runner tests with injected fake model/judge ports and production-client sentinels. Prove describe makes zero calls; selected models/cases reach the target once; multi-turn state resets; tool success/error/unexpected outcomes, selection, arguments/order and unknown/mismatched calls stay isolated. Demonstrate the sentinel detects an intentionally bypassed mock seam. Check malformed requests, output purity, bounds, safe errors, root/symlink escapes, environment names versus values, fixture provenance and unchanged production bytes. These tests do not prove live-agent compliance or arbitrary framework support. Then run the Sibu preview contract check from the project root: `node .agents/skills/eval-authoring/scripts/check-preview-contract.mjs --suite <suite-id> --model <target-model> --judge <judge-model>` (omit `--judge` when no rubric is selected). The check uses Sibu's actual input resolution without executing a run or calling a model. A blocked check is not runnable proof.
 
 Preserve existing Git rules and append root `/evals/artifacts/` only when needed. Verify effective ignore (`git check-ignore --no-index evals/artifacts/probe.json`) and no tracked contents (`git ls-files -- evals/artifacts`). A later negating rule, missing Git or tracked artifacts needs user guidance; never delete/untrack automatically. Do not create results or tracked placeholders. Keep ignored artifacts out of ordinary agent context. End with created paths, prerequisites, conventional test results, retained coverage gaps and a later direct-protocol invocation guide; do not execute the suite while authoring.
