@@ -10,7 +10,8 @@ import { diagnoseState } from '../workflow-health-inspector/index.js';
 import { applySyncAction, getSyncPreviews } from '../sync-review-orchestrator/index.js';
 import { readTemplate, readTemplateManifest, SELECTABLE_ARCHITECTURE_SKILLS, SUPPORTED_AGENTS } from './index.js';
 
-const templates = ['skills/eval-authoring/SKILL.md', 'skills/eval-authoring/references/version-2-contract.md'];
+const templates = ['skills/eval-authoring/SKILL.md', 'skills/eval-authoring/references/version-2-contract.md',
+  'skills/eval-authoring/scripts/check-preview-contract.mjs'];
 const target = (template: string) => `.agents/${template}`;
 async function initialize(t: TestContext, selectedAgents: SupportedAgent[]): Promise<{ rootPath: string; state: SibuState }> {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-authoring-lifecycle-'));
@@ -39,7 +40,7 @@ function apply(rootPath: string, state: SibuState, template: string, action: 'ap
   return result.state;
 }
 
-test('fresh init installs skill/reference for all agents and doctor observes healthy metadata', async (t) => {
+test('fresh init installs eval-authoring guidance and preview checker for all agents', async (t) => {
   for (const selected of [...SUPPORTED_AGENTS.map((agent) => [agent]), SUPPORTED_AGENTS]) {
     const { rootPath, state } = await initialize(t, selected);
     for (const template of templates) {
@@ -59,7 +60,7 @@ test('stale managed guidance gets meaningful updates and healthy doctor state', 
     state.managedFiles[target(template)] = { template, templateVersion: '0', sha256: sha256(stale), status: 'managed' };
     const change = preview(rootPath, state, template);
     assert.equal(change.status, 'update-available');
-    assert.match(change.changes.join(' '), /runner/i);
+    assert.match(change.changes.join(' '), /runner|preview/i);
     state = apply(rootPath, state, template, 'apply-update');
     assert.equal(fs.readFileSync(path.join(rootPath, target(template)), 'utf8'), readTemplate(template));
   }

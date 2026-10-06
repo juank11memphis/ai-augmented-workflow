@@ -205,18 +205,18 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       claude: '.agents/skills/eval-authoring/SKILL.md',
     },
     supplementalTargetsByAgent: {
-      codex: [{
-        templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md',
-        targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md',
-      }],
-      gemini: [{
-        templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md',
-        targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md',
-      }],
-      claude: [{
-        templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md',
-        targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md',
-      }],
+      codex: [
+        { templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md', targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md' },
+        { templateRelativePath: 'skills/eval-authoring/scripts/check-preview-contract.mjs', targetRelativePath: '.agents/skills/eval-authoring/scripts/check-preview-contract.mjs' },
+      ],
+      gemini: [
+        { templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md', targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md' },
+        { templateRelativePath: 'skills/eval-authoring/scripts/check-preview-contract.mjs', targetRelativePath: '.agents/skills/eval-authoring/scripts/check-preview-contract.mjs' },
+      ],
+      claude: [
+        { templateRelativePath: 'skills/eval-authoring/references/version-2-contract.md', targetRelativePath: '.agents/skills/eval-authoring/references/version-2-contract.md' },
+        { templateRelativePath: 'skills/eval-authoring/scripts/check-preview-contract.mjs', targetRelativePath: '.agents/skills/eval-authoring/scripts/check-preview-contract.mjs' },
+      ],
     },
   },
   {

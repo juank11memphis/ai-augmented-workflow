@@ -86,7 +86,7 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.match(metadata?.changes.join(' ') ?? '', /runner requests/);
+  assert.match(metadata?.changes.join(' ') ?? '', /resolved-case comparison/);
 });
 
 test('protocol examples and evidence define independent version, identity and ordering', () => {

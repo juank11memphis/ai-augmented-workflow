@@ -1,5 +1,5 @@
 {
-  "templateVersion": "209",
+  "templateVersion": "210",
   "templates": {
     "AGENTS.md": {
       "version": "53",
@@ -317,10 +317,10 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Adds runnable version-2 suites and safe project-owned runners after target confirmation and coverage approval, with isolated tools, synthetic fixtures and conventional runner tests."
+        "Requires a real Sibu preview contract check before an authored eval suite is called runnable."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
@@ -373,10 +373,17 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "2",
+      "version": "3",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Removes repeat counts from runner requests; each selected eval case now runs once."
+        "Clarifies resolved-case comparison, correlated runner diagnostics and preview contract checks."
+      ]
+    },
+    "skills/eval-authoring/scripts/check-preview-contract.mjs": {
+      "version": "1",
+      "description": "Checks an authored suite through Sibu's real no-model-call preview path.",
+      "changes": [
+        "Adds a repeatable preview contract check before treating generated eval suites as runnable."
       ]
     }
   }

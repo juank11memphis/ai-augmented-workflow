@@ -27,7 +27,7 @@ test('artifact exclusion, output evidence and source-control repair remain expli
   const git = section('Conventional artifacts and Git safety');
   for (const phrase of ['/evals/artifacts/', 'without clobbering', 'effective ignore', 'no tracked artifacts', 'Missing Git', 'later negations', 'never automatically delete or untrack', 'Do not create run results', 'ordinary agent context']) assert.ok(git.includes(phrase), phrase);
   const outputs = section('Outputs');
-  assert.match(outputs, /test commands\/results.*coverage summary and gaps/);
-  assert.match(outputs, /dashboard version-2 execution/);
-  assert.match(outputs, /Do not claim live-agent compliance/);
+  assert.match(outputs, /preview contract check commands\/results.*coverage summary and gaps/);
+  assert.match(outputs, /Call the suite runnable only after the Sibu preview check passes/);
+  assert.match(outputs, /does not prove execution or live-agent compliance/);
 });

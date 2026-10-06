@@ -68,6 +68,7 @@ For every confirmed target, implement the approved plan without silently droppin
 - Embed reviewed coverage dispositions, reasons and justified gaps. Separate standard Sibu assertions from runner-owned custom/rubric grading.
 - Create a runnable project-owned runner and test support using the contract's describe, estimate and execute operations. Invoke the real target integration with the selected Model Under Evaluation and a separately selected optional Judge Model; never substitute static expected outputs for target behavior.
 - Generate conventional runner tests with fake model/judge ports, not live model or external tool calls. Verify actual target dispatch, conversation state within attempts, reset between attempts and zero production tool-client calls. These tests are allowed during authoring; executing generated evals is not.
+- After conventional tests, run [the preview contract check](scripts/check-preview-contract.mjs) from the target project root for every generated suite. Supply a selected target model and, for rubric cases, a judge model. This starts the installed Sibu workbench and calls its real preview path, including file-content resolution, but never starts a run or calls a model. Cover file-backed inputs when present. Do not substitute a hand-built request or claim the suite runnable unless this check returns `ready`; report missing environment or any block as a setup/contract gap instead.
 - For an unfamiliar framework, use focused inspection and prove the adapter/mocking seam with conventional tests. If imports, model compatibility or isolation remain uncertain, ask for focused clarification and stop generation; do not invent SDK behavior or label a placeholder runnable.
 
 ## Tool and data safety
@@ -91,7 +92,7 @@ Preserve existing Git rules; add the root `/evals/artifacts/` exclusion without 
 
 ## Outputs
 
-Report created/changed paths, setup prerequisites and selected models, conventional test commands/results, coverage summary and gaps, and how the user can later invoke the direct runner protocol. Include concise setup/protocol/test instructions appropriate to the project stack. Distinguish directly runnable protocol support from dashboard version-2 execution, which may not yet be available. Do not claim live-agent compliance from static checks or fake-port tests.
+Report created/changed paths, setup prerequisites and selected models, conventional and Sibu preview contract check commands/results, coverage summary and gaps, and how the user can later invoke the direct runner protocol. Call the suite runnable only after the Sibu preview check passes; this does not prove execution or live-agent compliance.
 
 ## Boundaries
 
