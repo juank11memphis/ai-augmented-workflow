@@ -18,12 +18,16 @@ const selected: SelectedFailureRead = { status: 'ready', value: {
     cellOutputPreview: null, diagnostics: [], artifacts: [] },
 } };
 
-function dependencies(options: { selected?: SelectedFailureRead; targetFiles?: readonly string[]; calls?: unknown[]; changed?: boolean; change?: { kind: 'unified-diff' | 'replacement'; representation: string }; events?: DraftRepairProposalLogEvent[]; providerError?: Error; loggerThrows?: boolean; analysis?: null; missingKey?: boolean } = {}): DraftEvalRepairProposalDependencies {
+function dependencies(options: { selected?: SelectedFailureRead; targetFiles?: readonly string[]; calls?: unknown[]; changed?: boolean; change?: { kind: 'unified-diff' | 'replacement'; representation: string }; events?: DraftRepairProposalLogEvent[]; providerError?: Error; loggerThrows?: boolean; analysis?: null | 'unclear'; missingKey?: boolean; withContext?: boolean } = {}): DraftEvalRepairProposalDependencies {
   const state = { status: 'present' as const, path: 'prompts/agent.md', digest: options.changed ? 'changed' : 'first', content: 'before', preview: 'before' };
   return {
     artifactReader: { read: async selection => { options.calls?.push(selection); return options.selected ?? selected; } },
+    ...(options.withContext ? { contextReader: { read: async () => ({ origin: 'current-project' as const,
+      excerpts: [{ source: 'Case input', text: 'Sunday hours?' }], missing: [] }) } } : {}),
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: !options.missingKey, assistanceModelLabel: 'assist', apiKey: 'secret' }) },
-    analysisStore: { get: () => options.analysis === null ? null : ({ exactFailureExplanation: 'Failed', likelyCause: 'prompt_issue', evidenceSummary: 'Selected evidence', uncertainty: 'Low' }) },
+    analysisStore: { get: () => options.analysis === null ? null : ({ exactFailureExplanation: 'Failed',
+      likelyCause: options.analysis === 'unclear' ? 'unclear_needs_human_judgment' : 'prompt_issue',
+      evidenceSummary: 'Selected evidence', uncertainty: 'Low' }) },
     context: { namedFiles: () => ({ status: 'ready', paths: ['prompts/agent.md'] }) },
     projectFileReader: {
       readProjectFilePreviews: async () => ({ status: 'ok', files: [{ path: 'prompts/agent.md', preview: 'before', digest: 'first' }] }),
@@ -105,6 +109,17 @@ describe('draftEvalRepairProposal', () => {
     assert.equal(calls.length, 1);
     const nonfailed = await draftEvalRepairProposal(command, dependencies({ selected: { status: 'blocked', reason: 'non-failed-assertion' }, calls: [] }));
     assert.equal(nonfailed.status, 'blocked');
+  });
+  it('permits one explicit direction after unclear analysis without bypassing proposal review', async () => {
+    const calls: unknown[] = [];
+    const result = await draftEvalRepairProposal({ ...command, repairDirection: { type: 'eval_assertion_issue' } },
+      dependencies({ analysis: 'unclear', calls, withContext: true }));
+    assert.equal(result.status, 'proposal-ready');
+    assert.match(JSON.stringify(calls[1]), /unclear_needs_human_judgment/);
+    assert.match(JSON.stringify(calls[1]), /Sunday hours\?/);
+    const unsupported = await draftEvalRepairProposal({ ...command, repairDirection: { type: 'regression_case' } },
+      dependencies({ analysis: 'unclear' }));
+    assert.equal(unsupported.status, 'blocked');
   });
   it('reports stale analysis, missing evidence and missing configuration with distinct observed reasons', async () => {
     for (const scenario of [

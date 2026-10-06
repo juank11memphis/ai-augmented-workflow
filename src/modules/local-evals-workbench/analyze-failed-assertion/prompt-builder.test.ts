@@ -53,6 +53,16 @@ describe('buildFailedAssertionAnalysisPrompt', () => {
     assert.match(prompt, /R{20}/);
     assert.ok(prompt.length <= MAX_ANALYSIS_PROMPT);
   });
+  it('compares saved evidence with bounded current-case context without claiming a run snapshot', () => {
+    const prompt = buildFailedAssertionAnalysisPrompt(evidence(), { origin: 'current-project',
+      excerpts: [{ source: 'Case input', text: 'What are Sunday hours?' },
+        { source: 'Fixture', text: 'No approved Sunday hours.' },
+        { source: 'Target prompt', text: 'Do not invent unsupported facts.' }], missing: ['Case reference'] });
+    assert.match(prompt, /What are Sunday hours\?|No approved Sunday hours|Do not invent unsupported facts/);
+    assert.match(prompt, /not a snapshot of the saved run|may have changed since execution/);
+    assert.match(prompt, /Do not assume the expected assertion is correct/);
+    assert.ok(prompt.length <= MAX_ANALYSIS_PROMPT);
+  });
 });
 
 function evidence(): FailedAssertionEvidence {

@@ -75,7 +75,7 @@ export class OpenAiFailureAnalysisAdapter implements FailureAnalysisLlmPort {
     private readonly timeoutMs = 20_000) {}
 
   async analyzeFailure(request: Parameters<FailureAnalysisLlmPort['analyzeFailure']>[0]): Promise<FailureAnalysis> {
-    const prompt = buildFailedAssertionAnalysisPrompt(request.evidence);
+    const prompt = buildFailedAssertionAnalysisPrompt(request.evidence, request.context);
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const timedOut = new Promise<never>((_, reject) => {
       timeout = setTimeout(() => reject(new FailureAnalysisProviderError('timeout')), this.timeoutMs);

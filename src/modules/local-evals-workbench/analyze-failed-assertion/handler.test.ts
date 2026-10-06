@@ -16,9 +16,11 @@ const selected: SelectedFailureRead = { status: 'ready', value: {
     cellOutputPreview: null, diagnostics: [], artifacts: [] },
 } };
 
-function dependencies(options: { selected?: SelectedFailureRead; hasKey?: boolean; calls?: unknown[]; events?: unknown[]; failure?: unknown; throwOnLog?: boolean } = {}): AnalyzeFailedAssertionDependencies {
+function dependencies(options: { selected?: SelectedFailureRead; hasKey?: boolean; calls?: unknown[]; events?: unknown[]; failure?: unknown; throwOnLog?: boolean; context?: boolean } = {}): AnalyzeFailedAssertionDependencies {
   return {
     artifactReader: { read: async selection => { options.calls?.push(selection); return options.selected ?? selected; } },
+    ...(options.context ? { contextReader: { read: async () => ({ origin: 'current-project' as const,
+      excerpts: [{ source: 'Case input', text: 'Sunday hours?' }], missing: ['Target prompt'] }) } } : {}),
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: options.hasKey ?? true, assistanceModelLabel: 'assist', apiKey: 'secret' }) },
     llm: { analyzeFailure: async request => { options.calls?.push(request); if (options.failure) throw options.failure; return { exactFailureExplanation: 'Failed', likelyCause: 'prompt_issue', evidenceSummary: 'Selected evidence', uncertainty: 'Low' }; } },
     analysisStore: { save: () => 'analysis-1' },
@@ -34,6 +36,15 @@ describe('analyzeFailedAssertion', () => {
     assert.deepEqual(calls[0], command);
     assert.match(JSON.stringify(calls[1]), /selected actual/);
     assert.doesNotMatch(JSON.stringify(calls[1]), /other attempt/);
+  });
+  it('passes selected current context to assistance and reports only source labels to the UI', async () => {
+    const calls: unknown[] = [];
+    const result = await analyzeFailedAssertion(command, dependencies({ calls, context: true }));
+    assert.equal(result.status, 'analysis-ready');
+    assert.match(JSON.stringify(calls[1]), /Sunday hours\?/);
+    if (result.status === 'analysis-ready') assert.deepEqual(result.contextSummary,
+      { origin: 'current-project', available: ['Case input'], missing: ['Target prompt'] });
+    assert.doesNotMatch(JSON.stringify(result), /Sunday hours\?/);
   });
   it('emits one safe start and one completed analysis event', async () => {
     const events: unknown[] = [];

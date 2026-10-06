@@ -7,6 +7,7 @@ export type AnalyzeFailedAssertionReadyResult = {
   readonly assistanceModelLabel: string;
   readonly evidence: FailedAssertionEvidence;
   readonly analysis: FailureAnalysis;
+  readonly contextSummary?: { readonly origin: 'current-project'; readonly available: readonly string[]; readonly missing: readonly string[] };
 };
 
 export type AnalyzeFailedAssertionUnavailableResult = {

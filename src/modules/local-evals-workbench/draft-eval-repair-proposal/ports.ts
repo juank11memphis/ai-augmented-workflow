@@ -6,6 +6,7 @@ import type { SelectedFailureReader } from '../repair-context/selected-evidence.
 import type { ProjectFileState } from '../repair-context/project-file-state.js';
 import type { DraftEvalRepairProposalCommand } from './command.js';
 import type { FailureSelection } from '../repair-context/selected-evidence.js';
+import type { AnalysisContext } from '../analyze-failed-assertion/context-reader.js';
 export type { StoredRepairProposal } from '../repair-context/contracts.js';
 
 export type ProposalRunArtifactReaderPort = SelectedFailureReader;
@@ -36,6 +37,7 @@ export type RepairProposalLlmPort = {
     readonly repairDirection: RepairDirection;
     readonly priorAnalysis?: DraftProposalPriorAnalysis;
     readonly projectFiles: readonly ProjectFilePreview[];
+    readonly analysisContext?: AnalysisContext;
   }): Promise<RepairProposalDraft>;
 };
 

@@ -4,9 +4,11 @@ import type { AnalyzeFailedAssertionLogEvent, AnalyzeFailedAssertionLoggerPort, 
 import type { AnalyzeFailedAssertionBlockedResult, AnalyzeFailedAssertionErrorResult, AnalyzeFailedAssertionResult } from './result.js';
 import { logicalId } from '../run-history/validation.js';
 import { supportedModelId } from '../repair-context/model-id.js';
+import type { AnalysisContextReaderPort } from './context-reader.js';
 
 export type AnalyzeFailedAssertionDependencies = {
   readonly artifactReader: FailedAssertionRunArtifactReaderPort;
+  readonly contextReader?: AnalysisContextReaderPort;
   readonly assistanceConfig: AssistanceConfigPort;
   readonly llm: FailureAnalysisLlmPort;
   readonly analysisStore: FailureAnalysisStorePort;
@@ -58,10 +60,12 @@ export async function analyzeFailedAssertion(command: AnalyzeFailedAssertionComm
   }
 
   try {
-    const analysis = await dependencies.llm.analyzeFailure({ model: config.assistanceModelLabel, evidence });
+    const context = await dependencies.contextReader?.read(command).catch(() => ({ origin: 'current-project' as const, excerpts: [], missing: ['Case input', 'Fixture', 'Case reference', 'Selected check', 'Target source', 'Target prompt'] }));
+    const analysis = await dependencies.llm.analyzeFailure({ model: config.assistanceModelLabel, evidence, context });
     const analysisId = dependencies.analysisStore.save(command, analysis);
     finish(dependencies, startedAt, { outcome: 'completed', reason: 'analysis-ready' });
-    return { status: 'analysis-ready', analysisId, assistanceModelLabel: config.assistanceModelLabel, evidence, analysis };
+    return { status: 'analysis-ready', analysisId, assistanceModelLabel: config.assistanceModelLabel, evidence, analysis,
+      ...(context ? { contextSummary: { origin: context.origin, available: context.excerpts.map(item => item.source), missing: context.missing } } : {}) };
   } catch (error) {
     const reason = providerFailureReason(error);
     finish(dependencies, startedAt, { outcome: 'failed', reason });

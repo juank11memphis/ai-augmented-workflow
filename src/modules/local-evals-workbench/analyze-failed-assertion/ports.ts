@@ -5,9 +5,11 @@ export type { AssistanceConfig } from '../repair-context/assistance-config.js';
 import type { SelectedFailureReader } from '../repair-context/selected-evidence.js';
 import type { FailureSelection } from '../repair-context/selected-evidence.js';
 import type { AnalyzeFailedAssertionBlockedResult, AnalyzeFailedAssertionErrorResult } from './result.js';
+import type { AnalysisContext, AnalysisContextReaderPort } from './context-reader.js';
 
 export type FailedAssertionRunArtifactReaderPort = SelectedFailureReader;
 export type FailureAnalysisStorePort = { save(selection: FailureSelection, analysis: FailureAnalysis): string };
+export type { AnalysisContextReaderPort };
 
 export type AssistanceConfigPort = {
   getConfig(): AssistanceConfig;
@@ -17,6 +19,7 @@ export type FailureAnalysisLlmPort = {
   analyzeFailure(request: {
     readonly model: string;
     readonly evidence: FailedAssertionEvidence;
+    readonly context?: AnalysisContext;
   }): Promise<FailureAnalysis>;
 };
 

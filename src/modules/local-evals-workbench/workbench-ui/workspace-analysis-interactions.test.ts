@@ -26,7 +26,7 @@ function harness(post: (url: string, body: unknown) => Promise<unknown>, clipboa
       setSelection(value: unknown): void; resetRepair(): void; requestRepair(kind: string): Promise<void>; markup(): string; stage(): string;
     };
   api.setSelection(selection('a'));
-  return { api, host, resultRegion, document, feedback, click: (action: string) => listeners.get('click')?.({ target: { closest: () => ({ dataset: { action } }) } }) };
+  return { api, host, resultRegion, document, feedback, click: (action: string, direction?: string) => listeners.get('click')?.({ target: { closest: () => ({ dataset: { action, direction } }) } }) };
 }
 
 test('unavailable credentials and provider errors keep explicit recovery instead of an automatic retry', async () => {
@@ -58,17 +58,43 @@ test('ready analysis separates grounded fields, escapes private evidence, and of
   assert.equal(resultRegion.innerHTML, '<h2>Results</h2><h2>History</h2><p>FAILED ASSERTION / PRIVATE OUTPUT</p>');
 });
 
-test('uncertain or unsupported analysis retains its fields and result without suggesting a safe draft', async () => {
+test('uncertain analysis offers explicit repair directions; unsupported causes do not draft', async () => {
   for (const cause of ['model_nondeterminism', 'unclear_needs_human_judgment', 'unexpected_direction']) {
     const { api, host, resultRegion } = harness(async () => ({ status: 'analysis-ready', analysisId: 'analysis', analysis: {
       likelyCause: cause, exactFailureExplanation: 'Selected failure', evidenceSummary: 'Selected evidence', uncertainty: 'Direction is not established',
     } }));
     await api.requestRepair('analysis');
     assert.match(host.innerHTML, /What happened.*Selected failure.*Evidence.*Selected evidence.*Uncertainty.*Direction is not established/s);
-    assert.match(host.innerHTML, /Review this uncertainty before choosing a repair target/);
+    if (cause === 'unclear_needs_human_judgment') assert.match(host.innerHTML, /Choose a repair direction to investigate.*Target behavior.*Eval assertion.*Fixture input/s);
+    else assert.match(host.innerHTML, /Review this uncertainty before choosing a repair target/);
     assert.doesNotMatch(host.innerHTML, /data-action="draft-repair"/);
     assert.match(resultRegion.innerHTML, /FAILED ASSERTION \/ PRIVATE OUTPUT/);
   }
+});
+
+test('selected current context is disclosed and an uncertain repair needs an explicit user choice', async () => {
+  const calls: { url: string; body: Record<string, unknown> }[] = [];
+  const { api, click } = harness(async (url, body) => { calls.push({ url, body: body as Record<string, unknown> });
+    return url.includes('failure-analysis') ? { status: 'analysis-ready', analysisId: 'analysis',
+      analysis: { likelyCause: 'unclear_needs_human_judgment', exactFailureExplanation: 'Mismatch', evidenceSummary: 'Evidence', uncertainty: 'Unclear' },
+      contextSummary: { origin: 'current-project', available: ['Case input', 'Fixture', 'Target prompt'], missing: ['Case reference'] } }
+      : { status: 'proposal-ready', proposal: { proposalId: 'proposal', affectedProjectFiles: ['evals/suite.json'],
+        changeSummary: 'Change assertion', rationale: 'Reviewed context', expectedEvalImpact: 'Pass selected case',
+        proposedChange: { kind: 'replacement', representation: '{}' } } };
+  });
+  await api.requestRepair('analysis');
+  assert.match(api.markup(), /Current project files, not a saved run-time snapshot.*Case input, Fixture, Target prompt.*Case reference/s);
+  assert.equal(calls.length, 1);
+  click('choose-repair-direction', 'eval_assertion_issue');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls.length, 2);
+  assert.equal((calls[1]?.body.repairDirection as { type: string }).type, 'eval_assertion_issue');
+  assert.equal(api.stage(), 'proposal');
+  assert.match(api.markup(), /Approve and apply/);
+  assert.equal(calls.some(call => call.url.endsWith('/apply')), false);
+  await api.requestRepair('analysis');
+  assert.match(api.markup(), /Choose a repair direction to investigate/);
+  assert.doesNotMatch(api.markup(), /data-action="draft-repair"/);
 });
 
 test('A to B to A discards both late analysis success and failure', async () => {

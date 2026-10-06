@@ -2,10 +2,11 @@ import { readPromptTemplate, renderPromptTemplate } from '../prompt-template.js'
 import type { FailedAssertionEvidence } from '../repair-context/contracts.js';
 import type { DraftProposalPriorAnalysis, RepairDirection } from './command.js';
 import type { ProjectFilePreview } from './ports.js';
+import type { AnalysisContext } from '../analyze-failed-assertion/context-reader.js';
 
 const repairProposalTemplate = readPromptTemplate(new URL('./prompts/repair-proposal.md', import.meta.url));
 
-export function buildRepairProposalPrompt(input: { readonly evidence: FailedAssertionEvidence; readonly repairDirection: RepairDirection; readonly priorAnalysis?: DraftProposalPriorAnalysis; readonly projectFiles: readonly ProjectFilePreview[] }): string {
+export function buildRepairProposalPrompt(input: { readonly evidence: FailedAssertionEvidence; readonly repairDirection: RepairDirection; readonly priorAnalysis?: DraftProposalPriorAnalysis; readonly projectFiles: readonly ProjectFilePreview[]; readonly analysisContext?: AnalysisContext }): string {
   return renderPromptTemplate(repairProposalTemplate, {
     repairDirection: directionText(input.repairDirection),
     priorAnalysis: input.priorAnalysis?.summary ?? 'none.',
@@ -18,8 +19,15 @@ export function buildRepairProposalPrompt(input: { readonly evidence: FailedAsse
     actualOutputPreview: input.evidence.actualOutputPreview ?? 'Not reported.',
     expectedPreview: input.evidence.expectedPreview ?? 'Not reported.',
     linkedEvidence: input.evidence.artifacts.map(item => `${item.label}: ${item.preview ?? 'No excerpt.'}`).join('\n') || 'None.',
+    analysisContext: formatAnalysisContext(input.analysisContext),
     projectFileContext: formatProjectFileContext(input.projectFiles),
   });
+}
+
+function formatAnalysisContext(context: AnalysisContext | undefined): string {
+  if (!context) return 'Current case context unavailable.';
+  const excerpts = context.excerpts.slice(0, 6).map(item => `${item.source}: ${item.text.slice(0, 1600)}`).join('\n');
+  return `Current project, not a saved run-time snapshot.\n${excerpts}\nMissing: ${context.missing.slice(0, 6).join(', ') || 'none'}`;
 }
 
 function formatProjectFileContext(projectFiles: readonly ProjectFilePreview[]): string {

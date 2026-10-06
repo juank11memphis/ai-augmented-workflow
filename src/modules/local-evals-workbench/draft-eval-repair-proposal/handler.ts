@@ -6,12 +6,14 @@ import type { ProposalContextPort, ProposalAnalysisStorePort } from './ports.js'
 import { validateProjectFileTargets } from './project-file-safety.js';
 import { UnsafeRepairProposalTargetError, validateRepairProposalDraft } from './proposal-validation.js';
 import { applySingleHunkDiff } from '../repair-context/single-hunk-diff.js';
+import type { AnalysisContextReaderPort } from '../analyze-failed-assertion/context-reader.js';
 import type { DraftEvalRepairProposalBlockedResult, DraftEvalRepairProposalResult } from './result.js';
 
 export type DraftEvalRepairProposalDependencies = {
   readonly artifactReader: ProposalRunArtifactReaderPort;
   readonly assistanceConfig: ProposalAssistanceConfigPort;
   readonly projectFileReader: SafeProjectFileReaderPort;
+  readonly contextReader?: AnalysisContextReaderPort;
   readonly context: ProposalContextPort;
   readonly analysisStore: ProposalAnalysisStorePort;
   readonly llm: RepairProposalLlmPort;
@@ -41,7 +43,11 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
   const blockedScope = validateCommand(command);
   if (blockedScope) return logBlocked(blockedScope, log);
   const priorAnalysis = dependencies.analysisStore.get(command.analysisId, command);
-  if (!priorAnalysis || priorAnalysis.likelyCause !== command.repairDirection.type) return logBlocked(blocked('stale-analysis', 'Analyze this selected failure again before drafting a repair.'), log);
+  const chosenAfterUncertainty = priorAnalysis?.likelyCause === 'unclear_needs_human_judgment'
+    && ['prompt_issue', 'eval_assertion_issue', 'fixture_input_issue'].includes(command.repairDirection.type);
+  if (!priorAnalysis || priorAnalysis.likelyCause !== command.repairDirection.type && !chosenAfterUncertainty) {
+    return logBlocked(blocked('stale-analysis', 'Analyze this selected failure again before drafting a repair.'), log);
+  }
 
   const selected = await dependencies.artifactReader.read(command);
   if (selected.status === 'blocked') return logBlocked(blocked(selected.reason === 'non-failed-assertion' ? 'non-failed-assertion' : 'missing-artifact', 'The selected failed assertion is unavailable in this saved run.'), log);
@@ -57,8 +63,11 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
     const projectFiles = await dependencies.projectFileReader.readProjectFilePreviews(command.projectRoot, context.paths);
     if (projectFiles.status === 'blocked') return logBlocked({ status: 'blocked', reason: 'unsafe-target-files', message: 'The named repair target could not be safely read.', evidence }, log);
     let draft;
-    try { draft = await dependencies.llm.draftProposal({ model: config.assistanceModelLabel, evidence, repairDirection: command.repairDirection,
-      priorAnalysis: { summary: priorAnalysis.evidenceSummary, likelyCause: priorAnalysis.likelyCause }, projectFiles: projectFiles.files });
+    try {
+      const analysisContext = await dependencies.contextReader?.read(command).catch(() => undefined);
+      draft = await dependencies.llm.draftProposal({ model: config.assistanceModelLabel, evidence, repairDirection: command.repairDirection,
+        priorAnalysis: { summary: priorAnalysis.evidenceSummary, likelyCause: priorAnalysis.likelyCause }, projectFiles: projectFiles.files,
+        analysisContext });
     } catch (error) {
       if (error instanceof UnsafeRepairProposalTargetError) {
         return reject('unsafe-target-files', 'The proposed repair target is unsafe.', 1, log, assistanceModelLabel, evidence);

@@ -7,11 +7,16 @@ const evidence: FailedAssertionEvidence = { suiteId: 'suite', testCaseId: 'case-
 
 describe('buildRepairProposalPrompt', () => {
   it('includes active assertion, direction, bounded project context, schema, and excludes unsafe/autonomous content', () => {
-    const prompt = buildRepairProposalPrompt({ evidence, repairDirection: { type: 'prompt_issue' }, priorAnalysis: { summary: 'Prompt skipped the stop rule.' }, projectFiles: [{ path: 'prompts/skill.md', preview: 'safe prompt excerpt' }] });
+    const prompt = buildRepairProposalPrompt({ evidence, repairDirection: { type: 'prompt_issue' }, priorAnalysis: { summary: 'Prompt skipped the stop rule.' },
+      projectFiles: [{ path: 'prompts/skill.md', preview: 'safe prompt excerpt' }],
+      analysisContext: { origin: 'current-project', excerpts: [{ source: 'Case input', text: 'Sunday hours?' },
+        { source: 'Fixture', text: 'No approved Sunday hours.' }], missing: ['Target prompt'] } });
     assert.match(prompt, /exactly one failed eval assertion/);
     assert.match(prompt, /affectedProjectFiles/);
     assert.match(prompt, /prompts\/skill\.md/);
     assert.match(prompt, /I can draft it/);
+    assert.match(prompt, /Sunday hours\?|No approved Sunday hours|Target prompt/);
+    assert.match(prompt, /not a saved run-time snapshot/);
     assert.doesNotMatch(prompt, /other failed output|OPENAI_API_KEY|secret-value/);
   });
 });
