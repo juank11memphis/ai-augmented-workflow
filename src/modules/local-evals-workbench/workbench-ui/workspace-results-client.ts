@@ -317,7 +317,6 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
         return;
       }
       const failed = payload.value.evidence.assertions.filter(item => item.outcome === 'failed');
-      const rawResponse = payload.value.evidence.output;
       const assertionId = failed.find(item => item.id === requestedAssertionId)?.id || failed[0]?.id;
       if (assertionId) query.set('assertionId', assertionId);
       const selected = assertionId ? await json('/api/eval-runs/status?' + query) : payload;
@@ -330,31 +329,12 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       }
       clearReadNotice('evidence'); resetRepair();
       const evidence = selected.value.evidence;
-      const assertion = assertionId ? evidence.assertions.find(item => item.id === assertionId) : evidence.assertions[0];
+      const assertion = assertionId ? evidence.assertions.find(item => item.id === assertionId) : null;
       const attempts = run.cases.find(item => item.caseId === caseId)?.attempts || [];
-      const attemptChoices = '<label class="field">Attempt<select data-action="attempt-select" data-case-id="' + esc(caseId) + '">' + attempts.map(item => '<option value="' + esc(item.number) + '"' + (item.number === attempt ? ' selected' : '') + '>Attempt ' + esc(item.number) + ' — ' + esc(item.outcome) + '</option>').join('') + '</select></label>';
-      const failedChoices = failed.length ? '<label class="field">Failed check ' + (failed.findIndex(item => item.id === assertionId) + 1) + ' of ' + failed.length + '<select data-action="assertion-select" data-case-id="' + esc(caseId) + '" data-attempt="' + esc(attempt) + '">' + failed.map(item => '<option value="' + esc(item.id) + '"' + (item.id === assertionId ? ' selected' : '') + '>' + esc(item.id) + '</option>').join('') + '</select></label>' : '';
       selectedFailure = latestRun() && assertionId ? { suiteId: suite.id, runId: run.runId, testCaseId: caseId, attempt, assertionId, evalRunModelId: run.testedModel, runScope: run.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: caseId } } : null;
-      const trace = evidence.turns.map(item => '<p>' + esc(item.role) + ': ' + esc(item.content) + '</p>').join('') + evidence.tools.map(item => '<p>Tool ' + esc(item.name) + ': ' + esc(item.outcome || 'result') + ' · ' + esc(item.arguments) + ' · ' + esc(item.result) + '</p>').join('');
-      const allChecks = payload.value.evidence.assertions.map(item => '<li><strong>' + esc(item.id) + '</strong> — ' + esc(item.outcome)
-        + (item.score == null ? '' : ' · Score ' + esc(item.score) + (item.threshold == null ? '' : ' · Threshold ' + esc(item.threshold)))
-        + '<p>Actual: ' + esc(item.actual || 'Not reported.') + '</p><p>Expected: ' + esc(item.expected || 'Not reported.') + '</p>'
-        + (item.diagnostics.length ? '<ul>' + item.diagnostics.map(message => '<li>' + esc(message) + '</li>').join('') + '</ul>' : '') + '</li>').join('');
-      const attemptDiagnostics = payload.value.evidence.diagnostics.map(item => '<p>' + esc(item) + '</p>').join('');
-      const html = '<div class="section-heading"><h2 tabindex="-1">Result detail</h2><button type="button" data-action="close-detail">Close</button></div>'
-        + (latestRun() ? '' : '<p class="readonly">Historical run · read-only</p>')
-        + '<h3>' + esc(suite.testCases.find(item => item.id === caseId)?.name || caseId) + '</h3><p>' + esc(evidence.outcome) + ' · ' + failed.length + ' failed checks</p>'
-        + attemptChoices + failedChoices
-        + '<section class="detail-section"><h3>What happened</h3><p>' + esc(assertion?.actual || 'No actual behavior reported.') + '</p>' + (assertion?.score == null ? '' : '<p>Score ' + esc(assertion.score) + (assertion.threshold == null ? '' : ' · Threshold ' + esc(assertion.threshold)) + '</p>') + '</section>'
-        + '<section class="detail-section"><h3>Expected</h3><p>' + esc(assertion?.expected || 'No expected behavior reported.') + '</p></section>'
-        + '<details class="detail-section"><summary>All checks (' + payload.value.evidence.assertions.length + ')</summary>' + (allChecks ? '<ul>' + allChecks + '</ul>' : '<p>No checks reported.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Conversation turns and tool trace</summary>' + (trace || '<p>No trace reported.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Diagnostics</summary>' + ((assertion?.diagnostics || []).map(item => '<p>' + esc(item) + '</p>').join('') || '<p>No selected diagnostics.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Attempt diagnostics</summary>' + (attemptDiagnostics || '<p>No attempt diagnostics.</p>') + '</details>'
-        + '<details class="detail-section"><summary>Bounded raw response</summary>'
-        + (payload.value.evidence.truncated ? '<p>Saved response was truncated.</p>' : '')
-        + '<pre>' + esc(rawResponse || 'No raw response was retained for this attempt.') + '</pre></details>'
-        + '<section data-repair-host aria-label="Guided repair">' + repairMarkup() + '</section>';
+      const html = renderCaseDetail({ suiteName: suite.name, runId: run.runId, caseId,
+        caseName: suite.testCases.find(item => item.id === caseId)?.name || caseId,
+        attempt, attempts, evidence, selectedCheck: assertion, latest: latestRun() });
       detail.innerHTML = html;
       if (matchMedia('(max-width:699px)').matches) openSheet('Result detail', html, '<button type="button" data-action="close-sheet">Close</button>');
       else detail.querySelector('h2')?.focus();

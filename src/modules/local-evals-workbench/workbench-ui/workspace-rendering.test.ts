@@ -91,6 +91,18 @@ it('keeps failure analysis notice in existing result detail instead of adding a 
   assert.doesNotMatch(html, /diagnostic-rail|diagnostic-history|data-analysis-panel/);
 });
 
+it('keeps an unselected pane hidden and provides compact, medium, and expanded selected-detail hooks', () => {
+  const html = renderWorkspaceShell({ status: 'ready', diagnostics: [], suites: [] });
+  assert.match(html, /data-detail hidden data-detail-view="pane"><\/aside>/);
+  assert.match(html, /\.sheet:has\(\[data-action="close-detail"\]\)\{height:100dvh/);
+  assert.match(html, /\.detail-back\{display:none\}/);
+  assert.match(html, /@media\(max-width:699px\).*\.detail-back\{display:inline-flex/s);
+  assert.match(html, /@media\(min-width:700px\) and \(max-width:1099px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:2\}/s);
+  assert.match(html, /@media\(min-width:1100px\).*\.detail:not\(\[hidden\]\)\{display:block;grid-column:3\}/s);
+  assert.match(html, /\[data-results-container\]\{grid-column:2\/4\}/);
+  assert.match(html, /\.detail-secondary pre\{max-width:100%;overflow:auto\}/);
+});
+
 it('renders safe labeled results with only inspectable actions and no broad evidence', () => {
   const model = createWorkspaceViewModel({ discovery: { status: 'ready', diagnostics: [], suites: [{
     id: 'suite', name: 'Suite', description: '', readyTestCaseCount: 0,
