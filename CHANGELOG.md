@@ -14,6 +14,7 @@ Write or update the changelog entry first, then publish the matching GitHub Rele
 - gate authored suites on real preview check
 
 ### Changed
+- prepare 1.4.0 and sync workflow templates
 - simplify case result details
 
 ### Removed
