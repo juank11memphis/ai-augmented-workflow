@@ -162,7 +162,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       const change = proposal?.proposedChange;
       const canApply = repairStage === 'proposal';
       return '<section class="repair-proposal" aria-label="Proposed repair"><h3 tabindex="-1">Proposed repair</h3><p><strong>File</strong> ' + esc(proposal?.affectedProjectFiles?.[0] || '') + '</p><p>' + esc(proposal?.changeSummary || '') + '</p>'
-        + '<section class="detail-section" aria-label="Exact proposed change"><h4>Change preview</h4><pre>' + esc((change?.representation || '').split('\n').slice(0, 5).join('\n')) + '</pre><details><summary>Show full change</summary><pre>' + esc(change?.representation || '') + '</pre></details></section>'
+        + '<section class="detail-section" aria-label="Exact proposed change"><h4>Change preview</h4><pre aria-label="Proposed change preview">' + esc((change?.representation || '').split('\n').slice(0, 5).join('\n')) + '</pre><details><summary>Show full change</summary><pre aria-label="Full proposed change">' + esc(change?.representation || '') + '</pre></details></section>'
         + '<h4>Rationale</h4><p>' + esc(proposal?.rationale || '') + '</p><h4>Expected impact</h4><p>' + esc(proposal?.expectedEvalImpact || '') + '</p>'
         + (canApply ? '<div class="repair-decisions"><button type="button" data-action="reject-repair"' + pending + '>Not now</button><button class="primary" type="button" data-action="approve-repair"' + pending + '>Approve and apply</button></div>' + notice : '')
         + (canApply ? '' : '<section class="model-notice detail-section" data-apply-notice aria-label="Repair Proposal"><h4 tabindex="-1" data-apply-heading>'
@@ -183,6 +183,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
   }
   function renderRepair() {
     const activeAction = document.activeElement?.dataset?.action;
+    const initiatedRepair = ['analyze-failure', 'draft-repair', 'approve-repair', 'reject-repair'].includes(activeAction);
     const hosts = [...document.querySelectorAll('[data-repair-host]')];
     const activeHost = hosts.find(node => node.closest?.('[role="dialog"]')) || hosts[0];
     hosts.forEach(node => {
@@ -194,9 +195,11 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     });
     const shouldFocusNotice = proposalAnnouncement && activeAction === 'draft-repair' && !activeHost?.querySelector?.('[data-action="draft-repair"]');
     const shouldFocusApply = activeAction === 'approve-repair' && repairStage !== 'proposal' && !repairPending;
+    const shouldFocusProposal = activeAction === 'draft-repair' && repairStage === 'proposal' && !repairPending;
     proposalAnnouncement = '';
-    if (activeAction) {
+    if (initiatedRepair) {
       const next = shouldFocusApply ? activeHost?.querySelector?.('[data-apply-heading]') : shouldFocusNotice ? activeHost?.querySelector?.('[data-proposal-heading]')
+        : shouldFocusProposal ? activeHost?.querySelector?.('.repair-proposal h3')
         : activeHost?.querySelector?.('[data-action="' + activeAction + '"]') || activeHost?.querySelector?.('h3');
       next?.focus?.();
     }

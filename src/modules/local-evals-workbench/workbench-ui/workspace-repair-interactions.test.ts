@@ -241,6 +241,19 @@ test('apply notice is announced once and focus changes only for the initiated ap
   assert.match(WORKSPACE_STYLES, /@media\(min-width:1100px\)/);
 });
 
+test('a ready proposal receives initiated focus without stealing unrelated focus or announcing private change text', async () => {
+  const browser = harness(async url => url.includes('failure-analysis') ? analysis : { status: 'proposal-ready', proposal: {
+    ...proposal, changeSummary: privateText, proposedChange: { kind: 'replacement', representation: privateText } } });
+  await browser.api.requestRepair('analysis');
+  browser.context.document.activeElement = { dataset: { action: 'draft-repair' } };
+  await browser.api.requestRepair('proposal');
+  assert.equal(browser.context.document.activeElement?.focusName, '.repair-proposal h3');
+  assert.doesNotMatch(browser.host.innerHTML.match(/<p role="status"[^>]*>.*?<\/p>/s)?.[0] || '', /PRIVATE_/);
+  browser.context.document.activeElement = { dataset: { action: 'case' }, focusName: 'another task' };
+  await browser.api.requestRepair('analysis');
+  assert.equal(browser.context.document.activeElement?.focusName, 'another task');
+});
+
 test('case and suite rerun actions only prefill setup; neither starts a run', async () => {
   const urls: string[] = [];
   const { api, context } = harness(async url => {
