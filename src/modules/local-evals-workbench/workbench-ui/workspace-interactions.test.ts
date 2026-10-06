@@ -273,7 +273,7 @@ test('New run is a focused task and Back or Escape restores the invoking results
     '#run-setup-title': heading,
   };
   const context = { document, one: (selector: string) => nodes[selector], suite: { id: 'suite', testCases: [] },
-    suites: [], setup: { caseId: '' }, setupRegion, sheetSlot: nodes['[data-sheet-slot]'], startPending: false, activePanel: null,
+    suites: [], setup: { caseId: '' }, setupRegion, sheetSlot: nodes['[data-sheet-slot]'], startPending: false, startUncertain: false, activePanel: null,
     isActive: () => false, loadDiscovery() {}, loadRuntime() {}, json: async () => new Promise(() => undefined),
     historyGeneration: 0 };
   vm.runInNewContext(WORKSPACE_RESULTS_CLIENT, context);

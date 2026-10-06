@@ -60,7 +60,8 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.match(html, /data-run-setup/);
       assert.match(html, /data-setup-fields/);
       assert.match(html, /data-action="review"/);
-      assert.doesNotMatch(html, /data-action="new-run"|selection-sheet/);
+      assert.match(html, /data-action="new-run"/);
+      assert.doesNotMatch(html, /selection-sheet/);
 
       const described = await post('/api/eval-suites/describe', { suiteId: 'offline' });
       assert.equal(described.code, 200);
