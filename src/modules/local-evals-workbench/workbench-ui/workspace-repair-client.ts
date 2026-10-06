@@ -97,14 +97,23 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     return [...new Set(paths.filter(path => typeof path === 'string' && path.length <= 240 &&
       (path === target || path.startsWith(target + '.sibu-') && !/[\\/\r\n]/.test(path.slice(target.length)))))];
   }
-  const selectionKey = selection => selection ? [selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId].join('|') : '';
+  const selectionKey = selection => selection ? JSON.stringify([selection.suiteId, selection.runId, selection.testCaseId, selection.attempt, selection.assertionId]) : '';
+  function currentFailureSelected() {
+    if (!selectedFailure || !latestRun()) return false;
+    if (typeof detailSelection !== 'undefined') {
+      if (!detailSelection || selectionKey(selectedFailure) !== selectionKey({ ...detailSelection, testCaseId: detailSelection.caseId })) return false;
+    }
+    if (typeof selectedRunId !== 'undefined' && selectedFailure.runId !== selectedRunId) return false;
+    if (typeof suite !== 'undefined' && selectedFailure.suiteId !== suite?.id) return false;
+    return true;
+  }
   function resetRepair() {
     repairGeneration++; selectedFailure = null; repairStage = 'idle'; repairAnalysis = null; repairAnalysisId = null;
     repairProposal = null; repairApplied = null; repairMessage = ''; repairPending = false; repairAffectedFiles = []; analysisIssueDetails = null; repairIssueCopy = null;
     proposalIssueCopy = null; proposalIssueDetails = null; proposalAnnouncement = ''; applyIssueDetails = null;
   }
   function repairMarkup() {
-    if (!selectedFailure || !latestRun()) return '';
+    if (!currentFailureSelected()) return '';
     const pending = repairPending ? ' disabled' : '';
     const notice = '<p role="status" aria-live="polite">' + esc(repairMessage) + '</p>';
     if (repairStage === 'idle' || repairStage === 'loading') return '<h3 tabindex="-1">Fix one failure</h3><p>Selected failed check: ' + esc(selectedFailure.assertionId) + '</p><button type="button" data-action="analyze-failure"' + pending + '>Analyze failure</button>' + notice;
@@ -171,7 +180,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     }
   }
   async function requestRepair(kind) {
-    if (!selectedFailure || repairPending || !latestRun()) return;
+    if (!currentFailureSelected() || repairPending) return;
     const current = { ...selectedFailure }, key = selectionKey(current), generation = ++repairGeneration;
     repairPending = true; repairMessage = kind === 'analysis' ? 'Analyzing the selected check…' : kind === 'proposal' ? 'Drafting one-file repair…' : 'Checking approval and file state…';
     if (kind === 'analysis') { repairStage = 'loading'; analysisIssueDetails = null; repairIssueCopy = null; }
@@ -192,7 +201,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
           testCaseId: current.testCaseId, attempt: current.attempt, assertionId: current.assertionId,
           proposalId: repairProposal.proposalId, approvalMarker: 'approve-concrete-repair-proposal' });
       }
-      if (generation !== repairGeneration || selectionKey(selectedFailure) !== key || !latestRun()) return;
+      if (generation !== repairGeneration || selectionKey(selectedFailure) !== key || !currentFailureSelected()) return;
       if (kind === 'analysis' && result.status === 'analysis-ready') { repairAnalysis = result.analysis; repairAnalysisId = result.analysisId; repairStage = 'analysis'; repairMessage = ''; }
       else if (kind === 'analysis') {
         const safe = safeAnalysisIssue(result);
@@ -219,7 +228,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       }
       else repairMessage = result.message || result.reason || 'This step is unavailable. Review the selected evidence and try again.';
     } catch {
-      if (generation === repairGeneration && selectionKey(selectedFailure) === key) {
+      if (generation === repairGeneration && selectionKey(selectedFailure) === key && currentFailureSelected()) {
         if (kind === 'analysis') {
           repairStage = 'retryable-error'; repairIssueCopy = ['Analysis unavailable', "Sibu couldn't reach the analysis service.", 'Check the connection, then try analysis again. A matching terminal event may not exist.'];
           repairMessage = 'Analysis connection failed';
@@ -233,7 +242,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         if (kind === 'apply') repairMessage = 'Sibu could not confirm whether the approved change was applied. The connection failed; a matching terminal event may not exist.';
       }
     } finally {
-      if (generation === repairGeneration && selectionKey(selectedFailure) === key) { repairPending = false; renderRepair(); }
+      if (generation === repairGeneration && selectionKey(selectedFailure) === key && currentFailureSelected()) { repairPending = false; renderRepair(); }
     }
   }
   async function rerunAfterRepair(scope) {

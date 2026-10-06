@@ -15,7 +15,8 @@ const evidence = (caseId: string, attempt: number, assertionId = 'failed') => ({
       actual: caseId + attempt + 'other', expected: 'expected', diagnostics: [] }] : [])],
     turns: [], tools: [], diagnostics: [], output: 'PRIVATE RAW' } } });
 
-function harness(read: (url: string) => Promise<unknown>, phone = false) {
+function harness(read: (url: string) => Promise<unknown>, phone = false,
+  post: (url: string, body: Record<string, unknown>) => Promise<unknown> = async () => { throw new Error('Unexpected repair request'); }) {
   const listeners = new Map<string, ((event: any) => void)[]>();
   const document = { activeElement: null as unknown, querySelectorAll: () => [],
     addEventListener(type: string, listener: (event: any) => void) { listeners.set(type, [...listeners.get(type) || [], listener]); } };
@@ -44,25 +45,26 @@ function harness(read: (url: string) => Promise<unknown>, phone = false) {
     '[data-read-announcement]': { textContent: '' }, '[data-action="copy-read-issue"]': { hidden: true } };
   const context = { document, URLSearchParams, one: (key: string) => nodes[key], esc: escape,
     suite: { id: 'suite', name: 'Suite', testCases: [{ id: 'a', name: 'Case A' }, { id: 'b', name: 'Case B' }] },
-    suites: [], run: { runId: 'run', suiteId: 'suite', state: 'completed', scope: 'all', testedModel: 'model',
+    suites: [] as { id: string; name: string; testCases: { id: string; name: string }[] }[], run: { runId: 'run', suiteId: 'suite', state: 'completed', scope: 'all', testedModel: 'model',
       caseIds: ['a', 'b'], cases: [
         { caseId: 'a', state: 'completed', attempts: [{ number: 1, outcome: 'failed' }, { number: 2, outcome: 'passed' }] },
         { caseId: 'b', state: 'completed', attempts: [{ number: 1, outcome: 'failed' }] }] },
-    selectedRunId: 'run', latestKnownRunId: 'run', acceptedRunId: null, history: [],
+    selectedRunId: 'run', latestKnownRunId: 'run', acceptedRunId: null, history: [] as { runId: string }[],
     detailGeneration: 0, runGeneration: 0, historyGeneration: 0, setup: { model: 'model' }, runtime: {},
     startPending: false, startUncertain: false, activePanel: null, setupRegion: { hidden: true, querySelector: () => null },
     isActive: () => false, needsJudge: () => false, refreshSetupControls() {}, status() {},
-    loadDiscovery() {}, loadRuntime() {}, loadHistory() {}, renderCaseDetail: undefined,
+    loadDiscovery() {}, loadRuntime() {}, loadHistory() {}, setRuntimeState() {}, renderCaseDetail: undefined,
     matchMedia: () => ({ matches: phone }), sheetSlot: sheet,
     openSheet: (_title: string, html: string) => { sheet.open = true; sheet.html = html; heading.focus(); },
     closeSheet: () => { sheet.open = false; api.closeCaseDetail(); },
-    json: (url: string) => url.includes('/history?') ? new Promise(() => undefined) : read(url),
+    json: (url: string) => url.includes('/history?') ? new Promise(() => undefined) : read(url), post,
     setTimeout: () => 0, safeReference: () => false,
   };
   const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_REPAIR_CLIENT + WORKSPACE_RESULTS_CLIENT
-    + ';({ inspectCase, clearSelectedDetail, closeCaseDetail, renderWorkspace, selectSuite, state:()=>({detailSelection,selectedFailure,repairStage,readNotices}) })',
+    + ';({ inspectCase, clearSelectedDetail, closeCaseDetail, renderWorkspace, selectSuite, selectHistoryRun, requestRepair, markup:repairMarkup, state:()=>({detailSelection,selectedFailure,repairStage,readNotices}) })',
     context) as { inspectCase(caseId: string, attempt: number, assertionId?: string): Promise<void>;
       clearSelectedDetail(): void; closeCaseDetail(): void; renderWorkspace(): void; selectSuite(id: string): void;
+      selectHistoryRun(id: string): Promise<void>; requestRepair(kind: string): Promise<void>; markup(): string;
       state(): { detailSelection: { caseId: string; attempt: number; assertionId: string }; selectedFailure: unknown;
         repairStage: string; readNotices: Record<string, unknown> } };
   function click(action: string, data: Record<string, string> = {}) {
@@ -158,4 +160,72 @@ test('suite invalidation and filter closure remove selected evidence and repair 
   app.input('Case B');
   assert.equal(app.detail.hidden, true);
   assert.equal(app.api.state().detailSelection, null as never);
+});
+
+test('each suite, run, case, attempt, and assertion change discards assistance before an old proposal can apply', async () => {
+  const changes = ['suite', 'run', 'case', 'attempt', 'assertion'] as const;
+  for (const change of changes) {
+    const calls: { url: string; body: Record<string, unknown> }[] = [];
+    const app = harness(async url => url.includes('runId=past') ? { status: 'ok', value: { summary: {
+      runId: 'past', suiteId: 'suite', state: 'completed', scope: 'all', testedModel: 'model', caseIds: ['a'], cases: [] } } }
+      : evidence(url.includes('caseId=b') ? 'b' : 'a', url.includes('attempt=2') ? 2 : 1,
+        url.includes('assertionId=other') ? 'other' : 'failed'), false, async (url, body) => {
+      calls.push({ url, body });
+      return url.includes('failure-analysis') ? { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue' } }
+        : { status: 'proposal-ready', proposal: { proposalId: 'old', affectedProjectFiles: ['prompts/agent.md'], proposedChange: { representation: 'OLD PROPOSAL' } } };
+    });
+    await app.api.inspectCase('a', 1, 'failed');
+    await app.api.requestRepair('analysis');
+    assert.deepEqual(JSON.parse(JSON.stringify(calls[0]!.body)), {
+      suiteId: 'suite', runId: 'run', testCaseId: 'a', attempt: 1, assertionId: 'failed',
+      evalRunModelId: 'model', runScope: { type: 'all' },
+    });
+    await app.api.requestRepair('proposal');
+    assert.match(app.api.markup(), /Approve and apply/);
+    if (change === 'suite') {
+      app.context.suites = [{ ...app.context.suite }, { id: 'next', name: 'Next', testCases: [] }];
+      app.api.selectSuite('next');
+    } else if (change === 'run') {
+      app.context.history = [{ runId: 'run' }, { runId: 'past' }];
+      await app.api.selectHistoryRun('past');
+    } else await app.api.inspectCase(change === 'case' ? 'b' : 'a', change === 'attempt' ? 2 : 1,
+      change === 'assertion' ? 'other' : 'failed');
+    assert.equal(app.api.state().repairStage, 'idle', change);
+    assert.doesNotMatch(app.api.markup(), /OLD PROPOSAL|Approve and apply/, change);
+    await app.api.requestRepair('apply');
+    assert.equal(calls.filter(call => call.url.endsWith('/apply')).length, 0, change);
+  }
+});
+
+test('a late proposal response cannot restore approval after a changed failed assertion', async () => {
+  let finishDraft: (value: unknown) => void = () => undefined;
+  const calls: string[] = [];
+  const app = harness(async url => evidence('a', 1, url.includes('assertionId=other') ? 'other' : 'failed'), false,
+    async url => { calls.push(url); return url.includes('failure-analysis')
+      ? { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue' } }
+      : new Promise(resolve => { finishDraft = resolve; }); });
+  await app.api.inspectCase('a', 1, 'failed');
+  await app.api.requestRepair('analysis');
+  const pending = app.api.requestRepair('proposal');
+  await app.api.inspectCase('a', 1, 'other');
+  finishDraft({ status: 'proposal-ready', proposal: { proposalId: 'old' } });
+  await pending;
+  assert.equal(app.api.state().repairStage, 'idle');
+  assert.doesNotMatch(app.api.markup(), /Approve and apply/);
+  await app.api.requestRepair('apply');
+  assert.equal(calls.filter(url => url.endsWith('/apply')).length, 0);
+});
+
+test('past-run evidence remains inspectable without granting analysis or repair permission', async () => {
+  const calls: string[] = [];
+  const app = harness(async url => evidence('a', 1, url.includes('assertionId=other') ? 'other' : 'failed'), false,
+    async url => { calls.push(url); return { status: 'analysis-ready' }; });
+  app.context.latestKnownRunId = 'newer';
+  await app.api.inspectCase('a', 1, 'failed');
+  assert.match(app.detail.innerHTML, /Selected check: failed|a1failed/);
+  assert.equal(app.api.state().selectedFailure, null);
+  await app.api.requestRepair('analysis');
+  await app.api.requestRepair('apply');
+  assert.deepEqual(calls, []);
+  assert.doesNotMatch(app.api.markup(), /Analyze failure|Approve and apply/);
 });
