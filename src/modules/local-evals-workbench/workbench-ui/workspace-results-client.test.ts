@@ -136,6 +136,47 @@ test('no-match copy retains an editable query and clearing restores all rows and
   assert.equal(page.replacements(), 0);
 });
 
+test('selected-run browser summary uses selected scope, not filtered rows or recorded-case count', () => {
+  const page = browser();
+  page.context.run = { ...saved, state: 'running', caseIds: ['alpha', 'beta'], finishedAt: undefined,
+    cases: [{ caseId: 'alpha', state: 'completed', attempts: [{ outcome: 'failed' }, { outcome: 'passed' }] }] } as never;
+  page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  page.api.renderWorkspace();
+  assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /1 failed · 1 not finished · 1 excluded/);
+  assert.match(page.list.innerHTML, /2 attempts/);
+  assert.match(page.list.innerHTML, /1 failed attempts/);
+  assert.match(page.list.innerHTML, /excluded/);
+  assert.equal((page.context.one('[data-run-metrics]') as { textContent: string }).textContent, '');
+  page.edit('Gamma', 3);
+  assert.equal(page.count.textContent, '1');
+  assert.match((page.context.one('[data-status-summary]') as { textContent: string }).textContent, /1 failed · 1 not finished/);
+  page.context.latestKnownRunId = 'newer'; page.api.renderWorkspace();
+  assert.match((page.context.one('[data-latest-label]') as { textContent: string }).textContent, /Past run/);
+});
+
+test('browser keeps not-run, running, incomplete, failed, and passed distinct without private summary data', () => {
+  const page = browser();
+  const summary = page.context.one('[data-status-summary]') as { textContent: string };
+  const metrics = page.context.one('[data-run-metrics]') as { textContent: string };
+  page.context.run = { ...saved, state: 'running', diagnostics: ['private output'], caseIds: ['alpha', 'beta', 'gamma'],
+    finishedAt: undefined, cases: [
+      { caseId: 'alpha', state: 'incomplete', attempts: [{ outcome: 'incomplete' }] },
+      { caseId: 'beta', state: 'not-run', attempts: [] },
+      { caseId: 'gamma', state: 'completed', attempts: [{ outcome: 'passed' }] },
+    ] } as never;
+  page.api.renderWorkspace();
+  assert.match(page.list.innerHTML, /running/);
+  assert.match(page.list.innerHTML, /not-run/);
+  assert.match(page.list.innerHTML, /passed/);
+  assert.doesNotMatch(summary.textContent + page.list.innerHTML + metrics.textContent, /private output/);
+  page.context.run = { ...saved, state: 'interrupted', finishedAt: undefined, caseIds: ['alpha', 'beta', 'gamma'],
+    cases: [{ caseId: 'alpha', state: 'incomplete', attempts: [{ outcome: 'incomplete' }] }] } as never;
+  page.api.renderWorkspace();
+  assert.match(page.list.innerHTML, /incomplete/);
+  assert.doesNotMatch(page.list.innerHTML, /running/);
+  assert.equal(metrics.textContent, '');
+});
+
 test('polling refresh preserves the exact focused input, query and selection', async () => {
   const page = browser();
   page.api.renderWorkspace();

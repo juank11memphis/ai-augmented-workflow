@@ -58,3 +58,40 @@ it('distinguishes empty discovery from unreadable suites without exposing diagno
   assert.match(blocked('unreadable-eval-suites').discoveryNotice?.nextStep ?? '', /Check the local eval workspace/);
   assert.doesNotMatch(JSON.stringify(blocked('unreadable-eval-suites').discoveryNotice), /sk-secret|private content/);
 });
+
+it('projects authoritative selected-scope progress across queued, running, and terminal outcomes', () => {
+  const selected = { ...run, caseIds: ['safe', 'unsafe'], cases: [run.cases[0]!] };
+  for (const state of ['queued', 'running', 'completed', 'partial', 'interrupted', 'blocked', 'error'] as const) {
+    const model = createWorkspaceViewModel({ discovery, run: { ...selected, state, finishedAt: null } });
+    assert.equal(model.state, state);
+    assert.equal(model.progress, '1/2 complete');
+    assert.equal(model.unfinished, 1);
+    assert.equal(model.cases[1]?.status, 'not-run');
+    assert.equal(model.durationMs, null);
+    assert.equal(model.cost, null);
+  }
+  const active = createWorkspaceViewModel({ discovery, run: { ...run, state: 'running', cases: [
+    { ...run.cases[0]!, state: 'incomplete', attempts: [] }, run.cases[1]!,
+  ] } });
+  assert.equal(active.cases[0]?.status, 'running');
+  assert.equal(active.progress, '0/2 complete');
+  assert.equal(createWorkspaceViewModel({ discovery, run }).durationMs, 1);
+});
+
+it('counts attempts and failures, excludes unselected cases, and never projects private evidence', () => {
+  const privateRun = { ...run, scope: 'selected' as const, caseIds: ['safe'], diagnostics: ['private output'],
+    cost: null, cases: [{ ...run.cases[0]!, attempts: [
+      { number: 1, outcome: 'failed' as const, durationMs: 1, calls: null, cost: null, output: 'private output' },
+      { number: 2, outcome: 'passed' as const, durationMs: 1, calls: null, cost: null },
+    ] }] };
+  const model = createWorkspaceViewModel({ discovery, run: privateRun, history: [
+    { runId: 'newer', suiteId: 'suite', state: 'completed', createdAt: 3, updatedAt: 3, finishedAt: 3,
+      outcome: 'passed', testedModel: 'one-model', judgeModel: null, scope: 'all', repeats: 1, calls: 2, cost: null },
+  ] });
+  assert.equal(model.historical, true);
+  assert.deepEqual([model.passed, model.failed, model.unfinished, model.excluded], [0, 1, 0, 1]);
+  assert.deepEqual([model.cases[0]?.status, model.cases[0]?.attempts, model.cases[0]?.failedChecks], ['failed', 2, 1]);
+  assert.equal(model.cases[1]?.status, 'excluded');
+  assert.equal(model.progress, '1/1 complete');
+  assert.doesNotMatch(JSON.stringify({ cases: model.cases, progress: model.progress, statusText: model.statusText }), /private output/);
+});

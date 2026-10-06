@@ -104,7 +104,10 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const item = run?.cases.find(value => value.caseId === caseId);
     if (!item) return { state: 'not-run', failed: 0, attempts: [] };
     const failed = item.attempts.filter(value => value.outcome === 'failed').length;
-    return { state: item.state !== 'completed' ? item.state : failed ? 'failed' : item.attempts.every(value => value.outcome === 'passed') ? 'passed' : 'incomplete', failed, attempts: item.attempts };
+    const state = item.state === 'not-run' ? 'not-run' : item.state === 'incomplete'
+      ? run?.state === 'running' ? 'running' : 'incomplete'
+      : failed ? 'failed' : item.attempts.length && item.attempts.every(value => value.outcome === 'passed') ? 'passed' : 'incomplete';
+    return { state, failed, attempts: item.attempts };
   }
   function renderWorkspace() {
     one('[data-suite-title]').textContent = suite?.name || 'No eval suites yet';
@@ -120,7 +123,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
     if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
     refreshSetupControls();
-    const historical = run && history.length && !latestRun();
+    const historical = run && latestKnownRunId && !latestRun();
     one('[data-latest-label]').textContent = run ? (historical ? 'Past run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
     const runIds = run?.caseIds || [];
     const visibleCases = run ? [...runIds.map(id => suite?.testCases.find(item => item.id === id) || { id, name: id }),
@@ -136,9 +139,11 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (run) {
       const done = statuses.length - unfinished;
       const current = run.cases.find(item => item.state === 'incomplete') || run.cases.find(item => item.state === 'not-run');
-      const elapsed = Math.max(0, ((run.finishedAt || Date.now()) - run.createdAt) / 1000).toFixed(1);
       status(done + '/' + statuses.length + ' complete' + (isActive() && current ? ' · Current: ' + current.caseId : ''));
-      one('[data-run-metrics]').textContent = 'Elapsed ' + elapsed + 's · Cost ' + (run.cost == null ? 'unavailable' : run.cost);
+      const metrics = [];
+      if (run.finishedAt != null && run.createdAt != null) metrics.push('Elapsed ' + Math.max(0, (run.finishedAt - run.createdAt) / 1000).toFixed(1) + 's');
+      if (run.cost != null) metrics.push('Cost ' + run.cost);
+      one('[data-run-metrics]').textContent = metrics.join(' · ');
     } else if (acceptedRunId) status('Run queued. Loading saved progress…');
     else if (suite) status('0/' + suite.testCases.length + ' complete');
     if (!suite) {
