@@ -6,7 +6,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   let taskView = 'results';
   let setupReturn = null;
   function showTaskView(view) {
-    if (view === 'new-run' && (!suite || isActive() || startPending)) return;
+    if (view === 'new-run' && (!suite || isActive() || startPending || startUncertain)) return;
     taskView = view;
     workspace.dataset.taskView = view;
     setupRegion.hidden = view !== 'new-run';
@@ -121,7 +121,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (reviewAction) reviewAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
     refreshSetupControls();
     const historical = run && history.length && !latestRun();
-    one('[data-latest-label]').textContent = run ? (historical ? 'Historical run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
+    one('[data-latest-label]').textContent = run ? (historical ? 'Past run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
     const runIds = run?.caseIds || [];
     const visibleCases = run ? [...runIds.map(id => suite?.testCases.find(item => item.id === id) || { id, name: id }),
       ...(suite?.testCases || []).filter(item => !runIds.includes(item.id))] : suite?.testCases || [];
@@ -244,7 +244,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     openPanel('history');
     side.innerHTML = '<div class="section-heading"><h2 tabindex="-1">History</h2><button type="button" data-action="close-panel">Close</button></div>'
       + (historyReadError ? '<p>Saved History could not be read. Previous results are still available.</p><button type="button" data-action="recheck-history">Recheck History</button>' : '')
-      + (history.length ? '<ol class="history-list">' + history.map(item => '<li><button type="button" data-action="history-run" data-run-id="' + esc(item.runId) + '"><strong>' + esc(new Date(item.createdAt).toLocaleString()) + '</strong><br>' + esc(item.testedModel) + ' · ' + esc(item.scope) + ' · ' + esc(item.repeats) + ' repeat(s)<br>' + esc(item.state) + ' / ' + esc(item.outcome) + ' · ' + esc(item.finishedAt ? Math.max(0, item.finishedAt-item.createdAt) + 'ms' : 'Duration unavailable') + ' · Cost ' + esc(item.cost == null ? 'unavailable' : item.cost) + '</button></li>').join('') + '</ol>' : '<p>No saved runs yet.</p>');
+      + (history.length ? '<ol class="history-list">' + history.map((item, index) => '<li><button type="button" data-action="history-run" data-run-id="' + esc(item.runId) + '"' + (selectedRunId === item.runId ? ' aria-current="true"' : '') + '><strong>' + (index === 0 ? 'Latest run · ' : 'Past run · ') + esc(new Date(item.createdAt).toLocaleString()) + '</strong><br>' + esc(item.testedModel) + ' · ' + esc(item.scope) + ' · ' + esc(item.repeats) + ' repeat(s)<br>' + esc(item.state) + ' / ' + esc(item.outcome) + ' · ' + esc(item.finishedAt ? Math.max(0, item.finishedAt-item.createdAt) + 'ms' : 'Duration unavailable') + ' · Cost ' + esc(item.cost == null ? 'unavailable' : item.cost) + '</button></li>').join('') + '</ol>' : '<p>No saved runs yet.</p>');
   }
   function renderCoverage() {
     openPanel('coverage');
@@ -253,6 +253,27 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const categories = (coverage?.categories || []).map(item => '<li><strong>' + esc(item.id) + '</strong> — ' + esc(item.status.replaceAll('-', ' ')) + (item.reason ? '<p>' + esc(item.reason) + '</p>' : '') + '</li>').join('');
     side.innerHTML = '<div class="section-heading"><h2 tabindex="-1">Coverage</h2><button type="button" data-action="close-panel">Close</button></div><h3>Known gaps</h3>' + (gaps ? '<ul>' + gaps + '</ul>' : '<p>No known gaps documented.</p>') + '<h3>Coverage categories</h3><ul>' + categories + '</ul>';
     focusPanel();
+  }
+  async function selectHistoryRun(runId) {
+    if (!suite || !history.some(item => item.runId === runId)) return;
+    const current = { suiteId: suite.id, runId }, generation = ++runGeneration;
+    try {
+      const payload = await json('/api/eval-runs/status?' + new URLSearchParams(current));
+      if (generation !== runGeneration || suite?.id !== current.suiteId || !history.some(item => item.runId === runId)) return;
+      if (payload.status !== 'ok' || payload.value?.summary?.runId !== runId) {
+        showReadNotice('status', payload); return;
+      }
+      clearReadNotice('status');
+      selectedRunId = runId;
+      run = payload.value.summary;
+      clearSelectedDetail();
+      if (taskView === 'new-run') showTaskView('results');
+      closePanel();
+      renderWorkspace();
+      if (isActive()) setTimeout(pollRun, 700);
+    } catch {
+      if (generation === runGeneration && suite?.id === current.suiteId) showReadNotice('status', null, true);
+    }
   }
   async function inspectCase(caseId, attempt, requestedAssertionId = null) {
     if (!run || !suite) return;
@@ -353,12 +374,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }
     if (target.dataset.action === 'history-run') {
       if (acceptedRunId) { status('Wait for the current run to finish before opening another run.'); return; }
-      selectedRunId = target.dataset.runId;
-      clearSelectedDetail();
-      void pollRun();
-      if (taskView === 'new-run') showTaskView('results');
-      closePanel();
-      detail.hidden = true;
+      void selectHistoryRun(target.dataset.runId);
     }
   });
   document.addEventListener('change', event => {

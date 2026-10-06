@@ -23,9 +23,12 @@ function browser() {
   const read = { hidden: true };
   const readHeading = { textContent: '' }, readGuidance = { textContent: '' }, readAnnouncement = { textContent: '' };
   const readDetails = { textContent: '', hidden: true }, readCopy = { hidden: true };
+  let panelFocus = '';
+  const side = { hidden: true, innerHTML: '', querySelector: (selector: string) => selector === 'h2' ? { focus: () => { panelFocus = 'heading'; } } : null,
+    setAttribute() {}, removeAttribute() {} };
   const nodes: Record<string, unknown> = {
     '[data-results-container]': results, '[data-detail]': { innerHTML: '', hidden: false },
-    '[data-side-panel]': { hidden: true }, '[data-suite-title]': { textContent: '' },
+    '[data-side-panel]': side, '[data-suite-title]': { textContent: '' },
     '[data-suite-description]': { textContent: '' }, '[data-action="suite-select"]': { value: '' },
     '[data-action="coverage"]': { hidden: false }, '[data-action="history"]': { hidden: false },
     '[data-latest-label]': { textContent: '' }, '[data-status-summary]': statusSummary,
@@ -61,15 +64,17 @@ function browser() {
       ? new Promise(resolve => { resolvePoll = resolve; }) : new Promise(() => undefined),
     setTimeout: () => 0,
   };
-  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, pollRun, loadHistory, inspectCase, runOutcomeCopy, state:()=>({run,history,selectedRunId,readNotices}) })', context) as {
-    renderWorkspace(): void; pollRun(): Promise<void>; loadHistory(): Promise<void>; inspectCase(caseId: string, attempt: number): Promise<void>;
+  const api = vm.runInNewContext(WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, renderHistory, renderCoverage, selectHistoryRun, pollRun, loadHistory, inspectCase, runOutcomeCopy, state:()=>({run,history,selectedRunId,readNotices}) })', context) as {
+    renderWorkspace(): void; renderHistory(): void; renderCoverage(): void; selectHistoryRun(runId: string): Promise<void>;
+    pollRun(): Promise<void>; loadHistory(): Promise<void>; inspectCase(caseId: string, attempt: number): Promise<void>;
     runOutcomeCopy(summary: unknown): string; state(): { run: unknown; history: unknown[]; selectedRunId: string; readNotices: Record<string, unknown> };
   };
   function edit(value: string, start: number, end = start) {
     input.value = value; input.selectionStart = start; input.selectionEnd = end;
     listeners.get('input')?.({ target: input });
   }
-  return { api, context, document, input, section, count, list, empty, results, copied,
+  return { api, context, document, input, section, count, list, empty, results, side, copied,
+    panelFocus: () => panelFocus,
     read, readHeading, readGuidance, readAnnouncement, readDetails, readCopy,
     replacements: () => replacements, edit, resolvePoll: () => resolvePoll,
     click(action: string) { listeners.get('click')?.({ target: { closest: () => ({ dataset: { action } }) } as unknown as SearchInput }); },
@@ -161,6 +166,54 @@ const reference = '123e4567-e89b-42d3-a456-426614174001';
 const saved = { runId: 'run', state: 'completed', outcome: 'failed', diagnostics: ['assertion-failed'],
   caseIds: ['alpha'], createdAt: 1, finishedAt: 2, cost: null,
   cases: [{ caseId: 'alpha', state: 'completed', attempts: [{ outcome: 'failed' }] }] };
+
+test('History labels latest and past, preserves selection on failed read, and returns to latest', async () => {
+  const page = browser();
+  const past = { ...saved, runId: 'past-run' };
+  page.context.run = saved; page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  page.context.history = [
+    { runId: 'run', createdAt: 2, testedModel: 'model', scope: 'all', repeats: 1, state: 'completed', outcome: 'failed', cost: null },
+    { runId: 'past-run', createdAt: 1, testedModel: 'model', scope: 'all', repeats: 1, state: 'completed', outcome: 'failed', cost: null },
+  ] as never[];
+  page.api.renderWorkspace();
+  const selected = page.api.state().selectedRunId;
+  page.api.renderHistory();
+  assert.match(page.side.innerHTML, /Latest run.*Past run/s);
+  assert.match(page.side.innerHTML, /aria-current="true"/);
+  page.context.json = async () => ({ status: 'blocked', reason: 'corrupt', issue: {
+    stage: 'status', outcome: 'blocked', category: 'corrupt', reference } });
+  await page.api.selectHistoryRun('past-run');
+  assert.equal(page.api.state().selectedRunId, selected);
+  assert.equal(page.api.state().run, saved);
+  assert.equal(page.side.hidden, false);
+  page.context.json = async url => ({ status: 'ok', value: { summary: url.includes('past-run') ? past : saved } });
+  await page.api.selectHistoryRun('past-run');
+  assert.equal(page.api.state().selectedRunId, 'past-run');
+  assert.match((page.context.one('[data-latest-label]') as { textContent: string }).textContent, /^Past run/);
+  assert.equal(page.side.hidden, true);
+  page.api.renderCoverage();
+  assert.equal(page.panelFocus(), 'heading');
+  assert.equal(page.api.state().selectedRunId, 'past-run');
+  await page.api.selectHistoryRun('run');
+  assert.equal(page.api.state().selectedRunId, 'run');
+  assert.equal(page.api.state().run, saved);
+  assert.match((page.context.one('[data-latest-label]') as { textContent: string }).textContent, /^Latest run/);
+});
+
+test('late History selection response cannot replace the current suite or run', async () => {
+  const page = browser();
+  page.context.run = saved; page.context.selectedRunId = 'run'; page.context.latestKnownRunId = 'run';
+  page.context.history = [{ runId: 'run' }, { runId: 'past-run' }] as never[];
+  let release!: (value: unknown) => void;
+  page.context.json = async () => new Promise(resolve => { release = resolve; });
+  const pending = page.api.selectHistoryRun('past-run');
+  await new Promise(resolve => setImmediate(resolve));
+  page.context.suite = { ...page.context.suite, id: 'other' };
+  release({ status: 'ok', value: { summary: { ...saved, runId: 'past-run' } } });
+  await pending;
+  assert.equal(page.api.state().run, saved);
+  assert.equal(page.api.state().selectedRunId, 'run');
+});
 
 test('failed status polls retain terminal failed checks, list, selection and detail; recovery clears only status notice', async () => {
   const page = browser();

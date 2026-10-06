@@ -205,7 +205,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     const category = Object.hasOwn(modelCopy, reason) ? reason : 'unknown';
     const name = category === 'required-setting-rejected' ? payload?.rejectedSettingName
       : category === 'environment-undeclared' ? payload?.undeclaredEnvironmentName : payload?.missingEnvironmentName;
-    let guidance = modelCopy[category];
+    let guidance = category === 'unknown' ? 'Cause unknown. ' + modelCopy[category] : modelCopy[category];
     if (category === 'required-setting-rejected' && name === 'SIBU_EVAL_MODE') guidance = 'Sibu sets SIBU_EVAL_MODE automatically. You do not need to set it. This suite lists it by mistake; share the issue details with the person who set up the suite.';
     else if (safeSettingName(name) && category === 'required-setting-rejected') guidance = 'This suite requests ' + name + ', which Sibu cannot accept. You do not need to set it. Share the issue details with the person who set up the suite.';
     if (safeSettingName(name) && category === 'environment-undeclared') guidance = 'This suite needs ' + name + ', but its setup does not list it. Ask the person who set up the suite to fix it.';
@@ -253,7 +253,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     return '<fieldset><legend>Run scope</legend><label><input type="radio" name="scope" value="all"' + (setup.scope === 'all' ? ' checked' : '') + '> All ' + esc(suite?.testCases.length || 0) + ' cases</label><label><input type="radio" name="scope" value="one"' + (setup.scope === 'one' ? ' checked' : '') + '> One case</label></fieldset>'
       + '<label class="field" data-case-field' + (setup.scope === 'one' ? '' : ' hidden') + '>Test case<select data-field="case">' + cases + '</select></label>'
       + (runtimeState === 'blocked'
-        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p role="status" data-model-copy-status></p></div></div>'
+        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p>Review run unavailable</p><p role="status" data-model-copy-status></p></div></div>'
         : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
       + '<details><summary>Model support</summary><p>Tests can use models supported by this suite. Sibu\'s built-in analysis and repair help currently uses OpenAI. More providers are planned.</p></details>'
       + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '')
@@ -306,7 +306,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       if (strictRuntimeChoices && (!setup.model || needsJudge() && !setup.judgeModel)) status('Previous model choice is unavailable. Choose compatible models before review.');
       strictRuntimeChoices = false;
       refreshSetupControls();
-    } catch { if (suite?.id === current && generation === runtimeGeneration) { modelIssue = { guidance: 'The model check received no response. Check the connection and try again. A matching terminal event may not exist.', details: null }; setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); } }
+    } catch { if (suite?.id === current && generation === runtimeGeneration) { modelIssue = { guidance: 'Cause unknown. The model check received no response. Check the connection and try again. A matching terminal event may not exist.', details: null }; setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); } }
   }
   ${WORKSPACE_RUN_REVIEW_CLIENT}
   document.addEventListener('click', event => {
