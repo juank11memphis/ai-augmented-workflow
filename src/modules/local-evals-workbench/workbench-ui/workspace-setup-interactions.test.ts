@@ -391,3 +391,101 @@ test('double Start sends one reviewed snapshot and keeps setup collapsed until r
   await api.startRun();
   assert.equal(submissions, 1);
 });
+
+test('whole-suite and one-case setup require a current review before the existing start endpoint', async () => {
+  const controls = { scope: 'one', caseId: 'plain', model: 'tested', judge: '', repeats: '1' };
+  const requests: { url: string; body: Record<string, unknown> }[] = [];
+  const reviewButton = { disabled: false, focus() { document.activeElement = this; } };
+  const heading = { focus() { document.activeElement = this; } };
+  const startButton = { disabled: false };
+  const fields = { innerHTML: '', querySelector: () => null };
+  const slot = { innerHTML: '', set textContent(value: string) { if (!value) this.innerHTML = ''; },
+    querySelector(key: string): unknown {
+      if (key === '#sheet-title') return heading;
+      if (key === '[data-action="start"]') return startButton;
+      if (key === '[role="dialog"]') return this.innerHTML ? {} : null;
+      return null;
+    } };
+  const region = { isConnected: true, hidden: false, querySelector(key: string): unknown {
+    if (key === '[data-setup-fields]') return fields;
+    if (key === '[data-action="review"]') return reviewButton;
+    if (key === 'input[name="scope"]:checked') return { value: controls.scope };
+    if (key === '[data-field="case"]') return { value: controls.caseId };
+    if (key === '[data-field="model"]') return { value: controls.model };
+    if (key === '[data-field="judge"]') return fields.innerHTML.includes('data-field="judge"') ? { value: controls.judge } : null;
+    if (key === '[data-field="repeats"]') return { value: controls.repeats };
+    return null;
+  } };
+  const progress = { textContent: '' };
+  const setupStatus = { textContent: '' };
+  const document = { activeElement: reviewButton as unknown, getElementById: () => ({ textContent: JSON.stringify({ suites: [
+    { id: 'suite', name: 'Support checks', testCases: [{ id: 'plain', name: 'Plain' }, { id: 'rubric', name: 'Rubric' }] }] }) }),
+    querySelector: (key: string): unknown => ({ '[data-workspace]': {}, '[data-sheet-slot]': slot,
+      '[data-run-setup]': region, '[data-progress]': progress, '[data-setup-status]': setupStatus })[key], addEventListener() {} };
+  const fetch = async (url: string, options: { body: string }) => {
+    const body = JSON.parse(options.body) as Record<string, unknown>;
+    requests.push({ url, body });
+    if (url === '/api/eval-suites/describe') return { json: async () => ({ status: 'ready', models: ['tested', 'other'],
+      judgeModels: ['judge'], rubricCaseIds: ['rubric'] }) };
+    if (url === '/api/eval-runs/preview') {
+      const scope = body.scope as { type: string; testCaseId?: string };
+      const selectedCaseIds = scope.type === 'all' ? ['plain', 'rubric'] : [scope.testCaseId];
+      const calls = selectedCaseIds.length * (body.repeats as number);
+      return { json: async () => ({ status: 'ready', selectedCaseIds, repeats: body.repeats, model: body.model,
+        judgeModel: body.judgeModel, targetCalls: calls, judgeCalls: body.judgeModel ? calls : 0,
+        totalCalls: body.judgeModel ? calls * 2 : calls, cost: { status: 'available', currency: 'USD', amount: '0.42' } }) };
+    }
+    if (url === '/api/eval-runs/start') return { status: 202, json: async () => ({ status: 'queued', suiteId: 'suite',
+      runId: 'accepted', reference: startReference }) };
+    throw new Error('Unexpected endpoint');
+  };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; resetRepair=()=>{};'
+    + ' clearSelectedDetail=()=>{};renderWorkspace=()=>{};pollRun=()=>{};loadHistory=()=>{};'
+    + ' return {loadRuntime,refreshSetupControls,showReview,readSetup,startRun,closeSheet,state:()=>({review,selectedRunId})};})()',
+  { document, fetch, crypto: { randomUUID: () => startReference } }) as {
+    loadRuntime(): Promise<void>; refreshSetupControls(): void; showReview(): Promise<void>; readSetup(): void;
+    startRun(): Promise<void>; closeSheet(): void; state(): { review: unknown; selectedRunId: string | null };
+  };
+  api.readSetup();
+  await api.loadRuntime();
+  assert.equal(requests[0]?.url, '/api/eval-suites/describe');
+  assert.doesNotMatch(fields.innerHTML, /data-field="judge"/);
+  await api.startRun();
+  assert.equal(requests.filter(item => item.url === '/api/eval-runs/start').length, 0);
+  await api.showReview();
+  assert.deepEqual(JSON.parse(JSON.stringify(requests.at(-1)?.body)), { suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'plain' }, model: 'tested', judgeModel: null, repeats: 1 });
+  assert.match(slot.innerHTML, /<dt>Scope<\/dt><dd>1 test case/);
+  assert.match(slot.innerHTML, /<dt>Test case<\/dt><dd>Plain/);
+  assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>1/);
+  assert.match(slot.innerHTML, /Actual cost may vary/);
+  assert.equal(document.activeElement, heading);
+  assert.equal(requests.filter(item => item.url === '/api/eval-runs/start').length, 0);
+  api.closeSheet();
+  assert.equal(document.activeElement, reviewButton);
+  controls.caseId = 'rubric'; api.readSetup(); api.refreshSetupControls();
+  assert.match(fields.innerHTML, /data-field="judge"/);
+  controls.judge = 'judge'; controls.repeats = '2'; api.readSetup();
+  await api.showReview();
+  assert.match(slot.innerHTML, /<dt>Test case<\/dt><dd>Rubric/);
+  assert.match(slot.innerHTML, /<dt>Judge<\/dt><dd>judge/);
+  assert.match(slot.innerHTML, /<dt>Repeats<\/dt><dd>2/);
+  assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>4/);
+  assert.match(slot.innerHTML, /<dt>Estimated cost<\/dt><dd>USD 0.42/);
+  controls.model = 'other'; api.readSetup();
+  assert.equal(api.state().review, null);
+  assert.equal(slot.innerHTML, '');
+  assert.equal(document.activeElement, reviewButton);
+  await api.startRun();
+  assert.equal(requests.filter(item => item.url === '/api/eval-runs/start').length, 0);
+  controls.scope = 'all'; api.readSetup(); api.refreshSetupControls();
+  await api.showReview();
+  assert.deepEqual(JSON.parse(JSON.stringify(requests.at(-1)?.body)), { suiteId: 'suite', scope: { type: 'all' }, model: 'other', judgeModel: 'judge', repeats: 2 });
+  assert.match(slot.innerHTML, /<dt>Scope<\/dt><dd>All 2 cases/);
+  assert.match(slot.innerHTML, /<dt>Model<\/dt><dd>other/);
+  assert.match(slot.innerHTML, /<dt>Expected calls<\/dt><dd>8/);
+  assert.match(slot.innerHTML, /data-action="back-setup"/);
+  assert.match(slot.innerHTML, /data-action="start"/);
+  await api.startRun();
+  assert.equal(requests.filter(item => item.url === '/api/eval-runs/start').length, 1);
+  assert.equal(api.state().selectedRunId, 'accepted');
+});

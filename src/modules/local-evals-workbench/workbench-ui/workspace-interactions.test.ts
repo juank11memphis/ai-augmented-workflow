@@ -200,14 +200,14 @@ test('suite switch clears either open panel and stale selected detail before a n
     assert.equal(side.hidden, true);
     assert.equal(side.innerHTML, '');
     assert.deepEqual(removed, ['role', 'aria-modal', 'aria-label']);
-    assert.equal(api.getDetail().hidden, false);
+    assert.equal(api.getDetail().hidden, true);
     assert.doesNotMatch(api.getDetail().innerHTML, /Old suite evidence/);
     detail.innerHTML = 'New suite result';
-    assert.equal(detail.hidden, false);
+    assert.equal(detail.hidden, true);
   }
 });
 
-test('actual workspace rendering collapses setup for an accepted run and restores it on completion', () => {
+test('actual workspace rendering keeps setup closed for accepted and completed runs', () => {
   const nodes: Record<string, { textContent?: string; innerHTML?: string; hidden?: boolean; value?: string; disabled?: boolean;
     querySelector?: (selector: string) => unknown }> = {};
   for (const selector of ['[data-results-container]', '[data-detail]', '[data-side-panel]', '[data-suite-title]',
@@ -250,8 +250,50 @@ test('actual workspace rendering collapses setup for an accepted run and restore
   context.acceptedRunId = null;
   context.run = { ...context.run, state: 'completed', cases: [{ caseId: 'case', state: 'completed', attempts: [{ outcome: 'passed' }] }] };
   api.renderWorkspace();
-  assert.equal(nodes['[data-run-setup]']!.hidden, false);
+  assert.equal(nodes['[data-run-setup]']!.hidden, true);
   assert.match(nodes['[data-results-container]']!.innerHTML!, /Results/);
+});
+
+test('New run is a focused task and Back or Escape restores the invoking results control', () => {
+  const listeners = new Map<string, ((event: unknown) => void)[]>();
+  const trigger = { focus() { document.activeElement = trigger; } };
+  const heading = { focus() { document.activeElement = heading; } };
+  const workspace = { dataset: { taskView: 'results' } };
+  const setupRegion = { hidden: true };
+  const results = { hidden: false };
+  const side = { hidden: true };
+  const document = { activeElement: trigger as unknown,
+    addEventListener(name: string, listener: (event: unknown) => void) {
+      listeners.set(name, [...listeners.get(name) ?? [], listener]);
+    } };
+  const nodes: Record<string, unknown> = {
+    '[data-workspace]': workspace, '[data-run-setup]': setupRegion,
+    '[data-results-container]': results, '[data-detail]': { hidden: true },
+    '[data-side-panel]': side, '[data-sheet-slot]': { querySelector: () => null },
+    '#run-setup-title': heading,
+  };
+  const context = { document, one: (selector: string) => nodes[selector], suite: { id: 'suite', testCases: [] },
+    suites: [], setup: { caseId: '' }, setupRegion, sheetSlot: nodes['[data-sheet-slot]'], startPending: false, startUncertain: false, activePanel: null,
+    isActive: () => false, loadDiscovery() {}, loadRuntime() {}, json: async () => new Promise(() => undefined),
+    historyGeneration: 0 };
+  vm.runInNewContext(WORKSPACE_RESULTS_CLIENT, context);
+  const click = (action: string) => {
+    for (const listener of listeners.get('click') ?? []) listener({ target: { closest: () => ({ dataset: { action } }) } });
+  };
+  click('new-run');
+  assert.equal(workspace.dataset.taskView, 'new-run');
+  assert.equal(setupRegion.hidden, false);
+  assert.equal(results.hidden, true);
+  assert.equal(document.activeElement, heading);
+  click('return-results');
+  assert.equal(workspace.dataset.taskView, 'results');
+  assert.equal(setupRegion.hidden, true);
+  assert.equal(results.hidden, false);
+  assert.equal(document.activeElement, trigger);
+  click('new-run');
+  for (const listener of listeners.get('keydown') ?? []) listener({ key: 'Escape', preventDefault() {} });
+  assert.equal(workspace.dataset.taskView, 'results');
+  assert.equal(document.activeElement, trigger);
 });
 
 for (const failure of ['unavailable', 'rejected'] as const) {

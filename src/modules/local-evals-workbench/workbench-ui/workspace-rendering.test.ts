@@ -25,7 +25,11 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(html, /data-run-setup/);
   assert.match(html, /data-setup-fields/);
   assert.match(html, /data-action="review"/);
-  assert.doesNotMatch(html, /data-action="new-run"/);
+  assert.match(html, /data-action="new-run"/);
+  assert.match(html, /data-run-setup hidden/);
+  assert.match(html, /data-detail hidden/);
+  assert.match(html, /data-action="return-results"/);
+  assert.match(html, /id="run-setup-title" tabindex="-1"/);
   assert.match(html, /data-results-container/);
   assert.match(WORKSPACE_CLIENT_SCRIPT, /<summary>Model support<\/summary>/);
   assert.match(WORKSPACE_CLIENT_SCRIPT, /Sibu\\'s built-in analysis and repair help currently uses OpenAI/);
@@ -36,10 +40,11 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(html, /data-detail/);
   assert.match(html, /min-width:700px/);
   assert.match(html, /min-width:1100px/);
-  assert.match(html, /grid-template-columns:minmax\(16rem,2fr\) minmax\(18rem,3fr\)/);
+  assert.match(html, /grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/);
   assert.match(html, /\[data-run-setup\] \[data-setup-fields\]\{display:grid/);
   assert.match(html, /\.sheet-overlay\{position:fixed;inset:0/);
-  assert.match(html, /\.workspace:has\(\[data-run-setup\]\[hidden\]\) \[data-results-container\]/);
+  assert.match(html, /\.workspace\[data-task-view="new-run"\] \[data-results-container\]/);
+  assert.match(html, /\.workspace:has\(\[data-detail\]:not\(\[hidden\]\)\) \[data-results-container\]/);
   assert.doesNotMatch(html, /Eval result matrix|variant-filter|coverage percentage/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
 });

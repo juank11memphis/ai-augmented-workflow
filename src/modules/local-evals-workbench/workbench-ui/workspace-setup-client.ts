@@ -1,4 +1,5 @@
 import { startCopy as safeStartCopy } from '../start-local-evals-workbench/public-issue.js';
+import { WORKSPACE_RUN_REVIEW_CLIENT } from './workspace-run-review-client.js';
 
 export const WORKSPACE_SETUP_CLIENT = String.raw`
   const root = document.querySelector('[data-workspace]');
@@ -204,7 +205,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     const category = Object.hasOwn(modelCopy, reason) ? reason : 'unknown';
     const name = category === 'required-setting-rejected' ? payload?.rejectedSettingName
       : category === 'environment-undeclared' ? payload?.undeclaredEnvironmentName : payload?.missingEnvironmentName;
-    let guidance = modelCopy[category];
+    let guidance = category === 'unknown' ? 'Cause unknown. ' + modelCopy[category] : modelCopy[category];
     if (category === 'required-setting-rejected' && name === 'SIBU_EVAL_MODE') guidance = 'Sibu sets SIBU_EVAL_MODE automatically. You do not need to set it. This suite lists it by mistake; share the issue details with the person who set up the suite.';
     else if (safeSettingName(name) && category === 'required-setting-rejected') guidance = 'This suite requests ' + name + ', which Sibu cannot accept. You do not need to set it. Share the issue details with the person who set up the suite.';
     if (safeSettingName(name) && category === 'environment-undeclared') guidance = 'This suite needs ' + name + ', but its setup does not list it. Ask the person who set up the suite to fix it.';
@@ -225,8 +226,9 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   function status(message) { const node = one('[data-progress]'); if (node && node.textContent !== message) node.textContent = message; }
   function openSheet(title, content, actions) {
     if (!sheetReturn) sheetReturn = document.activeElement;
-    sheetSlot.innerHTML = '<div class="sheet-overlay"><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="sheet-header"><h2 id="sheet-title">' + esc(title) + '</h2><button type="button" data-action="close-sheet" aria-label="Close ' + esc(title) + '">×</button></div>' + content + '<div class="sheet-actions">' + actions + '</div></section></div>';
-    sheetSlot.querySelector('button')?.focus();
+    sheetSlot.innerHTML = '<div class="sheet-overlay"><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="sheet-header"><h2 id="sheet-title" tabindex="-1">' + esc(title) + '</h2><button type="button" data-action="close-sheet" aria-label="Close ' + esc(title) + '">×</button></div>' + content + '<div class="sheet-actions">' + actions + '</div></section></div>';
+    const heading = sheetSlot.querySelector('#sheet-title');
+    if (heading) heading.focus(); else sheetSlot.querySelector('button')?.focus();
   }
   function closeSheet() {
     if (review) { review = null; previewGeneration++; }
@@ -251,7 +253,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
     return '<fieldset><legend>Run scope</legend><label><input type="radio" name="scope" value="all"' + (setup.scope === 'all' ? ' checked' : '') + '> All ' + esc(suite?.testCases.length || 0) + ' cases</label><label><input type="radio" name="scope" value="one"' + (setup.scope === 'one' ? ' checked' : '') + '> One case</label></fieldset>'
       + '<label class="field" data-case-field' + (setup.scope === 'one' ? '' : ' hidden') + '>Test case<select data-field="case">' + cases + '</select></label>'
       + (runtimeState === 'blocked'
-        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p role="status" data-model-copy-status></p></div></div>'
+        ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p>Review run unavailable</p><p role="status" data-model-copy-status></p></div></div>'
         : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
       + '<details><summary>Model support</summary><p>Tests can use models supported by this suite. Sibu\'s built-in analysis and repair help currently uses OpenAI. More providers are planned.</p></details>'
       + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '')
@@ -278,6 +280,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   function readSetup() {
     const judge = setupRegion.querySelector('[data-field="judge"]');
     setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel, repeats: Number(setupRegion.querySelector('[data-field="repeats"]')?.value || 1) };
+    if (review && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
     review = null; previewGeneration++;
     clearPreviewNotice();
     const reviewAction = setupRegion.querySelector('[data-action="review"]');
@@ -286,6 +289,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   async function loadRuntime(userRetry = false) {
     if (!suite) return;
     const current = suite.id, generation = ++runtimeGeneration, hadModel = Boolean(setup.model), hadJudge = Boolean(setup.judgeModel);
+    if (review && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
     runtime = null; review = null; modelIssue = null; previewGeneration++; clearPreviewNotice();
     setRuntimeState('loading', 'Loading compatible models…');
     refreshSetupControls();
@@ -302,87 +306,9 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       if (strictRuntimeChoices && (!setup.model || needsJudge() && !setup.judgeModel)) status('Previous model choice is unavailable. Choose compatible models before review.');
       strictRuntimeChoices = false;
       refreshSetupControls();
-    } catch { if (suite?.id === current && generation === runtimeGeneration) { modelIssue = { guidance: 'The model check received no response. Check the connection and try again. A matching terminal event may not exist.', details: null }; setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); } }
+    } catch { if (suite?.id === current && generation === runtimeGeneration) { modelIssue = { guidance: 'Cause unknown. The model check received no response. Check the connection and try again. A matching terminal event may not exist.', details: null }; setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); } }
   }
-  async function showReview() {
-    readSetup();
-    if (!runtime || !setup.model || needsJudge() && !setup.judgeModel || !Number.isInteger(setup.repeats) || setup.repeats < 1 || setup.repeats > 20) {
-      one('[data-setup-status]').textContent = needsJudge() && !setup.judgeModel ? 'Choose a compatible Judge model.' : 'Choose a compatible model and repeat count from 1 to 20.'; return;
-    }
-    const request = command(), descriptionGeneration = runtimeGeneration, requestGeneration = ++previewGeneration;
-    one('[data-setup-status]').textContent = 'Checking calls and cost…';
-    try {
-      const result = await post('/api/eval-runs/preview', request);
-      if (descriptionGeneration !== runtimeGeneration || requestGeneration !== previewGeneration ||
-        JSON.stringify(request) !== JSON.stringify(command()) || !setupRegion?.isConnected || startPending || startUncertain || isActive()) return;
-      if (result.status !== 'ready') { previewFailure(result); return; }
-      review = { request, result };
-      const cost = result.cost?.status === 'available' ? result.cost.currency + ' ' + result.cost.amount : 'Unavailable (estimate not confirmed)';
-      const selectedCase = suite.testCases.find(item => item.id === result.selectedCaseIds[0]);
-      const scope = request.scope.type === 'all' ? 'All ' + result.selectedCaseIds.length + ' cases' : '1 test case';
-      const content = '<p>' + esc(suite.name) + '</p><dl><div><dt>Scope</dt><dd>' + esc(scope) + '</dd></div>'
-        + (request.scope.type === 'test_case' ? '<div><dt>Test case</dt><dd>' + esc(selectedCase?.name || request.scope.testCaseId) + '</dd></div>' : '')
-        + '<div><dt>Repeats</dt><dd>' + esc(result.repeats) + '</dd></div><div><dt>Model</dt><dd>' + esc(result.model) + '</dd></div>'
-        + (result.judgeModel ? '<div><dt>Judge</dt><dd>' + esc(result.judgeModel) + '</dd></div>' : '')
-        + '<div><dt>Expected calls</dt><dd>' + esc(result.totalCalls) + '</dd></div><div><dt>Estimated cost</dt><dd>' + esc(cost) + '</dd></div></dl><p>Actual cost may vary.</p><p role="status" data-review-status></p>';
-      sheetReturn = setupRegion.querySelector('[data-action="review"]') || sheetReturn;
-      openSheet('Review run', content, '<button type="button" data-action="back-setup">Back</button><button class="primary" type="button" data-action="start">Start run</button>');
-    } catch { if (descriptionGeneration === runtimeGeneration && requestGeneration === previewGeneration &&
-      JSON.stringify(request) === JSON.stringify(command()) && setupRegion?.isConnected) {
-      showPreviewNotice('Preview not confirmed', 'The preview received no response. Check the connection and preview again. A matching terminal event may not exist.');
-    } }
-  }
-  async function startRun() {
-    if (!review || startPending || startUncertain || isActive()) return;
-    const reference = globalThis.crypto?.randomUUID?.();
-    if (!safeReference(reference)) {
-      showStartNotice('Run start unavailable', 'Sibu could not prepare a safe start reference. Check browser support before reviewing again.');
-      return;
-    }
-    startReference = reference;
-    startSuiteId = suite.id;
-    const { request, result } = review; startPending = true;
-    if (setupRegion) setupRegion.hidden = true;
-    status('Starting run…');
-    const button = sheetSlot.querySelector('[data-action="start"]'); if (button) button.disabled = true;
-    try {
-      const response = await fetch('/api/eval-runs/start', { method: 'POST', headers: { 'content-type': 'application/json', 'x-sibu-request-reference': reference },
-        body: JSON.stringify({ ...request, review: { selectedCaseIds: result.selectedCaseIds, targetCalls: result.targetCalls, judgeCalls: result.judgeCalls, totalCalls: result.totalCalls, cost: result.cost } }) });
-      const payload = await response.json();
-      if (response.status !== 202 || payload?.status !== 'queued' || !safeRunId(payload.runId) ||
-        payload.suiteId !== request.suiteId || !safeReference(payload.reference) || payload.reference.toLowerCase() !== reference.toLowerCase()) {
-        const blocked = response.status !== 202 && blockedStartIssue(payload);
-        if (blocked) {
-          showStartNotice(blocked.copy.title, blocked.copy.explanation + ' ' + blocked.copy.nextStep, blocked.details, blocked.copy.recoveryAction);
-          status('Run start blocked.');
-          review = null; startReference = null; startSuiteId = null;
-        } else {
-          startUncertain = true;
-          showStartNotice('Run start not confirmed', 'The response could not confirm the start. The run may already exist. Check History before starting another.', null, 'history');
-          status('Run start not confirmed. Check History.');
-        }
-        if (button) button.disabled = true;
-        if (setupRegion) setupRegion.hidden = false;
-        const form = one('[data-start-form]'); if (form) form.hidden = startUncertain;
-        sheetSlot.textContent = ''; sheetReturn = null;
-        one('[data-start-notice]')?.querySelector('[data-start-heading]')?.focus?.();
-        return;
-      }
-      selectedRunId = payload.runId; latestKnownRunId = payload.runId; acceptedRunId = payload.runId; run = null;
-      startReference = null; startSuiteId = null;
-      closeSheet(); clearSelectedDetail(); renderWorkspace(); status('Run queued. Loading saved progress…');
-      void pollRun(); void loadHistory();
-    } catch {
-      startUncertain = true;
-      showStartNotice('Run start not confirmed', 'The connection ended before Sibu could confirm the start. The run may already exist. Check History before starting another. A matching terminal event may not exist.', null, 'history');
-      status('Run start not confirmed. Check History.');
-      if (setupRegion) setupRegion.hidden = false;
-      const form = one('[data-start-form]'); if (form) form.hidden = true;
-      sheetSlot.textContent = ''; sheetReturn = null;
-      one('[data-start-notice]')?.querySelector('[data-start-heading]')?.focus?.();
-    }
-    finally { startPending = false; if (button && review && !startUncertain) button.disabled = false; }
-  }
+  ${WORKSPACE_RUN_REVIEW_CLIENT}
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
     if (target.dataset.action === 'copy-issue' && copyableIssue) {

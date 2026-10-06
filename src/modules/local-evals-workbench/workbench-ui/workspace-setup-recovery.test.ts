@@ -119,6 +119,41 @@ test('lost model-check response offers connection retry without a fabricated ref
   assert.equal(browser.results.textContent, 'Previous results');
 });
 
+test('blocked preview preserves previous results, names preview stage, and never starts', async () => {
+  const nodes = new Map<string, { textContent: string; hidden: boolean; focus(): void }>();
+  let focused = false, starts = 0;
+  for (const key of ['[data-preview-heading]', '[data-preview-guidance]', '[data-preview-details]',
+    '[data-action="copy-preview-issue"]', '[data-preview-copy-status]']) {
+    nodes.set(key, { textContent: '', hidden: false, focus() { focused = true; } });
+  }
+  const notice = { hidden: true, querySelector: (key: string) => nodes.get(key) };
+  const results = { textContent: 'Previous results' };
+  const region = { isConnected: true, querySelector(key: string) {
+    return ({ 'input[name="scope"]:checked': { value: 'all' }, '[data-field="case"]': { value: 'case' },
+      '[data-field="model"]': { value: 'model' }, '[data-field="repeats"]': { value: '1' },
+      '[data-action="review"]': { disabled: false } })[key as '[data-field="model"]'];
+  } };
+  const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', name: 'Suite', testCases: [{ id: 'case', name: 'Case' }] }] }) }),
+    querySelector: (key: string) => ({ '[data-workspace]': {}, '[data-run-setup]': region,
+      '[data-preview-notice]': notice, '[data-setup-status]': { textContent: '' },
+      '[data-results-container]': results })[key as '[data-workspace]'], addEventListener() {} };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; runtime={models:["model"],judgeModels:[],rubricCaseIds:[]}; setup.model="model"; return {showReview};})()', {
+    document, fetch: async (url: string) => { if (url.includes('/start')) starts++; return { json: async () => ({
+      status: 'blocked', stage: 'estimation', reason: 'runner-request-too-large',
+      issue: { stage: 'preview', observedStage: 'estimation', outcome: 'blocked', category: 'runner-request-too-large', reference,
+        explanation: 'sk-secret' },
+    }) }; },
+  }) as { showReview(): Promise<void> };
+  await api.showReview();
+  assert.equal(notice.hidden, false);
+  assert.equal(nodes.get('[data-preview-heading]')?.textContent, 'Preview blocked');
+  assert.match(nodes.get('[data-preview-guidance]')?.textContent ?? '', /estimation.*runner request was too large/i);
+  assert.equal(results.textContent, 'Previous results');
+  assert.equal(starts, 0);
+  assert.equal(focused, true);
+  assert.doesNotMatch(JSON.stringify([...nodes.values()]), /sk-secret/);
+});
+
 test('Try again only describes, focuses a failed notice, and ignores an older blocked response', async () => {
   const requests: { url: string; resolve(value: unknown): void }[] = [];
   let focused = 0;
