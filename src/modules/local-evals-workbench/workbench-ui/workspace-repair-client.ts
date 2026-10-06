@@ -84,7 +84,13 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     return 'Stage: repair-apply\nOutcome: ' + issue.outcome + '\nCategory: ' + category + '\nReference: ' + issue.reference.toLowerCase();
   }
   function applyOutcome(result) {
-    if (result?.status === 'applied' && Array.isArray(result.changedFiles) && result.rerunRecommendation?.primaryAction) return 'applied';
+    const files = result?.changedFiles;
+    const primary = result?.rerunRecommendation?.primaryAction;
+    if (result?.status === 'applied' && Number.isInteger(result.changedFileCount) && result.changedFileCount > 0
+      && Array.isArray(files) && files.length === result.changedFileCount
+      && files.every(file => typeof file?.path === 'string' && file.path.length > 0)
+      && primary?.scope === 'test_case' && primary.suiteId === selectedFailure?.suiteId
+      && primary.testCaseId === selectedFailure?.testCaseId && typeof primary.evalRunModelId === 'string' && primary.evalRunModelId.length > 0) return 'applied';
     if (result?.status === 'blocked' && result.changedFileCount === 0 && Array.isArray(result.changedFiles) && !result.changedFiles.length &&
       safeApplyIssue(result)) return 'blocked';
     return 'uncertain';
@@ -168,9 +174,12 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         + (repairAffectedFiles.length ? '<section data-repair-files aria-label="Files to inspect"><h4 tabindex="-1" data-repair-files-heading>Files to inspect</h4><ul>'
           + repairAffectedFiles.map(path => '<li>' + esc(path) + '</li>').join('') + '</ul></section>' : '') + '</section>';
     }
-    return '<h3 tabindex="-1">Repair applied</h3><p>The result is not verified until you rerun the eval.</p><ul>'
+    const suiteRerun = repairApplied?.rerunRecommendation?.alternateActions?.some(action => action.scope === 'suite'
+      && action.suiteId === selectedFailure.suiteId && typeof action.evalRunModelId === 'string' && action.evalRunModelId.length > 0);
+    return '<h3 tabindex="-1">Repair applied</h3><p>Changed files:</p><p>The result is not verified until you rerun the eval.</p><ul>'
       + (repairApplied?.changedFiles || []).map(file => '<li>' + esc(file.path) + ' — ' + esc(file.summary || '') + '</li>').join('') + '</ul>'
-      + '<button class="primary" type="button" data-action="rerun-case">Rerun this case</button><button type="button" data-action="rerun-suite">Rerun all cases</button>' + notice;
+      + '<button class="primary" type="button" data-action="rerun-case">Rerun this case</button>'
+      + (suiteRerun ? '<button type="button" data-action="rerun-suite">Rerun all cases</button>' : '') + notice;
   }
   function renderRepair() {
     const activeAction = document.activeElement?.dataset?.action;
@@ -203,7 +212,7 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       let result;
       if (kind === 'analysis') result = await post('/api/failure-analysis', current);
       else if (kind === 'proposal') {
-        if (!['analysis', 'proposal-error', 'apply-blocked', 'apply-uncertain'].includes(repairStage) || !repairAnalysis) return;
+        if (!['analysis', 'proposal-error', 'apply-blocked'].includes(repairStage) || !repairAnalysis) return;
         const cause = repairAnalysis.likelyCause;
         const direction = ['prompt_issue', 'eval_assertion_issue', 'fixture_input_issue'].includes(cause) ? cause : null;
         if (!direction) { repairMessage = 'A named repair direction is unavailable for this analysis.'; return; }

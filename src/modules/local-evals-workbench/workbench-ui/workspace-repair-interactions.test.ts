@@ -59,7 +59,7 @@ test('proposal review shows exact decision context and sends identity plus expli
   const { api } = harness(async (url, body) => {
     calls.push({ url, body });
     if (url.includes('failure-analysis')) return { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue' } };
-    if (url.endsWith('/apply')) return { status: 'applied', changedFiles: [{ path: 'prompts/agent.md', summary: 'Require owner verification' }], rerunRecommendation: { primaryAction: { scope: 'test_case', suiteId: 'suite', testCaseId: 'case', evalRunModelId: 'model' }, alternateActions: [{ scope: 'suite', suiteId: 'suite', evalRunModelId: 'model' }] } };
+    if (url.endsWith('/apply')) return { status: 'applied', changedFileCount: 1, changedFiles: [{ path: 'prompts/agent.md', summary: 'Require owner verification' }], rerunRecommendation: { primaryAction: { scope: 'test_case', suiteId: 'suite', testCaseId: 'case', evalRunModelId: 'model' }, alternateActions: [{ scope: 'suite', suiteId: 'suite', evalRunModelId: 'model' }] } };
     return { status: 'proposal-ready', proposal };
   });
   await api.requestRepair('analysis');
@@ -190,17 +190,30 @@ test('confirmed block explains the supported reason and removes repeat approval'
 test('lost and malformed apply responses stay uncertain with inspection control and no terminal claim', async () => {
   for (const response of [Error(privateText), undefined, { status: 'blocked', reason: 'missing-approval',
     changedFileCount: 99, changedFiles: [], issue: applyResponse('blocked', 'missing-approval').issue, message: privateText },
-  { status: 'blocked', reason: 'missing-approval', changedFileCount: 0, changedFiles: [], message: privateText }]) {
+  { status: 'blocked', reason: 'missing-approval', changedFileCount: 0, changedFiles: [], message: privateText },
+  { status: 'applied', changedFileCount: 1, changedFiles: [], rerunRecommendation: { primaryAction: { scope: 'test_case' } } },
+  { status: 'applied', changedFileCount: 1, changedFiles: [{ path: 'prompts/agent.md' }],
+    rerunRecommendation: { primaryAction: { scope: 'test_case', suiteId: 'other', testCaseId: 'case', evalRunModelId: 'model' } } }]) {
     const browser = await reachApply(response);
     const markup = browser.api.markup();
     const notice = markup.match(/<section class="model-notice detail-section" data-apply-notice.*?<\/section>/s)?.[0] ?? '';
     assert.equal(browser.api.stage(), 'apply-uncertain');
     assert.match(markup, /Repair outcome not confirmed.*Sibu could not confirm.*View files to inspect/s);
     assert.match(markup, /data-repair-files.*prompts\/agent\.md/s);
-    assert.doesNotMatch(markup, /No project files changed|data-action="approve-repair"|data-action="draft-repair"|data-action="copy-apply-issue"/);
+    assert.doesNotMatch(markup, /No project files changed|Repair applied|data-action="rerun-case"|data-action="approve-repair"|data-action="draft-repair"|data-action="copy-apply-issue"/);
     assert.doesNotMatch(notice, /sk-secret|PRIVATE_|99|prompts\/agent\.md/);
     assert.equal(browser.urls.filter(url => url.endsWith('/apply')).length, 1);
   }
+});
+
+test('uncertain apply cannot draft again before named-file inspection', async () => {
+  const browser = await reachApply(Error(privateText));
+  await browser.api.requestRepair('proposal');
+  await browser.api.requestRepair('apply');
+  assert.equal(browser.api.stage(), 'apply-uncertain');
+  assert.equal(browser.urls.filter(url => url.endsWith('/apply')).length, 1);
+  assert.equal(browser.urls.filter(url => url === '/api/repair-proposals').length, 1);
+  assert.match(browser.api.markup(), /Files to inspect.*prompts\/agent\.md/s);
 });
 
 test('file inspection focuses the existing named-file area, not a new panel', async () => {
@@ -233,7 +246,7 @@ test('case and suite rerun actions only prefill setup; neither starts a run', as
   const { api, context } = harness(async url => {
     urls.push(url);
     if (url.includes('failure-analysis')) return { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue' } };
-    if (url.endsWith('/apply')) return { status: 'applied', changedFiles: [{ path: 'prompts/agent.md', summary: 'Require owner verification' }],
+    if (url.endsWith('/apply')) return { status: 'applied', changedFileCount: 1, changedFiles: [{ path: 'prompts/agent.md', summary: 'Require owner verification' }],
       rerunRecommendation: { primaryAction: { scope: 'test_case', suiteId: 'suite', testCaseId: 'case', evalRunModelId: 'model' },
         alternateActions: [{ scope: 'suite', suiteId: 'suite', evalRunModelId: 'model' }] } };
     return { status: 'proposal-ready', proposal };
@@ -250,10 +263,21 @@ test('case and suite rerun actions only prefill setup; neither starts a run', as
   assert.equal(urls.filter(url => url.includes('/eval-runs/')).length, 0);
 });
 
+test('applied outcome offers only rerun actions supported by the response', async () => {
+  const browser = await reachApply({ status: 'applied', changedFileCount: 1,
+    changedFiles: [{ path: 'prompts/agent.md', summary: 'Require owner verification' }],
+    rerunRecommendation: { primaryAction: { scope: 'test_case', suiteId: 'suite', testCaseId: 'case', evalRunModelId: 'model' }, alternateActions: [] } });
+  const markup = browser.api.markup();
+  assert.equal(browser.api.stage(), 'applied');
+  assert.match(markup, /Changed files:.*prompts\/agent\.md.*Rerun this case/s);
+  assert.doesNotMatch(markup, /Rerun all cases|Approve and apply|data-action="draft-repair"/);
+  assert.equal(browser.urls.filter(url => url.endsWith('/apply')).length, 1);
+});
+
 test('cancelled or superseded rerun does not reopen setup after runtime loads', async () => {
   const { api, context } = harness(async url => {
     if (url.includes('failure-analysis')) return { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue' } };
-    if (url.endsWith('/apply')) return { status: 'applied', changedFiles: [{ path: 'prompts/agent.md' }],
+    if (url.endsWith('/apply')) return { status: 'applied', changedFileCount: 1, changedFiles: [{ path: 'prompts/agent.md' }],
       rerunRecommendation: { primaryAction: { scope: 'test_case', suiteId: 'suite', testCaseId: 'case', evalRunModelId: 'model' } } };
     return { status: 'proposal-ready', proposal };
   });
