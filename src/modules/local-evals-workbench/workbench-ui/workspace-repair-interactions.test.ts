@@ -36,7 +36,8 @@ const privateText = 'sk-secret PRIVATE_FILE_CONTENT PRIVATE_PROVIDER_BODY PRIVAT
 const proposalIssue = (category: string, outcome: string) => ({ stage: 'proposal', outcome, category, reference,
   title: privateText, explanation: privateText, nextStep: privateText });
 const analysis = { status: 'analysis-ready', analysisId: 'analysis', analysis: { likelyCause: 'prompt_issue',
-  exactFailureExplanation: 'Selected check failed', evidenceSummary: 'Retained selected evidence', uncertainty: 'Low' } };
+  exactFailureExplanation: 'Selected check failed', suggestedFix: 'Update the target prompt rule.',
+  evidenceSummary: 'Retained selected evidence', uncertainty: 'Low' } };
 const draftResponse = (status: string, category: string, outcome: string) => ({ status, reason: category,
   issue: proposalIssue(category, outcome), message: privateText, evidence: { output: privateText }, proposal: { changeSummary: privateText } });
 const applyResponse = (status: 'blocked' | 'error', category: string) => ({ status, reason: category,
@@ -97,7 +98,7 @@ test('rejecting a proposal keeps selected evidence and never applies a project c
   await api.requestRepair('analysis'); await api.requestRepair('proposal');
   click('reject-repair');
   assert.equal(api.stage(), 'analysis');
-  assert.match(api.markup(), /Retained selected evidence.*Proposal set aside/s);
+  assert.match(api.markup(), /Update the target prompt rule.*Proposal set aside/s);
   assert.doesNotMatch(api.markup(), /Approve and apply|Show full change/);
   await api.requestRepair('apply');
   assert.equal(urls.filter(url => url.endsWith('/apply')).length, 0);
@@ -124,7 +125,8 @@ test('unsuccessful and malformed drafts preserve evidence without stale approval
     await api.requestRepair('analysis'); await api.requestRepair('proposal');
     const markup = api.markup();
     assert.equal(api.stage(), 'proposal-error');
-    assert.match(markup, /Retained selected evidence/);
+    assert.match(markup, /Update the target prompt rule/);
+    assert.doesNotMatch(markup, /Retained selected evidence/);
     assert.match(markup, heading);
     assert.match(markup, next);
     assert.doesNotMatch(markup, /data-action="approve-repair"|PRIVATE_|sk-secret|<img/);
@@ -351,7 +353,7 @@ test('all proposal categories show specific safe guidance beside retained analys
     const { api, host } = harness(async url => { urls.push(url); return url.includes('failure-analysis') ? analysis : draftResponse(status!, category!, outcome!); });
     await api.requestRepair('analysis'); await api.requestRepair('proposal');
     assert.equal(api.stage(), 'proposal-error');
-    assert.match(host.innerHTML, /Analysis · failed.*Selected check failed.*Retained selected evidence.*data-proposal-notice/s);
+    assert.match(host.innerHTML, /Analysis · failed.*Selected check failed.*Update the target prompt rule.*data-proposal-notice/s);
     assert.match(host.innerHTML, new RegExp(wording!));
     assert.match(host.innerHTML, /Stage: proposal.*Category: .*Reference:/s);
     assert.doesNotMatch(host.innerHTML, /Approve and apply|data-action="approve-repair"|PRIVATE_|sk-secret/);

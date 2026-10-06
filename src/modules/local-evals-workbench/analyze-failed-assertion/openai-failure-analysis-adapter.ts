@@ -104,10 +104,11 @@ export function parseFailureAnalysis(outputText: string): FailureAnalysis {
   if (!isRecord(payload)) throw new FailureAnalysisProviderError('invalid-response');
   const exactFailureExplanation = readString(payload.exactFailureExplanation);
   const likelyCause = readLikelyCause(payload.likelyCause);
+  const suggestedFix = readString(payload.suggestedFix, 400);
   const evidenceSummary = readString(payload.evidenceSummary);
   const uncertainty = readString(payload.uncertainty);
-  if (!exactFailureExplanation || !likelyCause || !evidenceSummary || !uncertainty) throw new FailureAnalysisProviderError('invalid-response');
-  return { exactFailureExplanation, likelyCause, evidenceSummary, uncertainty };
+  if (!exactFailureExplanation || !likelyCause || !suggestedFix || !evidenceSummary || !uncertainty) throw new FailureAnalysisProviderError('invalid-response');
+  return { exactFailureExplanation, likelyCause, suggestedFix, evidenceSummary, uncertainty };
 }
 
 function extractOutputText(payload: unknown): string {
@@ -120,8 +121,8 @@ function extractOutputText(payload: unknown): string {
   throw new Error('OpenAI response did not include output text.');
 }
 
-function readString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim().length > 0 && value.length <= 1_200 ? value.trim() : null;
+function readString(value: unknown, maxLength = 1_200): string | null {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= maxLength ? value.trim() : null;
 }
 
 function readLikelyCause(value: unknown): FailureLikelyCause | null {

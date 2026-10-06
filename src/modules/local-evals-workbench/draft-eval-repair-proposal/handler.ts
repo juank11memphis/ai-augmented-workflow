@@ -66,7 +66,9 @@ export async function draftEvalRepairProposal(command: DraftEvalRepairProposalCo
     try {
       const analysisContext = await dependencies.contextReader?.read(command).catch(() => undefined);
       draft = await dependencies.llm.draftProposal({ model: config.assistanceModelLabel, evidence, repairDirection: command.repairDirection,
-        priorAnalysis: { summary: priorAnalysis.evidenceSummary, likelyCause: priorAnalysis.likelyCause }, projectFiles: projectFiles.files,
+        priorAnalysis: { summary: priorAnalysis.suggestedFix
+          ? `${priorAnalysis.evidenceSummary} Suggested fix: ${priorAnalysis.suggestedFix}` : priorAnalysis.evidenceSummary,
+        likelyCause: priorAnalysis.likelyCause }, projectFiles: projectFiles.files,
         analysisContext });
     } catch (error) {
       if (error instanceof UnsafeRepairProposalTargetError) {

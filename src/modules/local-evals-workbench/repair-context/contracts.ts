@@ -12,7 +12,8 @@ export type FailedAssertionEvidence = {
 export type SafeEvidenceDiagnostic = { readonly code: string; readonly severity: 'info' | 'warning' | 'error'; readonly message: string; readonly location?: string };
 export type SafeEvidenceArtifact = { readonly id: string; readonly label: string; readonly kind: 'output-preview' | 'diagnostic' | 'metric' | 'file' | 'trace'; readonly preview?: string; readonly reference?: string };
 export type FailureLikelyCause = 'prompt_issue' | 'eval_assertion_issue' | 'fixture_input_issue' | 'model_nondeterminism' | 'unclear_needs_human_judgment';
-export type FailureAnalysis = { readonly exactFailureExplanation: string; readonly likelyCause: FailureLikelyCause; readonly evidenceSummary: string; readonly uncertainty: string };
+export type FailureAnalysis = { readonly exactFailureExplanation: string; readonly likelyCause: FailureLikelyCause;
+  readonly suggestedFix?: string; readonly evidenceSummary: string; readonly uncertainty: string };
 export type ProposedRepairChange = { readonly kind: 'unified-diff' | 'replacement' | 'instructions'; readonly representation: string };
 export type RepairProposalApprovalState = 'pending';
 export type RepairProposalSourceFailureScope = {

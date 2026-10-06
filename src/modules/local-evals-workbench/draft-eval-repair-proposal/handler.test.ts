@@ -27,7 +27,7 @@ function dependencies(options: { selected?: SelectedFailureRead; targetFiles?: r
     assistanceConfig: { getConfig: () => ({ hasOpenAiApiKey: !options.missingKey, assistanceModelLabel: 'assist', apiKey: 'secret' }) },
     analysisStore: { get: () => options.analysis === null ? null : ({ exactFailureExplanation: 'Failed',
       likelyCause: options.analysis === 'unclear' ? 'unclear_needs_human_judgment' : 'prompt_issue',
-      evidenceSummary: 'Selected evidence', uncertainty: 'Low' }) },
+      suggestedFix: 'Update the selected rule only if the source policy allows it.', evidenceSummary: 'Selected evidence', uncertainty: 'Low' }) },
     context: { namedFiles: () => ({ status: 'ready', paths: ['prompts/agent.md'] }) },
     projectFileReader: {
       readProjectFilePreviews: async () => ({ status: 'ok', files: [{ path: 'prompts/agent.md', preview: 'before', digest: 'first' }] }),
@@ -117,6 +117,7 @@ describe('draftEvalRepairProposal', () => {
     assert.equal(result.status, 'proposal-ready');
     assert.match(JSON.stringify(calls[1]), /unclear_needs_human_judgment/);
     assert.match(JSON.stringify(calls[1]), /Sunday hours\?/);
+    assert.match(JSON.stringify(calls[1]), /Suggested fix: Update the selected rule/);
     const unsupported = await draftEvalRepairProposal({ ...command, repairDirection: { type: 'regression_case' } },
       dependencies({ analysis: 'unclear' }));
     assert.equal(unsupported.status, 'blocked');
@@ -149,7 +150,7 @@ describe('draftEvalRepairProposal', () => {
       assert.equal(result.status === 'proposal-rejected' || result.status === 'error' ? result.reason : '', scenario.reason);
       assert.equal(result.status === 'proposal-rejected' || result.status === 'error' ? result.evidence : null, selected.status === 'ready' ? selected.value.evidence : null);
       assert.equal(calls.length, scenario.expectedCalls, 'provider input but no proposal save');
-      assert.deepEqual((calls[1] as { priorAnalysis: unknown }).priorAnalysis, { summary: 'Selected evidence', likelyCause: 'prompt_issue' });
+      assert.deepEqual((calls[1] as { priorAnalysis: unknown }).priorAnalysis, { summary: 'Selected evidence Suggested fix: Update the selected rule only if the source policy allows it.', likelyCause: 'prompt_issue' });
       assert.equal(events.at(-1)?.reason, scenario.reason);
       assert.equal(events.at(-1)?.reference, '123e4567-e89b-42d3-a456-426614174000');
       assert.doesNotMatch(JSON.stringify({ result, events }), /SYNTHETIC_SECRET/);

@@ -49,27 +49,42 @@ test('unavailable credentials and provider errors keep explicit recovery instead
 
 test('ready analysis separates grounded fields, escapes private evidence, and offers a draft only for a supported direction', async () => {
   const { api, host, resultRegion } = harness(async () => ({ status: 'analysis-ready', analysisId: 'analysis', analysis: {
-    likelyCause: 'prompt_issue', exactFailureExplanation: '<selected explanation>', evidenceSummary: '<private excerpt>', uncertainty: 'May be nondeterministic',
+    likelyCause: 'prompt_issue', exactFailureExplanation: '<selected explanation>', suggestedFix: 'Update the target prompt rule.',
+    evidenceSummary: '<private excerpt>', uncertainty: 'May be nondeterministic',
   } }));
   await api.requestRepair('analysis');
   assert.match(host.innerHTML, /data-analysis-detail aria-label="Analysis for selected failed check"/);
-  assert.match(host.innerHTML, /Analysis · a.*What happened.*&lt;selected explanation&gt;.*Likely cause.*prompt issue.*Evidence.*&lt;private excerpt&gt;.*Uncertainty.*May be nondeterministic.*Draft repair/s);
-  assert.doesNotMatch(host.innerHTML, /<selected explanation>|<private excerpt>|data-analysis-notice/);
+  assert.match(host.innerHTML, /Analysis · a.*What happened.*<ul><li>&lt;selected explanation&gt;<\/li><\/ul>.*Likely cause.*prompt issue.*Suggested fix.*Update the target prompt rule.*Draft repair/s);
+  assert.doesNotMatch(host.innerHTML, /<selected explanation>|private excerpt|May be nondeterministic|<h4>Evidence|<h4>Uncertainty|data-analysis-notice/);
   assert.equal(resultRegion.innerHTML, '<h2>Results</h2><h2>History</h2><p>FAILED ASSERTION / PRIVATE OUTPUT</p>');
 });
 
 test('uncertain analysis offers explicit repair directions; unsupported causes do not draft', async () => {
   for (const cause of ['model_nondeterminism', 'unclear_needs_human_judgment', 'unexpected_direction']) {
     const { api, host, resultRegion } = harness(async () => ({ status: 'analysis-ready', analysisId: 'analysis', analysis: {
-      likelyCause: cause, exactFailureExplanation: 'Selected failure', evidenceSummary: 'Selected evidence', uncertainty: 'Direction is not established',
+      likelyCause: cause, exactFailureExplanation: 'Selected failure', suggestedFix: 'Review the expected disposition before changing files.',
+      evidenceSummary: 'Selected evidence', uncertainty: 'Direction is not established',
     } }));
     await api.requestRepair('analysis');
-    assert.match(host.innerHTML, /What happened.*Selected failure.*Evidence.*Selected evidence.*Uncertainty.*Direction is not established/s);
+    assert.match(host.innerHTML, /What happened.*Selected failure.*Likely cause.*Suggested fix.*Review the expected disposition/s);
+    assert.doesNotMatch(host.innerHTML, /Selected evidence|Direction is not established/);
     if (cause === 'unclear_needs_human_judgment') assert.match(host.innerHTML, /Choose a repair direction to investigate.*Target behavior.*Eval assertion.*Fixture input/s);
     else assert.match(host.innerHTML, /Review this uncertainty before choosing a repair target/);
     assert.doesNotMatch(host.innerHTML, /data-action="draft-repair"/);
     assert.match(resultRegion.innerHTML, /FAILED ASSERTION \/ PRIVATE OUTPUT/);
   }
+});
+
+test('long model explanations are bounded to one short bullet in the view', async () => {
+  const { api } = harness(async () => ({ status: 'analysis-ready', analysisId: 'analysis', analysis: {
+    likelyCause: 'eval_assertion_issue', exactFailureExplanation: 'Mismatch '.repeat(60),
+    suggestedFix: 'Allow answer when it uses approved knowledge.', evidenceSummary: 'Private detail', uncertainty: 'Private uncertainty',
+  } }));
+  await api.requestRepair('analysis');
+  const markup = api.markup();
+  const bullet = markup.match(/<h4>What happened<\/h4><ul><li>(.*?)<\/li>/)?.[1] ?? '';
+  assert.ok(bullet.length <= 141);
+  assert.match(markup, /eval assertion issue.*Suggested fix.*Allow answer when it uses approved knowledge/s);
 });
 
 test('selected current context is disclosed and an uncertain repair needs an explicit user choice', async () => {

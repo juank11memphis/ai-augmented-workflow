@@ -11,11 +11,12 @@ const privateMarkers = ['synthetic-key', 'synthetic-prompt', 'synthetic-output',
 describe('OpenAiFailureAnalysisAdapter', () => {
   it('parses valid fake LLM analysis', async () => {
     const calls: { model: string; input: string; apiKey: string }[] = [];
-    const adapter = new OpenAiFailureAnalysisAdapter('secret-key', fakeClient(calls, JSON.stringify({ exactFailureExplanation: 'Output skipped the stop rule.', likelyCause: 'prompt_issue', evidenceSummary: 'The active output continued.', uncertainty: 'Low.' })));
+    const adapter = new OpenAiFailureAnalysisAdapter('secret-key', fakeClient(calls, JSON.stringify({ exactFailureExplanation: 'Output skipped the stop rule.', likelyCause: 'prompt_issue', suggestedFix: 'Add an explicit stop rule to the target prompt.', evidenceSummary: 'The active output continued.', uncertainty: 'Low.' })));
     const result = await adapter.analyzeFailure({ model: 'analysis-model', evidence: evidence() });
 
     assert.equal(result.likelyCause, 'prompt_issue');
     assert.equal(result.exactFailureExplanation, 'Output skipped the stop rule.');
+    assert.equal(result.suggestedFix, 'Add an explicit stop rule to the target prompt.');
     assert.equal(calls[0]?.model, 'analysis-model');
     assert.match(calls[0]?.input ?? '', /bad active output/);
     assert.equal(calls[0]?.apiKey, 'secret-key');
@@ -23,7 +24,7 @@ describe('OpenAiFailureAnalysisAdapter', () => {
   });
 
   it('supports uncertain likely cause', async () => {
-    const adapter = new OpenAiFailureAnalysisAdapter('secret', fakeClient([], JSON.stringify({ exactFailureExplanation: 'The expectation is ambiguous.', likelyCause: 'unclear_needs_human_judgment', evidenceSummary: 'Evidence conflicts.', uncertainty: 'High uncertainty.' })));
+    const adapter = new OpenAiFailureAnalysisAdapter('secret', fakeClient([], JSON.stringify({ exactFailureExplanation: 'The expectation is ambiguous.', likelyCause: 'unclear_needs_human_judgment', suggestedFix: 'Decide whether answering from approved facts is allowed for this case.', evidenceSummary: 'Evidence conflicts.', uncertainty: 'High uncertainty.' })));
     const result = await adapter.analyzeFailure({ model: 'analysis-model', evidence: evidence() });
     assert.equal(result.likelyCause, 'unclear_needs_human_judgment');
     assert.match(result.uncertainty, /High/);
@@ -32,7 +33,7 @@ describe('OpenAiFailureAnalysisAdapter', () => {
     const calls: { model: string; input: string; apiKey: string }[] = [];
     const adapter = new OpenAiFailureAnalysisAdapter('provider-auth-only', fakeClient(calls, JSON.stringify({
       exactFailureExplanation: 'Selected value OPENAI_API_KEY=synthetic', likelyCause: 'unclear_needs_human_judgment',
-      evidenceSummary: 'Bearer synthetic-trace', uncertainty: 'The evidence may be incomplete.',
+      suggestedFix: 'Decide which source defines the expected response.', evidenceSummary: 'Bearer synthetic-trace', uncertainty: 'The evidence may be incomplete.',
     })));
     const result = await adapter.analyzeFailure({ model: 'analysis-model', evidence: {
       ...evidence(), actualOutputPreview: 'OPENAI_API_KEY=synthetic',
@@ -60,7 +61,9 @@ describe('OpenAiFailureAnalysisAdapter', () => {
   it('classifies malformed, invalid-shape, and oversized analysis output as invalid response', async () => {
     for (const output of ['synthetic-output not-json', '', JSON.stringify({ likelyCause: 'prompt_issue' }),
       JSON.stringify({ exactFailureExplanation: 'Failure', likelyCause: 'invented', evidenceSummary: 'Evidence', uncertainty: 'Low' }),
-      JSON.stringify({ exactFailureExplanation: 'X'.repeat(1_201), likelyCause: 'prompt_issue', evidenceSummary: 'Evidence', uncertainty: 'Low' }),
+      JSON.stringify({ exactFailureExplanation: 'Failure', likelyCause: 'prompt_issue', evidenceSummary: 'Evidence', uncertainty: 'Low' }),
+      JSON.stringify({ exactFailureExplanation: 'X'.repeat(1_201), likelyCause: 'prompt_issue', suggestedFix: 'Fix prompt.', evidenceSummary: 'Evidence', uncertainty: 'Low' }),
+      JSON.stringify({ exactFailureExplanation: 'Failure', likelyCause: 'prompt_issue', suggestedFix: 'X'.repeat(401), evidenceSummary: 'Evidence', uncertainty: 'Low' }),
       'x'.repeat(8_001)]) {
       await assertProviderFailure(() => new OpenAiFailureAnalysisAdapter('synthetic-key', fakeClient([], output))
         .analyzeFailure({ model: 'analysis-model', evidence: evidence() }), 'invalid-response');

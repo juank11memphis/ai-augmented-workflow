@@ -190,7 +190,9 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
     if (analysisState.status === 'loading' && analysisState.scopeKey === scopeKey) return '<section class="detail-section conversation-placeholder" aria-live="polite"><h3>Conversation</h3><p>Analyzing this failure...</p><button type="button" data-control="analyze-failure" disabled aria-disabled="true">Analyzing...</button></section>';
     if (analysisState.status === 'ready' && analysisState.scopeKey === scopeKey) {
       const analysis = analysisState.result.analysis;
-      return '<section class="detail-section conversation-placeholder analysis-result" aria-live="polite"><h3>Analysis</h3><p><strong>What failed</strong></p><p>' + h(analysis.exactFailureExplanation) + '</p><p><strong>Likely cause</strong></p><p class="analysis-result__cause">' + h(causeLabel(analysis.likelyCause)) + '</p><p><strong>Evidence</strong></p><p>' + h(analysis.evidenceSummary) + '</p><p><strong>Uncertainty</strong></p><p>' + h(analysis.uncertainty) + '</p><button type="button" data-control="analyze-failure">Analyze again</button></section>';
+      const summary = String(analysis.exactFailureExplanation || 'The selected check failed.').replace(/\s+/g, ' ').trim();
+      const short = summary.length <= 140 ? summary : summary.slice(0, 139).trimEnd() + '…';
+      return '<section class="detail-section conversation-placeholder analysis-result" aria-live="polite"><h3>Analysis</h3><p><strong>What happened</strong></p><ul><li>' + h(short) + '</li></ul><p><strong>Likely cause</strong></p><p class="analysis-result__cause">' + h(causeLabel(analysis.likelyCause)) + '</p><p><strong>Suggested fix</strong></p><p>' + h(analysis.suggestedFix || 'Draft a repair to see a concrete change.') + '</p><button type="button" data-control="analyze-failure">Analyze again</button></section>';
     }
     if (analysisState.status === 'unavailable' && analysisState.scopeKey === scopeKey) {
       const guidance = (analysisState.result.setupGuidance || []).map((item) => '<li>' + h(item) + '</li>').join('');

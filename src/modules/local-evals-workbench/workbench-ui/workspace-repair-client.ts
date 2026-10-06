@@ -150,10 +150,9 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
         + esc((repairContextSummary.missing || []).join(', ') || 'none') + '</p></section>' : '';
       const analysisHtml = '<section class="detail-section" data-analysis-detail aria-label="Analysis for selected failed check">'
         + '<h3 tabindex="-1">Analysis · ' + esc(selectedFailure.assertionId) + '</h3>'
-        + '<h4>What happened</h4><p>' + esc(analysis?.exactFailureExplanation || '') + '</p>'
+        + '<h4>What happened</h4><ul><li>' + esc(shortSummary(analysis?.exactFailureExplanation)) + '</li></ul>'
         + '<h4>Likely cause</h4><p>' + esc(cause.replaceAll('_', ' ')) + '</p>'
-        + '<h4>Evidence</h4><p>' + esc(analysis?.evidenceSummary || '') + '</p>'
-        + '<h4>Uncertainty</h4><p>' + esc(analysis?.uncertainty || '') + '</p></section>' + context;
+        + '<h4>Suggested fix</h4><p>' + esc(analysis?.suggestedFix || 'Draft a repair to see a concrete change.') + '</p></section>' + context;
       if (repairStage === 'proposal-error') {
         const [title, explanation, nextStep, action] = proposalIssueCopy;
         return analysisHtml + '<section class="model-notice detail-section" data-proposal-notice aria-label="Repair Proposal"><h3 tabindex="-1" data-proposal-heading>' + esc(title) + '</h3><p>' + esc(explanation + ' ' + nextStep) + '</p>'
@@ -190,6 +189,10 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
       + (repairApplied?.changedFiles || []).map(file => '<li>' + esc(file.path) + ' — ' + esc(file.summary || '') + '</li>').join('') + '</ul>'
       + '<button class="primary" type="button" data-action="rerun-case">Rerun this case</button>'
       + (suiteRerun ? '<button type="button" data-action="rerun-suite">Rerun all cases</button>' : '') + notice;
+  }
+  function shortSummary(value) {
+    const summary = String(value || 'The selected check failed.').replace(/\s+/g, ' ').trim();
+    return summary.length <= 140 ? summary : summary.slice(0, 139).trimEnd() + '…';
   }
   function renderRepair() {
     const activeAction = document.activeElement?.dataset?.action;
