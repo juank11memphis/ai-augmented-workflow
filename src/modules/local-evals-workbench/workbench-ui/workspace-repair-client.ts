@@ -127,8 +127,13 @@ export const WORKSPACE_REPAIR_CLIENT = String.raw`
     if (repairStage === 'analysis' || repairStage === 'proposal-error') {
       const analysis = repairAnalysis;
       const cause = analysis?.likelyCause || 'unclear_needs_human_judgment';
-      const canDraft = cause !== 'model_nondeterminism' && cause !== 'unclear_needs_human_judgment';
-      const analysisHtml = '<h3 tabindex="-1">AI analysis</h3><p>' + esc(analysis?.exactFailureExplanation || '') + '</p><p>Likely cause: ' + esc(cause.replaceAll('_', ' ')) + '</p><p>Evidence: ' + esc(analysis?.evidenceSummary || '') + '</p><p>Uncertainty: ' + esc(analysis?.uncertainty || '') + '</p>';
+      const canDraft = ['prompt_issue', 'eval_assertion_issue', 'fixture_input_issue'].includes(cause);
+      const analysisHtml = '<section class="detail-section" data-analysis-detail aria-label="Analysis for selected failed check">'
+        + '<h3 tabindex="-1">Analysis · ' + esc(selectedFailure.assertionId) + '</h3>'
+        + '<h4>What happened</h4><p>' + esc(analysis?.exactFailureExplanation || '') + '</p>'
+        + '<h4>Likely cause</h4><p>' + esc(cause.replaceAll('_', ' ')) + '</p>'
+        + '<h4>Evidence</h4><p>' + esc(analysis?.evidenceSummary || '') + '</p>'
+        + '<h4>Uncertainty</h4><p>' + esc(analysis?.uncertainty || '') + '</p></section>';
       if (repairStage === 'proposal-error') {
         const [title, explanation, nextStep, action] = proposalIssueCopy;
         return analysisHtml + '<section class="model-notice detail-section" data-proposal-notice aria-label="Repair Proposal"><h3 tabindex="-1" data-proposal-heading>' + esc(title) + '</h3><p>' + esc(explanation + ' ' + nextStep) + '</p>'
