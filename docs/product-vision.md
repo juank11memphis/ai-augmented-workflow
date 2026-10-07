@@ -14,7 +14,7 @@ Sibu is not here to replace the engineer. It is here to amplify the engineer.
 
 Sibu is meant to feel wise, grounded, and local without becoming mystical or grandiose.
 
-The name fits the product because the product is not an AI autopilot. It is a guide. It helps engineers work with better judgment, clearer structure, and stronger respect for their own craft. Sibu should feel like a steady source of orientation: something that helps a team move faster without losing itself.
+The name fits the product because Sibu is a guide, not a substitute for engineering judgment. It helps engineers set direction and constraints, then lets AI carry well-defined work forward without repeated routine interruptions. Sibu should feel like a steady source of orientation: something that helps a team move faster without losing itself.
 
 That matches the product's core promise. Sibu does not win by sounding futuristic or all-powerful. It wins by helping developers bring order to fast-moving AI work, protect quality, and keep human ownership intact.
 
@@ -31,7 +31,7 @@ Sibu should feel human, confident, and rooted. It should sound like a tool that 
 
 A developer should be able to run `sibu init` in a repo with no AI workflow, start working immediately, and feel guided into a better way of collaborating with AI.
 
-The ideal outcome is simple: a developer finishes a real user story in a couple of hours and feels proud of both the speed and the quality of the work.
+The ideal outcome is simple: a developer can define a feature clearly, let its small, checked stories progress through an epic without routine review pauses, and review the complete result before accepting it. They feel proud of both the speed and the quality of the work.
 
 Sibu succeeds when AI stops feeling like a pile of disconnected experiments and starts feeling like a reliable development loop.
 
@@ -86,11 +86,11 @@ It should push developers toward:
 
 - small chunks of work
 - explicit plans before code changes
-- human review and confirmation
+- human direction up front and review of the completed epic
 - clean, readable implementations
 - focused skills for focused tasks
 - workflow maintenance instead of stale setup files
-- responsible use of AI as an amplifier, not an autopilot
+- bounded unattended progression with clear stops for material decisions and failures
 
 Sibu should be flexible everywhere else.
 
@@ -102,19 +102,19 @@ The framework should provide strong defaults, not a cage.
 
 One of Sibu's most important beliefs is that AI works best when developers use it on small, well-shaped chunks of work.
 
-Sibu should not encourage users to hand a huge vague goal to an agent and disappear. That is how teams get impressive demos, fragile code, and low trust.
+Sibu should not encourage users to hand a huge vague goal to an agent and disappear. That is how teams get impressive demos, fragile code, and low trust. Unattended progress is earned by defining the feature, dividing it into small stories and checked tasks, and making the resulting work visible for review.
 
 Instead, Sibu should make the better behavior feel natural:
 
 1. define a focused task
 2. inspect the repo context
 3. propose a plan
-4. confirm scope
+4. establish the scope and checks
 5. make the change
 6. validate it
-7. sync or update workflow files when needed
+7. record the checked outcome and advance to the next small piece of work
 
-The product should repeatedly guide users back to this loop. Move fast, but keep the work reviewable. Use AI aggressively, but keep the engineer in control.
+The product should repeatedly guide users back to this loop, then present the completed epic for human review with a traceable account of its stories and verification. Routine story transitions should not interrupt the engineer. Material ambiguity, failed checks, unsafe integration, or consequential decisions should. Move fast, but keep the work reviewable and the engineer in control.
 
 ## User Control
 
@@ -135,7 +135,7 @@ When local edits exist, Sibu should protect them. When updates are available, Si
 
 ## Trust and Quality
 
-Sibu must never remove user agency in the name of convenience.
+Sibu must never remove user agency in the name of convenience. Its default planned-feature workflow may progress through an epic without routine human review after each story, but it must stop rather than guess when a material decision or blocker arises. The engineer reviews the completed epic before accepting it.
 
 It should avoid destructive actions unless the user explicitly asks for them or confirms the plan. It should not silently overwrite customized workflow files. It should not hide template updates behind vague messages. It should not imply that AI-generated work is trustworthy just because it completed.
 
@@ -145,6 +145,7 @@ Trust comes from making the loop visible:
 - explain the change
 - preserve local edits
 - validate when possible
+- preserve a traceable account of completed stories, integration, and verification for the final epic review
 - make drift understandable
 - keep the human responsible for direction and judgment
 
@@ -173,16 +174,14 @@ Sibu should not become an AI IDE.
 
 It should not try to become an AI code editor, coding copilot, or any other full development environment. Sibu's job is not to own the editor, the model, the agent, or the entire development surface.
 
-Sibu should also reject the fantasy that high-quality software comes from telling AI, “go build this big thing while I get coffee.”
+Sibu should also reject the fantasy that high-quality software comes from giving AI a vague goal and trusting an unexamined result. It can advance a well-defined epic unattended, but it must not hide failures, improvise consequential decisions, or bypass the engineer's final review.
 
-That promise is seductive and wrong. Sibu should push against it.
-
-Sibu should empower users to use AI to amplify their own judgment, speed, and craft. It should not sell replacement as the product.
+Sibu should empower users to use AI to amplify their own judgment, speed, and craft. It should sell fewer routine interruptions, not replacement of the engineer.
 
 ## Success Signal
 
 Sibu is working when a new user can enter a repo with no AI environment, run `sibu init`, and quickly understand how to work with the framework.
 
-They start a real task. Sibu guides them into small, responsible collaboration with AI. They move faster than they expected. They finish a user story in a couple of hours. The code is clean. The workflow makes sense. They feel proud.
+They define a real feature and its boundaries. Sibu guides the work into small, checked stories, progresses through the epic without routine review pauses, and presents a coherent, traceable result for human review. The code is clean. The workflow makes sense. They feel proud.
 
 That feeling is the signal: velocity without shame, speed without slop, AI without surrendering ownership.

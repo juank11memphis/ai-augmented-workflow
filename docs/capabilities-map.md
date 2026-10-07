@@ -65,18 +65,21 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Ground feature designs in shared architecture**: use each feature's BRD, the project SAD, selected architecture guidance, and required UX to produce an SDD with requirement traceability and existing module ownership.
 - **Explain feature behavior visually**: include a main-flow Mermaid sequence diagram in each SDD, allowing a justified alternative for changes without meaningful interaction flow.
 - **Route architectural changes upstream**: pause SDD work that changes module boundaries or system-wide decisions and direct the user to update the SAD first; keep architecture-compatible details in the SDD.
-- **Keep AI work reviewable**: guide work into small, explicit, validated chunks that preserve engineer judgment and accountability.
+- **Keep AI work reviewable**: guide work into small, explicit, validated chunks whose outcomes remain traceable for final Epic review.
 - **Plan stories into outcome milestones and tasks**: turn one deployable story into at least one outcome-grouped milestone and bounded, ordered tasks without a task-count quota.
 - **Define executable task checks before execution**: give each task its own objective pass/fail check and distilled context; split or clarify uncheckable tasks rather than delegating vague work.
 - **Challenge plan complexity early**: obtain independent architecture review of the exact plan version, emphasizing over-engineering and premature optimization as well as architecture fit, scope, and check quality; do not send code to the architecture reviewer.
-- **Present plan findings plainly**: explain reviewer findings, proposed fixes, and unresolved risks briefly in language a human can readily understand.
-- **Gate execution on exact-plan review**: automatically accept a complete review with no findings or unresolved risks and start execution; require a human decision for findings or risks, and block missing or stale reviews.
-- **Execute checked tasks on a story branch**: run one bounded task per fresh-context executor iteration, commit only after its prescribed check passes, and retain concise progress history.
+- **Resolve plan findings before execution**: revise actionable reviewer findings, obtain fresh review of every changed plan, and explain unresolved material decisions or risks plainly to the human.
+- **Gate execution on exact-plan review**: automatically accept a complete review with no findings or unresolved risks and start execution; stop for unresolved material decisions, and block missing or stale reviews.
+- **Prepare an Epic integration branch**: create one branch for the Epic before its Stories begin and preserve it as the integration base for their work.
+- **Execute checked tasks on a Story branch**: branch the active Story from the current Epic branch, run one bounded task per fresh-context executor iteration, commit only after its prescribed check passes, and retain concise progress history.
 - **Stop on executor blockers**: escalate ambiguity, missing checks, repeated failures, undeclared flags, or material scope changes instead of permitting executor improvisation.
 - **Advance through checked milestones**: record each milestone's verified outcome and advance to the next without routine human approval; stop for ambiguity, material decisions, failed checks, or other blockers.
-- **Open a plain-language story PR**: create a PR at the final milestone with a clear summary of changes, user value, and verification; use its review as both final milestone and story review.
+- **Integrate verified Stories sequentially**: after the active Story's checks and evidence pass, open a clear Story PR and squash-merge it into the Epic branch without routine human review; start the next planned Story only from the updated Epic branch.
+- **Stop unsafe integration**: pause rather than merge or advance when Story checks, required evidence, or integration safety are unresolved.
+- **Present a consolidated Epic PR**: after all planned Stories are integrated and Epic-level verification passes, open one PR for human review that links every merged Story PR and condenses their work, value, checks, blockers, retries, and recoveries.
 - **Surface material review choices**: present conflicting sources or recommendations and consequential product, architecture, dependency, data, security, privacy, migration, or scope decisions to the human rather than resolving them autonomously.
-- **Keep deployment outside the workflow**: coordinate reviewed story delivery through the PR without handling production deployment.
+- **Keep deployment outside the workflow**: coordinate reviewed Epic delivery through the PR without handling production deployment.
 
 #### Local Evals Workbench
 
@@ -178,10 +181,11 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
 - **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
 - **Plan architecture review** depends on one complete story plan, project SAD, feature SDD, selected architecture guidance, and task-level objective checks; it precedes any unattended execution.
-- **Conditional plan acceptance** depends on a complete review of the exact plan version: no findings or unresolved risks permits automatic execution; findings or risks require a human decision. A changed plan needs a fresh review and the same rule.
-- **Checked task execution** depends on an accepted plan, one story branch, task-specific checks, relevant conventions, and progress history.
-- **Checked milestone progression** follows each verified milestone without a routine human pause; material decisions and blockers still stop unattended execution, and changed plans require fresh review and human acceptance.
-- **Final story review** occurs through the final milestone PR, whose hosting remains an external source-control capability. Production deployment is not part of this pipeline capability.
+- **Conditional plan acceptance** depends on a complete review of the exact plan version: no findings or unresolved risks permits automatic execution; actionable findings require revision and fresh review, while unresolved material decisions stop for the human.
+- **Checked task execution** depends on an accepted plan, the active Story branch from the current Epic branch, task-specific checks, relevant conventions, and progress history.
+- **Checked milestone progression** follows each verified milestone without a routine human pause; material decisions and blockers still stop unattended execution, and changed plans require fresh review.
+- **Sequential Story integration** depends on verified Story completion and safe squash-merge into the Epic branch; the next Story starts only from the updated Epic branch.
+- **Final Epic review** occurs through the consolidated Epic PR after every Story PR has merged and Epic-level verification passes. PR hosting remains an external source-control capability; production deployment is not part of this pipeline capability.
 - **Skill Guidance** must discover and confirm Evaluation Targets, obtain approval for the Eval Coverage Plan, and generate runnable suites before the **Local Evals Workbench** can execute them.
 - **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while Evaluation Targets, suite definitions, fixtures, and test-support files remain project-owned.
 - **Local Evals Workbench** depends on external **LLM provider APIs** for target execution, rubric judging, analysis, and proposal drafting; non-LLM result inspection should remain available when provider credentials are unavailable.
