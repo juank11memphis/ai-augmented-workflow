@@ -82,9 +82,9 @@ describe('safe Epic integration base template contract', () => {
 
   it('versions the packaged guidance and preserves customized installed clauses', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '215');
-    assert.equal(manifest.templates[templatePath]?.version, '67');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Epic PR handoff.*child-PR reconciliation.*named Epic checks/i);
+    assert.equal(manifest.templateVersion, '216');
+    assert.equal(manifest.templates[templatePath]?.version, '68');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/i);
     assert.match(installed, /same uncommitted Task/);
     assert.match(installed, /## Human QA at Story review/);
     assert.notEqual(installed, gatekeeper, 'installed project customizations must not be replaced by packaged template');

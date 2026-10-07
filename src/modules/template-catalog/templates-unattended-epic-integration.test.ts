@@ -89,10 +89,10 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '215');
-    assert.equal(manifest.templates[templatePath]?.version, '67');
+    assert.equal(manifest.templateVersion, '216');
+    assert.equal(manifest.templates[templatePath]?.version, '68');
     assert.equal(manifest.templates['AGENTS.md']?.version, '54');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Epic PR handoff.*child-PR reconciliation.*named Epic checks/);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);
     assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /integrate fully verified Story PRs/);
   });
 });

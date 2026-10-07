@@ -282,6 +282,8 @@ After the approved story implementation is committed, continue through the curre
 3. If no next story exists, inspect the feature's `epics/` folder and choose the next logical Epic based on dependencies, sequencing, risk reduction, and feature value.
 4. If no logical next Epic exists or every Epic has all stories approved, tell the user the feature appears ready and stop. Do not invent work outside the current feature.
 
+When the user later asks to close out a merged final feature/Epic PR, verify the actual merge with the PR host (use configured GitHub MCP when available); local Git or SSH failure does not establish remote state. With explicit local-cleanup authorization, check for unrelated local changes, switch to the target base branch, and fast-forward pull it. Confirm the updated base contains the merge result before deleting the local feature/Epic branch. For a squash merge, compare trees before force-deleting a non-ancestor branch, and do so only when the user explicitly requested local branch deletion. Stop on divergent content, ambiguous host state, dirty local state, or blocked Git permissions; do not delete a remote branch unless separately requested. Report the observed local branch and any incomplete cleanup.
+
 ## Final response behavior
 
 After final Story checks and PR creation, briefly report in the PR handoff:

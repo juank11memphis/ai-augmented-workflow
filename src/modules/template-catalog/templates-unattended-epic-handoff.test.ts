@@ -66,13 +66,22 @@ describe('future packaged Epic handoff contract', () => {
     assert.match(handoff, /deterministic prompt-contract tests do not prove live host or agent behavior/);
   });
 
+  it('closes a human-merged Epic locally only after host and squash-result verification', () => {
+    assert.match(handoff, /verify its actual merged state, head, and base with the PR host.*GitHub MCP/);
+    assert.match(handoff, /switch to the target base branch, and fast-forward pull it/);
+    assert.match(handoff, /compare the resulting trees before using force deletion/);
+    assert.match(handoff, /Stop on divergent content, ambiguous host state, dirty local state, or blocked Git permissions/);
+    assert.match(handoff, /do not delete a remote branch unless separately requested/);
+  });
+
   it('versions the changed packaged gatekeeper with current sync notes while preserving installed Story review', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '215');
-    assert.equal(manifest.templates[templatePath]?.version, '67');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Epic PR handoff.*child-PR reconciliation.*named Epic checks/);
+    assert.equal(manifest.templateVersion, '216');
+    assert.equal(manifest.templates[templatePath]?.version, '68');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
     assert.match(installed, /## Story review gate: one final PR decision/);
     assert.doesNotMatch(installed, /## Present complete Epic for human review/);
+    assert.match(installed, /merged final feature\/Epic PR.*GitHub MCP/);
   });
 });

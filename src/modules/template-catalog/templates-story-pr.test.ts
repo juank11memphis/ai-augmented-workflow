@@ -63,9 +63,9 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '215');
+    assert.equal(manifest.templateVersion, '216');
     const executorTemplate = manifest.templates[templatePath];
-    assert.equal(executorTemplate?.version, '67');
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /Epic PR handoff.*child-PR reconciliation.*named Epic checks/);
+    assert.equal(executorTemplate?.version, '68');
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);
   });
 });

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "215",
+  "templateVersion": "216",
   "templates": {
     "AGENTS.md": {
       "version": "54",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "67",
+      "version": "68",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Adds complete Epic PR handoff after ordered child-PR reconciliation and named Epic checks, with readback, safe retry, and human-only merge."
+        "Adds verified local branch cleanup after a human merges the Epic PR, including squash-merge checks and GitHub host readback."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

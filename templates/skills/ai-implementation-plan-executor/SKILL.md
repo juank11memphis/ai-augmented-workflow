@@ -289,6 +289,8 @@ Query the actual PR after create or update. Verify its identity, open state, ful
 
 Hand the read-back Epic PR URL and verified summary to the human for review and merge. **Do not merge the Epic PR**, deploy, or start another Epic without a new user request. Deferred human QA remains `not performed`; deterministic prompt-contract tests do not prove live host or agent behavior.
 
+If the user later asks to close out a merged Epic PR, verify its actual merged state, head, and base with the PR host (use configured GitHub MCP when available); a local Git or SSH failure does not establish remote state. With explicit local-cleanup authorization, check for unrelated local changes, switch to the target base branch, and fast-forward pull it. Confirm the updated base contains the merge result before deleting the local Epic branch. A squash merge may not preserve branch ancestry: compare the resulting trees before using force deletion, and use it only when the user explicitly requested local branch deletion. Stop on divergent content, ambiguous host state, dirty local state, or blocked Git permissions; do not delete a remote branch unless separately requested. Report the observed local branch and any incomplete cleanup.
+
 ## Final response behavior
 
 After verified Story integration, briefly report:
