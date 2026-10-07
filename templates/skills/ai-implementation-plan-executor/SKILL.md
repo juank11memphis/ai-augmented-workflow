@@ -171,6 +171,16 @@ For unapproved steps:
 
 Do not mark steps approved, commit changes, move to the next story, or move to the next Epic until the user explicitly approves the completed story implementation.
 
+## Safe Epic and sequential Story base (UED-S01)
+
+When asked to deliver an identified Epic, the main agent first defines the Start Epic delivery intent and reports either a safe observed state or a specific missing-context/unsafe-state stop. Require the Epic, its ordered Stories, sufficient feature BRD and SDD, project SAD, required UX when applicable, selected architecture guidance, and an agreed initial base and target. Verify usable Git and PR-host access. Name each missing or insufficient prerequisite and stop **before any branch or Task work**; never select an ambiguous base by new Sibu policy.
+
+Observe the current branch, index, worktree, local/remote branch identity, and host state before effects. With a clean, unambiguous state, establish or reconcile **one Epic integration branch from the agreed base** and observe its actual head. A collision, unrelated local change, conflicting remote change, unavailable host or permission, or ambiguous partial branch effect requires a specific reconciliation stop. Re-query actual branch/host state before retrying; do not infer success from a submitted command. Never stash, reset, force push, automatically rebase, bypass branch protection, or expose credentials to repair state.
+
+For Execute next Story, select **only the next Story in planned order** and verify that every prior Story is integrated in the Epic branch. Observe its current head, then obtain an exact independently reviewed and accepted Story plan under the gate below **before creating the Story branch**. A missing, stale, or unaccepted plan stops before Story-branch creation or Task dispatch. After plan acceptance, re-observe the Epic head and branch/index/worktree/host safety. Only then create the one active Story branch from that **observed current Epic head** and verify its ancestry. An unverified or stale Epic head, concurrent change, branch collision, or uncertain prior integration stops later Story work for reconciliation; never reuse a prior head by assumption.
+
+This increment preserves the existing final **human Story PR review and approval/continuation gate** below. It does not authorize automatic Story merge, an Epic PR, parallel Stories, deployment, or final Story approval by a checked-Task executor. Report operational outcomes as concise safe state, reason, and repair or decision, without secrets or raw private logs.
+
 ## Exact-plan architecture review and conditional decision
 
 The main agent owns this message-only gate before the first executor dispatch. Do not add a runtime module or persistent hash helper. The architecture reviewer assesses the plan, never an implementation diff; branch creation and Task commits remain downstream of clean-review automatic acceptance or explicit human acceptance.

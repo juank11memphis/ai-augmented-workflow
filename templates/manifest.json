@@ -1,5 +1,5 @@
 {
-  "templateVersion": "212",
+  "templateVersion": "213",
   "templates": {
     "AGENTS.md": {
       "version": "53",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "64",
+      "version": "65",
       "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
       "changes": [
-        "Treats the user's approved-and-merged PR report as Story approval without a second confirmation, while merge alone still requires approval."
+        "Checks Epic prerequisites and the agreed integration base before branching; accepts each exact Story plan before creating its branch from the observed current Epic head while retaining human Story review."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
