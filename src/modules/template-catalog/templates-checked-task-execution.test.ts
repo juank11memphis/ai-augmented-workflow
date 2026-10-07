@@ -56,7 +56,8 @@ describe('checked Task execution template contract', () => {
     assert.match(toolbox, /one Conventional Commit referencing the Task ID on the Story branch/i);
     assert.match(toolbox, /Append a compact progress entry \*\*after\*\* commit with actual check command\/result, evidence coverage, commit reference, gotchas, and decisions/i);
     assert.match(toolbox, /On blocker, record check, attempts, missing evidence, and reason in progress without a done state or completed-Task commit/i);
-    assert.match(gatekeeper, /Already checked Task commits do not confer Story approval/i);
+    assert.match(gatekeeper, /The worker's only commit authority is one passing, scoped Task-ID-linked Conventional Commit/i);
+    assert.match(gatekeeper, /Keep Story integration and continuation with the main agent/i);
   });
 
   it('checks expected evidence before commit and recovers a bounded post-commit gap through a new reviewed Task', () => {
@@ -69,7 +70,8 @@ describe('checked Task execution template contract', () => {
     assert.match(gatekeeper, /do not ask the human merely because the gap was noticed after commit/i);
     assert.match(gatekeeper, /Stop for non-convergence, an unexecutable check, failed prescribed validation/i);
     assert.match(gatekeeper, /does not authorize broad code review, a second commit for the original Task/i);
-    assert.match(gatekeeper, /post-commit evidence gap and follow-up Task disposition/i);
+    assert.match(gatekeeper, /record the gap and leave the Milestone incomplete/i);
+    assert.match(gatekeeper, /send the gap to `ai-implementation-planner` for the smallest follow-up checked Task/i);
   });
 
   it('plans a bounded same-Story regression repair without losing a blocked Task or its failed check', () => {
@@ -86,7 +88,7 @@ describe('checked Task execution template contract', () => {
     assert.match(toolbox, /Never modify, stage, or commit those preserved edits/i);
     assert.match(planner, /Do not require or invent a prior reviewer finding/i);
     assert.match(plannerToolbox, /failed check and evidence, attribution to an earlier checked Task in the same Story/i);
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /same-Story validation regressions/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /integrate fully verified Story PRs.*customized installed workflows/i);
     assert.match(gatekeeper, /AFK recovery for a cross-Task validation regression/i);
   });
 
@@ -113,7 +115,7 @@ describe('checked Task execution template contract', () => {
       assert.match(wrapper, /Never approve your own work.*stash, reset/i);
       assert.match(manifest.templates[path]?.changes.join('') ?? '', /checked Task/i);
     }
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /post-commit evidence recovery/);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /integrate fully verified Story PRs.*customized installed workflows/i);
     assert.match(manifest.templates['skills/ai-implementation-executor-toolbox/SKILL.md']?.changes.join('') ?? '', /Task/i);
     assert.match(gatekeeper, /post-commit evidence gap/i);
     assert.match(readTemplate('AGENTS.md'), /checked-Task executor may commit only its scoped Task after the prescribed check passes/i);

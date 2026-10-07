@@ -14,7 +14,7 @@ describe('exact Story-plan review and conditional acceptance gate', () => {
     assert.match(gatekeeper, /Do not introduce automatic code review or a post-code architecture-review\/repair loop/i);
     assert.match(gatekeeper, /This is a completion-evidence check, not an automatic implementation-code review/i);
     assert.doesNotMatch(gatekeeper, /## Automated implementation review loop/i);
-    assert.match(gatekeeper, /preserve the human Story review/i);
+    assert.match(gatekeeper, /Preserve the verified Story integration gate below/);
   });
 
   it('keeps reviewable plan version separate from execution state', () => {
@@ -54,15 +54,14 @@ describe('exact Story-plan review and conditional acceptance gate', () => {
     assert.match(gatekeeper, /Human acceptance cannot waive a missing Task check/i);
   });
 
-  it('keeps final PR review distinct from plan acceptance and excludes runtime machinery', () => {
-    assert.match(gatekeeper, /PR is the final Milestone and Story review surface/i);
-    assert.match(gatekeeper, /Present the PR for one explicit.*decision/i);
-    assert.match(gatekeeper, /Acceptance alone permits approval metadata and any remaining eligible final Story commit/i);
-    assert.match(gatekeeper, /There is no separate post-PR approval/i);
+  it('keeps verified integration distinct from plan acceptance and excludes runtime machinery', () => {
+    assert.match(gatekeeper, /proceed to verified Story integration below without a routine human Story decision/i);
+    assert.match(gatekeeper, /Do not write human approval markers or claim a human Story decision that did not occur/i);
+    assert.match(gatekeeper, /Do not duplicate a checked Task commit/i);
     assert.match(gatekeeper, /Do not add a runtime module or persistent hash helper/i);
-    assert.match(gatekeeper, /fresh independent plan-only architecture review and use the same AFK finding\/revision loop and conditional acceptance before executor dispatch/i);
+    assert.match(gatekeeper, /fresh independent plan-only architecture review.*same AFK finding\/revision loop and conditional acceptance before any executor resumes/i);
     assert.match(gatekeeper, /\*\*Plan review history\*\*/i);
-    assert.match(gatekeeper, /number of independent review iterations, each finding and planner revision/i);
+    assert.match(gatekeeper, /independent review iterations and finding dispositions/i);
   });
 
   it('requires a fresh read-only reviewer and plain-language finding presentation', () => {
