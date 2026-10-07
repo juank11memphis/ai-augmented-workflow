@@ -20,7 +20,7 @@ import { getSyncPreviews } from './sync-preview.js';
 const VALIDATION_SKILL_CASES = [
   skillCase('ai-implementation-planner', '23'),
   skillCase('ai-implementation-planner-toolbox', '10'),
-  skillCase('ai-implementation-plan-executor', '36'),
+  skillCase('ai-implementation-plan-executor', '64'),
   skillCase('ai-implementation-executor-toolbox', '14'),
 ] as const;
 const temporaryRoots: string[] = [];
@@ -40,7 +40,7 @@ describe('repository-aware validation guidance lifecycle', () => {
 
       const preview = findManagedPreview(rootPath, state, validationSkill);
       assert.equal(preview.status, 'update-available');
-      assert.match(preview.changes.join('\n'), /verified story-specific|foreground progress|Removes|reviewers|architecture review packet|plan review of the exact Story version|checked.Task|next Story or Epic|Story approval|Milestone|human decision|architecture-review findings|affected plan steps|AFK planner-reviewer|evidence recovery|evidence gaps/i);
+      assert.match(preview.changes.join('\n'), /verified story-specific|foreground progress|Removes|reviewers|architecture review packet|plan review of the exact Story version|checked.Task|next Story or Epic|Story approval|Milestone|human decision|architecture-review findings|affected plan steps|AFK planner-reviewer|evidence recovery|evidence gaps|agreed integration base/i);
 
       const applied = applySyncAction({
         rootPath,

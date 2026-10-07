@@ -95,7 +95,11 @@ describe('Final Story PR written contract', () => {
     assert.match(description, /not live agent behavior or pull-request hosting/);
     const manifest = readTemplateManifest();
     assert.ok(Number(manifest.templateVersion) >= 211);
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '64');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /approved-and-merged PR report.*Story approval/);
+    const executorTemplate = manifest.templates['skills/ai-implementation-plan-executor/SKILL.md'];
+    assert.ok(executorTemplate);
+    assert.equal(executorTemplate.version, '65');
+    assert.match(executorTemplate.changes.join(' '), /agreed integration base/i);
+    assert.match(executorTemplate.changes.join(' '), /accepts each exact Story plan before creating its branch from the observed current Epic head/i);
+    assert.match(executorTemplate.changes.join(' '), /human Story review/i);
   });
 });
