@@ -1,11 +1,11 @@
 {
-  "templateVersion": "213",
+  "templateVersion": "214",
   "templates": {
     "AGENTS.md": {
-      "version": "53",
+      "version": "54",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Extends post-commit evidence recovery to bounded same-Story validation regressions without waiving human Story review."
+        "Allows the main agent to integrate fully verified Story PRs into an Epic without routine Story approval while retaining safety stops and customized installed workflows."
       ]
     },
     ".codex/config.toml": {
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "65",
-      "description": "Mandatory AI implementation plan executor gatekeeper for story execution, review, approval metadata, commit, and feature continuation.",
+      "version": "66",
+      "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Checks Epic prerequisites and the agreed integration base before branching; accepts each exact Story plan before creating its branch from the observed current Epic head while retaining human Story review."
+        "Requires verified Task and Story evidence, observed host checks, PR readback, and safe branch state before squash-merging a Story PR into the Epic branch without routine human Story approval."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
