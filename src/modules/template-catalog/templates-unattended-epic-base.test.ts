@@ -71,20 +71,20 @@ describe('safe Epic integration base template contract', () => {
     assert.match(guidance, /Never stash, reset, force push, automatically rebase, bypass branch protection, or expose credentials/);
   });
 
-  it('retains exact-plan and checked-Task evidence plus final human Story PR review', () => {
+  it('retains exact-plan and checked-Task evidence before verified Story integration', () => {
     assert.match(gatekeeper, /Compare the reviewable identity at reviewer dispatch, review-packet receipt, acceptance/);
     assert.match(gatekeeper, /every Task in the accepted plan has its own specific, objective, executable pass\/fail check and expected passing evidence/);
     assert.match(gatekeeper, /each expected evidence item against actual tests and assertions/);
-    assert.match(gatekeeper, /Present the PR for one explicit \*\*accept\*\*, \*\*request changes\*\*, or \*\*defer\*\* decision/);
-    assert.match(epicGuidance(gatekeeper), /human Story PR review and approval\/continuation gate/);
-    assert.match(epicGuidance(gatekeeper), /does not authorize automatic Story merge, an Epic PR, parallel Stories, deployment/);
+    assert.match(gatekeeper, /every Task's prescribed check and each `Done when` item have evidence/);
+    assert.match(epicGuidance(gatekeeper), /replaces routine human Story PR review for future distributed workflows/);
+    assert.match(epicGuidance(gatekeeper), /does not authorize an Epic PR, parallel Stories, deployment/);
   });
 
   it('versions the packaged guidance and preserves customized installed clauses', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '213');
-    assert.equal(manifest.templates[templatePath]?.version, '65');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Epic prerequisites.*accepts each exact Story plan.*observed current Epic head.*human Story review/i);
+    assert.equal(manifest.templateVersion, '215');
+    assert.equal(manifest.templates[templatePath]?.version, '67');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Epic PR handoff.*child-PR reconciliation.*named Epic checks/i);
     assert.match(installed, /same uncommitted Task/);
     assert.match(installed, /## Human QA at Story review/);
     assert.notEqual(installed, gatekeeper, 'installed project customizations must not be replaced by packaged template');

@@ -89,7 +89,7 @@ describe('Sibu-provided sub-agent model routing', () => {
         assert.match(executor, /All implementation execution stays in the foreground/);
         assert.match(executor, /Resolve the architecture reviewer's model route before launching the read-only reviewer/);
         assert.match(executor, /Do not run an executor while the reviewer is active/);
-        assert.match(executor, /Only after explicit story-level user approval/);
+        assert.match(executor, /Keep Story integration and continuation with the main agent/);
         for (const path of ['skills/export-to-github/SKILL.md', 'skills/export-to-notion/SKILL.md']) {
             const source = readTemplate(path);
             assert.match(source, /Start the `(?:github|notion)-exporter` sub-agent in the background/);

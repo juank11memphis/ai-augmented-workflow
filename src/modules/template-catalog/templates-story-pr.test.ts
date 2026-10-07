@@ -1,14 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { readTemplate, readTemplateManifest } from './index.js';
 
-const gatekeeper = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
-
-function fixture(name: string): string {
-  return readFileSync(new URL(`./fixtures/story-pr/${name}.md`, import.meta.url), 'utf8');
-}
+const templatePath = 'skills/ai-implementation-plan-executor/SKILL.md';
+const gatekeeper = readTemplate(templatePath);
+const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
 
 function assertInOrder(content: string, phrases: string[]): void {
   let prior = -1;
@@ -19,87 +18,54 @@ function assertInOrder(content: string, phrases: string[]): void {
   }
 }
 
-describe('Final Story PR written contract', () => {
-  it('opens one PR only after accepted plan, correct branch, checked Tasks, and Story validation', () => {
-    const scenarios = fixture('scenarios');
-    assert.match(scenarios, /One Milestone:.*one final M-01\/Story decision/);
-    assert.match(scenarios, /Multiple Milestones:.*verified M-01 advances automatically to M-02.*final M-02\/Story decision/);
-    assert.match(scenarios, /Early or wrong-branch attempt: no PR/);
+describe('future packaged verified Story PR contract', () => {
+  it('opens one PR only after accepted plan, checked Tasks, and Story validation', () => {
     assertInOrder(gatekeeper, [
-      'accepted plan identity',
-      'final Task check/commit/progress evidence',
-      'actual story-level command results before opening it',
+      'exact accepted plan identity is still current',
+      "every Task's prescribed check and each `Done when` item have evidence",
+      'actual Story-level validation passes',
     ]);
-    assert.match(gatekeeper, /main agent, never the Task executor, opens one PR from the verified dedicated Story branch/i);
+    assert.match(gatekeeper, /main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/i);
     assert.match(gatekeeper, /Do not open a PR early, from another branch, or with missing or failed required local checks/i);
   });
 
-  it('uses PR review as the only final gate and updates that PR after checked revisions', () => {
-    const scenarios = fixture('scenarios');
-    assert.match(scenarios, /Final PR change request:.*fresh independent plan-only architecture review.*AFK planner-reviewer loop.*same PR with review history/);
-    assert.match(gatekeeper, /PR is the final Milestone and Story review surface for one- and multi-Milestone Stories/);
-    assert.match(gatekeeper, /There is no separate post-PR approval or implementation-code architecture review/);
-    assert.match(gatekeeper, /update the \*\*same PR\*\*, including its plan review history and actual checks, for renewed final review/);
-    assert.match(gatekeeper, /Acceptance alone permits approval metadata/);
+  it('keeps main-only PR ownership and no routine human Story decision', () => {
+    assert.match(gatekeeper, /For the final Milestone, including a one-Milestone Story, proceed to verified Story integration below without a routine human Story decision/);
+    assert.match(gatekeeper, /there is no separate post-code architecture review or routine human Story PR decision/);
+    assert.match(gatekeeper, /request a \*\*squash-only merge\*\* of that verified Story PR/);
+    assert.match(gatekeeper, /Do not write human approval markers or claim a human Story decision that did not occur/);
   });
 
-  it('accepts an approved-and-merged PR report without a duplicate Story decision', () => {
-    assert.match(gatekeeper, /approved and merged.*in either order.*explicit Story acceptance/);
-    assert.match(gatekeeper, /verify the merge, record approval, and do not ask for a second Story decision/);
-    assert.match(gatekeeper, /A report of merge alone is not acceptance/);
-  });
-
-  it('reports actual local and hosted check states without invented success', () => {
-    assert.match(fixture('scenarios'), /passing is passing; failing is failing; pending is pending; unavailable is unavailable/);
-    assert.match(gatekeeper, /distinguish passing, failing, pending, and unavailable CI checks as observed/);
-    assert.match(gatekeeper, /Never call an unrun, pending, failed, or unavailable check passing/);
-    assert.match(gatekeeper, /If CI has not settled, disclose that and wait for its available status/);
-  });
-
-  it('stops safely on hosting or check-retrieval failure', () => {
-    assert.match(fixture('scenarios'), /Host failure:.*preserves Story branch and evidence.*final review incomplete/);
-    assert.match(gatekeeper, /If source-control hosting access, PR creation, or check retrieval fails, preserve the branch and validation evidence, report the blocker, and leave final review incomplete/);
-    assert.match(gatekeeper, /Do not silently substitute a conversational approval, create a second PR, merge, or deploy/);
-  });
-
-  it('tracks Story status without treating Task completion or PR creation as Story approval', () => {
-    assertInOrder(gatekeeper, [
-      'Only after acceptance, create or select one dedicated Story branch',
-      'change only the selected Story file\'s `**Status:**` field from `ready-for-planning` to `in-progress`',
-      'Dispatch exactly the next ordered Task',
-    ]);
-    assert.match(gatekeeper, /preserve `in-progress`; if the field is missing, `draft`, `done`, or otherwise conflicts.*stop and reconcile it with the human/);
-    assert.match(gatekeeper, /Leave the Story `in-progress` through Task execution, human-decision blockers, PR blockers, and final PR review/);
-    assert.match(gatekeeper, /Deferral and requested changes leave the Story `in-progress`/);
-    assert.match(gatekeeper, /Only after explicit story-level user approval, change only the selected Story file's `\*\*Status:\*\*` field from `in-progress` to `done`/);
-    assert.match(gatekeeper, /Do not stage or commit ignored paths, including ignored `docs\/features\/\*\*` paths/);
-  });
-
-  it('rechecks feature continuation after merge without bypassing human gates', () => {
-    assert.match(gatekeeper, /After a Story PR merge is confirmed, including a merge requested in a later turn, run this check again before ending the turn/);
-    assert.match(gatekeeper, /Do not treat a merge report alone as Story approval: if the final human Story decision is still missing, stop at that gate/);
-    assert.match(gatekeeper, /If the user reports both approval and merge for the identified Story PR, record approval and continue without asking for a separate Story or continuation confirmation/);
-    assert.match(gatekeeper, /continue without asking for a separate Story or continuation confirmation; preserve every required plan review, applicable human decision, code-change permission, and blocker gate/);
-    assert.match(gatekeeper, /If no logical next Epic exists or every Epic has all stories approved, tell the user the feature appears ready and stop/);
-  });
-
-  it('provides a scannable representative description and versioned distribution note', () => {
-    const description = fixture('representative-description');
-    for (const section of ['What changed', 'Why it matters', 'Verification', 'Known risks and limits']) {
-      assert.match(description, new RegExp(`^## ${section}$`, 'm'));
+  it('requires a complete PR body, readback, and same-PR repair', () => {
+    for (const section of ['What changed', 'Why it matters', 'Plan review history', 'Verification', 'Known risks and limits']) {
       assert.match(gatekeeper, new RegExp(`\\*\\*${section}\\*\\*`));
     }
-    assert.match(gatekeeper, /\*\*Plan review history\*\*/);
-    assert.match(gatekeeper, /number of independent review iterations, each finding and planner revision/i);
-    assert.match(description, /Hosted CI is pending; it has not been counted as passing/);
-    assert.match(description, /not live agent behavior or pull-request hosting/);
+    assert.match(gatekeeper, /independent review iterations and finding dispositions/);
+    assert.match(gatekeeper, /Read back the actual PR body and verify these fields/);
+    assert.match(gatekeeper, /repair the \*\*same PR\*\* if its body does not match/);
+    assert.match(gatekeeper, /deferred human-only QA as `not performed`/);
+  });
+
+  it('blocks unsafe host checks and ambiguous merge effects before later Story work', () => {
+    assert.match(gatekeeper, /failed, pending, missing, or unavailable required check blocks merge and later Story work/);
+    assert.match(gatekeeper, /recheck the accepted plan, Story and Epic branch heads, PR head\/base and body, index\/worktree/);
+    assert.match(gatekeeper, /query PR and Epic-head identity first, then stop until reconciled/);
+    assert.match(gatekeeper, /record the closed child PR URL and resulting Epic head before allowing the next Story/);
+  });
+
+  it('continues only after observed integration and preserves installed human review', () => {
+    assert.match(gatekeeper, /After the verified Story PR squash merge and updated Epic head are observed, continue only to the next planned Story/);
+    assert.match(gatekeeper, /Never advance from an attempted or ambiguous merge/);
+    assert.match(gatekeeper, /If no next Story exists, stop Story dispatch and use the separate Epic verification and human-handoff contract/);
+    assert.match(installed, /## Story review gate: one final PR decision/);
+    assert.notEqual(installed, gatekeeper);
+  });
+
+  it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.ok(Number(manifest.templateVersion) >= 211);
-    const executorTemplate = manifest.templates['skills/ai-implementation-plan-executor/SKILL.md'];
-    assert.ok(executorTemplate);
-    assert.equal(executorTemplate.version, '65');
-    assert.match(executorTemplate.changes.join(' '), /agreed integration base/i);
-    assert.match(executorTemplate.changes.join(' '), /accepts each exact Story plan before creating its branch from the observed current Epic head/i);
-    assert.match(executorTemplate.changes.join(' '), /human Story review/i);
+    assert.equal(manifest.templateVersion, '215');
+    const executorTemplate = manifest.templates[templatePath];
+    assert.equal(executorTemplate?.version, '67');
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /Epic PR handoff.*child-PR reconciliation.*named Epic checks/);
   });
 });

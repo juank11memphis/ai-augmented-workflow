@@ -58,7 +58,7 @@ describe('eval-authoring template registration', () => {
     const agentsContents = readTemplate('AGENTS.md');
     assert.match(templateMetadata?.description ?? '', /Mandatory eval-authoring skill/i);
     assert.match(templateMetadata?.changes.join('\n') ?? '', /validate emitted execute events/i);
-    assert.match(agentsMetadata?.changes.join('\n') ?? '', /post-commit evidence recovery.*human Story review/i);
+    assert.match(agentsMetadata?.changes.join('\n') ?? '', /integrate fully verified Story PRs.*customized installed workflows/i);
     assert.match(agentsContents, /use `eval-authoring`/);
     assert.match(agentsContents, /Sibu eval suites, eval definitions, fixtures, assertions\/graders, rubrics/i);
   });

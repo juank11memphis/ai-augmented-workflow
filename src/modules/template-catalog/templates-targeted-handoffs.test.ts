@@ -55,14 +55,14 @@ describe('targeted handoff instruction contracts', () => {
     assert.match(executorWorker, /human-authorized change list/i);
   });
 
-  it('targets plan evidence without preselecting findings and preserves the human gate', () => {
+  it('targets plan evidence without preselecting findings and preserves verified integration', () => {
     assert.match(executor, /plan-review packet uses the independent reviewer contract/i);
     assert.match(executor, /source-verified \*\*start here\*\*/i);
     assert.match(executor, /reviewer independently verifies the full authoritative sources and plan/i);
     assert.match(executor, /current reviewable plan identity and content/i);
     assert.match(executor, /Do not send a code diff/i);
-    assert.match(executor, /Present the PR for one explicit.*decision/i);
-    assert.match(executor, /Acceptance alone permits approval metadata and any remaining eligible final Story commit/i);
+    assert.match(executor, /every Task's prescribed check and each `Done when` item have evidence/i);
+    assert.match(executor, /Do not write human approval markers or claim a human Story decision that did not occur/i);
     assert.match(executorWorker, /Never approve your own work/i);
     assert.match(executorWorker, /Never run:/i);
   });
@@ -78,7 +78,7 @@ describe('targeted handoff instruction contracts', () => {
       const entry = manifest.templates[`skills/${name}/SKILL.md`];
       assert.ok(entry, name);
       assert.equal(entry.changes.length, 1, name);
-      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet|plan review|checked.Task|Story or Epic|Story approval|Milestone|human decision|architecture-review findings|affected plan steps|AFK planner-reviewer|evidence recovery|evidence gaps|Epic prerequisites|agreed integration base|current Epic head|human Story review/i, name);
+      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet|plan review|checked.Task|Story or Epic|Story approval|Milestone|human decision|architecture-review findings|affected plan steps|AFK planner-reviewer|evidence recovery|evidence gaps|Epic prerequisites|agreed integration base|current Epic head|human Story review|child-PR reconciliation/i, name);
       const template = readTemplate(`skills/${name}/SKILL.md`);
       // Project-owned installed copies adopt source changes only through reviewable Sibu sync.
       assert.match(template, new RegExp(`name: ${name}`));
