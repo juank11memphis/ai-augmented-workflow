@@ -28,7 +28,7 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /post-commit evidence recovery.*human Story review/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /integrate fully verified Story PRs.*customized installed workflows/i);
     assert.match(contents, /planner automatically revises actionable review findings.*complete review finds no findings or unresolved risks.*accepts the exact plan automatically/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
@@ -323,7 +323,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /approved-and-merged PR report.*Story approval/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Epic PR handoff.*child-PR reconciliation.*named Epic checks/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -343,12 +343,12 @@ describe('Sibu executor worker templates', () => {
     assert.match(contents, /edge\/failure coverage/i);
     assert.match(contents, /skipped deeper checks with rationale/i);
     assert.match(contents, /residual risks or known gaps/i);
-    assert.match(contents, /tests passed.*not enough|tests passed.*not.*only completion evidence/i);
+    assert.match(contents, /A passing command or existing Task commit cannot stand in for missing evidence/i);
     assert.match(contents, /export-to-github/);
     assert.match(contents, /export-to-notion/);
     assert.match(contents, /Fallback matrix/);
     assert.match(contents, /Inline compressed-context fallback/);
-    assert.match(contents, /final Story approval metadata, any final Story commit, and feature continuation under main-agent control/i);
+    assert.match(contents, /Keep Story integration and continuation with the main agent/i);
     assert.match(contents, /git commit/);
     assert.match(contents, /git stash/);
     assert.match(contents, /git reset/);

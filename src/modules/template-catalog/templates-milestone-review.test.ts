@@ -20,11 +20,10 @@ function ordered(contract: string, phrases: string[]): void {
 }
 
 describe('Milestone progression written contract', () => {
-  it('uses one final Story gate even for a one-Milestone Story', () => {
-    assert.match(fixture('one-milestone'), /final Story review is the one M-01 PR review; do not ask twice/i);
-    assert.match(gatekeeper, /final Milestone, including a one-Milestone Story.*only routine post-execution decision/i);
-    assert.match(gatekeeper, /PR is the final Milestone and Story review surface for one- and multi-Milestone Stories/i);
-    assert.match(gatekeeper, /There is no separate post-PR approval or implementation-code architecture review/i);
+  it('sends the final Milestone to verified Story integration without routine Story review', () => {
+    assert.match(gatekeeper, /For the final Milestone, including a one-Milestone Story, proceed to verified Story integration below without a routine human Story decision/);
+    assert.match(gatekeeper, /every planned `Done when` item has evidence/);
+    assert.match(gatekeeper, /required Story-level validation has completed successfully/);
   });
 
   it('advances to the next Milestone only after verified Task evidence', () => {
@@ -76,7 +75,7 @@ describe('Milestone progression written contract', () => {
     assert.match(gatekeeper, /Do not substitute an implementation-code architecture review/i);
   });
 
-  it('keeps worker authority narrow and ships a versioned skill', () => {
+  it('keeps worker authority narrow and ships current handoff guidance', () => {
     for (const path of [
       '.codex/agents/sibu-implementation-executor.toml',
       '.claude/agents/sibu-implementation-executor.md',
@@ -88,7 +87,9 @@ describe('Milestone progression written contract', () => {
     }
     const manifest = readTemplateManifest();
     assert.ok(Number(manifest.templateVersion) >= 211);
-    assert.equal(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.version, '64');
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /approved-and-merged PR report.*Story approval/);
+    const executorTemplate = manifest.templates['skills/ai-implementation-plan-executor/SKILL.md'];
+    assert.ok(executorTemplate);
+    assert.equal(executorTemplate.version, '67');
+    assert.match(executorTemplate.changes.join(' '), /Epic PR handoff.*child-PR reconciliation.*named Epic checks/i);
   });
 });
