@@ -277,6 +277,18 @@ After the verified Story PR squash merge and updated Epic head are observed, con
 2. If a next User Story exists, plan it through `ai-implementation-planner` when needed, then immediately begin execution.
 3. If no next Story exists, stop Story dispatch and use the separate Epic verification and human-handoff contract; do not start another Epic or infer Epic completion from Story merges.
 
+## Present complete Epic for human review
+
+The main agent owns this operation; a checked-Task executor does not create an Epic PR. Before any Epic PR effect, reconcile the Epic's ordered `stories/` list against **every** observed merged child Story PR. For each planned Story, verify the child PR identity, URL, merged state, Epic base, and recorded resulting Epic head; follow the observed integration chain through to the **latest** Epic branch head. Missing, duplicate, unmerged, mismatched, or out-of-order children, or an Epic head that changed during reconciliation, stop the handoff. Do not infer completion from Story status text, submitted merge requests, or local commits alone.
+
+Identify the **named Epic-level check** from the Epic, SDD, or repository convention and run or observe that exact check against the latest reconciled Epic head. Record its name, source, head, and actual result. An undefined, unavailable, missing, pending, or failed required check stops the handoff; do not invent or substitute a weaker check. Recheck the Epic head, agreed target base, branch/index/worktree safety, and relevant host check state immediately before creating or updating the PR. A changed head/base or unsafe state requires reconciliation, not a stale PR update.
+
+Create or update **one Epic PR** from the verified Epic branch to the agreed base only after those gates pass. Its concise body must link every child PR in planned order and give each Story's change, user value, local and host verification, blockers, retries, and recoveries. Include aggregate Epic checks, deferred human-only QA explicitly marked `not performed`, remaining limits, and any incomplete or non-applicable fact distinguished from a passing check. Use safe outcome/reason summaries; never include credentials, secrets, raw private logs, or invented success.
+
+Query the actual PR after create or update. Verify its identity, open state, full body and every child link, actual head/base and head commit, and current required host-check conclusions before calling it review-ready. If the body differs, repair **the same PR** and read it back again. A timeout or ambiguous creation/update effect requires querying the host by branch and PR identity **before any retry**; reuse a matching existing PR, and stop if identity or effect remains ambiguous. A missing body field, mismatched head/base, changed branch state, or missing/failed/pending/unavailable host check is not review-ready.
+
+Hand the read-back Epic PR URL and verified summary to the human for review and merge. **Do not merge the Epic PR**, deploy, or start another Epic without a new user request. Deferred human QA remains `not performed`; deterministic prompt-contract tests do not prove live host or agent behavior.
+
 ## Final response behavior
 
 After verified Story integration, briefly report:

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "214",
+  "templateVersion": "215",
   "templates": {
     "AGENTS.md": {
       "version": "54",
@@ -149,10 +149,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "66",
+      "version": "67",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Requires verified Task and Story evidence, observed host checks, PR readback, and safe branch state before squash-merging a Story PR into the Epic branch without routine human Story approval."
+        "Adds complete Epic PR handoff after ordered child-PR reconciliation and named Epic checks, with readback, safe retry, and human-only merge."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
