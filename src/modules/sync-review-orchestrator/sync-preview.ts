@@ -68,7 +68,9 @@ export function shouldAskForSyncAction(preview: SyncPreview): boolean {
   return PROMPTABLE_SYNC_PREVIEW_STATUSES.has(preview.status);
 }
 
-export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: string; state: SibuState; manifest: TemplateManifest }): SyncPreview[] {
+export function getSyncPreviews({ rootPath, state, manifest, protectedPaths = new Set<string>() }: {
+  rootPath: string; state: SibuState; manifest: TemplateManifest; protectedPaths?: ReadonlySet<string>;
+}): SyncPreview[] {
   const selectedLanguageSkills = getSelectedLanguageSkillsFromState(state);
   const selectedFrameworkSkills = getSelectedFrameworkSkillsFromState(state);
   const selectedArchitectureSkill = getSelectedArchitectureSkillFromState(state);
@@ -125,7 +127,7 @@ export function getSyncPreviews({ rootPath, state, manifest }: { rootPath: strin
     previews.push(getNewExpectedTargetPreview({ rootPath, manifest, target }));
   }
 
-  return previews;
+  return previews.filter((preview) => !protectedPaths.has(preview.relativePath));
 }
 
 function getNewExpectedTargetPreviews({

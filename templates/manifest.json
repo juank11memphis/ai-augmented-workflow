@@ -1,6 +1,13 @@
 {
-  "templateVersion": "216",
+  "templateVersion": "218",
   "templates": {
+    "skill-retirements.json": {
+      "version": "1",
+      "description": "Package-only evidence for explicitly retired non-architecture Sibu skills; not an installed project target.",
+      "changes": [
+        "Adds an empty, validated retirement catalog so future withdrawn skills can be identified without guessing from missing templates."
+      ]
+    },
     "AGENTS.md": {
       "version": "54",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
@@ -149,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "68",
+      "version": "69",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Adds verified local branch cleanup after a human merges the Epic PR, including squash-merge checks and GitHub host readback."
+        "Tries GitHub MCP first for PR work and avoids routine branch-rules lookups while preserving required check and merge safety gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

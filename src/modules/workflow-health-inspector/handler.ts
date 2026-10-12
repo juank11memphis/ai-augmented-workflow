@@ -1,18 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { intro, log, outro } from '@clack/prompts';
-import chalk from 'chalk';
 
 import { STATE_RELATIVE_PATH } from '../workflow-state-ledger/state-path.js';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import { sha256 } from '../../shared/hash.js';
-import { checkForLatestSibuVersion, getNpmVersionAdvisoryLines } from '../../support/version-advisory/index.js';
-import { getProjectContext } from '../../shared/paths.js';
-import { renderIntro } from '../../support/interactive-guidance/index.js';
-import { hasReviewedTemplateVersion, readStateForDoctor } from '../workflow-state-ledger/index.js';
-import { getTemplateVersion, readTemplateManifest } from '../template-catalog/index.js';
-import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState } from '../../shared/types.js';
+import { hasReviewedTemplateVersion } from '../workflow-state-ledger/index.js';
+import { getTemplateVersion, loadSkillRetirements, lookupSkillIdentity, readTemplateManifest } from '../template-catalog/index.js';
+import type { DoctorIssue, ManagedFileStatus, SibuState } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
   getSelectedArchitectureSkillFromState,
@@ -23,56 +18,8 @@ import {
   getSelectedWorkflowSkillsFromState,
   getWorkflowTargets,
 } from '../template-catalog/index.js';
-import type { DoctorProjectCommand } from './command.js';
-
-export async function handleDoctorProject(_command: DoctorProjectCommand): Promise<void> {
-  await renderIntro();
-  intro(chalk.cyan('Checking workflow state'));
-
-  const { rootPath, statePath } = getProjectContext();
-  const stateResult = readStateForDoctor(statePath);
-
-  if (!stateResult.ok) {
-    log.error(stateResult.message);
-    log.info('Run `sibu init` once to create Sibu workflow metadata.');
-    outro(chalk.yellow('Setup needs attention.'));
-    process.exitCode = 1;
-    return;
-  }
-
-  const state = stateResult.state;
-  const issues = diagnoseState({ rootPath, state });
-  const npmVersionResult = await checkForLatestSibuVersion();
-
-  if (issues.length === 0) {
-    log.success('Workflow is healthy. No drift detected.');
-    log.info(`Sibu version: ${state.sibuVersion}`);
-    log.info(`Template version: ${state.templateVersion}`);
-    log.info(`Managed workflow files: ${Object.keys(state.managedFiles).length}`);
-    log.info(`File statuses: ${formatManagedFileStatusCounts(state)}`);
-    logNpmVersionAdvisory(npmVersionResult);
-    outro(chalk.green('Check complete.'));
-    return;
-  }
-
-  log.warn('Found workflow changes that need review.');
-  for (const issue of issues) {
-    if (issue.severity === 'error') {
-      log.error(issue.message);
-    } else {
-      log.warn(issue.message);
-    }
-
-    if (issue.hint) {
-      log.info(issue.hint);
-    }
-  }
-
-  logNpmVersionAdvisory(npmVersionResult);
-  logSyncNextStep();
-  outro(chalk.yellow('Review needed.'));
-  process.exitCode = 1;
-}
+import { inspectWorkflow } from './retirement-inspection.js';
+import type { SkillInspectionFinding } from './retirement-inspection.js';
 
 export { getNpmVersionAdvisoryLines } from '../../support/version-advisory/index.js';
 
@@ -81,18 +28,6 @@ export function getDoctorSyncNextStepLines(): string[] {
     'Run `sibu sync` to review these workflow changes and choose whether to apply them.',
     'Sibu will not change project files until you explicitly run `sibu sync`.',
   ];
-}
-
-function logNpmVersionAdvisory(result: NpmVersionCheckResult): void {
-  for (const line of getNpmVersionAdvisoryLines(result)) {
-    log.info(line);
-  }
-}
-
-function logSyncNextStep(): void {
-  for (const line of getDoctorSyncNextStepLines()) {
-    log.info(line);
-  }
 }
 
 export function diagnoseState({ rootPath, state }: { rootPath: string; state: SibuState }): DoctorIssue[] {
@@ -108,10 +43,38 @@ export function diagnoseState({ rootPath, state }: { rootPath: string; state: Si
   }
 
   addUnsupportedSelectionIssues(state, issues);
+  const inspection = inspectWorkflow({ type: 'inspect-workflow' }, state, {
+    resolveSkill: (id) => lookupSkillIdentity(id),
+    retirements: loadSkillRetirements,
+    exists: (relativePath) => fs.existsSync(path.join(rootPath, relativePath)),
+    readText: (relativePath) => fs.readFileSync(path.join(rootPath, relativePath), 'utf8'),
+  });
+  for (const finding of inspection.findings) {
+    issues.push(inspectionIssue(finding));
+  }
   const reportedMissingPaths = addExpectedTargetIssues(rootPath, state, issues);
-  addManagedFileIssues(rootPath, state, issues, reportedMissingPaths);
+  addManagedFileIssues(rootPath, state, issues, reportedMissingPaths, new Set(inspection.findings.flatMap((finding) =>
+    finding.evidence.filter((item) => item.source === 'managed-file').map((item) => item.path)
+  )));
 
   return issues;
+}
+
+function inspectionIssue(finding: SkillInspectionFinding): DoctorIssue {
+  if (finding.kind === 'retired-skill') {
+    return {
+      severity: 'warning',
+      message: `Retired skill: ${finding.skillId} — ${finding.explanation} Installed in this project; cleanup requires your choice.`,
+      hint: 'Run `sibu sync` to review cleanup. Doctor changed nothing.',
+      retirement: { kind: 'retired', skillId: finding.skillId, explanation: finding.explanation },
+    };
+  }
+  return {
+    severity: 'warning',
+    message: `Unrecognized skill: ${finding.skillId}. Sibu cannot confirm whether this skill is current or retired.`,
+    hint: 'It will not be offered for retired-skill cleanup.',
+    retirement: { kind: 'unrecognized', skillId: finding.skillId },
+  };
 }
 
 function addUnsupportedSelectionIssues(state: SibuState, issues: DoctorIssue[]): void {
@@ -211,10 +174,11 @@ function addExpectedTargetIssues(rootPath: string, state: SibuState, issues: Doc
   return reportedMissingPaths;
 }
 
-function addManagedFileIssues(rootPath: string, state: SibuState, issues: DoctorIssue[], reportedMissingPaths: Set<string>): void {
+function addManagedFileIssues(rootPath: string, state: SibuState, issues: DoctorIssue[], reportedMissingPaths: Set<string>, inspectedSkillPaths: Set<string>): void {
   const manifest = readTemplateManifest();
 
   for (const [relativePath, managedFile] of Object.entries(state.managedFiles)) {
+    if (inspectedSkillPaths.has(relativePath)) continue;
     if (managedFile.status === 'unmanaged') {
       continue;
     }
@@ -241,6 +205,10 @@ function addManagedFileIssues(rootPath: string, state: SibuState, issues: Doctor
       });
     }
 
+    if (!manifest.templates[managedFile.template]) {
+      issues.push({ severity: 'warning', message: `${relativePath} records an unrecognized template: ${managedFile.template}.` });
+      continue;
+    }
     const currentTemplateVersion = getTemplateVersion(manifest, managedFile.template);
     if (managedFile.templateVersion !== currentTemplateVersion && !hasReviewedTemplateVersion(managedFile, currentTemplateVersion)) {
       issues.push({
@@ -252,7 +220,7 @@ function addManagedFileIssues(rootPath: string, state: SibuState, issues: Doctor
   }
 }
 
-function formatManagedFileStatusCounts(state: SibuState): string {
+export function formatManagedFileStatusCounts(state: SibuState): string {
   const counts = Object.values(state.managedFiles).reduce<Record<ManagedFileStatus, number>>(
     (accumulator, managedFile) => {
       accumulator[managedFile.status ?? 'managed'] += 1;

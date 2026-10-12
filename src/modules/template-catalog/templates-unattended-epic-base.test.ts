@@ -80,13 +80,15 @@ describe('safe Epic integration base template contract', () => {
     assert.match(epicGuidance(gatekeeper), /does not authorize an Epic PR, parallel Stories, deployment/);
   });
 
-  it('versions the packaged guidance and preserves customized installed clauses', () => {
+  it('versions the packaged guidance and verifies the installed gatekeeper is synced', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '216');
-    assert.equal(manifest.templates[templatePath]?.version, '68');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/i);
-    assert.match(installed, /same uncommitted Task/);
-    assert.match(installed, /## Human QA at Story review/);
-    assert.notEqual(installed, gatekeeper, 'installed project customizations must not be replaced by packaged template');
+    assert.equal(manifest.templateVersion, '218');
+    assert.equal(manifest.templates[templatePath]?.version, '69');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/i);
+    assert.match(installed, /Preserve the blocked Task's uncommitted edits/);
+    assert.equal(installed, gatekeeper);
+    assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
+    assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);
+    assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
   });
 });

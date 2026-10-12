@@ -5,6 +5,12 @@ import path from 'node:path';
 import { afterEach, describe, it } from 'node:test';
 
 import type { SibuState } from '../../shared/types.js';
+import { sha256 } from '../../shared/hash.js';
+import { inspectWorkflow } from '../workflow-health-inspector/index.js';
+import { lookupSkillIdentity, parseSkillRetirements } from '../template-catalog/index.js';
+import { reviewRetiredSkills } from './retired-skill-review-adapters.js';
+import { createRetiredSkillFileAdapter } from './retired-skill-file-adapter.js';
+import type { RetiredSkillReviewChoice } from './retired-skill-review-command.js';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SUPPORTED_AGENTS, getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 import { writeSibuState } from '../workflow-state-ledger/index.js';
 import { getSyncVersionAdvisoryLines, handleSyncProject as runSyncProject } from './handler.js';
@@ -29,6 +35,162 @@ const temporaryRoots: string[] = [];
 const originalCwd = process.cwd();
 const LEGACY_AGENT_ID = 'legacy-agent';
 const LEGACY_ONLY_FILE = '.legacy-agent/settings.json';
+
+const retiredSkills = parseSkillRetirements({ schemaVersion: 1, retirements: ['old-a', 'old-b'].map((id) => ({
+  id, category: 'workflow', explanation: `${id} is retired`, formerTemplateRelativePath: `skills/${id}/SKILL.md`,
+  formerTargetsByAgent: { codex: [`.agents/skills/${id}/SKILL.md`], gemini: [`.gemini/skills/${id}/SKILL.md`],
+    claude: [`.claude/skills/${id}/SKILL.md`] },
+  generatedRoutingTargetsByAgent: { codex: ['AGENTS.md'], gemini: ['GEMINI.md'], claude: ['CLAUDE.md'] },
+})) });
+
+function retiredFixture(options: { unsafeShared?: boolean } = {}) {
+  const root = createCleanInitializedRepo(SELECTABLE_ARCHITECTURE_SKILLS[0]);
+  const statePath = path.join(root, '.sibu/state.json');
+  const state = readState(root);
+  state.selectedWorkflowSkills = ['old-a', 'old-b'] as unknown as SibuState['selectedWorkflowSkills'];
+  const routing = `${fs.readFileSync(path.join(root, 'AGENTS.md'), 'utf8')}\n- old-a guidance\n${options.unsafeShared ? 'old-b guidance spans unowned lines' : '- old-b guidance'}\n`;
+  fs.writeFileSync(path.join(root, 'AGENTS.md'), routing);
+  state.managedFiles['AGENTS.md'].sha256 = sha256(routing);
+  for (const id of ['old-a', 'old-b']) {
+    const relativePath = `.agents/skills/${id}/SKILL.md`;
+    const target = path.join(root, relativePath);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, `${id} content\n`);
+    state.managedFiles[relativePath] = { template: `skills/${id}/SKILL.md`, templateVersion: '1', sha256: sha256(`${id} content\n`) };
+  }
+  fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  const inspect = (actual: SibuState) => inspectWorkflow({ type: 'inspect-workflow' }, actual, {
+    resolveSkill: (id) => lookupSkillIdentity(id, retiredSkills), retirements: () => retiredSkills,
+    exists: (relativePath) => fs.existsSync(path.join(root, relativePath)),
+    readText: (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8'),
+  });
+  return { root, statePath, inspect, findingIds: () => inspect(readState(root)).findings
+    .filter((finding) => finding.kind === 'retired-skill').map((finding) => finding.skillId) };
+}
+
+it('reviews multiple retirements before ordinary sync, preserving kept shared routing and doctor finding across runs', async () => {
+  const fixture = retiredFixture();
+  process.chdir(fixture.root);
+  const ordinaryMissingPath = '.agents/skills/clean-code/SKILL.md';
+  fs.rmSync(path.join(fixture.root, ordinaryMissingPath));
+  const order: string[] = [];
+  const choices: RetiredSkillReviewChoice[] = ['clean-up', 'keep', 'keep'];
+  const review = (root: string, statePath: string) => reviewRetiredSkills(root, statePath, {
+    retirements: () => retiredSkills, inspect: (state) => fixture.inspect(state), interaction: {
+      summary: (ids) => order.push(`summary:${ids.join(',')}`),
+      choose: async (preview) => { order.push(`choice:${preview.skillId}`); return choices.shift()!; },
+      outcome: () => {},
+    },
+  });
+  const ordinary: string[] = [];
+  const deps = { renderIntro: async () => {}, reviewRetiredSkills: review,
+    askForNewLanguageSkills: async (state: SibuState) => { ordinary.push('ordinary'); return { state, changedState: false }; },
+    askForMissingFrameworkSkills: async (state: SibuState) => ({ state, changedState: false }),
+    askForNewArchitectureSkill: async (state: SibuState) => ({ state, changedState: false }),
+    askForSyncAction: async (preview: { relativePath: string }) => { ordinary.push(preview.relativePath); return 'skip' as const; },
+    reviewProjectModelRoutes: (() => ({ status: 'preview', notices: [], reviewUnavailable: false })) as never,
+  };
+  await handleSyncProject({ type: 'sync' }, deps);
+  assert.deepEqual(order, ['summary:old-a,old-b', 'choice:old-a', 'choice:old-b']);
+  assert.equal(order.at(-1), 'choice:old-b');
+  assert.equal(ordinary[0], 'ordinary');
+  assert.equal(ordinary.includes(ordinaryMissingPath), true);
+  assert.equal(ordinary.includes('AGENTS.md'), false);
+  assert.equal(ordinary.includes('.agents/skills/old-a/SKILL.md'), false);
+  assert.equal(fs.existsSync(path.join(fixture.root, '.agents/skills/old-a/SKILL.md')), false);
+  assert.equal(fs.existsSync(path.join(fixture.root, '.agents/skills/old-b/SKILL.md')), true);
+  assert.match(fs.readFileSync(path.join(fixture.root, 'AGENTS.md'), 'utf8'), /- old-b guidance/);
+  assert.deepEqual(readState(fixture.root).selectedWorkflowSkills, ['old-b']);
+  assert.deepEqual(fixture.findingIds(), ['old-b']);
+  ordinary.length = 0;
+  await handleSyncProject({ type: 'sync' }, deps);
+  assert.deepEqual(order.slice(-2), ['summary:old-b', 'choice:old-b']);
+  assert.equal(ordinary.includes('AGENTS.md'), false);
+  assert.match(fs.readFileSync(path.join(fixture.root, 'AGENTS.md'), 'utf8'), /- old-b guidance/);
+  assert.deepEqual(fixture.findingIds(), ['old-b']);
+});
+
+it('cancelled retirement review stops before ordinary sync without changing files or findings', async () => {
+  const fixture = retiredFixture();
+  process.chdir(fixture.root);
+  const before = fs.readFileSync(fixture.statePath, 'utf8');
+  const routing = fs.readFileSync(path.join(fixture.root, 'AGENTS.md'), 'utf8');
+  let ordinary = false;
+  await handleSyncProject({ type: 'sync' }, {
+    renderIntro: async () => {},
+    reviewRetiredSkills: (root, statePath) => reviewRetiredSkills(root, statePath, {
+      retirements: () => retiredSkills, inspect: (state) => fixture.inspect(state),
+      interaction: { summary: () => {}, choose: async () => 'cancel', outcome: () => {} },
+    }),
+    askForNewLanguageSkills: async (state) => { ordinary = true; return { state, changedState: false }; },
+  });
+  assert.equal(ordinary, false);
+  assert.equal(process.exitCode, 1);
+  assert.equal(fs.readFileSync(fixture.statePath, 'utf8'), before);
+  assert.equal(fs.readFileSync(path.join(fixture.root, 'AGENTS.md'), 'utf8'), routing);
+  assert.deepEqual(fixture.findingIds(), ['old-a', 'old-b']);
+});
+
+it('unsafe shared routing preservation blocks before ordinary sync can erase kept guidance', async () => {
+  const fixture = retiredFixture({ unsafeShared: true });
+  process.chdir(fixture.root);
+  const routing = fs.readFileSync(path.join(fixture.root, 'AGENTS.md'), 'utf8');
+  let ordinary = false;
+  await handleSyncProject({ type: 'sync' }, {
+    renderIntro: async () => {},
+    reviewRetiredSkills: (root, statePath) => reviewRetiredSkills(root, statePath, {
+      retirements: () => retiredSkills, inspect: (state) => fixture.inspect(state),
+      interaction: { summary: () => {}, choose: async () => 'clean-up', outcome: () => {} },
+    }),
+    askForNewLanguageSkills: async (state) => { ordinary = true; return { state, changedState: false }; },
+  });
+  assert.equal(ordinary, false);
+  assert.equal(process.exitCode, 1);
+  assert.equal(fs.readFileSync(path.join(fixture.root, 'AGENTS.md'), 'utf8'), routing);
+  assert.deepEqual(fixture.findingIds(), ['old-a', 'old-b']);
+});
+
+it('unknown recorded skill is never offered as retired cleanup', async () => {
+  const fixture = retiredFixture();
+  const state = readState(fixture.root);
+  state.selectedWorkflowSkills = [...(state.selectedWorkflowSkills ?? []), 'unknown-skill' as never];
+  fs.writeFileSync(fixture.statePath, `${JSON.stringify(state, null, 2)}\n`);
+  const chosen: string[] = [];
+  const result = await reviewRetiredSkills(fixture.root, fixture.statePath, {
+    retirements: () => retiredSkills, inspect: (current) => fixture.inspect(current),
+    interaction: { summary: () => {}, choose: async (preview) => { chosen.push(preview.skillId); return 'keep'; }, outcome: () => {} },
+  });
+  assert.equal(result.status, 'ready');
+  assert.deepEqual(chosen, ['old-a', 'old-b']);
+  assert.equal(fixture.inspect(readState(fixture.root)).findings.some((finding) =>
+    finding.kind === 'unrecognized-skill' && finding.skillId === 'unknown-skill'), true);
+});
+
+it('partial cleanup stops ordinary sync and the next run uses observed state rather than assuming completion', async () => {
+  const fixture = retiredFixture();
+  process.chdir(fixture.root);
+  let ordinary = false;
+  const review = (root: string, statePath: string) => reviewRetiredSkills(root, statePath, {
+    retirements: () => retiredSkills, inspect: (state) => fixture.inspect(state),
+    createFiles: (projectRoot, projectStatePath) => {
+      const actual = createRetiredSkillFileAdapter(projectRoot, projectStatePath);
+      return { ...actual, state: { ...actual.state, checkpoint: () => 'stale' as const } };
+    },
+    interaction: { summary: () => {}, choose: async () => 'clean-up', outcome: () => {} },
+  });
+  await handleSyncProject({ type: 'sync' }, { renderIntro: async () => {}, reviewRetiredSkills: review,
+    askForNewLanguageSkills: async (state) => { ordinary = true; return { state, changedState: false }; } });
+  assert.equal(ordinary, false);
+  assert.equal(process.exitCode, 1);
+  assert.equal(fs.existsSync(path.join(fixture.root, '.agents/skills/old-a/SKILL.md')), false);
+  assert.equal(readState(fixture.root).managedFiles['.agents/skills/old-a/SKILL.md'] !== undefined, true);
+  const second = await reviewRetiredSkills(fixture.root, fixture.statePath, {
+    retirements: () => retiredSkills, inspect: (state) => fixture.inspect(state),
+    interaction: { summary: () => {}, choose: async () => 'clean-up', outcome: () => {} },
+  });
+  assert.equal(second.status, 'stopped');
+  assert.deepEqual(fixture.findingIds(), ['old-a', 'old-b']);
+});
 
 afterEach(() => {
   process.chdir(originalCwd);

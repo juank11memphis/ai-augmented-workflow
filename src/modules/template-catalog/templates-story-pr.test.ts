@@ -19,6 +19,15 @@ function assertInOrder(content: string, phrases: string[]): void {
 }
 
 describe('future packaged verified Story PR contract', () => {
+  it('tries GitHub MCP first without routine branch-rules probing or weaker merge gates', () => {
+    assert.match(gatekeeper, /For GitHub PR operations and remote host observations, try the configured GitHub MCP first/);
+    assert.match(gatekeeper, /Use `gh` or another configured host interface only when MCP is unavailable or lacks the needed operation/);
+    assert.match(gatekeeper, /Do not perform standalone branch-rules or branch-protection lookups as a routine prerequisite/);
+    assert.match(gatekeeper, /use PR and check readback plus the host's merge response to identify required checks and protection blockers/);
+    assert.match(gatekeeper, /read back its actual state before any retry or fallback/);
+    assert.match(gatekeeper, /An absent, unavailable, or ambiguous required check or host policy is not permission to merge/);
+  });
+
   it('opens one PR only after accepted plan, checked Tasks, and Story validation', () => {
     assertInOrder(gatekeeper, [
       'exact accepted plan identity is still current',
@@ -53,19 +62,21 @@ describe('future packaged verified Story PR contract', () => {
     assert.match(gatekeeper, /record the closed child PR URL and resulting Epic head before allowing the next Story/);
   });
 
-  it('continues only after observed integration and preserves installed human review', () => {
+  it('continues only after observed integration with synced installed guidance', () => {
     assert.match(gatekeeper, /After the verified Story PR squash merge and updated Epic head are observed, continue only to the next planned Story/);
     assert.match(gatekeeper, /Never advance from an attempted or ambiguous merge/);
     assert.match(gatekeeper, /If no next Story exists, stop Story dispatch and use the separate Epic verification and human-handoff contract/);
-    assert.match(installed, /## Story review gate: one final PR decision/);
-    assert.notEqual(installed, gatekeeper);
+    assert.equal(installed, gatekeeper);
+    assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
+    assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);
+    assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
   });
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '216');
+    assert.equal(manifest.templateVersion, '218');
     const executorTemplate = manifest.templates[templatePath];
-    assert.equal(executorTemplate?.version, '68');
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);
+    assert.equal(executorTemplate?.version, '69');
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/);
   });
 });
