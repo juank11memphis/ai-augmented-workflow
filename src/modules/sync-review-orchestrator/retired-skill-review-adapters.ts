@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { log, select, isCancel } from '@clack/prompts';
+import { log } from '@clack/prompts';
 
 import type { SibuState } from '../../shared/types.js';
 import { inspectWorkflow, type InspectWorkflowResult } from '../workflow-health-inspector/index.js';
@@ -10,12 +10,14 @@ import { applyRetiredSkillReview } from './retired-skill-review-handler.js';
 import { previewRetiredSkill } from './retired-skill-preview.js';
 import type { RetiredSkillReviewChoice } from './retired-skill-review-command.js';
 import type { RetiredSkillReviewResult } from './retired-skill-review-result.js';
+import type { RetiredSkillApplyResult } from './retired-skill-review-handler.js';
+import { askForRetiredSkillChoice, renderRetiredSkillOutcome, renderRetiredSkillSummary } from './retired-skill-review-prompt.js';
 
 type Preview = Extract<RetiredSkillReviewResult, { status: 'preview' }>;
 type Interaction = {
-  summary(skills: readonly string[]): void;
-  choose(preview: Preview): Promise<RetiredSkillReviewChoice>;
-  outcome(message: string): void;
+  summary(skills: readonly string[], retirements?: readonly SkillRetirement[]): void;
+  choose(preview: Preview, index?: number, total?: number): Promise<RetiredSkillReviewChoice>;
+  outcome(result: RetiredSkillApplyResult): void;
 };
 type ReviewDependencies = {
   retirements(): readonly SkillRetirement[];
@@ -35,28 +37,9 @@ function inspectProject(state: SibuState, rootPath: string, retirements: readonl
 }
 
 const defaultInteraction: Interaction = {
-  summary: (skills) => log.warn(`Retired skills awaiting review: ${skills.join(', ')}.`),
-  choose: async (preview) => {
-    log.info(`${preview.skillId}: ${preview.explanation}`);
-    for (const [label, effects] of [
-      ['Remove managed copy', preview.remove], ['Keep as your own', preview.keepAsOwn],
-      ['Refresh Sibu routing', preview.removeFromSibuGuidance], ['Review yourself', preview.reviewYourself],
-      ['Uncertain ownership', preview.uncertain],
-    ] as const) {
-      for (const effect of effects) log.info(`${label}: ${effect.path} — ${effect.reason}`);
-    }
-    const choice = await select<RetiredSkillReviewChoice>({
-      message: `What should Sibu do with ${preview.skillId}?`,
-      initialValue: 'keep',
-      options: [
-        { value: 'keep', label: 'Keep for now' },
-        { value: 'clean-up', label: 'Clean up', hint: preview.canCleanUp ? 'Apply only verified effects.' : 'Unavailable until ownership is clear.' },
-        { value: 'cancel', label: 'Cancel sync' },
-      ],
-    });
-    return isCancel(choice) ? 'cancel' : choice;
-  },
-  outcome: (message) => log.info(message),
+  summary: (skills, retirements = []) => { for (const line of renderRetiredSkillSummary(skills, retirements)) log.info(line); },
+  choose: askForRetiredSkillChoice,
+  outcome: (result) => { for (const line of renderRetiredSkillOutcome(result)) log.info(line); },
 };
 
 function protection(findings: InspectWorkflowResult, retirements: readonly SkillRetirement[]): ReadonlySet<string> {
@@ -73,6 +56,18 @@ function protection(findings: InspectWorkflowResult, retirements: readonly Skill
   return paths;
 }
 
+function userReferences(rootPath: string, state: SibuState, skillId: string,
+  inspect: ReturnType<typeof createRetiredSkillFileAdapter>['files']['inspect']): Array<{ path: string; description: string }> {
+  const candidates = ['README.md', 'AGENTS.md', 'GEMINI.md', 'CLAUDE.md'];
+  return candidates.filter((relativePath) => {
+    const record = state.managedFiles[relativePath];
+    if (record && record.status !== 'unmanaged') return false;
+    if (!fs.existsSync(path.join(rootPath, relativePath))) return false;
+    const snapshot = inspect(relativePath, skillId);
+    return snapshot.status === 'present' && snapshot.referencesSkill;
+  }).map((relativePath) => ({ path: relativePath, description: 'User-written reference remains for review' }));
+}
+
 export async function reviewRetiredSkills(rootPath: string, statePath: string,
   overrides: Partial<ReviewDependencies> = {}): Promise<RetiredSkillSyncReview> {
   const dependencies = { retirements: loadSkillRetirements, inspect: inspectProject, createFiles: createRetiredSkillFileAdapter,
@@ -82,27 +77,24 @@ export async function reviewRetiredSkills(rootPath: string, statePath: string,
   const findings = () => dependencies.inspect(files.state.snapshot().state, rootPath, retirements);
   let current = findings();
   const pending = current.findings.filter((finding) => finding.kind === 'retired-skill').map((finding) => finding.skillId);
-  if (pending.length) dependencies.interaction.summary(pending);
+  if (pending.length) dependencies.interaction.summary(pending, retirements);
 
-  for (const skillId of pending) {
+  for (const [index, skillId] of pending.entries()) {
     current = findings();
     if (!current.findings.some((finding) => finding.kind === 'retired-skill' && finding.skillId === skillId)) continue;
     const review = {
       catalog: { resolveSkill: (id: string) => lookupSkillIdentity(id, retirements) },
       state: { read: () => files.state.snapshot().state },
-      files: { inspect: files.files.inspect, userReferences: (_id: string) => [] },
+      files: { inspect: files.files.inspect, userReferences: (id: string) =>
+        userReferences(rootPath, files.state.snapshot().state, id, files.files.inspect) },
       interaction: { choose: dependencies.interaction.choose },
     };
     const preview = previewRetiredSkill({ type: 'preview-retired-skill', skillId }, review);
     if (preview.status !== 'preview') return { status: 'stopped', protectedPaths: protection(current, retirements) };
-    const choice = await dependencies.interaction.choose(preview);
+    const choice = await dependencies.interaction.choose(preview, index + 1, pending.length);
     const result = applyRetiredSkillReview(preview, choice,
       { review, retirements: () => retirements, ...files });
-    dependencies.interaction.outcome(`${skillId}: ${result.status}${result.reason ? ` — ${result.reason}` : ''}.`);
-    for (const path of result.remainingManualReview) dependencies.interaction.outcome(`Review yourself: ${path}`);
-    if (result.status === 'completed') {
-      dependencies.interaction.outcome('User-written references were not changed; review any that remain.');
-    }
+    dependencies.interaction.outcome(result);
     if (result.status === 'cancelled' || !['completed', 'deferred'].includes(result.status)) {
       return { status: 'stopped', protectedPaths: protection(findings(), retirements) };
     }

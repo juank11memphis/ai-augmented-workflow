@@ -7,6 +7,105 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { formatStartLocalEvalsWorkbenchResult, handleStartLocalEvalsWorkbenchCommand } from '../../modules/local-evals-workbench/index.js';
+import { renderRetirementFinding } from './doctor-presentation.js';
+import { inspectWorkflow } from '../../modules/workflow-health-inspector/retirement-inspection.js';
+import { lookupSkillIdentity, parseSkillRetirements } from '../../modules/template-catalog/retirements.js';
+import { reviewRetiredSkills } from '../../modules/sync-review-orchestrator/retired-skill-review-adapters.js';
+import { sha256 } from '../../shared/hash.js';
+import type { SibuState } from '../../shared/types.js';
+import type { RetiredSkillReviewChoice } from '../../modules/sync-review-orchestrator/retired-skill-review-command.js';
+
+describe('retired-skill CLI presentation and disposable lifecycle', () => {
+  it('matches compact/wide doctor and unknown mockups without terminal imports in the inspector', () => {
+    const retired = { severity: 'warning' as const, message: 'not used for rendering', retirement: {
+      kind: 'retired' as const, skillId: 'YYY', explanation: 'Sibu no longer provides this skill.',
+    } };
+    assert.deepEqual(renderRetirementFinding(retired, 50), [
+      'Retired skill: YYY', 'Sibu no longer provides this skill.', '',
+      'Run `sibu sync` to review cleanup.', 'Doctor changed nothing.',
+    ]);
+    assert.deepEqual(renderRetirementFinding(retired, 120), [
+      'Retired skill: YYY — Sibu no longer provides this skill.',
+      'Installed in this project; cleanup requires your choice.', '',
+      'Run `sibu sync` to review cleanup. Doctor changed nothing.',
+    ]);
+    assert.deepEqual(renderRetirementFinding({ severity: 'warning', message: '', retirement: {
+      kind: 'unrecognized', skillId: 'YYY',
+    } }, 50), ['Unrecognized skill: YYY', 'Sibu cannot confirm whether this skill is current or retired.',
+      'It will not be offered for retired-skill cleanup.']);
+    const source = fs.readFileSync('src/modules/workflow-health-inspector/handler.ts', 'utf8');
+    assert.doesNotMatch(source, /@clack\/prompts|chalk|process\.stdout|process\.stdin|doctor-presentation/);
+    assert.match(fs.readFileSync('src/entrypoints/cli/execute-command.ts', 'utf8'), /doctor-presentation\.js/);
+  });
+
+  it('keeps, cancels, and cleans mandatory/optional copies across two agents without touching user files or architecture', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-retired-cli-'));
+    const statePath = path.join(root, '.sibu/state.json');
+    const records = parseSkillRetirements({ schemaVersion: 1, retirements: [
+      ...(['old-mandatory', 'old-optional'] as const).map((id) => ({
+        id, category: id === 'old-mandatory' ? 'mandatory' : 'workflow', explanation: `${id} was retired.`,
+        formerTemplateRelativePath: `skills/${id}/SKILL.md`,
+        formerTargetsByAgent: { codex: [`.agents/skills/${id}/SKILL.md`],
+          gemini: [`.gemini/skills/${id}/SKILL.md`], claude: [`.claude/skills/${id}/SKILL.md`] },
+        generatedRoutingTargetsByAgent: { codex: ['AGENTS.md'], gemini: ['GEMINI.md'], claude: ['CLAUDE.md'] },
+      })),
+    ] });
+    const state: SibuState = { sibuVersion: 'test', templateVersion: 'test', generatedAt: 'test', updatedAt: 'test',
+      selectedAgents: ['codex', 'gemini'], selectedArchitectureSkill: 'command-pattern',
+      selectedWorkflowSkills: ['old-optional', 'unknown-skill'] as unknown as SibuState['selectedWorkflowSkills'], managedFiles: {} };
+    const write = (relativePath: string, bytes: string) => {
+      const target = path.join(root, relativePath);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, bytes);
+    };
+    for (const id of ['old-mandatory', 'old-optional']) {
+      const codexPath = `.agents/skills/${id}/SKILL.md`;
+      write(codexPath, `${id}\n`);
+      state.managedFiles[codexPath] = { template: `skills/${id}/SKILL.md`, templateVersion: '1', sha256: sha256(`${id}\n`) };
+    }
+    const editedPath = '.gemini/skills/old-optional/SKILL.md';
+    write(editedPath, 'Locally edited old optional guidance.\n');
+    state.managedFiles[editedPath] = { template: 'skills/old-optional/SKILL.md', templateVersion: '1',
+      sha256: sha256('original guidance\n') };
+    write('README.md', 'My user-created reference to old-optional stays.\n');
+    write('.agents/skills/user-created/SKILL.md', 'My skill stays.\n');
+    write('.sibu/state.json', `${JSON.stringify(state, null, 2)}\n`);
+    const inspect = (current: SibuState) => inspectWorkflow({ type: 'inspect-workflow' }, current, {
+      retirements: () => records, resolveSkill: (id) => lookupSkillIdentity(id, records),
+      exists: (relativePath) => fs.existsSync(path.join(root, relativePath)),
+      readText: (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8'),
+    });
+    const read = () => JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
+    const manualReview: string[] = [];
+    const run = async (choices: RetiredSkillReviewChoice[]) => reviewRetiredSkills(root, statePath, {
+      retirements: () => records, inspect: (current) => inspect(current), interaction: {
+        summary: () => {}, choose: async (preview) => {
+          manualReview.push(...preview.reviewYourself.map((effect) => effect.path));
+          return choices.shift()!;
+        }, outcome: () => {},
+      },
+    });
+    try {
+      const before = fs.readFileSync(statePath, 'utf8');
+      await run(['keep', 'keep']);
+      assert.equal(fs.readFileSync(statePath, 'utf8'), before);
+      assert.deepEqual(inspect(read()).findings.map((item) => item.skillId), ['old-optional', 'unknown-skill', 'old-mandatory']);
+      await run(['cancel']);
+      assert.equal(fs.readFileSync(statePath, 'utf8'), before);
+      await run(['clean-up', 'clean-up']);
+      assert.equal(fs.existsSync(path.join(root, '.agents/skills/old-mandatory/SKILL.md')), false);
+      assert.equal(fs.existsSync(path.join(root, '.agents/skills/old-optional/SKILL.md')), false);
+      assert.equal(fs.readFileSync(path.join(root, editedPath), 'utf8'), 'Locally edited old optional guidance.\n');
+      assert.equal(read().managedFiles[editedPath]?.status, 'unmanaged');
+      assert.equal(read().selectedArchitectureSkill, 'command-pattern');
+      assert.deepEqual(read().selectedWorkflowSkills, ['unknown-skill']);
+      assert.deepEqual(inspect(read()).findings.map((item) => item.skillId), ['unknown-skill']);
+      assert.ok(manualReview.includes('README.md'));
+      assert.equal(fs.readFileSync(path.join(root, 'README.md'), 'utf8'), 'My user-created reference to old-optional stays.\n');
+      assert.equal(fs.readFileSync(path.join(root, '.agents/skills/user-created/SKILL.md'), 'utf8'), 'My skill stays.\n');
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+});
 
 describe('local evals CLI handler', () => {
 

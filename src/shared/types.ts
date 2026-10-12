@@ -182,6 +182,7 @@ export type DoctorIssue = {
   severity: 'warning' | 'error';
   message: string;
   hint?: string;
+  retirement?: { kind: 'retired' | 'unrecognized'; skillId: string; explanation?: string };
 };
 
 export type TemplateManifest = {
