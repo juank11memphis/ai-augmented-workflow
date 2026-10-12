@@ -61,6 +61,8 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Template Update**: a newer Sibu-provided version of a managed template.
 - **Sync Review**: the user-controlled maintenance process for deciding how to handle drift, missing files, local edits, and template updates.
 - **Skill**: focused AI workflow guidance for a specific kind of work or artifact.
+- **Retired Sibu-Provided Skill**: a formerly distributed non-architecture skill that Sibu explicitly identifies as withdrawn from its current guidance. It may have been mandatory or optional when installed; retirement does not transfer ownership of installed files to Sibu. Architecture-skill retirement is outside the current lifecycle.
+- **Unrecognized Skill**: a Sibu-recorded skill whose origin or retirement cannot be established from Sibu's known guidance. It is not presumed retired or safe to remove; user-created skills outside Sibu state are not part of this finding.
 - **Architecture Skill**: a focused skill from Sibu's fixed architecture catalog that gives architecture-specific guidance for how project architecture, feature design, implementation planning, and execution should be shaped.
 - **Selected Architecture Skill**: the one repo-level architecture skill the user explicitly chooses during workflow adoption. It is recorded in Sibu state, installed as workflow guidance, and carried into downstream technical and implementation work.
 - **Architecture Skill Replacement**: an intentional high-impact workflow configuration change where the user replaces the selected architecture skill with a different catalog option after initialization.
@@ -118,6 +120,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Customized vs Drifted**: customization is user-owned change that may be valid; drift is a detected difference that needs review. Not all drift is a mistake.
 - **Workflow vs Pipeline**: workflow is the overall repo-local AI collaboration setup. Pipeline is the ordered artifact chain used for planned product/feature work.
 - **Skill vs Artifact**: a skill is the guidance/process; an artifact is the project-owned output produced by that skill.
+- **Retired vs Unrecognized Skill**: Sibu calls a skill retired only with explicit Sibu retirement information. Mere absence from the current catalog does not prove deprecation; user-created skills remain outside Sibu retirement cleanup.
 - **Eval Suite vs Eval Run**: a suite defines what can be evaluated; a run is one execution of that suite or one test case from it.
 - **Model Under Evaluation vs Judge Model**: the Model Under Evaluation produces the behavior being tested; the Judge Model scores rubric-based behavior and must remain distinguishable in results.
 - **Assertion vs Grader**: assertion is the familiar UI term for checks; grader is the broader eval term for rubric or model-judged evaluation.
@@ -143,7 +146,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 
 - **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages, including the required selected architecture skill.
 - **Workflow Configuration Management**: lets users intentionally change selected workflow guidance, architecture guidance, tool integrations, and repo-wide sub-agent model routes after initialization while preserving safety and state consistency.
-- **Workflow Maintenance & Sync Review**: detects drift and helps users review, repair, update, customize, skip, or unmanage workflow files.
+- **Workflow Maintenance & Sync Review**: detects drift and known skill retirement, then helps users review, repair, update, clean up, customize, skip, or unmanage workflow files.
 - **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work, selected architecture guidance, reviewed story plans, bounded checked execution, human decisions on material blockers, sequential Story PR integration, and final Epic PR review.
 - **Local Evals Workbench**: helps users discover Evaluation Targets, approve deep risk-based coverage, create repo-local eval suites, run all or one test case against a selected compatible model, inspect results, analyze one failed assertion at a time, review concrete repair proposals, approve project file mutations, and rerun eval scope.
 - **Maintainer Release Support**: helps Sibu maintainers prepare, validate, publish, and recover Sibu releases without turning release automation into an end-user workflow.
@@ -295,6 +298,14 @@ An intentional post-initialization change to selected workflow guidance or tool 
 #### Skill
 
 A focused unit of AI workflow guidance for one type of work. Skills are responsible for routing, prerequisites, behavior, and output expectations.
+
+#### Retired Sibu-Provided Skill
+
+A Sibu-provided non-architecture skill explicitly withdrawn from current guidance, including a formerly mandatory or optional skill. Its installed copies and routing references remain project-owned and require a user-controlled maintenance decision. Architecture-skill retirement needs a separate future domain and workflow decision.
+
+#### Unrecognized Skill
+
+A Sibu-recorded skill that Sibu cannot identify as currently supported or explicitly retired. Sibu reports the uncertainty without claiming deprecation or treating the file as eligible for retirement cleanup; unrelated user-created skills remain outside this process.
 
 #### Architecture Skill
 
@@ -458,6 +469,7 @@ define focused task
 - A **Workflow File** has a repo path, source template, current content, recorded hash, template version, and ownership state.
 - **Sibu State Metadata** records managed paths, template versions, file hashes, selected agent support, the selected architecture skill, repo-wide model routes for Sibu-provided sub-agent roles, and whether files are managed, customized, or unmanaged.
 - A **Skill** has a purpose, trigger scope, required inputs, hard-stop conditions, owned output artifact, and boundaries.
+- A **Retired Sibu-Provided Skill** has a known Sibu identity and retirement explanation; its installed copies may have different ownership states in different projects.
 - An **Architecture Skill** has a catalog identifier, name, description, routing instruction, source template, and agent-specific target path.
 - A **Selected Architecture Skill** has exactly one catalog choice recorded in state and one installed guidance target for each selected agent that supports skill files.
 - A **Workflow Configuration Change** has a user intent, selected option, affected workflow files, readiness checks, and resulting state updates.
@@ -513,6 +525,7 @@ define focused task
 - A **Model Recommendation Catalog** may recommend one route per supported role, workload class, and agent environment, but a user may choose another available route.
 - A saved **Model Route** remains unchanged when a catalog recommendation changes until the user explicitly accepts or resets it.
 - A **Skill** produces or updates one primary **Artifact** type.
+- One **Retired Sibu-Provided Skill** may have installed copies and Sibu-managed routing references across several selected agents; each affected project retains control of its copies.
 - A **Skill** may guide use of an MCP-provided tool, but the MCP server remains an external integration.
 - An **Artifact** can be required by one or more downstream **Skills**.
 - A **Project / Repo** can contain many **Eval Suites**.
@@ -553,6 +566,11 @@ define focused task
 - `sibu sync` is the maintenance path for reviewing and applying workflow changes after initialization.
 - Sibu must protect customized files from automatic overwrite.
 - Sibu should make drift understandable rather than hide it.
+- Sibu must distinguish explicitly retired Sibu-provided skills from unrecognized or user-created skills; catalog absence alone is not proof of retirement.
+- Known retirement requires review in both workflow health checks and sync; it must not be silently dismissed as a healthy workflow or trigger automatic cleanup.
+- Retirement cleanup may remove an unchanged Sibu-managed skill copy only after the user chooses that action. Customized copies remain in the project and become unmanaged rather than being deleted.
+- Cleanup of a retired skill must also address Sibu-managed routing references to it, while preserving user-written references for explicit review rather than silently changing them.
+- The current retirement lifecycle does not withdraw architecture skills or offer their cleanup. The selected architecture skill remains governed by the existing intentional replacement rules; an initialized workflow must not be left without selected architecture guidance.
 - Users can customize or unmanage workflow files when Sibu defaults no longer fit.
 - Optional non-architecture skills and MCP integrations are user-selected and may be changed after initialization.
 - Architecture skill replacement is allowed only as an intentional high-impact configuration change after Sibu strongly warns the user about downstream consequences.
@@ -604,6 +622,10 @@ define focused task
 - When the user wants to replace the selected architecture skill, Sibu should warn that the change may invalidate prior technical designs, implementation plans, and implementation guidance before allowing the change.
 - When workflow state has no selected architecture skill, Sibu should treat that as workflow state needing review or repair rather than as a normal choice.
 - When drift, missing files, local edits, or template updates are detected, Sibu should direct the user to `sibu sync`.
+- When Sibu knows a formerly provided non-architecture skill was retired, `sibu doctor` should flag it for review and `sibu sync` should explain the retirement and offer a user-controlled cleanup or defer decision, whether the skill was mandatory or optional.
+- When a recorded skill is unrecognized but not explicitly retired, Sibu should report it separately and avoid a deprecation claim or retirement cleanup.
+- When the user chooses retirement cleanup, Sibu should remove unchanged managed copies, leave customized copies in place as unmanaged, and remove Sibu-managed routing references; user-written references remain for explicit review.
+- When architecture guidance is no longer suitable, Sibu should use its separate, intentional architecture-replacement workflow rather than the retired-skill cleanup path.
 - When local edits exist, Sibu should present review options instead of overwriting automatically.
 - When a managed file is missing, Sibu may offer to repair it during sync.
 - When an MCP server is selected, Sibu should render agent-specific configuration that references credentials safely rather than storing secret values.
@@ -689,6 +711,13 @@ define focused task
 6. **Updated / Repaired / Skipped**: user chooses how to handle the file during sync.
 7. **Unmanaged**: user takes full ownership and Sibu stops controlling it.
 
+#### Sibu-Provided Skill Retirement Lifecycle
+
+1. **Skill Distributed**: Sibu provides non-architecture guidance that a project may install, whether mandatory or optional.
+2. **Retirement Declared**: Sibu explicitly identifies the skill as withdrawn and explains the change; an unknown skill does not enter this lifecycle by inference.
+3. **Retirement Review Needed**: doctor reports the finding without changing files; sync presents the affected installed copies and routing guidance for a user decision.
+4. **Cleanup Deferred or Chosen**: deferral leaves the finding visible for future review. Cleanup removes only unchanged managed copies, preserves customized copies as unmanaged, and addresses Sibu-managed routing references without silently changing user-written ones.
+
 #### Architecture Skill Selection Lifecycle
 
 1. **Catalog Available**: Sibu has a fixed set of selectable architecture skills.
@@ -754,6 +783,10 @@ define focused task
 - **Sub-agent Model Route Changed**: the user intentionally replaces or resets a saved route.
 - **Drift Detected**: Sibu finds missing, modified, unrecorded, customized, or outdated workflow files.
 - **Template Update Available**: a newer Sibu template exists for a tracked workflow file.
+- **Sibu-Provided Skill Retired**: Sibu explicitly withdraws a formerly distributed skill and explains its retirement.
+- **Retired Skill Review Needed**: workflow health or sync identifies an installed retired skill and presents it for user decision.
+- **Retired Skill Cleanup Chosen**: the user authorizes cleanup of the affected Sibu-managed copies and routing references, subject to local customization safeguards.
+- **Retired Skill Cleanup Deferred**: the user keeps the current project files and the retirement finding remains visible for later review.
 - **Local Customization Detected**: a workflow file has user edits that must be protected.
 - **Managed File Repaired**: a missing or broken managed file is restored by user choice.
 - **Template Update Applied**: the user chooses to apply a template update.
@@ -828,6 +861,7 @@ define focused task
 - **Automation vs trust**: Sibu should reduce tedious setup and maintenance work without hiding changes or overriding local decisions.
 - **Required architecture choice vs user control**: Sibu should require a selected architecture skill for workflow consistency without dictating which architecture the user must choose.
 - **Architecture replacement vs downstream consistency**: users may need to change architecture guidance, but doing so can disrupt prior technical designs, implementation plans, and workflow expectations.
+- **Architecture retirement deferred**: this retirement lifecycle covers Sibu-provided mandatory and optional non-architecture skills only. Retiring architecture guidance would need a separate future decision that preserves the required selected architecture skill.
 - **Strong defaults vs local adaptation**: defaults should help most users move quickly, while customization and unmanagement remain first-class paths.
 - **Pipeline enforcement vs developer flow**: feature work should follow the artifact chain, but narrow fixes should not be burdened with unnecessary process.
 - **Template freshness vs local edits**: newer templates may be valuable, but customized local files require careful review and protection.

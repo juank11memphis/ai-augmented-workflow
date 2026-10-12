@@ -43,11 +43,13 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 
 - **Check workflow health**: inspect Sibu-managed workflow state without changing files so users know whether the workflow is healthy or needs attention.
 - **Detect workflow drift**: identify missing, modified, unrecorded, customized, or outdated workflow files that need review.
+- **Detect retired Sibu-provided skills**: identify explicitly retired mandatory or optional non-architecture skills in recorded project workflow state during health checks and sync, without labeling merely unrecognized or user-created skills as deprecated.
 - **Detect architecture selection problems**: identify missing or unsupported selected architecture skill state as workflow health that needs review or repair.
 - **Detect model-route review needs**: identify unavailable saved routes and newer research-informed catalog recommendations that the user may want to review.
-- **Explain maintenance findings**: make drift, local edits, architecture selection problems, model-route review needs, and template updates understandable before the user decides what to do.
+- **Explain maintenance findings**: make drift, local edits, known skill retirement, unrecognized recorded skills, architecture selection problems, model-route review needs, and template updates understandable before the user decides what to do.
 - **Protect local edits**: prevent automatic overwrite of user-customized workflow files and preserve local ownership decisions.
-- **Guide sync decisions**: help the user choose whether to repair, update, customize, unmanage, select missing required architecture guidance, retain or change a model route, or skip each relevant workflow change.
+- **Guide retired-skill cleanup**: let users defer or explicitly choose cleanup of a known retired skill, removing unchanged managed copies and Sibu-managed routing references while preserving customized copies as unmanaged and surfacing user-written references for review.
+- **Guide sync decisions**: help the user choose whether to repair, update, clean up a retired skill, customize, unmanage, select missing required architecture guidance, retain or change a model route, or skip each relevant workflow change.
 - **Apply approved maintenance changes**: update workflow files and state metadata only after the user chooses an action.
 
 #### AI-Augmented Development Pipeline
@@ -116,6 +118,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Provide workflow templates**: maintain source templates for agent instructions, skills, conventions, and workflow files.
 - **Version templates**: track template versions so projects can detect freshness, drift, and available updates.
 - **Describe template changes**: provide user-facing update notes that make sync decisions understandable.
+- **Declare skill retirements**: provide authoritative identities and explanations for withdrawn Sibu-provided non-architecture skills so maintenance can distinguish known retirement from an unrecognized recorded skill.
 - **Support safe template adoption**: make templates available for initialization and sync without implying that Sibu may silently overwrite project-owned files.
 - **Distribute model recommendations**: package the current model recommendation catalog for supported agent environments as versioned, reviewable Sibu guidance.
 - **Explain recommendation updates**: provide sync-visible notes when new models, changed provider guidance, or revised research-informed role recommendations become available.
@@ -176,7 +179,8 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Skill Guidance** must provide the fixed architecture skill catalog before **Workflow Adoption & State Tracking** can require architecture skill selection.
 - **Workflow Adoption & State Tracking** must precede **Workflow Configuration Management** and **Workflow Maintenance & Sync Review**, because both depend on recorded workflow state.
 - **Workflow Configuration Management** depends on **Template Catalog** for selectable skills, workflow templates, and recommendation versions; **Skill Guidance** for selected architecture guidance; **Agent Support Selection** for valid model-route choices; **MCP / Tool Configuration Support** for safe tool configuration rendering; and **Workflow Maintenance & Sync Review** readiness concepts to avoid unsafe mutation.
-- **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template and recommendation versions with meaningful update notes, **Skill Guidance** to repair missing or unsupported architecture skill selections, and **Agent Support Selection** to interpret unavailable or superseded model routes.
+- **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template and recommendation versions, meaningful update notes, and authoritative non-architecture skill-retirement notices; **Skill Guidance** to repair missing or unsupported architecture skill selections; and **Agent Support Selection** to interpret unavailable or superseded model routes.
+- **Retired-skill cleanup** depends on recorded Sibu-managed file ownership and routing context; architecture guidance remains outside this cleanup capability and under intentional configuration management.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
 - **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
@@ -204,6 +208,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Team routes vs personal preferences**: the initial capability stores repo-wide choices; private per-developer overrides remain possible future evolution.
 - **Catalog coverage**: users may choose available models absent from the catalog; Sibu must not present either catalog recommendations or user-selected routes as guaranteed quality, cost, or completion-time outcomes.
 - **Architecture replacement risk**: replacing architecture guidance is allowed, but future feature work should define the exact warning, confirmation, and repair experience carefully.
+- **Architecture-skill retirement**: this capability is deferred; current retirement detection and cleanup cover only mandatory and optional non-architecture skills.
 - **Skill selection depth**: optional skills may start as template choices, but could evolve into richer recommendations based on project type.
 - **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.
