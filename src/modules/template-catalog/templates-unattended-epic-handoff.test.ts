@@ -74,14 +74,17 @@ describe('future packaged Epic handoff contract', () => {
     assert.match(handoff, /do not delete a remote branch unless separately requested/);
   });
 
-  it('versions the changed packaged gatekeeper with current sync notes while preserving installed Story review', () => {
+  it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '216');
+    assert.equal(manifest.templateVersion, '217');
     assert.equal(manifest.templates[templatePath]?.version, '68');
     assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
-    assert.match(installed, /## Story review gate: one final PR decision/);
-    assert.doesNotMatch(installed, /## Present complete Epic for human review/);
-    assert.match(installed, /merged final feature\/Epic PR.*GitHub MCP/);
+    assert.equal(installed, guidance);
+    assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
+    assert.match(installed, /main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/i);
+    assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
+    assert.match(installed, /## Present complete Epic for human review/);
+    assert.match(installed, /verify its actual merged state, head, and base with the PR host.*GitHub MCP/);
   });
 });
