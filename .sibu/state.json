@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "216",
+  "templateVersion": "218",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-12T17:21:36.713Z",
+  "updatedAt": "2026-10-12T22:36:14.990Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -217,8 +217,8 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "68",
-      "sha256": "673aef9b6bda262a0c351c023ebf6d5068a5e4502c310843514ab95dc6df841a",
+      "templateVersion": "69",
+      "sha256": "5f77f63f8b924be67bf11c02a88e1c4aaa535a7032eee2794748496f9dc50cc4",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {

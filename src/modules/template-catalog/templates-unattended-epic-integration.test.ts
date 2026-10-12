@@ -91,10 +91,10 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '217');
-    assert.equal(manifest.templates[templatePath]?.version, '68');
+    assert.equal(manifest.templateVersion, '218');
+    assert.equal(manifest.templates[templatePath]?.version, '69');
     assert.equal(manifest.templates['AGENTS.md']?.version, '54');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/);
     assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /integrate fully verified Story PRs/);
   });
 });

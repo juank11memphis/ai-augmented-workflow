@@ -76,9 +76,9 @@ describe('future packaged Epic handoff contract', () => {
 
   it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '217');
-    assert.equal(manifest.templates[templatePath]?.version, '68');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);
+    assert.equal(manifest.templateVersion, '218');
+    assert.equal(manifest.templates[templatePath]?.version, '69');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
     assert.equal(installed, guidance);
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
