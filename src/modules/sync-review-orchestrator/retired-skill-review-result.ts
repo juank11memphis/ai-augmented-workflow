@@ -1,4 +1,5 @@
 import type { RetiredSkillReviewChoice } from './retired-skill-review-command.js';
+import type { RetiredSkillFileSnapshot } from './retired-skill-review-ports.js';
 
 export type RetiredSkillEffect = Readonly<{ path: string; reason: string }>;
 
@@ -7,6 +8,8 @@ export type RetiredSkillReviewResult =
   | {
     status: 'preview';
     skillId: string;
+    stateFingerprint: string;
+    observedFiles: Record<string, RetiredSkillFileSnapshot>;
     explanation: string;
     selected: boolean;
     choices: readonly RetiredSkillReviewChoice[];

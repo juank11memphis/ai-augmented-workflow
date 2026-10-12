@@ -1,4 +1,5 @@
 import type { ManagedFileState, SibuState } from '../../shared/types.js';
+import { sha256 } from '../../shared/hash.js';
 import type { SkillRetirement } from '../template-catalog/retirements.js';
 import type { RetiredSkillReviewCommand } from './retired-skill-review-command.js';
 import type { RetiredSkillReviewPorts, RetiredSkillFileSnapshot } from './retired-skill-review-ports.js';
@@ -34,10 +35,12 @@ export function previewRetiredSkill(command: RetiredSkillReviewCommand, ports: R
   const removeFromSibuGuidance: RetiredSkillEffect[] = [];
   const reviewYourself: RetiredSkillEffect[] = [];
   const uncertain: RetiredSkillEffect[] = [];
+  const observedFiles: Record<string, RetiredSkillFileSnapshot> = {};
 
   for (const path of pathsForAgents(retirement.formerTargetsByAgent, state.selectedAgents)) {
     const record = state.managedFiles[path];
     const snapshot = ports.files.inspect(path, command.skillId);
+    observedFiles[path] = snapshot;
     if (snapshot.status === 'missing' && !record) continue;
     const ownership = record?.template === retirement.formerTemplateRelativePath
       ? classifyRecordedFile(record, snapshot) : snapshot.status === 'present' ? 'unmanaged' : 'uncertain';
@@ -49,6 +52,7 @@ export function previewRetiredSkill(command: RetiredSkillReviewCommand, ports: R
 
   for (const path of pathsForAgents(retirement.generatedRoutingTargetsByAgent, state.selectedAgents)) {
     const snapshot = ports.files.inspect(path, command.skillId);
+    observedFiles[path] = snapshot;
     if (snapshot.status === 'missing') {
       if (state.managedFiles[path]) uncertain.push({ path, reason: 'Recorded routing file is missing' });
       continue;
@@ -74,6 +78,7 @@ export function previewRetiredSkill(command: RetiredSkillReviewCommand, ports: R
     }
   }
   return { status: 'preview', skillId: command.skillId, explanation: retirement.explanation,
+    stateFingerprint: sha256(JSON.stringify(state)), observedFiles,
     selected: selected(state, command.skillId), choices: ['keep', 'clean-up', 'cancel'],
     remove, keepAsOwn, removeFromSibuGuidance, reviewYourself, uncertain, canCleanUp: uncertain.length === 0 };
 }
