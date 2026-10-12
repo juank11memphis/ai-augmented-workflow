@@ -7,6 +7,18 @@ import { isSibuState } from './state.js';
 
 export type CurrentState = { bytes: string; state: SibuState } | undefined;
 
+export type ConditionalStateWrite = 'saved' | 'stale';
+
+/** Compare exact on-disk bytes while holding the existing state-file lock. */
+export function writeStateIfUnchanged(
+  statePath: string, expectedBytes: string, nextState: SibuState
+): ConditionalStateWrite {
+  return mutateStateFile(statePath, (current) => {
+    if (!current || current.bytes !== expectedBytes) return { result: 'stale' as const };
+    return { state: nextState, result: 'saved' as const };
+  });
+}
+
 export function mutateStateFile<T>(
   statePath: string,
   mutation: (current: CurrentState) => { state: SibuState; result: T } | { result: T }

@@ -76,20 +76,22 @@ describe('future packaged verified Story integration contract', () => {
     assert.match(integration, /prevents the affected merge or later Story/);
   });
 
-  it('records verified integration without routine human Story approval or changing installed guidance', () => {
+  it('records verified integration without routine human Story approval in synced guidance', () => {
     assert.match(integration, /no separate post-code architecture review or routine human Story PR decision/);
     assert.doesNotMatch(integration, /Present the PR for one explicit/);
     assert.match(guidance, /record the Story as `verified\/integrated`/);
     assert.match(guidance, /Do not write human approval markers/);
     assert.match(agents, /without routine human Story review only after required evidence/);
     assert.match(agents, /already installed customized workflows retain their human Story review/);
-    assert.match(installed, /## Story review gate: one final PR decision/);
-    assert.doesNotMatch(installed, /## Integrate verified Story:/);
+    assert.equal(installed, guidance);
+    assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
+    assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);
+    assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
   });
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '216');
+    assert.equal(manifest.templateVersion, '217');
     assert.equal(manifest.templates[templatePath]?.version, '68');
     assert.equal(manifest.templates['AGENTS.md']?.version, '54');
     assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /verified local branch cleanup.*squash-merge checks.*GitHub host readback/);

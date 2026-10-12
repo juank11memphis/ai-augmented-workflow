@@ -214,6 +214,32 @@ test('warns when state references an unsupported MCP server', () => {
   assert.equal(issues.some((issue) => issue.message === 'State references unsupported MCP server: unknown.'), true);
 });
 
+test('reports an absent recorded skill template without changing project or state bytes', () => {
+  const rootPath = createCleanInitializedRepo();
+  const statePath = path.join(rootPath, '.sibu/state.json');
+  const skillPath = '.agents/skills/unrecognized-old-skill/SKILL.md';
+  const absoluteSkillPath = path.join(rootPath, skillPath);
+  fs.mkdirSync(path.dirname(absoluteSkillPath), { recursive: true });
+  fs.writeFileSync(absoluteSkillPath, 'Local old skill.\n', 'utf8');
+  const state = readState(rootPath);
+  state.managedFiles[skillPath] = {
+    template: 'skills/unrecognized-old-skill/SKILL.md',
+    templateVersion: '1', sha256: 'old-hash', status: 'managed',
+  };
+  fs.writeFileSync(statePath, JSON.stringify(state), 'utf8');
+  const beforeState = fs.readFileSync(statePath);
+  const beforeSkill = fs.readFileSync(absoluteSkillPath);
+  const beforeAgents = fs.readFileSync(path.join(rootPath, 'AGENTS.md'));
+
+  const issues = diagnoseState({ rootPath, state: readState(rootPath) });
+
+  assert.equal(issues.some((issue) => issue.message.includes('Unrecognized skill: unrecognized-old-skill') &&
+    issue.hint === 'It will not be offered for retired-skill cleanup.'), true);
+  assert.deepEqual(fs.readFileSync(statePath), beforeState);
+  assert.deepEqual(fs.readFileSync(absoluteSkillPath), beforeSkill);
+  assert.deepEqual(fs.readFileSync(path.join(rootPath, 'AGENTS.md')), beforeAgents);
+});
+
 function createCleanInitializedRepo(): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-doctor-deep-module-'));
   temporaryRoots.push(rootPath);

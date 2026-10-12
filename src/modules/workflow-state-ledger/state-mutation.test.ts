@@ -6,6 +6,7 @@ import { it, mock } from 'node:test';
 
 import type { ModelRoute, SibuState } from '../../shared/types.js';
 import { readModelRoutes, upsertModelRoute, writeSibuState, writeStateFile } from './index.js';
+import { writeStateIfUnchanged } from './state-mutation.js';
 
 const route: ModelRoute = {
   agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded',
@@ -126,5 +127,19 @@ it('fails closed on occupied lock and malformed state', () => {
     fs.writeFileSync(f.statePath, '{broken');
     assert.throws(() => writeStateFile(f.statePath, f.original));
     assert.equal(fs.readFileSync(f.statePath, 'utf8'), '{broken');
+  } finally { f.cleanup(); }
+});
+
+it('checkpoints only the exact observed state bytes and preserves concurrent changes', () => {
+  const f = fixture();
+  try {
+    const first = fs.readFileSync(f.statePath, 'utf8');
+    const next = { ...f.original, selectedAgents: ['codex'] };
+    assert.equal(writeStateIfUnchanged(f.statePath, first, next), 'saved');
+    const saved = fs.readFileSync(f.statePath, 'utf8');
+    assert.equal(writeStateIfUnchanged(f.statePath, first, { ...next, selectedAgents: [] }), 'stale');
+    assert.equal(fs.readFileSync(f.statePath, 'utf8'), saved);
+    assert.equal(writeStateIfUnchanged(f.statePath, saved, { ...next, selectedAgents: ['gemini'] }), 'saved');
+    assert.deepEqual(state(f.statePath).selectedAgents, ['gemini']);
   } finally { f.cleanup(); }
 });

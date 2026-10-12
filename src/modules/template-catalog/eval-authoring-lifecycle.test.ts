@@ -48,8 +48,24 @@ test('fresh init installs eval-authoring guidance and preview checker for all ag
       assert.equal(state.managedFiles[target(template)]?.template, template);
       assert.equal(preview(rootPath, state, template).status, 'up-to-date');
     }
+    for (const id of ['ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox',
+      'ai-implementation-architecture-reviewer-toolbox']) {
+      const template = `skills/${id}/SKILL.md`;
+      assert.equal(state.managedFiles[target(template)]?.template, template);
+      assert.equal(fs.existsSync(path.join(rootPath, target(template))), true);
+    }
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   }
+});
+
+test('fresh doctor distinguishes a genuinely unknown recorded skill from installed toolboxes', async (t) => {
+  const { rootPath, state } = await initialize(t, SUPPORTED_AGENTS);
+  assert.deepEqual(diagnoseState({ rootPath, state }), []);
+  state.managedFiles['.agents/skills/unknown-skill/SKILL.md'] = {
+    template: 'skills/unknown-skill/SKILL.md', templateVersion: '1', sha256: 'recorded', status: 'managed',
+  };
+  assert.deepEqual(diagnoseState({ rootPath, state }).map((issue) => issue.retirement),
+    [{ kind: 'unrecognized', skillId: 'unknown-skill' }]);
 });
 
 test('stale managed guidance gets meaningful updates and healthy doctor state', async (t) => {

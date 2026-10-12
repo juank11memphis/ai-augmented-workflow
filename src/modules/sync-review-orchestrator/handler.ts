@@ -17,6 +17,7 @@ import { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './
 import { reviewProjectModelRoutes } from './model-route-review-adapters.js';
 import { askForModelRouteReview, formatModelRouteReview } from './model-route-review-prompt.js';
 import type { ModelRouteReviewNotice, ModelRouteReviewResult } from './model-route-review-result.js';
+import { reviewRetiredSkills } from './retired-skill-review-adapters.js';
 
 type SyncProjectDependencies = {
   renderIntro: typeof renderIntro;
@@ -27,6 +28,7 @@ type SyncProjectDependencies = {
   askForSyncAction: typeof askForSyncAction;
   askForModelRouteReview: typeof askForModelRouteReview;
   reviewProjectModelRoutes: typeof reviewProjectModelRoutes;
+  reviewRetiredSkills: typeof reviewRetiredSkills;
   checkForLatestSibuVersion: typeof checkForLatestSibuVersion;
 };
 
@@ -39,6 +41,7 @@ const defaultSyncProjectDependencies: SyncProjectDependencies = {
   askForSyncAction,
   askForModelRouteReview,
   reviewProjectModelRoutes,
+  reviewRetiredSkills,
   checkForLatestSibuVersion,
 };
 
@@ -109,12 +112,25 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
     stateResult.state = cleanupResult.state;
   }
 
-  const languageSkillSelection = await syncDependencies.askForNewLanguageSkills(stateResult.state);
+  const retirementReview = await syncDependencies.reviewRetiredSkills(rootPath, statePath);
+  if (retirementReview.status === 'stopped') {
+    outro(chalk.yellow('Sync stopped. Retired-skill review is incomplete.'));
+    process.exitCode = 1;
+    return;
+  }
+  const refreshedState = readStateForDoctor(statePath);
+  if (!refreshedState.ok) {
+    log.error(refreshedState.message);
+    outro(chalk.yellow('Sync stopped. Workflow state needs fresh review.'));
+    process.exitCode = 1;
+    return;
+  }
+  const languageSkillSelection = await syncDependencies.askForNewLanguageSkills(refreshedState.state);
   const frameworkSkillSelection = await syncDependencies.askForMissingFrameworkSkills(languageSkillSelection.state);
   const architectureSkillSelection = await syncDependencies.askForNewArchitectureSkill(frameworkSkillSelection.state);
   let state = architectureSkillSelection.state;
   const manifest = readTemplateManifest();
-  const previews = getSyncPreviews({ rootPath, state, manifest });
+  const previews = getSyncPreviews({ rootPath, state, manifest, protectedPaths: retirementReview.protectedPaths });
   const actionablePreviews = previews.filter(isActionableSyncPreview);
 
   if (actionablePreviews.length === 0) {

@@ -1,5 +1,5 @@
 import { handleStartLocalEvalsWorkbenchCommand } from '../../modules/local-evals-workbench/index.js';
-import { handleDoctorProject } from '../../modules/workflow-health-inspector/index.js';
+import { handleDoctorProject } from './doctor-presentation.js';
 import { handleInitProject } from '../../modules/workflow-installer/index.js';
 import {
   handleListMcpServers,
@@ -24,7 +24,7 @@ export async function executeCliCommand(command: SibuCliCommand): Promise<void> 
       await handleInitProject(command);
       return;
     case 'doctor':
-      await handleDoctorProject(command);
+      await handleDoctorProject();
       return;
     case 'sync':
       await handleSyncProject(command);
