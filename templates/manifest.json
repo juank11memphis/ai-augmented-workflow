@@ -1,6 +1,13 @@
 {
-  "templateVersion": "216",
+  "templateVersion": "217",
   "templates": {
+    "skill-retirements.json": {
+      "version": "1",
+      "description": "Package-only evidence for explicitly retired non-architecture Sibu skills; not an installed project target.",
+      "changes": [
+        "Adds an empty, validated retirement catalog so future withdrawn skills can be identified without guessing from missing templates."
+      ]
+    },
     "AGENTS.md": {
       "version": "54",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
