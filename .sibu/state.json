@@ -2,7 +2,7 @@
   "sibuVersion": "1.0.0",
   "templateVersion": "218",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-12T22:42:27.294Z",
+  "updatedAt": "2026-10-12T22:50:06.835Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -115,9 +115,8 @@
     ".codex/config.toml": {
       "template": ".codex/config.toml",
       "templateVersion": "4",
-      "sha256": "adb05c078b566a1a3170f87b1209cbc724abf61683b1eab880aa3baec17e62e5",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "4"
+      "sha256": "d74c8fc037310fb613d8f58aa202ee9b58125dd9405a23e45115e79449b5c404",
+      "status": "managed"
     },
     "GEMINI.md": {
       "template": "GEMINI.md",
