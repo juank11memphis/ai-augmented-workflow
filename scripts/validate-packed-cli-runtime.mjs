@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validatePackedEvalPreview } from './validate-packed-eval-preview.mjs';
 import { validatePackedEvalExecution } from './validate-packed-eval-execution.mjs';
+import { validatePackedRetiredSkills } from './validate-packed-retired-skills.mjs';
 
 async function main() {
   const workspace = mkdtempSync(path.join(os.tmpdir(), 'sibu-packed-runtime-'));
@@ -52,6 +53,8 @@ async function main() {
     await validateInstalledModelCatalog(installedPackageRoot);
     await validatePackedEvalPreview({ workspace, installedPackageRoot });
     await validatePackedEvalExecution({ workspace, installedPackageRoot });
+    await validatePackedRetiredSkills({ workspace, installedPackageRoot, installedExecutable, npmBinPath,
+      prepareFixtureProject, runInstalledSibu });
     runInstalledNodeScript(installedPackageRoot, ['bin/admin/changelog.js', '--help']);
     runInstalledNodeScript(installedPackageRoot, ['bin/admin/release.js', '--help']);
 
