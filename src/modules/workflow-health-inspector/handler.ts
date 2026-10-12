@@ -11,7 +11,7 @@ import { checkForLatestSibuVersion, getNpmVersionAdvisoryLines } from '../../sup
 import { getProjectContext } from '../../shared/paths.js';
 import { renderIntro } from '../../support/interactive-guidance/index.js';
 import { hasReviewedTemplateVersion, readStateForDoctor } from '../workflow-state-ledger/index.js';
-import { getTemplateVersion, readTemplateManifest } from '../template-catalog/index.js';
+import { getTemplateVersion, loadSkillRetirements, lookupSkillIdentity, readTemplateManifest } from '../template-catalog/index.js';
 import type { DoctorIssue, ManagedFileStatus, NpmVersionCheckResult, SibuState } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
@@ -24,6 +24,8 @@ import {
   getWorkflowTargets,
 } from '../template-catalog/index.js';
 import type { DoctorProjectCommand } from './command.js';
+import { inspectWorkflow } from './retirement-inspection.js';
+import type { SkillInspectionFinding } from './retirement-inspection.js';
 
 export async function handleDoctorProject(_command: DoctorProjectCommand): Promise<void> {
   await renderIntro();
@@ -108,10 +110,36 @@ export function diagnoseState({ rootPath, state }: { rootPath: string; state: Si
   }
 
   addUnsupportedSelectionIssues(state, issues);
+  const inspection = inspectWorkflow({ type: 'inspect-workflow' }, state, {
+    resolveSkill: (id) => lookupSkillIdentity(id),
+    retirements: loadSkillRetirements,
+    exists: (relativePath) => fs.existsSync(path.join(rootPath, relativePath)),
+    readText: (relativePath) => fs.readFileSync(path.join(rootPath, relativePath), 'utf8'),
+  });
+  for (const finding of inspection.findings) {
+    issues.push(inspectionIssue(finding));
+  }
   const reportedMissingPaths = addExpectedTargetIssues(rootPath, state, issues);
-  addManagedFileIssues(rootPath, state, issues, reportedMissingPaths);
+  addManagedFileIssues(rootPath, state, issues, reportedMissingPaths, new Set(inspection.findings.flatMap((finding) =>
+    finding.evidence.filter((item) => item.source === 'managed-file').map((item) => item.path)
+  )));
 
   return issues;
+}
+
+function inspectionIssue(finding: SkillInspectionFinding): DoctorIssue {
+  if (finding.kind === 'retired-skill') {
+    return {
+      severity: 'warning',
+      message: `Retired skill: ${finding.skillId} — ${finding.explanation} Installed in this project; cleanup requires your choice.`,
+      hint: 'Run `sibu sync` to review cleanup. Doctor changed nothing.',
+    };
+  }
+  return {
+    severity: 'warning',
+    message: `Unrecognized skill: ${finding.skillId}. Sibu cannot confirm whether this skill is current or retired.`,
+    hint: 'It will not be offered for retired-skill cleanup.',
+  };
 }
 
 function addUnsupportedSelectionIssues(state: SibuState, issues: DoctorIssue[]): void {
@@ -211,10 +239,11 @@ function addExpectedTargetIssues(rootPath: string, state: SibuState, issues: Doc
   return reportedMissingPaths;
 }
 
-function addManagedFileIssues(rootPath: string, state: SibuState, issues: DoctorIssue[], reportedMissingPaths: Set<string>): void {
+function addManagedFileIssues(rootPath: string, state: SibuState, issues: DoctorIssue[], reportedMissingPaths: Set<string>, inspectedSkillPaths: Set<string>): void {
   const manifest = readTemplateManifest();
 
   for (const [relativePath, managedFile] of Object.entries(state.managedFiles)) {
+    if (inspectedSkillPaths.has(relativePath)) continue;
     if (managedFile.status === 'unmanaged') {
       continue;
     }
@@ -241,6 +270,10 @@ function addManagedFileIssues(rootPath: string, state: SibuState, issues: Doctor
       });
     }
 
+    if (!manifest.templates[managedFile.template]) {
+      issues.push({ severity: 'warning', message: `${relativePath} records an unrecognized template: ${managedFile.template}.` });
+      continue;
+    }
     const currentTemplateVersion = getTemplateVersion(manifest, managedFile.template);
     if (managedFile.templateVersion !== currentTemplateVersion && !hasReviewedTemplateVersion(managedFile, currentTemplateVersion)) {
       issues.push({
