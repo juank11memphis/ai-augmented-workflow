@@ -29,8 +29,18 @@ const activeSkills: SkillTemplate[] = [
   ...SELECTABLE_LANGUAGE_SKILLS,
   ...SELECTABLE_WORKFLOW_SKILLS,
 ];
-const activeIds = new Set(activeSkills.map((skill) => skillId(skill)));
-const activeTemplatePaths = new Set(activeSkills.map((skill) => skill.templateRelativePath));
+const supplementalSkillTemplates = activeSkills.flatMap((skill) =>
+  Object.values(skill.supplementalTargetsByAgent ?? {}).flatMap((targets) => targets ?? [])
+    .filter((target) => /^skills\/[^/]+\/SKILL\.md$/.test(target.templateRelativePath))
+    .map((target) => target.templateRelativePath));
+const activeTemplatePaths = new Set([
+  ...activeSkills.map((skill) => skill.templateRelativePath),
+  ...supplementalSkillTemplates,
+]);
+const activeIds = new Set([
+  ...activeSkills.map((skill) => skillId(skill)),
+  ...supplementalSkillTemplates.map((template) => template.split('/')[1]!),
+]);
 const activeTargetPaths = new Set(activeSkills.flatMap((skill) => [
   ...Object.values(skill.targetRelativePathsByAgent),
   ...Object.values(skill.supplementalTargetsByAgent ?? {}).flatMap((targets) => targets?.map((target) => target.targetRelativePath) ?? []),
