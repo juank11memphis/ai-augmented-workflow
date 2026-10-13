@@ -96,8 +96,13 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     visibleDetailCaseId = null;
   }
   function selectSuite(id) {
-    if (!id || suite?.id === id || isActive() || startPending) return;
-    suite = suites.find(item => item.id === id) || null;
+    if (suite?.id === id) return;
+    const nextSuite = suites.find(item => item.id === id);
+    if (!nextSuite || isActive() || startPending) {
+      one('[data-action="suite-select"]').value = suite?.id || '';
+      return;
+    }
+    suite = nextSuite;
     if (taskView === 'new-run') showTaskView('results');
     run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null;
     runGeneration++; historyGeneration++; detailGeneration++;

@@ -9,7 +9,7 @@ const jsonForHtml = (value: unknown): string => JSON.stringify(value).replace(/[
 
 export function renderWorkspaceShell(discovery: EvalSuiteDiscoveryResult): string {
   const model = createWorkspaceViewModel({ discovery });
-  const options = discovery.suites.map(suite => `<option value="${escapeHtml(suite.id)}">${escapeHtml(suite.name)}</option>`).join('');
+  const options = discovery.suites.map(suite => `<option value="${escapeHtml(suite.id)}"${suite.id === model.suite?.id ? ' selected' : ''}>${escapeHtml(suite.name)}</option>`).join('');
   const rail = discovery.suites.map(suite => `<button type="button" data-action="suite" data-suite-id="${escapeHtml(suite.id)}" ${suite.id === model.suite?.id ? 'aria-current="page"' : ''}>${escapeHtml(suite.name)}</button>`).join('');
   const notice = model.discoveryNotice;
   const entryNotice = notice ? `<div data-discovery-notice style="flex-basis:100%"><h3 tabindex="-1">${escapeHtml(notice.title)}</h3><p data-discovery-guidance>${escapeHtml(notice.explanation)} ${escapeHtml(notice.nextStep)}</p><span data-discovery-announcement role="status" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></span><p data-issue-details hidden></p><button type="button" data-action="copy-issue" hidden>Copy issue details</button><p data-issue-copy-status role="status"></p></div>` : '<div data-discovery-notice style="flex-basis:100%" hidden></div>';

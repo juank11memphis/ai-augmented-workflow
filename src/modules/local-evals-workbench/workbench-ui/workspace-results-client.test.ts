@@ -6,8 +6,13 @@ import { WORKSPACE_CASE_DETAIL_CLIENT } from './workspace-case-detail.js';
 
 function browser() {
   const listeners = new Map<string, (event: { target: SearchInput }) => void>();
+  const railButtons = ['suite', 'second'].map(suiteId => {
+    const attributes = new Map<string, string>();
+    return { dataset: { suiteId }, setAttribute: (name: string, value: string) => attributes.set(name, value),
+      removeAttribute: (name: string) => attributes.delete(name), getAttribute: (name: string) => attributes.get(name) };
+  });
   const document = { activeElement: null as SearchInput | null,
-    querySelectorAll: () => [],
+    querySelectorAll: (selector: string) => selector === '[data-action="suite"]' ? railButtons : [],
     addEventListener: (type: string, listener: (event: { target: SearchInput }) => void) => listeners.set(type, listener) };
   const input: SearchInput = { value: '', selectionStart: 0, selectionEnd: 0,
     matches: (selector: string) => selector === '[data-action="search"]',
@@ -50,7 +55,9 @@ function browser() {
     suite: { id: 'suite', name: 'Suite', description: '', testCases: [
       { id: 'alpha', name: 'Alpha case' }, { id: 'beta', name: 'Beta case' },
       { id: 'gamma', name: 'Gamma case' },
-    ] }, suites: [], run: null as null | { runId: string; state: string; caseIds: string[];
+    ] }, suites: [{ id: 'suite', name: 'Suite', description: '', testCases: [
+      { id: 'alpha', name: 'Alpha case' }, { id: 'beta', name: 'Beta case' }, { id: 'gamma', name: 'Gamma case' },
+    ] }, { id: 'second', name: 'Second', description: '', testCases: [{ id: 'delta', name: 'Delta case' }] }], run: null as null | { runId: string; state: string; caseIds: string[];
       cases: { caseId: string; state: string; attempts: { outcome: string }[] }[];
       createdAt: number; finishedAt?: number; cost: null },
     history: [], selectedRunId: null as string | null, latestKnownRunId: null as string | null,
@@ -59,7 +66,7 @@ function browser() {
     startPending: false, startUncertain: false, activePanel: null,
     setupRegion: { hidden: false, querySelector: () => ({ disabled: false }) },
     isActive: () => context.run?.state === 'running', needsJudge: () => false,
-    refreshSetupControls() {}, status() {}, loadDiscovery() {}, loadRuntime() {}, resetRepair() {},
+    refreshSetupControls() {}, status() {}, loadDiscovery() {}, loadRuntime() {}, setRuntimeState() {}, resetRepair() {},
     repairMarkup: () => '<button data-action="analyze-failure">Analyze failure</button>',
     selectedFailure: null,
     safeReference: (value: unknown) => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value),
@@ -69,8 +76,9 @@ function browser() {
       ? new Promise(resolve => { resolvePoll = resolve; }) : new Promise(() => undefined),
     setTimeout: () => 0,
   };
-  const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, renderHistory, renderCoverage, selectHistoryRun, pollRun, loadHistory, inspectCase, closeCaseDetail, runOutcomeCopy, state:()=>({run,history,selectedRunId,readNotices}) })', context) as {
+  const api = vm.runInNewContext(WORKSPACE_CASE_DETAIL_CLIENT + WORKSPACE_RESULTS_CLIENT + ';({ renderWorkspace, renderHistory, renderCoverage, selectSuite, selectHistoryRun, pollRun, loadHistory, inspectCase, closeCaseDetail, runOutcomeCopy, state:()=>({run,history,selectedRunId,readNotices}) })', context) as {
     renderWorkspace(): void; renderHistory(): void; renderCoverage(): void; selectHistoryRun(runId: string): Promise<void>;
+    selectSuite(id: string): void;
     pollRun(): Promise<void>; loadHistory(): Promise<void>; inspectCase(caseId: string, attempt: number): Promise<void>;
     closeCaseDetail(): void;
     runOutcomeCopy(summary: unknown): string; state(): { run: unknown; history: unknown[]; selectedRunId: string; readNotices: Record<string, unknown> };
@@ -79,7 +87,7 @@ function browser() {
     input.value = value; input.selectionStart = start; input.selectionEnd = end;
     listeners.get('input')?.({ target: input });
   }
-  return { api, context, document, input, section, count, list, empty, results, side, copied,
+  return { api, context, document, railButtons, input, section, count, list, empty, results, side, copied,
     sheet: { isOpen: () => sheetOpen, closes: () => sheetCloses },
     panelFocus: () => panelFocus,
     read, readHeading, readGuidance, readAnnouncement, readDetails, readCopy,
@@ -90,6 +98,27 @@ function browser() {
 
 type SearchInput = { value: string; selectionStart: number; selectionEnd: number;
   matches(selector: string): boolean; focus(): void };
+
+test('suite switching moves accessible rail selection and keeps the mobile picker in sync', () => {
+  const page = browser();
+  const picker = page.context.one('[data-action="suite-select"]') as { value: string };
+  page.api.renderWorkspace();
+  assert.equal(page.railButtons[0]!.getAttribute('aria-current'), 'page');
+  assert.equal(page.railButtons[1]!.getAttribute('aria-current'), undefined);
+  assert.equal(picker.value, 'suite');
+
+  page.api.selectSuite('second');
+  assert.equal(page.railButtons[0]!.getAttribute('aria-current'), undefined);
+  assert.equal(page.railButtons[1]!.getAttribute('aria-current'), 'page');
+  assert.equal(picker.value, 'second');
+  assert.equal((page.context.one('[data-suite-title]') as { textContent: string }).textContent, 'Second');
+
+  page.context.startPending = true;
+  picker.value = 'suite';
+  page.api.selectSuite('suite');
+  assert.equal(picker.value, 'second');
+  assert.equal(page.railButtons[1]!.getAttribute('aria-current'), 'page');
+});
 
 test('end and middle edits, deletion, caret and selection retain one input while rows and count filter', () => {
   const page = browser();

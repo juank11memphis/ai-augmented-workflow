@@ -16,6 +16,17 @@ it('renders a copyable no-suite next step without run controls', () => {
   assert.match(html, /data-run-setup hidden/);
 });
 
+it('marks the initial suite in both selectors and visibly distinguishes the desktop selection', () => {
+  const suites = ['first', 'second'].map(id => ({ id, name: id, description: '', readyTestCaseCount: 0,
+    testCases: [], modelOptions: [], coverage: { categories: [], gaps: [] } }));
+  const html = renderWorkspaceShell({ status: 'ready', diagnostics: [], suites });
+  assert.match(html, /<option value="first" selected>first<\/option><option value="second">second<\/option>/);
+  assert.match(html, /data-action="suite" data-suite-id="first" aria-current="page"/);
+  assert.match(html, /data-action="suite" data-suite-id="second" >/);
+  assert.match(html, /\.suite-rail button\[aria-current="page"\]\{[^}]*background:#1d4ed8;[^}]*border-left-width:4px/);
+  assert.match(html, /\.suite-rail button\[aria-current="page"\]::after\{content:"Selected"/);
+});
+
 it('renders responsive one-model list, coverage and history actions, and escapes suite content', () => {
   const html = renderWorkspaceShell({ status: 'ready', diagnostics: [], suites: [{
     id: 'suite', name: '<script>alert(1)</script>', description: 'Safe', readyTestCaseCount: 1,
