@@ -17,7 +17,7 @@ export type ExecuteLimits = {
 };
 export const EXECUTE_LIMITS: ExecuteLimits = {
   requestBytes: 256_000, lineBytes: 64_000, stdoutBytes: 1_000_000, stderrBytes: 16_000,
-  events: 1_000, startupMs: 5_000, idleMs: 10_000, overallMs: 120_000, cleanupMs: 1_000,
+  events: 1_000, startupMs: 5_000, idleMs: 30_000, overallMs: 120_000, cleanupMs: 1_000,
 };
 
 export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {

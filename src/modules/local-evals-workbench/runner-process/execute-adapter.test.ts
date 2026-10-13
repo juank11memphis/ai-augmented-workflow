@@ -14,6 +14,12 @@ async function withSelection(run: (project: Awaited<ReturnType<typeof offlinePro
   } finally { await project.cleanup(); }
 }
 
+test('execute timeout defaults allow 30 seconds of idle time without changing startup or overall limits', () => {
+  assert.equal(EXECUTE_LIMITS.startupMs, 5_000);
+  assert.equal(EXECUTE_LIMITS.idleMs, 30_000);
+  assert.equal(EXECUTE_LIMITS.overallMs, 120_000);
+});
+
 test('streams ordered actual output before process exit without exposing runner environment', async () => {
   await withSelection(async (project, selection) => {
     const received: ExecutionEvent[] = [];
