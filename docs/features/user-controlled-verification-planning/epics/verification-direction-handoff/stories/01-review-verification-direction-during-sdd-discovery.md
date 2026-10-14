@@ -6,7 +6,7 @@
 
 [Engineer-Directed Verification Handoff](../epic_brief.md)
 
-**Status:** in-progress
+**Status:** done
 
 ## User Story
 
@@ -77,3 +77,7 @@ Depends on: none. Blocks: UCVP-02.
 ## Open Questions and Assumptions
 
 Open questions: none. Accepted assumption: existing Sibu template/lifecycle conventions provide the distribution path; no new runtime module is needed.
+
+## Integration
+
+Verified Story PR [#29](https://github.com/juank11memphis/ai-augmented-workflow/pull/29) was squash-merged into the Epic branch at `6479e1635a04711f5435e31c4b7dc1708383f29e`.
