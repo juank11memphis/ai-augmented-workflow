@@ -74,7 +74,7 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '218');
+    assert.equal(manifest.templateVersion, '219');
     const executorTemplate = manifest.templates[templatePath];
     assert.equal(executorTemplate?.version, '69');
     assert.match(executorTemplate?.changes.join(' ') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/);
