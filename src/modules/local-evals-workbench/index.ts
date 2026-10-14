@@ -13,3 +13,4 @@ export * from './check-eval-artifact-readiness/index.js';
 export * from './list-eval-runs/index.js';
 export * from './get-eval-run/index.js';
 export * from './headless-eval-result/index.js';
+export * from './headless-eval-run/index.js';
