@@ -88,7 +88,7 @@ describe('checked Task execution template contract', () => {
     assert.match(toolbox, /Never modify, stage, or commit those preserved edits/i);
     assert.match(planner, /Do not require or invent a prior reviewer finding/i);
     assert.match(plannerToolbox, /failed check and evidence, attribution to an earlier checked Task in the same Story/i);
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /reviewed same-Task continuation.*bounded overlapping failures/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/i);
     assert.match(gatekeeper, /AFK recovery for a cross-Task validation regression/i);
   });
 
@@ -135,7 +135,7 @@ describe('checked Task execution template contract', () => {
       assert.match(wrapper, /Never approve your own work.*stash, reset/i);
       assert.match(manifest.templates[path]?.changes.join('') ?? '', /checked Task/i);
     }
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /reviewed same-Task continuation.*bounded overlapping failures/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/i);
     assert.match(manifest.templates['skills/ai-implementation-executor-toolbox/SKILL.md']?.changes.join('') ?? '', /Task/i);
     assert.match(gatekeeper, /post-commit evidence gap/i);
     assert.match(readTemplate('AGENTS.md'), /checked-Task executor may commit only its scoped Task after the prescribed check passes/i);

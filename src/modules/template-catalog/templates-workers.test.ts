@@ -28,7 +28,7 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /reviewed same-Task continuation.*bounded overlapping failures/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/i);
     assert.match(contents, /planner automatically revises actionable review findings.*complete review finds no findings or unresolved risks.*accepts the exact plan automatically/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
