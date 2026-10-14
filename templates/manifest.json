@@ -1,5 +1,5 @@
 {
-  "templateVersion": "218",
+  "templateVersion": "219",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -345,10 +345,11 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Replaces the former writer with feature SDD at sdd.md; use sync for adoption and retire obsolete local copies/records only after ownership review."
+        "Adds a concrete verification proposal and correction during SDD discovery, separate from the final check-in; sync preserves local ownership review.",
+        "Records the settled approach in the SDD quality strategy, including human visual review for UI features without a new approval gate."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
