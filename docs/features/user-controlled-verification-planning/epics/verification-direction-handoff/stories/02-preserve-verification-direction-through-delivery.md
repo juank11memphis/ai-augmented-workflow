@@ -6,7 +6,7 @@
 
 [Engineer-Directed Verification Handoff](../epic_brief.md)
 
-**Status:** in-progress
+**Status:** done
 
 ## User Story
 
