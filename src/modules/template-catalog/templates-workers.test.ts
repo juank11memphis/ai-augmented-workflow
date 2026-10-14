@@ -28,7 +28,7 @@ describe('AGENTS.md template', () => {
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates['AGENTS.md'];
     const contents = readTemplate('AGENTS.md');
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /integrate fully verified Story PRs.*customized installed workflows/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /reviewed same-Task continuation.*bounded overlapping failures/i);
     assert.match(contents, /planner automatically revises actionable review findings.*complete review finds no findings or unresolved risks.*accepts the exact plan automatically/i);
     assert.match(contents, /`sibu doctor` is the read-only health check/i);
     assert.match(contents, /Use `sibu doctor` as a read-only workflow health check/i);
@@ -214,7 +214,7 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /checked-Task validation regression.*existing Story plan/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /same-Task plan revision.*bounded overlapping failures/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /software-design-writer/);
@@ -230,7 +230,7 @@ describe('Sibu planner worker templates', () => {
     assert.match(contents, /valid story-local `\.impl_plan\/` exists/);
     assert.match(contents, /planning-only/);
     assert.match(contents, /Do not pass the full main conversation context/);
-    assert.match(contents, /story verification expectations and any software design quality strategy context needed to plan validation steps/i);
+    assert.match(contents, /source-verified, Story-applicable SDD quality-strategy context and Story verification expectations/i);
     assert.match(contents, /turn verification expectations into concrete validation steps/i);
     assert.match(contents, /unit, acceptance\/integration, edge\/failure, and regression checks/i);
     assert.match(contents, /property\/invariant, torture\/fuzz, mutation, or manual QA only when/i);
@@ -253,7 +253,7 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /checked-Task regression follow-up.*completed Task evidence/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /failed checked Task.*continuation.*single-commit authority/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -270,7 +270,7 @@ describe('Sibu planner worker templates', () => {
     assert.match(renderedContents, /# Step: <Imperative step title>/);
     assert.match(renderedContents, /Never write production code/);
     assert.match(renderedContents, /unmapped language, framework, database, or architecture pattern/);
-    assert.match(renderedContents, /verification expectations and any software design quality strategy context needed to plan validation steps/i);
+    assert.match(renderedContents, /source-verified, Story-applicable SDD quality-strategy context and Story verification expectations/i);
     assert.match(renderedContents, /concrete validation steps near the work they prove/i);
     assert.match(renderedContents, /unit, acceptance\/integration, edge\/failure, regression/i);
     assert.match(renderedContents, /property\/invariant, torture\/fuzz, mutation, or manual QA/i);
@@ -323,7 +323,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /overlapping uncommitted Task failures.*reviewed same-Task continuation/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -369,7 +369,7 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /blocked checked Task's inventoried, disjoint edits/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /reviewed failed Task with inventoried edits.*exact check and one scoped commit/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);

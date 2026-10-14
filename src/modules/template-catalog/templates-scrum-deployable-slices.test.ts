@@ -166,7 +166,7 @@ describe('deployable Scrum authoring contract', () => {
     assert.match(skill, /A user request selects the next stage/);
     assert.match(skill, /ask whether the user wants to use flags/);
     const manifest = readTemplateManifest();
-    assert.match(manifest.templates['skills/scrum-master-planner/SKILL.md']?.changes.join(' ') ?? '', /conditional flag decisions.*SAD.*SDD.*removal/i);
+    assert.match(manifest.templates['skills/scrum-master-planner/SKILL.md']?.changes.join(' ') ?? '', /SDD verification methods.*human limits.*without adding approval gates/i);
   });
 });
 

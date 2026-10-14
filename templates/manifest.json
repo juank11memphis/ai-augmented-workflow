@@ -1,5 +1,5 @@
 {
-  "templateVersion": "222",
+  "templateVersion": "223",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "54",
+      "version": "55",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Allows the main agent to integrate fully verified Story PRs into an Epic without routine Story approval while retaining safety stops and customized installed workflows."
+        "Allows reviewed same-Task continuation for bounded overlapping failures while retaining check, commit, and safety gates."
       ]
     },
     ".codex/config.toml": {
@@ -142,31 +142,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "33",
+      "version": "34",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Carries the applicable SDD verification direction into Task checks and stops material changes for an engineer-directed SDD revision."
+        "Adds same-Task plan revision for bounded overlapping failures in uncommitted checked Tasks."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "21",
+      "version": "22",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Refines SDD verification direction into concrete Task evidence while distinguishing routine equivalent checks from material departures."
+        "Revises a failed checked Task for continuation while preserving its check and single-commit authority."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "70",
+      "version": "71",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Checks independent plan review against SDD verification direction, repairs bounded omissions automatically, and stops for material strategy decisions."
+        "Recovers bounded overlapping uncommitted Task failures through reviewed same-Task continuation without weakening checks or commit gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "28",
+      "version": "29",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Distinguishes ordinary failed checks from material verification changes and requires evidence for each Task completion condition."
+        "Resumes a reviewed failed Task with inventoried edits while preserving its exact check and one scoped commit."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
