@@ -50,6 +50,43 @@ describe('SAD/SDD instruction contracts (static, not model behavior)', () => {
     assert.match(sdd, /explain why a sequence would misrepresent/);
     assert.match(sdd, /no completed SDD is diagram-free/);
   });
+
+  it('places a concrete verification proposal and correction before the separate final check-in', () => {
+    const sdd = readTemplate('skills/software-design-writer/SKILL.md');
+    const discovery = sdd.split('## Discovery and user control\n')[1].split('\n## Embedded Mermaid validation')[0];
+    const proposal = discovery.indexOf('present the engineer with a concise, feature-specific proposed verification approach');
+    const correction = discovery.indexOf('Ask the engineer to confirm or correct this direction');
+    const finalCheckIn = discovery.indexOf('perform a final conversational check-in');
+    assert.ok(proposal >= 0 && proposal < correction && correction < finalCheckIn);
+    assert.match(discovery, /restat(?:e|ing) a changed approach for confirmation before writing/);
+    assert.match(discovery, /If the final check-in changes verification direction, restate and reconfirm/);
+    assert.match(discovery, /check-in cannot substitute for them/);
+  });
+
+  it('states the proposal dimensions and records a settled, non-formal quality strategy', () => {
+    const sdd = readTemplate('skills/software-design-writer/SKILL.md');
+    const quality = sdd.split('## Quality strategy\n')[1].split('\n## Visual explanation')[0];
+    const discovery = sdd.split('## Discovery and user control\n')[1].split('\n## Embedded Mermaid validation')[0];
+    for (const concept of ['what will be verified', 'by what methods', 'relevant scenarios or surfaces', 'what evidence', 'human-owned', 'meaningful exclusions or validation constraints']) {
+      assert.ok(discovery.includes(concept), concept);
+    }
+    assert.match(discovery, /focused follow-ups/);
+    assert.match(discovery, /Do not invent exact commands when they are unknown/);
+    assert.match(quality, /settled verification approach as an easy-to-find SDD quality strategy/);
+    assert.match(quality, /relevant source BRD requirement IDs/);
+    assert.match(quality, /without turning the section into an approval record or a universal test-method checklist/);
+    assert.match(discovery, /Do not add approval fields, signatures, or approval statuses/);
+    assert.match(discovery, /Do not add routine Story, Task, or Milestone approval pauses/);
+  });
+
+  it('branches UI visual-fidelity guidance from non-UI verification', () => {
+    const sdd = readTemplate('skills/software-design-writer/SKILL.md');
+    const discovery = sdd.split('## Discovery and user control\n')[1].split('\n## Embedded Mermaid validation')[0];
+    assert.match(discovery, /For UI-changing features, derive named screens, states, and breakpoints from the binding UX mockups/);
+    assert.match(discovery, /person will compare visual fidelity against those mockups, separately from functional tests and automated accessibility checks/);
+    assert.match(discovery, /automation does not prove subjective visual quality/);
+    assert.match(discovery, /For non-UI features, omit visual-review boilerplate/);
+  });
 });
 
 describe('atomic SAD/SDD distribution and consumer contracts', () => {
