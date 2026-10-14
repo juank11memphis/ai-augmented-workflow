@@ -1,4 +1,4 @@
-import type { StartLocalEvalsWorkbenchCommand } from '../../modules/local-evals-workbench/index.js';
+import type { StartLocalEvalsWorkbenchCommand, DescribeEvalSuiteRuntimeCommand, HeadlessEvalRunCommand } from '../../modules/local-evals-workbench/index.js';
 import type { DoctorProjectCommand } from '../../modules/workflow-health-inspector/index.js';
 import type { InitProjectCommand } from '../../modules/workflow-installer/index.js';
 import type {
@@ -24,6 +24,10 @@ export type SibuCliCommand =
   | UseMcpServerCommand
   | StopMcpServerCommand
   | StartLocalEvalsWorkbenchCommand
+  | { readonly type: 'evals:suites' }
+  | ({ readonly type: 'evals:describe' } & DescribeEvalSuiteRuntimeCommand)
+  | ({ readonly type: 'evals:run' } & HeadlessEvalRunCommand)
+  | { readonly type: 'evals:result'; readonly suiteId: string; readonly runId: string; readonly caseId?: string; readonly assertionId?: string }
   | ResolveModelRouteCommand
   | SetModelRouteCommand
   | { type: 'models:guided' };

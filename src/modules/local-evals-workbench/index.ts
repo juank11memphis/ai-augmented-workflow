@@ -14,3 +14,4 @@ export * from './list-eval-runs/index.js';
 export * from './get-eval-run/index.js';
 export * from './headless-eval-result/index.js';
 export * from './headless-eval-run/index.js';
+export { createHeadlessWorkbench } from './headless-composition.js';
