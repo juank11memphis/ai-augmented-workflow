@@ -1,5 +1,5 @@
 {
-  "templateVersion": "224",
+  "templateVersion": "225",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "55",
+      "version": "56",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Allows reviewed same-Task continuation for bounded overlapping failures while retaining check, commit, and safety gates."
+        "Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate."
       ]
     },
     ".codex/config.toml": {

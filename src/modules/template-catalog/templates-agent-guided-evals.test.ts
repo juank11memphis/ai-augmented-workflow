@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readTemplate, readTemplateManifest } from './index.js';
+import { MANDATORY_SKILLS, SUPPORTED_AGENTS, getSkillTargetsForAgents, readTemplate, readTemplateManifest } from './index.js';
 
 const path = 'skills/agent-guided-evals/SKILL.md';
 const skill = readTemplate(path);
@@ -43,10 +43,55 @@ test('agent-guided skill and current-version sync metadata ship together', () =>
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-  assert.equal(manifest.templateVersion, '224');
+  assert.equal(manifest.templateVersion, '225');
   assert.equal(entry?.version, '1');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
     'Adds a bounded single-case eval troubleshooting workflow with explicit fix approval, safe host edits, and one focused verification rerun.',
   ]);
+});
+
+test('agent-guided skill resolves to one shared mandatory target for Codex and Claude Code', () => {
+  const guided = MANDATORY_SKILLS.find((entry) => entry.templateRelativePath === path);
+  assert.ok(guided);
+  const codex = SUPPORTED_AGENTS.find((agent) => agent.id === 'codex');
+  const claude = SUPPORTED_AGENTS.find((agent) => agent.id === 'claude');
+  const gemini = SUPPORTED_AGENTS.find((agent) => agent.id === 'gemini');
+  assert.ok(codex && claude && gemini);
+
+  for (const agent of [codex, claude]) {
+    assert.deepEqual(getSkillTargetsForAgents(guided, [agent]), [{
+      templateRelativePath: path,
+      targetRelativePath: '.agents/skills/agent-guided-evals/SKILL.md',
+    }]);
+  }
+  assert.deepEqual(getSkillTargetsForAgents(guided, [codex, claude]), [{
+    templateRelativePath: path,
+    targetRelativePath: '.agents/skills/agent-guided-evals/SKILL.md',
+  }]);
+  assert.deepEqual(getSkillTargetsForAgents(guided, [gemini]), []);
+});
+
+test('eval troubleshooting route stays distinct from mandatory authoring and browser default', () => {
+  const agents = readTemplate('AGENTS.md');
+  const claude = readTemplate('CLAUDE.md');
+  const authoring = MANDATORY_SKILLS.find((entry) => entry.templateRelativePath === 'skills/eval-authoring/SKILL.md');
+  assert.ok(authoring);
+  assert.match(agents, /create, revise, or maintain Sibu eval suites.*use `eval-authoring`/);
+  assert.match(agents, /run, inspect, troubleshoot, or fix an existing Sibu eval case.*use `agent-guided-evals`/);
+  assert.match(agents, /“let's work on evals,”/);
+  assert.match(agents, /Keep creation or maintenance of eval artifacts with `eval-authoring`/);
+  assert.match(claude, /Follow the project instructions in `AGENTS.md`/);
+  assert.match(skill, /independent CLI full-suite run-and-inspect path remains available/);
+  assert.doesNotMatch(skill, /open(?:ing)? the (?:browser|UI)/i);
+});
+
+test('AGENTS route has a current-version sync note without rebumping the shared skill', () => {
+  const manifest = readTemplateManifest();
+  assert.equal(manifest.templateVersion, '225');
+  assert.equal(manifest.templates['AGENTS.md']?.version, '56');
+  assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
+    'Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate.',
+  ]);
+  assert.equal(manifest.templates[path]?.version, '1');
 });
