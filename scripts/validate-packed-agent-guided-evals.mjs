@@ -15,6 +15,13 @@ export async function validatePackedAgentGuidedEvals({ installedPackageRoot }) {
   const agents = readFileSync(agentsPath, 'utf8');
   assert.match(skill, /name: agent-guided-evals/);
   assert.match(skill, /sibu evals run <suite> --case <case_id>/);
+  assert.match(skill, /sibu evals run <suite> --model <model_id>` for all cases, without `--case`/);
+  assert.match(skill, /first unresolved failed assertion in stable suite\/case\/check order/);
+  assert.match(skill, /Advance only if the fresh completed result demonstrates that assertion passing/);
+  assert.match(skill, /if its evidence predates an intervening edit, run that case once/);
+  assert.match(skill, /rerun the full suite exactly as originally scoped, without `--case`/);
+  assert.match(skill, /Claim suite success only from this terminal run's actual completed, passing outcome/);
+  assert.match(skill, /If it fails, re-enter the same one-at-a-time loop/);
   assert.match(skill, /sibu evals result <suite> <run_id> --case <case_id> --assertion <assertion_id>/);
   assert.match(agents, /run, inspect, troubleshoot, or fix an existing Sibu eval case.*use `agent-guided-evals`/);
   assert.match(agents, /create, revise, or maintain Sibu eval suites.*use `eval-authoring`/);
