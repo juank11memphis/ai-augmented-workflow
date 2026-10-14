@@ -73,6 +73,8 @@ For a review-driven revision of an existing Story plan, the main agent also supp
 
 For an executor-discovered bounded regression revision, the main agent instead supplies the accepted plan identity, failed check and attribution to an earlier checked Task in the same Story, smallest repair outcome, blocked Task and its inventoried uncommitted edits, and plan folder. Add one ordered follow-up checked Task before the blocked Task, with its own executable check and expected evidence; update affected dependencies and the Story-plan view while preserving completed Task evidence and unrelated scope. Do not require or invent a prior reviewer finding. Return the revised identity for a fresh independent plan-only review; stop for unclear attribution or a material decision.
 
+For an overlapping failure in a still-uncommitted checked Task, the main agent instead supplies the accepted plan identity, exact failed check and evidence, attempted fixes, smallest bounded repair outcome, Task ID, preserved unstaged edit inventory, and plan folder. Revise that **same Task** for continuation without adding a Task or changing its outcome, check, expected evidence, dependencies, or single-commit authority. Preserve completed Task evidence and unrelated scope. Return the revised identity for fresh independent plan-only review; stop for unclear failure, edit attribution, or a material decision.
+
 ## Required source context gate
 
 Before delegating or planning inline, verify these paths exist and are coherent:
@@ -114,7 +116,8 @@ Build a narrow planner packet for the worker. The packet must include:
 - the source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, and applicable SAD/SDD module ownership and dependency constraints; for uncertain fine-grained references, give the full authoritative path and a locate-relevant-context instruction instead
 - for review-driven revision, the current plan folder and reviewed identity, the complete finding/risk packet, and a request to address actionable findings minimally while reporting any material-decision blocker
 - for executor-discovered bounded regression revision, the current plan folder and accepted identity, actual failed check, earlier same-Story Task attribution, bounded repair outcome, blocked Task and preserved-edit inventory, and a request for one ordered follow-up Task before the blocked Task without implementation edits
-- story verification expectations and any software design quality strategy context needed to plan validation steps
+- for overlapping uncommitted Task continuation, the current plan folder and accepted identity, exact failed check and evidence, attempted fixes, bounded repair outcome, same Task ID and preserved unstaged edit inventory, and a request to revise only that Task without implementation edits
+- source-verified, Story-applicable SDD quality-strategy context and Story verification expectations: required methods, coverage (including scenarios, surfaces, states, and relevant UX breakpoints), expected evidence, human-judgment and automation limits, and material exclusions. Include the governing SDD heading and source requirement IDs; omit unrelated feature-wide detail without dropping an applicable constraint
 - the source-verified Epic/Story flag inventory (`Flags: none` when unflagged), declared final-removal Story if any, and a stop instruction for any undeclared flag need
 - planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
@@ -146,7 +149,9 @@ Before writing step files inline, read and apply:
 
 If a required skill path is missing, stop and report the blocker. If an optional relevant skill is not installed and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag the gap as a plan risk.
 
-Inline plans must preserve the same verification expectations given to planner workers. Turn the story's verification expectations and technical-design quality strategy into concrete validation steps, not only a generic final test command. Consider unit, acceptance/integration, edge/failure, and regression checks by default, and property/invariant, torture/fuzz, mutation, or manual QA only when the story risk justifies them. When a deeper check is relevant but omitted, include a short skip rationale and any residual risks.
+Inline plans must preserve the same verification expectations given to planner workers. For each Task check and the final validation strategy, show which applicable SDD method and coverage it answers, what pass/fail evidence it yields, and which human limits and exclusions remain. Choose an exact repository command, fixture, equivalent local check, or more precise evidence without asking again when those choices answer the same verification questions within the SDD direction. Turn the Story's expectations into concrete validation steps, not only a generic final test command. Consider unit, acceptance/integration, edge/failure, and regression checks by default, and property/invariant, torture/fuzz, mutation, or manual QA only when the Story risk justifies them. When a deeper check is relevant but omitted, include a short skip rationale and any residual risks.
+
+If a required SDD method is infeasible or insufficient, an unavailable method has no equivalent in-scope check, a substitution no longer answers the same verification question, or a strategic scenario or surface is uncovered, stop affected planning. Also stop for a material new method, expense, external dependency, or human-judgment point. Describe the difference, why it matters, and the smallest engineer decision; request an engineer-directed SDD revision before planning the changed check. Missing relevant strategy or contradictory sources block rather than invite a guessed check. An unavailable command with an equivalent in-scope check remains routine; a failed prescribed check follows existing execution recovery, not an automatic strategy change. Do not amend the SDD or add routine Task, Milestone, or plan approval.
 
 ## Repository-aware validation policy
 
@@ -217,6 +222,7 @@ Before considering planning complete, verify:
 - the flag inventory, off/on checks for declared flagged Tasks, and any upstream-declared removal no-reference check are explicit
 - every step names expected files and the owning module or area when known, without treating the file list as exhaustive
 - validation steps are explicit enough to prove the story is complete and reflect the story's verification expectations
+- each Task check and the final strategy preserve applicable SDD methods, coverage, evidence, human limits, and exclusions; any material departure stops for an engineer-directed SDD revision rather than becoming a silent plan change
 - the plan preserves approved Deep Module, architecture, and UX boundaries
 - the plan does not add product or implementation scope beyond the source artifacts
 
