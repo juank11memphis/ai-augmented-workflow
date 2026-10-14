@@ -15,6 +15,8 @@ describe('createProgram', () => {
 
     assert.ok(evalsCommand);
     assert.equal(evalsCommand.description(), 'Start the local Sibu evals workbench');
+    assert.deepEqual(evalsCommand.commands.map((command) => command.name()), ['suites', 'describe', 'run', 'result']);
+    assert.equal(evalsCommand.commands.some((command) => ['repair', 'apply', 'approve'].includes(command.name())), false);
   });
 
   it('registers the mcp list command', () => {

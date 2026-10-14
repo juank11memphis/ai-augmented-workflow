@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { discoverConventionalEvalSuites } from './handler.js';
 import type { EvalSuiteDiscoveryLogEvent, EvalSuiteDiscoveryLoggerPort, EvalSuiteDiscoveryReaderPort, RawEvalSuiteDefinition } from './ports.js';
 import type { EvalSuiteDiscoveryDiagnostic } from './result.js';
+import { toPublicEvalSuiteDiscoveryResult } from './result.js';
 
 const projectRoot = '/repo/root';
 
@@ -20,6 +21,8 @@ describe('discoverConventionalEvalSuites', () => {
     assert.equal(result.definitions[0]?.version, 2);
     assert.deepEqual(result.suites[0]?.modelOptions, []);
     assert.deepEqual(result.suites[0]?.testCases, [{ id: 'case', name: 'Case' }]);
+    assert.deepEqual(Object.keys(toPublicEvalSuiteDiscoveryResult(result)).sort(), ['diagnostics', 'status', 'suites']);
+    assert.doesNotMatch(JSON.stringify(toPublicEvalSuiteDiscoveryResult(result)), /definitions|target|runner/);
     assert.deepEqual(logger.events.at(-1), {
       event: 'eval_suite_discovery_completed', outcome: 'ready', suiteCount: 1,
       diagnosticCount: 0, unsupportedCount: 0, reasonCodes: [], durationMs: 8,
@@ -44,6 +47,18 @@ describe('discoverConventionalEvalSuites', () => {
     assert.ok(result.diagnostics.some((item) => item.code === 'suite-definition-unsupported'));
     assert.ok(result.diagnostics.some((item) => item.code === 'sensitive-content-detected'));
     assert.doesNotMatch(JSON.stringify(result), /legacy prompt|static output/);
+  });
+
+  it('excludes a suite with an invalid case from the public case list', async () => {
+    const result = await discoverConventionalEvalSuites(command(), {
+      discoveryReader: reader([
+        { source: 'evals/valid.json', payload: validSuite(), diagnostics: [] },
+        { source: 'evals/invalid-case.json', payload: validSuite({ id: 'invalid-case', testCases: [{ id: '../unsafe', name: 'Unsafe' }] }), diagnostics: [] },
+      ]), logger: new CapturingDiscoveryLogger(),
+    });
+    const publicResult = toPublicEvalSuiteDiscoveryResult(result);
+    assert.deepEqual(publicResult.suites.map(suite => suite.id), ['suite']);
+    assert.ok(publicResult.diagnostics.some(item => item.code === 'suite-definition-malformed'));
   });
 
   it('excludes every colliding suite ID rather than selecting by reader order', async () => {

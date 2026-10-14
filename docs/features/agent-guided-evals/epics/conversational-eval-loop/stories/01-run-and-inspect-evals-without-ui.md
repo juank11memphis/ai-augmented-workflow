@@ -5,7 +5,7 @@
 ## Epic
 [Conversational Eval Loop](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 As a developer, I want to discover, run, and inspect my repo-local evals without opening the browser workbench, so that an agent conversation can use the same trustworthy results.

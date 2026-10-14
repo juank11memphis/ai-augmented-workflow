@@ -24,10 +24,29 @@ export function createProgram(): CommanderCommand {
     .description('Interactively review and apply Sibu template updates')
     .action(() => executeCliCommand({ type: 'sync' }));
 
-  cli
-    .command('evals')
-    .description('Start the local Sibu evals workbench')
-    .action(() => executeCliCommand(createStartLocalEvalsWorkbenchCommand()));
+  const evals = cli.command('evals').description('Start the local Sibu evals workbench');
+  evals.action(() => executeCliCommand(createStartLocalEvalsWorkbenchCommand()));
+  evals.command('suites').description('List eval suites and cases as JSON')
+    .action(() => executeCliCommand({ type: 'evals:suites' }));
+  evals.command('describe <suite>').description('Describe compatible models as JSON')
+    .option('--case <case_id>', 'Describe one case')
+    .action((suiteId: string, options: { case?: string }) => executeCliCommand({ type: 'evals:describe', suiteId, ...(options.case !== undefined ? { caseId: options.case } : {}) }));
+  evals.command('run <suite>').description('Run a suite or one case to a terminal result as JSON')
+    .option('--case <case_id>', 'Run one case (default: all cases)')
+    .option('--model <model_id>', 'Evaluation model')
+    .option('--judge <model_id>', 'Judge model when required')
+    .action((suiteId: string, options: { case?: string; model?: string; judge?: string }) => executeCliCommand({
+      type: 'evals:run', suiteId, scope: options.case !== undefined ? { type: 'test_case', testCaseId: options.case } : { type: 'all' },
+      model: options.model ?? '', ...(options.judge !== undefined ? { judgeModel: options.judge } : {}),
+    }));
+  evals.command('result <suite> <run>').description('Read bounded run evidence as JSON')
+    .option('--case <case_id>', 'Selected failed case')
+    .option('--assertion <assertion_id>', 'Selected failed assertion (requires --case)')
+    .action((suiteId: string, runId: string, options: { case?: string; assertion?: string }) => executeCliCommand({
+      type: 'evals:result', suiteId, runId,
+      ...(options.case !== undefined ? { caseId: options.case } : {}),
+      ...(options.assertion !== undefined ? { assertionId: options.assertion } : {}),
+    }));
 
   const skills = cli.command('skills').description('Manage Sibu workflow skills');
 
