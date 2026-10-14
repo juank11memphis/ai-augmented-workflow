@@ -1,5 +1,5 @@
 {
-  "templateVersion": "225",
+  "templateVersion": "226",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -331,10 +331,10 @@
       ]
     },
     "skills/agent-guided-evals/SKILL.md": {
-      "version": "1",
-      "description": "Mandatory shared Codex and Claude Code guidance for troubleshooting one Sibu eval case.",
+      "version": "2",
+      "description": "Mandatory shared Codex and Claude Code guidance for sequential troubleshooting of one Sibu eval case or a full suite.",
       "changes": [
-        "Adds a bounded single-case eval troubleshooting workflow with explicit fix approval, safe host edits, and one focused verification rerun."
+        "Adds one-at-a-time full-suite troubleshooting with fresh focused verification and a final suite rerun while preserving single-case approval and edit safeguards."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {

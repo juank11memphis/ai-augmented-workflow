@@ -5,13 +5,17 @@ import { MANDATORY_SKILLS, SUPPORTED_AGENTS, getSkillTargetsForAgents, readTempl
 const path = 'skills/agent-guided-evals/SKILL.md';
 const skill = readTemplate(path);
 
-test('agent-guided skill uses the real single-case JSON CLI and T00 locator', () => {
+test('agent-guided skill uses the JSON CLI for one case or the full suite and bounded locators', () => {
   assert.match(skill, /sibu evals suites/);
+  assert.match(skill, /one case or all cases/);
+  assert.match(skill, /sibu evals describe <suite>` for all cases/);
   assert.match(skill, /sibu evals describe <suite> --case <case_id>/);
+  assert.match(skill, /sibu evals run <suite> --model <model_id>` for all cases, without `--case`/);
   assert.match(skill, /sibu evals run <suite> --case <case_id> --model <model_id>/);
   assert.match(skill, /--judge <model_id>.*only when required/);
   assert.match(skill, /cases\[\]\.caseId.*attempts\[\]\.number/);
-  assert.match(skill, /failedAssertionIds.*locatorStatus: available/);
+  assert.match(skill, /first unresolved failed assertion in stable suite\/case\/check order from `failedAssertionIds` with `locatorStatus: available`/);
+  assert.match(skill, /source run ID and `\(caseId, attempt number, assertionId\)`/);
   assert.match(skill, /\(caseId, attempt number, assertionId\)/);
   assert.match(skill, /attempt \*\*1\*\* only/);
   assert.match(skill, /locator is absent, `unavailable`, `truncated`.*stop/);
@@ -20,9 +24,7 @@ test('agent-guided skill uses the real single-case JSON CLI and T00 locator', ()
   assert.match(skill, /Do not infer IDs from suite JSON or load bulk artifacts/);
 });
 
-test('agent-guided skill bounds diagnosis, approval, edit scope, and one rerun', () => {
-  assert.match(skill, /Guided full-suite or multi-case troubleshooting is not available until AGE-US-03/);
-  assert.match(skill, /independent CLI full-suite run-and-inspect path remains available/);
+test('agent-guided skill bounds diagnosis, approval, edit scope, and focused verification', () => {
   assert.match(skill, /one active failed assertion/);
   assert.match(skill, /likely cause, uncertainty, and concise possible fixes/);
   assert.match(skill, /blocked\/error\/interrupted\/partial runs, missing credentials, unavailable runner or judge/);
@@ -32,22 +34,35 @@ test('agent-guided skill bounds diagnosis, approval, edit scope, and one rerun',
   assert.match(skill, /working-tree baseline including pre-existing changes/);
   assert.match(skill, /post-edit changed-file list and delta.*approved scope/);
   assert.match(skill, /unexpected, concurrent, or indistinguishable.*stop before rerunning/);
-  assert.match(skill, /automatically run the same case \*\*once\*\*/);
-  assert.match(skill, /wait for a new decision before any second edit/);
-  assert.match(skill, /do not claim full-suite success/);
+  assert.match(skill, /automatically run the affected case \*\*once\*\*/);
+  assert.match(skill, /Advance only if the fresh completed result demonstrates that assertion passing/);
+  assert.match(skill, /reanalyze its fresh bounded evidence and wait for another approved, scoped fix/);
+  assert.match(skill, /blocked, partial, interrupted, error, unavailable, or uncertain rerun is not a pass/);
   assert.match(skill, /There is no Sibu CLI mutation shortcut/);
   assert.match(skill, /not.*Sibu-enforced authorization guarantee/);
+});
+
+test('agent-guided full-suite loop refreshes later failures and requires terminal suite verification', () => {
+  assert.match(skill, /if its evidence predates an intervening edit, run that case once/);
+  assert.match(skill, /select its current failed assertion from fresh bounded locators/);
+  assert.match(skill, /if the old failure disappeared, report that rather than repairing stale evidence/);
+  assert.match(skill, /Each new fix needs its own explicit approval and scoped edit/);
+  assert.match(skill, /ambiguous evidence, unsafe changes, or non-convergence/);
+  assert.match(skill, /rerun the full suite exactly as originally scoped, without `--case`/);
+  assert.match(skill, /Claim suite success only from this terminal run's actual completed, passing outcome/);
+  assert.match(skill, /If it fails, re-enter the same one-at-a-time loop/);
+  assert.match(skill, /originally selected single case, retain the focused outcome and do not add a full-suite rerun/);
 });
 
 test('agent-guided skill and current-version sync metadata ship together', () => {
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-  assert.equal(manifest.templateVersion, '225');
-  assert.equal(entry?.version, '1');
+  assert.equal(manifest.templateVersion, '226');
+  assert.equal(entry?.version, '2');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
-    'Adds a bounded single-case eval troubleshooting workflow with explicit fix approval, safe host edits, and one focused verification rerun.',
+    'Adds one-at-a-time full-suite troubleshooting with fresh focused verification and a final suite rerun while preserving single-case approval and edit safeguards.',
   ]);
 });
 
@@ -82,16 +97,16 @@ test('eval troubleshooting route stays distinct from mandatory authoring and bro
   assert.match(agents, /“let's work on evals,”/);
   assert.match(agents, /Keep creation or maintenance of eval artifacts with `eval-authoring`/);
   assert.match(claude, /Follow the project instructions in `AGENTS.md`/);
-  assert.match(skill, /independent CLI full-suite run-and-inspect path remains available/);
+  assert.match(skill, /one case or all cases/);
   assert.doesNotMatch(skill, /open(?:ing)? the (?:browser|UI)/i);
 });
 
-test('AGENTS route has a current-version sync note without rebumping the shared skill', () => {
+test('unchanged AGENTS route metadata remains version 56 while the shared skill advances', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '225');
+  assert.equal(manifest.templateVersion, '226');
   assert.equal(manifest.templates['AGENTS.md']?.version, '56');
   assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
     'Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate.',
   ]);
-  assert.equal(manifest.templates[path]?.version, '1');
+  assert.equal(manifest.templates[path]?.version, '2');
 });
