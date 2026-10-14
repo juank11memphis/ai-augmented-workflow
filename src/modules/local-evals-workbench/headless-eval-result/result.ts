@@ -1,4 +1,5 @@
 import type { CheckOutcome, RunState } from '../run-history/index.js';
+import type { LocatedAttempt } from '../run-history/failed-assertion-locators.js';
 
 export type HeadlessEvalSummary = {
   readonly suiteId: string;
@@ -8,7 +9,7 @@ export type HeadlessEvalSummary = {
   readonly scope: 'all' | 'selected';
   readonly testedModel: string;
   readonly judgeModel: string | null;
-  readonly cases: readonly { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed'; readonly attempts: readonly { readonly number: number; readonly outcome: CheckOutcome }[] }[];
+  readonly cases: readonly { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed'; readonly attempts: readonly LocatedAttempt[] }[];
 };
 
 export type HeadlessEvalResult =

@@ -85,6 +85,18 @@ describe('evals JSON CLI adapter', () => {
     }
   });
 
+  it('passes ordered failed-assertion locators through run and unselected result JSON', async () => {
+    const attempts = [{ number: 1, outcome: 'failed', failedAssertionIds: ['first', 'second'], locatorStatus: 'available' }];
+    const cases = [{ caseId: 'case', state: 'completed', attempts }];
+    const run = await invoke({ type: 'evals:run', suiteId: 'suite', scope: { type: 'all' }, model: 'm' },
+      { status: 'completed', runId: 'run', outcome: 'failed', cases });
+    const result = await invoke({ type: 'evals:result', suiteId: 'suite', runId: 'run' },
+      { status: 'ready', summary: { suiteId: 'suite', runId: 'run', state: 'completed', cases } });
+    assert.deepEqual(run.json.cases, cases);
+    assert.deepEqual((result.json.summary as { cases: unknown }).cases, cases);
+    assert.doesNotMatch(JSON.stringify(run.json) + JSON.stringify(result.json), /actual|expected|output|turns|tools/);
+  });
+
   it('prints only one JSON result from the compiled headless command without launching the browser server', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-evals-json-'));
     try {

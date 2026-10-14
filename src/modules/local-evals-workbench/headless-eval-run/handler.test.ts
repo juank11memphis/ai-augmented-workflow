@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
-import type { Manifest, RunState } from '../run-history/contracts.js';
+import type { Attempt, Manifest, RunState } from '../run-history/contracts.js';
 import type { HeadlessEvalRunDependencies } from './ports.js';
 import { headlessEvalRun } from './handler.js';
 
@@ -111,4 +111,31 @@ test('safe structured logger omits raw secrets and cannot change result', async 
   await headlessEvalRun(command, safe.ports);
   assert.deepEqual(safe.events, [{ event: 'headless_eval_run_finished', scope: 'all', status: 'completed', runId: 'run-1', durationMs: 0 }]);
   assert.doesNotMatch(JSON.stringify(safe.events), /secret|output|patch|evidence/i);
+});
+
+test('failed run exposes bounded ordered locators, not raw evidence or logs', async () => {
+  const f = fixture(); f.setState('completed', 'failed');
+  const attempts = Array.from({ length: 33 }, (_, index) => ({ id: `check-${index}`, kind: 'assertion' as const,
+    outcome: 'failed' as const, score: null, expected: 'raw-secret', actual: 'raw-secret', diagnostics: ['raw-secret'], turnIds: [], toolIds: [] }));
+  const evidence: Attempt = { version: 1, suiteId: 'suite', runId: 'run-1', caseId: 'case', number: 1, outcome: 'failed',
+    durationMs: 1, calls: null, cost: null, output: 'raw-secret', truncated: false, diagnostics: ['raw-secret'], turns: [], tools: [], assertions: attempts };
+  const reader = { get: async (_suiteId: string, _runId: string, selection?: { caseId: string }) => selection
+    ? { status: 'ok' as const, value: { summary: manifest('completed', 'failed'), evidenceStatus: 'available' as const, evidence } }
+    : { status: 'ok' as const, value: { summary: manifest('completed', 'failed'), evidenceStatus: 'not-requested' as const } } };
+  const result = await headlessEvalRun(command, { ...f.ports, reader });
+  const located = result.cases?.[0]?.attempts[0];
+  assert.deepEqual(located?.failedAssertionIds, attempts.slice(0, 32).map(item => item.id));
+  assert.equal(located?.locatorStatus, 'truncated');
+  assert.doesNotMatch(JSON.stringify(result) + JSON.stringify(f.events), /raw-secret|output|turns|tools/);
+});
+
+test('missing or corrupt failed attempt yields unavailable while passed attempt has no locator', async () => {
+  const f = fixture(); f.setState('partial', 'failed');
+  const unavailable = await headlessEvalRun(command, { ...f.ports, reader: { get: async (_suiteId, _runId, selection) => selection
+    ? { status: 'blocked', reason: 'corrupt' } as const
+    : { status: 'ok', value: { summary: manifest('partial', 'failed'), evidenceStatus: 'not-requested' } } as const } });
+  assert.equal(unavailable.status, 'partial');
+  assert.deepEqual(unavailable.cases?.[0]?.attempts[0], { number: 1, outcome: 'failed', failedAssertionIds: [], locatorStatus: 'unavailable' });
+  f.setState('completed', 'passed');
+  assert.deepEqual((await headlessEvalRun(command, f.ports)).cases?.[0]?.attempts[0], { number: 1, outcome: 'passed' });
 });

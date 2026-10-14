@@ -1,6 +1,7 @@
 import type { HeadlessEvalResultCommand } from './command.js';
 import type { HeadlessEvalResultDependencies } from './ports.js';
 import type { HeadlessEvalResult, HeadlessEvalSummary } from './result.js';
+import { failedAssertionLocators } from '../run-history/failed-assertion-locators.js';
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const MAX_TEXT = 600;
@@ -34,8 +35,9 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   const summary: HeadlessEvalSummary = {
     suiteId: manifest.suiteId, runId: manifest.runId, state: manifest.state, outcome: manifest.outcome,
     scope: manifest.scope, testedModel: manifest.testedModel, judgeModel: manifest.judgeModel,
-    cases: manifest.cases.map(item => ({ caseId: item.caseId, state: item.state,
-      attempts: item.attempts.map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) })),
+    cases: selection ? manifest.cases.map(item => ({ caseId: item.caseId, state: item.state,
+      attempts: item.attempts.map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) }))
+      : await failedAssertionLocators(manifest, dependencies.reader),
   };
   const artifactPath = safeArtifactPath(reviewArtifactPath);
   if (!selection) {

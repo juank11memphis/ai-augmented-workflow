@@ -61,3 +61,48 @@ test('non-failed and mismatched selections never expose evidence', async () => {
   const invalid = await headlessEvalResult({ suiteId: '../suite', runId: 'run' }, ready({ summary, evidenceStatus: 'not-requested' }));
   assert.deepEqual(invalid, { status: 'blocked', reason: 'invalid-input' });
 });
+
+test('unselected result supplies the same locator and selected result accepts it', async () => {
+  const reader = { get: async (_suiteId: string, _runId: string, selected?: { assertionId?: string }) => ({ status: 'ok' as const,
+    value: { summary, evidenceStatus: selected ? 'available' as const : 'not-requested' as const,
+      ...(selected ? { evidence } : {}) } }) };
+  const unselected = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, { reader });
+  assert.equal(unselected.status, 'ready');
+  if (unselected.status !== 'ready') assert.fail('Expected summary');
+  assert.deepEqual(unselected.summary.cases[0]?.attempts[0], { number: 1, outcome: 'failed', failedAssertionIds: ['check'], locatorStatus: 'available' });
+  assert.doesNotMatch(JSON.stringify(unselected), /full-run|full-trace|selected diagnostic|expected|actual/);
+  const selected = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, { reader });
+  assert.equal(selected.status, 'ready');
+  if (selected.status !== 'ready' || !('failure' in selected)) assert.fail('Expected selected failure');
+  assert.equal(selected.failure.assertionId, 'check');
+});
+
+test('invalid and unavailable attempt evidence never produces a false locator', async () => {
+  for (const detail of [
+    { summary, evidenceStatus: 'unavailable' as const },
+    { summary, evidenceStatus: 'available' as const, evidence: { ...evidence, assertions: [{ ...evidence.assertions[0]!, id: '../unsafe' }] } },
+  ]) {
+    const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, ready(detail));
+    assert.equal(result.status, 'ready');
+    if (result.status !== 'ready') assert.fail('Expected summary');
+    assert.deepEqual(result.summary.cases[0]?.attempts[0], { number: 1, outcome: 'failed', failedAssertionIds: [], locatorStatus: 'unavailable' });
+  }
+});
+
+test('document cap follows case order and marks later failed attempts truncated', async () => {
+  const first = { ...evidence, assertions: Array.from({ length: 32 }, (_, index) => ({ ...evidence.assertions[0]!, id: `id-${index}` })) };
+  const secondCase = { caseId: 'later', state: 'completed' as const, attempts: [{ ...summary.cases[0]!.attempts[0]! }] };
+  const twoCases: Manifest = { ...summary, caseIds: ['case', 'later'], cases: [...summary.cases, secondCase] };
+  let attemptReads = 0;
+  const reader = { get: async (_suiteId: string, _runId: string, selected?: { caseId: string }) => {
+    if (selected) attemptReads++;
+    return { status: 'ok' as const, value: { summary: twoCases, evidenceStatus: selected ? 'available' as const : 'not-requested' as const,
+      ...(selected ? { evidence: first } : {}) } };
+  } };
+  const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, { reader });
+  assert.equal(result.status, 'ready');
+  if (result.status !== 'ready') assert.fail('Expected summary');
+  assert.deepEqual(result.summary.cases[0]?.attempts[0]?.failedAssertionIds, first.assertions.map(item => item.id));
+  assert.deepEqual(result.summary.cases[1]?.attempts[0], { number: 1, outcome: 'failed', failedAssertionIds: [], locatorStatus: 'truncated' });
+  assert.equal(attemptReads, 1);
+});
