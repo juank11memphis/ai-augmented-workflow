@@ -5,7 +5,7 @@
 ## Epic
 [Conversational Eval Loop](../epic_brief.md)
 
-**Status:** in-progress
+**Status:** done
 
 ## User Story
 As a developer, I want to discover, run, and inspect my repo-local evals without opening the browser workbench, so that an agent conversation can use the same trustworthy results.
@@ -55,3 +55,7 @@ Blocks AGE-US-02; otherwise none.
 
 ## Open Questions and Assumptions
 - Accepted assumption: the SDD's shared JSON CLI operations are the agent-facing contract; no separate MCP interface is required for this increment.
+
+## Integration
+
+Verified Story PR [#32](https://github.com/juank11memphis/ai-augmented-workflow/pull/32) was squash-merged into the Epic branch at `07e2e19c37ea7b264d1cc8a24cf478c202c9bb52`.
