@@ -172,6 +172,36 @@ describe('getSyncPreviews', () => {
     assert.match(fs.readFileSync(targetPath, 'utf8'), /Local executor customization/);
   });
 
+  it('previews the current SDD writer update and preserves reviewed local guidance', () => {
+    const rootPath = createCleanInitializedRepo();
+    const state = readState(rootPath);
+    const manifest = readTemplateManifest();
+    const relativePath = '.agents/skills/software-design-writer/SKILL.md';
+    const templatePath = 'skills/software-design-writer/SKILL.md';
+    const targetPath = path.join(rootPath, relativePath);
+    const currentTemplate = manifest.templates[templatePath];
+    assert.ok(currentTemplate);
+    assert.match(currentTemplate.changes.join(' '), /verification proposal and correction during SDD discovery/);
+    state.managedFiles[relativePath].templateVersion = '1';
+    fs.appendFileSync(targetPath, '\nLocal SDD writer guidance.\n', 'utf8');
+    const localBytes = fs.readFileSync(targetPath);
+
+    const preview = getSyncPreview(rootPath, state, relativePath, manifest);
+
+    assert.equal(preview.status, 'modified-with-update');
+    assert.equal(preview.managedFile.template, templatePath);
+    assert.equal(preview.currentTemplateVersion, currentTemplate.version);
+    assert.deepEqual(preview.changes, currentTemplate.changes);
+
+    const reviewed = applySyncAction({ rootPath, state, manifest, preview, action: 'mark-reviewed' });
+
+    assert.equal(reviewed.changedFiles, false);
+    assert.equal(reviewed.changedState, true);
+    assert.deepEqual(fs.readFileSync(targetPath), localBytes);
+    assert.equal(reviewed.state.managedFiles[relativePath]?.status, 'customized');
+    assert.equal(reviewed.state.managedFiles[relativePath]?.lastReviewedTemplateVersion, currentTemplate.version);
+  });
+
   it('offers Export to GitHub adoption when GitHub MCP is already selected', () => {
     const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
     const state = readState(rootPath);
