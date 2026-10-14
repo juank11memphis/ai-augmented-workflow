@@ -1,5 +1,5 @@
 {
-  "templateVersion": "221",
+  "templateVersion": "222",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,17 +156,17 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "69",
+      "version": "70",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Tries GitHub MCP first for PR work and avoids routine branch-rules lookups while preserving required check and merge safety gates."
+        "Checks independent plan review against SDD verification direction, repairs bounded omissions automatically, and stops for material strategy decisions."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "27",
+      "version": "28",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Keeps a blocked checked Task's inventoried, disjoint edits untouched during a reviewed same-Story regression repair."
+        "Distinguishes ordinary failed checks from material verification changes and requires evidence for each Task completion condition."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -353,10 +353,10 @@
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Plan reviewer reports whether prior findings are resolved, persist, or were superseded without approving execution."
+        "Reviews planned verification against SDD methods, coverage, evidence, and human limits while separating bounded findings from material risks."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {
