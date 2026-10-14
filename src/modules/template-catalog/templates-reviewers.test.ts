@@ -74,7 +74,7 @@ describe('plan-only architecture reviewer', () => {
   it('ships current-version notes for the atomic reviewer contract', () => {
     const manifest = readTemplateManifest();
     for (const path of [toolboxPath, ...wrapperPaths]) {
-      assert.match(manifest.templates[path]?.changes.join(' ') ?? '', /plan review|plan-only|plan reviewer/i, path);
+      assert.match(manifest.templates[path]?.changes.join(' ') ?? '', /plan review|plan-only|plan reviewer|planned verification/i, path);
     }
   });
 });

@@ -78,7 +78,7 @@ describe('checked Task execution template contract', () => {
     const agents = readTemplate('AGENTS.md');
     const manifest = readTemplateManifest();
 
-    assert.match(agents, /bounded same-Story regression found by a failed check/i);
+    assert.match(agents, /bounded same-Story regression from an earlier committed Task/i);
     assert.match(agents, /Unresolved failures, material decisions, unsafe state, or non-convergence still stop/i);
     assert.match(gatekeeper, /clearly attributable regression from an earlier checked Task in the same Story/i);
     assert.match(gatekeeper, /Send the regression to `ai-implementation-planner` for a separate, ordered follow-up checked Task/i);
@@ -88,8 +88,28 @@ describe('checked Task execution template contract', () => {
     assert.match(toolbox, /Never modify, stage, or commit those preserved edits/i);
     assert.match(planner, /Do not require or invent a prior reviewer finding/i);
     assert.match(plannerToolbox, /failed check and evidence, attribution to an earlier checked Task in the same Story/i);
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /integrate fully verified Story PRs.*customized installed workflows/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /reviewed same-Task continuation.*bounded overlapping failures/i);
     assert.match(gatekeeper, /AFK recovery for a cross-Task validation regression/i);
+  });
+
+  it('continues an overlapping failure only in the same uncommitted Task after independent plan review', () => {
+    const agents = readTemplate('AGENTS.md');
+    const manifest = readTemplateManifest();
+
+    assert.match(agents, /overlapping, bounded failure within the still-uncommitted Task/i);
+    assert.match(gatekeeper, /AFK recovery for an overlapping uncommitted Task failure/i);
+    assert.match(gatekeeper, /record the exact failed command, observed failure, attempted fixes, and remaining `Done when` evidence/i);
+    assert.match(gatekeeper, /Inventory every uncommitted path.*attributable to this Task, unstaged/i);
+    assert.match(gatekeeper, /do not dispatch or commit a separate follow-up/i);
+    assert.match(gatekeeper, /revise the \*\*same Task ID\*\* for continuation/i);
+    assert.match(gatekeeper, /fresh independent \*\*plan-only\*\* architecture review of the changed reviewable identity/i);
+    assert.match(gatekeeper, /one passing scoped commit/i);
+    assert.match(gatekeeper, /Repeat reviewed continuations only with substantive new evidence or a distinct bounded fix/i);
+    assert.match(planner, /Revise that \*\*same Task\*\* for continuation without adding a Task/i);
+    assert.match(plannerToolbox, /Preserve its outcome, check, expected evidence, dependencies, Task ID, single-commit authority/i);
+    assert.match(toolbox, /reviewed continuation of the \*\*same uncommitted Task\*\*/i);
+    assert.match(toolbox, /do not use a new invocation to repeat an unchanged failure without evidence-guided progress/i);
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /overlapping uncommitted Task failures/i);
   });
 
   it('requires declared flag checks and stops on an undeclared flag', () => {
@@ -115,7 +135,7 @@ describe('checked Task execution template contract', () => {
       assert.match(wrapper, /Never approve your own work.*stash, reset/i);
       assert.match(manifest.templates[path]?.changes.join('') ?? '', /checked Task/i);
     }
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /integrate fully verified Story PRs.*customized installed workflows/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /reviewed same-Task continuation.*bounded overlapping failures/i);
     assert.match(manifest.templates['skills/ai-implementation-executor-toolbox/SKILL.md']?.changes.join('') ?? '', /Task/i);
     assert.match(gatekeeper, /post-commit evidence gap/i);
     assert.match(readTemplate('AGENTS.md'), /checked-Task executor may commit only its scoped Task after the prescribed check passes/i);

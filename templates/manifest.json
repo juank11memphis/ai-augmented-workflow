@@ -1,5 +1,5 @@
 {
-  "templateVersion": "218",
+  "templateVersion": "223",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "54",
+      "version": "55",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Allows the main agent to integrate fully verified Story PRs into an Epic without routine Story approval while retaining safety stops and customized installed workflows."
+        "Allows reviewed same-Task continuation for bounded overlapping failures while retaining check, commit, and safety gates."
       ]
     },
     ".codex/config.toml": {
@@ -135,38 +135,38 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "20",
+      "version": "21",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Adds conditional flag decisions, project SAD and feature SDD handoffs, and final flag-removal Stories while preserving unflagged planning."
+        "Carries each Story's applicable SDD verification methods, coverage, evidence, human limits, and exclusions into reviewable expectations without adding approval gates."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "32",
+      "version": "34",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Accepts a checked-Task validation regression for a bounded follow-up revision of the existing Story plan."
+        "Adds same-Task plan revision for bounded overlapping failures in uncommitted checked Tasks."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "20",
+      "version": "22",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Plans a bounded checked-Task regression follow-up without rewriting completed Task evidence."
+        "Revises a failed checked Task for continuation while preserving its check and single-commit authority."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "69",
+      "version": "71",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Tries GitHub MCP first for PR work and avoids routine branch-rules lookups while preserving required check and merge safety gates."
+        "Recovers bounded overlapping uncommitted Task failures through reviewed same-Task continuation without weakening checks or commit gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "27",
+      "version": "29",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Keeps a blocked checked Task's inventoried, disjoint edits untouched during a reviewed same-Story regression repair."
+        "Resumes a reviewed failed Task with inventoried edits while preserving its exact check and one scoped commit."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -345,17 +345,18 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "1",
+      "version": "2",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Replaces the former writer with feature SDD at sdd.md; use sync for adoption and retire obsolete local copies/records only after ownership review."
+        "Adds a concrete verification proposal and correction during SDD discovery, separate from the final check-in; sync preserves local ownership review.",
+        "Records the settled approach in the SDD quality strategy, including human visual review for UI features without a new approval gate."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Plan reviewer reports whether prior findings are resolved, persist, or were superseded without approving execution."
+        "Reviews planned verification against SDD methods, coverage, evidence, and human limits while separating bounded findings from material risks."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {

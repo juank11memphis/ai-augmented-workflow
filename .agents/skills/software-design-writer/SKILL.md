@@ -29,6 +29,8 @@ Name relevant existing SAD modules and include sufficient promises/interfaces, o
 
 Specify unit, acceptance/integration, edge/failure, and regression tests relevant to the feature. Use property/invariant, torture/fuzz, mutation, or manual QA only when risk warrants them; explain material skips. Identify validation commands where known without claiming they ran. Keep planned verification intent distinct from observed results.
 
+Write the settled verification approach as an easy-to-find SDD quality strategy, tied to relevant source BRD requirement IDs. State the chosen coverage, methods, expected evidence, human-owned judgments, and meaningful exclusions or constraints without turning the section into an approval record or a universal test-method checklist.
+
 ## Visual explanation
 
 Every SDD embeds at least one explanatory Mermaid diagram. For an interaction-driven feature use a main-flow sequence diagram showing the trigger, relevant participants, interactions/data, responses, and meaningful branches/failures. For a change with no meaningful interaction flow, include a suitable structural flowchart, state or data diagram and explain why a sequence would misrepresent the change. The exception changes diagram type, not the obligation: no completed SDD is diagram-free. Supplement only when useful and never invent unsupported behavior to populate a diagram.
@@ -37,7 +39,13 @@ Every SDD embeds at least one explanatory Mermaid diagram. For an interaction-dr
 
 Read the required sources first, then interview one focused question at a time about remaining material decisions. Reuse settled answers; do not mechanically repeat questions answered by the user or sources. Ask meaningful follow-ups to partial answers and resolve material uncertainty instead of inventing decisions. There is no question-count limit or shortcut for complex work. Small changes need proportionate discovery, not filler questions.
 
+Before writing the SDD, present the engineer with a concise, feature-specific proposed verification approach in plain language. Explain what will be verified, by what methods, over which relevant scenarios or surfaces, what evidence each method should produce, which judgments or decisions remain human-owned, and any meaningful exclusions or validation constraints. Do not invent exact commands when they are unknown. Ask the engineer to confirm or correct this direction; incorporate corrections and restate a changed approach for confirmation before writing. Resolve material gaps with focused follow-ups before making the proposal.
+
+For UI-changing features, derive named screens, states, and breakpoints from the binding UX mockups. Explain how a person will compare visual fidelity against those mockups, separately from functional tests and automated accessibility checks; automation does not prove subjective visual quality. For non-UI features, omit visual-review boilerplate.
+
 Before writing, perform a final conversational check-in: “I am clear on my end. Is there anything else to cover before I write?” Incorporate corrections and wait for the response. This closes discovery, not a document sign-off ceremony. Do not add approval fields, signatures, or approval statuses. Never automatically execute the next stage; the user chooses progression. Preserve code-change permissions, story-level review, sync ownership choices, and external mutation authorization.
+
+The verification proposal and its confirmation are distinct from that final check-in; the check-in cannot substitute for them. If the final check-in changes verification direction, restate and reconfirm the changed approach before writing. Do not add routine Story, Task, or Milestone approval pauses when downstream work stays within the settled approach.
 
 ## Embedded Mermaid validation
 

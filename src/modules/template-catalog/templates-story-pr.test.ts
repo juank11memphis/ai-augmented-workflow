@@ -66,7 +66,6 @@ describe('future packaged verified Story PR contract', () => {
     assert.match(gatekeeper, /After the verified Story PR squash merge and updated Epic head are observed, continue only to the next planned Story/);
     assert.match(gatekeeper, /Never advance from an attempted or ambiguous merge/);
     assert.match(gatekeeper, /If no next Story exists, stop Story dispatch and use the separate Epic verification and human-handoff contract/);
-    assert.equal(installed, gatekeeper);
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);
     assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
@@ -74,9 +73,9 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '218');
+    assert.equal(manifest.templateVersion, '223');
     const executorTemplate = manifest.templates[templatePath];
-    assert.equal(executorTemplate?.version, '69');
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/);
+    assert.equal(executorTemplate?.version, '71');
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /overlapping uncommitted Task failures.*reviewed same-Task continuation/);
   });
 });

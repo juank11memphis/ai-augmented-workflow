@@ -108,7 +108,7 @@ test('cleanup preserves shared retired B guidance, selection, doctor finding and
     assert.equal(fs.existsSync(path.join(f.root, skillPath)), false);
     assert.equal(f.state().managedFiles[skillPath], undefined);
     assert.equal(f.state().managedFiles[routingPath]?.sha256, sha256(f.bytes(routingPath)));
-    assert.equal(f.state().managedFiles[routingPath]?.templateVersion, '54');
+    assert.equal(f.state().managedFiles[routingPath]?.templateVersion, '55');
     assert.equal(f.state().managedFiles[routingPath]?.status, 'managed');
     assert.match(f.bytes(routingPath), /^- older-skill guidance$/m);
     assert.doesNotMatch(f.bytes(routingPath), /^- former-skill guidance$/m);

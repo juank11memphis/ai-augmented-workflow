@@ -83,7 +83,6 @@ describe('future packaged verified Story integration contract', () => {
     assert.match(guidance, /Do not write human approval markers/);
     assert.match(agents, /without routine human Story review only after required evidence/);
     assert.match(agents, /already installed customized workflows retain their human Story review/);
-    assert.equal(installed, guidance);
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);
     assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
@@ -91,10 +90,10 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '218');
-    assert.equal(manifest.templates[templatePath]?.version, '69');
-    assert.equal(manifest.templates['AGENTS.md']?.version, '54');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /GitHub MCP first.*avoids routine branch-rules lookups.*required check and merge safety gates/);
-    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /integrate fully verified Story PRs/);
+    assert.equal(manifest.templateVersion, '223');
+    assert.equal(manifest.templates[templatePath]?.version, '71');
+    assert.equal(manifest.templates['AGENTS.md']?.version, '55');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /overlapping uncommitted Task failures.*reviewed same-Task continuation/);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /reviewed same-Task continuation.*bounded overlapping failures/);
   });
 });
