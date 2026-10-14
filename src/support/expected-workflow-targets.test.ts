@@ -59,6 +59,7 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/scripts/check-touched-source-file-lines.mjs').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/business-domain-model-writer/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/eval-authoring/SKILL.md').length, 1);
+    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/agent-guided-evals/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/capabilities-map-writer/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
@@ -234,6 +235,7 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/eval-authoring/SKILL.md',
       '.agents/skills/eval-authoring/references/version-2-contract.md',
       '.agents/skills/eval-authoring/scripts/check-preview-contract.mjs',
+      '.agents/skills/agent-guided-evals/SKILL.md',
       '.agents/skills/feature-idea-capture/SKILL.md',
       '.agents/skills/export-to-notion/SKILL.md',
       '.codex/agents/notion-exporter.toml',

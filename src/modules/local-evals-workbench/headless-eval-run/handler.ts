@@ -3,6 +3,7 @@ import type { HeadlessEvalRunDependencies } from './ports.js';
 import type { HeadlessEvalRunResult } from './result.js';
 import { compatibleDescription, hasRubric, requiredCapabilities } from '../runtime-description.js';
 import { logicalId } from '../run-history/validation.js';
+import { failedAssertionLocators } from '../run-history/failed-assertion-locators.js';
 
 const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
 const SAFE_REASON = /^[a-z][a-z0-9-]{0,79}$/;
@@ -60,8 +61,7 @@ export async function headlessEvalRun(command: HeadlessEvalRunCommand, ports: He
     }
     if (manifest.state !== execution.status || execution.runId !== runId) return finish({ status: 'error', runId, reason: 'persisted-state-mismatch' });
     return finish({ status: manifest.state, runId, ...(reason ? { reason } : {}), outcome: manifest.outcome,
-      cases: manifest.cases.map(item => ({ caseId: item.caseId, state: item.state,
-        attempts: item.attempts.map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) })),
+      cases: await failedAssertionLocators(manifest, ports.reader),
       diagnostics: manifest.diagnostics.slice(0, 5).filter(item => SAFE_REASON.test(item)) });
   } catch { return finish({ status: 'error', ...(runId ? { runId } : {}), reason: 'unavailable' }); }
 }
