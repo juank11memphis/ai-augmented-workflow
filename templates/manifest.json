@@ -1,5 +1,5 @@
 {
-  "templateVersion": "220",
+  "templateVersion": "221",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -142,17 +142,17 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "32",
+      "version": "33",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Accepts a checked-Task validation regression for a bounded follow-up revision of the existing Story plan."
+        "Carries the applicable SDD verification direction into Task checks and stops material changes for an engineer-directed SDD revision."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "20",
+      "version": "21",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Plans a bounded checked-Task regression follow-up without rewriting completed Task evidence."
+        "Refines SDD verification direction into concrete Task evidence while distinguishing routine equivalent checks from material departures."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
