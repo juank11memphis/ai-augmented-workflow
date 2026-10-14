@@ -1,5 +1,5 @@
 {
-  "templateVersion": "219",
+  "templateVersion": "220",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -135,10 +135,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "20",
+      "version": "21",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Adds conditional flag decisions, project SAD and feature SDD handoffs, and final flag-removal Stories while preserving unflagged planning."
+        "Carries each Story's applicable SDD verification methods, coverage, evidence, human limits, and exclusions into reviewable expectations without adding approval gates."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
