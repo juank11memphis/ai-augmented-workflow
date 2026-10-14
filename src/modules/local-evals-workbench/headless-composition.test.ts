@@ -32,11 +32,18 @@ test('headless discovery, description, awaited run and persisted result use work
     assert.equal(run.status, 'completed', JSON.stringify(run));
     assert.equal(run.outcome, 'failed');
     assert.ok(run.runId);
+    const runAttempt = run.cases?.find(item => item.caseId === 'schema')?.attempts[0];
+    assert.deepEqual(runAttempt?.failedAssertionIds, ['unsupported']);
+    assert.equal(runAttempt?.locatorStatus, 'available');
+    assert.doesNotMatch(JSON.stringify(run), /SYNTHETIC_SECRET_SENTINEL|"actual"|"output"/);
     const result = await workbench.result({ suiteId: 'offline', runId: run.runId });
     assert.equal(result.status, 'ready');
     if (result.status === 'ready') {
       assert.equal(result.summary.state, 'completed');
       assert.deepEqual(result.summary.cases.map(item => item.caseId), ['first', 'second', 'schema']);
+      const resultAttempt = result.summary.cases.find(item => item.caseId === 'schema')?.attempts[0];
+      assert.deepEqual(resultAttempt, runAttempt);
+      assert.doesNotMatch(JSON.stringify(result), /SYNTHETIC_SECRET_SENTINEL|"actual"|"output"/);
       const manifest = JSON.parse(await readFile(path.join(project.root, 'evals/artifacts/offline', run.runId, 'run.json'), 'utf8')) as {
         version: number; suiteId: string; runId: string; state: string; cases: { caseId: string }[];
       };
@@ -52,10 +59,15 @@ test('headless discovery, description, awaited run and persisted result use work
       assert.equal(uiRead.status, 'ok');
       if (uiRead.status === 'ok') assert.deepEqual(uiRead.value.summary, manifest);
     }
+    assert.ok(runAttempt?.failedAssertionIds?.[0]);
+    assert.ok(runAttempt.number === 1);
     const failure = await workbench.result({ suiteId: 'offline', runId: run.runId,
-      selection: { caseId: 'schema', attempt: 1, assertionId: 'unsupported' } });
+      selection: { caseId: 'schema', attempt: runAttempt.number, assertionId: runAttempt.failedAssertionIds[0] } });
     assert.equal(failure.status, 'ready');
-    if (failure.status === 'ready') assert.equal('failure' in failure && failure.failure.assertionId, 'unsupported');
+    if (failure.status === 'ready') {
+      assert.equal('failure' in failure && failure.failure.assertionId, 'unsupported');
+      assert.doesNotMatch(JSON.stringify(failure.summary), /SYNTHETIC_SECRET_SENTINEL|"actual"|"output"/);
+    }
     assert.equal(serverStarts, 0);
     assert.equal(project.git('status', '--porcelain'), before);
   } finally {

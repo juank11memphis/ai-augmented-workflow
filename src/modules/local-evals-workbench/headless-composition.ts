@@ -30,7 +30,8 @@ export async function createHeadlessWorkbench(projectRoot: string) {
     discover: () => toPublicEvalSuiteDiscoveryResult(discovery),
     describe: (command: DescribeEvalSuiteRuntimeCommand) => describeEvalSuiteRuntime(command, { suites, runner }),
     run: (command: HeadlessEvalRunCommand) => headlessEvalRun(command, { suites, runner, artifacts, inputs,
-      store: history.store, reader: { get: (suiteId, runId) => history.get({ suiteId, runId }) },
+      store: history.store, reader: { get: (suiteId, runId, selection) =>
+        history.get({ suiteId, runId, ...(selection ? { selection } : {}) }) },
       executor: { execute: async selection => {
         const result = await executeEvalRun({ ...selection, suitePath: discovery.sourceBySuiteId?.[selection.suite.id] },
           { runner: executor, store: history.store, evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now });
