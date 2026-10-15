@@ -17,11 +17,29 @@ describe('NodeEvalSuiteDiscoveryReader', () => {
     assert.equal(result.suites[0]?.id, 'support-agent');
     assert.equal(result.suites[0]?.readyTestCaseCount, 2);
     assert.equal(result.definitions[0]?.testCases[0]?.fixture?.type, 'file');
+    assert.equal(Object.hasOwn(result.definitions[0] ?? {}, 'defaultTestedModel'), false);
+    assert.equal(Object.hasOwn(result.definitions[0] ?? {}, 'defaultJudgeModel'), false);
     assert.equal(result.diagnostics.length, 0);
   });
 
+  it('discovers saved suite defaults without writing to the project suite', async () => {
+    const project = await createProject();
+    const suitePath = path.join(project, 'evals', 'suite.json');
+    await writeSuite(project, validSuite({ defaultTestedModel: 'fake/target', defaultJudgeModel: 'fake/judge' }));
+    const before = await fs.readFile(suitePath, 'utf8');
+
+    const result = await discoverFromProjectRoot(project);
+
+    assert.equal(result.status, 'ready');
+    assert.equal(result.definitions[0]?.defaultTestedModel, 'fake/target');
+    assert.equal(result.definitions[0]?.defaultJudgeModel, 'fake/judge');
+    assert.equal(result.diagnostics.length, 0);
+    assert.equal(await fs.readFile(suitePath, 'utf8'), before);
+  });
+
   it('reports missing evals and malformed JSON without exposing raw content', async () => {
-    const missing = await discoverFromProjectRoot(path.join(fixturesRoot, 'empty-project'));
+    const emptyProject = await fs.mkdtemp(path.join(os.tmpdir(), 'sibu-evals-empty-project-'));
+    const missing = await discoverFromProjectRoot(emptyProject);
     assert.equal(missing.status, 'blocked');
     assert.equal(missing.reason, 'missing-evals-folder');
 

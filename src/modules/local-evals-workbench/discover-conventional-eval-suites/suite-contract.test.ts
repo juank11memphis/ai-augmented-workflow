@@ -4,6 +4,50 @@ import { describe, it } from 'node:test';
 import { validateEvalSuiteContract } from './suite-contract.js';
 
 describe('version-2 eval suite contract', () => {
+  it('keeps old suites valid without inventing defaults', () => {
+    const result = validateEvalSuiteContract(validSuite());
+    assert.equal(result.status, 'valid');
+    if (result.status !== 'valid') return;
+    assert.equal(Object.hasOwn(result.suite, 'defaultTestedModel'), false);
+    assert.equal(Object.hasOwn(result.suite, 'defaultJudgeModel'), false);
+  });
+
+  it('normalizes independent tested and judge defaults, including a deterministic-only suite', () => {
+    const both = validateEvalSuiteContract(validSuite({ defaultTestedModel: 'fake/target', defaultJudgeModel: 'fake/judge' }));
+    assert.equal(both.status, 'valid');
+    if (both.status === 'valid') {
+      assert.equal(both.suite.defaultTestedModel, 'fake/target');
+      assert.equal(both.suite.defaultJudgeModel, 'fake/judge');
+    }
+    const testedOnly = validateEvalSuiteContract(validSuite({ defaultTestedModel: 'provider:model-1' }));
+    assert.equal(testedOnly.status, 'valid');
+    if (testedOnly.status === 'valid') {
+      assert.equal(testedOnly.suite.defaultTestedModel, 'provider:model-1');
+      assert.equal(Object.hasOwn(testedOnly.suite, 'defaultJudgeModel'), false);
+    }
+    const judgeOnly = validateEvalSuiteContract(validSuite({ defaultJudgeModel: 'fake/judge' }));
+    assert.equal(judgeOnly.status, 'valid');
+    if (judgeOnly.status === 'valid') {
+      assert.equal(Object.hasOwn(judgeOnly.suite, 'defaultTestedModel'), false);
+      assert.equal(judgeOnly.suite.defaultJudgeModel, 'fake/judge');
+    }
+  });
+
+  it('rejects empty, malformed, and unsafe suite model defaults without echoing values', () => {
+    const invalidValues: unknown[] = ['', ' ', null, 42, {}, [], ' fake/target', '../escape', 'fake\\target',
+      'fake\nmodel', 'fake;command', 'a'.repeat(121)];
+    for (const field of ['defaultTestedModel', 'defaultJudgeModel']) {
+      for (const value of invalidValues) {
+        const result = validateEvalSuiteContract(validSuite({ [field]: value }));
+        assert.equal(result.status, 'invalid', `${field}: ${String(value)}`);
+        if (result.status === 'invalid') {
+          assert.ok(result.diagnostics.some((item) => item.reason === 'suite-model-default-invalid'));
+          assert.doesNotMatch(JSON.stringify(result), /fake;command|fake\\\\target/);
+        }
+      }
+    }
+  });
+
   it('normalizes every supported assertion, grader, content, turn, and mock shape', () => {
     const result = validateEvalSuiteContract(fullSuite(), 'evals/full.json');
     assert.equal(result.status, 'valid');
