@@ -3,13 +3,68 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader, type InternalEvalSuiteDiscoveryResult, type NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
 import { createWorkbenchDependencies } from '../workbench-composition.js';
 import { NodeProjectSuiteChoiceFile } from '../change-saved-model-choice/index.js';
+import { withOfflineWorkbench } from './local-server-starter-test-fixture.js';
+import { createRunHistory } from '../run-history/composition.js';
+import { createSelectedFailureReader } from '../repair-context/selected-evidence.js';
 
 describe('local server suite contract boundaries', () => {
+  it('persists the temporary selected label through status, detail, and repair evidence without changing suite defaults', async () => {
+    const terminal: string[] = [];
+    const originalInfo = console.info;
+    console.info = (line: unknown) => { if (typeof line === 'string') terminal.push(line); };
+    try { await withOfflineWorkbench(async workbench => {
+      const suitePath = path.join(workbench.projectRoot, 'evals/offline.json');
+      const original = JSON.parse(await readFile(suitePath, 'utf8')) as Record<string, unknown>;
+      const saved = JSON.stringify({ ...original, defaultTestedModel: 'fake/available' });
+      await writeFile(suitePath, saved);
+      await workbench.setRunnerMode('assertion-failed');
+      const request = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' },
+        runOnly: { testedModel: 'fake/unavailable' } };
+      const preview = await workbench.post('/api/eval-runs/preview', request);
+      assert.equal(preview.code, 200);
+      assert.equal(preview.payload.model, 'fake/unavailable');
+      const started = await workbench.post('/api/eval-runs/start', { ...request, previewToken: preview.payload.previewToken });
+      assert.equal(started.code, 202);
+      assert.equal(await readFile(suitePath, 'utf8'), saved);
+      const runId = String(started.payload.runId);
+      let detail: Record<string, unknown> | undefined;
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const status = await workbench.get(`/api/eval-runs/status?suiteId=offline&runId=${runId}`);
+        if (status.code === 200 && (status.payload.value as { summary: { state: string } }).summary.state === 'completed') {
+          const selected = await workbench.get(`/api/eval-runs/status?suiteId=offline&runId=${runId}&caseId=first&attempt=1`);
+          assert.equal(selected.code, 200);
+          detail = selected.payload.value as Record<string, unknown>;
+          break;
+        }
+        await delay(20);
+      }
+      assert.ok(detail, 'The disposable fake run must persist a result');
+      const summary = detail.summary as { testedModel: string; judgeModel: string | null };
+      const evidence = detail.evidence as { outcome: string; assertions: { id: string; outcome: string }[] };
+      assert.deepEqual([summary.testedModel, summary.judgeModel], ['fake/unavailable', null]);
+      assert.equal(detail.evidenceStatus, 'available');
+      assert.equal(evidence.outcome, 'failed');
+      const assertion = evidence.assertions.find(item => item.outcome === 'failed');
+      assert.ok(assertion);
+      const repair = await createSelectedFailureReader(createRunHistory(workbench.projectRoot).get).read({
+        suiteId: 'offline', runId, testCaseId: 'first', attempt: 1, assertionId: assertion.id,
+      });
+      assert.equal(repair.status, 'ready');
+      if (repair.status === 'ready') assert.equal(repair.value.evidence.evalRunModelLabel, 'fake/unavailable');
+      assert.equal(await readFile(suitePath, 'utf8'), saved);
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (terminal.some(line => line.includes('"event":"eval_run_finished"') && line.includes(`"runId":"${runId}"`))) return;
+        await delay(20);
+      }
+      assert.fail('The disposable fake runner must finish before fixture cleanup');
+    }); } finally { console.info = originalInfo; }
+  });
   it('translates only explicit POST Save results and performs zero writes for no-save routes', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-saved-route-'));
     const evals = path.join(root, 'evals');

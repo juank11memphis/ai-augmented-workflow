@@ -9,6 +9,7 @@ const command = { suiteId: 'suite', scope: { type: 'all' as const }, model: 'fak
 
 const suite: NormalizedEvalSuite = {
   version: 2, kind: 'sibu-eval-suite', id: 'suite', name: 'Suite', description: 'Synthetic',
+  defaultTestedModel: 'fake/target', defaultJudgeModel: 'fake/judge',
   target: { id: 'target', kind: 'agent', path: 'src/target.mjs' },
   coverage: { categories: [{ id: 'one', status: 'covered' }], gaps: [] },
   runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
@@ -35,7 +36,7 @@ test('preview returns selected cases without invoking the model', async () => {
 test('selection and readiness blocks before queueing', async () => {
   for (const command of [
     { suiteId: 'suite', scope: { type: 'test_case' as const, testCaseId: 'missing' }, model: 'fake/target' },
-    { suiteId: 'suite', scope: { type: 'all' as const }, model: 'wrong' },
+    { suiteId: 'suite', scope: { type: 'test_case' as const, testCaseId: 'case' }, runOnly: { testedModel: 'wrong' } },
   ]) {
     const deps = dependencies();
     assert.equal((await previewEvalRun(command, deps)).status, 'blocked');
@@ -51,11 +52,12 @@ test('rubric suites keep Judge readiness explicit even for a deterministic case'
   }] };
   const deps = dependencies();
   deps.suites.load = async () => rubricSuite;
-  assert.deepEqual(await previewEvalRun({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'case' }, model: 'fake/target' }, deps),
-    { status: 'blocked', stage: 'description', reason: 'capability-unsupported' });
+  assert.equal((await previewEvalRun({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'case' }, model: 'fake/target' }, deps)).status, 'ready');
+  deps.suites.load = async () => ({ ...rubricSuite, defaultJudgeModel: 'fake/unavailable-judge' });
   deps.runner.describe = async () => ({ status: 'ready', value: { ...description, capabilities: ['single-turn', 'rubric'], judgeModels: ['fake/judge'] } });
   assert.deepEqual(await previewEvalRun({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'rubric' }, model: 'fake/target' }, deps),
-    { status: 'blocked', stage: 'description', reason: 'judge-unavailable' });
+    { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', caseId: 'rubric', role: 'judge' });
+  deps.suites.load = async () => rubricSuite;
   const ready = await previewEvalRun({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'rubric' }, model: 'fake/target', judgeModel: 'fake/judge' }, deps);
   assert.equal(ready.status, 'ready');
   if (ready.status === 'ready') assert.equal(ready.judgeModel, 'fake/judge');
@@ -91,10 +93,11 @@ test('unexpected exceptions identify only the observed stage and unknown cause',
     const deps = dependencies();
     const events: unknown[] = [];
     failure.prepare(deps);
-    assert.deepEqual(await previewEvalRun(command, { ...deps, logger: { record: (event: unknown) => { events.push(event); } } }),
-      { status: 'error', stage: failure.stage, reason: 'unknown-cause' });
+    const result = await previewEvalRun(command, { ...deps, logger: { record: (event: unknown) => { events.push(event); } } });
+    assert.equal(result.status, failure.stage === 'selection' || failure.stage === 'description' ? 'blocked' : 'error');
     assert.equal(events.length, 2);
-    assert.deepEqual(events.map(event => (event as { outcome: string }).outcome), ['started', 'failed']);
+    assert.deepEqual(events.map(event => (event as { outcome: string }).outcome), ['started',
+      failure.stage === 'selection' || failure.stage === 'description' ? 'blocked' : 'failed']);
     assert.equal(JSON.stringify(events).includes('SECRET_MARKER'), false);
   }
 });

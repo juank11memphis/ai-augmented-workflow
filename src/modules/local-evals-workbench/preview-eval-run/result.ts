@@ -1,6 +1,6 @@
-import type { RuntimeBlockReason } from '../runtime-description.js';
+import type { SelectionBlockReason, ModelRole } from '../resolve-eval-run-selection/result.js';
 export type PreviewStage = 'selection' | 'description' | 'artifact-readiness' | 'resolved-inputs';
 export type PreviewEvalRunResult =
-  | { readonly status: 'ready'; readonly suiteId: string; readonly selectedCaseIds: readonly string[]; readonly model: string; readonly judgeModel: string | null }
-  | { readonly status: 'blocked'; readonly stage: PreviewStage; readonly reason: RuntimeBlockReason }
+  | { readonly status: 'ready'; readonly suiteId: string; readonly selectedCaseIds: readonly string[]; readonly model: string; readonly judgeModel: string | null; readonly previewToken: string }
+  | { readonly status: 'blocked'; readonly stage: PreviewStage; readonly reason: SelectionBlockReason; readonly caseId?: string; readonly role?: ModelRole }
   | { readonly status: 'error'; readonly stage: PreviewStage; readonly reason: 'unknown-cause' };
