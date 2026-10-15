@@ -125,3 +125,12 @@ it('keeps historical model labels when current suite context changes', () => {
   assert.equal(model.results[0]?.name, 'Renamed case');
   assert.deepEqual([model.results[0]?.model, model.results[0]?.judgeModel], ['old-tested', 'old-judge']);
 });
+
+it('refreshes completed-case labels from the selected run without changing detail identifiers', () => {
+  const initial = createWorkspaceViewModel({ discovery, run: { ...run, testedModel: 'initial-model' } });
+  const refreshed = createWorkspaceViewModel({ discovery, run: { ...run, testedModel: 'refreshed-model', judgeModel: 'review-judge' } });
+  assert.deepEqual([initial.results[0]?.model, initial.results[0]?.judgeModel], ['initial-model', null]);
+  assert.deepEqual([refreshed.results[0]?.model, refreshed.results[0]?.judgeModel], ['refreshed-model', 'review-judge']);
+  assert.deepEqual(refreshed.results[0]?.detail, initial.results[0]?.detail);
+  assert.equal(refreshed.results.length, 1);
+});
