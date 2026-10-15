@@ -86,7 +86,10 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 #### Local Evals Workbench
 
 - **Discover local eval suites**: find valid eval suites from the repo's conventional eval workspace without requiring dashboard-specific configuration.
-- **Select compatible evaluation models**: let users choose one compatible Model Under Evaluation per run and a separate Judge Model when rubric-based grading requires one.
+- **Manage suite model defaults**: let users set, change, or reset separate persistent suite defaults for the Model Under Evaluation and, when rubric grading requires one, the Judge Model.
+- **Manage test-case model overrides**: let users override either inherited suite default for a test case and reset an override to restore inheritance.
+- **Resolve models for eval runs**: require missing suite defaults to be set before a run; use each case's effective defaults for a full-suite run, while allowing a different model for one single-case run without changing saved choices.
+- **Resolve unavailable eval model choices**: pause an affected run when a saved suite default or test-case override is unavailable; let the user explicitly replace it, or reset an unavailable test-case override to inherit the suite default, without silent substitution in either the UI or agent-guided flow.
 - **Run focused eval scope**: let users run either all test cases in a suite or one selected test case so repairs can be validated in small loops.
 - **Execute real AI behavior**: exercise the Evaluation Target with suite inputs so results come from actual single-turn, multi-turn, and mocked-tool behavior rather than predefined outputs.
 - **Preview run consumption in the UI**: preserve the existing workbench preview of expected model-call volume and estimated cost before a UI run; new cost controls are outside the agent-guided mode's current scope.
@@ -99,7 +102,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Gate repair mutations by approval**: prevent prompt, assertion, fixture, eval definition, workflow artifact, or other project file mutation until the user approves the concrete proposal.
 - **Apply approved project repairs**: mutate only approved files inside the project root, avoid secrets/credentials, and report exactly what changed.
 - **Guide eval reruns after repair**: preserve the existing UI's offered or suggested rerun path after an approved change.
-- **Guide agent-based eval sessions**: let users work from a coding-agent conversation to choose a suite, all cases or one case, compatible evaluation and optional judge models, then run and troubleshoot through the same project-owned evals without switching to the UI.
+- **Guide agent-based eval sessions**: let users work from a coding-agent conversation to choose a suite and all cases or one case, resolve the same per-case model choices as the UI, then run and troubleshoot through the same project-owned evals without switching to the UI.
 - **Explain agent-guided failures plainly**: have the agent investigate one failure at a time and return a short explanation, evidence and uncertainty, and possible fixes for the user's decision.
 - **Verify approved repairs automatically**: after the user approves a concrete fix, let the agent change only the approved files, rerun the affected test case automatically, and keep diagnosing that failure until a rerun verifies it passes; only then move to the next failure.
 - **Validate selected suite after focused repairs**: when the user originally chose all cases, rerun the full suite after the known failures are resolved and continue the one-at-a-time loop for any remaining failures.
@@ -196,6 +199,8 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Final Epic review** occurs through the consolidated Epic PR after every Story PR has merged and Epic-level verification passes. PR hosting remains an external source-control capability; production deployment is not part of this pipeline capability.
 - **Skill Guidance** must discover and confirm Evaluation Targets, obtain approval for the Eval Coverage Plan, and generate runnable suites before the **Local Evals Workbench** can execute them.
 - **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while Evaluation Targets, suite definitions, fixtures, and test-support files remain project-owned.
+- **Eval run execution** depends on user-selected suite model defaults and any test-case overrides; a missing required suite default pauses execution for an explicit user choice, while a single-case one-run choice does not change saved defaults.
+- **Eval run execution** also depends on the availability of each effective model choice; an unavailable saved choice requires a user decision before the affected run proceeds.
 - **Local Evals Workbench** depends on external **LLM provider APIs** for target execution, rubric judging, analysis, and proposal drafting; non-LLM result inspection should remain available when provider credentials are unavailable.
 - **Agent-guided eval sessions** depend on the same project-owned suites and Local Evals Workbench run evidence as the UI, while external coding agents provide the conversational surface. Approval of one concrete repair permits its automatic focused rerun, not additional unapproved edits.
 - **Local Evals Workbench** depends on **User Control & Trust** constraints before applying any repair proposal to project files.
@@ -223,7 +228,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 
 - **Local eval format maturity**: the first eval format should be conventional and narrow, but may need migration/versioning once real projects create many suites.
 - **Coverage depth without false completeness**: target discovery and coverage analysis should systematically explore applicable risk categories while making omissions and uncertainty visible.
-- **Local-first execution scope**: the existing dashboard remains available and an agent-guided conversational mode is planned; each run uses one Model Under Evaluation and mocks external tools. Headless CI, multi-model comparison, and real external-tool calls remain future evolution.
+- **Local-first execution scope**: the existing dashboard remains available and an agent-guided conversational mode is planned; each selected case uses one Model Under Evaluation and mocks external tools. A full-suite run may use different models across cases, but same-case multi-model comparison, headless CI, and real external-tool calls remain future evolution.
 - **Run artifact isolation**: persisted local evidence must stay useful for regression review without entering Git or routine LLM context accidentally.
 - **Repair safety breadth**: approved eval repairs may target any project file, so future work should strengthen diff preview, sensitive-file protection, and recovery behavior before broad automation.
 - **Provider configuration**: MVP can standardize on `OPENAI_API_KEY` and `SIBU_EVALS_MODEL`, while future work may need multi-provider configuration without leaking credentials into project files.

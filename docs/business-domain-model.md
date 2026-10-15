@@ -82,13 +82,17 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Evaluation Target**: a repo-local generative-AI integration, agent, prompt, or AI-assisted workflow whose behavior the user wants to evaluate.
 - **Eval Coverage Plan**: a user-reviewed proposal describing which confirmed Evaluation Targets, behavior categories, risks, and scenarios an eval suite will cover before suite artifacts are generated.
 - **Coverage Gap**: an applicable behavior category, risk, or scenario that is not covered, together with the reason it remains uncovered.
-- **Eval Suite**: a repo-local collection of related eval test cases, assertions/graders, fixtures, and run behavior discovered through Sibu's eval conventions.
-- **Eval Test Case**: one single-turn or multi-turn scenario inside an eval suite that can be run by itself or as part of the whole suite.
+- **Eval Suite**: a repo-local collection of related eval test cases, assertions/graders, fixtures, and run behavior discovered through Sibu's eval conventions. It may carry user-selected evaluation and judge model defaults.
+- **Eval Test Case**: one single-turn or multi-turn scenario inside an eval suite that can be run by itself or as part of the whole suite. It inherits each suite model default unless the user sets a corresponding test-case override.
 - **Tool Interaction Expectation**: the expected tool selection, arguments, sequence, result handling, or failure behavior for an Evaluation Target, evaluated without invoking real external side effects in the initial scope.
-- **Model Under Evaluation**: the single compatible model selected by the user to produce behavior during an Eval Run.
-- **Judge Model**: the separately selected model that evaluates rubric-based criteria when deterministic assertions are insufficient.
+- **Model Under Evaluation**: the compatible model that produces behavior for one eval test case. In a full-suite run, different cases may use different models according to their effective defaults.
+- **Judge Model**: the separate model that evaluates rubric-based criteria for a test case when deterministic assertions are insufficient. In a full-suite run, different cases may use different judge models according to their effective defaults.
+- **Suite Model Default**: the user's persistent choice of Model Under Evaluation or Judge Model for an eval suite, inherited by its test cases unless overridden. A Judge Model default is needed only when rubric-based grading requires one.
+- **Test-Case Model Override**: the user's persistent replacement for one inherited suite model default on one test case; resetting it restores inheritance.
+- **One-Run Model Choice**: a model the user selects for one single-test-case run instead of that case's effective default; it does not change either persistent default.
+- **Unavailable Eval Model Choice**: a saved suite default or test-case override that cannot be used for its intended evaluation or judge role; it requires an explicit user decision before the affected run can proceed.
 - **Assertion / Grader**: the rule, rubric, or evaluator that judges a test case output. Assertions are deterministic or declared checks; graders may include rubric or LLM-judged checks.
-- **Eval Run**: one execution of an eval suite or one selected eval test case against a single Model Under Evaluation; each selected case runs once.
+- **Eval Run**: one execution of an eval suite or one selected eval test case; each selected case runs once using its effective Model Under Evaluation and, when needed, Judge Model, subject to an optional one-run choice for a single-case run.
 - **Agent-Guided Eval Session**: a user-initiated, conversational run–diagnose–approve–repair–rerun loop in an external coding agent, using the same project-owned suites and eval results as the Local Evals Workbench.
 - **Eval Result**: the output, assertion/grader outcomes, diagnostics, metrics, and artifacts produced by an eval run.
 - **Failed Assertion**: one assertion or grader outcome that did not pass for a specific test case result.
@@ -415,23 +419,23 @@ A reviewable proposal that maps each confirmed Evaluation Target to applicable h
 
 #### Eval Suite
 
-A project-owned group of related test cases, fixtures, assertions/graders, and run behavior discovered from the conventional evals area.
+A project-owned group of related test cases, fixtures, assertions/graders, and run behavior discovered from the conventional evals area. The user may set separate, persistent suite defaults for the Model Under Evaluation and, when rubric grading requires one, the Judge Model. Each test case inherits those defaults unless overridden.
 
 #### Eval Test Case
 
-One runnable single-turn or multi-turn scenario inside a suite. A test case can include expected tool interactions and can be run independently so users can validate a focused repair before running the whole suite.
+One runnable single-turn or multi-turn scenario inside a suite. A test case can include expected tool interactions and can be run independently so users can validate a focused repair before running the whole suite. The user may override either inherited model default for that case and later reset the override to restore inheritance.
 
 #### Agent-Guided Eval Session
 
-A user-initiated conversation in an external coding agent that selects an Eval Suite, all cases or one case, a Model Under Evaluation, and a Judge Model when needed. The agent runs the chosen scope, diagnoses one failure at a time, presents the likely cause and possible fixes in plain language, and waits for the user's choice of a concrete repair. After the approved repair, it reruns the affected case automatically. It stays on that failure until a rerun verifies it passes, then advances to the next failure. If the user chose the full suite, it reruns the full suite after resolving the known failures. This mode supplements rather than replaces the existing UI and eval-authoring skill.
+A user-initiated conversation in an external coding agent that selects an Eval Suite and all cases or one case. Full-suite runs use each case's effective evaluation and, when needed, judge model defaults. For a single-case run, the user may choose different models for that run without changing saved defaults. The agent runs the chosen scope, diagnoses one failure at a time, presents the likely cause and possible fixes in plain language, and waits for the user's choice of a concrete repair. After the approved repair, it reruns the affected case automatically. It stays on that failure until a rerun verifies it passes, then advances to the next failure. If the user chose the full suite, it reruns the full suite after resolving the known failures. This mode supplements rather than replaces the existing UI and eval-authoring skill.
 
 #### Model Under Evaluation
 
-The single compatible model selected by the user for an Eval Run. The initial scope supports one model per run rather than cross-model comparison.
+The compatible model used to produce behavior for one eval test case. The user chooses suite defaults and may override them per test case. A full-suite run may use different models across cases, but does not compare multiple models for the same case in one run.
 
 #### Judge Model
 
-A separately selected model used only where a rubric requires qualitative judgment. Deterministic assertions remain preferred for exact outputs, structures, and tool interactions.
+A separate model used only where a rubric requires qualitative judgment. It follows the same suite-default and test-case-override rules as the Model Under Evaluation. Deterministic assertions remain preferred for exact outputs, structures, and tool interactions.
 
 #### Assertion / Grader
 
@@ -499,10 +503,10 @@ define focused task
 - A **Local Eval Artifact** has a project path, purpose, eval scope, expected/reference context, ownership status, and relationship to one or more suites or test cases.
 - An **Evaluation Target** has a repo location, purpose, provider or runtime compatibility, observable behavior, and sources of expected behavior.
 - An **Eval Coverage Plan** has confirmed targets, applicable coverage categories, proposed scenarios, grader approaches, Coverage Gaps, and user approval state.
-- An **Eval Suite** has an identifier, name, purpose, Evaluation Target, test cases, assertions/graders, fixtures, coverage summary, model/run configuration, and run artifact location.
-- An **Eval Test Case** has an identifier, name, one or more interaction turns, input variables or fixture reference, expected/reference context, applicable tool expectations, and assertion/grader outcomes after a run.
-- An **Eval Run** has one Model Under Evaluation, an optional Judge Model, selected scope, estimated call volume and cost, and retained results.
-- An **Agent-Guided Eval Session** has a selected suite and scope, selected evaluation and optional judge models, one active failed assertion, user-approved repair decisions, and verification outcomes.
+- An **Eval Suite** has an identifier, name, purpose, Evaluation Target, test cases, assertions/graders, fixtures, coverage summary, separate user-selected evaluation and optional judge model defaults, run configuration, and run artifact location.
+- An **Eval Test Case** has an identifier, name, one or more interaction turns, input variables or fixture reference, expected/reference context, applicable tool expectations, optional evaluation and judge model overrides, and assertion/grader outcomes after a run.
+- An **Eval Run** has a selected scope, an effective Model Under Evaluation and optional Judge Model for each selected case, estimated call volume and cost, and retained results.
+- An **Agent-Guided Eval Session** has a selected suite and scope, effective per-case evaluation and optional judge models, one active failed assertion, user-approved repair decisions, and verification outcomes.
 - A **Failure Analysis** has one active failed assertion, evidence, likely cause classification, confidence/uncertainty, conversation history, and source eval result.
 - A **Repair Proposal** has affected project file paths, proposed change summary, rationale, expected eval impact, approval state, and mutation result.
 - A **Maintainer Release** has a git range, proposed version, changelog section, package metadata update, validation result, tag, publish result, and recovery state.
@@ -539,8 +543,10 @@ define focused task
 - One approved **Eval Coverage Plan** covers one or more confirmed **Evaluation Targets** and identifies zero or more **Coverage Gaps**.
 - An **Evaluation Target** may have one or more **Eval Suites**.
 - An **Eval Suite** contains many **Eval Test Cases**.
+- An **Eval Suite** may have one persistent Model Under Evaluation default and one separate Judge Model default; each **Eval Test Case** may override either default independently.
+- For each case, the effective model of each kind is its test-case override when present, otherwise its suite default. Resetting a test-case override restores inheritance; resetting a suite default leaves it unset.
 - An **Eval Run** executes one **Eval Suite** or one selected **Eval Test Case**.
-- An **Eval Run** uses exactly one **Model Under Evaluation** and may use one separate **Judge Model**.
+- An **Eval Run** uses exactly one **Model Under Evaluation** per selected case and a separate **Judge Model** for that case only when rubric grading needs one. A full-suite run may therefore use multiple models across its cases.
 - An **Agent-Guided Eval Session** may include multiple **Eval Runs**, but addresses only one active **Failed Assertion** at a time.
 - An **Eval Result** contains many assertion/grader outcomes.
 - A **Failure Analysis** focuses on exactly one **Failed Assertion** at a time.
@@ -610,6 +616,10 @@ define focused task
 - Local eval repair must focus the user and LLM on one failed assertion at a time.
 - In an Agent-Guided Eval Session, the agent may advance to the next failed assertion only after a rerun verifies that the active one passes. A still-failing assertion is reanalyzed using the new result without authorizing another mutation.
 - Sibu must not claim exhaustive eval coverage; it must use systematic risk-based coverage and disclose known Coverage Gaps.
+- Saved eval model defaults and overrides change only through an explicit user choice; a one-run model choice never changes them.
+- An unavailable saved eval model choice must never be silently replaced or ignored; the affected run pauses for a user decision.
+- A full-suite run uses each case's effective model defaults and never replaces all case overrides with a single run-wide model choice.
+- A suite must have a user-selected Model Under Evaluation default before a run starts. It must also have a user-selected Judge Model default when any selected case needs rubric grading; neither kind receives an automatic fallback after reset.
 - Suite generation must not invent expected behavior. Repo code, prompts, tests, and documentation provide evidence, and the user resolves material ambiguity.
 - Generated eval fixtures must use synthetic or appropriately redacted data and must not contain secrets or raw production data.
 - Initial suite generation must remain within eval and test-support artifacts; production behavior changes belong only to the approval-gated repair workflow.
@@ -668,13 +678,17 @@ define focused task
 - When expected behavior is materially ambiguous, suite creation should stop for focused clarification rather than inventing pass/fail criteria.
 - When a suite is generated, Sibu should document applicable coverage categories and any known Coverage Gaps.
 - When a user runs evals, Sibu should support both all-test-case and single-test-case scope.
-- When a user prepares an Eval Run, Sibu should offer compatible models, require one Model Under Evaluation, and allow a separate Judge Model for rubrics. The existing workbench UI shows expected model-call volume and estimated cost before execution; new cost controls are outside the agent-guided mode's current scope.
+- When a user sets or changes a suite model default or a test-case override, Sibu should let them choose a compatible model for that model's role without silently changing the other role's choice.
+- When a user resets a test-case model override, the case should inherit the corresponding suite default again. When a user resets a suite model default, it should remain unset until the user selects a new one.
+- When a saved suite model default becomes unavailable, Sibu should pause the affected run and ask the user to choose a compatible replacement. When a test-case override becomes unavailable, Sibu should pause and let the user choose a compatible replacement or explicitly reset that override to inherit the suite default.
+- When a user prepares an Eval Run and the suite Model Under Evaluation default is unset, Sibu should ask them to set it before execution. If rubric grading is needed and the suite Judge Model default is unset, Sibu should ask them to set that too; no Judge Model is needed for deterministic-only grading.
+- When a user runs a full suite, Sibu should use each case's effective evaluation and, when needed, judge models, including test-case overrides. When a user runs one case, they may select another compatible model of either kind for that run only, without changing saved defaults. The existing workbench UI shows expected model-call volume and estimated cost before execution; new cost controls are outside the agent-guided mode's current scope.
 - When an eval result has multiple failed assertions, the Failure Workbench should analyze and discuss only one selected failed assertion at a time.
 - When LLM-backed analysis is requested, Sibu should use server-side credentials from the project or shell environment, including `OPENAI_API_KEY`, and use `SIBU_EVALS_MODEL` when provided.
 - When credentials are missing, Sibu should keep non-LLM eval inspection available and explain why analysis/proposal drafting is unavailable.
 - When a repair proposal is drafted, Sibu should preview affected file(s), rationale, and expected eval impact before offering approval.
 - When a repair is approved and applied, Sibu should report changed files and offer or suggest rerunning the relevant eval scope.
-- When an agent-guided eval session starts, the user selects a suite, all cases or one case, the Model Under Evaluation, and a Judge Model when needed; the agent uses the same eval suite and result evidence as the existing UI.
+- When an agent-guided eval session starts, the user selects a suite and all cases or one case; the agent uses the same effective per-case model choices, optional single-case one-run choices, eval suite, and result evidence as the existing UI.
 - When the agent-guided run has failures, the agent should investigate one failed assertion at a time and return a brief, evidence-grounded explanation of its likely cause and possible fixes, distinguishing an eval behavior failure from a runner, credential, or judge problem when the evidence supports that distinction.
 - When the user chooses a concrete fix, the agent may change only the approved project files, then reruns the affected test case without another routine prompt. If that assertion still fails, it reanalyzes the new evidence and waits for another user-approved fix; it does not move to another failure or silently edit again.
 - When a focused rerun verifies the active assertion passes, the agent should proceed to the next failure. For an originally selected full suite, it should rerun the full suite after the known failures are resolved and address any remaining failures through the same one-at-a-time loop.
@@ -704,7 +718,7 @@ define focused task
 4. **Coverage Approved**: the user accepts the plan before suite artifacts are generated.
 5. **Eval Suites Generated**: Sibu creates immediately runnable project-owned suites and test-support artifacts without changing production behavior.
 6. **Eval Workspace Discovered**: Sibu finds project-owned eval suites in the conventional evals area.
-7. **Eval Scope and Models Selected**: the user chooses a suite, all cases or one case, one compatible Model Under Evaluation, and an optional Judge Model.
+7. **Eval Scope and Models Resolved**: the user chooses a suite and all cases or one case; Sibu checks required suite defaults, then resolves each case's inherited or overridden models. For a single-case run, the user may make a one-run choice instead.
 8. **Run Previewed**: Sibu shows expected model-call volume and estimated cost.
 9. **Eval Run Completed**: Sibu records output, assertion/grader results, diagnostics, metrics, tool interactions, and run artifacts.
 10. **Failure Selected**: the user opens one failed result and selects one failed assertion as the active work item.
@@ -837,6 +851,10 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 - **Eval Coverage Proposed**: Sibu presents systematic risk-based coverage and known gaps before generating files.
 - **Eval Coverage Approved**: the user authorizes suite generation from the reviewed coverage plan.
 - **Eval Suites Generated**: immediately runnable project-owned suites and test-support artifacts are created without changing production behavior.
+- **Suite Model Default Set, Changed, or Reset**: the user persistently selects or clears the suite's evaluation or judge model default.
+- **Test-Case Model Override Set or Reset**: the user persistently replaces or restores inheritance of one model kind for one case.
+- **One-Run Model Chosen**: the user selects a different model for one single-case run without changing saved defaults.
+- **Eval Model Choice Found Unavailable**: the affected run pauses until the user replaces the saved choice or, for a test-case override, resets it to inherit the suite default.
 - **Eval Run Started**: the user starts all test cases or one selected test case.
 - **Eval Run Completed**: Sibu captures result status, output, assertion/grader outcomes, diagnostics, and metrics.
 - **Failed Assertion Selected**: the user chooses one failed assertion in the UI, or the agent selects the next unresolved assertion in an Agent-Guided Eval Session, for focused analysis.
