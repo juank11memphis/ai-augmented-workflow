@@ -5,7 +5,7 @@
 ## Epic
 [Conversational Eval Loop](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** done
 
 ## User Story
 As a developer, I want the agent to work through a failing suite one issue at a time and verify the full suite at the end, so that several failures can be resolved without repeated UI handoffs or premature success claims.

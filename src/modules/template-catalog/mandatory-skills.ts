@@ -220,6 +220,13 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
+    templateRelativePath: 'skills/agent-guided-evals/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/agent-guided-evals/SKILL.md',
+      claude: '.agents/skills/agent-guided-evals/SKILL.md',
+    },
+  },
+  {
     templateRelativePath: 'skills/feature-idea-capture/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/feature-idea-capture/SKILL.md',

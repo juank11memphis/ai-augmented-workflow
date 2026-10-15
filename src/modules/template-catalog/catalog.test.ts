@@ -228,7 +228,22 @@ describe('skill target paths', () => {
 
     for (const skillTemplate of skillTemplates) {
       assertSupportedAgentKeysOnly(skillTemplate);
+      if (skillTemplate.templateRelativePath !== 'skills/agent-guided-evals/SKILL.md') {
+        assert.deepEqual(Object.keys(skillTemplate.targetRelativePathsByAgent).sort(), ['claude', 'codex', 'gemini']);
+      }
     }
+  });
+
+  it('targets the guided eval skill to Codex and Claude only', () => {
+    const guidedSkills = MANDATORY_SKILLS.filter(
+      (skill) => skill.templateRelativePath === 'skills/agent-guided-evals/SKILL.md'
+    );
+
+    assert.equal(guidedSkills.length, 1);
+    assert.deepEqual(guidedSkills[0]?.targetRelativePathsByAgent, {
+      codex: '.agents/skills/agent-guided-evals/SKILL.md',
+      claude: '.agents/skills/agent-guided-evals/SKILL.md',
+    });
   });
 });
 
@@ -302,5 +317,10 @@ function getArchitectureSkill(skillId: string) {
 }
 
 function assertSupportedAgentKeysOnly(skillTemplate: SkillTemplate): void {
-  assert.deepEqual(Object.keys(skillTemplate.targetRelativePathsByAgent).sort(), ['claude', 'codex', 'gemini']);
+  const supportedIds: ReadonlySet<string> = new Set(SUPPORTED_AGENTS.map((agent) => agent.id));
+  const targetIds = Object.keys(skillTemplate.targetRelativePathsByAgent);
+  assert.notEqual(targetIds.length, 0);
+  for (const targetId of targetIds) {
+    assert.equal(supportedIds.has(targetId), true, `${skillTemplate.templateRelativePath}: ${targetId}`);
+  }
 }

@@ -17,6 +17,7 @@ import { handleSyncProject } from '../../modules/sync-review-orchestrator/index.
 import type { SibuCliCommand } from './command.js';
 import { serializeModelRouteResult } from './model-route-json.js';
 import { runModelsGuidedFlow, createModelsTerminal } from './models-guided-flow.js';
+import { handleEvalsJsonCommand } from './evals-json.js';
 
 export async function executeCliCommand(command: SibuCliCommand): Promise<void> {
   switch (command.type) {
@@ -49,6 +50,12 @@ export async function executeCliCommand(command: SibuCliCommand): Promise<void> 
       return;
     case 'evals':
       await handleStartLocalEvalsWorkbenchCommand(command);
+      return;
+    case 'evals:suites':
+    case 'evals:describe':
+    case 'evals:run':
+    case 'evals:result':
+      await handleEvalsJsonCommand(command);
       return;
     case 'models:resolve':
     case 'models:set': {

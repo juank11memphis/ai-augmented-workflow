@@ -125,10 +125,19 @@ test('offline target execution persists real output and changed integration chan
       const runId = start.value.runId as string;
       for (let tries = 0; tries < 120; tries++) {
         const result = await get(runId);
-        if (result.status === 'ok' && !['queued', 'running'].includes(result.value.summary.state)) return { runId, summary: result.value.summary };
+        if (result.status === 'ok' && !['queued', 'running'].includes(result.value.summary.state)) {
+          try {
+            const index = JSON.parse(await readFile(path.join(project.root, 'evals/artifacts/offline/index.json'), 'utf8')) as {
+              entries: { runId: string; state: string }[];
+            };
+            if (index.entries.some(entry => entry.runId === runId && entry.state === result.value.summary.state)) {
+              return { runId, summary: result.value.summary };
+            }
+          } catch { /* Atomic index update is still in flight. */ }
+        }
         await new Promise(resolve => setTimeout(resolve, 50));
       }
-      assert.fail('Deep run did not finish.');
+      assert.fail('Deep run did not reach a persisted terminal state.');
     };
     try {
       const before = project.git('status', '--porcelain');

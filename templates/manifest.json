@@ -1,5 +1,5 @@
 {
-  "templateVersion": "223",
+  "templateVersion": "226",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "55",
+      "version": "56",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Allows reviewed same-Task continuation for bounded overlapping failures while retaining check, commit, and safety gates."
+        "Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate."
       ]
     },
     ".codex/config.toml": {
@@ -328,6 +328,13 @@
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
         "Requires generated runner tests to validate emitted execute events against Sibu's workbench contract when available."
+      ]
+    },
+    "skills/agent-guided-evals/SKILL.md": {
+      "version": "2",
+      "description": "Mandatory shared Codex and Claude Code guidance for sequential troubleshooting of one Sibu eval case or a full suite.",
+      "changes": [
+        "Adds one-at-a-time full-suite troubleshooting with fresh focused verification and a final suite rerun while preserving single-case approval and edit safeguards."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {

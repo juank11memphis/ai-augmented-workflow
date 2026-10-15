@@ -5,7 +5,7 @@
 ## Epic
 [Conversational Eval Loop](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** done
 
 ## User Story
 As a developer, I want Codex or Claude Code to diagnose a failed eval case, discuss fixes with me, and verify only the fix I approve, so that I can troubleshoot without switching to the Evals UI.

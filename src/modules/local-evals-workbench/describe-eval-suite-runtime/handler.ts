@@ -20,6 +20,8 @@ export async function describeEvalSuiteRuntime(
   try {
     const suite = await dependencies.suites.load(command.suiteId);
     if (!suite) { log('eval_runtime_describe_blocked', 'suite-unavailable'); return { status: 'blocked', reason: 'suite-unavailable' }; }
+    const selectedCases = command.caseId === undefined ? suite.testCases : suite.testCases.filter(testCase => testCase.id === command.caseId);
+    if (!selectedCases.length) { log('eval_runtime_describe_blocked', 'case-unavailable'); return { status: 'blocked', reason: 'case-unavailable' }; }
     const described = await dependencies.runner.describe(suite);
     if (described.status === 'blocked') {
       log('eval_runtime_describe_blocked', described.reason);
@@ -33,7 +35,7 @@ export async function describeEvalSuiteRuntime(
       }
       return { status: 'blocked', reason: described.reason };
     }
-    const reason = compatibleDescription(suite, described.value);
+    const reason = compatibleDescription({ ...suite, testCases: selectedCases }, described.value);
     if (reason) {
       log('eval_runtime_describe_blocked', reason);
       if (reason === 'environment-undeclared') {
@@ -44,7 +46,7 @@ export async function describeEvalSuiteRuntime(
     }
     log('eval_runtime_describe_completed');
     return { status: 'ready', suiteId: suite.id, models: described.value.models, judgeModels: described.value.judgeModels,
-      rubricRequired: hasRubric(suite.testCases), rubricCaseIds: suite.testCases.filter((testCase) => hasRubric([testCase])).map((testCase) => testCase.id) };
+      rubricRequired: hasRubric(selectedCases), rubricCaseIds: selectedCases.filter((testCase) => hasRubric([testCase])).map((testCase) => testCase.id) };
   } catch {
     log('eval_runtime_describe_blocked', 'runner-unavailable');
     return { status: 'blocked', reason: 'runner-unavailable' };

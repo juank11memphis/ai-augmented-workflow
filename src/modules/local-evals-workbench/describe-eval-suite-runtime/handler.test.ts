@@ -15,6 +15,19 @@ test('describe exposes independent compatible choices without calling execution'
   const result = await describeEvalSuiteRuntime({ suiteId: 'suite' }, { suites: { load: async () => suite }, runner: { describe: async () => ({ status: 'ready', value: description }) } });
   assert.deepEqual(result, { status: 'ready', suiteId: 'suite', models: ['fake/target'], judgeModels: [], rubricRequired: false, rubricCaseIds: [] });
 });
+test('selected case does not require the judge used by another case', async () => {
+  const rubricCase = { ...suite.testCases[0]!, id: 'rubric', graders: [{ id: 'r', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'Safe' }, threshold: 0.8 }] };
+  const mixed = { ...suite, testCases: [...suite.testCases, rubricCase] };
+  const dependencies = { suites: { load: async () => mixed }, runner: { describe: async () => ({ status: 'ready' as const, value: description }) } };
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite', caseId: 'case' }, dependencies),
+    { status: 'ready', suiteId: 'suite', models: ['fake/target'], judgeModels: [], rubricRequired: false, rubricCaseIds: [] });
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, dependencies), { status: 'blocked', reason: 'capability-unsupported' });
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite', caseId: 'rubric' }, dependencies), { status: 'blocked', reason: 'capability-unsupported' });
+  const rubricCapable = { ...dependencies, runner: { describe: async () => ({ status: 'ready' as const, value: { ...description, capabilities: ['single-turn', 'rubric'] as const } }) } };
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite' }, rubricCapable), { status: 'blocked', reason: 'judge-unavailable' });
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite', caseId: 'rubric' }, rubricCapable), { status: 'blocked', reason: 'judge-unavailable' });
+  assert.deepEqual(await describeEvalSuiteRuntime({ suiteId: 'suite', caseId: 'missing' }, dependencies), { status: 'blocked', reason: 'case-unavailable' });
+});
 test('rubric suite requires compatible judge and capability', async () => {
   const rubric = { ...suite, testCases: [{ ...suite.testCases[0]!, graders: [{ id: 'r', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'Safe' }, threshold: 0.8 }] }] };
   const runner = { describe: async () => ({ status: 'ready' as const, value: { ...description, capabilities: ['single-turn', 'rubric'] as const } }) };

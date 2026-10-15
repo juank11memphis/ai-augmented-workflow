@@ -1,1 +1,1 @@
-export type DescribeEvalSuiteRuntimeCommand = { readonly suiteId: string };
+export type DescribeEvalSuiteRuntimeCommand = { readonly suiteId: string; readonly caseId?: string };
