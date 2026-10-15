@@ -83,3 +83,26 @@ it('rejects contradictory Judge evidence at save and reopened read', async () =>
     assert.equal(detail.status === 'ok' && detail.value.evidenceStatus, 'unavailable');
   } finally { await p.cleanup(); }
 });
+
+it('reads legacy run-wide model labels and opens failed-case attempt evidence', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root);
+    const created = await a.store.create({ ...config, testedModel: 'historic-tested', judgeModel: 'historic-judge' });
+    if (created.status !== 'ok') return assert.fail(JSON.stringify(created));
+    const id = created.value.runId;
+    assert.equal((await a.store.start('suite', id)).status, 'ok');
+    const failed = evidence(id);
+    assert.equal((await a.store.append('suite', id, { ...failed, outcome: 'failed', assertions: [
+      { ...failed.assertions[0]!, outcome: 'failed' },
+    ] })).status, 'ok');
+    assert.equal((await a.store.finalize('suite', id, 'completed')).status, 'ok');
+    const detail = await historyReader(fixture(p.root)).get('suite', id, { caseId: 'case', attempt: 1 });
+    assert.equal(detail.status, 'ok');
+    if (detail.status !== 'ok') return;
+    assert.deepEqual([detail.value.summary.testedModel, detail.value.summary.judgeModel], ['historic-tested', 'historic-judge']);
+    assert.equal(detail.value.summary.cases[0]?.state, 'completed');
+    assert.equal(detail.value.evidenceStatus, 'available');
+    assert.equal(detail.value.evidence?.outcome, 'failed');
+    assert.equal(detail.value.evidence?.caseId, 'case');
+  } finally { await p.cleanup(); }
+});
