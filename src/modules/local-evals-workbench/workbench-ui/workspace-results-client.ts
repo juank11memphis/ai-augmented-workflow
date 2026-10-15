@@ -103,6 +103,10 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       return;
     }
     suite = nextSuite;
+    if (typeof savedSuiteGeneration !== 'undefined') {
+      savedSuiteGeneration++; savedSuiteModels = null; suiteModelsDraft = null;
+      suiteModelStatus(''); renderSuiteModelSummary();
+    }
     if (taskView === 'new-run') showTaskView('results');
     run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null;
     runGeneration++; historyGeneration++; detailGeneration++;
@@ -116,7 +120,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     const searchInput = resultContainer.querySelector?.('[data-action="search"]');
     if (searchInput) searchInput.value = '';
     setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '' };
-    renderWorkspace(); void loadRuntime(); void loadHistory();
+    renderWorkspace(); void loadRuntime(); if (typeof loadSavedSuiteModels === 'function') void loadSavedSuiteModels(); void loadHistory();
   }
   function caseStatus(caseId) {
     const item = run?.cases.find(value => value.caseId === caseId);
@@ -425,5 +429,5 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   });
   document.addEventListener('input', event => { if (event.target.matches('[data-action="search"]')) { search = event.target.value; renderWorkspace(); } });
   setup.caseId = suite?.testCases[0]?.id || '';
-  void loadDiscovery(); void loadRuntime(); void loadHistory();
+  void loadDiscovery(); void loadRuntime(); if (typeof loadSavedSuiteModels === 'function') void loadSavedSuiteModels(); void loadHistory();
 `;

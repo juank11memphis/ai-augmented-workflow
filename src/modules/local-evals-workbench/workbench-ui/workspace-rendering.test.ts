@@ -36,6 +36,10 @@ it('renders responsive one-model list, coverage and history actions, and escapes
   assert.match(html, /data-action="coverage"/);
   assert.match(html, /data-action="history"/);
   assert.match(html, /data-run-setup/);
+  assert.match(html, /data-suite-tested>Not set<\/span>/);
+  assert.match(html, /data-suite-judge-row hidden/);
+  assert.match(html, /data-action="suite-models">Models<\/button>/);
+  assert.match(html, /data-suite-model-status/);
   assert.match(html, /data-setup-fields/);
   assert.match(html, /data-action="start"/);
   assert.match(html, /data-action="new-run"/);
@@ -127,10 +131,10 @@ it('renders safe labeled results with only inspectable actions and no broad evid
   } });
   const html = renderWorkspaceResults(model);
   assert.match(html, /class="result-head" aria-hidden="true"/);
-  assert.match(html, /<span class="result-label">Result: <\/span>failed/);
-  assert.match(html, /<span class="result-label">Attempts: <\/span>2 · 1 failed/);
+  assert.match(html, /<span class="result-label">Status: <\/span>Pass/);
+  assert.match(html, /<span class="result-label">Model: <\/span>model/);
   assert.match(html, /data-case-id="a&quot;&lt;"/);
-  assert.match(html, /data-case-id="b" disabled/);
+  assert.doesNotMatch(html, /data-case-id="b"/);
   assert.doesNotMatch(html, /<private>|raw response|aria-label="[^"]*private/);
   const shell = renderWorkspaceShell({ status: 'ready', diagnostics: [], suites: [{
     id: 'suite', name: 'Suite', description: '', readyTestCaseCount: 0, testCases: [], modelOptions: [],
@@ -139,6 +143,6 @@ it('renders safe labeled results with only inspectable actions and no broad evid
   assert.ok(shell.indexOf('data-run-context') < shell.indexOf('data-results-container'));
   assert.match(shell, /data-detail hidden/);
   assert.match(shell, /@media\(max-width:699px\).*\.result-list button\{display:grid/s);
-  assert.match(shell, /@media\(min-width:700px\).*\.result-head\{display:grid/s);
+  assert.match(shell, /@media\(min-width:1100px\)\{\.result-head,\.result-list button\{display:grid/s);
   assert.match(shell, /@media\(min-width:1100px\).*\[data-results-container\]\{grid-column:2\/4\}/s);
 });

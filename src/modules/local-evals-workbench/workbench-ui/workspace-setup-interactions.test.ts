@@ -3,6 +3,71 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
+import { WORKSPACE_SUITE_MODELS_CLIENT } from './workspace-suite-models-client.js';
+
+test('Suite models keeps draft changes local until Save and resets roles independently', async () => {
+  const requests: unknown[] = [];
+  const listeners = new Map<string, (event: any) => void>();
+  const nodes = new Map<string, { textContent: string; hidden: boolean; disabled: boolean; focus(): void }>();
+  const one = (key: string) => {
+    if (!nodes.has(key)) nodes.set(key, { textContent: '', hidden: false, disabled: false, focus() {} });
+    return nodes.get(key)!;
+  };
+  let dialog = '', closed = 0;
+  const runtime = { models: ['X', 'Y'], judgeModels: ['J'], rubricCaseIds: ['rubric'] };
+  const fragment = `let suite = {id:'suite',name:'Suite'}; let runtime = ${JSON.stringify(runtime)};
+    let runtimeState = 'ready', sheetReturn = null;
+    const one = globalThis.one, esc = value => String(value ?? ''), json = globalThis.json,
+      post = globalThis.post, openSheet = globalThis.openSheet, closeSheet = globalThis.closeSheet;
+    ${WORKSPACE_SUITE_MODELS_CLIENT}
+    return {loadSavedSuiteModels, openSuiteModels, saveSuiteModels, renderSuiteModelSummary, choiceMarkup,
+      draft:()=>suiteModelsDraft, setDraft: value => {suiteModelsDraft=value},
+      setRuntime: value => {runtime=value}, saved:()=>savedSuiteModels};`;
+  const api = vm.runInNewContext('(() => {' + fragment + '})()', {
+    one, document: { addEventListener(name: string, listener: (event: any) => void) { listeners.set(name, listener); } },
+    json: async () => ({ status: 'ready', suiteId: 'suite', token: 'a'.repeat(64), defaultTestedModel: 'X', defaultJudgeModel: 'J' }),
+    post: async (_url: string, body: unknown) => {
+      requests.push(body);
+      return { status: 'saved', token: 'b'.repeat(64), modelId: (body as { modelId?: string }).modelId ?? null };
+    },
+    openSheet: (_title: string, content: string) => { dialog = content; },
+    closeSheet: () => { closed++; },
+  }) as { loadSavedSuiteModels(): Promise<void>; openSuiteModels(): Promise<void>; saveSuiteModels(): Promise<void>;
+    renderSuiteModelSummary(): void; draft(): { tested: string; judge: string } | null;
+    setDraft(value: { tested: string; judge: string }): void; setRuntime(value: unknown): void;
+    choiceMarkup(role: string, label: string, value: string, choices: string[]): string;
+    saved(): { defaultTestedModel: string | null; defaultJudgeModel: string } };
+  await api.loadSavedSuiteModels();
+  assert.equal(one('[data-suite-tested]').textContent, 'X');
+  assert.equal(one('[data-suite-judge]').textContent, 'J');
+  await api.openSuiteModels();
+  assert.match(dialog, /Suite models|id="suite-tested"/);
+  assert.match(dialog, /id="suite-judge"/);
+  assert.match(dialog, /Reset default/);
+  assert.match(api.choiceMarkup('tested', 'Model', 'old', ['X']), /old is unavailable\. Choose a replacement/);
+  assert.match(api.choiceMarkup('tested', 'Model', 'old', ['X']), /value="old" selected>old · Unavailable/);
+  listeners.get('click')!({ target: { closest: () => ({ dataset: { action: 'cancel-suite-models' } }) } });
+  assert.equal(requests.length, 0, 'Cancel must not write');
+  assert.equal(api.draft(), null);
+  assert.equal(closed, 1);
+  await api.openSuiteModels();
+  api.setDraft({ tested: '', judge: 'J' });
+  assert.equal(requests.length, 0, 'draft reset must not write');
+  await api.saveSuiteModels();
+  assert.deepEqual(requests.map(value => JSON.parse(JSON.stringify(value))), [
+    { suiteId: 'suite', role: 'tested', action: 'reset', expectedToken: 'a'.repeat(64) },
+  ]);
+  assert.equal(api.saved().defaultTestedModel, null);
+  assert.equal(api.saved().defaultJudgeModel, 'J');
+  assert.equal(one('[data-suite-tested]').textContent, 'Not set');
+  assert.equal(closed, 2);
+  assert.match(one('[data-suite-model-status]').textContent, /saved/);
+  api.setRuntime({ models: ['X'], judgeModels: [], rubricCaseIds: [] });
+  api.renderSuiteModelSummary();
+  assert.equal(one('[data-suite-judge-row]').hidden, true, 'deterministic-only suites omit Judge');
+  await api.openSuiteModels();
+  assert.doesNotMatch(dialog, /id="suite-judge"/);
+});
 
 const startReference = '123e4567-e89b-42d3-a456-426614174000';
 const startNotice = () => {
