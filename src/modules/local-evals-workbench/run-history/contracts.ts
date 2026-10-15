@@ -9,11 +9,14 @@ export interface OwnerPort { readonly identity: Owner; check(owner: Owner): Prom
 export type RunConfiguration = {
   readonly suiteId: string; readonly caseIds: readonly string[]; readonly scope: 'all' | 'selected';
   readonly testedModel: string; readonly judgeModel: string | null;
+  readonly caseSelections?: readonly CaseModelSelection[];
 };
+export type CaseModelSelection = { readonly caseId: string; readonly testedModel: string; readonly judgeModel: string | null };
 export type AttemptSummary = { readonly number: number; readonly outcome: CheckOutcome; readonly durationMs: number; readonly calls: number | null; readonly cost: number | null;
   readonly rubricScores?: readonly number[] };
-export type CaseSummary = { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed'; readonly attempts: readonly AttemptSummary[] };
-export type Manifest = RunConfiguration & {
+export type CaseSummary = { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed'; readonly attempts: readonly AttemptSummary[];
+  readonly testedModel?: string; readonly judgeModel?: string | null };
+export type Manifest = Omit<RunConfiguration, 'caseSelections'> & {
   readonly version: 1; readonly runId: string; readonly state: RunState; readonly owner: Owner;
   readonly createdAt: number; readonly updatedAt: number; readonly finishedAt: number | null;
   readonly outcome: CheckOutcome; readonly calls: number | null; readonly cost: number | null;

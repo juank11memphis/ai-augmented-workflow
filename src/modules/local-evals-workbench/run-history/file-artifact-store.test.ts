@@ -1,12 +1,44 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { readFile, writeFile, unlink } from 'node:fs/promises';
+import { readFile, readdir, writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fixture } from './store-fixture.js';
 import { project } from './test-project.js';
 import { config, evidence } from './test-fixtures.js';
 import { LIMITS } from './limits.js';
 import { manifest } from './validation.js';
+import { orderedRunPlan } from '../run-execution/contracts.js';
+
+it('records a complete source-ordered immutable per-case plan with explicit deterministic Judge null', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root);
+    const caseIds = ['deterministic', 'rubric'];
+    const selections = orderedRunPlan(caseIds, [
+      { caseId: 'deterministic', testedModel: 'tested-A', judgeModel: null },
+      { caseId: 'rubric', testedModel: 'tested-B', judgeModel: 'judge-B' },
+    ]);
+    assert.ok(selections); assert.ok(Object.isFrozen(selections)); assert.ok(Object.isFrozen(selections[0]));
+    const created = await a.store.create({ ...config, caseIds, caseSelections: selections });
+    assert.equal(created.status, 'ok'); if (created.status !== 'ok') return;
+    assert.deepEqual(created.value.cases.map(({ caseId, testedModel, judgeModel }) => ({ caseId, testedModel, judgeModel })), selections);
+    const disk = JSON.parse(await readFile(path.join(a.paths.artifactRoot, a.paths.run('suite', created.value.runId)), 'utf8'));
+    assert.deepEqual(disk.cases.map(({ caseId, testedModel, judgeModel }: { caseId: string; testedModel: string; judgeModel: string | null }) => ({ caseId, testedModel, judgeModel })), selections);
+    assert.equal('caseSelections' in disk, false);
+  } finally { await p.cleanup(); }
+});
+
+it('rejects missing, duplicate, reordered and malformed per-case plans before artifact creation', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const caseIds = ['first', 'second'];
+    const valid = [{ caseId: 'first', testedModel: 'A', judgeModel: null }, { caseId: 'second', testedModel: 'B', judgeModel: 'J' }];
+    for (const choices of [valid.slice(0, 1), [valid[0], valid[0]], [...valid].reverse(),
+      [{ ...valid[0], judgeModel: '' }, valid[1]], [{ ...valid[0], testedModel: '' }, valid[1]]]) {
+      assert.equal(orderedRunPlan(caseIds, choices), undefined);
+      assert.deepEqual(await a.store.create({ ...config, caseIds, caseSelections: choices }), { status: 'blocked', reason: 'invalid-input' });
+    }
+    await assert.rejects(readdir(path.join(p.root, 'evals/artifacts')), { code: 'ENOENT' });
+  } finally { await p.cleanup(); }
+});
 it('persists queued/attempt/terminal state across stores and refuses duplicate finalization', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const created = await a.store.create(config); assert.equal(created.status, 'ok'); if (created.status !== 'ok') return;
