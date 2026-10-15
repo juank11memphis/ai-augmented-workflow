@@ -3,6 +3,7 @@ import type { StartEvalRunResult } from './result.js';
 import type { StartEvalRunDependencies } from './ports.js';
 import { resolveRunSnapshot } from '../resolve-run-snapshot.js';
 import { logicalId } from '../run-history/validation.js';
+import { orderedRunPlan } from '../run-execution/contracts.js';
 
 const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
@@ -43,15 +44,18 @@ export async function startEvalRun(command: StartEvalRunCommand, ports: StartEva
     if (command.previewToken && command.previewToken !== snapshot.previewToken) return blocked('suite-changed');
     const suite = snapshot.suite!;
     const cases = snapshot.selection.cases.map(selected => suite.testCases.find(item => item.id === selected.caseId)!);
+    const caseSelections = orderedRunPlan(cases.map(item => item.id), snapshot.selection.cases);
+    if (!caseSelections) return blocked('invalid-input');
     const model = snapshot.selection.cases[0]!.testedModel;
     const judgeModel = snapshot.selection.cases[0]!.judgeModel;
     const ready = await ports.artifacts.check();
     if (ready.status === 'blocked') return blocked(ready.reason);
     const inputs = await ports.inputs.resolve(cases);
     if (inputs.status === 'blocked') return blocked(inputs.reason);
-    const queued = await ports.store.create({ suiteId: suite.id, caseIds: cases.map(item => item.id), scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: model, judgeModel });
+    if (inputs.value.length !== cases.length || inputs.value.some((item, index) => item.id !== caseSelections[index]?.caseId)) return blocked('invalid-input');
+    const queued = await ports.store.create({ suiteId: suite.id, caseIds: cases.map(item => item.id), scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: model, judgeModel, caseSelections });
     if (queued.status === 'blocked') return blocked(queued.reason);
-    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model, judgeModel, ...(reference ? { reference } : {}) }); }
+    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model, judgeModel, caseSelections, ...(reference ? { reference } : {}) }); }
     catch {
       await ports.store.finalize(suite.id, queued.value.runId, 'error', ['schedule-failed']);
       return blocked('schedule-failed');

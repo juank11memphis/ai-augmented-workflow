@@ -75,6 +75,53 @@ test('selected Judge Model reaches queued configuration and scheduler', async ()
   assert.deepEqual(scheduled && { judgeModel: (scheduled as { judgeModel: string }).judgeModel }, { judgeModel: 'judge' });
 });
 
+test('mixed full-suite start stores and schedules complete ordered Judge choices', async () => {
+  const h = harness();
+  const rubric = { ...one, id: 'rubric', graders: [{ id: 'quality', type: 'rubric' as const,
+    rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+  const last = { ...one, id: 'last' };
+  h.ports.suites.load = async () => ({ ...suite, testCases: [one, rubric, last] });
+  h.ports.runner.describe = async () => ({ status: 'ready', value: { runnerId: 'runner', capabilities: ['single-turn', 'rubric'] as const,
+    models: ['fake'], judgeModels: ['judge'], requiredEnvironment: [] } });
+  let created: unknown;
+  const create = h.ports.store.create;
+  h.ports.store.create = async input => { created = input; return create(input); };
+  const preview = await previewEvalRun({ suiteId: 'suite', scope: { type: 'all' } }, previewPorts(h));
+  assert.equal(preview.status, 'ready');
+  if (preview.status !== 'ready') return;
+  assert.equal((await startEvalRun({ suiteId: 'suite', scope: { type: 'all' }, previewToken: preview.previewToken }, h.ports)).status, 'queued');
+  const expected = [{ caseId: 'case', testedModel: 'fake', judgeModel: null },
+    { caseId: 'rubric', testedModel: 'fake', judgeModel: 'judge' }, { caseId: 'last', testedModel: 'fake', judgeModel: null }];
+  assert.deepEqual((created as { caseSelections: unknown }).caseSelections, expected);
+  assert.deepEqual((h.schedules[0] as { caseSelections: unknown }).caseSelections, expected);
+  assert.equal(h.events.filter(item => item === 'create').length, 1);
+  assert.equal(h.events.filter(item => item === 'schedule').length, 1);
+});
+
+test('inconsistent resolved inputs block before artifact creation or dispatch', async () => {
+  const h = harness();
+  h.ports.inputs.resolve = async () => ({ status: 'ready', value: [] });
+  assert.deepEqual(await startEvalRun({ suiteId: 'suite', scope: { type: 'all' } }, h.ports), { status: 'blocked', reason: 'invalid-input' });
+  assert.equal(h.events.includes('create'), false);
+  assert.equal(h.events.includes('schedule'), false);
+});
+
+test('missing or unavailable rubric Judge stops the entire mixed scope before a runner call', async () => {
+  const rubric = { ...one, id: 'rubric', graders: [{ id: 'quality', type: 'rubric' as const,
+    rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+  for (const judge of [undefined, 'judge']) {
+    const h = harness();
+    h.ports.suites.load = async () => ({ ...suite, defaultJudgeModel: judge, testCases: [one, rubric] });
+    h.ports.runner.describe = async () => ({ status: 'ready', value: { runnerId: 'runner', capabilities: ['single-turn', 'rubric'] as const,
+      models: ['fake'], judgeModels: [], requiredEnvironment: [] } });
+    const result = await startEvalRun({ suiteId: 'suite', scope: { type: 'all' } }, h.ports);
+    assert.equal(result.status, 'blocked');
+    if (result.status === 'blocked') assert.deepEqual([result.caseId, result.role], ['rubric', 'judge']);
+    assert.equal(h.events.includes('create'), false);
+    assert.equal(h.events.includes('schedule'), false);
+  }
+});
+
 test('scheduler failure marks the queued run error, not started', async () => {
   const h = harness();
   h.ports.scheduler.schedule = () => { throw new Error('synthetic'); };

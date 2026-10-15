@@ -3,6 +3,7 @@ import type { ArtifactStorePort } from '../run-history/contracts.js';
 import type { ArtifactReadinessPort, CaseInputResolverPort } from '../run-configuration.js';
 import type { RunnerDescriptorPort, SuiteRuntimeRegistryPort } from '../runtime-ports.js';
 import type { StartEvalRunResult } from './result.js';
+import type { OrderedRunPlan } from '../run-execution/contracts.js';
 
 export type StartRunDiagnostic = {
   readonly event: 'eval_run_start_blocked' | 'eval_run_queued';
@@ -25,6 +26,7 @@ export interface RunSchedulerPort {
     readonly cases: readonly NormalizedEvalTestCase[];
     readonly model: string;
     readonly judgeModel: string | null;
+    readonly caseSelections: OrderedRunPlan;
     readonly reference?: string;
   }): void;
 }
