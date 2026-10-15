@@ -14,6 +14,8 @@ import { createRunHistory } from './run-history/composition.js';
 import { executeEvalRun } from './execute-eval-run/index.js';
 import { evaluateOutputAssertions } from './run-execution/output-assertions.js';
 import { loadEvalEnvironment } from './eval-environment.js';
+import { changeSavedModelChoice, NodeProjectSuiteChoiceFile } from './change-saved-model-choice/index.js';
+import type { ChangeSavedModelChoiceCommand } from './change-saved-model-choice/index.js';
 
 /** One process per project: the shared artifact index is not cross-process safe. */
 export async function createHeadlessWorkbench(projectRoot: string) {
@@ -26,9 +28,18 @@ export async function createHeadlessWorkbench(projectRoot: string) {
   const history = createRunHistory(projectRoot);
   const artifacts = new PreviewArtifactReadiness(projectRoot);
   const inputs = { resolve: (cases: Parameters<typeof resolveSuiteInputs>[1]) => resolveSuiteInputs(projectRoot, cases) };
+  const choiceFiles = new NodeProjectSuiteChoiceFile(projectRoot);
   return {
     discover: () => toPublicEvalSuiteDiscoveryResult(discovery),
-    describe: (command: DescribeEvalSuiteRuntimeCommand) => describeEvalSuiteRuntime(command, { suites, runner }),
+    describe: async (command: DescribeEvalSuiteRuntimeCommand) => {
+      const result = await describeEvalSuiteRuntime(command, { suites, runner });
+      if (result.status !== 'ready') return result;
+      const snapshot = await choiceFiles.read(command.suiteId);
+      if ('status' in snapshot) return snapshot;
+      return { ...result, choiceToken: snapshot.token,
+        savedChoices: { testedModel: snapshot.suite.defaultTestedModel ?? null, judgeModel: snapshot.suite.defaultJudgeModel ?? null } };
+    },
+    changeChoice: (command: ChangeSavedModelChoiceCommand) => changeSavedModelChoice(command, { files: choiceFiles, runner }),
     run: (command: HeadlessEvalRunCommand) => headlessEvalRun(command, { suites, runner, artifacts, inputs,
       store: history.store, reader: { get: (suiteId, runId, selection) =>
         history.get({ suiteId, runId, ...(selection ? { selection } : {}) }) },
