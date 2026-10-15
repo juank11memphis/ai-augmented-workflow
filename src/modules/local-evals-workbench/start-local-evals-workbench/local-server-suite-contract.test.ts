@@ -1,13 +1,50 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader, type InternalEvalSuiteDiscoveryResult, type NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
+import { createWorkbenchDependencies } from '../workbench-composition.js';
+import { NodeProjectSuiteChoiceFile } from '../change-saved-model-choice/index.js';
 
 describe('local server suite contract boundaries', () => {
+  it('translates only explicit POST Save results and performs zero writes for no-save routes', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-saved-route-'));
+    const evals = path.join(root, 'evals');
+    await mkdir(evals);
+    const file = path.join(evals, 'suite.json');
+    const source = { ...definition(), id: 'suite', runner: { command: ['node', 'evals/runners/runner.mjs'], requiredEnvironment: [] } };
+    await writeFile(file, JSON.stringify(source));
+    const adapter = new NodeProjectSuiteChoiceFile(root);
+    const starter = new NodeLocalWorkbenchServerStarter(undefined, request => ({ ...createWorkbenchDependencies(request),
+      savedChoice: { files: adapter, runner: { describe: async () => ({ status: 'ready', value: {
+        runnerId: 'fake', capabilities: ['single-turn'], models: ['X'], judgeModels: ['J'], requiredEnvironment: [],
+      } }) } },
+    }));
+    const server = await starter.startServer({ projectRoot: root, initialDiscoveryResult: discovery() });
+    try {
+      const before = await readFile(file, 'utf8');
+      const noSave = await fetch(`${server.url}api/eval-suites/saved-choice?suiteId=suite`);
+      assert.equal(noSave.status, 200);
+      assert.match(await noSave.text(), /"status":"ready"/);
+      const cancelEquivalent = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+      assert.equal(cancelEquivalent.status, 400);
+      assert.equal(await readFile(file, 'utf8'), before);
+      const snapshot = await adapter.read('suite');
+      if (!('token' in snapshot)) assert.fail('suite should be valid');
+      const save = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ suiteId: 'suite', role: 'tested', action: 'set', modelId: 'X', expectedToken: snapshot.token }) });
+      assert.equal(save.status, 200);
+      assert.equal((await save.json() as { status: string }).status, 'saved');
+      const stale = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ suiteId: 'suite', role: 'tested', action: 'set', modelId: 'X', expectedToken: snapshot.token }) });
+      assert.equal(stale.status, 409);
+      assert.equal((await stale.json() as { reason: string }).reason, 'suite-changed');
+      assert.equal((JSON.parse(await readFile(file, 'utf8')) as { defaultTestedModel: string }).defaultTestedModel, 'X');
+    } finally { await server.stop?.(); await rm(root, { recursive: true, force: true }); }
+  });
   it('excludes normalized contract contents from JSON and bootstrapped browser state', async () => {
     const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: '/repo', initialDiscoveryResult: discovery() });
 
