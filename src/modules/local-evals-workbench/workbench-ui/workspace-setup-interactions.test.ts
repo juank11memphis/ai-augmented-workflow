@@ -7,6 +7,7 @@ import { WORKSPACE_SUITE_MODELS_CLIENT } from './workspace-suite-models-client.j
 
 test('Suite models keeps draft changes local until Save and resets roles independently', async () => {
   const requests: unknown[] = [];
+  const runRequests: string[] = [];
   const listeners = new Map<string, (event: any) => void>();
   const nodes = new Map<string, { textContent: string; hidden: boolean; disabled: boolean; focus(): void }>();
   const one = (key: string) => {
@@ -26,7 +27,8 @@ test('Suite models keeps draft changes local until Save and resets roles indepen
   const api = vm.runInNewContext('(() => {' + fragment + '})()', {
     one, document: { addEventListener(name: string, listener: (event: any) => void) { listeners.set(name, listener); } },
     json: async () => ({ status: 'ready', suiteId: 'suite', token: 'a'.repeat(64), defaultTestedModel: 'X', defaultJudgeModel: 'J' }),
-    post: async (_url: string, body: unknown) => {
+    post: async (url: string, body: unknown) => {
+      if (url.includes('/run')) runRequests.push(url);
       requests.push(body);
       return { status: 'saved', token: 'b'.repeat(64), modelId: (body as { modelId?: string }).modelId ?? null };
     },
@@ -50,6 +52,7 @@ test('Suite models keeps draft changes local until Save and resets roles indepen
   assert.equal(requests.length, 0, 'Cancel must not write');
   assert.equal(api.draft(), null);
   assert.equal(closed, 1);
+  assert.deepEqual(runRequests, [], 'Cancel must not dispatch a run');
   await api.openSuiteModels();
   api.setDraft({ tested: '', judge: 'J' });
   assert.equal(requests.length, 0, 'draft reset must not write');
@@ -62,11 +65,84 @@ test('Suite models keeps draft changes local until Save and resets roles indepen
   assert.equal(one('[data-suite-tested]').textContent, 'Not set');
   assert.equal(closed, 2);
   assert.match(one('[data-suite-model-status]').textContent, /saved/);
+  assert.deepEqual(runRequests, [], 'Save must not dispatch a run');
   api.setRuntime({ models: ['X'], judgeModels: [], rubricCaseIds: [] });
   api.renderSuiteModelSummary();
   assert.equal(one('[data-suite-judge-row]').hidden, true, 'deterministic-only suites omit Judge');
   await api.openSuiteModels();
   assert.doesNotMatch(dialog, /id="suite-judge"/);
+});
+
+test('Suite models Cancel, Close, and Save restore focus without starting a run', async () => {
+  const listeners = new Map<string, ((event: any) => void)[]>();
+  const nodes = new Map<string, { textContent: string; hidden: boolean; disabled: boolean; focus(): void }>();
+  const runRequests: string[] = [];
+  let activeElement: unknown;
+  let markup = '';
+  const one = (selector: string) => {
+    if (!nodes.has(selector)) nodes.set(selector, { textContent: '', hidden: false, disabled: false, focus() { activeElement = this; } });
+    return nodes.get(selector)!;
+  };
+  const trigger = one('[data-action="suite-models"]');
+  const heading = { focus() { activeElement = heading; } };
+  const sheetSlot = {
+    set innerHTML(value: string) { markup = value; },
+    set textContent(value: string) { if (!value) markup = ''; },
+    querySelector(selector: string) {
+      if (selector === '#sheet-title') return heading;
+      if (selector === '[role="dialog"]') return markup ? {} : null;
+      if (selector === '[data-action="close-detail"]') return null;
+      return null;
+    },
+  };
+  const document = {
+    get activeElement() { return activeElement; },
+    set activeElement(value: unknown) { activeElement = value; },
+    querySelector(selector: string) { return selector === '[data-workspace]' ? {} : selector === '[data-sheet-slot]' ? sheetSlot : one(selector); },
+    getElementById() { return { textContent: '{"suites":[{"id":"suite","name":"Suite","testCases":[]}]}' }; },
+    addEventListener(name: string, listener: (event: any) => void) { listeners.set(name, [...(listeners.get(name) || []), listener]); },
+  };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '\n' + WORKSPACE_SUITE_MODELS_CLIENT
+    + '\nreturn {loadSavedSuiteModels, openSuiteModels, setRuntime: value => {runtime=value}, setDraft: value => {suiteModelsDraft=value}, setRuntimeState};})()', {
+      document, navigator: {},
+      fetch: async (url: string, options?: { body?: string }) => ({ json: async () => {
+        if (url.includes('/run')) runRequests.push(url);
+        if (url.includes('saved-choice') && !options) return { status: 'ready', suiteId: 'suite', token: 'a'.repeat(64), defaultTestedModel: 'X', defaultJudgeModel: 'J' };
+        if (url.includes('saved-choice') && options?.body) {
+          const body = JSON.parse(options.body);
+          return { status: 'saved', token: 'b'.repeat(64), modelId: body.modelId ?? null };
+        }
+        return {};
+      } }),
+    }) as { loadSavedSuiteModels(): Promise<void>; openSuiteModels(): Promise<void>;
+      setRuntime(value: unknown): void; setDraft(value: { tested: string; judge: string }): void;
+      setRuntimeState(state: string, message: string): void };
+  const click = (action: string) => {
+    const event = { target: { closest: () => ({ dataset: { action } }) } };
+    for (const listener of listeners.get('click') || []) listener(event);
+  };
+  const open = async () => {
+    activeElement = trigger;
+    await api.openSuiteModels();
+    assert.equal(activeElement, heading, 'opening the dialog moves focus inside');
+  };
+  api.setRuntime({ models: ['X', 'Y'], judgeModels: ['J'], rubricCaseIds: ['rubric'] });
+  api.setRuntimeState('ready', 'Compatible models ready.');
+  await api.loadSavedSuiteModels();
+  await open();
+  click('cancel-suite-models');
+  assert.equal(activeElement, trigger, 'Cancel restores focus to the originating Models trigger');
+  await open();
+  click('close-sheet');
+  assert.equal(activeElement, trigger, 'Close restores focus to the originating Models trigger');
+  await open();
+  api.setDraft({ tested: '', judge: 'J' });
+  click('save-suite-models');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(activeElement, trigger, 'Save restores focus to the originating Models trigger');
+  assert.match(one('[data-suite-model-status]').textContent, /saved/);
+  assert.equal(markup, '', 'Save closes the dialog');
+  assert.deepEqual(runRequests, [], 'Cancel, Close, and Save do not dispatch a run');
 });
 
 const startReference = '123e4567-e89b-42d3-a456-426614174000';
