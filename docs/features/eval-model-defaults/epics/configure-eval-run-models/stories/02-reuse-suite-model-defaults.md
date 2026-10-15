@@ -37,17 +37,17 @@ As an engineer running evals, I want to save separate suite defaults for evaluat
 - **AC-02 — Reset and missing choice:** Reset leaves a suite default unset; Start run pauses for an explicit choice, including when an old suite has no default. Deterministic-only scope does not require a Judge model. Source: BRD REQ-01, REQ-05, AC-01, AC-02, AC-05. Verification: test.
 - **AC-03 — Unavailable choice:** An unavailable saved suite model blocks preview/start until a compatible replacement is explicitly saved, with no paid runner call or silent substitution. Source: BRD REQ-05, AC-05. Verification: test.
 - **AC-04 — Temporary single-case choice:** A single-case run can choose another compatible Model or applicable Judge model without changing saved suite defaults; full-suite scope rejects that temporary input. Source: BRD REQ-04, AC-04. Verification: test.
-- **AC-05 — Surface parity:** The UI and agent-guided flow reach the same defaults and blocked outcomes; the user judges suite controls and dialogs against binding phone/tablet/desktop UX mockups afterward. Source: BRD REQ-06, AC-06. Verification: needs human/LLM-judge review.
+- **AC-05 — Surface parity:** The UI and agent-guided flow reach the same defaults and blocked outcomes; the user judges suite controls and dialogs against binding phone/tablet/desktop UX mockups afterward. Source: BRD REQ-06, AC-06. Verification: deterministic Node contract tests plus later user QA.
 
 ## Verification Expectations
 
 - Fake-port handler and suite-file fixture tests show valid set/change/reset, no accidental mutation on preview/run/Cancel, old suite compatibility, symlink/root-escape refusal, concurrent-edit conflicts, and no fallback.
-- Non-UI integration tests show the same effective choice through preview and start, a single-case temporary choice not persisted, and agent-facing result parity. No live LLM or automated UI review.
+- Deterministic Node integration and UI contract tests show the same effective choice through preview and start, a single-case temporary choice not persisted, and agent-facing result parity. No live LLM, headless-browser UI test, or automated visual/accessibility review.
 - The user performs post-implementation QA of suite summary, Suite models dialog, missing/unavailable states, This run only controls, and phone/tablet/desktop fidelity.
 
 ## Validation
 
-- `pnpm run build`; focused non-UI suite-contract, saved-choice, preview/start, and agent-guidance tests; `pnpm run validate:packed-runtime` after changes stabilize. Do not run automated UI tests as a verification method for this Story.
+- Focused deterministic suite-contract, saved-choice, preview/start, UI contract, and agent-guidance tests during implementation; after template changes stabilize, `pnpm verify` (includes build and Node tests) and `pnpm run validate:packed-runtime`. Do not run headless-browser UI tests or automated visual/accessibility review.
 
 ## Domain Context
 

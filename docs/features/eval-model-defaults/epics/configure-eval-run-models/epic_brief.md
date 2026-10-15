@@ -24,7 +24,7 @@ Engineers can set reusable suite model defaults, override them for individual ca
 ## Out of Scope
 
 - Automatic recommendations or model fallback, run-wide temporary overrides for full suites, same-case multi-model comparison, new cost controls, headless CI, or live-model evals as routine tests.
-- Automated UI tests or agent-performed UI review; the user owns post-implementation UI QA against the UX mockups.
+- Headless-browser UI tests and automated visual/accessibility or agent-performed UI review; deterministic Node UI contract tests remain allowed, and the user owns post-implementation QA against the UX mockups.
 
 ## User Stories and Sequence
 

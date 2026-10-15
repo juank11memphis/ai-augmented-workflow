@@ -36,17 +36,17 @@ As an engineer running a full eval suite, I want selected test cases to use thei
 - **AC-02 — Mixed full-suite run:** With suite Model X and one of nine cases overridden to Y, one full-suite run executes eight cases on X and one on Y, with applicable independent judge choices and case order preserved. Source: BRD REQ-03, AC-03. Verification: test.
 - **AC-03 — Unavailable override:** An unavailable case override stops before paid execution and offers explicit replacement or inheritance; it is never silently ignored. Source: BRD REQ-05, AC-05. Verification: test.
 - **AC-04 — Truthful evidence:** New results show the actual per-case Model and optional Judge model; existing single-model histories remain readable, and a partial runner failure keeps completed-case evidence. Source: BRD REQ-06, AC-06. Verification: test.
-- **AC-05 — Surface parity and binding UX:** The UI and agent-guided flow use the same override rules; the selected-case Models action, dialog, blocked state, and case-first results follow the binding phone/tablet/desktop mockups for the user's later QA. Source: BRD REQ-02, REQ-06, AC-03, AC-06. Verification: needs human/LLM-judge review.
+- **AC-05 — Surface parity and binding UX:** The UI and agent-guided flow use the same override rules; the selected-case Models action, dialog, blocked state, and case-first results follow the binding phone/tablet/desktop mockups for the user's later QA. Source: BRD REQ-02, REQ-06, AC-03, AC-06. Verification: deterministic Node contract tests plus later user QA.
 
 ## Verification Expectations
 
 - Fake-port and suite-file tests prove independent inheritance/reset, saved-choice write safety, missing suite default despite a case override, and no accidental change from run-only choices.
-- Runner/artifact integration with disposable fixtures proves eight-X/one-Y batch execution, independent judge choices, preview/start recheck, interruption with partial evidence, and backward reading of old run history. No live LLM or automated UI review.
+- Runner/artifact integration with disposable fixtures proves eight-X/one-Y batch execution, independent judge choices, preview/start recheck, interruption with partial evidence, and backward reading of old run history. No live LLM, headless-browser UI test, or automated visual/accessibility review.
 - The user performs post-implementation QA of selected-case controls, Test-case models dialog, unavailable-override recovery, and actual model labels across phone/tablet/desktop mockups.
 
 ## Validation
 
-- `pnpm run build`; focused non-UI selection, runner/artifact, history-compatibility, and agent-guidance tests; `pnpm run validate:packed-runtime` after changes stabilize. Do not use automated UI tests as verification for this Story.
+- `pnpm run build`; focused deterministic selection, runner/artifact, history-compatibility, UI contract, and agent-guidance tests; `pnpm run validate:packed-runtime` after changes stabilize. Do not run headless-browser UI tests or automated visual/accessibility review.
 
 ## Domain Context
 
