@@ -48,6 +48,7 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
     log('eval_preview_completed', 'preview', 'completed');
     return {
       status: 'ready', suiteId: suite.id, selectedCaseIds: cases.map((testCase) => testCase.id),
+      caseSelections: snapshot.selection.cases,
       model: snapshot.selection.cases[0]!.testedModel, judgeModel: snapshot.selection.cases[0]!.judgeModel,
       previewToken: snapshot.previewToken!,
     };

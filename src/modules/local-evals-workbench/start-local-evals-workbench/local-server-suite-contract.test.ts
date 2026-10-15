@@ -14,6 +14,60 @@ import { createRunHistory } from '../run-history/composition.js';
 import { createSelectedFailureReader } from '../repair-context/selected-evidence.js';
 
 describe('local server suite contract boundaries', () => {
+  it('passes ordered preview selections through HTTP without estimates or partial blocked choices', async () => {
+    const base = { ...definition().testCases[0]!, toolMocks: [] };
+    const rubric = { ...base, id: 'rubric', graders: [{ id: 'tone', type: 'rubric' as const,
+      rubric: { type: 'inline' as const, text: 'Kind' }, threshold: 0.8 }] };
+    const cases = [{ ...base, id: 'first' }, rubric, { ...base, id: 'last' }];
+    let current: NormalizedEvalSuite = { ...definition(), id: 'suite', defaultTestedModel: 'X', defaultJudgeModel: 'J',
+      runner: { command: ['node', 'evals/runners/runner.mjs'], requiredEnvironment: [] }, testCases: cases };
+    let readinessCalls = 0;
+    let inputCalls = 0;
+    const starter = new NodeLocalWorkbenchServerStarter(undefined, request => ({ ...createWorkbenchDependencies(request), preview: {
+      suites: { load: async () => current },
+      runner: { describe: async () => ({ status: 'ready', value: {
+        runnerId: 'fake', capabilities: ['single-turn', 'rubric'], models: ['X', 'Y'], judgeModels: ['J'], requiredEnvironment: [],
+      } }) },
+      artifacts: { check: async () => { readinessCalls++; return { status: 'ready', value: null }; } },
+      inputs: { resolve: async selected => { inputCalls++; return { status: 'ready', value: selected }; } },
+    } }));
+    const server = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: discovery() });
+    const preview = async (body: unknown) => {
+      const response = await fetch(`${server.url}api/eval-runs/preview`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      return { code: response.status, payload: await response.json() as Record<string, unknown> };
+    };
+    try {
+      for (const ordered of [cases, [rubric, cases[0]!, cases[2]!]]) {
+        current = { ...current, testCases: ordered };
+        const { code, payload } = await preview({ suiteId: 'suite', scope: { type: 'all' } });
+        assert.equal(code, 200);
+        assert.deepEqual(payload.selectedCaseIds, ordered.map(item => item.id));
+        assert.deepEqual(payload.caseSelections, ordered.map(item => ({ caseId: item.id, testedModel: 'X', judgeModel: item.id === 'rubric' ? 'J' : null })));
+        assert.deepEqual([payload.model, payload.judgeModel], ['X', ordered[0]!.id === 'rubric' ? 'J' : null]);
+        assert.match(String(payload.previewToken), /^[a-f0-9]{64}$/);
+        assert.equal(/callCount|price|cost|estimate/i.test(JSON.stringify(payload)), false);
+      }
+      const temporary = await preview({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'last' }, runOnly: { testedModel: 'Y' } });
+      assert.equal(temporary.code, 200);
+      assert.deepEqual(temporary.payload.selectedCaseIds, ['last']);
+      assert.deepEqual(temporary.payload.caseSelections, [{ caseId: 'last', testedModel: 'Y', judgeModel: null }]);
+      current = { ...current, defaultTestedModel: undefined };
+      const before = [readinessCalls, inputCalls];
+      const blocked = await preview({ suiteId: 'suite', scope: { type: 'all' } });
+      assert.equal(blocked.code, 422);
+      assert.deepEqual([blocked.payload.status, blocked.payload.stage, blocked.payload.reason, blocked.payload.role],
+        ['blocked', 'selection', 'missing-suite-default', 'tested']);
+      assert.equal('caseSelections' in blocked.payload, false);
+      current = { ...current, defaultTestedModel: 'gone' };
+      const unavailable = await preview({ suiteId: 'suite', scope: { type: 'all' } });
+      assert.equal(unavailable.code, 422);
+      assert.deepEqual([unavailable.payload.status, unavailable.payload.stage, unavailable.payload.reason, unavailable.payload.role],
+        ['blocked', 'description', 'saved-model-unavailable', 'tested']);
+      assert.equal('caseSelections' in unavailable.payload, false);
+      assert.deepEqual([readinessCalls, inputCalls], before);
+    } finally { await server.stop?.(); }
+  });
+
   it('persists the temporary selected label through status, detail, and repair evidence without changing suite defaults', async () => {
     const terminal: string[] = [];
     const originalInfo = console.info;
