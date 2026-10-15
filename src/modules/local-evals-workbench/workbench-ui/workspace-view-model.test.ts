@@ -95,3 +95,42 @@ it('counts attempts and failures, excludes unselected cases, and never projects 
   assert.equal(model.progress, '1/1 complete');
   assert.doesNotMatch(JSON.stringify({ cases: model.cases, progress: model.progress, statusText: model.statusText }), /private output/);
 });
+
+it('projects one completed result per selected case with recorded rubric labels and failed-case detail', () => {
+  const rubricRun: Manifest = { ...run, testedModel: 'tested-at-run', judgeModel: 'judge-at-run', cases: [
+    run.cases[0]!,
+    { caseId: 'unsafe', state: 'completed', attempts: [{ number: 1, outcome: 'failed', durationMs: 2, calls: 1, cost: null, rubricScores: [0.2] }] },
+  ] };
+  const model = createWorkspaceViewModel({ discovery, run: rubricRun });
+  assert.deepEqual(model.results, [
+    { caseId: 'safe', name: 'Safe response', status: 'passed', model: 'tested-at-run', judgeModel: 'judge-at-run', detail: { caseId: 'safe', attempt: 1 } },
+    { caseId: 'unsafe', name: 'Unsafe response', status: 'failed', model: 'tested-at-run', judgeModel: 'judge-at-run', detail: { caseId: 'unsafe', attempt: 1 } },
+  ]);
+});
+
+it('omits unfinished cases and nullable judge for deterministic-only recorded runs', () => {
+  const model = createWorkspaceViewModel({ discovery, run });
+  assert.deepEqual(model.results, [
+    { caseId: 'safe', name: 'Safe response', status: 'passed', model: 'one-model', judgeModel: null, detail: { caseId: 'safe', attempt: 1 } },
+  ]);
+});
+
+it('keeps historical model labels when current suite context changes', () => {
+  const changedDiscovery: EvalSuiteDiscoveryResult = { ...discovery, suites: [{ ...discovery.suites[0]!,
+    modelOptions: [{ id: 'new-default', label: 'New default' }],
+    testCases: [{ id: 'safe', name: 'Renamed case' }, { id: 'unsafe', name: 'Unsafe response' }],
+  }] };
+  const historicRun: Manifest = { ...run, testedModel: 'old-tested', judgeModel: 'old-judge' };
+  const model = createWorkspaceViewModel({ discovery: changedDiscovery, run: historicRun });
+  assert.equal(model.results[0]?.name, 'Renamed case');
+  assert.deepEqual([model.results[0]?.model, model.results[0]?.judgeModel], ['old-tested', 'old-judge']);
+});
+
+it('refreshes completed-case labels from the selected run without changing detail identifiers', () => {
+  const initial = createWorkspaceViewModel({ discovery, run: { ...run, testedModel: 'initial-model' } });
+  const refreshed = createWorkspaceViewModel({ discovery, run: { ...run, testedModel: 'refreshed-model', judgeModel: 'review-judge' } });
+  assert.deepEqual([initial.results[0]?.model, initial.results[0]?.judgeModel], ['initial-model', null]);
+  assert.deepEqual([refreshed.results[0]?.model, refreshed.results[0]?.judgeModel], ['refreshed-model', 'review-judge']);
+  assert.deepEqual(refreshed.results[0]?.detail, initial.results[0]?.detail);
+  assert.equal(refreshed.results.length, 1);
+});
