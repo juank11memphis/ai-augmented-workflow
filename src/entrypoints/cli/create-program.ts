@@ -39,13 +39,15 @@ export function createProgram(): CommanderCommand {
       type: 'evals:run', suiteId, scope: options.case !== undefined ? { type: 'test_case', testCaseId: options.case } : { type: 'all' },
       ...(options.model !== undefined ? { model: options.model } : {}), ...(options.judge !== undefined ? { judgeModel: options.judge } : {}),
     }));
-  evals.command('choice <suite>').description('Explicitly set or reset a saved suite model as JSON')
+  evals.command('choice <suite>').description('Explicitly set or reset a saved suite or case model as JSON')
     .requiredOption('--role <role>', 'tested or judge')
     .requiredOption('--token <token>', 'Choice token from evals describe')
+    .option('--case <case_id>', 'Change one case override (reset inherits the suite choice)')
     .option('--set <model_id>', 'Set saved model')
     .option('--reset', 'Reset saved model')
-    .action((suiteId: string, options: { role: string; token: string; set?: string; reset?: boolean }) => executeCliCommand({
+    .action((suiteId: string, options: { role: string; token: string; case?: string; set?: string; reset?: boolean }) => executeCliCommand({
       type: 'evals:choice', suiteId, role: options.role as 'tested' | 'judge', expectedToken: options.token,
+      ...(options.case !== undefined ? { caseId: options.case } : {}),
       action: options.reset ? 'reset' : 'set', ...(options.set !== undefined ? { modelId: options.set } : {}),
     }));
   evals.command('result <suite> <run>').description('Read bounded run evidence as JSON')
