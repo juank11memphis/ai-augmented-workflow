@@ -5,7 +5,7 @@
 ## Epic
 [Diagnose Eval Failures from Selected CLI Evidence](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 As an engineer examining a failed rubric assertion, I want to see exactly what the judge received and returned alongside the score, so that I can distinguish the model's answer from the judge's evaluation.
