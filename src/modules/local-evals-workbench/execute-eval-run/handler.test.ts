@@ -56,6 +56,35 @@ test('starts before runner, checkpoints output, grades actual evidence and final
     runnerPath: 'evals/runner.mjs', inputPaths: [], omittedInputPathCount: 0, context: 'current-repo-files' });
 });
 
+test('judge source is linked before store, while malformed scoring stays an incomplete grading error', async () => {
+  const rubricCase = { ...testCase, graders: [{ id: 'quality', type: 'rubric' as const,
+    rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+  const command = { ...selection, suite: { ...selection.suite, testCases: [rubricCase] }, cases: [rubricCase], judgeModel: 'judge' };
+  const base: ExecutionEvent[] = [{ type: 'case-started', caseId: 'case', attempt: 1 },
+    { type: 'turn-completed', caseId: 'case', attempt: 1, turnId: 'turn-1', output: 'actual' }];
+  const source = { kind: 'judge-exchange' as const, id: 'judge-1', turnId: 'turn-1', checkId: 'quality',
+    judgeModel: 'judge', eventSequence: 3, elapsedMs: 4, evaluatedRubric: 'quality >= 0.8',
+    request: 'instructions\nactual\nreferences', response: '{bad', rationale: 'malformed',
+    result: { status: 'grading-error' as const, code: 'malformed-score' } };
+  const error: ExecutionEvent = { type: 'grading-error', caseId: 'case', attempt: 1, checkId: 'quality',
+    judgeModel: 'judge', code: 'malformed-score', sequence: 3 };
+  const h = harness([...base, error, { type: 'source-record', caseId: 'case', attempt: 1, sequence: 4, record: source },
+    { type: 'case-completed', caseId: 'case', attempt: 1, status: 'error', sourceCapture: 'incomplete' }], 'error');
+  const logs: unknown[] = [];
+  const result = await executeEvalRun(command, { ...h, clock: Date.now, logger: { record: item => { logs.push(item); } } });
+  assert.equal(result.status, 'error');
+  assert.ok(h.writes.includes('source:judge-1'));
+  assert.equal(h.attempts.at(-1)?.assertions[0]?.gradingError?.code, 'malformed-score');
+  assert.equal(h.attempts.at(-1)?.assertions[0]?.score, null);
+  assert.equal(h.attempts.at(-1)?.assertions[0]?.outcome, 'incomplete');
+  assert.doesNotMatch(JSON.stringify(logs), /instructions|references|malformed/);
+
+  const wrong = harness([...base, error, { type: 'source-record', caseId: 'case', attempt: 1, sequence: 4,
+    record: { ...source, judgeModel: 'other' } }], 'error');
+  assert.equal((await executeEvalRun(command, { ...wrong, clock: Date.now })).reason, 'runner-protocol-invalid');
+  assert.equal(wrong.writes.some(item => item.startsWith('source:')), false);
+});
+
 test('ordered deterministic-rubric-deterministic batches retain one logical run and actual Judge evidence', async () => {
   for (const order of [['first', 'rubric', 'last'], ['rubric', 'first', 'last']]) {
     const cases = order.map(id => id === 'rubric' ? { ...testCase, id, graders: [{ id: 'quality', type: 'rubric' as const,

@@ -88,6 +88,73 @@ test('deep protocol validates one ordered attempt, tools, grader IDs, and select
   assert.throws(() => missing.accept(complete));
 });
 
+test('version-two judge exchange links exact scored event, and rejects wrong identity, comparison, order and false completion', () => {
+  const deep = { ...singleCase, graders: [{ id: 'quality', type: 'rubric' as const,
+    rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+  const selected: ExecutionSelection = { ...selection, cases: [deep], judgeModel: 'judge' };
+  const e = (sequence: number, type: string, data: unknown, caseId: string | null = 'case') =>
+    ({ protocolVersion: 2, requestId: 'request', runId: 'run', sequence, type, caseId, attempt: caseId ? 1 : null, data });
+  const begin = [e(0, 'run-started', { model: 'fake', judgeModel: 'judge' }, null), e(1, 'case-attempt-started', {}),
+    e(2, 'conversation-turn-completed', { turnIndex: 0, turnId: 'turn-1', role: 'assistant', output: 'answer' }),
+    e(3, 'rubric-judgment-completed', { checkId: 'quality', passed: false, score: 0.7, threshold: 0.8,
+      judgeModel: 'judge', evidence: 'safe', diagnostics: [] })];
+  const source = { kind: 'judge-exchange', id: 'judge-1', turnId: 'turn-1', checkId: 'quality',
+    judgeModel: 'judge', eventSequence: 3, elapsedMs: 8, evaluatedRubric: 'quality >= 0.8',
+    request: 'instructions\nanswer\nreference', response: '{"score":0.7}', rationale: 'Missing caveat',
+    result: { status: 'completed', score: 0.7, threshold: 0.8, passed: false }, redactedFields: ['request'] };
+  const chunk = (sequence: number, value: unknown) => { const bytes = Buffer.from(JSON.stringify(value));
+    return e(sequence, 'source-record-chunk', { recordId: 'judge-1', index: 0, count: 1,
+      byteLength: bytes.length, base64: bytes.toString('base64') }); };
+  const ready = () => { const validator = new ExecuteEventValidator('request', selected);
+    for (const item of begin) validator.accept(item); return validator; };
+  const valid = ready();
+  const accepted = valid.accept(chunk(4, source));
+  assert.equal(accepted.type, 'source-record');
+  if (accepted.type === 'source-record') assert.deepEqual(accepted.record, source);
+  assert.equal(valid.accept(e(5, 'case-attempt-completed', { status: 'completed', sourceEvidenceComplete: false,
+    judgeEvidenceComplete: true })).type, 'case-completed');
+  for (const bad of [{ ...source, judgeModel: 'other' }, { ...source, checkId: 'other' },
+    { ...source, turnId: 'other' }, { ...source, eventSequence: 2 },
+    { ...source, result: { ...source.result, score: 0.9, passed: true } }]) {
+    assert.throws(() => ready().accept(chunk(4, bad)));
+  }
+  assert.throws(() => ready().accept(e(4, 'case-attempt-completed', { status: 'completed', sourceEvidenceComplete: false,
+    judgeEvidenceComplete: true })));
+  assert.throws(() => valid.accept(chunk(6, source)));
+});
+
+test('scoreless judge error retains malformed source and interrupted or over-limit chunks report gaps', () => {
+  const deep = { ...singleCase, graders: [{ id: 'quality', type: 'rubric' as const,
+    rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+  const selected: ExecutionSelection = { ...selection, cases: [deep], judgeModel: 'judge' };
+  const e = (sequence: number, type: string, data: unknown, caseId: string | null = 'case') =>
+    ({ protocolVersion: 2, requestId: 'request', runId: 'run', sequence, type, caseId, attempt: caseId ? 1 : null, data });
+  const ready = () => { const validator = new ExecuteEventValidator('request', selected);
+    validator.accept(e(0, 'run-started', { model: 'fake', judgeModel: 'judge' }, null));
+    validator.accept(e(1, 'case-attempt-started', {}));
+    validator.accept(e(2, 'conversation-turn-completed', { turnIndex: 0, turnId: 'turn-1', role: 'assistant', output: 'answer' }));
+    validator.accept(e(3, 'rubric-judgment-error', { checkId: 'quality', judgeModel: 'judge', code: 'malformed-score' }));
+    return validator; };
+  const source = { kind: 'judge-exchange', id: 'judge-1', turnId: 'turn-1', checkId: 'quality',
+    judgeModel: 'judge', eventSequence: 3, elapsedMs: 8, evaluatedRubric: 'quality >= 0.8',
+    request: 'exact instructions\nanswer\nrefs', response: '{bad', rationale: 'bad score',
+    result: { status: 'grading-error', code: 'malformed-score' } };
+  const bytes = Buffer.from(JSON.stringify(source));
+  const chunk = (index: number, count: number, base64: string, byteLength = bytes.length) =>
+    e(4 + index, 'source-record-chunk', { recordId: 'judge-1', index, count, byteLength, base64 });
+  const completed = ready().accept(chunk(0, 1, bytes.toString('base64')));
+  assert.equal(completed.type, 'source-record');
+  if (completed.type === 'source-record') assert.deepEqual(completed.record, source);
+  const interrupted = ready();
+  interrupted.accept(chunk(0, 2, bytes.subarray(0, 10).toString('base64')));
+  assert.deepEqual(interrupted.incompleteSource, { type: 'source-gap', caseId: 'case', attempt: 1,
+    reason: 'incomplete', recordId: 'judge-1' });
+  const overLimit = ready();
+  assert.throws(() => overLimit.accept(chunk(0, 1, bytes.subarray(0, 10).toString('base64'), 256001)));
+  assert.deepEqual(overLimit.incompleteSource, { type: 'source-gap', caseId: 'case', attempt: 1,
+    reason: 'capture-failed', recordId: 'judge-1' });
+});
+
 test('version-two chunks preserve exact model source and reject false completion, links and duplicate records', () => {
   const selected: ExecutionSelection = { ...selection, cases: [{ ...singleCase,
     assertions: [{ id: 'exact', type: 'output-equals', expected: { type: 'inline', text: 'raw é' } }] }] };

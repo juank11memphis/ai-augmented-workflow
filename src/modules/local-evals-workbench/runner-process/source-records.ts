@@ -23,11 +23,32 @@ function redactions(value: unknown, allowed: readonly string[]): boolean {
   return value === undefined || Array.isArray(value) && value.length <= allowed.length
     && new Set(value).size === value.length && value.every(item => allowed.includes(item));
 }
+function score(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
 
 /** Validates complete source records, not chunks or fixture-declared substitutes. */
 export function sourceRecord(value: unknown): value is SourceRecord {
   if (!record(value) || !logicalId(value.id) || !logicalId(value.turnId) || !logicalId(value.checkId)
     || !elapsed(value.elapsedMs)) return false;
+  if (value.kind === 'judge-exchange') {
+    if (!exactKeys(value, ['kind', 'id', 'turnId', 'checkId', 'judgeModel', 'eventSequence', 'elapsedMs', 'evaluatedRubric', 'request', 'result'],
+      ['response', 'rationale', 'redactedFields']) || !boundedText(value.judgeModel, 200) || !value.judgeModel
+      || !Number.isSafeInteger(value.eventSequence) || Number(value.eventSequence) < 0
+      || !boundedText(value.evaluatedRubric) || !boundedText(value.request)
+      || value.response !== undefined && !boundedText(value.response)
+      || value.rationale !== undefined && !boundedText(value.rationale)
+      || !redactions(value.redactedFields, ['evaluatedRubric', 'request', 'response', 'rationale'])
+      || !record(value.result)) return false;
+    return value.result.status === 'completed'
+      ? exactKeys(value.result, ['status', 'score', 'threshold', 'passed'])
+        && score(value.result.score) && score(value.result.threshold)
+        && typeof value.result.passed === 'boolean' && value.result.passed === (value.result.score >= value.result.threshold)
+        && value.response !== undefined && value.rationale !== undefined
+      : value.result.status === 'grading-error'
+        && exactKeys(value.result, ['status', 'code'])
+        && typeof value.result.code === 'string' && /^[a-z][a-z0-9-]{0,79}$/.test(value.result.code);
+  }
   if (value.kind === 'model-call') {
     return exactKeys(value, ['kind', 'id', 'turnId', 'checkId', 'modelId', 'phase', 'elapsedMs', 'inputMessages', 'rawText', 'rawToolCalls', 'normalizedOutput'], ['approvedFacts', 'redactedFields'])
       && boundedText(value.modelId, 200) && value.modelId.length > 0
@@ -55,13 +76,19 @@ type Pending = { readonly id: string; readonly count: number; readonly byteLengt
 
 export class SourceRecordChunks {
   private pending: Pending | undefined;
+  private failedId: string | undefined;
   private readonly ids = new Set<string>();
 
   get incompleteId(): string | undefined { return this.pending?.id; }
+  get captureFailedId(): string | undefined { return this.failedId; }
   get count(): number { return this.ids.size; }
-  reset(): void { this.pending = undefined; this.ids.clear(); }
+  reset(): void { this.pending = undefined; this.failedId = undefined; this.ids.clear(); }
 
   accept(data: Record<string, unknown>): SourceRecord | undefined {
+    if (logicalId(data.recordId) && Number.isSafeInteger(data.byteLength) && Number(data.byteLength) > MAX_RECORD_BYTES) {
+      this.failedId = data.recordId;
+      throw new Error('source-capture-limit');
+    }
     if (!exactKeys(data, ['recordId', 'index', 'count', 'byteLength', 'base64'])
       || !logicalId(data.recordId) || !Number.isSafeInteger(data.index) || Number(data.index) < 0
       || !Number.isSafeInteger(data.count) || Number(data.count) < 1 || Number(data.count) > MAX_CHUNKS

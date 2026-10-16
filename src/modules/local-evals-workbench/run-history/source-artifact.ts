@@ -12,6 +12,22 @@ function keys(value: Record<string, unknown>, required: readonly string[], optio
 function sourceRecord(value: unknown): value is SourceRecord {
   if (!record(value) || !logicalId(value.id) || !logicalId(value.turnId) || !logicalId(value.checkId)
     || !integer(value.elapsedMs)) return false;
+  if (value.kind === 'judge-exchange') return keys(value,
+    ['kind', 'id', 'turnId', 'checkId', 'judgeModel', 'eventSequence', 'elapsedMs', 'evaluatedRubric', 'request', 'result'],
+    ['response', 'rationale', 'redactedFields'])
+    && bounded(value.judgeModel, 200) && value.judgeModel.length > 0 && integer(value.eventSequence)
+    && bounded(value.evaluatedRubric, LIMITS.sourceRecordBytes) && bounded(value.request, LIMITS.sourceRecordBytes)
+    && (value.response === undefined || bounded(value.response, LIMITS.sourceRecordBytes))
+    && (value.rationale === undefined || bounded(value.rationale, LIMITS.sourceRecordBytes))
+    && redactions(value.redactedFields, ['evaluatedRubric', 'request', 'response', 'rationale'])
+    && record(value.result) && (value.result.status === 'completed'
+      ? keys(value.result, ['status', 'score', 'threshold', 'passed'])
+        && typeof value.result.score === 'number' && Number.isFinite(value.result.score) && value.result.score >= 0 && value.result.score <= 1
+        && typeof value.result.threshold === 'number' && Number.isFinite(value.result.threshold) && value.result.threshold >= 0 && value.result.threshold <= 1
+        && value.result.passed === (value.result.score >= value.result.threshold)
+        && value.response !== undefined && value.rationale !== undefined
+      : value.result.status === 'grading-error' && keys(value.result, ['status', 'code'])
+        && typeof value.result.code === 'string' && /^[a-z][a-z0-9-]{0,79}$/.test(value.result.code));
   if (value.kind === 'model-call') return keys(value,
     ['kind', 'id', 'turnId', 'checkId', 'modelId', 'phase', 'elapsedMs', 'inputMessages', 'rawText', 'rawToolCalls', 'normalizedOutput'],
     ['approvedFacts', 'redactedFields'])
@@ -57,6 +73,8 @@ export function sourceField(recordValue: SourceRecord, key: string): string | un
     if (input) return recordValue.inputMessages[Number(input[1])]?.content;
     const call = /^rawToolCalls-([0-9]{1,2})$/.exec(key);
     if (call && recordValue.rawToolCalls[Number(call[1])]) return JSON.stringify(recordValue.rawToolCalls[Number(call[1])]!.arguments);
+  } else if (recordValue.kind === 'judge-exchange') {
+    if (key === 'evaluatedRubric' || key === 'request' || key === 'response' || key === 'rationale') return recordValue[key];
   } else if (key === 'request' || key === 'result') return JSON.stringify(recordValue[key]);
   return undefined;
 }

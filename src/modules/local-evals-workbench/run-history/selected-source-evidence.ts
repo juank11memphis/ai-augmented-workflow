@@ -35,7 +35,7 @@ export function selectedSourceEvidence(attempt: Attempt, assertionId: string,
           arguments: field(source.id, `rawToolCalls-${index}`, JSON.stringify(call.arguments), hidden('rawToolCalls')) })),
         normalizedOutput: field(source.id, 'normalizedOutput', source.normalizedOutput, hidden('normalizedOutput')) });
       for (const fact of source.approvedFacts ?? []) approvedFacts.push({ modelCallId: source.id, ...fact });
-    } else {
+    } else if (source.kind === 'tool-delivery') {
       if (!modelCalls.some(call => call.id === source.modelCallId)) return undefined;
       toolEvents.push({ id: source.id, modelCallId: source.modelCallId, sequence: stored.sequence, name: source.name,
         request: field(source.id, 'request', JSON.stringify(source.request), hidden('request')),

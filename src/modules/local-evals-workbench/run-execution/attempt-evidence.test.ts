@@ -35,3 +35,17 @@ test('source record shape distinguishes provider text, structured calls, normali
   assert.equal(sourceRecord({ ...call, rawText: undefined }), false);
   assert.equal(sourceRecord({ ...tool, modelCallId: '../other' }), false);
 });
+
+test('judge source separates completed numeric comparison from scoreless grading error and retains redaction markers', () => {
+  const exchange = { kind: 'judge-exchange', id: 'judge-1', turnId: 'turn-1', checkId: 'rubric',
+    judgeModel: 'judge', eventSequence: 4, elapsedMs: 12, evaluatedRubric: 'quality >= 0.8',
+    request: 'INSTRUCTIONS\nANSWER\nREFERENCES', response: '{"score":0.7}', rationale: 'Missing caveat',
+    result: { status: 'completed', score: 0.7, threshold: 0.8, passed: false }, redactedFields: ['request'] };
+  assert.equal(sourceRecord(exchange), true);
+  assert.equal(sourceRecord({ ...exchange, result: { ...exchange.result, passed: true } }), false);
+  assert.equal(sourceRecord({ ...exchange, result: { ...exchange.result, score: 'bad' } }), false);
+  const malformed = { ...exchange, response: '{broken', rationale: 'Malformed response',
+    result: { status: 'grading-error', code: 'malformed-score' } };
+  assert.equal(sourceRecord(malformed), true);
+  assert.equal(sourceRecord({ ...malformed, result: { ...malformed.result, score: null } }), false);
+});

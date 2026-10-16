@@ -62,7 +62,7 @@ export type EvidenceFieldRange = {
   readonly locator: string; readonly offset: number; readonly byteLength: number;
   readonly bytes: Uint8Array; readonly nextOffset: number | null;
 };
-export type SourceReference = { readonly id: string; readonly kind: 'model-call' | 'tool-delivery'; readonly status: 'complete';
+export type SourceReference = { readonly id: string; readonly kind: 'model-call' | 'tool-delivery' | 'judge-exchange'; readonly status: 'complete';
   readonly checkId: string; readonly turnId: string; readonly sequence: number; readonly byteLength: number };
 export type SourceCapture = { readonly records: readonly SourceReference[];
   readonly gaps: readonly { readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string }[] };
