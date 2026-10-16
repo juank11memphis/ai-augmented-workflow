@@ -1,12 +1,14 @@
 import type { HeadlessEvalResultCommand } from './command.js';
 import type { HeadlessEvalResultDependencies } from './ports.js';
-import type { HeadlessEvalResult, HeadlessEvalSummary } from './result.js';
+import type { HeadlessEvalResult, HeadlessEvalSummary, SelectedEvidenceField, SelectedSourceEvidence } from './result.js';
 import { failedAssertionLocators } from '../run-history/failed-assertion-locators.js';
+import type { EvidenceField, SourceEvidence } from '../run-history/contracts.js';
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const MAX_TEXT = 600;
 const MAX_DIAGNOSTICS = 3;
 const MAX_JSON = 4800;
+const MAX_FIELD_BYTES = 1024;
 
 function safeArtifactPath(path: string | undefined): string | undefined {
   return path && /^(?!.*(?:^|\/)\.\.?\/)[A-Za-z0-9._/-]+$/.test(path) && !path.startsWith('/') ? path : undefined;
@@ -16,10 +18,45 @@ function clipped(value: string): string {
   return value.length <= MAX_TEXT ? value : `${value.slice(0, MAX_TEXT - 1)}…`;
 }
 
+function fieldsOf(source: SourceEvidence): EvidenceField[] {
+  return [
+    ...source.modelCalls.flatMap(call => [
+      ...call.inputMessages.map(message => message.content), call.rawText,
+      ...call.rawToolCalls.map(tool => tool.arguments), call.normalizedOutput,
+    ]),
+    ...source.toolEvents.flatMap(event => [event.request, event.result]),
+  ];
+}
+
+function projectField(field: EvidenceField): SelectedEvidenceField {
+  if (field.status === 'gap') return field;
+  const inline = field.value !== undefined && Buffer.byteLength(field.value, 'utf8') === field.byteLength && field.byteLength <= MAX_TEXT;
+  return { status: 'available', locator: field.locator, byteLength: field.byteLength,
+    truncated: !inline, ...(inline ? { value: field.value } : {}) };
+}
+
+function projectSource(source: SourceEvidence): SelectedSourceEvidence {
+  return { version: 2,
+    modelCalls: [...source.modelCalls].sort((a, b) => a.sequence - b.sequence).map(call => ({
+      id: call.id, turnId: call.turnId, sequence: call.sequence, modelId: call.modelId,
+      inputMessages: call.inputMessages.map(message => ({ role: message.role, content: projectField(message.content) })),
+      rawText: projectField(call.rawText),
+      rawToolCalls: call.rawToolCalls.map(tool => ({ id: tool.id, name: tool.name, arguments: projectField(tool.arguments) })),
+      normalizedOutput: projectField(call.normalizedOutput),
+    })),
+    toolEvents: [...source.toolEvents].sort((a, b) => a.sequence - b.sequence).map(event => ({
+      id: event.id, modelCallId: event.modelCallId, sequence: event.sequence, name: event.name,
+      request: projectField(event.request), result: projectField(event.result), outcome: event.outcome,
+    })),
+    approvedFacts: source.approvedFacts,
+  };
+}
+
 export async function headlessEvalResult(command: HeadlessEvalResultCommand, dependencies: HeadlessEvalResultDependencies): Promise<HeadlessEvalResult> {
   const { selection } = command;
   if (!ID.test(command.suiteId) || !ID.test(command.runId) ||
-    selection && (!ID.test(selection.caseId) || selection.attempt !== 1 || !ID.test(selection.assertionId))) {
+    selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || !ID.test(selection.assertionId)) ||
+    command.field && (!selection || !ID.test(command.field.locator) || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
     return { status: 'blocked', reason: 'invalid-input' };
   }
   let read;
@@ -53,12 +90,36 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   const assertion = evidence.assertions.find(item => item.id === selection.assertionId);
   if (!assertion || evidence.assertions.length !== 1) return { status: 'blocked', reason: 'selection-mismatch' };
   if (evidence.outcome !== 'failed' || assertion.outcome !== 'failed') return { status: 'blocked', reason: 'non-failed-assertion' };
+  const source = evidence.sourceEvidence;
+  if (source && (source.version !== 2 || source.assertionId !== selection.assertionId)) {
+    return { status: 'blocked', reason: 'selection-mismatch' };
+  }
+  if (command.field) {
+    const matching = source && fieldsOf(source).filter(field => field.status === 'available' && field.locator === command.field!.locator);
+    if (!matching || matching.length !== 1 || matching[0]?.status !== 'available' || command.field.offset >= matching[0].byteLength ||
+      !dependencies.reader.readField) return { status: 'blocked', reason: 'selection-mismatch' };
+    let range;
+    try { range = await dependencies.reader.readField(command.suiteId, command.runId, selection, command.field.locator,
+      command.field.offset, MAX_FIELD_BYTES); }
+    catch { return { status: 'blocked', reason: 'unavailable' }; }
+    if (range.status === 'blocked') return { status: 'blocked', reason: range.reason === 'not-found' ? 'missing-artifact' : 'unavailable' };
+    const value = range.value;
+    const next = command.field.offset + value.bytes.length;
+    if (value.locator !== command.field.locator || value.offset !== command.field.offset || value.byteLength !== matching[0].byteLength ||
+      value.bytes.length < 1 || value.bytes.length > MAX_FIELD_BYTES ||
+      value.nextOffset !== (next === value.byteLength ? null : next) || next > value.byteLength) {
+      return { status: 'blocked', reason: 'corrupt-artifact' };
+    }
+    return { status: 'ready', summary, field: { locator: value.locator, offset: value.offset, byteLength: value.byteLength,
+      bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
+  }
   const failure = {
     caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id, kind: assertion.kind,
     actual: clipped(assertion.actual), expected: clipped(assertion.expected),
     diagnostics: assertion.diagnostics.slice(0, MAX_DIAGNOSTICS).map(clipped),
     ...(artifactPath ? { artifactPath } : {}),
     truncated: assertion.actual.length > MAX_TEXT || assertion.expected.length > MAX_TEXT || assertion.diagnostics.length > MAX_DIAGNOSTICS || assertion.diagnostics.some(item => item.length > MAX_TEXT),
+    source: source ? projectSource(source) : { status: 'gap' as const, reason: 'not-captured' as const },
   };
   const result = { status: 'ready' as const, summary, failure };
   return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };

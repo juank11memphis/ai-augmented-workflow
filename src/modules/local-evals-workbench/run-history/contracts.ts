@@ -28,6 +28,31 @@ export type AssertionEvidence = {
   readonly diagnostics: readonly string[]; readonly turnIds: readonly string[]; readonly toolIds: readonly string[];
   readonly judgeModel?: string;
 };
+export type EvidenceGap = 'not-captured' | 'incomplete' | 'redacted' | 'capture-failed';
+export type EvidenceField =
+  | { readonly status: 'available'; readonly locator: string; readonly byteLength: number; readonly value?: string }
+  | { readonly status: 'gap'; readonly reason: EvidenceGap };
+export type ModelCallEvidence = {
+  readonly id: string; readonly turnId: string; readonly sequence: number; readonly modelId: string;
+  readonly inputMessages: readonly { readonly role: 'system' | 'user' | 'assistant' | 'tool'; readonly content: EvidenceField }[];
+  readonly rawText: EvidenceField;
+  readonly rawToolCalls: readonly { readonly id: string; readonly name: string; readonly arguments: EvidenceField }[];
+  readonly normalizedOutput: EvidenceField;
+};
+export type DeliveredToolEvidence = {
+  readonly id: string; readonly modelCallId: string; readonly sequence: number; readonly name: string;
+  readonly request: EvidenceField; readonly result: EvidenceField;
+  readonly outcome: 'result' | 'error' | 'unexpected-response';
+};
+export type SourceEvidence = {
+  readonly version: 2; readonly assertionId: string;
+  readonly modelCalls: readonly ModelCallEvidence[]; readonly toolEvents: readonly DeliveredToolEvidence[];
+  readonly approvedFacts: readonly { readonly modelCallId: string; readonly factId: string; readonly provenance: string }[];
+};
+export type EvidenceFieldRange = {
+  readonly locator: string; readonly offset: number; readonly byteLength: number;
+  readonly bytes: Uint8Array; readonly nextOffset: number | null;
+};
 export type TurnEvidence = { readonly id: string; readonly role: 'user' | 'assistant' | 'system' | 'tool'; readonly content: string };
 export type ToolEvidence = { readonly id: string; readonly name: string; readonly arguments: string; readonly result: string;
   readonly turnId?: string; readonly position?: number; readonly outcome?: 'result' | 'error' | 'unexpected-response' };
@@ -37,6 +62,7 @@ export type Attempt = {
   readonly calls: number | null; readonly cost: number | null; readonly output: string;
   readonly truncated: boolean; readonly diagnostics: readonly string[]; readonly turns: readonly TurnEvidence[];
   readonly tools: readonly ToolEvidence[]; readonly assertions: readonly AssertionEvidence[];
+  readonly sourceEvidence?: SourceEvidence;
   /** Repo-relative sources for a repo-aware reviewer; saved outputs and check results are above. */
   readonly review?: { readonly runPath: string; readonly suitePath: string | null; readonly targetPath: string | null; readonly runnerPath: string | null;
     readonly inputPaths: readonly string[]; readonly omittedInputPathCount: number; readonly context: 'current-repo-files' };
