@@ -1,5 +1,5 @@
 {
-  "templateVersion": "227",
+  "templateVersion": "228",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -324,17 +324,17 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Uses saved suite defaults for full-suite authoring previews and limits temporary model choices to one case."
+        "Explains independent test-case overrides, inheritance reset, required saved suite defaults, and unavailable-choice recovery."
       ]
     },
     "skills/agent-guided-evals/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory shared Codex and Claude Code guidance for sequential troubleshooting of one Sibu eval case or a full suite.",
       "changes": [
-        "Uses saved suite defaults for full runs, blocks missing or unavailable choices, and confines temporary model choices to one case."
+        "Guides explicit case override set/reset and unavailable-choice recovery with truthful per-case run results."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "6",
+      "version": "7",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Documents optional tested and Judge suite defaults, saved-choice runs, and blocked or temporary one-case choices."
+        "Documents case model fields alongside required suite defaults, inheritance reset, ordered mixed-model runs, and actual per-case evidence."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {

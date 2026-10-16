@@ -15,6 +15,12 @@ test('agent-guided skill uses the JSON CLI for one case or the full suite and bo
   assert.match(skill, /temporary `--model <model_id>` and `--judge <model_id>` only when applicable/);
   assert.match(skill, /missing or unavailable required tested\/Judge suite default blocks the run/);
   assert.match(skill, /One-case temporary choices never persist or become full-suite overrides/);
+  assert.match(skill, /--case <case_id> --role <tested\|judge> --token <choiceToken> --set <model_id>/);
+  assert.match(skill, /reset just that role to inheritance/);
+  assert.match(skill, /suite tested default X.*eight on X and one on Y/);
+  assert.match(skill, /unavailable case override blocks before any paid call/);
+  assert.match(skill, /\*\*Replace\*\*.*\*\*Inherit\*\*/);
+  assert.match(skill, /actual per-case tested\/Judge model/);
   assert.match(skill, /cases\[\]\.caseId.*attempts\[\]\.number/);
   assert.match(skill, /first unresolved failed assertion in stable suite\/case\/check order from `failedAssertionIds` with `locatorStatus: available`/);
   assert.match(skill, /source run ID and `\(caseId, attempt number, assertionId\)`/);
@@ -60,11 +66,11 @@ test('agent-guided skill and current-version sync metadata ship together', () =>
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-  assert.equal(manifest.templateVersion, '227');
-  assert.equal(entry?.version, '3');
+  assert.equal(manifest.templateVersion, '228');
+  assert.equal(entry?.version, '4');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
-    'Uses saved suite defaults for full runs, blocks missing or unavailable choices, and confines temporary model choices to one case.',
+    'Guides explicit case override set/reset and unavailable-choice recovery with truthful per-case run results.',
   ]);
 });
 
@@ -105,10 +111,10 @@ test('eval troubleshooting route stays distinct from mandatory authoring and bro
 
 test('unchanged AGENTS route metadata remains version 56 while the shared skill advances', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '227');
+  assert.equal(manifest.templateVersion, '228');
   assert.equal(manifest.templates['AGENTS.md']?.version, '56');
   assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
     'Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate.',
   ]);
-  assert.equal(manifest.templates[path]?.version, '3');
+  assert.equal(manifest.templates[path]?.version, '4');
 });

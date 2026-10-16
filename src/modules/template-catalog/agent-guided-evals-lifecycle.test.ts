@@ -63,7 +63,7 @@ for (const host of hosts) {
     const { rootPath, state } = await initialize(t, host);
     assertSuiteGuidance(rootPath);
     assert.equal(state.managedFiles[target]?.template, template);
-    assert.equal(state.managedFiles[target]?.templateVersion, '3');
+    assert.equal(state.managedFiles[target]?.templateVersion, '4');
     assert.equal(preview(rootPath, state).status, 'up-to-date');
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });
@@ -76,13 +76,13 @@ for (const host of hosts) {
     assert.equal(preview(rootPath, state).status, 'update-available');
     state = apply(rootPath, state, 'apply-update');
     assertSuiteGuidance(rootPath);
-    assert.equal(state.managedFiles[target]?.templateVersion, '3');
+    assert.equal(state.managedFiles[target]?.templateVersion, '4');
     fs.unlinkSync(path.join(rootPath, target));
     delete state.managedFiles[target];
     assert.equal(preview(rootPath, state).status, 'new-template');
     state = apply(rootPath, state, 'apply-update');
     assertSuiteGuidance(rootPath);
-    assert.equal(state.managedFiles[target]?.templateVersion, '3');
+    assert.equal(state.managedFiles[target]?.templateVersion, '4');
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });
 
@@ -96,7 +96,7 @@ for (const host of hosts) {
     assert.equal(fs.readFileSync(path.join(rootPath, target), 'utf8'), custom);
     assert.equal(state.managedFiles[target]?.status, 'customized');
     assert.equal(state.managedFiles[target]?.templateVersion, '0');
-    assert.equal(state.managedFiles[target]?.lastReviewedTemplateVersion, '3');
+    assert.equal(state.managedFiles[target]?.lastReviewedTemplateVersion, '4');
     assert.equal(state.managedFiles[target]?.sha256, sha256(custom));
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });

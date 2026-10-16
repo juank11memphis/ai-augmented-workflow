@@ -98,6 +98,15 @@ test('distributed authoring guidance distinguishes saved full-suite and temporar
   assert.match(reference, /A required unset or unavailable suite default blocks preview\/run/);
   assert.match(reference, /sibu evals run <suite-id>` reuses valid saved choices/);
   assert.match(reference, /--case <case-id>` with `--model`/);
+  assert.match(skill, /case-level `testedModel` or `judgeModel` only for an intentional override/);
+  assert.match(reference, /Each test case may independently save `testedModel` and `judgeModel`/);
+  assert.match(reference, /required suite default still must exist even when every selected case overrides it/);
+  assert.match(reference, /explicitly \*\*Replace\*\* it.*\*\*Inherit\*\*/);
+  assert.match(reference, /nine cases with suite tested default X.*eight and Y for one/);
+  assert.match(reference, /actual tested and applicable Judge model for each case/);
+  assert.equal(validateEvalSuiteContract({ ...example(), testCases: [
+    { ...(example().testCases as Record<string, unknown>[])[0], testedModel: 'fake/alternate' },
+  ] }).status, 'valid');
   assert.match(script, /values\.has\('--model'\).*values\.has\('--judge'\).*values\.has\('--case'\)/);
   assert.match(script, /runOnly:/);
   assert.doesNotMatch(script, /\/api\/eval-runs\/start|\/api\/eval-runs\/run/);
