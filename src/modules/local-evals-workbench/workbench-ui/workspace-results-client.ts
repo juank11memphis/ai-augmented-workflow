@@ -176,7 +176,6 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       const metrics = [];
       if (run.finishedAt != null && run.createdAt != null) metrics.push('Elapsed ' + Math.max(0, (run.finishedAt - run.createdAt) / 1000).toFixed(1) + 's');
       if (run.cost != null) metrics.push('Cost ' + run.cost);
-      if (run.testedModel) metrics.unshift('Model: ' + run.testedModel);
       one('[data-run-metrics]').textContent = metrics.join(' · ');
     } else if (acceptedRunId) status('Run queued. Loading saved progress…');
     else if (suite) status('0/' + suite.testCases.length + ' complete');
