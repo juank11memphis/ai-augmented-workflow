@@ -35,6 +35,10 @@ export class ArtifactPaths {
     if (!Number.isSafeInteger(number) || number < 1 || number > 20) throw new ArtifactFault('unsafe-path');
     return `${component(suiteId)}/${component(runId)}/cases/${component(caseId)}/${number}.json`;
   }
+  source(suiteId: string, runId: string, caseId: string, number: number, recordId: string): string {
+    this.ids(recordId);
+    return `${this.attempt(suiteId, runId, caseId, number).slice(0, -5)}/source/${component(recordId)}.json`;
+  }
   index(suiteId: string): string { this.ids(suiteId); return `${component(suiteId)}/index.json`; }
   private ids(...ids: string[]) { if (!ids.every(logicalId)) throw new ArtifactFault('unsafe-path'); }
 }

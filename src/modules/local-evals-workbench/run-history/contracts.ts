@@ -53,6 +53,14 @@ export type EvidenceFieldRange = {
   readonly locator: string; readonly offset: number; readonly byteLength: number;
   readonly bytes: Uint8Array; readonly nextOffset: number | null;
 };
+export type SourceReference = { readonly id: string; readonly kind: 'model-call' | 'tool-delivery'; readonly status: 'complete';
+  readonly checkId: string; readonly turnId: string; readonly sequence: number; readonly byteLength: number };
+export type SourceCapture = { readonly records: readonly SourceReference[];
+  readonly gaps: readonly { readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string }[] };
+export type StoredSourceRecord = { readonly version: 1; readonly suiteId: string; readonly runId: string;
+  readonly caseId: string; readonly attempt: number; readonly sequence: number; readonly status: 'complete'; readonly byteLength: number;
+  readonly record: import('../run-execution/contracts.js').SourceRecord };
+export type SourceRecordWrite = Omit<StoredSourceRecord, 'status' | 'byteLength'>;
 export type TurnEvidence = { readonly id: string; readonly role: 'user' | 'assistant' | 'system' | 'tool'; readonly content: string };
 export type ToolEvidence = { readonly id: string; readonly name: string; readonly arguments: string; readonly result: string;
   readonly turnId?: string; readonly position?: number; readonly outcome?: 'result' | 'error' | 'unexpected-response' };
@@ -63,6 +71,7 @@ export type Attempt = {
   readonly truncated: boolean; readonly diagnostics: readonly string[]; readonly turns: readonly TurnEvidence[];
   readonly tools: readonly ToolEvidence[]; readonly assertions: readonly AssertionEvidence[];
   readonly sourceEvidence?: SourceEvidence;
+  readonly sourceCapture?: SourceCapture;
   /** Repo-relative sources for a repo-aware reviewer; saved outputs and check results are above. */
   readonly review?: { readonly runPath: string; readonly suitePath: string | null; readonly targetPath: string | null; readonly runnerPath: string | null;
     readonly inputPaths: readonly string[]; readonly omittedInputPathCount: number; readonly context: 'current-repo-files' };
@@ -76,11 +85,14 @@ export interface ArtifactSafetyPort { check(relativePaths?: readonly string[]): 
 export interface ArtifactReaderPort {
   list(suiteId: string, limit: number): Promise<Outcome<readonly HistoryEntry[]>>;
   get(suiteId: string, runId: string, selection?: Selection): Promise<Outcome<RunDetail>>;
+  sourceRecord?(suiteId: string, runId: string, selection: Required<Selection>, recordId: string): Promise<Outcome<StoredSourceRecord>>;
+  sourceFieldRange?(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number): Promise<Outcome<EvidenceFieldRange>>;
 }
 export interface ArtifactStorePort {
   create(configuration: RunConfiguration): Promise<Outcome<Manifest>>;
   start(suiteId: string, runId: string): Promise<Outcome<Manifest>>;
   append(suiteId: string, runId: string, attempt: Attempt): Promise<Outcome<Manifest>>;
+  saveSourceRecord?(record: SourceRecordWrite): Promise<Outcome<SourceReference>>;
   finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[]): Promise<Outcome<Manifest>>;
 }
 export type ArtifactEvent = { readonly event: 'artifact-persisted' | 'artifact-blocked' | 'artifact-recovered' | 'artifact-read'; readonly reason?: Reason; readonly state?: RunState; readonly count?: number };

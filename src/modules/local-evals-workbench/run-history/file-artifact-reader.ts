@@ -1,4 +1,4 @@
-import type { ArtifactReaderPort, Attempt, HistoryEntry, Manifest, Outcome, Reason, RunDetail, Selection } from './contracts.js';
+import type { ArtifactReaderPort, Attempt, EvidenceFieldRange, HistoryEntry, Manifest, Outcome, Reason, RunDetail, Selection, StoredSourceRecord } from './contracts.js';
 import { ArtifactPaths, failure } from './artifact-paths.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
 import { InterruptedRunRecovery } from './interrupted-run-recovery.js';
@@ -6,6 +6,8 @@ import { attempt, integer, logicalId, manifest } from './validation.js';
 import { LIMITS } from './limits.js';
 import { compact, indexFrom, manifestCandidates } from './history-index.js';
 import { boundedArtifact } from './bounded-artifact.js';
+import { ArtifactSafetyAdapter } from './artifact-safety-adapter.js';
+import { sourceField, storedSourceRecord } from './source-artifact.js';
 export class FileArtifactReader implements ArtifactReaderPort {
   constructor(private readonly paths: ArtifactPaths, private readonly reader: BoundedArtifactReader,
     private readonly recovery?: InterruptedRunRecovery) {}
@@ -43,6 +45,45 @@ export class FileArtifactReader implements ArtifactReaderPort {
       return selected ? { status: 'ok', value: { summary: summary.value, evidence: selected, evidenceStatus: 'available',
         ...(evidence.review ? { reviewArtifactPath: `evals/artifacts/${this.paths.attempt(suiteId, runId, selection.caseId, selection.attempt)}` } : {}) }, warnings: summary.warnings } : unavailable('not-found');
     } catch (error) { return failure(error); }
+  }
+  async sourceRecord(suiteId: string, runId: string, selection: Required<Selection>, recordId: string): Promise<Outcome<StoredSourceRecord>> {
+    if (![suiteId, runId, selection.caseId, selection.assertionId, recordId].every(logicalId) || selection.attempt !== 1)
+      return { status: 'blocked', reason: 'invalid-input' };
+    const detail = await this.get(suiteId, runId, { caseId: selection.caseId, attempt: selection.attempt });
+    if (detail.status !== 'ok') return detail;
+    if (detail.value.evidenceStatus !== 'available') return { status: 'blocked', reason: 'not-found' };
+    const reference = detail.value.evidence?.sourceCapture?.records.find(item => item.id === recordId && item.checkId === selection.assertionId);
+    if (!reference) return { status: 'blocked', reason: 'not-found' };
+    if (detail.value.evidence?.outcome !== 'incomplete'
+      && !detail.value.evidence?.assertions.some(item => item.id === selection.assertionId)) return { status: 'blocked', reason: 'not-found' };
+    const relative = this.paths.source(suiteId, runId, selection.caseId, selection.attempt, recordId);
+    const safety = await new ArtifactSafetyAdapter(this.paths).check([relative]);
+    if (safety.status !== 'ok') return safety;
+    const stored = await this.reader.read(relative, LIMITS.sourceRecordBytes, storedSourceRecord, true);
+    if (stored.status !== 'ok') return stored;
+    const value = stored.value;
+    if (value.suiteId !== suiteId || value.runId !== runId || value.caseId !== selection.caseId || value.attempt !== selection.attempt
+      || value.record.id !== reference.id || value.record.checkId !== reference.checkId || value.record.turnId !== reference.turnId
+      || value.record.kind !== reference.kind || value.status !== reference.status || value.sequence !== reference.sequence
+      || Buffer.byteLength(JSON.stringify(value.record)) !== reference.byteLength) return { status: 'blocked', reason: 'corrupt' };
+    return stored;
+  }
+  async sourceFieldRange(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number): Promise<Outcome<EvidenceFieldRange>> {
+    if (!Number.isSafeInteger(offset) || offset < 0 || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/.test(locator))
+      return { status: 'blocked', reason: 'invalid-input' };
+    const split = locator.indexOf('~');
+    const stored = await this.sourceRecord(suiteId, runId, selection, locator.slice(0, split));
+    if (stored.status !== 'ok') return stored;
+    const record = stored.value.record;
+    const key = locator.slice(split + 1);
+    if (record.redactedFields?.some(field => key === field || key.startsWith(`${field}-`))) return { status: 'blocked', reason: 'unavailable' };
+    const field = sourceField(record, key);
+    if (field === undefined) return { status: 'blocked', reason: 'not-found' };
+    const bytes = Buffer.from(field, 'utf8');
+    if (offset > bytes.length) return { status: 'blocked', reason: 'invalid-input' };
+    const end = Math.min(bytes.length, offset + LIMITS.sourceFieldRangeBytes);
+    return { status: 'ok', value: { locator, offset, byteLength: bytes.length, bytes: bytes.subarray(offset, end),
+      nextOffset: end < bytes.length ? end : null } };
   }
   private async summary(suiteId: string, runId: string): Promise<Outcome<Manifest>> {
     const result = await this.reader.read(this.paths.run(suiteId, runId), LIMITS.manifestBytes, manifest); if (result.status !== 'ok') return result;
