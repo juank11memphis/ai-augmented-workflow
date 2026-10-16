@@ -53,6 +53,7 @@ export async function createHeadlessWorkbench(projectRoot: string) {
     }),
     result: (command: HeadlessEvalResultCommand) => headlessEvalResult(command, { reader: { get: (suiteId, runId, selection) =>
       history.get({ suiteId, runId, ...(selection ? { selection } : {}) }),
+      readSource: (suiteId, runId, selection) => history.readSource(suiteId, runId, selection),
       readField: (suiteId, runId, selection, locator, offset, limit) => history.readField(suiteId, runId, selection, locator, offset, limit) } }),
   };
 }

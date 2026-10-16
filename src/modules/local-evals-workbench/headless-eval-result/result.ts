@@ -16,6 +16,7 @@ export type SelectedSourceEvidence = {
     readonly request: SelectedEvidenceField; readonly result: SelectedEvidenceField;
     readonly outcome: 'result' | 'error' | 'unexpected-response' }[];
   readonly approvedFacts: readonly { readonly modelCallId: string; readonly factId: string; readonly provenance: string }[];
+  readonly gaps?: readonly { readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string }[];
 };
 
 export type HeadlessEvalSummary = {

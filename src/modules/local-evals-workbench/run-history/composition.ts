@@ -30,6 +30,8 @@ export function createRunHistory(projectRoot: string, dependencies: {
     }, logger }),
     list: (command: ListEvalRunsCommand) => listEvalRuns(command, { reader, logger }),
     get: (command: GetEvalRunCommand) => getEvalRun(command, { reader, logger }),
+    readSource: (suiteId: string, runId: string, selection: Required<import('./contracts.js').Selection>) =>
+      reader.selectedSource(suiteId, runId, selection),
     readField: (suiteId: string, runId: string, selection: Required<import('./contracts.js').Selection>, locator: string, offset: number, limit: number) =>
       reader.sourceFieldRange(suiteId, runId, selection, locator, offset, limit),
   };

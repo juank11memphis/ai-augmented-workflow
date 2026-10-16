@@ -70,9 +70,8 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         || !cases[caseIndex]?.assertions.some(assertion => assertion.id === event.record.checkId)
         || !current.turns.some(turn => turn.id === event.record.turnId)
         || current.sourceRecords.some(record => record.id === event.record.id)) throw new Error('source-record-link');
-      if (event.sequence !== current.sourceRecords.length) throw new Error('source-record-order');
       const saved = ports.store.saveSourceRecord ? await ports.store.saveSourceRecord({ version: 1, suiteId: suite.id, runId, caseId: current.caseId,
-        attempt: current.number, sequence: event.sequence, record: event.record }) : { status: 'blocked' as const, reason: 'unavailable' as const };
+        attempt: current.number, sequence: current.sourceRecords.length, record: event.record }) : { status: 'blocked' as const, reason: 'unavailable' as const };
       if (saved.status !== 'ok') {
         current.sourceGaps.push({ reason: 'capture-failed', recordId: event.record.id });
         addDiagnostic(current.diagnostics, 'source-evidence-incomplete');

@@ -48,6 +48,7 @@ export type SourceEvidence = {
   readonly version: 2; readonly assertionId: string;
   readonly modelCalls: readonly ModelCallEvidence[]; readonly toolEvents: readonly DeliveredToolEvidence[];
   readonly approvedFacts: readonly { readonly modelCallId: string; readonly factId: string; readonly provenance: string }[];
+  readonly gaps?: readonly { readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string }[];
 };
 export type EvidenceFieldRange = {
   readonly locator: string; readonly offset: number; readonly byteLength: number;

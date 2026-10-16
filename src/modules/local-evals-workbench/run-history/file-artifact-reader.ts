@@ -1,4 +1,4 @@
-import type { ArtifactReaderPort, Attempt, EvidenceFieldRange, HistoryEntry, Manifest, Outcome, Reason, RunDetail, Selection, StoredSourceRecord } from './contracts.js';
+import type { ArtifactReaderPort, Attempt, EvidenceFieldRange, HistoryEntry, Manifest, Outcome, Reason, RunDetail, Selection, SourceEvidence, StoredSourceRecord } from './contracts.js';
 import { ArtifactPaths, failure } from './artifact-paths.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
 import { InterruptedRunRecovery } from './interrupted-run-recovery.js';
@@ -8,6 +8,7 @@ import { compact, indexFrom, manifestCandidates } from './history-index.js';
 import { boundedArtifact } from './bounded-artifact.js';
 import { ArtifactSafetyAdapter } from './artifact-safety-adapter.js';
 import { sourceField, storedSourceRecord } from './source-artifact.js';
+import { selectedSourceEvidence } from './selected-source-evidence.js';
 export class FileArtifactReader implements ArtifactReaderPort {
   constructor(private readonly paths: ArtifactPaths, private readonly reader: BoundedArtifactReader,
     private readonly recovery?: InterruptedRunRecovery) {}
@@ -67,6 +68,23 @@ export class FileArtifactReader implements ArtifactReaderPort {
       || value.record.kind !== reference.kind || value.status !== reference.status || value.sequence !== reference.sequence
       || Buffer.byteLength(JSON.stringify(value.record)) !== reference.byteLength) return { status: 'blocked', reason: 'corrupt' };
     return stored;
+  }
+  async selectedSource(suiteId: string, runId: string, selection: Required<Selection>): Promise<Outcome<SourceEvidence | undefined>> {
+    const selected = await this.get(suiteId, runId, { caseId: selection.caseId, attempt: selection.attempt });
+    if (selected.status !== 'ok') return selected;
+    const attempt = selected.value.evidence;
+    if (!attempt || attempt.outcome !== 'failed'
+      || !attempt.assertions.some(item => item.id === selection.assertionId && item.outcome === 'failed'))
+      return { status: 'blocked', reason: 'not-found' };
+    const references = attempt.sourceCapture?.records.filter(item => item.checkId === selection.assertionId) ?? [];
+    const records: StoredSourceRecord[] = [];
+    for (const reference of references) {
+      const read = await this.sourceRecord(suiteId, runId, selection, reference.id);
+      if (read.status !== 'ok') return read;
+      records.push(read.value);
+    }
+    const source = selectedSourceEvidence(attempt, selection.assertionId, records);
+    return references.length > 0 && !source ? { status: 'blocked', reason: 'corrupt' } : { status: 'ok', value: source };
   }
   async sourceFieldRange(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number,
     limit = LIMITS.sourceFieldRangeBytes): Promise<Outcome<EvidenceFieldRange>> {

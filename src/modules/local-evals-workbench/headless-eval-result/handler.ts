@@ -49,6 +49,7 @@ function projectSource(source: SourceEvidence): SelectedSourceEvidence {
       request: projectField(event.request), result: projectField(event.result), outcome: event.outcome,
     })),
     approvedFacts: source.approvedFacts,
+    ...(source.gaps ? { gaps: source.gaps } : {}),
   };
 }
 
@@ -57,7 +58,8 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   if (!ID.test(command.suiteId) || !ID.test(command.runId) ||
     selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || !ID.test(selection.assertionId)) ||
     command.locatorOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0) ||
-    command.field && (!selection || !ID.test(command.field.locator) || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
+    command.field && (!selection || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/.test(command.field.locator)
+      || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
     return { status: 'blocked', reason: 'invalid-input' };
   }
   let read;
@@ -93,7 +95,16 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   const assertion = evidence.assertions.find(item => item.id === selection.assertionId);
   if (!assertion || evidence.assertions.length !== 1) return { status: 'blocked', reason: 'selection-mismatch' };
   if (evidence.outcome !== 'failed' || assertion.outcome !== 'failed') return { status: 'blocked', reason: 'non-failed-assertion' };
-  const source = evidence.sourceEvidence;
+  let source = evidence.sourceEvidence;
+  if (!source && dependencies.reader.readSource) {
+    let assembled;
+    try { assembled = await dependencies.reader.readSource(command.suiteId, command.runId, selection); }
+    catch { return { status: 'blocked', reason: 'unavailable' }; }
+    if (assembled.status === 'blocked') return { status: 'blocked', reason: assembled.reason === 'corrupt' ? 'corrupt-artifact'
+      : ['unsafe-path', 'not-ignored', 'tracked-artifacts', 'unverifiable-root'].includes(assembled.reason)
+        ? 'unsafe-artifact' : 'unavailable' };
+    source = assembled.value;
+  }
   if (source && (source.version !== 2 || source.assertionId !== selection.assertionId)) {
     return { status: 'blocked', reason: 'selection-mismatch' };
   }

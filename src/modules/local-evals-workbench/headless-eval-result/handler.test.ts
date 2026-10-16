@@ -159,7 +159,7 @@ test('old, incomplete, and runner-redacted evidence report typed gaps without re
 
 test('large retained UTF-8 field has byte-range continuation that reconstructs exact bytes', async () => {
   const raw = 'é'.repeat(700);
-  const largeSource: SourceEvidence = { ...source, modelCalls: [{ ...source.modelCalls[0]!, rawText: field('large-raw', raw) }] };
+  const largeSource: SourceEvidence = { ...source, modelCalls: [{ ...source.modelCalls[0]!, rawText: field('call-2~rawText', raw) }] };
   const detail = { summary, evidenceStatus: 'available' as const, evidence: { ...evidence, sourceEvidence: largeSource } };
   const bytes = Buffer.from(raw);
   const reader = { get: async () => ({ status: 'ok' as const, value: detail }),
@@ -170,11 +170,11 @@ test('large retained UTF-8 field has byte-range continuation that reconstructs e
   const selected = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, { reader });
   assert.equal(selected.status, 'ready');
   if (selected.status !== 'ready' || !('failure' in selected) || !('modelCalls' in selected.failure.source)) assert.fail('Expected source');
-  assert.deepEqual(selected.failure.source.modelCalls[0]?.rawText, { status: 'available', locator: 'large-raw', byteLength: 1400, truncated: true });
+  assert.deepEqual(selected.failure.source.modelCalls[0]?.rawText, { status: 'available', locator: 'call-2~rawText', byteLength: 1400, truncated: true });
   const chunks: Buffer[] = [];
   let offset = 0;
   while (offset < bytes.length) {
-    const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'large-raw', offset } }, { reader });
+    const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'call-2~rawText', offset } }, { reader });
     assert.equal(result.status, 'ready');
     if (result.status !== 'ready' || !('field' in result)) assert.fail('Expected range');
     chunks.push(Buffer.from(result.field.bytesBase64, 'base64'));
@@ -189,9 +189,11 @@ test('wrong assertion, field locator, or offset refuses cross-selection reads', 
     evidence: { ...evidence, sourceEvidence: source } } }), readField: async () => { fieldReads++; throw Error('must not read'); } };
   const wrong = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection: { ...selection, assertionId: 'other' } }, { reader });
   assert.deepEqual(wrong, { status: 'blocked', reason: 'selection-mismatch' });
-  const locator = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'not-linked', offset: 0 } }, { reader });
+  const locator = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'other~rawText', offset: 0 } }, { reader });
   assert.deepEqual(locator, { status: 'blocked', reason: 'selection-mismatch' });
-  const offset = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'raw-1', offset: -1 } }, { reader });
+  const malformed = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'not-linked', offset: 0 } }, { reader });
+  assert.deepEqual(malformed, { status: 'blocked', reason: 'invalid-input' });
+  const offset = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'call-1~rawText', offset: -1 } }, { reader });
   assert.deepEqual(offset, { status: 'blocked', reason: 'invalid-input' });
   assert.equal(fieldReads, 0);
 });
