@@ -6,7 +6,7 @@ Make every persisted failed assertion reachable from compact, ordered run and re
 
 ## Scope
 
-- Task ID: EFE-S03-T01; Milestone ID: EFE-S03-M1 (reachable compact failure index); Status: pending; Depends on: none.
+- Task ID: EFE-S03-T01; Milestone ID: EFE-S03-M1 (reachable compact failure index); Status: done; Depends on: none.
 - Story: `docs/features/eval-failure-evidence/epics/diagnose-eval-failures/stories/03-locate-and-classify-failures.md`. Sources: `docs/features/eval-failure-evidence/epics/diagnose-eval-failures/epic_brief.md`; `docs/features/eval-failure-evidence/brd.md` REQ-01/05/06/08 and AC-01/03/04/06; `docs/features/eval-failure-evidence/sdd.md` including `## Main interaction`; `docs/architecture.md` § Local Evals Workbench; selected `.agents/skills/command-pattern/SKILL.md`.
 - Story acceptance criteria: AC-01, AC-02; source decisions: full-run output is a compact index, locator order follows persisted case/attempt/assertion order, bounded pages expose an explicit continuation, unavailable failed-attempt evidence is marked rather than guessed. On-demand pointers: SDD `## Owning operations and interfaces` (`headless-eval-run` and `run-history` rows), `## Evidence and ordering contract`, `## Main interaction`, `## Quality strategy and planned verification`; BRD `## Requirements` REQ-01/05/06 and `## Business Acceptance Criteria` AC-01/03/04.
 - Applicable skills: `.agents/skills/clean-code/SKILL.md`, `.agents/skills/typescript/SKILL.md`, `.agents/skills/structured-logging/SKILL.md`, `.agents/skills/command-pattern/SKILL.md`.
