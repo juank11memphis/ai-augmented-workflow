@@ -67,14 +67,18 @@ describe('NodeLocalWorkbenchServerStarter', () => {
       assert.equal(described.code, 200);
       assert.deepEqual(described.payload.models, ['fake/available', 'fake/unavailable']);
 
-      const all = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
+      const all = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
       assert.equal(all.code, 200);
       assert.deepEqual(all.payload.selectedCaseIds, ['first', 'second']);
 
-      const one = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/unavailable' });
+      const one = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, runOnly: { testedModel: 'fake/unavailable' } });
       assert.equal(one.code, 200);
       assert.deepEqual(one.payload.selectedCaseIds, ['first']);
-      const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/unavailable' };
+      assert.equal((one.payload.caseSelections as { testedModel: string }[])[0]?.testedModel, 'fake/unavailable');
+      const fullSuiteRunOnly = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, runOnly: { testedModel: 'fake/unavailable' } });
+      assert.equal(fullSuiteRunOnly.code, 400);
+      assert.equal((fullSuiteRunOnly.payload.issue as { category: string }).category, 'invalid-request');
+      const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, runOnly: { testedModel: 'fake/unavailable' } };
       const legacyReview = await post('/api/eval-runs/start', { ...selection, review: { selectedCaseIds: ['first'] } });
       assert.equal(legacyReview.code, 400);
 

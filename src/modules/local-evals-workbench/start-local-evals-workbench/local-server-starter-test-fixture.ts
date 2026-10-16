@@ -15,6 +15,7 @@ import type { LocalEvalsWorkbenchLoggerPort } from './ports.js';
 
 const offlineSuite = {
   version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline checks', description: 'Synthetic fixture',
+  defaultTestedModel: 'fake/available',
   target: { id: 'target', kind: 'agent', path: 'src/target.mjs' },
   coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
   runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
