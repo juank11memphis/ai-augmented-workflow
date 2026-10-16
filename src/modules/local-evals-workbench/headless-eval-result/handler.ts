@@ -53,7 +53,16 @@ function projectField(field: EvidenceField): SelectedEvidenceField {
 }
 
 function projectSource(source: SourceEvidence): SelectedSourceEvidence {
+  const orderedEvents = [
+    ...source.modelCalls.map(call => ({ kind: 'model-call' as const, id: call.id, order: call.sequence })),
+    ...source.toolEvents.map(event => ({ kind: 'tool-delivery' as const, id: event.id, order: event.sequence })),
+  ].sort((a, b) => a.order - b.order);
+  const sequence: SelectedSourceEvidence['sequence'] = [
+    ...orderedEvents,
+    ...(source.judge ? [{ kind: 'judge-exchange' as const, id: source.assertionId }] : []),
+  ];
   return { version: 2,
+    sequence,
     modelCalls: [...source.modelCalls].sort((a, b) => a.sequence - b.sequence).map(call => ({
       id: call.id, turnId: call.turnId, sequence: call.sequence, modelId: call.modelId,
       inputMessages: call.inputMessages.map(message => ({ role: message.role, content: projectField(message.content) })),
@@ -132,7 +141,10 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     (grading.kind !== 'rubric' || grading.score !== null);
   const isGradingIssue = grading.kind === 'rubric' && assertion.outcome === 'incomplete' && assertion.score === null &&
     (assertion.gradingError !== undefined || source?.judge?.error !== undefined);
-  if (!isFailedAssertion && !isGradingIssue) return { status: 'blocked', reason: 'non-failed-assertion' };
+  const isExecutionIssue = !isGradingIssue && assertion.outcome === 'incomplete' && evidence.outcome === 'incomplete' &&
+    (manifest.state === 'partial' || manifest.state === 'error' || manifest.state === 'interrupted' ||
+      source?.toolEvents.some(event => event.outcome === 'error'));
+  if (!isFailedAssertion && !isGradingIssue && !isExecutionIssue) return { status: 'blocked', reason: 'non-failed-assertion' };
   if (command.field) {
     const matching = source && fieldsOf(source).filter(field => field.status === 'available' && field.locator === command.field!.locator);
     if (!matching || matching.length !== 1 || matching[0]?.status !== 'available' || command.field.offset >= matching[0].byteLength ||
@@ -157,6 +169,15 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     const result = { status: 'ready' as const, summary, gradingIssue: {
       caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id,
       grading, source: source ? projectSource(source) : { status: 'gap' as const, reason: 'not-captured' as const },
+    } };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+  }
+  if (isExecutionIssue) {
+    const code = source?.toolEvents.some(event => event.outcome === 'error') ? 'tool-error'
+      : manifest.state === 'error' ? 'runner-error' : 'incomplete-execution';
+    const result = { status: 'ready' as const, summary, executionIssue: {
+      caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id, state: manifest.state, code,
+      source: source ? projectSource(source) : { status: 'gap' as const, reason: 'not-captured' as const },
     } };
     return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
   }
