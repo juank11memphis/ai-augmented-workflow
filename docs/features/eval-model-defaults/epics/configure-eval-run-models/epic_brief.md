@@ -23,14 +23,14 @@ Engineers can set reusable suite model defaults, override them for individual ca
 
 ## Out of Scope
 
-- Automatic recommendations or model fallback, run-wide temporary overrides for full suites, same-case multi-model comparison, new cost controls, headless CI, or live-model evals as routine tests.
-- Automated UI tests or agent-performed UI review; the user owns post-implementation UI QA against the UX mockups.
+- Automatic recommendations or model fallback, run-wide temporary overrides for full suites, same-case multi-model comparison, call-count or price estimates in preview/model choices, new cost controls, headless CI, or live-model evals as routine tests.
+- Headless-browser UI tests and automated visual/accessibility or agent-performed UI review; deterministic Node UI contract tests remain allowed, and the user owns post-implementation QA against the UX mockups.
 
 ## User Stories and Sequence
 
 1. [EMD-S01 — Inspect case-first eval results](./stories/01-inspect-case-first-eval-results.md) — establishes clear per-case result presentation; dependencies: none.
-2. [EMD-S02 — Reuse suite model defaults](./stories/02-reuse-suite-model-defaults.md) — delivers persistent suite choices and one-case temporary choices; depends on EMD-S01.
-3. [EMD-S03 — Override models for individual cases](./stories/03-override-models-for-individual-cases.md) — delivers mixed-model full-suite runs and per-case evidence; depends on EMD-S02.
+2. [EMD-S02 — Reuse suite model defaults](./stories/02-reuse-suite-model-defaults.md) — delivers persistent suite choices, one-case temporary choices, and safe full-suite Judge applicability; depends on EMD-S01.
+3. [EMD-S03 — Override models for individual cases](./stories/03-override-models-for-individual-cases.md) — extends batching to mixed overridden tested models and per-case evidence; depends on EMD-S02.
 
 ## Feature Flags
 

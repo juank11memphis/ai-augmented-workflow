@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { readFile, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -8,7 +9,14 @@ import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader } from './
 import { offlineProject } from './run-execution/offline-project-fixture.js';
 import { NodeLocalWorkbenchServerStarter } from './start-local-evals-workbench/local-server-starter.js';
 
-const all = { suiteId: 'offline', scope: { type: 'all' as const }, model: 'fake' };
+const all = { suiteId: 'offline', scope: { type: 'all' as const } };
+
+async function setSavedTestedModel(project: Awaited<ReturnType<typeof offlineProject>>, model?: string): Promise<void> {
+  const suitePath = path.join(project.root, 'evals/offline.json');
+  const suite = JSON.parse(await readFile(suitePath, 'utf8')) as Record<string, unknown>;
+  if (model) suite.defaultTestedModel = model;
+  await writeFile(suitePath, JSON.stringify(suite));
+}
 
 test('headless discovery, description, awaited run and persisted result use workbench contracts without HTTP', async () => {
   const project = await offlineProject();
@@ -19,6 +27,7 @@ test('headless discovery, description, awaited run and persisted result use work
     return original.apply(this, args);
   };
   try {
+    await setSavedTestedModel(project, 'fake');
     const before = project.git('status', '--porcelain');
     const workbench = await createHeadlessWorkbench(project.root);
     const discovered = workbench.discover();
@@ -79,12 +88,14 @@ test('headless discovery, description, awaited run and persisted result use work
 test('headless blocks invalid suite/case/model/judge and unsafe artifact root without project edits', async () => {
   const project = await offlineProject();
   try {
+    await setSavedTestedModel(project, 'fake');
     const workbench = await createHeadlessWorkbench(project.root);
     const before = project.git('status', '--porcelain');
     assert.deepEqual(await workbench.run({ ...all, suiteId: '../offline' }), { status: 'blocked', reason: 'invalid-input' });
-    assert.deepEqual(await workbench.run({ ...all, scope: { type: 'test_case', testCaseId: 'absent' } }), { status: 'blocked', reason: 'case-unavailable' });
-    assert.deepEqual(await workbench.run({ ...all, model: 'unavailable' }), { status: 'blocked', reason: 'model-unavailable' });
-    assert.deepEqual(await workbench.run({ ...all, judgeModel: 'unavailable' }), { status: 'blocked', reason: 'judge-unavailable' });
+    assert.deepEqual(await workbench.run({ ...all, scope: { type: 'test_case', testCaseId: 'absent' } }),
+      { status: 'blocked', reason: 'case-unavailable', caseId: 'absent' });
+    assert.deepEqual(await workbench.run({ ...all, scope: { type: 'test_case', testCaseId: 'first' }, runOnly: { testedModel: 'unavailable' } }),
+      { status: 'blocked', reason: 'run-only-model-unavailable', caseId: 'first', role: 'tested', source: 'run-only' });
     assert.equal(project.git('status', '--porcelain'), before);
     await symlink(project.root, path.join(project.root, 'evals/artifacts'));
     const unsafe = await workbench.run(all);
@@ -94,9 +105,93 @@ test('headless blocks invalid suite/case/model/judge and unsafe artifact root wi
   } finally { await project.cleanup(); }
 });
 
+test('headless stops old suites without a saved default', async () => {
+  const project = await offlineProject();
+  try {
+    const suitePath = path.join(project.root, 'evals/offline.json');
+    const suite = JSON.parse(await readFile(suitePath, 'utf8')) as Record<string, unknown>;
+    delete suite.defaultTestedModel;
+    await writeFile(suitePath, JSON.stringify(suite));
+    const workbench = await createHeadlessWorkbench(project.root);
+    const result = await workbench.run(all);
+    assert.deepEqual(result, { status: 'blocked', reason: 'missing-suite-default', caseId: 'first', role: 'tested', source: 'suite-default' });
+    assert.equal(result.runId, undefined);
+  } finally { await project.cleanup(); }
+});
+
+test('headless case choice uses the shared save handler and blocked runs require explicit recovery', async () => {
+  const project = await offlineProject();
+  try {
+    await setSavedTestedModel(project, 'fake');
+    const suitePath = path.join(project.root, 'evals/offline.json');
+    const workbench = await createHeadlessWorkbench(project.root);
+    const described = await workbench.describe({ suiteId: 'offline', caseId: 'first' });
+    assert.equal(described.status, 'ready');
+    if (described.status !== 'ready') return;
+    const invokeChoice = (flag: '--set' | '--reset', token: string) => {
+      const args = [path.resolve('bin/sibu.js'), 'evals', 'choice', 'offline', '--case', 'first', '--role', 'tested', '--token', token,
+        flag, ...(flag === '--set' ? ['fake'] : [])];
+      const child = spawnSync(process.execPath, args, { cwd: project.root, encoding: 'utf8' });
+      assert.equal(child.status, 0, child.stderr || child.stdout);
+      return JSON.parse(child.stdout.trim()) as { status: string; caseId: string; role: string; token: string };
+    };
+    const set = invokeChoice('--set', described.choiceToken);
+    assert.equal(set.status, 'saved');
+    assert.equal(set.caseId, 'first');
+    assert.equal((JSON.parse(await readFile(suitePath, 'utf8')) as { testCases: { testedModel?: string }[] }).testCases[0]?.testedModel, 'fake');
+    const reset = invokeChoice('--reset', set.token);
+    assert.equal(reset.status, 'saved');
+    assert.equal(reset.caseId, 'first');
+    assert.equal((JSON.parse(await readFile(suitePath, 'utf8')) as { testCases: { testedModel?: string }[] }).testCases[0]?.testedModel, undefined);
+    const suite = JSON.parse(await readFile(suitePath, 'utf8')) as { testCases: { testedModel?: string }[] };
+    suite.testCases[0]!.testedModel = 'unavailable';
+    await writeFile(suitePath, JSON.stringify(suite));
+    const before = await readFile(suitePath, 'utf8');
+    const blocked = await workbench.run(all);
+    assert.equal(blocked.status, 'blocked');
+    assert.deepEqual({ reason: blocked.reason, caseId: blocked.caseId, role: blocked.role, source: blocked.source },
+      { reason: 'saved-model-unavailable', caseId: 'first', role: 'tested', source: 'case-override' });
+    assert.equal(blocked.runId, undefined);
+    assert.equal(await readFile(suitePath, 'utf8'), before);
+  } finally { await project.cleanup(); }
+});
+
+test('headless run and read return actual case labels, including old history fallback', async () => {
+  const project = await offlineProject();
+  try {
+    await setSavedTestedModel(project, 'fake');
+    const workbench = await createHeadlessWorkbench(project.root);
+    const before = await readFile(path.join(project.root, 'evals/offline.json'), 'utf8');
+    const preview = await workbench.describe({ suiteId: 'offline', caseId: 'first' });
+    assert.equal(preview.status, 'ready');
+    assert.equal(await readFile(path.join(project.root, 'evals/offline.json'), 'utf8'), before);
+    const run = await workbench.run({ suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake' });
+    assert.equal(run.status, 'completed');
+    assert.equal(run.cases?.[0]?.testedModel, 'fake');
+    assert.equal(run.cases?.[0]?.judgeModel, null);
+    assert.equal(await readFile(path.join(project.root, 'evals/offline.json'), 'utf8'), before);
+    assert.ok(run.runId);
+    const changedSuite = JSON.parse(before) as { defaultTestedModel: string };
+    changedSuite.defaultTestedModel = 'later-default';
+    await writeFile(path.join(project.root, 'evals/offline.json'), JSON.stringify(changedSuite));
+    const result = await workbench.result({ suiteId: 'offline', runId: run.runId });
+    assert.equal(result.status, 'ready');
+    if (result.status !== 'ready') return;
+    assert.deepEqual(result.summary.cases.map(item => [item.testedModel, item.judgeModel]), [['fake', null]]);
+    const manifestPath = path.join(project.root, 'evals/artifacts/offline', run.runId, 'run.json');
+    const old = JSON.parse(await readFile(manifestPath, 'utf8')) as { cases: { testedModel?: string; judgeModel?: string | null }[] };
+    delete old.cases[0]!.testedModel; delete old.cases[0]!.judgeModel;
+    await writeFile(manifestPath, JSON.stringify(old));
+    const legacy = await workbench.result({ suiteId: 'offline', runId: run.runId });
+    assert.equal(legacy.status, 'ready');
+    if (legacy.status === 'ready') assert.deepEqual(legacy.summary.cases.map(item => [item.testedModel, item.judgeModel]), [['fake', null]]);
+  } finally { await project.cleanup(); }
+});
+
 test('headless retains persisted interrupted run and pre-existing project edits', async () => {
   const project = await offlineProject();
   try {
+    await setSavedTestedModel(project, 'fake');
     const notes = path.join(project.root, 'src/notes.txt');
     await writeFile(notes, 'committed baseline\n');
     project.git('add', 'src/notes.txt');
@@ -122,6 +217,7 @@ test('headless retains persisted interrupted run and pre-existing project edits'
 test('headless reports unavailable required credentials before creating a run', async () => {
   const project = await offlineProject();
   try {
+    await setSavedTestedModel(project, 'fake');
     const suitePath = path.join(project.root, 'evals/offline.json');
     const suite = JSON.parse(await readFile(suitePath, 'utf8')) as { runner: { requiredEnvironment: string[] } };
     suite.runner.requiredEnvironment = ['SIBU_OFFLINE_TEST_MISSING_CREDENTIAL'];

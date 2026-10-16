@@ -115,6 +115,7 @@ test('restored failure remains immutable through approval and distinct confirmed
     assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'run.json'), 'utf8'), beforeManifest);
     const sourceAttempt = await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'cases/case/1.json'), 'utf8');
     const suite: NormalizedEvalSuite = { version: 2, kind: 'sibu-eval-suite', id: 'suite', name: 'Suite', description: 'Offline',
+      defaultTestedModel: 'synthetic',
       target: { id: 'target', kind: 'agent', path: 'prompts/agent.md' }, coverage: { categories: [], gaps: [] },
       runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
       testCases: [{ id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Check' } }], toolMocks: [],
@@ -125,8 +126,17 @@ test('restored failure remains immutable through approval and distinct confirmed
     const runPorts = { suites: { load: async () => suite }, runner, inputs: { resolve: async () => ({ status: 'ready' as const, value: suite.testCases }) },
       artifacts: { check: async () => ({ status: 'ready' as const, value: null }) }, store: history.store,
       scheduler: { schedule: ({ runId: scheduledId }: { runId: string }) => { scheduled.push(scheduledId); } } };
+    const missingDefault = await previewEvalRun({ suiteId: 'suite', scope: { type: 'all' } },
+      { ...runPorts, suites: { load: async () => ({ ...suite, defaultTestedModel: undefined }) } });
+    assert.equal(missingDefault.status, 'blocked');
+    if (missingDefault.status === 'blocked') assert.equal(missingDefault.reason, 'missing-suite-default');
+    const blockedStart = await startEvalRun({ suiteId: 'suite', scope: { type: 'all' } },
+      { ...runPorts, suites: { load: async () => ({ ...suite, defaultTestedModel: undefined }) } });
+    assert.equal(blockedStart.status, 'blocked');
+    if (blockedStart.status === 'blocked') assert.equal(blockedStart.reason, 'missing-suite-default');
+    assert.equal(scheduled.length, 0, 'missing default does not execute');
     for (const scope of [{ type: 'test_case' as const, testCaseId: 'case' }, { type: 'all' as const }]) {
-      const selection = { suiteId: 'suite', scope, model: 'synthetic', judgeModel: null };
+      const selection = { suiteId: 'suite', scope };
       const preview = await previewEvalRun(selection, runPorts);
       assert.equal(preview.status, 'ready');
       assert.equal(scheduled.length, scope.type === 'test_case' ? 0 : 1, 'preview never schedules');
@@ -143,7 +153,11 @@ test('restored failure remains immutable through approval and distinct confirmed
       assert.equal((await history.store.finalize('suite', started.runId, 'completed')).status, 'ok');
       const read = await history.get({ suiteId: 'suite', runId: started.runId });
       assert.equal(read.status, 'ok');
-      if (read.status === 'ok') assert.equal(read.value.summary.runId, started.runId);
+      if (read.status === 'ok') {
+        assert.equal(read.value.summary.runId, started.runId);
+        assert.deepEqual(read.value.summary.cases.map(({ testedModel, judgeModel }) => ({ testedModel, judgeModel })),
+          [{ testedModel: 'synthetic', judgeModel: null }]);
+      }
     }
     assert.equal(new Set(scheduled).size, 2);
     assert.equal(await fs.readFile(path.join(p.root, 'evals/artifacts/suite', runId, 'run.json'), 'utf8'), beforeManifest);

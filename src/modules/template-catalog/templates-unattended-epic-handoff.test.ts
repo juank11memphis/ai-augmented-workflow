@@ -76,7 +76,7 @@ describe('future packaged Epic handoff contract', () => {
 
   it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '226');
+  assert.equal(manifest.templateVersion, '228');
     assert.equal(manifest.templates[templatePath]?.version, '71');
     assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /overlapping uncommitted Task failures.*reviewed same-Task continuation/);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');

@@ -54,6 +54,7 @@ export async function executeCliCommand(command: SibuCliCommand): Promise<void> 
     case 'evals:suites':
     case 'evals:describe':
     case 'evals:run':
+    case 'evals:choice':
     case 'evals:result':
       await handleEvalsJsonCommand(command);
       return;

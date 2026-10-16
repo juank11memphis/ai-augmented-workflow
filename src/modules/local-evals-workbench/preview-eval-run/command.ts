@@ -1,2 +1,2 @@
-import type { RunSelectionCommand } from '../run-configuration.js';
-export type PreviewEvalRunCommand = RunSelectionCommand;
+import type { RunSetupCommand } from '../run-configuration.js';
+export type PreviewEvalRunCommand = RunSetupCommand;

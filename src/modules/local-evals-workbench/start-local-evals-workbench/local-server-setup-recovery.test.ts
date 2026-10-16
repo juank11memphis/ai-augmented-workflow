@@ -51,6 +51,7 @@ process.stdin.on('end', () => {
 
 type Scenario = {
   readonly mode: string;
+  readonly noSavedDefault?: boolean;
   readonly throwAtPreviewBoundary?: boolean;
   readonly requiredEnvironment?: readonly string[];
   readonly multiTurn?: boolean;
@@ -75,6 +76,8 @@ async function withWorkbench(scenario: Scenario, run: (client: {
     await writeFile(path.join(root, '.gitignore'), '/evals/artifacts/\n');
     const suite = {
       version: 2, kind: 'sibu-eval-suite', id: 'synthetic', name: 'Synthetic checks', description: 'Offline test',
+      ...(scenario.noSavedDefault ? {} : { defaultTestedModel: 'fake/target' }),
+      ...(scenario.rubric ? { defaultJudgeModel: 'fake/judge' } : {}),
       target: { id: 'target', kind: 'agent', path: 'src/target.mjs' },
       coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
       runner: { command: ['node', 'evals/runner.mjs', scenario.mode], requiredEnvironment: scenario.requiredEnvironment ?? [] },
@@ -133,7 +136,19 @@ function assertSafe(response: HttpResult, allowedName?: string): void {
   if (allowedName) assert.equal(response.payload.missingEnvironmentName, allowedName);
 }
 
-const selection = { suiteId: 'synthetic', scope: { type: 'all' }, model: 'fake/target' };
+const selection = { suiteId: 'synthetic', scope: { type: 'all' } };
+
+test('suite without a saved default blocks Preview and Start without queueing a run', async () => {
+  await withWorkbench({ mode: 'ready', noSavedDefault: true }, async ({ post, get }) => {
+    for (const route of ['/api/eval-runs/preview', '/api/eval-runs/start']) {
+      const response = await post(route, selection);
+      assertSafe(response);
+      assert.equal(response.payload.reason, 'missing-suite-default');
+    }
+    const history = await get('/api/eval-runs/history?suiteId=synthetic');
+    assert.deepEqual(history.payload.value, []);
+  });
+});
 
 test('local HTTP exposes only a validated, declared missing name and blocks Preview/Start', async () => {
   await withWorkbench({ mode: 'ready', requiredEnvironment: [MISSING_NAME] }, async ({ post, get }) => {
@@ -199,18 +214,18 @@ test('malformed model-check request stays safe when the terminal sink fails', as
 });
 
 for (const scenario of [
-  { name: 'no compatible models', setup: { mode: 'no-models' }, reason: 'model-unavailable' },
+  { name: 'no compatible models', setup: { mode: 'no-models' }, reason: 'saved-model-unavailable', describeReason: 'model-unavailable' },
   { name: 'runner exits early', setup: { mode: 'crash' }, reason: 'runner-exited' },
   { name: 'invalid runner protocol', setup: { mode: 'invalid' }, reason: 'runner-protocol-invalid' },
   { name: 'unsupported capability', setup: { mode: 'unsupported', multiTurn: true }, reason: 'capability-unsupported' },
-  { name: 'unavailable Judge Model', setup: { mode: 'no-judge', rubric: true }, reason: 'judge-unavailable' },
+  { name: 'unavailable Judge Model', setup: { mode: 'no-judge', rubric: true }, reason: 'saved-model-unavailable', describeReason: 'judge-unavailable' },
   { name: 'undeclared runner environment', setup: { mode: 'undeclared' }, reason: 'environment-undeclared' },
 ] as const) {
   test(`local HTTP keeps ${scenario.name} distinct and safe`, async () => {
     await withWorkbench(scenario.setup, async ({ post, get }) => {
       const description = await post('/api/eval-suites/describe', { suiteId: 'synthetic' });
       assertSafe(description);
-      assert.equal(description.payload.reason, scenario.reason);
+      assert.equal(description.payload.reason, 'describeReason' in scenario ? scenario.describeReason : scenario.reason);
       if (scenario.reason === 'environment-undeclared') {
         assert.equal(description.payload.undeclaredEnvironmentName, UNDECLARED_NAME);
         const issue = description.payload.issue as { explanation: string };

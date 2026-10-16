@@ -5,6 +5,9 @@ import type { ExecutionEvent, ExecutionSelection } from '../run-execution/contra
 import type { ArtifactStorePort, Manifest, Outcome, Attempt } from '../run-history/contracts.js';
 import { queued } from '../run-history/test-fixtures.js';
 import { evaluateOutputAssertions } from '../run-execution/output-assertions.js';
+import { fixture } from '../run-history/store-fixture.js';
+import { project } from '../run-history/test-project.js';
+import { FileArtifactReader } from '../run-history/file-artifact-reader.js';
 
 const testCase = { id: 'case', name: 'Case', turns: [{ role: 'user' as const, content: { type: 'inline' as const, text: 'hello' } }], toolMocks: [],
   assertions: [{ id: 'check', type: 'output-contains' as const, expected: 'actual' }], graders: [] };
@@ -48,6 +51,136 @@ test('starts before runner, checkpoints output, grades actual evidence and final
   assert.equal(h.attempts.at(-1)?.calls, null);
   assert.deepEqual(h.attempts.at(-1)?.review, { runPath: 'evals/artifacts/suite/run/run.json', suitePath: null, targetPath: 'src/target.mjs',
     runnerPath: 'evals/runner.mjs', inputPaths: [], omittedInputPathCount: 0, context: 'current-repo-files' });
+});
+
+test('ordered deterministic-rubric-deterministic batches retain one logical run and actual Judge evidence', async () => {
+  for (const order of [['first', 'rubric', 'last'], ['rubric', 'first', 'last']]) {
+    const cases = order.map(id => id === 'rubric' ? { ...testCase, id, graders: [{ id: 'quality', type: 'rubric' as const,
+      rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] } : { ...testCase, id });
+    const choices = cases.map(item => ({ caseId: item.id, testedModel: 'synthetic',
+      judgeModel: item.id === 'rubric' ? 'judge' : null }));
+    const requests: { ids: string[]; model: string; judge: string | null; runId: string }[] = [];
+    const h = harness([]);
+    h.runner.execute = async (batch, consume) => {
+      requests.push({ ids: batch.cases.map(item => item.id), model: batch.model, judge: batch.judgeModel ?? null, runId: batch.runId });
+      await consume({ type: 'run-started' });
+      for (const item of batch.cases) {
+        await consume({ type: 'case-started', caseId: item.id });
+        await consume({ type: 'turn-completed', caseId: item.id, turnId: `${item.id}-turn`, output: 'actual response' });
+        if (item.id === 'rubric') await consume({ type: 'grader-completed', caseId: item.id, attempt: 1,
+          checkId: 'quality', grader: 'rubric', passed: true, score: 0.9, threshold: 0.8,
+          judgeModel: batch.judgeModel ?? undefined, evidence: 'quality', diagnostics: [] });
+        await consume({ type: 'case-completed', caseId: item.id, status: 'completed' });
+      }
+      await consume({ type: 'run-completed', status: 'completed' });
+      return { status: 'completed' as const };
+    };
+    const result = await executeEvalRun({ ...selection, suite: { ...selection.suite, testCases: cases }, cases,
+      caseSelections: choices }, { ...h, evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now });
+    assert.equal(result.status, 'completed');
+    assert.deepEqual(requests.flatMap(item => item.ids), order);
+    assert.deepEqual(requests.map(item => item.judge), order[0] === 'rubric' ? ['judge', null] : [null, 'judge', null]);
+    assert.ok(requests.every(item => item.model === 'synthetic' && item.runId === 'run'));
+    assert.equal(h.writes.filter(item => item === 'start').length, 1);
+    assert.equal(h.writes.filter(item => item === 'finalize:completed').length, 1);
+    assert.deepEqual(h.attempts.filter(item => item.outcome !== 'incomplete').map(item => item.caseId), order);
+    assert.equal(h.attempts.find(item => item.caseId === 'rubric' && item.outcome === 'passed')?.assertions.find(item => item.id === 'quality')?.judgeModel, 'judge');
+  }
+});
+
+test('one nine-case run persists the executed tested and independent judge pairs', async () => {
+  const p = await project();
+  try {
+    const artifact = fixture(p.root);
+    const cases = Array.from({ length: 9 }, (_, index) => ({ ...testCase, id: `case-${index + 1}`,
+      graders: index === 2 || index === 3 ? [{ id: 'quality', type: 'rubric' as const,
+        rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] : [] }));
+    const choices = cases.map((item, index) => ({ caseId: item.id, testedModel: index === 8 ? 'model-y' : 'model-x',
+      judgeModel: index === 2 ? 'judge-a' : index === 3 ? 'judge-b' : null }));
+    const created = await artifact.store.create({ suiteId: 'suite', caseIds: cases.map(item => item.id), scope: 'all',
+      testedModel: 'model-x', judgeModel: null, caseSelections: choices });
+    assert.equal(created.status, 'ok');
+    if (created.status !== 'ok') return;
+    const runId = created.value.runId;
+    const requests: { runId: string; ids: string[]; testedModel: string; judgeModel: string | null }[] = [];
+    const runner = { async execute(batch: ExecutionSelection, consume: (event: ExecutionEvent) => Promise<void>) {
+      requests.push({ runId: batch.runId, ids: batch.cases.map(item => item.id),
+        testedModel: batch.model, judgeModel: batch.judgeModel ?? null });
+      for (const item of batch.cases) {
+        await consume({ type: 'case-started', caseId: item.id });
+        await consume({ type: 'turn-completed', caseId: item.id, turnId: `${item.id}-turn`, output: 'actual' });
+        if (item.graders.length) await consume({ type: 'grader-completed', caseId: item.id, attempt: 1, checkId: 'quality',
+          grader: 'rubric', passed: true, score: 0.9, threshold: 0.8, judgeModel: batch.judgeModel ?? undefined,
+          evidence: 'quality', diagnostics: [] });
+        await consume({ type: 'case-completed', caseId: item.id, status: 'completed' });
+      }
+      await consume({ type: 'run-completed', status: 'completed' });
+      return { status: 'completed' as const };
+    } };
+    const result = await executeEvalRun({ ...selection, runId, model: 'model-x', suite: { ...selection.suite, testCases: cases }, cases,
+      caseSelections: choices }, { runner, store: artifact.store, evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now });
+    assert.equal(result.status, 'completed');
+    assert.deepEqual(requests.map(item => item.ids), [
+      ['case-1', 'case-2'], ['case-3'], ['case-4'], ['case-5', 'case-6', 'case-7', 'case-8'], ['case-9'],
+    ]);
+    assert.ok(requests.every(item => item.runId === runId));
+    assert.deepEqual(requests.map(({ testedModel, judgeModel }) => ({ testedModel, judgeModel })), [
+      { testedModel: 'model-x', judgeModel: null }, { testedModel: 'model-x', judgeModel: 'judge-a' },
+      { testedModel: 'model-x', judgeModel: 'judge-b' }, { testedModel: 'model-x', judgeModel: null },
+      { testedModel: 'model-y', judgeModel: null },
+    ]);
+    const reader = new FileArtifactReader(artifact.paths, artifact.reader);
+    const detail = await reader.get('suite', runId, { caseId: 'case-4', attempt: 1 });
+    assert.equal(detail.status, 'ok');
+    if (detail.status !== 'ok') return;
+    assert.deepEqual(detail.value.summary.cases.map(({ caseId, testedModel, judgeModel }) => ({ caseId, testedModel, judgeModel })), choices);
+    assert.equal(detail.value.summary.state, 'completed');
+    assert.equal(detail.value.evidence?.assertions.find(item => item.id === 'quality')?.judgeModel, 'judge-b');
+  } finally { await p.cleanup(); }
+});
+
+test('interrupted or malformed middle batch never retries or dispatches the later case', async () => {
+  for (const failure of ['interrupted', 'malformed'] as const) {
+    const cases = ['first', 'rubric', 'last'].map(id => id === 'rubric' ? { ...testCase, id,
+      graders: [{ id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] } : { ...testCase, id });
+    const requests: string[] = [];
+    const h = harness([]);
+    h.runner.execute = async (batch, consume) => {
+      const id = batch.cases[0]!.id;
+      requests.push(id);
+      await consume({ type: 'case-started', caseId: id });
+      await consume({ type: 'turn-completed', caseId: id, turnId: 'turn', output: 'actual' });
+      if (id === 'rubric') {
+        if (failure === 'malformed') await consume({ type: 'case-completed', caseId: id, status: 'completed' });
+        return { status: 'interrupted' as const };
+      }
+      await consume({ type: 'case-completed', caseId: id, status: 'completed' });
+      await consume({ type: 'run-completed', status: 'completed' });
+      return { status: 'completed' as const };
+    };
+    const result = await executeEvalRun({ ...selection, suite: { ...selection.suite, testCases: cases }, cases,
+      caseSelections: cases.map(item => ({ caseId: item.id, testedModel: 'synthetic', judgeModel: item.id === 'rubric' ? 'judge' : null })) },
+    { ...h, clock: Date.now });
+    assert.deepEqual(requests, ['first', 'rubric']);
+    assert.equal(result.status, failure === 'malformed' ? 'partial' : 'interrupted');
+    assert.equal(h.writes.at(-1), `finalize:${result.status}`);
+    assert.equal(h.attempts.find(item => item.caseId === 'first' && item.outcome === 'passed')?.output, 'actual');
+    assert.equal(h.attempts.some(item => item.caseId === 'last'), false);
+  }
+});
+
+test('legacy homogeneous scope executes while mixed scope without plan blocks before runner', async () => {
+  const mixed = [testCase, { ...testCase, id: 'rubric', graders: [{ id: 'quality', type: 'rubric' as const,
+    rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] }];
+  const h = harness([]);
+  assert.deepEqual(await executeEvalRun({ ...selection, suite: { ...selection.suite, testCases: mixed }, cases: mixed },
+    { ...h, clock: Date.now }), { status: 'blocked', runId: 'run', reason: 'runner-protocol-invalid' });
+  assert.deepEqual(h.writes, []);
+  const legacy = harness([{ type: 'case-started', caseId: 'case' },
+    { type: 'turn-completed', caseId: 'case', turnId: 'turn', output: 'actual' },
+    { type: 'case-completed', caseId: 'case', status: 'completed' }, { type: 'run-completed', status: 'completed' }]);
+  assert.equal((await executeEvalRun(selection, { ...legacy, clock: Date.now })).status, 'completed');
+  assert.equal(legacy.writes.filter(item => item === 'runner').length, 1);
 });
 
 test('runner failure retains completed evidence and terminal state is partial', async () => {

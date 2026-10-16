@@ -57,7 +57,7 @@ describe('eval-authoring template registration', () => {
     const agentsMetadata = manifest.templates['AGENTS.md'];
     const agentsContents = readTemplate('AGENTS.md');
     assert.match(templateMetadata?.description ?? '', /Mandatory eval-authoring skill/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /validate emitted execute events/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /saved suite defaults/i);
     assert.match(agentsMetadata?.changes.join('\n') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/i);
     assert.match(agentsContents, /use `eval-authoring`/);
     assert.match(agentsContents, /Sibu eval suites, eval definitions, fixtures, assertions\/graders, rubrics/i);

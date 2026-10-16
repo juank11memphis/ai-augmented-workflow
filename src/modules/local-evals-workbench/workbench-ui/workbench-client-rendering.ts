@@ -46,8 +46,7 @@ export const WORKBENCH_CLIENT_RENDERING_SECTION = {
   }
 
   function modelOption(option) {
-    const label = option.label + (option.priceEstimate ? ' · ' + option.priceEstimate : '');
-    return new Option(label, option.id, option.id === state.selectedEvalRunModel, option.id === state.selectedEvalRunModel);
+    return new Option(option.label, option.id, option.id === state.selectedEvalRunModel, option.id === state.selectedEvalRunModel);
   }
 
   function renderSuiteNavigationState(selectedSuiteId) {

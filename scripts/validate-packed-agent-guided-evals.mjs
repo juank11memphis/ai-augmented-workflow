@@ -15,7 +15,8 @@ export async function validatePackedAgentGuidedEvals({ installedPackageRoot }) {
   const agents = readFileSync(agentsPath, 'utf8');
   assert.match(skill, /name: agent-guided-evals/);
   assert.match(skill, /sibu evals run <suite> --case <case_id>/);
-  assert.match(skill, /sibu evals run <suite> --model <model_id>` for all cases, without `--case`/);
+  assert.match(skill, /sibu evals run <suite>` for all cases, without `--case` or run-wide model flags/);
+  assert.match(skill, /A missing or unavailable required tested\/Judge suite default blocks the run/);
   assert.match(skill, /first unresolved failed assertion in stable suite\/case\/check order/);
   assert.match(skill, /Advance only if the fresh completed result demonstrates that assertion passing/);
   assert.match(skill, /if its evidence predates an intervening edit, run that case once/);

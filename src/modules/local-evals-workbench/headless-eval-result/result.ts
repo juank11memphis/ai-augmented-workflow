@@ -9,7 +9,8 @@ export type HeadlessEvalSummary = {
   readonly scope: 'all' | 'selected';
   readonly testedModel: string;
   readonly judgeModel: string | null;
-  readonly cases: readonly { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed'; readonly attempts: readonly LocatedAttempt[] }[];
+  readonly cases: readonly { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed';
+    readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[];
 };
 
 export type HeadlessEvalResult =

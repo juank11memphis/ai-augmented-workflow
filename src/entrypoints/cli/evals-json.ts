@@ -1,7 +1,7 @@
 import { createHeadlessWorkbench } from '../../modules/local-evals-workbench/index.js';
 import type { SibuCliCommand } from './command.js';
 
-type EvalCliCommand = Extract<SibuCliCommand, { type: 'evals:suites' | 'evals:describe' | 'evals:run' | 'evals:result' }>;
+type EvalCliCommand = Extract<SibuCliCommand, { type: 'evals:suites' | 'evals:describe' | 'evals:run' | 'evals:choice' | 'evals:result' }>;
 type Workbench = Awaited<ReturnType<typeof createHeadlessWorkbench>>;
 type Output = { readonly write: (line: string) => void; readonly setExitCode: (code: number) => void };
 
@@ -12,8 +12,16 @@ function invalidReason(command: EvalCliCommand): string | undefined {
   if (command.type === 'evals:describe' && command.caseId !== undefined && !SAFE_ID.test(command.caseId)) return 'invalid-case-id';
   if (command.type === 'evals:run') {
     if (command.scope.type === 'test_case' && !SAFE_ID.test(command.scope.testCaseId)) return 'invalid-case-id';
-    if (!command.model.trim()) return 'model-required';
+    if (command.model !== undefined && !command.model.trim()) return 'invalid-model';
     if (command.judgeModel !== undefined && command.judgeModel !== null && !command.judgeModel.trim()) return 'invalid-judge-model';
+  }
+  if (command.type === 'evals:choice') {
+    if (command.caseId !== undefined && !SAFE_ID.test(command.caseId)) return 'invalid-case-id';
+    if (command.role !== 'tested' && command.role !== 'judge') return 'invalid-role';
+    if (command.action !== 'set' && command.action !== 'reset') return 'invalid-action';
+    if (!/^[a-f0-9]{64}$/.test(command.expectedToken)) return 'invalid-token';
+    if (command.action === 'set' && !command.modelId) return 'model-required';
+    if (command.action === 'reset' && command.modelId !== undefined) return 'set-and-reset-conflict';
   }
   if (command.type === 'evals:result') {
     if (!SAFE_ID.test(command.runId)) return 'invalid-run-id';
@@ -24,9 +32,23 @@ function invalidReason(command: EvalCliCommand): string | undefined {
   return undefined;
 }
 
+function nextAction(result: { readonly status?: unknown; readonly reason?: unknown; readonly role?: unknown; readonly caseId?: unknown; readonly source?: unknown }): string | undefined {
+  if (result.status === 'conflict') return 'Describe the suite again, then explicitly retry the saved choice.';
+  if (result.status !== 'blocked') return undefined;
+  if (result.reason === 'missing-suite-default') return `Set the suite ${result.role} default with evals choice, then retry.`;
+  if (result.reason === 'saved-model-unavailable' && result.source === 'case-override')
+    return `Case ${result.caseId}, ${result.role}: Replace the override with evals choice --case ${result.caseId} --set, or Inherit with evals choice --case ${result.caseId} --reset. Describe for a current token first; then explicitly start again.`;
+  if (result.reason === 'saved-model-unavailable') return `Replace the suite ${result.role} default explicitly, then retry.`;
+  if (result.reason === 'run-only-scope-unsupported') return 'Remove the run-only model flags for a full-suite run.';
+  if (result.reason === 'run-only-model-unavailable' || result.reason === 'invalid-run-only-choice') return 'Choose a compatible this-run-only model for one case or omit the run-only flags.';
+  if (result.reason === 'model-unavailable') return 'Describe compatible models, then explicitly set another saved choice.';
+  return undefined;
+}
+
 function succeeded(operation: string, result: unknown): boolean {
   if (typeof result !== 'object' || result === null || !('status' in result)) return false;
   if (result.status === 'completed') return 'outcome' in result && result.outcome === 'passed';
+  if (result.status === 'saved') return true;
   if (result.status !== 'ready') return false;
   if (operation === 'result') return true;
   return true;
@@ -50,10 +72,14 @@ export async function handleEvalsJsonCommand(
     const workbench = await dependencies.create(dependencies.root);
     const result = command.type === 'evals:suites' ? workbench.discover()
       : command.type === 'evals:describe' ? await workbench.describe({ suiteId: command.suiteId, ...(command.caseId ? { caseId: command.caseId } : {}) })
-      : command.type === 'evals:run' ? await workbench.run({ suiteId: command.suiteId, scope: command.scope, model: command.model, judgeModel: command.judgeModel })
+      : command.type === 'evals:run' ? await workbench.run({ suiteId: command.suiteId, scope: command.scope,
+        ...(command.model !== undefined ? { model: command.model } : {}), ...(command.judgeModel !== undefined ? { judgeModel: command.judgeModel } : {}) })
+      : command.type === 'evals:choice' ? await workbench.changeChoice({ suiteId: command.suiteId, role: command.role,
+        action: command.action, expectedToken: command.expectedToken, ...(command.caseId !== undefined ? { caseId: command.caseId } : {}),
+        ...(command.modelId !== undefined ? { modelId: command.modelId } : {}) })
       : await workbench.result({ suiteId: command.suiteId, runId: command.runId,
         ...(command.caseId && command.assertionId ? { selection: { caseId: command.caseId, attempt: 1 as const, assertionId: command.assertionId } } : {}) });
-    dependencies.output.write(JSON.stringify({ schemaVersion: 1, operation, ...result }));
+    dependencies.output.write(JSON.stringify({ schemaVersion: 1, operation, ...result, ...('status' in result && nextAction(result) ? { nextAction: nextAction(result) } : {}) }));
     if (!succeeded(operation, result)) dependencies.output.setExitCode(1);
   } catch {
     dependencies.output.write(JSON.stringify({ schemaVersion: 1, operation, status: 'error', reason: 'unexpected-error' }));

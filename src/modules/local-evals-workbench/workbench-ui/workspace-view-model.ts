@@ -1,5 +1,6 @@
 import type { EvalSuiteDiscoveryResult, EvalSuiteSummary } from '../discover-conventional-eval-suites/result.js';
 import type { Manifest, HistoryEntry } from '../run-history/contracts.js';
+import { completedCaseResults, type CompletedCaseResult } from './workspace-result-data.js';
 
 export type WorkspaceState = 'empty' | 'ready' | 'queued' | 'running' | 'completed' | 'partial' | 'blocked' | 'interrupted' | 'error';
 export type WorkspaceCaseStatus = 'excluded' | 'not-run' | 'incomplete' | 'running' | 'passed' | 'failed';
@@ -19,6 +20,7 @@ export type WorkspaceViewModel = {
   readonly state: WorkspaceState;
   readonly statusText: string;
   readonly cases: readonly WorkspaceCase[];
+  readonly results: readonly CompletedCaseResult[];
   readonly passed: number;
   readonly failed: number;
   readonly unfinished: number;
@@ -64,7 +66,7 @@ export function createWorkspaceViewModel(input: {
   const total = selectedIds.length;
   const completed = total - unfinished;
   const durationMs = run?.finishedAt == null ? null : Math.max(0, run.finishedAt - run.createdAt);
-  return { suite, state, run, cases, passed, failed, unfinished, excluded, historical, history, discoveryNotice: discoveryNotice(input.discovery),
+  return { suite, state, run, cases, results: completedCaseResults(run, suite), passed, failed, unfinished, excluded, historical, history, discoveryNotice: discoveryNotice(input.discovery),
     durationMs, cost: run?.cost ?? null,
     progress: `${completed}/${total} complete`,
     statusText: state === 'ready' ? `${cases.length} test cases ready` : state === 'empty' ? 'No eval suites yet'

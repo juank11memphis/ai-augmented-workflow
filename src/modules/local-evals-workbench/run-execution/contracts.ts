@@ -1,11 +1,24 @@
 import type { NormalizedEvalSuite, NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
 
+export type OrderedRunPlanChoice = { readonly caseId: string; readonly testedModel: string; readonly judgeModel: string | null };
+export type OrderedRunPlan = readonly OrderedRunPlanChoice[];
+
+/** Reject incomplete or reordered selections before a logical run is created. */
+export function orderedRunPlan(caseIds: readonly string[], selections: readonly OrderedRunPlanChoice[]): OrderedRunPlan | undefined {
+  if (caseIds.length === 0 || selections.length !== caseIds.length || new Set(caseIds).size !== caseIds.length) return undefined;
+  if (!selections.every((choice, index) => choice.caseId === caseIds[index]
+    && typeof choice.testedModel === 'string' && choice.testedModel.length > 0
+    && (choice.judgeModel === null || typeof choice.judgeModel === 'string' && choice.judgeModel.length > 0))) return undefined;
+  return Object.freeze(selections.map(choice => Object.freeze({ ...choice })));
+}
+
 export type ExecutionSelection = {
   readonly runId: string;
   readonly suite: NormalizedEvalSuite;
   readonly cases: readonly NormalizedEvalTestCase[];
   readonly model: string;
   readonly judgeModel?: string | null;
+  readonly caseSelections?: OrderedRunPlan;
   readonly suitePath?: string;
   /** Accepted request reference propagated from the queued start, never persisted. */
   readonly reference?: string;

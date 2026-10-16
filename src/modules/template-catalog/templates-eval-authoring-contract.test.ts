@@ -86,7 +86,30 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.match(metadata?.changes.join(' ') ?? '', /workbench validator/);
+  assert.match(metadata?.changes.join(' ') ?? '', /suite defaults/);
+});
+
+test('distributed authoring guidance distinguishes saved full-suite and temporary one-case preview', () => {
+  const skill = readTemplate('skills/eval-authoring/SKILL.md');
+  const script = readTemplate('skills/eval-authoring/scripts/check-preview-contract.mjs');
+  assert.match(skill, /full-suite scope, use saved suite defaults/);
+  assert.match(skill, /Only a single-case check with `--case <case-id>` may add temporary/);
+  assert.match(reference, /Both fields are optional for authoring and old version-2 suites without them remain valid/);
+  assert.match(reference, /A required unset or unavailable suite default blocks preview\/run/);
+  assert.match(reference, /sibu evals run <suite-id>` reuses valid saved choices/);
+  assert.match(reference, /--case <case-id>` with `--model`/);
+  assert.match(skill, /case-level `testedModel` or `judgeModel` only for an intentional override/);
+  assert.match(reference, /Each test case may independently save `testedModel` and `judgeModel`/);
+  assert.match(reference, /required suite default still must exist even when every selected case overrides it/);
+  assert.match(reference, /explicitly \*\*Replace\*\* it.*\*\*Inherit\*\*/);
+  assert.match(reference, /nine cases with suite tested default X.*eight and Y for one/);
+  assert.match(reference, /actual tested and applicable Judge model for each case/);
+  assert.equal(validateEvalSuiteContract({ ...example(), testCases: [
+    { ...(example().testCases as Record<string, unknown>[])[0], testedModel: 'fake/alternate' },
+  ] }).status, 'valid');
+  assert.match(script, /values\.has\('--model'\).*values\.has\('--judge'\).*values\.has\('--case'\)/);
+  assert.match(script, /runOnly:/);
+  assert.doesNotMatch(script, /\/api\/eval-runs\/start|\/api\/eval-runs\/run/);
 });
 
 test('protocol examples and evidence define independent version, identity and ordering', () => {

@@ -1,7 +1,9 @@
 import type { PreviewEvalRunCommand } from './command.js';
 import type { PreviewEvalRunResult, PreviewStage } from './result.js';
 import type { ArtifactReadinessPort, CaseInputResolverPort, PreviewOutcomeLoggerPort, RunnerDescriptorPort, SuiteRuntimeRegistryPort } from './ports.js';
-import { compatibleDescription, hasRubric, requiredCapabilities, type RuntimeBlockReason } from '../runtime-description.js';
+import type { ModelChoiceSource, SelectionBlockReason } from '../resolve-eval-run-selection/result.js';
+import { logicalId } from '../run-history/validation.js';
+import { resolveRunSnapshot } from '../resolve-run-snapshot.js';
 import type { NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
 
 export type PreviewEvalRunDependencies = {
@@ -15,38 +17,30 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
   const started = Date.now();
   const log = (event: 'eval_preview_started' | 'eval_preview_blocked' | 'eval_preview_failed' | 'eval_preview_completed',
     stage: 'preview' | PreviewStage, outcome: 'started' | 'blocked' | 'failed' | 'completed',
-    reason?: RuntimeBlockReason | 'unknown-cause'): void => {
-    try { dependencies.logger?.record({ event, stage, outcome, reason, durationMs: Date.now() - started }); } catch { /* Noncritical sink. */ }
+    reason?: SelectionBlockReason | 'unknown-cause', caseId?: string, role?: 'tested' | 'judge'): void => {
+    try { dependencies.logger?.record({ event, stage, outcome, reason,
+      ...(caseId && logicalId(caseId) ? { caseId } : {}), ...(role ? { role } : {}), durationMs: Date.now() - started }); } catch { /* Noncritical sink. */ }
   };
   log('eval_preview_started', 'preview', 'started');
   let stage: PreviewStage = 'selection';
-  const blocked = (reason: RuntimeBlockReason): PreviewEvalRunResult => {
-    log('eval_preview_blocked', stage, 'blocked', reason);
-    return { status: 'blocked', stage, reason };
+  const blocked = (reason: SelectionBlockReason, caseId?: string, role?: 'tested' | 'judge', source?: ModelChoiceSource): PreviewEvalRunResult => {
+    log('eval_preview_blocked', stage, 'blocked', reason, caseId, role);
+    return { status: 'blocked', stage, reason, ...(caseId ? { caseId } : {}), ...(role ? { role } : {}), ...(source ? { source } : {}) };
   };
   try {
-    const suite = await dependencies.suites.load(command.suiteId);
-    if (!suite) return blocked('suite-unavailable');
-    let cases: readonly NormalizedEvalTestCase[];
-    if (command.scope.type === 'all') cases = suite.testCases;
-    else {
-      const selectedId = command.scope.testCaseId;
-      const selected = suite.testCases.find((testCase) => testCase.id === selectedId);
-      if (!selected) return blocked('case-unavailable');
-      cases = [selected];
+    const snapshot = await resolveRunSnapshot({ suiteId: command.suiteId, scope: command.scope,
+      ...(command.runOnly ? { runOnly: command.runOnly } : {}) }, {
+      suites: dependencies.suites,
+      runner: { describe: async suite => { stage = 'description'; return dependencies.runner.describe(suite); } },
+    });
+    if (snapshot.selection.status === 'blocked') {
+      if (snapshot.selection.reason === 'missing-suite-default' || snapshot.selection.reason === 'case-unavailable'
+        || snapshot.selection.reason === 'suite-unavailable' || snapshot.selection.reason.startsWith('run-only-')
+        || snapshot.selection.reason === 'invalid-run-only-choice') stage = 'selection';
+      return blocked(snapshot.selection.reason, snapshot.selection.caseId, snapshot.selection.role, snapshot.selection.source);
     }
-    if (!cases.length) return blocked('case-unavailable');
-    stage = 'description';
-    const description = await dependencies.runner.describe(suite);
-    if (description.status === 'blocked') return blocked(description.reason);
-    const compatibility = compatibleDescription(suite, description.value);
-    if (compatibility) return blocked(compatibility);
-    if (requiredCapabilities(cases).some((capability) => !description.value.capabilities.includes(capability))) return blocked('capability-unsupported');
-    if (!description.value.models.includes(command.model)) return blocked('model-unavailable');
-    const judgeRequired = hasRubric(cases);
-    const judge = judgeRequired ? command.judgeModel : null;
-    if (judgeRequired && (!judge || !description.value.judgeModels.includes(judge))) return blocked('judge-unavailable');
-    if (!judgeRequired && command.judgeModel) return blocked('judge-unavailable');
+    const suite = snapshot.suite!;
+    const cases: readonly NormalizedEvalTestCase[] = snapshot.selection.cases.map(selected => suite.testCases.find(item => item.id === selected.caseId)!);
     stage = 'artifact-readiness';
     const readiness = await dependencies.artifacts.check();
     if (readiness.status === 'blocked') return blocked(readiness.reason);
@@ -56,7 +50,9 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
     log('eval_preview_completed', 'preview', 'completed');
     return {
       status: 'ready', suiteId: suite.id, selectedCaseIds: cases.map((testCase) => testCase.id),
-      model: command.model, judgeModel: judge ?? null,
+      caseSelections: snapshot.selection.cases,
+      model: snapshot.selection.cases[0]!.testedModel, judgeModel: snapshot.selection.cases[0]!.judgeModel,
+      previewToken: snapshot.previewToken!,
     };
   } catch {
     log('eval_preview_failed', stage, 'failed', 'unknown-cause');

@@ -6,7 +6,7 @@ import { withOfflineWorkbench } from './local-server-starter-test-fixture.js';
 
 const reference = '123e4567-e89b-42d3-a456-426614174003';
 const secret = 'OPENAI_API_KEY=sk-synthetic-secret';
-const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/available' };
+const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' } };
 
 async function reviewedStart(post: Parameters<Parameters<typeof withOfflineWorkbench>[0]>[0]['post']) {
   return post('/api/eval-runs/start', selection, reference);

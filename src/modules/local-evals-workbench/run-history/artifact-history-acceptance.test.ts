@@ -40,6 +40,7 @@ it('reads version-1 input-unsafe manifest and attempt without migration or infer
     const manifestPath = path.join(p.root, 'evals/artifacts', a.paths.run('suite', id));
     const attemptPath = path.join(p.root, 'evals/artifacts', a.paths.attempt('suite', id, 'case', 1));
     const before = await Promise.all([readFile(manifestPath), readFile(attemptPath)]);
+    assert.equal(JSON.parse(before[0].toString()).cases[0].testedModel, undefined);
     const history = createRunHistory(p.root, { log: line => logs.push(line) });
     const detail = await history.get({ suiteId: 'suite', runId: id, selection: { caseId: 'case', attempt: 1 } });
     const listed = await history.list({ suiteId: 'suite' });
@@ -49,6 +50,8 @@ it('reads version-1 input-unsafe manifest and attempt without migration or infer
       assert.equal(detail.value.summary.state, 'blocked');
       assert.deepEqual(detail.value.summary.diagnostics, ['input-unsafe']);
       assert.deepEqual(detail.value.evidence?.diagnostics, ['input-unsafe']);
+      assert.deepEqual(detail.value.summary.cases.map(({ testedModel, judgeModel }) => ({ testedModel, judgeModel })),
+        [{ testedModel: config.testedModel, judgeModel: config.judgeModel }]);
     }
     assert.equal(listed.status === 'ok' && listed.value[0]?.state, 'blocked');
     assert.equal(listed.status === 'ok' && listed.value[0]?.outcome, 'incomplete');

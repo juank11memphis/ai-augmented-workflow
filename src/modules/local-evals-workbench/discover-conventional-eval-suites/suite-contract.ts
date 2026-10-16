@@ -3,6 +3,7 @@ import type {
   CoverageStatus, DeterministicAssertion, EvalGrader, FixtureContent, JsonValue, NormalizedEvalSuite,
   NormalizedEvalTestCase, SuiteContractResult, TargetKind, TextContent, ToolMock, TurnRole,
 } from './suite-contract-types.js';
+import { readOptionalCaseModelOverride, readOptionalSuiteModelDefault } from './suite-model-default.js';
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const ENVIRONMENT_NAME_PATTERN = /^[A-Z_][A-Z0-9_]*$/;
@@ -34,10 +35,12 @@ export function validateEvalSuiteContract(input: unknown, source = 'suite'): Sui
   if (sensitivePayloadDiagnostics.length > 0) return invalid(sensitivePayloadDiagnostics);
 
   const diagnostics: EvalSuiteDiscoveryDiagnostic[] = [];
-  rejectUnknownKeys(input, ['version', 'kind', 'id', 'name', 'description', 'target', 'coverage', 'runner', 'testCases'], source, diagnostics);
+  rejectUnknownKeys(input, ['version', 'kind', 'id', 'name', 'description', 'defaultTestedModel', 'defaultJudgeModel', 'target', 'coverage', 'runner', 'testCases'], source, diagnostics);
   const id = readId(input.id, `${source}:id`, diagnostics);
   const name = readText(input.name, `${source}:name`, diagnostics);
   const description = readText(input.description, `${source}:description`, diagnostics);
+  const defaultTestedModel = readOptionalSuiteModelDefault(input.defaultTestedModel, `${source}:defaultTestedModel`, diagnostics);
+  const defaultJudgeModel = readOptionalSuiteModelDefault(input.defaultJudgeModel, `${source}:defaultJudgeModel`, diagnostics);
   const target = readTarget(input.target, source, diagnostics);
   const coverage = readCoverage(input.coverage, source, diagnostics);
   const runner = readRunner(input.runner, source, diagnostics);
@@ -45,7 +48,9 @@ export function validateEvalSuiteContract(input: unknown, source = 'suite'): Sui
   checkUnique(testCases.map((testCase) => testCase.id), `${source}:testCases`, 'case-id-duplicate', diagnostics);
 
   if (!id || !name || !description || !target || !coverage || !runner || testCases.length === 0 || diagnostics.length > 0) return invalid(diagnostics);
-  return { status: 'valid', suite: { version: 2, kind: 'sibu-eval-suite', id, name, description, target, coverage, runner, testCases } };
+  return { status: 'valid', suite: { version: 2, kind: 'sibu-eval-suite', id, name, description,
+    ...(defaultTestedModel ? { defaultTestedModel } : {}), ...(defaultJudgeModel ? { defaultJudgeModel } : {}),
+    target, coverage, runner, testCases } };
 }
 
 function readTarget(value: unknown, source: string, diagnostics: EvalSuiteDiscoveryDiagnostic[]): NormalizedEvalSuite['target'] | undefined {
@@ -121,9 +126,11 @@ function readTestCases(value: unknown, source: string, diagnostics: EvalSuiteDis
   return value.flatMap((item, index) => {
     const location = `${source}:testCases[${index}]`;
     if (!isRecord(item)) { diagnostics.push(problem(location, 'test-case-invalid', 'Test case must be an object.')); return []; }
-    rejectUnknownKeys(item, ['id', 'name', 'turns', 'fixture', 'reference', 'toolMocks', 'assertions', 'graders'], location, diagnostics);
+    rejectUnknownKeys(item, ['id', 'name', 'testedModel', 'judgeModel', 'turns', 'fixture', 'reference', 'toolMocks', 'assertions', 'graders'], location, diagnostics);
     const id = readId(item.id, `${location}.id`, diagnostics);
     const name = item.name === undefined ? id : readText(item.name, `${location}.name`, diagnostics);
+    const testedModel = readOptionalCaseModelOverride(item.testedModel, `${location}.testedModel`, diagnostics);
+    const judgeModel = readOptionalCaseModelOverride(item.judgeModel, `${location}.judgeModel`, diagnostics);
     const turns = readTurns(item.turns, location, diagnostics);
     const fixture = item.fixture === undefined ? undefined : readFixtureContent(item.fixture, `${location}.fixture`, diagnostics);
     const reference = item.reference === undefined ? undefined : readTextContent(item.reference, `${location}.reference`, diagnostics);
@@ -132,7 +139,9 @@ function readTestCases(value: unknown, source: string, diagnostics: EvalSuiteDis
     const graders = readGraders(item.graders, location, diagnostics);
     checkUnique([...assertions, ...graders].map((entry) => entry.id), `${location}.checks`, 'check-id-duplicate', diagnostics);
     if (assertions.length + graders.length === 0) diagnostics.push(problem(`${location}.checks`, 'checks-empty', 'At least one assertion or grader is required.'));
-    return id && name && turns.length > 0 ? [{ id, name, turns, ...(fixture ? { fixture } : {}), ...(reference ? { reference } : {}), toolMocks, assertions, graders }] : [];
+    return id && name && turns.length > 0 ? [{ id, name,
+      ...(testedModel ? { testedModel } : {}), ...(judgeModel ? { judgeModel } : {}),
+      turns, ...(fixture ? { fixture } : {}), ...(reference ? { reference } : {}), toolMocks, assertions, graders }] : [];
   });
 }
 

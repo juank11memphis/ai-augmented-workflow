@@ -1,13 +1,170 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader, type InternalEvalSuiteDiscoveryResult, type NormalizedEvalSuite } from '../discover-conventional-eval-suites/index.js';
 import { NodeLocalWorkbenchServerStarter } from './local-server-starter.js';
+import { createWorkbenchDependencies } from '../workbench-composition.js';
+import { NodeProjectSuiteChoiceFile } from '../change-saved-model-choice/index.js';
+import { withOfflineWorkbench } from './local-server-starter-test-fixture.js';
+import { createRunHistory } from '../run-history/composition.js';
+import { createSelectedFailureReader } from '../repair-context/selected-evidence.js';
 
 describe('local server suite contract boundaries', () => {
+  it('passes ordered preview selections through HTTP without estimates or partial blocked choices', async () => {
+    const base = { ...definition().testCases[0]!, toolMocks: [] };
+    const rubric = { ...base, id: 'rubric', graders: [{ id: 'tone', type: 'rubric' as const,
+      rubric: { type: 'inline' as const, text: 'Kind' }, threshold: 0.8 }] };
+    const cases = [{ ...base, id: 'first' }, rubric, { ...base, id: 'last' }];
+    let current: NormalizedEvalSuite = { ...definition(), id: 'suite', defaultTestedModel: 'X', defaultJudgeModel: 'J',
+      runner: { command: ['node', 'evals/runners/runner.mjs'], requiredEnvironment: [] }, testCases: cases };
+    let readinessCalls = 0;
+    let inputCalls = 0;
+    const starter = new NodeLocalWorkbenchServerStarter(undefined, request => ({ ...createWorkbenchDependencies(request), preview: {
+      suites: { load: async () => current },
+      runner: { describe: async () => ({ status: 'ready', value: {
+        runnerId: 'fake', capabilities: ['single-turn', 'rubric'], models: ['X', 'Y'], judgeModels: ['J'], requiredEnvironment: [],
+      } }) },
+      artifacts: { check: async () => { readinessCalls++; return { status: 'ready', value: null }; } },
+      inputs: { resolve: async selected => { inputCalls++; return { status: 'ready', value: selected }; } },
+    } }));
+    const server = await starter.startServer({ projectRoot: '/repo', initialDiscoveryResult: discovery() });
+    const preview = async (body: unknown) => {
+      const response = await fetch(`${server.url}api/eval-runs/preview`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      return { code: response.status, payload: await response.json() as Record<string, unknown> };
+    };
+    try {
+      for (const ordered of [cases, [rubric, cases[0]!, cases[2]!]]) {
+        current = { ...current, testCases: ordered };
+        const { code, payload } = await preview({ suiteId: 'suite', scope: { type: 'all' } });
+        assert.equal(code, 200);
+        assert.deepEqual(payload.selectedCaseIds, ordered.map(item => item.id));
+        assert.deepEqual(payload.caseSelections, ordered.map(item => ({ caseId: item.id, testedModel: 'X', judgeModel: item.id === 'rubric' ? 'J' : null })));
+        assert.deepEqual([payload.model, payload.judgeModel], ['X', ordered[0]!.id === 'rubric' ? 'J' : null]);
+        assert.match(String(payload.previewToken), /^[a-f0-9]{64}$/);
+        assert.equal(/callCount|price|cost|estimate/i.test(JSON.stringify(payload)), false);
+      }
+      const temporary = await preview({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'last' }, runOnly: { testedModel: 'Y' } });
+      assert.equal(temporary.code, 200);
+      assert.deepEqual(temporary.payload.selectedCaseIds, ['last']);
+      assert.deepEqual(temporary.payload.caseSelections, [{ caseId: 'last', testedModel: 'Y', judgeModel: null }]);
+      current = { ...current, defaultTestedModel: undefined };
+      const before = [readinessCalls, inputCalls];
+      const blocked = await preview({ suiteId: 'suite', scope: { type: 'all' } });
+      assert.equal(blocked.code, 422);
+      assert.deepEqual([blocked.payload.status, blocked.payload.stage, blocked.payload.reason, blocked.payload.role],
+        ['blocked', 'selection', 'missing-suite-default', 'tested']);
+      assert.equal('caseSelections' in blocked.payload, false);
+      current = { ...current, defaultTestedModel: 'gone' };
+      const unavailable = await preview({ suiteId: 'suite', scope: { type: 'all' } });
+      assert.equal(unavailable.code, 422);
+      assert.deepEqual([unavailable.payload.status, unavailable.payload.stage, unavailable.payload.reason, unavailable.payload.role],
+        ['blocked', 'description', 'saved-model-unavailable', 'tested']);
+      assert.equal('caseSelections' in unavailable.payload, false);
+      assert.deepEqual([readinessCalls, inputCalls], before);
+    } finally { await server.stop?.(); }
+  });
+
+  it('persists the temporary selected label through status, detail, and repair evidence without changing suite defaults', async () => {
+    const terminal: string[] = [];
+    const originalInfo = console.info;
+    console.info = (line: unknown) => { if (typeof line === 'string') terminal.push(line); };
+    try { await withOfflineWorkbench(async workbench => {
+      const suitePath = path.join(workbench.projectRoot, 'evals/offline.json');
+      const original = JSON.parse(await readFile(suitePath, 'utf8')) as Record<string, unknown>;
+      const saved = JSON.stringify({ ...original, defaultTestedModel: 'fake/available' });
+      await writeFile(suitePath, saved);
+      await workbench.setRunnerMode('assertion-failed');
+      const request = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' },
+        runOnly: { testedModel: 'fake/unavailable' } };
+      const preview = await workbench.post('/api/eval-runs/preview', request);
+      assert.equal(preview.code, 200);
+      assert.equal(preview.payload.model, 'fake/unavailable');
+      const started = await workbench.post('/api/eval-runs/start', { ...request, previewToken: preview.payload.previewToken });
+      assert.equal(started.code, 202);
+      assert.equal(await readFile(suitePath, 'utf8'), saved);
+      const runId = String(started.payload.runId);
+      let detail: Record<string, unknown> | undefined;
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const status = await workbench.get(`/api/eval-runs/status?suiteId=offline&runId=${runId}`);
+        if (status.code === 200 && (status.payload.value as { summary: { state: string } }).summary.state === 'completed') {
+          const selected = await workbench.get(`/api/eval-runs/status?suiteId=offline&runId=${runId}&caseId=first&attempt=1`);
+          assert.equal(selected.code, 200);
+          detail = selected.payload.value as Record<string, unknown>;
+          break;
+        }
+        await delay(20);
+      }
+      assert.ok(detail, 'The disposable fake run must persist a result');
+      const summary = detail.summary as { testedModel: string; judgeModel: string | null };
+      const evidence = detail.evidence as { outcome: string; assertions: { id: string; outcome: string }[] };
+      assert.deepEqual([summary.testedModel, summary.judgeModel], ['fake/unavailable', null]);
+      assert.equal(detail.evidenceStatus, 'available');
+      assert.equal(evidence.outcome, 'failed');
+      const assertion = evidence.assertions.find(item => item.outcome === 'failed');
+      assert.ok(assertion);
+      const repair = await createSelectedFailureReader(createRunHistory(workbench.projectRoot).get).read({
+        suiteId: 'offline', runId, testCaseId: 'first', attempt: 1, assertionId: assertion.id,
+      });
+      assert.equal(repair.status, 'ready');
+      if (repair.status === 'ready') assert.equal(repair.value.evidence.evalRunModelLabel, 'fake/unavailable');
+      assert.equal(await readFile(suitePath, 'utf8'), saved);
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (terminal.some(line => line.includes('"event":"eval_run_finished"') && line.includes(`"runId":"${runId}"`))) return;
+        await delay(20);
+      }
+      assert.fail('The disposable fake runner must finish before fixture cleanup');
+    }); } finally { console.info = originalInfo; }
+  });
+  it('translates only explicit POST Save results and performs zero writes for no-save routes', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'sibu-saved-route-'));
+    const evals = path.join(root, 'evals');
+    await mkdir(evals);
+    const file = path.join(evals, 'suite.json');
+    const source = { ...definition(), id: 'suite', runner: { command: ['node', 'evals/runners/runner.mjs'], requiredEnvironment: [] } };
+    await writeFile(file, JSON.stringify(source));
+    const adapter = new NodeProjectSuiteChoiceFile(root);
+    const starter = new NodeLocalWorkbenchServerStarter(undefined, request => ({ ...createWorkbenchDependencies(request),
+      savedChoice: { files: adapter, runner: { describe: async () => ({ status: 'ready', value: {
+        runnerId: 'fake', capabilities: ['single-turn'], models: ['X'], judgeModels: ['J'], requiredEnvironment: [],
+      } }) } },
+    }));
+    const server = await starter.startServer({ projectRoot: root, initialDiscoveryResult: discovery() });
+    try {
+      const before = await readFile(file, 'utf8');
+      const noSave = await fetch(`${server.url}api/eval-suites/saved-choice?suiteId=suite`);
+      assert.equal(noSave.status, 200);
+      const ready = await noSave.json() as { status: string; cases: { caseId: string; testedModel: string | null }[]; token: string };
+      assert.equal(ready.status, 'ready');
+      assert.equal(ready.cases[0]?.testedModel, null);
+      assert.ok(ready.cases[0]?.caseId);
+      const cancelEquivalent = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+      assert.equal(cancelEquivalent.status, 400);
+      assert.equal(await readFile(file, 'utf8'), before);
+      const snapshot = await adapter.read('suite');
+      if (!('token' in snapshot)) assert.fail('suite should be valid');
+      const save = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ suiteId: 'suite', role: 'tested', action: 'set', modelId: 'X', expectedToken: snapshot.token }) });
+      assert.equal(save.status, 200);
+      assert.equal((await save.json() as { status: string }).status, 'saved');
+      const stale = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ suiteId: 'suite', role: 'tested', action: 'set', modelId: 'X', expectedToken: snapshot.token }) });
+      assert.equal(stale.status, 409);
+      assert.equal((await stale.json() as { reason: string }).reason, 'suite-changed');
+      assert.equal((JSON.parse(await readFile(file, 'utf8')) as { defaultTestedModel: string }).defaultTestedModel, 'X');
+      const caseSave = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ suiteId: 'suite', caseId: ready.cases[0]!.caseId, role: 'tested', action: 'set', modelId: 'X', expectedToken: (await adapter.read('suite') as { token: string }).token }) });
+      assert.equal(caseSave.status, 200);
+      const caseResult = await caseSave.json() as { caseId: string; status: string };
+      assert.equal(caseResult.caseId, ready.cases[0]!.caseId);
+      const afterCase = await fetch(`${server.url}api/eval-suites/saved-choice?suiteId=suite`).then(response => response.json()) as typeof ready;
+      assert.equal(afterCase.cases[0]?.testedModel, 'X');
+      assert.equal((JSON.parse(await readFile(file, 'utf8')) as { defaultTestedModel: string }).defaultTestedModel, 'X');
+    } finally { await server.stop?.(); await rm(root, { recursive: true, force: true }); }
+  });
   it('excludes normalized contract contents from JSON and bootstrapped browser state', async () => {
     const server = await new NodeLocalWorkbenchServerStarter().startServer({ projectRoot: '/repo', initialDiscoveryResult: discovery() });
 

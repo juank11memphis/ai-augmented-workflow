@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -76,7 +77,7 @@ test('stale managed guidance gets meaningful updates and healthy doctor state', 
     state.managedFiles[target(template)] = { template, templateVersion: '0', sha256: sha256(stale), status: 'managed' };
     const change = preview(rootPath, state, template);
     assert.equal(change.status, 'update-available');
-    assert.match(change.changes.join(' '), /runner|preview/i);
+    assert.match(change.changes.join(' '), /suite defaults|preview|case model|override/i);
     state = apply(rootPath, state, template, 'apply-update');
     assert.equal(fs.readFileSync(path.join(rootPath, target(template)), 'utf8'), readTemplate(template));
   }
@@ -117,4 +118,56 @@ test('customized skill/reference bytes survive reviewed updates and unrecorded a
   state = apply(rootPath, state, reference, 'mark-reviewed');
   assert.match(fs.readFileSync(path.join(rootPath, target(reference)), 'utf8'), /Local synthetic customization/);
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
+});
+
+test('installed preview checker uses saved defaults and blocks missing defaults without execution', async (t) => {
+  const cli = path.resolve('bin/sibu.js');
+  const { rootPath } = await initialize(t, [SUPPORTED_AGENTS[0]!]);
+  fs.mkdirSync(path.join(rootPath, 'evals'));
+  fs.mkdirSync(path.join(rootPath, 'src'));
+  fs.writeFileSync(path.join(rootPath, '.gitignore'), '/evals/artifacts/\n');
+  fs.writeFileSync(path.join(rootPath, 'src/target.mjs'), 'export const target = null;\n');
+  fs.writeFileSync(path.join(rootPath, 'evals/runner.mjs'), `let body = '';
+process.stdin.on('data', chunk => body += chunk);
+process.stdin.on('end', () => {
+  const request = JSON.parse(body);
+  if (request.operation !== 'describe' || process.env.SIBU_EVAL_MODE !== '1') {
+    throw new Error('Preview must not execute the runner');
+  }
+  const data = { runnerId: 'fixture', capabilities: ['single-turn', 'rubric'],
+    models: ['fake/tested'], judgeModels: ['fake/judge'], requiredEnvironment: [] };
+  process.stdout.write(JSON.stringify({ protocolVersion: 1, requestId: request.requestId,
+    sequence: 0, type: 'description', runId: null, caseId: null, attempt: null, data }) + '\\n');
+});\n`);
+  const suite = {
+    version: 2, kind: 'sibu-eval-suite', id: 'emd-defaults-ready', name: 'Saved defaults',
+    description: 'Synthetic saved-choice fixture', defaultTestedModel: 'fake/tested', defaultJudgeModel: 'fake/judge',
+    target: { id: 'target', kind: 'agent', path: 'src/target.mjs' },
+    coverage: { categories: [{ id: 'happy-path', status: 'covered' }], gaps: [] },
+    runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
+    testCases: [{ id: 'case', name: 'Synthetic case', turns: [{ role: 'user', content: { type: 'inline', text: 'Hello' } }],
+      toolMocks: [], assertions: [], graders: [{ id: 'quality', type: 'rubric',
+        rubric: { type: 'inline', text: 'Synthetic quality.' }, threshold: 0.8 }] }],
+  };
+  const readyPath = path.join(rootPath, 'evals/emd-defaults-ready.json');
+  const missingPath = path.join(rootPath, 'evals/emd-defaults-missing.json');
+  fs.writeFileSync(readyPath, JSON.stringify(suite));
+  fs.writeFileSync(missingPath, JSON.stringify({ ...suite, id: 'emd-defaults-missing', defaultTestedModel: undefined }));
+  execFileSync('git', ['init', '-q'], { cwd: rootPath });
+  const script = path.join(rootPath, '.agents/skills/eval-authoring/scripts/check-preview-contract.mjs');
+  const check = (args: string[]) => spawnSync('node', [script, ...args], {
+    cwd: rootPath, encoding: 'utf8', env: { ...process.env, SIBU_CLI: cli }, timeout: 30_000,
+  });
+  const before = [fs.readFileSync(readyPath, 'utf8'), fs.readFileSync(missingPath, 'utf8')];
+  const ready = check(['--suite', 'emd-defaults-ready']);
+  assert.equal(ready.status, 0, ready.stderr);
+  assert.deepEqual(JSON.parse(ready.stdout), { status: 'ready', suiteId: 'emd-defaults-ready', selectedCaseIds: ['case'] });
+  const missing = check(['--suite', 'emd-defaults-missing']);
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /preview-blocked:missing-suite-default:tested/);
+  const fullSuiteOverride = check(['--suite', 'emd-defaults-ready', '--model', 'fake/tested']);
+  assert.equal(fullSuiteOverride.status, 1);
+  assert.match(fullSuiteOverride.stderr, /use --suite ID \[--case ID/);
+  assert.deepEqual([fs.readFileSync(readyPath, 'utf8'), fs.readFileSync(missingPath, 'utf8')], before);
+  assert.equal(fs.existsSync(path.join(rootPath, 'evals/artifacts')), false);
 });

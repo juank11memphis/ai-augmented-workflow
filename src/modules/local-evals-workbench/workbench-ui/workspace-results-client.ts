@@ -103,6 +103,11 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       return;
     }
     suite = nextSuite;
+    if (typeof savedSuiteGeneration !== 'undefined') {
+      savedSuiteGeneration++; savedSuiteModels = null; suiteModelsDraft = null;
+      if (typeof caseModelsDraft !== 'undefined') caseModelsDraft = null;
+      suiteModelStatus(''); renderSuiteModelSummary();
+    }
     if (taskView === 'new-run') showTaskView('results');
     run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null;
     runGeneration++; historyGeneration++; detailGeneration++;
@@ -115,8 +120,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     detail.hidden = true; failuresOnly = false; search = '';
     const searchInput = resultContainer.querySelector?.('[data-action="search"]');
     if (searchInput) searchInput.value = '';
-    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '' };
-    renderWorkspace(); void loadRuntime(); void loadHistory();
+    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '', choice: 'saved', temporaryModel: '', temporaryJudge: '' };
+    renderWorkspace(); void loadRuntime(); if (typeof loadSavedSuiteModels === 'function') void loadSavedSuiteModels(); void loadHistory();
   }
   function caseStatus(caseId) {
     const item = run?.cases.find(value => value.caseId === caseId);
@@ -126,6 +131,18 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       ? run?.state === 'running' ? 'running' : 'incomplete'
       : failed ? 'failed' : item.attempts.length && item.attempts.every(value => value.outcome === 'passed') ? 'passed' : 'incomplete';
     return { state, failed, attempts: item.attempts };
+  }
+  function completedResultsForSelectedRun() {
+    if (!run) return [];
+    return run.caseIds.flatMap(caseId => {
+      const record = run.cases.find(item => item.caseId === caseId);
+      if (record?.state !== 'completed') return [];
+      const attempt = record.attempts.at(-1);
+      if (!attempt || attempt.outcome === 'incomplete') return [];
+      return [{ caseId, name: suite?.testCases.find(item => item.id === caseId)?.name || caseId,
+        status: attempt.outcome, model: record.testedModel || run.testedModel, judgeModel: record.judgeModel === undefined ? run.judgeModel : record.judgeModel,
+        detail: { caseId, attempt: attempt.number } }];
+    });
   }
   function renderWorkspace() {
     one('[data-suite-title]').textContent = suite?.name || 'No eval suites yet';
@@ -139,7 +156,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     setupRegion.hidden = taskView !== 'new-run' || !suite;
     const startForm = one('[data-start-form]'); if (startForm) startForm.hidden = startUncertain;
     const startAction = setupRegion.querySelector('[data-action="start"]');
-    if (startAction) startAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
+    if (startAction) startAction.disabled = Boolean(!runtime || setup.scope === 'one' && setup.choice === 'temporary' && (!setup.temporaryModel || needsJudge() && !setup.temporaryJudge));
     refreshSetupControls();
     const historical = run && latestKnownRunId && !latestRun();
     one('[data-latest-label]').textContent = run ? (historical ? 'Past run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
@@ -160,7 +177,6 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       const metrics = [];
       if (run.finishedAt != null && run.createdAt != null) metrics.push('Elapsed ' + Math.max(0, (run.finishedAt - run.createdAt) / 1000).toFixed(1) + 's');
       if (run.cost != null) metrics.push('Cost ' + run.cost);
-      if (run.testedModel) metrics.unshift('Model: ' + run.testedModel);
       one('[data-run-metrics]').textContent = metrics.join(' · ');
     } else if (acceptedRunId) status('Run queued. Loading saved progress…');
     else if (suite) status('0/' + suite.testCases.length + ' complete');
@@ -170,14 +186,14 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
         : '<section class="empty" aria-labelledby="empty-title"><h2 id="empty-title">No eval suites yet</h2><p>Ask your coding agent:</p><blockquote>Create production-ready Sibu evals for this project.</blockquote><button type="button" data-action="copy-prompt">Copy prompt</button><p data-copy-status role="status"></p></section>';
     detail.innerHTML = ''; detail.hidden = true; return;
     }
-    const rows = visibleCases.map(item => ({ ...item, status: run && !runIds.includes(item.id) ? { state: 'excluded', failed: 0, attempts: [] } : caseStatus(item.id) }))
-      .filter(item => (!failuresOnly || item.status.state === 'failed') && item.name.toLowerCase().includes(search.toLowerCase()));
-    if (visibleDetailCaseId && !rows.some(item => item.id === visibleDetailCaseId)) {
+    const results = completedResultsForSelectedRun();
+    const rows = results.filter(item => (!failuresOnly || item.status === 'failed') && item.name.toLowerCase().includes(search.toLowerCase()));
+    if (visibleDetailCaseId && !rows.some(item => item.caseId === visibleDetailCaseId)) {
       if (matchMedia('(max-width:699px)').matches && sheetSlot.querySelector('[role="dialog"]')) closeSheet();
       else closeCaseDetail();
     }
     if (!resultContainer.querySelector?.('.results')) {
-      resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search cases"></label></div><div class="result-head" aria-hidden="true"><span>Case</span><span>Result</span><span>Attempts</span></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
+      resultContainer.innerHTML = '<section class="results" aria-labelledby="results-title"><div class="section-heading"><h2 id="results-title">Results <small></small></h2><label><input type="checkbox" data-action="failures-only"> Failures only</label><label class="search">Search <input type="search" data-action="search" aria-label="Search cases"></label></div><div class="result-head" aria-hidden="true"><span>Case</span><span>Status</span><span>Model</span><span>Judge</span><span>Action</span></div><p data-result-empty hidden></p><ul class="result-list" data-result-list></ul></section>';
     }
     const count = resultContainer.querySelector?.('#results-title small');
     const list = resultContainer.querySelector?.('[data-result-list]');
@@ -186,9 +202,9 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (count) count.textContent = String(rows.length);
     if (failureFilter) failureFilter.checked = failuresOnly;
     const focusedCase = list?.contains?.(document.activeElement) ? document.activeElement.closest?.('[data-action="case"]')?.dataset.caseId : null;
-    if (list) list.innerHTML = rows.map(item => '<li data-case-status="' + item.status.state + '"><button type="button" data-action="case" data-case-id="' + esc(item.id) + '"' + (item.status.attempts.length ? '' : ' disabled') + '><span class="result-icon" aria-hidden="true">' + (item.status.state === 'passed' ? '✓' : item.status.state === 'failed' ? '✕' : '–') + '</span><span class="result-name"><strong>' + esc(item.name) + '</strong></span><span class="result-status"><span class="result-label">Result: </span>' + esc(item.status.state.replaceAll('-', ' ')) + '</span><span class="result-attempts"><span class="result-label">Attempts: </span>' + item.status.attempts.length + (item.status.failed ? ' · ' + item.status.failed + ' failed' : '') + '</span>' + (item.status.attempts.length ? '<span class="result-open" aria-hidden="true">›</span>' : '') + '</button></li>').join('');
+    if (list) list.innerHTML = rows.map(item => '<li data-case-status="' + item.status + '"><button type="button" data-action="case" data-case-id="' + esc(item.detail.caseId) + '" data-attempt="' + item.detail.attempt + '"><span class="result-name"><strong>' + esc(item.name) + '</strong></span><span class="result-status"><span class="result-label">Status: </span>' + (item.status === 'passed' ? 'Pass' : 'Fail') + '</span><span class="result-model"><span class="result-label">Model: </span>' + esc(item.model) + '</span><span class="result-judge">' + (item.judgeModel ? '<span class="result-label">Judge model: </span>' + esc(item.judgeModel) : '') + '</span><span class="result-action">View result</span></button></li>').join('');
     if (focusedCase) [...list.querySelectorAll('[data-action="case"]')].find(item => item.dataset.caseId === focusedCase)?.focus();
-    if (empty) { empty.hidden = rows.length > 0; empty.textContent = search ? 'No test cases match this search.' : failuresOnly ? 'No failed results are visible.' : 'No results yet.'; }
+    if (empty) { empty.hidden = rows.length > 0; empty.textContent = search ? 'No completed results match this search.' : failuresOnly ? 'No failed results.' : unfinished ? unfinished + ' not finished. No completed results yet.' : 'No completed results yet.'; }
   }
   async function loadHistory() {
     if (!suite) return;
@@ -387,7 +403,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     if (target.dataset.action === 'return-results') showTaskView('results');
     if (target.dataset.action === 'close-panel') closePanel();
     if (target.dataset.action === 'close-detail') { if (sheetSlot.querySelector('[role="dialog"]')) closeSheet(); else closeCaseDetail(); }
-    if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; detailListScroll = resultContainer.querySelector?.('[data-result-list]')?.scrollTop ?? null; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || attempts[0]?.number || 1); }
+    if (target.dataset.action === 'case') { detailReturnCaseId = target.dataset.caseId; detailListScroll = resultContainer.querySelector?.('[data-result-list]')?.scrollTop ?? null; const attempts = run?.cases.find(item => item.caseId === target.dataset.caseId)?.attempts || []; void inspectCase(target.dataset.caseId, attempts.find(item => item.outcome === 'failed')?.number || Number(target.dataset.attempt) || 1); }
     if (target.dataset.action === 'history-run') {
       if (acceptedRunId) { status('Wait for the current run to finish before opening another run.'); return; }
       void selectHistoryRun(target.dataset.runId);
@@ -413,5 +429,5 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   });
   document.addEventListener('input', event => { if (event.target.matches('[data-action="search"]')) { search = event.target.value; renderWorkspace(); } });
   setup.caseId = suite?.testCases[0]?.id || '';
-  void loadDiscovery(); void loadRuntime(); void loadHistory();
+  void loadDiscovery(); void loadRuntime(); if (typeof loadSavedSuiteModels === 'function') void loadSavedSuiteModels(); void loadHistory();
 `;

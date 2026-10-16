@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader } from '../discover-conventional-eval-suites/index.js';
@@ -13,6 +13,7 @@ import type { NormalizedEvalSuite } from '../discover-conventional-eval-suites/i
 
 const suite = {
   version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline', description: 'Synthetic fixture',
+  defaultTestedModel: 'fake/available',
   target: { id: 'target', kind: 'agent', path: 'src/target.mjs' },
   coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
   runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
@@ -21,10 +22,17 @@ const suite = {
     toolMocks: [], assertions: [{ id: 'contains', type: 'output-contains', expected: 'hello' }], graders: [],
   }],
 };
+const caseSelectionsSuite = {
+  ...suite,
+  testCases: [
+    { ...suite.testCases[0], id: 'overridden', name: 'Overridden', testedModel: 'fake/temporary' },
+    { ...suite.testCases[0], id: 'inheriting', name: 'Inheriting' },
+  ],
+};
 const runner = `let body=''; process.stdin.on('data',chunk=>body+=chunk); process.stdin.on('end',()=>{
   const request=JSON.parse(body);
   if(process.env.SIBU_EVAL_MODE!=='1'||request.operation!=='describe') process.exit(3);
-  const data={runnerId:'offline',capabilities:['single-turn'],models:['fake/available','fake/unavailable'],judgeModels:[],requiredEnvironment:[]};
+  const data={runnerId:'offline',capabilities:['single-turn'],models:['fake/available','fake/temporary','fake/unavailable'],judgeModels:[],requiredEnvironment:[]};
   process.stdout.write(JSON.stringify({protocolVersion:1,requestId:request.requestId,sequence:0,
     type:'description',runId:null,caseId:null,attempt:null,data})+'\\n');
 });`;
@@ -42,6 +50,7 @@ async function project(run: (root: string) => Promise<void>): Promise<void> {
 }
 test('HTTP describe and preview use offline runner, safe Git readiness and no execution', async () => {
   await project(async (root) => {
+    await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify(caseSelectionsSuite));
     const discovery = await discoverConventionalEvalSuites(
       { type: 'discover-conventional-eval-suites', projectRoot: root },
       { discoveryReader: new NodeEvalSuiteDiscoveryReader(), logger: { info: () => undefined, warn: () => undefined } }
@@ -55,19 +64,48 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
     try {
       const described = await post('/api/eval-suites/describe', { suiteId: 'offline' });
       assert.equal(described.code, 200);
-      assert.deepEqual(described.payload.models, ['fake/available', 'fake/unavailable']);
-      const available = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
+      assert.deepEqual(described.payload.models, ['fake/available', 'fake/temporary', 'fake/unavailable']);
+      const suitePath = path.join(root, 'evals/offline.json');
+      const savedSuiteContents = await readFile(suitePath, 'utf8');
+      const available = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
       assert.equal(available.code, 200);
-      assert.deepEqual(available.payload.selectedCaseIds, ['case']);
-      const unavailable = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'case' }, model: 'fake/unavailable' });
-      assert.equal(unavailable.code, 200);
-      assert.deepEqual(unavailable.payload.selectedCaseIds, ['case']);
-      const missingCase = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'missing' }, model: 'fake/available' });
+      assert.deepEqual(available.payload.selectedCaseIds, ['overridden', 'inheriting']);
+      assert.deepEqual(available.payload.caseSelections, [
+        { caseId: 'overridden', testedModel: 'fake/temporary', judgeModel: null },
+        { caseId: 'inheriting', testedModel: 'fake/available', judgeModel: null },
+      ]);
+      assert.equal(await readFile(suitePath, 'utf8'), savedSuiteContents);
+      const beforeRunOnly = await readFile(suitePath, 'utf8');
+      const runOnly = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'inheriting' }, runOnly: { testedModel: 'fake/temporary' } });
+      assert.equal(runOnly.payload.status, 'ready');
+      assert.deepEqual(runOnly.payload.caseSelections, [
+        { caseId: 'inheriting', testedModel: 'fake/temporary', judgeModel: null },
+      ]);
+      assert.equal(await readFile(suitePath, 'utf8'), beforeRunOnly);
+      const unavailableSuite = {
+        ...caseSelectionsSuite,
+        testCases: caseSelectionsSuite.testCases.map((testCase) => testCase.id === 'overridden'
+          ? { ...testCase, testedModel: 'fake/not-advertised' }
+          : testCase),
+      };
+      await writeFile(suitePath, JSON.stringify(unavailableSuite));
+      const beforeBlockedPreview = await readFile(suitePath, 'utf8');
+      const blockedPreview = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
+      assert.equal(blockedPreview.payload.status, 'blocked');
+      assert.equal(blockedPreview.payload.stage, 'description');
+      assert.equal(blockedPreview.payload.reason, 'saved-model-unavailable');
+      assert.equal((blockedPreview.payload.issue as { category: string }).category, 'saved-model-unavailable');
+      assert.equal(blockedPreview.payload.caseId, 'overridden');
+      assert.equal(blockedPreview.payload.role, 'tested');
+      assert.equal(blockedPreview.payload.source, 'case-override');
+      assert.equal(await readFile(suitePath, 'utf8'), beforeBlockedPreview);
+      await writeFile(suitePath, savedSuiteContents);
+      const missingCase = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'missing' } });
       assert.equal(missingCase.payload.status, 'blocked');
       assert.equal(missingCase.payload.stage, 'selection');
       assert.equal(missingCase.payload.reason, 'case-unavailable');
       assert.equal((missingCase.payload.issue as { category: string }).category, 'case-unavailable');
-      const invalid = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available', command: ['sh'] });
+      const invalid = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, command: ['sh'] });
       assert.equal(invalid.code, 400);
       const malformed = await fetch(new URL('/api/eval-runs/preview', server.url), { method: 'POST', body: '{' });
       assert.equal(malformed.status, 400);
@@ -76,7 +114,7 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
       const wrongMethod = await fetch(new URL('/api/eval-runs/preview', server.url));
       assert.equal(wrongMethod.status, 405);
       await writeFile(path.join(root, '.gitignore'), '');
-      const unsafe = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
+      const unsafe = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
       assert.equal(unsafe.payload.status, 'blocked');
       assert.equal(unsafe.payload.stage, 'artifact-readiness');
       assert.equal(unsafe.payload.reason, 'artifact-not-ignored');
@@ -85,7 +123,7 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
       await mkdir(path.join(root, 'evals/artifacts'));
       await writeFile(path.join(root, 'evals/artifacts/tracked.txt'), 'tracked fixture');
       execFileSync('git', ['add', '-f', 'evals/artifacts/tracked.txt'], { cwd: root });
-      const tracked = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' });
+      const tracked = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
       assert.equal(tracked.payload.status, 'blocked');
       assert.equal(tracked.payload.stage, 'artifact-readiness');
       assert.equal(tracked.payload.reason, 'artifact-tracked');
@@ -97,7 +135,7 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
 test('preview retains observed runner boundary categories without guessing a provider failure', async () => {
   await project(async (root) => {
     const selected = suite as NormalizedEvalSuite;
-    const command = { suiteId: 'offline', scope: { type: 'all' } as const, model: 'fake/available' };
+    const command = { suiteId: 'offline', scope: { type: 'all' } as const };
     const events: unknown[] = [];
     const environment = { PATH: process.env.PATH, SYNTHETIC_SECRET: 'SYNTHETIC_SECRET_MARKER' };
     const preview = async (candidate: NormalizedEvalSuite = selected, requestBytes: number = PREVIEW_PROCESS_LIMITS.requestBytes) =>
@@ -109,6 +147,10 @@ test('preview retains observed runner boundary categories without guessing a pro
         inputs: { resolve: async (cases) => ({ status: 'ready', value: cases }) },
         logger: { record: (event) => { events.push(event); } },
       });
+    const unavailable = await preview({ ...selected, defaultTestedModel: 'fake/not-advertised' });
+    assert.deepEqual(unavailable, { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested', source: 'suite-default' });
+    const missingDefault = await preview({ ...selected, defaultTestedModel: undefined });
+    assert.deepEqual(missingDefault, { status: 'blocked', stage: 'selection', reason: 'missing-suite-default', caseId: 'case', role: 'tested', source: 'suite-default' });
     const expectBlocked = async (reason: string, stage: string, candidate = selected, requestBytes?: number) => {
       const result = await preview(candidate, requestBytes);
       assert.deepEqual(result, { status: 'blocked', stage, reason });
@@ -134,7 +176,7 @@ test('preview retains observed runner boundary categories without guessing a pro
 
 test('legacy unclassified runner result stays unclassified at the observed preview stage', async () => {
   const selected = suite as NormalizedEvalSuite;
-  const result = await previewEvalRun({ suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available' }, {
+  const result = await previewEvalRun({ suiteId: 'offline', scope: { type: 'all' } }, {
     suites: { load: async () => selected },
     runner: { describe: async () => ({ status: 'blocked', reason: 'input-unsafe' }) },
     artifacts: { check: async () => { throw new Error('artifacts must not run'); } },

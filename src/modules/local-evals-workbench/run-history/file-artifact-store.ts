@@ -24,9 +24,11 @@ export class FileArtifactStore implements ArtifactStorePort {
     return this.mutate(async () => {
       const now = this.dependencies.clock();
       const runId = await this.reserve(config.value.suiteId, now);
-      const run: Manifest = { ...config.value, version: 1, runId, state: 'queued', owner: this.dependencies.owner.identity,
+      const { caseSelections, ...storedConfig } = config.value;
+      const run: Manifest = { ...storedConfig, version: 1, runId, state: 'queued', owner: this.dependencies.owner.identity,
         createdAt: now, updatedAt: now, finishedAt: null, outcome: 'incomplete', calls: null, cost: null, diagnostics: [],
-        cases: config.value.caseIds.map(caseId => ({ caseId, state: 'not-run', attempts: [] })) };
+        cases: config.value.caseIds.map((caseId, index) => ({ caseId, state: 'not-run', attempts: [],
+          ...(caseSelections ? { testedModel: caseSelections[index]!.testedModel, judgeModel: caseSelections[index]!.judgeModel } : {}) })) };
       const safe = this.safeManifest(run); if (safe.status !== 'ok') return safe;
       return this.persist(safe.value);
     });

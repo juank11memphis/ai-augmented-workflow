@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { unlink, writeFile } from 'node:fs/promises';
+import { readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fixture } from './store-fixture.js';
 import { project } from './test-project.js';
@@ -81,5 +81,51 @@ it('rejects contradictory Judge evidence at save and reopened read', async () =>
       JSON.stringify({ ...valid, assertions: [{ ...grader, outcome: 'passed' }] }));
     const detail = await historyReader(a).get('suite', id, { caseId: 'case', attempt: 1 });
     assert.equal(detail.status === 'ok' && detail.value.evidenceStatus, 'unavailable');
+  } finally { await p.cleanup(); }
+});
+
+it('reads legacy run-wide model labels and opens failed-case attempt evidence', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root);
+    const created = await a.store.create({ ...config, testedModel: 'historic-tested', judgeModel: 'historic-judge' });
+    if (created.status !== 'ok') return assert.fail(JSON.stringify(created));
+    const id = created.value.runId;
+    assert.equal((await a.store.start('suite', id)).status, 'ok');
+    const failed = evidence(id);
+    assert.equal((await a.store.append('suite', id, { ...failed, outcome: 'failed', assertions: [
+      { ...failed.assertions[0]!, outcome: 'failed' },
+    ] })).status, 'ok');
+    assert.equal((await a.store.finalize('suite', id, 'completed')).status, 'ok');
+    const detail = await historyReader(fixture(p.root)).get('suite', id, { caseId: 'case', attempt: 1 });
+    assert.equal(detail.status, 'ok');
+    if (detail.status !== 'ok') return;
+    assert.deepEqual([detail.value.summary.testedModel, detail.value.summary.judgeModel], ['historic-tested', 'historic-judge']);
+    assert.deepEqual([detail.value.summary.cases[0]?.testedModel, detail.value.summary.cases[0]?.judgeModel], ['historic-tested', 'historic-judge']);
+    assert.equal(detail.value.summary.cases[0]?.state, 'completed');
+    assert.equal(detail.value.evidenceStatus, 'available');
+    assert.equal(detail.value.evidence?.outcome, 'failed');
+    assert.equal(detail.value.evidence?.caseId, 'case');
+  } finally { await p.cleanup(); }
+});
+
+it('keeps historical bytes unchanged and never relabels saved cases from later suite defaults', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root);
+    const old = await a.store.create({ ...config, testedModel: 'historical', judgeModel: null });
+    const fresh = await a.store.create({ ...config, testedModel: 'compatibility-only', judgeModel: null,
+      caseSelections: [{ caseId: 'case', testedModel: 'saved-case', judgeModel: 'saved-judge' }] });
+    if (old.status !== 'ok' || fresh.status !== 'ok') return assert.fail('run creation failed');
+    const oldPath = path.join(a.paths.artifactRoot, a.paths.run('suite', old.value.runId));
+    const before = await readFile(oldPath);
+    await writeFile(path.join(p.root, 'evals/suite.json'), JSON.stringify({ defaultTestedModel: 'changed-later' }));
+    const reader = historyReader(fixture(p.root));
+    const historical = await reader.get('suite', old.value.runId);
+    const saved = await reader.get('suite', fresh.value.runId);
+    assert.equal(historical.status, 'ok'); assert.equal(saved.status, 'ok');
+    if (historical.status === 'ok' && saved.status === 'ok') {
+      assert.deepEqual([historical.value.summary.cases[0]?.testedModel, historical.value.summary.cases[0]?.judgeModel], ['historical', null]);
+      assert.deepEqual([saved.value.summary.cases[0]?.testedModel, saved.value.summary.cases[0]?.judgeModel], ['saved-case', 'saved-judge']);
+    }
+    assert.deepEqual(await readFile(oldPath), before);
   } finally { await p.cleanup(); }
 });

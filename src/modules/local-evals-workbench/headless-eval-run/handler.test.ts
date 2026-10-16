@@ -4,14 +4,21 @@ import type { NormalizedEvalSuite } from '../discover-conventional-eval-suites/i
 import type { Attempt, Manifest, RunState } from '../run-history/contracts.js';
 import type { HeadlessEvalRunDependencies } from './ports.js';
 import { headlessEvalRun } from './handler.js';
+import { executeEvalRun } from '../execute-eval-run/handler.js';
+import { evaluateOutputAssertions } from '../run-execution/output-assertions.js';
+import type { ExecutionEvent, ExecutionSelection } from '../run-execution/contracts.js';
+import { project } from '../run-history/test-project.js';
+import { fixture as artifactFixture } from '../run-history/store-fixture.js';
+import { FileArtifactReader } from '../run-history/file-artifact-reader.js';
 
 const basic = { id: 'case', name: 'Case', turns: [{ role: 'user' as const, content: { type: 'inline' as const, text: 'Hi' } }],
   toolMocks: [], assertions: [{ id: 'contains', type: 'output-contains' as const, expected: 'Hi' }], graders: [] };
 const suite: NormalizedEvalSuite = { version: 2, kind: 'sibu-eval-suite', id: 'suite', name: 'Suite', description: 'Synthetic',
+  defaultTestedModel: 'fake/model',
   target: { id: 'target', kind: 'agent', path: 'src/target.mjs' }, coverage: { categories: [{ id: 'one', status: 'covered' }], gaps: [] },
   runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases: [basic, { ...basic, id: 'other' }] };
 const description = { runnerId: 'fake', capabilities: ['single-turn', 'rubric'] as const, models: ['fake/model'], judgeModels: ['fake/judge'], requiredEnvironment: [] };
-const command = { suiteId: 'suite', scope: { type: 'all' as const }, model: 'fake/model' };
+const command = { suiteId: 'suite', scope: { type: 'all' as const } };
 
 function manifest(state: RunState, outcome: Manifest['outcome'] = 'passed'): Manifest {
   return { version: 1, suiteId: 'suite', runId: 'run-1', state, outcome, scope: 'all', testedModel: 'fake/model', judgeModel: null,
@@ -44,10 +51,10 @@ function fixture(overrides: Partial<HeadlessEvalRunDependencies> = {}) {
 test('selected and all scopes await execution then persisted readback', async () => {
   const f = fixture();
   assert.deepEqual(await headlessEvalRun(command, f.ports), { status: 'completed', runId: 'run-1', outcome: 'passed',
-    cases: [{ caseId: 'case', state: 'completed', attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
+    cases: [{ caseId: 'case', state: 'completed', testedModel: 'fake/model', judgeModel: null, attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
   assert.equal(f.reads(), 1);
   assert.deepEqual(await headlessEvalRun({ ...command, scope: { type: 'test_case', testCaseId: 'other' } }, f.ports),
-    { status: 'completed', runId: 'run-1', outcome: 'passed', cases: [{ caseId: 'case', state: 'completed', attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
+    { status: 'completed', runId: 'run-1', outcome: 'passed', cases: [{ caseId: 'case', state: 'completed', testedModel: 'fake/model', judgeModel: null, attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
   assert.deepEqual(f.selected, [['case', 'other'], ['other']]);
 });
 
@@ -63,13 +70,13 @@ test('handler remains pending until runner completion and reads artifact afterwa
   assert.equal(f.reads(), 1);
 });
 
-test('invalid scope, unavailable model and forbidden judge block before allocation', async () => {
+test('invalid scope and full-suite run-only input block before allocation', async () => {
   const f = fixture();
-  for (const [input, reason] of [
-    [{ ...command, scope: { type: 'test_case' as const, testCaseId: 'missing' } }, 'case-unavailable'],
-    [{ ...command, model: 'missing' }, 'model-unavailable'],
-    [{ ...command, judgeModel: 'fake/judge' }, 'judge-unavailable'],
-  ] as const) assert.deepEqual(await headlessEvalRun(input, f.ports), { status: 'blocked', reason });
+  for (const [input, expected] of [
+    [{ ...command, scope: { type: 'test_case' as const, testCaseId: 'missing' } }, { status: 'blocked', reason: 'case-unavailable', caseId: 'missing' }],
+    [{ ...command, model: 'missing' }, { status: 'blocked', reason: 'run-only-scope-unsupported' }],
+    [{ ...command, judgeModel: 'fake/judge' }, { status: 'blocked', reason: 'run-only-scope-unsupported' }],
+  ] as const) assert.deepEqual(await headlessEvalRun(input, f.ports), expected);
   assert.deepEqual(f.selected, []);
 });
 
@@ -77,9 +84,21 @@ test('rubric scope requires compatible judge and accepts one', async () => {
   const rubric = { ...basic, id: 'rubric', graders: [{ id: 'judge', type: 'rubric' as const,
     rubric: { type: 'inline' as const, text: 'Safe' }, threshold: 0.8 }] };
   const f = fixture({ suites: { load: async () => ({ ...suite, testCases: [rubric] }) } });
-  assert.deepEqual(await headlessEvalRun(command, f.ports), { status: 'blocked', reason: 'judge-unavailable' });
-  assert.deepEqual(await headlessEvalRun({ ...command, judgeModel: 'wrong' }, f.ports), { status: 'blocked', reason: 'judge-unavailable' });
-  assert.equal((await headlessEvalRun({ ...command, judgeModel: 'fake/judge' }, f.ports)).status, 'completed');
+  assert.deepEqual(await headlessEvalRun(command, f.ports), { status: 'blocked', reason: 'missing-suite-default', caseId: 'rubric', role: 'judge', source: 'suite-default' });
+  assert.equal((await headlessEvalRun(command, { ...f.ports, suites: { load: async () => ({ ...suite, defaultJudgeModel: 'fake/judge', testCases: [rubric] }) } })).status, 'completed');
+});
+
+test('saved and temporary choices share preview selection policy and block before paid execution', async () => {
+  let paidCalls = 0;
+  const f = fixture({ executor: { execute: async () => { paidCalls++; return { status: 'completed', runId: 'run-1' }; } } });
+  const missing = await headlessEvalRun(command, { ...f.ports, suites: { load: async () => ({ ...suite, defaultTestedModel: undefined }) } });
+  assert.deepEqual(missing, { status: 'blocked', reason: 'missing-suite-default', caseId: 'case', role: 'tested', source: 'suite-default' });
+  const unavailable = await headlessEvalRun(command, { ...f.ports, suites: { load: async () => ({ ...suite, defaultTestedModel: 'retired' }) } });
+  assert.deepEqual(unavailable, { status: 'blocked', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested', source: 'suite-default' });
+  const temporary = await headlessEvalRun({ ...command, scope: { type: 'test_case', testCaseId: 'case' }, model: 'fake/model' }, f.ports);
+  assert.equal(temporary.status, 'completed');
+  assert.equal(paidCalls, 1);
+  assert.deepEqual(f.selected, [['case']]);
 });
 
 test('failed assertions are completed, while partial blocked error and interrupted remain distinct', async () => {
@@ -138,4 +157,70 @@ test('missing or corrupt failed attempt yields unavailable while passed attempt 
   assert.deepEqual(unavailable.cases?.[0]?.attempts[0], { number: 1, outcome: 'failed', failedAssertionIds: [], locatorStatus: 'unavailable' });
   f.setState('completed', 'passed');
   assert.deepEqual((await headlessEvalRun(command, f.ports)).cases?.[0]?.attempts[0], { number: 1, outcome: 'passed' });
+});
+
+test('headless full-suite carries ordered mixed-Judge choices into one persisted logical run', async () => {
+  const p = await project();
+  try {
+    const rubric = { ...basic, id: 'rubric', graders: [{ id: 'quality', type: 'rubric' as const,
+      rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+    const cases = [{ ...basic, id: 'first' }, rubric, { ...basic, id: 'last' }];
+    const mixedSuite = { ...suite, defaultJudgeModel: 'fake/judge', testCases: cases };
+    const artifact = artifactFixture(p.root);
+    const reader = new FileArtifactReader(artifact.paths, artifact.reader);
+    const requests: { ids: string[]; judge: string | null; runId: string }[] = [];
+    let interruptMiddle = false;
+    const runner = { execute: async (batch: ExecutionSelection, consume: (event: ExecutionEvent) => Promise<void>) => {
+      requests.push({ ids: batch.cases.map(item => item.id), judge: batch.judgeModel ?? null, runId: batch.runId });
+      if (interruptMiddle && batch.cases[0]?.id === 'rubric') return { status: 'interrupted' as const };
+      for (const item of batch.cases) {
+        await consume({ type: 'case-started', caseId: item.id });
+        await consume({ type: 'turn-completed', caseId: item.id, turnId: `${item.id}-turn`, output: 'Hi' });
+        if (item.id === 'rubric') await consume({ type: 'grader-completed', caseId: item.id, attempt: 1,
+          checkId: 'quality', grader: 'rubric', passed: true, score: 0.9, threshold: 0.8,
+          judgeModel: batch.judgeModel ?? undefined, evidence: 'quality', diagnostics: [] });
+        await consume({ type: 'case-completed', caseId: item.id, status: 'completed' });
+      }
+      await consume({ type: 'run-completed', status: 'completed' });
+      return { status: 'completed' as const };
+    } };
+    const execute = async (selection: ExecutionSelection) => {
+      const outcome = await executeEvalRun(selection, { runner, store: artifact.store,
+        evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now });
+      if (outcome.status === 'queued' || outcome.status === 'running') return { status: 'storage-failed' as const, runId: outcome.runId };
+      return { status: outcome.status, runId: outcome.runId, ...(outcome.reason ? { reason: outcome.reason } : {}) };
+    };
+    const result = await headlessEvalRun(command, {
+      suites: { load: async () => mixedSuite }, runner: { describe: async () => ({ status: 'ready', value: description }) },
+      inputs: { resolve: async selected => ({ status: 'ready', value: selected }) },
+      artifacts: { check: async () => ({ status: 'ready', value: null }) }, store: artifact.store,
+      reader: { get: (suiteId, runId, selection) => reader.get(suiteId, runId, selection) },
+      executor: { execute },
+    });
+    assert.equal(result.status, 'completed');
+    assert.deepEqual(requests.map(item => item.ids), [['first'], ['rubric'], ['last']]);
+    assert.deepEqual(requests.map(item => item.judge), [null, 'fake/judge', null]);
+    assert.ok(requests.every(item => item.runId === result.runId));
+    const detail = await reader.get('suite', result.runId!);
+    assert.equal(detail.status, 'ok');
+    if (detail.status === 'ok') assert.deepEqual(detail.value.summary.cases.map(item => item.judgeModel), [null, 'fake/judge', null]);
+    requests.length = 0;
+    interruptMiddle = true;
+    const interrupted = await headlessEvalRun(command, {
+      suites: { load: async () => mixedSuite }, runner: { describe: async () => ({ status: 'ready', value: description }) },
+      inputs: { resolve: async selected => ({ status: 'ready', value: selected }) },
+      artifacts: { check: async () => ({ status: 'ready', value: null }) }, store: artifact.store,
+      reader: { get: (suiteId, runId, selection) => reader.get(suiteId, runId, selection) },
+      executor: { execute },
+    });
+    assert.equal(interrupted.status, 'interrupted');
+    assert.deepEqual(requests.map(item => item.ids), [['first'], ['rubric']]);
+    assert.ok(requests.every(item => item.runId === interrupted.runId));
+    const partialDetail = await reader.get('suite', interrupted.runId!);
+    assert.equal(partialDetail.status, 'ok');
+    if (partialDetail.status === 'ok') {
+      assert.equal(partialDetail.value.summary.cases[0]?.state, 'completed');
+      assert.equal(partialDetail.value.summary.cases[2]?.state, 'not-run');
+    }
+  } finally { await p.cleanup(); }
 });

@@ -48,7 +48,12 @@ export class FileArtifactReader implements ArtifactReaderPort {
     const result = await this.reader.read(this.paths.run(suiteId, runId), LIMITS.manifestBytes, manifest); if (result.status !== 'ok') return result;
     if (result.value.runId !== runId || result.value.suiteId !== suiteId) return { status: 'blocked', reason: 'corrupt' };
     const safe = boundedArtifact(result.value, LIMITS.manifestBytes, manifest); if (safe.status !== 'ok') return safe;
-    return this.recovery ? this.recovery.classify(safe.value) : safe;
+    const classified = this.recovery ? await this.recovery.classify(safe.value) : safe;
+    if (classified.status !== 'ok') return classified;
+    return { ...classified, value: { ...classified.value, cases: classified.value.cases.map(item => ({
+      ...item, testedModel: item.testedModel ?? classified.value.testedModel,
+      judgeModel: item.judgeModel === undefined ? classified.value.judgeModel : item.judgeModel,
+    })) } };
   }
 }
 function selectEvidence(evidence: Attempt, assertionId?: string): Attempt | undefined {

@@ -52,8 +52,10 @@ export async function validatePackedEvalExecution({ workspace, installedPackageR
   await mkdir(path.join(root, 'src'), { recursive: true });
   await writeFile(path.join(root, '.gitignore'), '/evals/artifacts/\n');
   await writeFile(path.join(root, 'src/target.mjs'), 'export function target(input, model) { return JSON.stringify({ text: model + ":synthetic:" + input }); }\n');
-  await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify({
+  const suitePath = path.join(root, 'evals/offline.json');
+  const suiteDefinition = JSON.stringify({
     version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline', description: 'Synthetic fixture',
+    defaultTestedModel: 'fake',
     target: { id: 'target', kind: 'integration', path: 'src/target.mjs' },
     coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
@@ -65,7 +67,8 @@ export async function validatePackedEvalExecution({ workspace, installedPackageR
         { id: 'unsupported-ref', type: 'json-schema', schema: { $ref: '#/missing' } },
         { id: 'unsupported-pattern', type: 'json-schema', schema: { type: 'object', properties: { text: { pattern: '(a+)+$' } } } },
       ], graders: [] }],
-  }));
+  });
+  await writeFile(suitePath, suiteDefinition);
   await writeFile(path.join(root, 'evals/runner.mjs'), `import { target } from '../src/target.mjs';
 let body=''; for await(const chunk of process.stdin) body += chunk; const q=JSON.parse(body);
 let n=0; function emit(type,caseId,data){process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,sequence:n++,type,
@@ -92,13 +95,16 @@ else process.exit(2);
   };
   try {
     await validateInstalledWorkbenchPage(server.url);
-    const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null };
+    const command = { suiteId: 'offline', scope: { type: 'all' } };
     assert.equal((await post('/api/eval-suites/describe', { suiteId: 'offline' })).code, 200);
     const preview = await post('/api/eval-runs/preview', command);
     assert.equal(preview.code, 200);
     assert.deepEqual(preview.value.selectedCaseIds, ['case']);
+    assert.equal(preview.value.model, 'fake');
+    assert.equal(await readFile(suitePath, 'utf8'), suiteDefinition, 'preview must not change the suite');
     const started = await post('/api/eval-runs/start', command);
     assert.equal(started.code, 202);
+    assert.equal(await readFile(suitePath, 'utf8'), suiteDefinition, 'start must not change the suite');
     const query = new URLSearchParams({ suiteId: 'offline', runId: started.value.runId });
     let status;
     for (let tries = 0; tries < 100; tries++) {

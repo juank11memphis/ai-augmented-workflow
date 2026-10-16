@@ -20,7 +20,7 @@ test('offline target execution persists real output and changed integration chan
     const get = async (suiteId: string, runId: string, caseId?: string) => {
       const query = new URLSearchParams({ suiteId, runId, ...(caseId ? { caseId, attempt: '1' } : {}) });
       const response = await fetch(new URL('/api/eval-runs/status?' + query, server.url));
-      return await response.json() as { status: string; value: { summary: { state: string }; reviewArtifactPath?: string; evidence?: { output: string; outcome: string;
+      return await response.json() as { status: string; value: { summary: { state: string; cases: { caseId: string; testedModel: string; judgeModel: string | null }[] }; reviewArtifactPath?: string; evidence?: { output: string; outcome: string;
         review?: { runPath: string; suitePath: string | null; targetPath: string | null; runnerPath: string | null; inputPaths: string[] };
         assertions: { id: string; outcome: string; diagnostics: string[] }[] } } };
     };
@@ -44,13 +44,14 @@ test('offline target execution persists real output and changed integration chan
     };
     const before = project.git('status', '--porcelain');
     try {
-      const command = { suiteId: 'offline', scope: { type: 'all' }, model: 'fake', judgeModel: null };
+      const command = { suiteId: 'offline', scope: { type: 'all' } };
       const preview = await post('/api/eval-runs/preview', command);
       assert.equal(preview.code, 200);
       const start = await post('/api/eval-runs/start', command);
       assert.equal(start.code, 202, JSON.stringify(start.value));
       const runId = start.value.runId as string;
-      const oneCommand = { ...command, scope: { type: 'test_case', testCaseId: 'first' } };
+      const oneCommand = { ...command, scope: { type: 'test_case', testCaseId: 'first' },
+        runOnly: { testedModel: 'fake' } };
       const onePreview = await post('/api/eval-runs/preview', oneCommand);
       assert.equal(onePreview.code, 200);
       const parallelStart = await post('/api/eval-runs/start', oneCommand);
@@ -58,7 +59,11 @@ test('offline target execution persists real output and changed integration chan
       assert.notEqual(parallelStart.value.runId, runId);
       const status = await terminal(runId);
       assert.equal(status.value.summary.state, 'completed');
+      assert.deepEqual(status.value.summary.cases.map(({ caseId, testedModel, judgeModel }) => ({ caseId, testedModel, judgeModel })),
+        ['first', 'second', 'schema'].map(caseId => ({ caseId, testedModel: 'fake', judgeModel: null })));
       const detail = await get('offline', runId, 'first');
+      const originalManifest = await readFile(path.join(project.root, 'evals/artifacts/offline', runId, 'run.json'));
+      const originalAttempt = await readFile(path.join(project.root, 'evals/artifacts/offline', runId, 'cases/first/1.json'));
       assert.match(detail.value.evidence!.output, /fake:GOOD:SYNTHETIC_SECRET_SENTINEL-first/);
       assert.equal(detail.value.evidence!.outcome, 'passed');
       assert.equal(detail.value.reviewArtifactPath, `evals/artifacts/offline/${runId}/cases/first/1.json`);
@@ -86,6 +91,8 @@ test('offline target execution persists real output and changed integration chan
       assert.equal(changedDetail.value.evidence!.outcome, 'failed');
       const changedSchema = await get('offline', second.value.runId as string, 'schema');
       assert.equal(changedSchema.value.evidence!.assertions.find(assertion => assertion.id === 'basic')?.outcome, 'failed');
+      assert.deepEqual(await readFile(path.join(project.root, 'evals/artifacts/offline', runId, 'run.json')), originalManifest);
+      assert.deepEqual(await readFile(path.join(project.root, 'evals/artifacts/offline', runId, 'cases/first/1.json')), originalAttempt);
       await project.crashOnSecond();
       const crashed = await post('/api/eval-runs/start', command);
       assert.equal(crashed.code, 202);
@@ -93,6 +100,8 @@ test('offline target execution persists real output and changed integration chan
       assert.equal(partial.value.summary.state, 'partial');
       const retained = await get('offline', crashed.value.runId as string, 'first');
       assert.equal(retained.value.evidence?.outcome, 'passed');
+      assert.deepEqual(await readFile(path.join(project.root, 'evals/artifacts/offline', runId, 'run.json')), originalManifest);
+      assert.deepEqual(await readFile(path.join(project.root, 'evals/artifacts/offline', runId, 'cases/first/1.json')), originalAttempt);
       assert.equal(project.git('status', '--porcelain').replace(' M src/target.mjs\n', ''), before);
     } finally { await server.stop?.(); }
   } finally { await project.cleanup(); }
@@ -113,11 +122,12 @@ test('offline target execution persists real output and changed integration chan
       const query = new URLSearchParams({ suiteId: 'offline', runId, ...(caseId ? { caseId, attempt: String(attempt ?? 1) } : {}) });
       const response = await fetch(new URL('/api/eval-runs/status?' + query, server.url));
       return await response.json() as { status: string; value: { summary: { state: string; outcome: string; calls: number; cost: number;
-        cases: { caseId: string; attempts: { outcome: string; rubricScores?: number[] }[] }[] }; evidence?: { outcome: string;
+        cases: { caseId: string; testedModel: string; judgeModel: string | null; attempts: { outcome: string; rubricScores?: number[] }[] }[] }; evidence?: { outcome: string;
         turns: { content: string }[]; tools: { outcome: string }[]; assertions: { id: string; outcome: string; score: number | null; judgeModel?: string }[] } } };
     };
     const run = async (caseId: string, judgeModel: string | null) => {
-      const command = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: caseId }, model: 'fake', judgeModel };
+      const command = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: caseId },
+        ...(judgeModel ? { runOnly: { judgeModel } } : {}) };
       const preview = await post('/api/eval-runs/preview', command);
       assert.equal(preview.code, 200, JSON.stringify(preview.value));
       const start = await post('/api/eval-runs/start', command);
@@ -141,10 +151,13 @@ test('offline target execution persists real output and changed integration chan
     };
     try {
       const before = project.git('status', '--porcelain');
-      const blocked = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'multi' }, model: 'fake', judgeModel: null });
-      assert.equal(blocked.value.reason, 'judge-unavailable');
+      const savedJudge = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'multi' } });
+      assert.equal(savedJudge.code, 200);
+      assert.deepEqual(savedJudge.value.caseSelections, [{ caseId: 'multi', testedModel: 'fake', judgeModel: 'fake-judge' }]);
       const multi = await run('multi', 'fake-judge');
       assert.equal(multi.summary.state, 'completed');
+      assert.deepEqual(multi.summary.cases.map(({ testedModel, judgeModel }) => ({ testedModel, judgeModel })),
+        [{ testedModel: 'fake', judgeModel: 'fake-judge' }]);
       const multiDetail = await get(multi.runId, 'multi');
       assert.equal(multiDetail.value.evidence?.turns.length, 2);
       assert.deepEqual(multiDetail.value.evidence?.tools.map(item => item.outcome), ['result', 'error', 'unexpected-response']);
