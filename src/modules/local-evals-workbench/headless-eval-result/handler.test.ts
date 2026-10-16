@@ -138,7 +138,51 @@ test('selected source keeps exact raw and normalized values, structured calls, a
   assert.equal(result.failure.source.modelCalls[0]?.rawToolCalls[0]?.arguments.status, 'available');
   assert.deepEqual(result.failure.source.toolEvents.map(event => event.sequence), [2]);
   assert.deepEqual(result.failure.source.approvedFacts, source.approvedFacts);
+  assert.deepEqual(result.failure.source.sequence, [
+    { kind: 'model-call', id: 'call-1', order: 1 },
+    { kind: 'tool-delivery', id: 'event-1', order: 2 },
+    { kind: 'model-call', id: 'call-2', order: 4 },
+  ]);
   assert.equal(result.failure.assertionId, 'check');
+});
+
+test('selected identity uses the exact case, attempt, assertion, and case-specific models', async () => {
+  const perCase = { ...summary, testedModel: 'default-model', judgeModel: 'default-judge', cases: [
+    { ...summary.cases[0]!, testedModel: 'actual-model', judgeModel: 'actual-judge' },
+  ] };
+  const selected = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary: perCase,
+    evidenceStatus: 'available', evidence: { ...evidence, assertions: [rubricAssertion], sourceEvidence: rubricSource } }));
+  if (selected.status !== 'ready' || !('failure' in selected)) assert.fail('Expected exact selected failure');
+  assert.deepEqual({ caseId: selected.failure.caseId, attempt: selected.failure.attempt,
+    assertionId: selected.failure.assertionId }, selection);
+  assert.equal(selected.summary.cases[0]?.testedModel, 'actual-model');
+  assert.equal(selected.summary.cases[0]?.judgeModel, 'actual-judge');
+  assert.equal(selected.failure.grading.kind, 'rubric');
+  if (selected.failure.grading.kind !== 'rubric') assert.fail('Expected rubric');
+  assert.deepEqual({ score: selected.failure.grading.score, threshold: selected.failure.grading.threshold,
+    comparison: selected.failure.grading.comparison, judgeModel: selected.failure.grading.judgeModel },
+  { score: 0.4, threshold: 0.7, comparison: 'failed', judgeModel: 'actual-judge' });
+  assert.deepEqual(selected.failure.diagnostics, ['selected diagnostic']);
+  if (!('sequence' in selected.failure.source)) assert.fail('Expected source sequence');
+  assert.deepEqual(selected.failure.source.sequence.map(item => item.kind), ['model-call', 'tool-delivery', 'model-call', 'judge-exchange']);
+  assert.equal(selected.failure.source.sequence[3]?.id, 'check');
+  const compact = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, ready({ summary: perCase,
+    evidenceStatus: 'not-requested' }));
+  assert.doesNotMatch(JSON.stringify(compact), /full-run-secret|full-run-output-secret|full-trace-secret|Missing R/);
+});
+
+test('wrong case and attempt never fall back to another selected artifact', async () => {
+  for (const wrong of [{ ...selection, caseId: 'other' }, { ...selection, attempt: 2 }]) {
+    const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection: wrong }, ready({ summary,
+      evidenceStatus: 'available', evidence }));
+    assert.deepEqual(result, { status: 'blocked', reason: 'selection-mismatch' });
+  }
+  const unavailable = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'unavailable' }));
+  assert.deepEqual(unavailable, { status: 'blocked', reason: 'missing-artifact' });
+  const corrupt = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection },
+    { reader: { get: async () => ({ status: 'blocked', reason: 'corrupt' }) } });
+  assert.deepEqual(corrupt, { status: 'blocked', reason: 'corrupt-artifact' });
 });
 
 test('old, incomplete, and runner-redacted evidence report typed gaps without reconstructed raw text', async () => {
@@ -263,6 +307,45 @@ test('failed judge without captured exchange reports error and gaps, not a model
   assert.deepEqual(issue.gradingIssue.grading.judge, { status: 'gap', reason: 'not-captured' });
   assert.deepEqual(issue.gradingIssue.source, { status: 'gap', reason: 'not-captured' });
   assert.equal('failure' in issue, false);
+});
+
+test('judge disagreement remains unproven by a completed low score', async () => {
+  const selected = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'available', evidence: { ...evidence, assertions: [rubricAssertion], sourceEvidence: rubricSource } }));
+  if (selected.status !== 'ready' || !('failure' in selected)) assert.fail('Expected failed comparison');
+  assert.equal(selected.failure.grading.kind, 'rubric');
+  assert.doesNotMatch(JSON.stringify(selected), /judge.disagreement|model.root.cause/i);
+});
+
+test('tool, runner, and partial execution remain distinct from completed assertion and grading failure', async () => {
+  const unfinished = { ...evidence, outcome: 'incomplete' as const,
+    assertions: [{ ...evidence.assertions[0]!, outcome: 'incomplete' as const }] };
+  const toolSource: SourceEvidence = { ...source, toolEvents: [{ ...source.toolEvents[0]!, outcome: 'error',
+    result: { status: 'gap', reason: 'capture-failed' } }], gaps: [{ reason: 'capture-failed', recordId: 'event-1' }] };
+  const scenarios = [
+    { state: 'partial' as const, sourceEvidence: toolSource, code: 'tool-error' },
+    { state: 'error' as const, sourceEvidence: source, code: 'runner-error' },
+    { state: 'interrupted' as const, sourceEvidence: { ...source, gaps: [{ reason: 'incomplete' as const }] }, code: 'incomplete-execution' },
+  ];
+  for (const scenario of scenarios) {
+    const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({
+      summary: { ...summary, state: scenario.state, outcome: 'incomplete', cases: [{ ...summary.cases[0]!, state: 'incomplete' }] },
+      evidenceStatus: 'available', evidence: { ...unfinished, sourceEvidence: scenario.sourceEvidence },
+    }));
+    if (result.status !== 'ready' || !('executionIssue' in result)) assert.fail(`Expected ${scenario.code}`);
+    assert.equal(result.executionIssue.code, scenario.code);
+    assert.equal(result.executionIssue.state, scenario.state);
+    assert.deepEqual({ caseId: result.executionIssue.caseId, attempt: result.executionIssue.attempt,
+      assertionId: result.executionIssue.assertionId }, selection);
+    assert.equal('failure' in result, false);
+    assert.equal('gradingIssue' in result, false);
+    assert.doesNotMatch(JSON.stringify(result), /full-run-secret|full-run-output-secret|full-trace-secret/);
+  }
+  const absent = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({
+    summary: { ...summary, state: 'partial', outcome: 'incomplete' }, evidenceStatus: 'available',
+    evidence: { ...unfinished, assertions: [] },
+  }));
+  assert.deepEqual(absent, { status: 'blocked', reason: 'selection-mismatch' });
 });
 
 test('judge field continuation rejects a locator absent from the selected assertion', async () => {

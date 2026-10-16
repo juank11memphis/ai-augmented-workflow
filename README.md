@@ -136,6 +136,8 @@ For a failed rubric, select its `failedAssertionIds` entry and read `failure.gra
 
 An older runner may report `not-captured`; that does **not** mean its normalized output is the raw provider response. `capture-failed`, `incomplete`, and `redacted` are distinct gaps, not empty raw values. Runner authors should use the managed [version-2 producer contract](templates/skills/eval-authoring/references/version-2-contract.md) to emit source evidence for future runs. Detailed artifacts remain local and subject to Sibu's Git-ignore/tracked-artifact checks; Git-ignore alone is not complete privacy protection.
 
+A completed failed assertion records observed model behavior, not a proven root cause. Compare the selected `failure` with its ordered `source.sequence` and `grading` before drawing conclusions: a judge score may be disputed, while `gradingIssue` identifies a judge failure and `executionIssue` identifies a tool, runner, or incomplete-run problem. Deterministic fixture tests verify this CLI contract; they do not prove that a live model or judge will diagnose correctly.
+
 ## The Sibu Workflow Loop
 
 Sibu works best when AI collaboration stays small, explicit, and reviewable. The loop is the rhythm: orient before building, build in focused slices, validate the result, and keep the workflow healthy over time.

@@ -6,7 +6,7 @@ Keep selected assertion evidence tied to its persisted case and attempt while re
 
 ## Scope
 
-- Task ID: EFE-S03-T02; Milestone ID: EFE-S03-M2 (truthful selected result); Status: pending; Depends on: EFE-S03-T01.
+- Task ID: EFE-S03-T02; Milestone ID: EFE-S03-M2 (truthful selected result); Status: done; Depends on: EFE-S03-T01.
 - Story acceptance criteria: AC-02, AC-03; source decisions: selected result is evidence projection, not diagnosis; a failed completed assertion is distinct from malformed/missing judge scoring, tool/runner errors, and partial/interrupted runs; wrong selection rejects without fallback. On-demand pointers: `docs/features/eval-failure-evidence/sdd.md` `## Design summary`, `## Owning operations and interfaces` (`headless-eval-result` row), `## Evidence and ordering contract`, `## Failure behavior and operational safety`, `## Quality strategy and planned verification`; `docs/features/eval-failure-evidence/brd.md` REQ-01/05/06/08 and AC-03/04/06; `docs/architecture.md` § Local Evals Workbench.
 - Applicable skills: `.agents/skills/clean-code/SKILL.md`, `.agents/skills/typescript/SKILL.md`, `.agents/skills/structured-logging/SKILL.md`, `.agents/skills/command-pattern/SKILL.md`.
 - In the existing `headless-eval-result` Command/Result/Handler slice, write fake-reader tests for exact selected case/attempt/assertion, per-case tested and judge model IDs, score/threshold/comparison, safe diagnostics, and causal order of model/tool/judge references. Test wrong case, attempt, assertion, field locator, and unavailable artifact as explicit blocks. Adjust contracts/handler only where tests reveal an SDD mismatch; preserve S01/S02 raw/normalized source and judge exchange fields.

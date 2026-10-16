@@ -16,6 +16,8 @@ export type SelectedGrading =
         readonly error?: { readonly code: string } } | { readonly status: 'gap'; readonly reason: EvidenceGap } };
 export type SelectedSourceEvidence = {
   readonly version: 2;
+  readonly sequence: readonly { readonly kind: 'model-call' | 'tool-delivery' | 'judge-exchange';
+    readonly id: string; readonly order?: number }[];
   readonly modelCalls: readonly { readonly id: string; readonly turnId: string; readonly sequence: number; readonly modelId: string;
     readonly inputMessages: readonly { readonly role: 'system' | 'user' | 'assistant' | 'tool'; readonly content: SelectedEvidenceField }[];
     readonly rawText: SelectedEvidenceField;
@@ -53,6 +55,11 @@ export type HeadlessEvalResult =
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly gradingIssue: {
       readonly caseId: string; readonly attempt: number; readonly assertionId: string;
       readonly grading: Extract<SelectedGrading, { kind: 'rubric' }>;
+      readonly source: SelectedSourceEvidence | { readonly status: 'gap'; readonly reason: EvidenceGap };
+    } }
+  | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly executionIssue: {
+      readonly caseId: string; readonly attempt: number; readonly assertionId: string;
+      readonly state: RunState; readonly code: 'tool-error' | 'runner-error' | 'incomplete-execution';
       readonly source: SelectedSourceEvidence | { readonly status: 'gap'; readonly reason: EvidenceGap };
     } }
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly field: { readonly locator: string; readonly offset: number; readonly byteLength: number;
