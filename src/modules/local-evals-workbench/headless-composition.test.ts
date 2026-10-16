@@ -107,9 +107,14 @@ test('headless blocks invalid suite/case/model/judge and unsafe artifact root wi
 test('headless stops old suites without a saved default', async () => {
   const project = await offlineProject();
   try {
+    const suitePath = path.join(project.root, 'evals/offline.json');
+    const suite = JSON.parse(await readFile(suitePath, 'utf8')) as Record<string, unknown>;
+    delete suite.defaultTestedModel;
+    await writeFile(suitePath, JSON.stringify(suite));
     const workbench = await createHeadlessWorkbench(project.root);
     const result = await workbench.run(all);
     assert.deepEqual(result, { status: 'blocked', reason: 'missing-suite-default', caseId: 'first', role: 'tested' });
+    assert.equal(result.runId, undefined);
   } finally { await project.cleanup(); }
 });
 
