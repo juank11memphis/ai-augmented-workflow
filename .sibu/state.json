@@ -2,7 +2,7 @@
   "sibuVersion": "1.0.0",
   "templateVersion": "228",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-16T17:46:26.353Z",
+  "updatedAt": "2026-10-16T18:16:39.584Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -127,7 +127,26 @@
       "templateVersion": "4",
       "sha256": "d92dc6c22832deba58d7ba9031f244abf2636692f402ea7bd66ae691f4c69b9e",
       "status": "customized",
-      "lastReviewedTemplateVersion": "4"
+      "lastReviewedTemplateVersion": "4",
+      "managedEntries": {
+        "/model_instructions_file": "8ae1eda72a7222aa9098eed1c69305fd8e12f23bb6cfab38f9dbeb859c44ebf1",
+        "agents/enabled": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+        "agents/max_concurrent_threads_per_session": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
+        "mcp_servers.github/url": "0880035d3197d286fe131100b47ade9e729549fa92d47e82704f8dca5f318229",
+        "mcp_servers.github/bearer_token_env_var": "5ac6a1bc2bd9540cb23aa6c477f182c81bc5b3c6b7a17e9b785668ecb9b4fd06",
+        "mcp_servers.github.tools.issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3",
+        "mcp_servers.github.tools.sub_issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3"
+      },
+      "managedRenderedEntries": {
+        "/model_instructions_file": "8ae1eda72a7222aa9098eed1c69305fd8e12f23bb6cfab38f9dbeb859c44ebf1",
+        "agents/enabled": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+        "agents/max_concurrent_threads_per_session": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
+        "mcp_servers.github/url": "0880035d3197d286fe131100b47ade9e729549fa92d47e82704f8dca5f318229",
+        "mcp_servers.github/bearer_token_env_var": "5ac6a1bc2bd9540cb23aa6c477f182c81bc5b3c6b7a17e9b785668ecb9b4fd06",
+        "mcp_servers.github.tools.issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3",
+        "mcp_servers.github.tools.sub_issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3"
+      },
+      "managedEntriesProtected": false
     },
     "GEMINI.md": {
       "template": "GEMINI.md",
@@ -394,13 +413,31 @@
       "template": ".gemini/settings.json",
       "templateVersion": "1",
       "sha256": "1f6fcc0dcc731a81a02ec0acaa14732f935cf44bec5d92ea0e5d54bb63096850",
-      "status": "managed"
+      "status": "managed",
+      "managedEntries": {
+        "/hooks/SessionStart/@sibu": "550589698a9a3aca12fde3e866715d8b95f15a2dfb9ef0d8aa0fd809d8b8be56",
+        "/mcpServers/github/httpUrl": "0880035d3197d286fe131100b47ade9e729549fa92d47e82704f8dca5f318229",
+        "/mcpServers/github/headers/Authorization": "e7d15defa5c87993cc0128838343e21b147998701c285a15acacafb72f3fda77"
+      },
+      "managedRenderedEntries": {
+        "/hooks/SessionStart/@sibu": "550589698a9a3aca12fde3e866715d8b95f15a2dfb9ef0d8aa0fd809d8b8be56",
+        "/mcpServers/github/httpUrl": "0880035d3197d286fe131100b47ade9e729549fa92d47e82704f8dca5f318229",
+        "/mcpServers/github/headers/Authorization": "e7d15defa5c87993cc0128838343e21b147998701c285a15acacafb72f3fda77"
+      },
+      "managedEntriesProtected": false
     },
     ".claude/settings.json": {
       "template": ".claude/settings.json",
       "templateVersion": "1",
       "sha256": "59dd7b757dce9017d2237786002a0a0e97ef6d36075156d69b1ea18e9257bdef",
-      "status": "managed"
+      "status": "managed",
+      "managedEntries": {
+        "/hooks/SessionStart/@sibu": "04f61fe91c9c0eab58d13df4ce183078ebdb2fa7f473ae722cbcaf8329db4fa9"
+      },
+      "managedRenderedEntries": {
+        "/hooks/SessionStart/@sibu": "04f61fe91c9c0eab58d13df4ce183078ebdb2fa7f473ae722cbcaf8329db4fa9"
+      },
+      "managedEntriesProtected": false
     },
     ".mcp.json": {
       "template": "mcp/claude/.mcp.json",
