@@ -12,6 +12,7 @@ import { askForSyncAction, askForUnsupportedAgentCleanup } from './action-prompt
 import { applySyncAction } from './apply-action.js';
 import type { SyncProjectCommand } from './command.js';
 import { logSyncPreview } from './log-preview.js';
+import { addSafeManagedConfigSnapshots } from './managed-config-migration.js';
 import { getSyncPreviews, isActionableSyncPreview, shouldAskForSyncAction } from './sync-preview.js';
 import { applyUnsupportedAgentCleanup, getUnsupportedAgentCleanupPlan } from './unsupported-agent-cleanup.js';
 import { reviewProjectModelRoutes } from './model-route-review-adapters.js';
@@ -130,6 +131,7 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
   const architectureSkillSelection = await syncDependencies.askForNewArchitectureSkill(frameworkSkillSelection.state);
   let state = architectureSkillSelection.state;
   const manifest = readTemplateManifest();
+  const migratedConfigState = addSafeManagedConfigSnapshots(rootPath, state, manifest);
   const previews = getSyncPreviews({ rootPath, state, manifest, protectedPaths: retirementReview.protectedPaths });
   const actionablePreviews = previews.filter(isActionableSyncPreview);
 
@@ -139,7 +141,7 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
     if (state.templateVersion !== manifest.templateVersion ||
       languageSkillSelection.changedState ||
       frameworkSkillSelection.changedState ||
-      architectureSkillSelection.changedState) {
+      architectureSkillSelection.changedState || migratedConfigState) {
       state = {
         ...state,
         templateVersion: manifest.templateVersion,
@@ -159,7 +161,7 @@ export async function handleSyncProject(_command: SyncProjectCommand, dependenci
 
   log.warn('Found workflow updates to review.');
 
-  let changedState = languageSkillSelection.changedState || frameworkSkillSelection.changedState || architectureSkillSelection.changedState;
+  let changedState = languageSkillSelection.changedState || frameworkSkillSelection.changedState || architectureSkillSelection.changedState || migratedConfigState;
   let changedFiles = false;
 
   for (const preview of previews) {

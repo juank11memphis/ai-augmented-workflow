@@ -9,6 +9,7 @@ import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_MCP_SERVERS, SELECTABLE_WORK
 import { readTemplateManifest } from '../template-catalog/index.js';
 import type { McpServerId, SibuState, SupportedAgent } from '../../shared/types.js';
 import { applySyncAction } from './apply-action.js';
+import { addSafeManagedConfigSnapshots } from './managed-config-migration.js';
 import { getSyncPreviews } from './sync-preview.js';
 import { getWorkflowTargets, renderMissingWorkflowFiles } from '../template-catalog/index.js';
 
@@ -95,6 +96,65 @@ describe('getSyncPreviews', () => {
     assert.equal(preview.hasLocalFile, true);
   });
 
+  it('ignores host-added Codex approvals and preserves them during a managed template update', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    const configPath = path.join(rootPath, '.codex/config.toml');
+    fs.appendFileSync(configPath, '\n[mcp_servers.github.tools.create_pull_request]\napproval_mode = "approve"\n', 'utf8');
+    const state = readState(rootPath);
+    assert.equal(getSyncPreview(rootPath, state, '.codex/config.toml').status, 'up-to-date');
+
+    const manifest = readTemplateManifest();
+    manifest.templates['.codex/config.toml'] = { ...manifest.templates['.codex/config.toml']!, version: '999' };
+    const preview = getSyncPreview(rootPath, state, '.codex/config.toml', manifest);
+    assert.equal(preview.status, 'update-available');
+    const applied = applySyncAction({ rootPath, state, manifest, preview, action: 'apply-update' });
+    assert.match(fs.readFileSync(configPath, 'utf8'), /\[mcp_servers\.github\.tools\.create_pull_request\]\napproval_mode = "approve"/);
+    assert.equal(applied.state.managedFiles['.codex/config.toml']?.templateVersion, '999');
+  });
+
+  it('migrates legacy Codex config ownership without including host-added approvals', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    const configPath = path.join(rootPath, '.codex/config.toml');
+    fs.appendFileSync(configPath, '\n[mcp_servers.github.tools.create_pull_request]\napproval_mode = "approve"\n', 'utf8');
+    const state = readState(rootPath);
+    delete state.managedFiles['.codex/config.toml'].managedEntries;
+    const manifest = readTemplateManifest();
+
+    assert.equal(addSafeManagedConfigSnapshots(rootPath, state, manifest), true);
+    assert.equal(getSyncPreview(rootPath, state, '.codex/config.toml', manifest).status, 'up-to-date');
+    assert.equal(Object.keys(state.managedFiles['.codex/config.toml'].managedEntries ?? {}).some((key) => key.includes('create_pull_request')), false);
+  });
+
+  it('keeps a reviewed edit to a Sibu-owned setting without repeated prompts or unsafe updates', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    const configPath = path.join(rootPath, '.codex/config.toml');
+    fs.writeFileSync(configPath, fs.readFileSync(configPath, 'utf8').replace('enabled = true', 'enabled = false'));
+    const state = readState(rootPath);
+    const manifest = readTemplateManifest();
+    const preview = getSyncPreview(rootPath, state, '.codex/config.toml', manifest);
+    assert.equal(preview.status, 'modified');
+
+    const reviewed = applySyncAction({ rootPath, state, manifest, preview, action: 'mark-reviewed' });
+    assert.equal(reviewed.state.managedFiles['.codex/config.toml']?.managedEntriesProtected, true);
+    assert.equal(getSyncPreview(rootPath, reviewed.state, '.codex/config.toml', manifest).status, 'up-to-date');
+
+    manifest.templates['.codex/config.toml'] = { ...manifest.templates['.codex/config.toml']!, version: '999' };
+    assert.equal(getSyncPreview(rootPath, reviewed.state, '.codex/config.toml', manifest).status, 'modified-with-update');
+    assert.match(fs.readFileSync(configPath, 'utf8'), /enabled = false/);
+  });
+
+  it('requires review before removing a selected MCP server that still has host approvals', () => {
+    const rootPath = createCleanInitializedRepoWithGithubMcp();
+    const configPath = path.join(rootPath, '.codex/config.toml');
+    fs.appendFileSync(configPath, '\n[mcp_servers.github.tools.merge_pull_request]\napproval_mode = "approve"\n', 'utf8');
+    const state = readState(rootPath);
+    state.selectedMcpServers = [];
+
+    const preview = getSyncPreview(rootPath, state, '.codex/config.toml');
+    assert.equal(preview.status, 'modified-with-update');
+    assert.match(fs.readFileSync(configPath, 'utf8'), /merge_pull_request/);
+  });
+
   it('respects unmanaged status for selected MCP config files', () => {
     const rootPath = createCleanInitializedRepoWithGithubMcp();
     fs.rmSync(path.join(rootPath, '.mcp.json'));
@@ -106,15 +166,17 @@ describe('getSyncPreviews', () => {
     assert.equal(preview.status, 'unmanaged');
   });
 
-  it('renders selected MCP config content for stale MCP managed files', () => {
+  it('reports stale MCP-managed setting evidence as a local edit', () => {
     const rootPath = createCleanInitializedRepoWithGithubMcp();
     const state = readState(rootPath);
-    state.managedFiles['.mcp.json'].sha256 = 'old-hash';
+    const managedEntries = state.managedFiles['.mcp.json'].managedEntries;
+    assert.ok(managedEntries);
+    managedEntries[Object.keys(managedEntries)[0]!] = 'old-hash';
 
     const preview = getSyncPreview(rootPath, state, '.mcp.json');
 
-    assert.equal(preview.status, 'modified-with-update');
-    assert.deepEqual(preview.changes, ['Refreshes generated MCP configuration for the current selected MCP servers.']);
+    assert.equal(preview.status, 'modified');
+    assert.deepEqual(preview.changes, []);
   });
 
   it('reports managed session-start hooks as missing when removed', () => {

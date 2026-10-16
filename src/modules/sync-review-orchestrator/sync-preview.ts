@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { sha256 } from '../../shared/hash.js';
+import { isSharedAgentConfig, managedConfigHasLocalEdits, managedConfigSelectionChanged, mergeManagedConfig } from '../agent-tool-configuration/managed-config.js';
 import { hasReviewedTemplateVersion } from '../workflow-state-ledger/index.js';
 import { renderTemplateForSync } from '../template-catalog/index.js';
 import type {
@@ -234,8 +235,27 @@ function getManagedFileSyncPreview({
 
   const targetPath = path.join(rootPath, relativePath);
   const hasLocalFile = fs.existsSync(targetPath);
-  const hasLocalEdits = hasLocalFile ? sha256(fs.readFileSync(targetPath, 'utf8')) !== managedFile.sha256 : false;
   const hasTemplateUpdate = managedFile.templateVersion !== template.version && !hasReviewedTemplateVersion(managedFile, template.version);
+  const renderedContents = hasLocalFile && isSharedAgentConfig(managedFile.template) ? renderTemplateForSync({
+    templateRelativePath: managedFile.template,
+    currentPath: targetPath,
+    selectedLanguageSkills,
+    selectedFrameworkSkills,
+    selectedArchitectureSkill,
+    selectedWorkflowSkills,
+    selectedDatabaseSkills,
+    selectedMcpServers,
+  }) : undefined;
+  const hasLocalEdits = hasLocalFile ? renderedContents === undefined
+    ? sha256(fs.readFileSync(targetPath, 'utf8')) !== managedFile.sha256
+    : managedConfigHasLocalEdits({
+      template: managedFile.template,
+      currentContents: fs.readFileSync(targetPath, 'utf8'),
+      expectedContents: renderedContents,
+      recordedEntries: managedFile.managedEntries,
+      recordedVersionIsCurrent: managedFile.templateVersion === template.version,
+      recordedFileHash: managedFile.sha256,
+    }) : false;
   const hasSelectionUpdate = hasRenderedSelectionUpdate({
     relativePath,
     currentPath: targetPath,
@@ -248,6 +268,21 @@ function getManagedFileSyncPreview({
     selectedMcpServers,
   });
   const hasUpdate = hasTemplateUpdate || hasSelectionUpdate;
+  let hasMergeConflict = false;
+  if (hasLocalFile && hasUpdate && renderedContents !== undefined && managedFile.managedEntries && !hasLocalEdits) {
+    try {
+      mergeManagedConfig({
+        template: managedFile.template,
+        currentContents: fs.readFileSync(targetPath, 'utf8'),
+        expectedContents: renderedContents,
+        recordedEntries: managedFile.managedEntries,
+      });
+    } catch {
+      hasMergeConflict = true;
+    }
+  }
+  const hasProtectedEdits = isSharedAgentConfig(managedFile.template) &&
+    (!!managedFile.managedEntriesProtected || !managedFile.managedEntries || hasMergeConflict) && hasUpdate;
   const changes = hasTemplateUpdate ? template.changes : [getSelectionRefreshChange(managedFile.template)];
 
   if (!hasLocalFile) {
@@ -262,7 +297,7 @@ function getManagedFileSyncPreview({
     };
   }
 
-  if (hasLocalEdits && hasUpdate) {
+  if ((hasLocalEdits || hasProtectedEdits) && hasUpdate) {
     return {
       relativePath,
       managedFile,
@@ -338,9 +373,10 @@ function hasRenderedSelectionUpdate({
   selectedDatabaseSkills: SelectableDatabaseSkill[];
   selectedMcpServers: SelectableMcpServer[];
 }): boolean {
-  if (relativePath !== 'AGENTS.md' && selectedMcpServers.length === 0) {
+  if (relativePath !== 'AGENTS.md' && !isSharedAgentConfig(managedFile.template) && selectedMcpServers.length === 0) {
     return false;
   }
+  if (!fs.existsSync(currentPath)) return false;
 
   const renderedContents = renderTemplateForSync({
     templateRelativePath: managedFile.template,
@@ -352,6 +388,14 @@ function hasRenderedSelectionUpdate({
     selectedDatabaseSkills,
     selectedMcpServers,
   });
+
+  if (isSharedAgentConfig(managedFile.template)) {
+    const renderedEntries = managedFile.managedRenderedEntries ??
+      (managedFile.managedEntriesProtected ? undefined : managedFile.managedEntries);
+    if (renderedEntries) return managedConfigSelectionChanged(managedFile.template, renderedContents, renderedEntries);
+    if (managedFile.managedEntriesProtected) return false;
+    return sha256(fs.readFileSync(currentPath, 'utf8')) === managedFile.sha256 && sha256(renderedContents) !== managedFile.sha256;
+  }
 
   return sha256(renderedContents) !== managedFile.sha256;
 }

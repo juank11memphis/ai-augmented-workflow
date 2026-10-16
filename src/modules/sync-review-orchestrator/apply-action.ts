@@ -4,6 +4,7 @@ import path from 'node:path';
 import { log } from '@clack/prompts';
 
 import { sha256 } from '../../shared/hash.js';
+import { isSharedAgentConfig, managedConfigHasLocalEdits, managedConfigSnapshot, mergeManagedConfig } from '../agent-tool-configuration/managed-config.js';
 import { getSideTemplatePath } from '../../shared/paths.js';
 import { cloneState } from '../workflow-state-ledger/index.js';
 import { getTemplateVersion } from '../template-catalog/index.js';
@@ -41,7 +42,7 @@ export function applySyncAction({
   switch (action) {
     case 'apply-update': {
       recordImpliedWorkflowSkill(nextState, preview);
-      const contents = renderTemplateForSync({
+      const expectedContents = renderTemplateForSync({
         templateRelativePath: managedFile.template,
         currentPath: targetPath,
         selectedLanguageSkills: getSelectedLanguageSkillsFromState(nextState),
@@ -51,6 +52,17 @@ export function applySyncAction({
         selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(nextState),
         selectedMcpServers: getSelectedMcpServersFromState(nextState),
       });
+      if (isSharedAgentConfig(managedFile.template) && fs.existsSync(targetPath) && !managedFile.managedEntries) {
+        throw new Error(`Cannot safely update ${preview.relativePath} without a reviewed Sibu-owned settings baseline.`);
+      }
+      const contents = isSharedAgentConfig(managedFile.template) && fs.existsSync(targetPath) && managedFile.managedEntries
+        ? mergeManagedConfig({
+          template: managedFile.template,
+          currentContents: fs.readFileSync(targetPath, 'utf8'),
+          expectedContents,
+          recordedEntries: managedFile.managedEntries,
+        })
+        : expectedContents;
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.writeFileSync(targetPath, contents, 'utf8');
       nextState.templateVersion = manifest.templateVersion;
@@ -60,6 +72,11 @@ export function applySyncAction({
         templateVersion: currentTemplateVersion,
         sha256: sha256(contents),
         status: 'managed',
+        ...(isSharedAgentConfig(managedFile.template) ? {
+          managedEntries: managedConfigSnapshot(managedFile.template, expectedContents),
+          managedRenderedEntries: managedConfigSnapshot(managedFile.template, expectedContents),
+          managedEntriesProtected: false,
+        } : {}),
       };
       log.success(`Applied latest template to ${preview.relativePath}`);
       return { state: nextState, changedFiles: true, changedState: true };
@@ -67,6 +84,16 @@ export function applySyncAction({
     case 'mark-reviewed': {
       recordImpliedWorkflowSkill(nextState, preview);
       const contents = fs.readFileSync(targetPath, 'utf8');
+      const expectedContents = isSharedAgentConfig(managedFile.template) ? renderTemplateForSync({
+        templateRelativePath: managedFile.template,
+        currentPath: targetPath,
+        selectedLanguageSkills: getSelectedLanguageSkillsFromState(nextState),
+        selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(nextState),
+        selectedArchitectureSkill: getSelectedArchitectureSkillFromState(nextState),
+        selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(nextState),
+        selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(nextState),
+        selectedMcpServers: getSelectedMcpServersFromState(nextState),
+      }) : undefined;
       nextState.templateVersion = manifest.templateVersion;
       nextState.updatedAt = new Date().toISOString();
       nextState.managedFiles[preview.relativePath] = {
@@ -74,6 +101,17 @@ export function applySyncAction({
         sha256: sha256(contents),
         status: 'customized',
         lastReviewedTemplateVersion: currentTemplateVersion,
+        ...(expectedContents !== undefined ? {
+          managedEntries: managedConfigSnapshot(managedFile.template, expectedContents, contents),
+          managedRenderedEntries: managedConfigSnapshot(managedFile.template, expectedContents),
+          managedEntriesProtected: managedConfigHasLocalEdits({
+            template: managedFile.template,
+            currentContents: contents,
+            expectedContents,
+            recordedVersionIsCurrent: true,
+            recordedFileHash: sha256(expectedContents),
+          }),
+        } : {}),
       };
       log.success(`Marked ${preview.relativePath} as reviewed.`);
       return { state: nextState, changedFiles: false, changedState: true };

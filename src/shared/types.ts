@@ -176,6 +176,9 @@ export type ManagedFileState = {
   status?: ManagedFileStatus;
   lastReviewedTemplateVersion?: string;
   reason?: string;
+  managedEntries?: Record<string, string>;
+  managedRenderedEntries?: Record<string, string>;
+  managedEntriesProtected?: boolean;
 };
 
 export type DoctorIssue = {

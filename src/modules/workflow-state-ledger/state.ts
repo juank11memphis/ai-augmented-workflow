@@ -5,6 +5,7 @@ import { STATE_RELATIVE_PATH } from './state-path.js';
 import { isModelRouteReviews, isModelRoutes } from './model-routes.js';
 import { mutateStateFile } from './state-mutation.js';
 import { sha256 } from '../../shared/hash.js';
+import { isSharedAgentConfig, managedConfigHasLocalEdits, managedConfigSnapshot } from '../agent-tool-configuration/managed-config.js';
 import { removeUndefinedFields } from '../../shared/object.js';
 import type {
   ManagedFileState,
@@ -20,7 +21,7 @@ import type {
   SupportedAgent,
   WorkflowTarget,
 } from '../../shared/types.js';
-import { getTemplateVersion, readTemplateManifest } from '../template-catalog/index.js';
+import { getTemplateVersion, readTemplateManifest, renderTemplateForSync } from '../template-catalog/index.js';
 import { SIBU_VERSION } from '../../support/version-advisory/index.js';
 
 export type StateReadResult = { ok: true; state: SibuState } | { ok: false; message: string };
@@ -122,13 +123,35 @@ export function writeSibuState({
           .map((target) => {
             const relativePath = path.relative(rootPath, target.targetPath);
             const previousManagedFile = previousState?.managedFiles[relativePath];
+            const currentContents = fs.readFileSync(target.targetPath, 'utf8');
+            const expectedContents = isSharedAgentConfig(target.templateRelativePath) ? renderTemplateForSync({
+              templateRelativePath: target.templateRelativePath,
+              currentPath: target.targetPath,
+              selectedLanguageSkills,
+              selectedFrameworkSkills,
+              selectedArchitectureSkill,
+              selectedWorkflowSkills,
+              selectedDatabaseSkills,
+              selectedMcpServers: selectedMcpServers ?? [],
+            }) : undefined;
             const nextManagedFile: ManagedFileState = {
               template: target.templateRelativePath,
               templateVersion: getTemplateVersion(manifest, target.templateRelativePath),
-              sha256: sha256(fs.readFileSync(target.targetPath, 'utf8')),
+              sha256: sha256(currentContents),
               status: previousManagedFile?.status ?? 'managed',
               lastReviewedTemplateVersion: previousManagedFile?.lastReviewedTemplateVersion,
               reason: previousManagedFile?.reason,
+              ...(expectedContents !== undefined ? {
+                managedEntries: managedConfigSnapshot(target.templateRelativePath, expectedContents, currentContents),
+                managedRenderedEntries: managedConfigSnapshot(target.templateRelativePath, expectedContents),
+                managedEntriesProtected: managedConfigHasLocalEdits({
+                  template: target.templateRelativePath,
+                  currentContents,
+                  expectedContents,
+                  recordedVersionIsCurrent: true,
+                  recordedFileHash: sha256(expectedContents),
+                }),
+              } : {}),
             };
 
             return [relativePath, removeUndefinedFields(nextManagedFile)];
@@ -212,6 +235,13 @@ function isManagedFileState(value: unknown): value is ManagedFileState {
     typeof managedFile.sha256 === 'string' &&
     (managedFile.status === undefined || validStatuses.includes(managedFile.status)) &&
     (managedFile.lastReviewedTemplateVersion === undefined || typeof managedFile.lastReviewedTemplateVersion === 'string') &&
-    (managedFile.reason === undefined || typeof managedFile.reason === 'string')
+    (managedFile.reason === undefined || typeof managedFile.reason === 'string') &&
+    (managedFile.managedEntries === undefined || (typeof managedFile.managedEntries === 'object' &&
+      managedFile.managedEntries !== null && !Array.isArray(managedFile.managedEntries) &&
+      Object.values(managedFile.managedEntries).every((hash) => typeof hash === 'string'))) &&
+    (managedFile.managedRenderedEntries === undefined || (typeof managedFile.managedRenderedEntries === 'object' &&
+      managedFile.managedRenderedEntries !== null && !Array.isArray(managedFile.managedRenderedEntries) &&
+      Object.values(managedFile.managedRenderedEntries).every((hash) => typeof hash === 'string'))) &&
+    (managedFile.managedEntriesProtected === undefined || typeof managedFile.managedEntriesProtected === 'boolean')
   );
 }

@@ -5,8 +5,9 @@ import path from 'node:path';
 import { STATE_RELATIVE_PATH } from '../workflow-state-ledger/state-path.js';
 import { SELECTABLE_ARCHITECTURE_SKILLS, SELECTABLE_DATABASE_SKILLS, SELECTABLE_FRAMEWORK_SKILLS, SELECTABLE_LANGUAGE_SKILLS, SELECTABLE_MCP_SERVERS, SUPPORTED_AGENTS } from '../template-catalog/index.js';
 import { sha256 } from '../../shared/hash.js';
+import { isSharedAgentConfig, managedConfigHasLocalEdits } from '../agent-tool-configuration/managed-config.js';
 import { hasReviewedTemplateVersion } from '../workflow-state-ledger/index.js';
-import { getTemplateVersion, loadSkillRetirements, lookupSkillIdentity, readTemplateManifest } from '../template-catalog/index.js';
+import { getTemplateVersion, loadSkillRetirements, lookupSkillIdentity, readTemplateManifest, renderTemplateForSync } from '../template-catalog/index.js';
 import type { DoctorIssue, ManagedFileStatus, SibuState } from '../../shared/types.js';
 import {
   getSelectedAgentsFromState,
@@ -196,8 +197,28 @@ function addManagedFileIssues(rootPath: string, state: SibuState, issues: Doctor
       continue;
     }
 
-    const currentHash = sha256(fs.readFileSync(targetPath, 'utf8'));
-    if (currentHash !== managedFile.sha256) {
+    const currentContents = fs.readFileSync(targetPath, 'utf8');
+    const currentTemplate = manifest.templates[managedFile.template];
+    const changed = isSharedAgentConfig(managedFile.template) && currentTemplate
+      ? managedConfigHasLocalEdits({
+        template: managedFile.template,
+        currentContents,
+        expectedContents: renderTemplateForSync({
+          templateRelativePath: managedFile.template,
+          currentPath: targetPath,
+          selectedLanguageSkills: getSelectedLanguageSkillsFromState(state),
+          selectedFrameworkSkills: getSelectedFrameworkSkillsFromState(state),
+          selectedArchitectureSkill: getSelectedArchitectureSkillFromState(state),
+          selectedWorkflowSkills: getSelectedWorkflowSkillsFromState(state),
+          selectedDatabaseSkills: getSelectedDatabaseSkillsFromState(state),
+          selectedMcpServers: getSelectedMcpServersFromState(state),
+        }),
+        recordedEntries: managedFile.managedEntries,
+        recordedVersionIsCurrent: managedFile.templateVersion === currentTemplate.version,
+        recordedFileHash: managedFile.sha256,
+      })
+      : sha256(currentContents) !== managedFile.sha256;
+    if (changed) {
       issues.push({
         severity: 'warning',
         message: `${relativePath} has changed since Sibu last recorded it.`,
