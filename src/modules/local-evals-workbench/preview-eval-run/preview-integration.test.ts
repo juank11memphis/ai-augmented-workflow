@@ -22,6 +22,13 @@ const suite = {
     toolMocks: [], assertions: [{ id: 'contains', type: 'output-contains', expected: 'hello' }], graders: [],
   }],
 };
+const caseSelectionsSuite = {
+  ...suite,
+  testCases: [
+    { ...suite.testCases[0], id: 'overridden', name: 'Overridden', testedModel: 'fake/temporary' },
+    { ...suite.testCases[0], id: 'inheriting', name: 'Inheriting' },
+  ],
+};
 const runner = `let body=''; process.stdin.on('data',chunk=>body+=chunk); process.stdin.on('end',()=>{
   const request=JSON.parse(body);
   if(process.env.SIBU_EVAL_MODE!=='1'||request.operation!=='describe') process.exit(3);
@@ -43,6 +50,7 @@ async function project(run: (root: string) => Promise<void>): Promise<void> {
 }
 test('HTTP describe and preview use offline runner, safe Git readiness and no execution', async () => {
   await project(async (root) => {
+    await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify(caseSelectionsSuite));
     const discovery = await discoverConventionalEvalSuites(
       { type: 'discover-conventional-eval-suites', projectRoot: root },
       { discoveryReader: new NodeEvalSuiteDiscoveryReader(), logger: { info: () => undefined, warn: () => undefined } }
@@ -57,15 +65,41 @@ test('HTTP describe and preview use offline runner, safe Git readiness and no ex
       const described = await post('/api/eval-suites/describe', { suiteId: 'offline' });
       assert.equal(described.code, 200);
       assert.deepEqual(described.payload.models, ['fake/available', 'fake/temporary', 'fake/unavailable']);
-      const available = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
-      assert.equal(available.code, 200);
-      assert.deepEqual(available.payload.selectedCaseIds, ['case']);
       const suitePath = path.join(root, 'evals/offline.json');
       const savedSuiteContents = await readFile(suitePath, 'utf8');
-      const runOnly = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'case' }, runOnly: { testedModel: 'fake/temporary' } });
-      assert.equal(runOnly.payload.status, 'ready');
-      assert.equal((runOnly.payload.caseSelections as { testedModel: string }[])[0]?.testedModel, 'fake/temporary');
+      const available = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
+      assert.equal(available.code, 200);
+      assert.deepEqual(available.payload.selectedCaseIds, ['overridden', 'inheriting']);
+      assert.deepEqual(available.payload.caseSelections, [
+        { caseId: 'overridden', testedModel: 'fake/temporary', judgeModel: null },
+        { caseId: 'inheriting', testedModel: 'fake/available', judgeModel: null },
+      ]);
       assert.equal(await readFile(suitePath, 'utf8'), savedSuiteContents);
+      const beforeRunOnly = await readFile(suitePath, 'utf8');
+      const runOnly = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'inheriting' }, runOnly: { testedModel: 'fake/temporary' } });
+      assert.equal(runOnly.payload.status, 'ready');
+      assert.deepEqual(runOnly.payload.caseSelections, [
+        { caseId: 'inheriting', testedModel: 'fake/temporary', judgeModel: null },
+      ]);
+      assert.equal(await readFile(suitePath, 'utf8'), beforeRunOnly);
+      const unavailableSuite = {
+        ...caseSelectionsSuite,
+        testCases: caseSelectionsSuite.testCases.map((testCase) => testCase.id === 'overridden'
+          ? { ...testCase, testedModel: 'fake/not-advertised' }
+          : testCase),
+      };
+      await writeFile(suitePath, JSON.stringify(unavailableSuite));
+      const beforeBlockedPreview = await readFile(suitePath, 'utf8');
+      const blockedPreview = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'all' } });
+      assert.equal(blockedPreview.payload.status, 'blocked');
+      assert.equal(blockedPreview.payload.stage, 'description');
+      assert.equal(blockedPreview.payload.reason, 'saved-model-unavailable');
+      assert.equal((blockedPreview.payload.issue as { category: string }).category, 'saved-model-unavailable');
+      assert.equal(blockedPreview.payload.caseId, 'overridden');
+      assert.equal(blockedPreview.payload.role, 'tested');
+      assert.equal(blockedPreview.payload.source, 'case-override');
+      assert.equal(await readFile(suitePath, 'utf8'), beforeBlockedPreview);
+      await writeFile(suitePath, savedSuiteContents);
       const missingCase = await post('/api/eval-runs/preview', { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'missing' } });
       assert.equal(missingCase.payload.status, 'blocked');
       assert.equal(missingCase.payload.stage, 'selection');
