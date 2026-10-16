@@ -5,7 +5,7 @@
 ## Epic
 [Diagnose Eval Failures from Selected CLI Evidence](../epic_brief.md)
 
-**Status:** in-progress
+**Status:** verified/integrated
 
 ## User Story
 As an engineer or coding agent reading a full-suite run, I want reliable locators and honest failure states, so that I can open the right assertion and avoid diagnosing a tool, judge, or incomplete-run problem as a model failure.
