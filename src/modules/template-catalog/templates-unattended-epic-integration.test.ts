@@ -90,7 +90,7 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '228');
+    assert.equal(manifest.templateVersion, '230');
     assert.equal(manifest.templates[templatePath]?.version, '71');
     assert.equal(manifest.templates['AGENTS.md']?.version, '56');
     assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /overlapping uncommitted Task failures.*reviewed same-Task continuation/);

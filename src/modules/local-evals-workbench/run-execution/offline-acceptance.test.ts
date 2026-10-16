@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { createHeadlessWorkbench } from '../headless-composition.js';
+import { sourceEvidenceProject } from './source-evidence-project-fixture.js';
 import { discoverConventionalEvalSuites, NodeEvalSuiteDiscoveryReader } from '../discover-conventional-eval-suites/index.js';
 import { NodeLocalWorkbenchServerStarter } from '../start-local-evals-workbench/local-server-starter.js';
 import { offlineProject } from './offline-project-fixture.js';
@@ -174,5 +177,160 @@ test('offline target execution persists real output and changed integration chan
       assert.deepEqual(single.summary.cases[0]?.attempts.flatMap(item => item.rubricScores ?? []), [0.9]);
       assert.equal(project.git('status', '--porcelain'), before);
     } finally { await server.stop?.(); }
+  } finally { await project.cleanup(); }
+});
+
+test('fake runner source survives save/reopen into selected CLI bytes without full-run disclosure', async () => {
+  const project = await sourceEvidenceProject();
+  try {
+    const before = project.git('status', '--porcelain');
+    const workbench = await createHeadlessWorkbench(project.root);
+    const result = await workbench.run({ suiteId: 'offline', scope: { type: 'all' } });
+    assert.equal(result.status, 'completed', JSON.stringify(result));
+    assert.doesNotMatch(JSON.stringify(result), /RAW-é|DELIVERED|approved context/);
+    if (result.status !== 'completed') return;
+    const runId = result.runId;
+    assert.ok(runId);
+    const cli = (...args: string[]) => {
+      const processResult = spawnSync(process.execPath, [path.resolve('bin/sibu.js'), 'evals', ...args],
+        { cwd: project.root, encoding: 'utf8', timeout: 20_000 });
+      assert.ifError(processResult.error);
+      assert.doesNotMatch(processResult.stderr, /RAW-é|DELIVERED|approved context/);
+      return JSON.parse(processResult.stdout) as Record<string, unknown>;
+    };
+    const summary = cli('result', 'offline', runId);
+    assert.equal(summary.status, 'ready');
+    assert.doesNotMatch(JSON.stringify(summary), /RAW-é|DELIVERED|approved context/);
+    const cases = (summary.summary as { cases: { caseId: string; attempts: { failedAssertionIds: string[] }[] }[] }).cases;
+    assert.deepEqual(cases.map(item => [item.caseId, item.attempts[0]?.failedAssertionIds]),
+      [['multi', ['exact']], ['redacted', ['exact']], ['rubric', ['exact', 'quality']]]);
+    const selected = cli('result', 'offline', runId, '--case', 'multi', '--attempt', '1', '--assertion', 'exact');
+    assert.equal(selected.status, 'ready', JSON.stringify(selected));
+    const failure = selected.failure as { caseId: string; attempt: number; source: { modelCalls: { id: string; turnId: string;
+      rawText: { locator: string; byteLength: number; truncated: boolean }; normalizedOutput: { value: string };
+      inputMessages: { content: { value: string } }[]; rawToolCalls: { arguments: { value: string } }[] }[];
+      toolEvents: { request: { value: string }; result: { value: string } }[]; approvedFacts: unknown[] } };
+    assert.deepEqual([failure.caseId, failure.attempt], ['multi', 1]);
+    assert.deepEqual((selected.failure as { grading: unknown }).grading, { kind: 'deterministic' });
+    assert.deepEqual(failure.source.modelCalls.map(call => [call.id, call.turnId]), [['call-1', 'turn-1'], ['call-2', 'turn-2']]);
+    assert.equal(failure.source.modelCalls[0]?.inputMessages[0]?.content.value, 'approved context');
+    assert.equal(failure.source.modelCalls[0]?.normalizedOutput.value, 'FIRST');
+    assert.equal(failure.source.modelCalls[0]?.rawToolCalls[0]?.arguments.value, '{"id":1}');
+    assert.equal(failure.source.modelCalls[1]?.inputMessages[0]?.content.value, '{"actual":"DELIVERED"}');
+    assert.equal(failure.source.toolEvents[0]?.request.value, '{"id":1}');
+    assert.equal(failure.source.toolEvents[0]?.result.value, '{"actual":"DELIVERED"}');
+    const declared = JSON.parse(await readFile(path.join(project.root, 'evals/offline.json'), 'utf8')) as {
+      testCases: { toolMocks: { outcome: { value: unknown } }[] }[] };
+    assert.notEqual(failure.source.toolEvents[0]?.result.value,
+      JSON.stringify(declared.testCases[0]?.toolMocks[0]?.outcome.value));
+    assert.deepEqual(failure.source.approvedFacts, [{ modelCallId: 'call-1', factId: 'fact-1', provenance: 'runner-attested' }]);
+    const raw = failure.source.modelCalls[0]!.rawText;
+    assert.equal(raw.truncated, true);
+    assert.equal(raw.locator, 'call-1~rawText');
+    const parts: Buffer[] = [];
+    let offset = 0;
+    while (true) {
+      const page = cli('result', 'offline', runId, '--case', 'multi', '--attempt', '1', '--assertion', 'exact',
+        '--field', raw.locator, '--offset', String(offset));
+      assert.equal(page.status, 'ready', JSON.stringify(page));
+      const field = page.field as { bytesBase64: string; nextOffset: number | null };
+      parts.push(Buffer.from(field.bytesBase64, 'base64'));
+      if (field.nextOffset === null) break;
+      offset = field.nextOffset;
+    }
+    assert.equal(Buffer.concat(parts).toString('utf8'), 'RAW-é-' + 'x'.repeat(1200));
+    assert.notEqual(Buffer.concat(parts).toString('utf8'), failure.source.modelCalls[0]?.normalizedOutput.value);
+    const judgeSelected = cli('result', 'offline', runId, '--case', 'rubric', '--attempt', '1', '--assertion', 'quality');
+    assert.equal(judgeSelected.status, 'ready', JSON.stringify(judgeSelected));
+    const rubricFailure = judgeSelected.failure as { grading: { kind: string; score: number; threshold: number;
+      comparison: string; judgeModel: string; evaluatedRubric: { value: string }; judge: {
+        request: { locator: string; byteLength: number; truncated: boolean }; response: { value: string }; rationale: { value: string } } } };
+    assert.deepEqual([rubricFailure.grading.kind, rubricFailure.grading.score, rubricFailure.grading.threshold,
+      rubricFailure.grading.comparison, rubricFailure.grading.judgeModel], ['rubric', 0.4, 0.8, 'failed', 'fake-judge']);
+    assert.equal(rubricFailure.grading.evaluatedRubric.value, 'Quality against REFERENCE-é');
+    assert.equal(rubricFailure.grading.judge.response.value, '{"score":0.4,"rationale":"Missing reference é"}');
+    assert.equal(rubricFailure.grading.judge.rationale.value, 'Missing reference é');
+    const judgeRequest = rubricFailure.grading.judge.request;
+    assert.equal(judgeRequest.truncated, true);
+    assert.equal(judgeRequest.locator, 'judge-1~request');
+    const judgeParts: Buffer[] = [];
+    let judgeOffset = 0;
+    while (true) {
+      const page = cli('result', 'offline', runId, '--case', 'rubric', '--attempt', '1', '--assertion', 'quality',
+        '--field', judgeRequest.locator, '--offset', String(judgeOffset));
+      assert.equal(page.status, 'ready', JSON.stringify(page));
+      const field = page.field as { bytesBase64: string; byteLength: number; offset: number; nextOffset: number | null };
+      assert.equal(field.offset, judgeOffset);
+      assert.equal(field.byteLength, judgeRequest.byteLength);
+      judgeParts.push(Buffer.from(field.bytesBase64, 'base64'));
+      if (field.nextOffset === null) break;
+      assert.ok(field.nextOffset > judgeOffset);
+      judgeOffset = field.nextOffset;
+    }
+    const expectedRequest = 'Grade NORMALIZED against REFERENCE-é. ' + 'judge-é-☃'.repeat(180);
+    assert.deepEqual(Buffer.concat(judgeParts), Buffer.from(expectedRequest));
+    assert.equal(cli('result', 'offline', runId, '--case', 'rubric', '--attempt', '1', '--assertion', 'exact',
+      '--field', judgeRequest.locator, '--offset', '0').status, 'blocked');
+    assert.doesNotMatch(JSON.stringify(result) + JSON.stringify(summary), /Grade NORMALIZED|Missing reference é|broken-é/);
+    const redacted = cli('result', 'offline', runId, '--case', 'redacted', '--attempt', '1', '--assertion', 'exact');
+    const redactedSource = (redacted.failure as { source: { modelCalls: { rawText: unknown }[]; approvedFacts: unknown[] } }).source;
+    assert.deepEqual(redactedSource.modelCalls[0]?.rawText, { status: 'gap', reason: 'redacted' });
+    assert.deepEqual(redactedSource.approvedFacts, []);
+    assert.equal(cli('result', 'offline', runId, '--case', 'redacted', '--attempt', '1', '--assertion', 'exact',
+      '--field', 'call-1~rawText', '--offset', '0').status, 'blocked');
+    assert.equal(cli('result', 'offline', runId, '--case', 'multi', '--attempt', '2', '--assertion', 'exact').status, 'blocked');
+    assert.equal(cli('result', 'offline', runId, '--case', 'multi', '--attempt', '1', '--assertion', 'wrong').status, 'blocked');
+    assert.equal(project.git('status', '--porcelain'), before);
+  } finally { await project.cleanup(); }
+});
+
+test('scoreless fake judge error retains exact bytes without inventing a failed locator', async () => {
+  const project = await sourceEvidenceProject(['malformed']);
+  try {
+    const workbench = await createHeadlessWorkbench(project.root);
+    const result = await workbench.run({ suiteId: 'offline', scope: { type: 'all' } });
+    assert.equal(result.status, 'error', JSON.stringify(result));
+    assert.doesNotMatch(JSON.stringify(result), /Grade NORMALIZED|broken-é/);
+    if (result.status !== 'error' || !result.runId) return;
+    const cli = (...args: string[]) => {
+      const processResult = spawnSync(process.execPath, [path.resolve('bin/sibu.js'), 'evals', 'result', 'offline', result.runId!, ...args],
+        { cwd: project.root, encoding: 'utf8', timeout: 20_000 });
+      assert.ifError(processResult.error);
+      assert.doesNotMatch(processResult.stderr, /Grade NORMALIZED|broken-é/);
+      return JSON.parse(processResult.stdout) as Record<string, unknown>;
+    };
+    const summary = cli();
+    assert.equal(summary.status, 'ready');
+    assert.doesNotMatch(JSON.stringify(summary), /Grade NORMALIZED|broken-é/);
+    const attempt = (summary.summary as { cases: { attempts: { outcome: string; failedAssertionIds?: string[] }[] }[] })
+      .cases[0]?.attempts[0];
+    assert.equal(attempt?.outcome, 'incomplete');
+    assert.equal(attempt.failedAssertionIds, undefined);
+    const selected = cli('--case', 'malformed', '--attempt', '1', '--assertion', 'quality');
+    assert.equal(selected.status, 'ready', JSON.stringify(selected));
+    assert.equal(selected.failure, undefined);
+    const issue = selected.gradingIssue as { grading: { score: number | null; comparison: string; error: { code: string };
+      judge: { request: { locator: string }; response: { locator: string; value: string } } } };
+    assert.deepEqual([issue.grading.score, issue.grading.comparison, issue.grading.error.code],
+      [null, 'incomplete', 'malformed-score']);
+    assert.equal(issue.grading.judge.response.value, '{broken-é');
+    const responsePage = cli('--case', 'malformed', '--attempt', '1', '--assertion', 'quality',
+      '--field', issue.grading.judge.response.locator, '--offset', '0');
+    assert.equal(responsePage.status, 'ready', JSON.stringify(responsePage));
+    assert.deepEqual(Buffer.from((responsePage.field as { bytesBase64: string }).bytesBase64, 'base64'), Buffer.from('{broken-é'));
+    const parts: Buffer[] = [];
+    let offset = 0;
+    while (true) {
+      const page = cli('--case', 'malformed', '--attempt', '1', '--assertion', 'quality',
+        '--field', issue.grading.judge.request.locator, '--offset', String(offset));
+      assert.equal(page.status, 'ready', JSON.stringify(page));
+      const field = page.field as { bytesBase64: string; nextOffset: number | null };
+      parts.push(Buffer.from(field.bytesBase64, 'base64'));
+      if (field.nextOffset === null) break;
+      assert.ok(field.nextOffset > offset);
+      offset = field.nextOffset;
+    }
+    assert.deepEqual(Buffer.concat(parts), Buffer.from('Grade NORMALIZED against REFERENCE-é. ' + 'judge-é-☃'.repeat(180)));
+    assert.equal(cli('--case', 'malformed', '--attempt', '1', '--assertion', 'exact').status, 'blocked');
   } finally { await project.cleanup(); }
 });

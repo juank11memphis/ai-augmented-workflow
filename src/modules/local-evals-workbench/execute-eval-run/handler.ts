@@ -1,9 +1,9 @@
 import type { ExecuteEvalRunCommand } from './command.js';
 import type { ExecuteEvalRunResult } from './result.js';
 import type { ExecuteEvalRunDependencies } from './ports.js';
-import type { Attempt, RunState, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
+import type { Attempt, RunState, SourceReference, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
 import type { ExecutionEvent } from '../run-execution/contracts.js';
-import { normalizeGraderOutcome, normalizeGraderOutcomes } from '../run-execution/attempt-evidence.js';
+import { normalizeGraderOutcome, normalizeGraderOutcomes, validJudgeSource } from '../run-execution/attempt-evidence.js';
 import { boundedJson, attempt as validAttempt } from '../run-history/validation.js';
 import { LIMITS } from '../run-history/limits.js';
 import { reviewSources } from './review-sources.js';
@@ -19,7 +19,9 @@ const SAFE_REASONS = new Set(['runner-absent', 'runner-unavailable', 'runner-sta
 class PersistenceStopped extends Error {}
 class EvidenceLimitStopped extends Error {}
 type Current = { caseId: string; number: number; began: number; turns: TurnEvidence[]; tools: ToolEvidence[];
-  graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[] };
+  graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[];
+  gradingErrors: Extract<ExecutionEvent, { type: 'grading-error' }>[];
+  sourceRecords: SourceReference[]; sourceGaps: { reason: 'incomplete' | 'capture-failed'; recordId?: string }[] };
 
 export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: ExecuteEvalRunDependencies): Promise<ExecuteEvalRunResult> {
   const { suite, runId, cases } = command;
@@ -52,16 +54,56 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
   };
   const evidence = (outcome: Attempt['outcome'], assertions: Attempt['assertions'] = [], calls: number | null = null, cost: number | null = null): Attempt => {
     if (!current) throw new Error('missing-attempt');
+    const visibleAssertions = assertions.length ? assertions : [
+      ...current.graders.map(item => normalizeGraderOutcome(
+        cases[caseIndex]!.graders.find(grader => grader.id === item.checkId)!, item, activeJudge)),
+      ...current.gradingErrors.map(item => ({
+      id: item.checkId, kind: 'grader' as const, outcome: 'incomplete' as const, score: null,
+      expected: 'rubric judgment', actual: '', diagnostics: [item.code], turnIds: [], toolIds: [], gradingError: { code: item.code } })),
+    ];
     return { version: 1, suiteId: suite.id, runId, caseId: current.caseId, number: current.number, outcome,
       durationMs: Math.max(0, ports.clock() - current.began), calls, cost, output: current.output,
-      truncated: false, diagnostics: [...current.diagnostics], turns: [...current.turns], tools: [...current.tools], assertions,
+      truncated: false, diagnostics: [...current.diagnostics], turns: [...current.turns], tools: [...current.tools], assertions: visibleAssertions,
+      sourceCapture: { records: [...current.sourceRecords], gaps: [...current.sourceGaps] },
       review: reviewSources(command, current.caseId) };
   };
   const consume = async (event: ExecutionEvent): Promise<void> => {
     if (terminal) throw new Error('event-after-terminal');
     if (event.type === 'case-started') {
       if (current || cases[caseIndex]?.id !== event.caseId || (event.attempt ?? 1) !== attemptNumber) throw new Error('attempt-order');
-      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], output: '', diagnostics: [] };
+      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], gradingErrors: [], output: '', diagnostics: [], sourceRecords: [], sourceGaps: [] };
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'source-record') {
+      if (!current || current.caseId !== event.caseId || current.number !== event.attempt
+        || ![...cases[caseIndex]!.assertions, ...cases[caseIndex]!.graders].some(item => item.id === event.record.checkId)
+        || !current.turns.some(turn => turn.id === event.record.turnId)
+        || current.sourceRecords.some(record => record.id === event.record.id)) throw new Error('source-record-link');
+      if (event.record.kind === 'judge-exchange') {
+        const record = event.record;
+        const declared = cases[caseIndex]?.graders.find(item => item.id === record.checkId);
+        const completed = current.graders.find(item => item.checkId === record.checkId);
+        const failed = current.gradingErrors.find(item => item.checkId === record.checkId);
+        if (!validJudgeSource(record) || declared?.type !== 'rubric' || record.judgeModel !== activeJudge
+          || current.sourceRecords.some(item => item.kind === 'judge-exchange' && item.checkId === record.checkId)
+          || event.sequence <= record.eventSequence
+          || record.result.status === 'completed' && (!completed || completed.grader !== 'rubric'
+            || completed.sequence === undefined || completed.sequence !== record.eventSequence
+            || completed.score !== record.result.score || completed.threshold !== record.result.threshold
+            || completed.passed !== record.result.passed)
+          || record.result.status === 'grading-error' && (!failed || failed.sequence !== record.eventSequence
+            || failed.code !== record.result.code)) throw new Error('source-judge-link');
+      }
+      const saved = ports.store.saveSourceRecord ? await ports.store.saveSourceRecord({ version: 1, suiteId: suite.id, runId, caseId: current.caseId,
+        attempt: current.number, sequence: current.sourceRecords.length, record: event.record }) : { status: 'blocked' as const, reason: 'unavailable' as const };
+      if (saved.status !== 'ok') {
+        current.sourceGaps.push({ reason: 'capture-failed', recordId: event.record.id });
+        addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
+      } else current.sourceRecords.push(saved.value);
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'source-gap') {
+      if (!current || current.caseId !== event.caseId || current.number !== event.attempt) throw new Error('source-gap-link');
+      current.sourceGaps.push({ reason: event.reason, ...(event.recordId ? { recordId: event.recordId } : {}) });
+      addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
       await persist(evidence('incomplete'));
     } else if (event.type === 'turn-completed') {
       if (!current || current.caseId !== event.caseId || (event.attempt ?? 1) !== current.number
@@ -86,8 +128,22 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         cases[caseIndex]!.graders.find(grader => grader.id === item.checkId)!, item, activeJudge));
       current.graders.push(event);
       await persist(evidence('incomplete', [...previous, result]));
+    } else if (event.type === 'grading-error') {
+      if (!current || current.caseId !== event.caseId || current.number !== event.attempt
+        || current.gradingErrors.some(item => item.checkId === event.checkId)
+        || current.graders.some(item => item.checkId === event.checkId)
+        || cases[caseIndex]?.graders.find(item => item.id === event.checkId)?.type !== 'rubric'
+        || event.judgeModel !== activeJudge || !/^[a-z][a-z0-9-]{0,79}$/.test(event.code)) throw new Error('grading-error-link');
+      current.gradingErrors.push(event);
+      addDiagnostic(current.diagnostics, `grading-error-${event.code}`);
+      await persist(evidence('incomplete'));
     } else if (event.type === 'case-completed') {
       if (!current || current.caseId !== event.caseId || (event.attempt ?? 1) !== current.number) throw new Error('attempt-order');
+      if (event.sourceCapture === 'complete' && (current.sourceGaps.length > 0 || current.sourceRecords.length === 0)) throw new Error('source-capture-invalid');
+      if (event.sourceCapture === 'incomplete') {
+        if (current.sourceGaps.length === 0) current.sourceGaps.push({ reason: 'incomplete' });
+        addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
+      }
       if (event.status === 'completed') {
         if (current.turns.length !== cases[caseIndex]!.turns.length) throw new Error('missing-turn');
         const selected = cases[caseIndex]!;
@@ -123,6 +179,11 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       if (outcome.status !== 'completed') break;
       if (terminal !== 'completed' || caseIndex !== expectedEnd || current) throw new Error('batch-incomplete');
     }
+    if (current && (current.sourceRecords.length > 0 || current.sourceGaps.length > 0)) {
+      if (current.sourceGaps.length === 0) current.sourceGaps.push({ reason: 'incomplete' });
+      addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
+      await persist(evidence('incomplete'));
+    }
     const status: Exclude<RunState, 'queued' | 'running'> = outcome.status === 'blocked' && completed === 0 ? 'blocked'
       : outcome.status === 'interrupted' ? 'interrupted'
       : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length ? 'completed'
@@ -138,6 +199,12 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     const status = completed ? 'partial' : 'error';
     const reason = error instanceof EvidenceLimitStopped ? 'evidence-limit-exceeded' : 'runner-protocol-invalid';
     addDiagnostic(runDiagnostics, reason);
+    if (current && current.sourceRecords.length > 0) {
+      if (current.sourceGaps.length === 0) current.sourceGaps.push({ reason: 'incomplete' });
+      addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
+      try { await persist(evidence('incomplete')); }
+      catch { log('eval_run_storage_failed', 'failed', 'unavailable'); return { status: 'storage-failed', runId }; }
+    }
     const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics);
     if (finished.status === 'blocked') { log('eval_run_storage_failed', 'failed', finished.reason); return { status: 'storage-failed', runId, reason: finished.reason }; }
     log('eval_run_finished', status === 'error' ? 'failed' : status, reason);

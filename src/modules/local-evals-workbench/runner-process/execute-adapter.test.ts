@@ -34,6 +34,33 @@ test('streams ordered actual output before process exit without exposing runner 
   });
 });
 
+test('version-two runner delivers complete source while operational logs omit its raw payload', async () => {
+  await withSelection(async (project, selection) => {
+    await project.changeRunner(`let raw=''; for await(const c of process.stdin) raw+=c; const q=JSON.parse(raw); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:2,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
+      emit('conversation-turn-completed','first',{turnIndex:0,turnId:'turn-1',role:'assistant',output:'normalized'});
+      const source={kind:'model-call',id:'call-1',turnId:'turn-1',checkId:'contains',modelId:q.model,phase:'initial',elapsedMs:3,
+        inputMessages:[{role:'user',content:'SYNTHETIC_INPUT_SECRET'}],rawText:'SYNTHETIC_RAW_SECRET',
+        rawToolCalls:[{id:'provider-call',name:'lookup',arguments:{secret:'SYNTHETIC_ARG_SECRET'}}],normalizedOutput:'normalized'};
+      const bytes=Buffer.from(JSON.stringify(source)); const split=Math.floor(bytes.length/2);
+      for(const [index,part] of [bytes.subarray(0,split),bytes.subarray(split)].entries()) emit('source-record-chunk','first',
+        {recordId:'call-1',index,count:2,byteLength:bytes.length,base64:part.toString('base64')});
+      emit('case-attempt-completed','first',{status:'completed',sourceEvidenceComplete:true});
+      emit('run-completed',null,{status:'completed'});`);
+    const received: ExecutionEvent[] = []; const logs: unknown[] = [];
+    const outcome = await new ProjectRunnerExecuteAdapter(project.root, EXECUTE_LIMITS, process.env,
+      { record: item => { logs.push(item); } }).execute(selection, async item => { received.push(item); });
+    assert.equal(outcome.status, 'completed');
+    const record = received.find(item => item.type === 'source-record');
+    assert.equal(record?.type, 'source-record');
+    if (record?.type === 'source-record') assert.equal(record.record.kind === 'model-call' && record.record.rawText, 'SYNTHETIC_RAW_SECRET');
+    assert.equal(received.some(item => item.type === 'source-chunk-accepted'), false);
+    assert.doesNotMatch(JSON.stringify(logs), /SYNTHETIC_(INPUT|RAW|ARG)_SECRET/);
+  });
+});
+
 test('preserves preceding accepted events on abnormal process exit and rejects missing terminal', async () => {
   await withSelection(async (project, selection) => {
     await project.changeRunner(`let raw=''; for await(const c of process.stdin) raw+=c; const q=JSON.parse(raw);

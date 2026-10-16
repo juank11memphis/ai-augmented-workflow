@@ -1,5 +1,5 @@
 import { mkdir } from 'node:fs/promises';
-import type { ArtifactStorePort, ArtifactLogger, Attempt, Manifest, Outcome, OwnerPort, RunConfiguration, RunState } from './contracts.js';
+import type { ArtifactStorePort, ArtifactLogger, Attempt, Manifest, Outcome, OwnerPort, RunConfiguration, RunState, SourceReference, SourceRecordWrite } from './contracts.js';
 import { ArtifactFault, component, failure } from './artifact-paths.js';
 import { AtomicArtifactFile, SafetyFault } from './atomic-artifact-file.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
@@ -10,6 +10,7 @@ import { runIdentity } from './run-identity.js';
 import { serialized } from './active-run-owner.js';
 import { appendAttempt, transition } from './lifecycle.js';
 import { collectHistory, compact, indexFrom } from './history-index.js';
+import { judgeMatchesAssertion, storedSourceRecord } from './source-artifact.js';
 export type StoreDependencies = {
   readonly files: AtomicArtifactFile; readonly reader: BoundedArtifactReader; readonly owner: OwnerPort;
   readonly clock: () => number; readonly logger: ArtifactLogger;
@@ -40,10 +41,47 @@ export class FileArtifactStore implements ArtifactStorePort {
     const safe = boundedArtifact(input, LIMITS.attemptBytes, attempt); if (safe.status !== 'ok') return this.report(safe);
     return this.update(suiteId, runId, async run => {
       const updated = appendAttempt(run, safe.value, this.dependencies.clock()); if (updated.status !== 'ok') return updated;
+      for (const reference of safe.value.sourceCapture?.records ?? []) {
+        const path = this.paths.source(suiteId, runId, safe.value.caseId, safe.value.number, reference.id);
+        await this.dependencies.files.ready(path);
+        const stored = await this.dependencies.reader.read(path, LIMITS.sourceRecordBytes, storedSourceRecord, true);
+        if (stored.status !== 'ok' || stored.value.suiteId !== suiteId || stored.value.runId !== runId
+          || stored.value.caseId !== safe.value.caseId || stored.value.attempt !== safe.value.number
+          || stored.value.record.id !== reference.id || stored.value.record.kind !== reference.kind || stored.value.status !== reference.status
+          || stored.value.record.checkId !== reference.checkId || stored.value.record.turnId !== reference.turnId
+          || stored.value.sequence !== reference.sequence || Buffer.byteLength(JSON.stringify(stored.value.record)) !== reference.byteLength)
+          return { status: 'blocked', reason: 'corrupt' };
+        if (!judgeMatchesAssertion(stored.value.record, safe.value.assertions)) return { status: 'blocked', reason: 'corrupt' };
+      }
       const valid = this.safeManifest(updated.value); if (valid.status !== 'ok') return valid;
       await this.dependencies.files.write(this.paths.attempt(suiteId, runId, safe.value.caseId, safe.value.number), safe.value);
       return valid;
     });
+  }
+  async saveSourceRecord(value: SourceRecordWrite): Promise<Outcome<SourceReference>> {
+    let bytes: number;
+    try { bytes = Buffer.byteLength(JSON.stringify(value.record)); }
+    catch { return { status: 'blocked', reason: 'invalid-input' }; }
+    const complete = { ...value, status: 'complete' as const, byteLength: bytes };
+    if (!storedSourceRecord(complete)) return { status: 'blocked', reason: 'invalid-input' };
+    const { suiteId, runId, caseId, attempt: number, record } = value;
+    try {
+      return await serialized(this.paths.root, async () => {
+        const loaded = await this.load(suiteId, runId);
+        if (loaded.status !== 'ok') return loaded;
+        if (loaded.value.state !== 'running' || !loaded.value.cases.some(item => item.caseId === caseId)
+          || loaded.value.owner.pid !== this.dependencies.owner.identity.pid
+          || loaded.value.owner.token !== this.dependencies.owner.identity.token) return { status: 'blocked', reason: 'invalid-transition' };
+        const path = this.paths.source(suiteId, runId, caseId, number, record.id);
+        await this.dependencies.files.ready(path);
+        const existing = await this.dependencies.reader.read(path, LIMITS.sourceRecordBytes, storedSourceRecord, true);
+        if (existing.status === 'blocked' && existing.reason !== 'not-found') return existing;
+        if (existing.status === 'ok') return { status: 'blocked', reason: 'corrupt' };
+        await this.dependencies.files.write(path, complete);
+        return { status: 'ok', value: { id: record.id, kind: record.kind, status: 'complete', checkId: record.checkId,
+          turnId: record.turnId, sequence: value.sequence, byteLength: bytes } };
+      });
+    } catch (error) { return error instanceof SafetyFault ? { status: 'blocked', reason: error.reason } : failure(error); }
   }
   async finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[]): Promise<Outcome<Manifest>> {
     if (!['completed', 'partial', 'blocked', 'error', 'interrupted'].includes(state)) return { status: 'blocked', reason: 'invalid-transition' };

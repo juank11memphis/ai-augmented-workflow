@@ -14,9 +14,13 @@ const MAX_IDS = 32;
 export async function failedAssertionLocators(
   manifest: Manifest,
   reader: Pick<ArtifactReaderPort, 'get'>,
-): Promise<readonly { readonly caseId: string; readonly state: Manifest['cases'][number]['state'];
-  readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[]> {
+  offset = 0,
+): Promise<{ readonly cases: readonly { readonly caseId: string; readonly state: Manifest['cases'][number]['state'];
+  readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[];
+  readonly nextLocatorOffset: number | null }> {
   let remaining = MAX_IDS;
+  let skipped = 0;
+  let more = false;
   const cases = [];
   for (const item of manifest.cases) {
     const attempts: LocatedAttempt[] = [];
@@ -27,6 +31,7 @@ export async function failedAssertionLocators(
       }
       if (remaining === 0) {
         attempts.push({ number: attempt.number, outcome: attempt.outcome, failedAssertionIds: [], locatorStatus: 'truncated' });
+        more = true;
         continue;
       }
       try {
@@ -40,8 +45,11 @@ export async function failedAssertionLocators(
           attempts.push({ number: attempt.number, outcome: attempt.outcome, failedAssertionIds: [], locatorStatus: 'unavailable' });
           continue;
         }
-        const ids = failed.slice(0, remaining).map(assertion => assertion.id);
+        const start = Math.max(0, offset - skipped);
+        const ids = failed.slice(start, start + remaining).map(assertion => assertion.id);
+        skipped += failed.length;
         remaining -= ids.length;
+        if (start + ids.length < failed.length) more = true;
         attempts.push({ number: attempt.number, outcome: attempt.outcome, failedAssertionIds: ids,
           locatorStatus: ids.length < failed.length ? 'truncated' : 'available' });
       } catch {
@@ -51,5 +59,5 @@ export async function failedAssertionLocators(
     cases.push({ caseId: item.caseId, state: item.state,
       testedModel: item.testedModel ?? manifest.testedModel, judgeModel: item.judgeModel !== undefined ? item.judgeModel : manifest.judgeModel, attempts });
   }
-  return cases;
+  return { cases, nextLocatorOffset: more ? offset + (MAX_IDS - remaining) : null };
 }

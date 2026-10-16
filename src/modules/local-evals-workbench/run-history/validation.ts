@@ -67,7 +67,7 @@ function validTotals(v: Record<string, unknown>): boolean {
   return true;
 }
 export function attempt(v: unknown): v is Attempt {
-  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics turns tools assertions review') || v.version !== 1
+  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics turns tools assertions review sourceCapture') || v.version !== 1
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
     || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(v.diagnostics)) return false;
   if (v.review !== undefined && (!record(v.review) || !keys(v.review, 'runPath suitePath targetPath runnerPath inputPaths omittedInputPathCount context')
@@ -77,22 +77,43 @@ export function attempt(v: unknown): v is Attempt {
     || v.review.runnerPath !== null && !reviewPath(v.review.runnerPath)
     || !Array.isArray(v.review.inputPaths) || v.review.inputPaths.length > LIMITS.evidenceItems
     || !v.review.inputPaths.every(reviewPath) || !integer(v.review.omittedInputPathCount))) return false;
+  if (v.sourceCapture !== undefined && (!record(v.sourceCapture) || !keys(v.sourceCapture, 'records gaps')
+    || !Array.isArray(v.sourceCapture.records) || v.sourceCapture.records.length > LIMITS.evidenceItems
+    || !v.sourceCapture.records.every(item => record(item) && keys(item, 'id kind status checkId turnId sequence byteLength')
+      && logicalId(item.id) && enumValue(item.kind, ['model-call', 'tool-delivery', 'judge-exchange']) && logicalId(item.checkId)
+      && item.status === 'complete' && logicalId(item.turnId) && integer(item.sequence, LIMITS.evidenceItems)
+      && integer(item.byteLength, LIMITS.sourceRecordBytes))
+    || new Set(v.sourceCapture.records.map(item => item.id)).size !== v.sourceCapture.records.length
+    || !v.sourceCapture.records.every((item, index) => item.sequence === index)
+    || !Array.isArray(v.sourceCapture.gaps) || v.sourceCapture.gaps.length > LIMITS.evidenceItems
+    || !v.sourceCapture.gaps.every(item => record(item) && keys(item, 'reason recordId')
+      && enumValue(item.reason, ['incomplete', 'capture-failed']) && (item.recordId === undefined || logicalId(item.recordId))))) return false;
   if (!Array.isArray(v.turns) || v.turns.length > LIMITS.evidenceItems || !v.turns.every(t => record(t) && keys(t, 'id role content') && logicalId(t.id) && enumValue(t.role, ['user', 'assistant', 'system', 'tool']) && text(t.content))
     || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result turnId position outcome') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result)
       && (t.turnId === undefined || logicalId(t.turnId)) && (t.position === undefined || integer(t.position, LIMITS.evidenceItems))
       && (t.outcome === undefined || enumValue(t.outcome, ['result', 'error', 'unexpected-response'])))
     || !Array.isArray(v.assertions) || v.assertions.length > LIMITS.evidenceItems) return false;
   const turns = v.turns.map(t => t.id), tools = v.tools.map(t => t.id);
+  if (v.sourceCapture !== undefined) {
+    const capture = v.sourceCapture as { records: { id: string; turnId: string; checkId: string }[];
+      gaps: { recordId?: string }[] };
+    if (capture.gaps.some(gap => gap.recordId !== undefined && capture.records.some(reference => reference.id === gap.recordId))
+      || !capture.records.every(item => turns.includes(item.turnId)
+      && (v.outcome === 'incomplete' || (v.assertions as { id: string }[]).some(assertion => assertion.id === item.checkId)))) return false;
+  }
   return new Set(turns).size === turns.length && new Set(tools).size === tools.length
     && v.tools.every((tool, index) => tool.position === undefined || tool.position === index)
     && v.tools.every(tool => tool.turnId === undefined || turns.includes(tool.turnId))
-    && v.assertions.every(a => record(a) && keys(a, 'id kind outcome score threshold expected actual diagnostics turnIds toolIds judgeModel') && logicalId(a.id)
+    && v.assertions.every(a => record(a) && keys(a, 'id kind outcome score threshold expected actual diagnostics turnIds toolIds judgeModel gradingError') && logicalId(a.id)
       && enumValue(a.kind, ['assertion', 'grader']) && outcome(a.outcome) && amount(a.score) && text(a.expected) && text(a.actual) && texts(a.diagnostics)
       && (!('threshold' in a) || typeof a.threshold === 'number' && Number.isFinite(a.threshold))
       && (!('judgeModel' in a) || text(a.judgeModel) && a.judgeModel.length > 0 && a.kind === 'grader'
         && typeof a.threshold === 'number' && a.threshold >= 0 && a.threshold <= 1
         && typeof a.score === 'number' && a.score <= 1
         && a.outcome === (a.score >= a.threshold ? 'passed' : 'failed'))
+      && (a.gradingError === undefined || record(a.gradingError) && keys(a.gradingError, 'code')
+        && typeof a.gradingError.code === 'string' && /^[a-z][a-z0-9-]{0,79}$/.test(a.gradingError.code)
+        && a.kind === 'grader' && a.outcome === 'incomplete' && a.score === null)
       && ids(a.turnIds, LIMITS.evidenceItems) && a.turnIds.every(id => turns.includes(id)) && ids(a.toolIds, LIMITS.evidenceItems) && a.toolIds.every(id => tools.includes(id)))
     && new Set(v.assertions.map(a => a.id)).size === v.assertions.length
     && (v.outcome !== 'passed' || v.assertions.length > 0 && v.assertions.every(a => a.outcome === 'passed'));

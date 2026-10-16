@@ -47,7 +47,7 @@ describe('evals JSON CLI adapter', () => {
     assert.equal(run.exitCode, 0);
 
     const evidence = { status: 'ready', summary: { suiteId: 'suite-1', runId: 'run-1', state: 'completed', outcome: 'failed' }, failure: { caseId: 'case-1', attempt: 1, assertionId: 'a-1', actual: 'bounded', expected: 'x', truncated: false } };
-    const selected = await invoke({ type: 'evals:result', suiteId: 'suite-1', runId: 'run-1', caseId: 'case-1', assertionId: 'a-1' }, evidence);
+    const selected = await invoke({ type: 'evals:result', suiteId: 'suite-1', runId: 'run-1', caseId: 'case-1', attempt: 1, assertionId: 'a-1' }, evidence);
     assert.deepEqual(selected.calls, [{ operation: 'result', command: { suiteId: 'suite-1', runId: 'run-1', selection: { caseId: 'case-1', attempt: 1, assertionId: 'a-1' } } }]);
     assert.deepEqual(selected.json.failure, evidence.failure);
     assert.equal(selected.exitCode, 0);
@@ -62,6 +62,10 @@ describe('evals JSON CLI adapter', () => {
       { type: 'evals:run', suiteId: 'suite', scope: { type: 'test_case', testCaseId: '../bad' }, model: 'm' },
       { type: 'evals:result', suiteId: 'suite', runId: '../bad' },
       { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case' },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 0, assertionId: 'assertion' },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 1, assertionId: 'assertion', field: '../unsafe' },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 1, assertionId: 'assertion', offset: 3 },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', locatorOffset: -1 },
     ];
     for (const command of commands) {
       const response = await invoke(command, { status: 'ready' });
@@ -139,6 +143,20 @@ describe('evals JSON CLI adapter', () => {
     assert.deepEqual((result.json.summary as { cases: unknown }).cases, cases);
     assert.equal((run.json.cases as typeof cases)[0]?.testedModel, 'model-x');
     assert.doesNotMatch(JSON.stringify(run.json) + JSON.stringify(result.json), /actual|expected|output|turns|tools/);
+  });
+
+  it('routes explicit attempt, field bytes, and locator continuation without reading files in the CLI', async () => {
+    const selected = await invoke({ type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 2,
+      assertionId: 'assertion', field: 'call~rawText', offset: 17 },
+    { status: 'ready', summary: { suiteId: 'suite', runId: 'run' }, field: { locator: 'call~rawText', offset: 17,
+      byteLength: 18, bytesBase64: 'YQ==', nextOffset: null } });
+    assert.deepEqual(selected.calls, [{ operation: 'result', command: { suiteId: 'suite', runId: 'run',
+      selection: { caseId: 'case', attempt: 2, assertionId: 'assertion' }, field: { locator: 'call~rawText', offset: 17 } } }]);
+    assert.equal(selected.json.status, 'ready');
+    const page = await invoke({ type: 'evals:result', suiteId: 'suite', runId: 'run', locatorOffset: 32 },
+      { status: 'ready', summary: { suiteId: 'suite', runId: 'run', nextLocatorOffset: 64 } });
+    assert.deepEqual(page.calls[0]?.command, { suiteId: 'suite', runId: 'run', locatorOffset: 32 });
+    assert.equal((page.json.summary as { nextLocatorOffset: number }).nextLocatorOffset, 64);
   });
 
   it('prints only one JSON result from the compiled headless command without launching the browser server', () => {
