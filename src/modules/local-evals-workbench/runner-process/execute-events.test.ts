@@ -87,3 +87,84 @@ test('deep protocol validates one ordered attempt, tools, grader IDs, and select
   const missing = make(); for (const item of [start, begun, turn, tool, turn2]) missing.accept(item);
   assert.throws(() => missing.accept(complete));
 });
+
+test('version-two chunks preserve exact model source and reject false completion, links and duplicate records', () => {
+  const selected: ExecutionSelection = { ...selection, cases: [{ ...singleCase,
+    assertions: [{ id: 'exact', type: 'output-equals', expected: { type: 'inline', text: 'raw é' } }] }] };
+  const source = { kind: 'model-call', id: 'call-1', turnId: 'turn-1', checkId: 'exact', modelId: 'fake',
+    phase: 'initial', elapsedMs: 12, inputMessages: [{ role: 'user', content: 'prompt é' }],
+    rawText: 'raw é', rawToolCalls: [{ id: 'provider-tool', name: 'lookup', arguments: { key: 'é' } }],
+    normalizedOutput: 'normalized' };
+  const bytes = Buffer.from(JSON.stringify(source));
+  const chunks = [bytes.subarray(0, 17), bytes.subarray(17)];
+  const e = (sequence: number, type: string, data: unknown, caseId: string | null = 'case') =>
+    ({ protocolVersion: 2, requestId: 'request', runId: 'run', sequence, type, caseId, attempt: caseId ? 1 : null, data });
+  const start = [e(0, 'run-started', { model: 'fake', judgeModel: null }, null),
+    e(1, 'case-attempt-started', {}),
+    e(2, 'conversation-turn-completed', { turnIndex: 0, turnId: 'turn-1', role: 'assistant', output: 'normalized' })];
+  const chunk = (sequence: number, index: number) => e(sequence, 'source-record-chunk', {
+    recordId: 'call-1', index, count: 2, byteLength: bytes.length, base64: chunks[index]!.toString('base64') });
+  const valid = new ExecuteEventValidator('request', selected);
+  for (const item of start) valid.accept(item);
+  assert.equal(valid.accept(chunk(3, 0)).type, 'source-chunk-accepted');
+  assert.equal(valid.incompleteSource?.reason, 'incomplete');
+  const complete = valid.accept(chunk(4, 1));
+  assert.equal(complete.type, 'source-record');
+  if (complete.type === 'source-record') assert.deepEqual(complete.record, source);
+  assert.equal(valid.incompleteSource, undefined);
+  assert.equal(valid.accept(e(5, 'case-attempt-completed', { status: 'completed', sourceEvidenceComplete: true })).type, 'case-completed');
+  assert.equal(valid.accept(e(6, 'run-completed', { status: 'completed' }, null)).type, 'run-completed');
+
+  const prefix = () => { const validator = new ExecuteEventValidator('request', selected); for (const item of start) validator.accept(item); return validator; };
+  assert.throws(() => prefix().accept(chunk(3, 1)), /invalid-source-order/);
+  assert.throws(() => prefix().accept(e(3, 'case-attempt-completed', { status: 'completed', sourceEvidenceComplete: true })), /invalid-case-end/);
+  const unfinished = prefix(); unfinished.accept(chunk(3, 0));
+  assert.throws(() => unfinished.accept(e(4, 'case-attempt-completed', { status: 'completed', sourceEvidenceComplete: true })), /invalid-case-end/);
+  const badLink = { ...source, checkId: 'other' };
+  const linkBytes = Buffer.from(JSON.stringify(badLink));
+  assert.throws(() => prefix().accept(e(3, 'source-record-chunk', { recordId: 'call-1', index: 0, count: 1,
+    byteLength: linkBytes.length, base64: linkBytes.toString('base64') })), /invalid-source-link/);
+  const duplicate = prefix(); duplicate.accept(chunk(3, 0)); duplicate.accept(chunk(4, 1));
+  assert.throws(() => duplicate.accept(e(5, 'source-record-chunk', { recordId: 'call-1', index: 0, count: 1,
+    byteLength: bytes.length, base64: bytes.toString('base64') })), /invalid-source-order/);
+  const long = Buffer.from(JSON.stringify({ ...source, rawText: 'é'.repeat(5000) }));
+  const large = prefix();
+  const retained = large.accept(e(3, 'source-record-chunk', { recordId: 'call-1', index: 0, count: 1,
+    byteLength: long.length, base64: long.toString('base64') }));
+  assert.equal(retained.type, 'source-record');
+  if (retained.type === 'source-record' && retained.record.kind === 'model-call') assert.equal(retained.record.rawText, 'é'.repeat(5000));
+  assert.throws(() => prefix().accept({ ...chunk(3, 0), attempt: 2 }), /invalid-case/);
+});
+
+test('version-two source links delivered tool results and post-tool continuation to the selected check', () => {
+  const selected: ExecutionSelection = { ...selection, cases: [{ ...singleCase,
+    assertions: [{ id: 'exact', type: 'output-equals', expected: { type: 'inline', text: 'done' } }] }] };
+  const validator = new ExecuteEventValidator('request', selected);
+  const e = (sequence: number, type: string, data: unknown, caseId: string | null = 'case') =>
+    ({ protocolVersion: 2, requestId: 'request', runId: 'run', sequence, type, caseId,
+      attempt: caseId ? 1 : null, data });
+  const source = (sequence: number, record: object) => {
+    const bytes = Buffer.from(JSON.stringify(record));
+    return e(sequence, 'source-record-chunk', { recordId: (record as { id: string }).id,
+      index: 0, count: 1, byteLength: bytes.length, base64: bytes.toString('base64') });
+  };
+  validator.accept(e(0, 'run-started', { model: 'fake', judgeModel: null }, null));
+  validator.accept(e(1, 'case-attempt-started', {}));
+  validator.accept(e(2, 'conversation-turn-completed', { turnIndex: 0, turnId: 'turn-1', role: 'assistant', output: 'done' }));
+  const call = { kind: 'model-call', id: 'call-1', turnId: 'turn-1', checkId: 'exact', modelId: 'fake',
+    phase: 'initial', elapsedMs: 2, inputMessages: [{ role: 'user', content: 'input é' }], rawText: 'raw é',
+    rawToolCalls: [{ id: 'tool-1', name: 'lookup', arguments: { term: 'é' } }], normalizedOutput: 'done' };
+  assert.deepEqual(validator.accept(source(3, call)), { type: 'source-record', caseId: 'case',
+    attempt: 1, sequence: 3, record: call });
+  validator.accept(e(4, 'tool-interaction-recorded', { toolId: 'tool-1', turnId: 'turn-1', position: 0,
+    name: 'lookup', arguments: { term: 'é' }, outcome: 'result', result: { found: true } }));
+  const delivery = { kind: 'tool-delivery', id: 'tool-1', turnId: 'turn-1', checkId: 'exact',
+    modelCallId: 'call-1', name: 'lookup', request: { term: 'é' }, result: { found: true },
+    outcome: 'result', elapsedMs: 4 };
+  assert.deepEqual(validator.accept(source(5, delivery)), { type: 'source-record', caseId: 'case',
+    attempt: 1, sequence: 5, record: delivery });
+  const continuation = { ...call, id: 'call-2', phase: 'post-tool', rawText: 'continued é', rawToolCalls: [] };
+  assert.deepEqual(validator.accept(source(6, continuation)), { type: 'source-record', caseId: 'case',
+    attempt: 1, sequence: 6, record: continuation });
+  assert.equal(validator.accept(e(7, 'case-attempt-completed', { status: 'completed', sourceEvidenceComplete: true })).type, 'case-completed');
+});

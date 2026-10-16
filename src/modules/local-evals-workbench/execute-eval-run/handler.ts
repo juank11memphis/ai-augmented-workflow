@@ -2,7 +2,7 @@ import type { ExecuteEvalRunCommand } from './command.js';
 import type { ExecuteEvalRunResult } from './result.js';
 import type { ExecuteEvalRunDependencies } from './ports.js';
 import type { Attempt, RunState, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
-import type { ExecutionEvent } from '../run-execution/contracts.js';
+import type { ExecutionEvent, SourceRecord } from '../run-execution/contracts.js';
 import { normalizeGraderOutcome, normalizeGraderOutcomes } from '../run-execution/attempt-evidence.js';
 import { boundedJson, attempt as validAttempt } from '../run-history/validation.js';
 import { LIMITS } from '../run-history/limits.js';
@@ -19,7 +19,8 @@ const SAFE_REASONS = new Set(['runner-absent', 'runner-unavailable', 'runner-sta
 class PersistenceStopped extends Error {}
 class EvidenceLimitStopped extends Error {}
 type Current = { caseId: string; number: number; began: number; turns: TurnEvidence[]; tools: ToolEvidence[];
-  graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[] };
+  graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[];
+  sourceRecords: SourceRecord[]; sourceGap: boolean };
 
 export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: ExecuteEvalRunDependencies): Promise<ExecuteEvalRunResult> {
   const { suite, runId, cases } = command;
@@ -61,8 +62,18 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     if (terminal) throw new Error('event-after-terminal');
     if (event.type === 'case-started') {
       if (current || cases[caseIndex]?.id !== event.caseId || (event.attempt ?? 1) !== attemptNumber) throw new Error('attempt-order');
-      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], output: '', diagnostics: [] };
+      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], output: '', diagnostics: [], sourceRecords: [], sourceGap: false };
       await persist(evidence('incomplete'));
+    } else if (event.type === 'source-record') {
+      if (!current || current.caseId !== event.caseId || current.number !== event.attempt
+        || !cases[caseIndex]?.assertions.some(assertion => assertion.id === event.record.checkId)
+        || !current.turns.some(turn => turn.id === event.record.turnId)
+        || current.sourceRecords.some(record => record.id === event.record.id)) throw new Error('source-record-link');
+      current.sourceRecords.push(event.record);
+    } else if (event.type === 'source-gap') {
+      if (!current || current.caseId !== event.caseId || current.number !== event.attempt) throw new Error('source-gap-link');
+      current.sourceGap = true;
+      addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
     } else if (event.type === 'turn-completed') {
       if (!current || current.caseId !== event.caseId || (event.attempt ?? 1) !== current.number
         || (event.turnIndex ?? current.turns.length) !== current.turns.length || current.turns.some(turn => turn.id === event.turnId)) throw new Error('turn-order');
@@ -88,6 +99,8 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       await persist(evidence('incomplete', [...previous, result]));
     } else if (event.type === 'case-completed') {
       if (!current || current.caseId !== event.caseId || (event.attempt ?? 1) !== current.number) throw new Error('attempt-order');
+      if (event.sourceCapture === 'complete' && (current.sourceGap || current.sourceRecords.length === 0)) throw new Error('source-capture-invalid');
+      if (event.sourceCapture === 'incomplete') addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
       if (event.status === 'completed') {
         if (current.turns.length !== cases[caseIndex]!.turns.length) throw new Error('missing-turn');
         const selected = cases[caseIndex]!;
