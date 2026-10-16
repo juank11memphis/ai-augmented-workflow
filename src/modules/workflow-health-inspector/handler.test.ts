@@ -135,6 +135,18 @@ test('diagnoses modified MCP-managed config files through managed-file drift', (
   );
 });
 
+test('ignores host-added Codex approvals while diagnosing Sibu-owned config edits', () => {
+  const rootPath = createCleanInitializedRepoWithGithubMcp();
+  const configPath = path.join(rootPath, '.codex/config.toml');
+  fs.appendFileSync(configPath, '\n[mcp_servers.github.tools.merge_pull_request]\napproval_mode = "approve"\n', 'utf8');
+  const state = readState(rootPath);
+  assert.equal(diagnoseState({ rootPath, state }).some((issue) => issue.message.includes('.codex/config.toml has changed')), false);
+
+  const contents = fs.readFileSync(configPath, 'utf8');
+  fs.writeFileSync(configPath, contents.replace('max_concurrent_threads_per_session = 2', 'max_concurrent_threads_per_session = 3'));
+  assert.equal(diagnoseState({ rootPath, state }).some((issue) => issue.message === '.codex/config.toml has changed since Sibu last recorded it.'), true);
+});
+
 test('does not diagnose unmanaged MCP-managed config files as expected target issues', () => {
   const rootPath = createCleanInitializedRepoWithGithubMcp();
   fs.rmSync(path.join(rootPath, '.mcp.json'));

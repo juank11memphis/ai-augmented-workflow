@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "223",
+  "templateVersion": "228",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-16T16:53:58.644Z",
+  "updatedAt": "2026-10-16T17:46:26.353Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -118,16 +118,16 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "54",
-      "sha256": "c34c1cb4061571d489e86289022f602ca6a4947ec5e29c46c0c8abca99cff0fd",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "55"
+      "templateVersion": "56",
+      "sha256": "9225af798246ffbde84e7951ca4f51d97cd7715ff954af2be8e8ca66bcf2cbd5",
+      "status": "managed"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
       "templateVersion": "4",
-      "sha256": "d74c8fc037310fb613d8f58aa202ee9b58125dd9405a23e45115e79449b5c404",
-      "status": "managed"
+      "sha256": "d92dc6c22832deba58d7ba9031f244abf2636692f402ea7bd66ae691f4c69b9e",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "4"
     },
     "GEMINI.md": {
       "template": "GEMINI.md",
@@ -260,14 +260,14 @@
     },
     ".agents/skills/eval-authoring/SKILL.md": {
       "template": "skills/eval-authoring/SKILL.md",
-      "templateVersion": "6",
-      "sha256": "9cbc0405edfbe05ad7d108cc0bc98ef30fe20091739e17f5c67e4ed4ccf4e427",
+      "templateVersion": "8",
+      "sha256": "6c97d3191aa5e51fcdfa0309524013d764ad85a069d46a20140400f4049b8195",
       "status": "managed"
     },
     ".agents/skills/eval-authoring/references/version-2-contract.md": {
       "template": "skills/eval-authoring/references/version-2-contract.md",
-      "templateVersion": "5",
-      "sha256": "6271cb98766cdbee4dbe15c1907c43aaac15b49a3b96354e839824c242a78bc9",
+      "templateVersion": "7",
+      "sha256": "dc4a4c3bf7a8af8fd51e0bda5db14039c1272717171026ac9f4cfb62d4d38779",
       "status": "managed"
     },
     ".agents/skills/feature-idea-capture/SKILL.md": {
@@ -411,8 +411,14 @@
     },
     ".agents/skills/eval-authoring/scripts/check-preview-contract.mjs": {
       "template": "skills/eval-authoring/scripts/check-preview-contract.mjs",
-      "templateVersion": "2",
-      "sha256": "359520adb23b517410b47e5c81b353a9c7f198cf2a55f9211152165488663145",
+      "templateVersion": "3",
+      "sha256": "ad0c8000d50377a99cbf2f9aceb02d350666c78bb9d12545adf47364fbd09e68",
+      "status": "managed"
+    },
+    ".agents/skills/agent-guided-evals/SKILL.md": {
+      "template": "skills/agent-guided-evals/SKILL.md",
+      "templateVersion": "4",
+      "sha256": "482bb1396fa296c3319a5f83477d98375401ed27f59affa18568d7b1696bbfdd",
       "status": "managed"
     }
   }
