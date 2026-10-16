@@ -33,6 +33,8 @@ export type NormalizedEvalSuite = {
 export type NormalizedEvalTestCase = {
   readonly id: string;
   readonly name: string;
+  readonly testedModel?: string;
+  readonly judgeModel?: string;
   readonly turns: readonly { readonly role: TurnRole; readonly content: TextContent }[];
   readonly fixture?: FixtureContent;
   readonly reference?: TextContent;

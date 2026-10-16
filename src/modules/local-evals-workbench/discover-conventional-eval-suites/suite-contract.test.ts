@@ -10,6 +10,46 @@ describe('version-2 eval suite contract', () => {
     if (result.status !== 'valid') return;
     assert.equal(Object.hasOwn(result.suite, 'defaultTestedModel'), false);
     assert.equal(Object.hasOwn(result.suite, 'defaultJudgeModel'), false);
+    assert.equal(Object.hasOwn(result.suite.testCases[0]!, 'testedModel'), false);
+    assert.equal(Object.hasOwn(result.suite.testCases[0]!, 'judgeModel'), false);
+  });
+
+  it('normalizes independent case model overrides without inventing suite defaults', () => {
+    for (const overrides of [
+      { testedModel: 'provider:target-1' },
+      { judgeModel: 'provider/judge-1' },
+      { testedModel: 'provider:target-1', judgeModel: 'provider/judge-1' },
+    ]) {
+      const result = validateEvalSuiteContract(validSuite({ testCases: [validCase(overrides)] }));
+      assert.equal(result.status, 'valid');
+      if (result.status !== 'valid') continue;
+      assert.equal(result.suite.testCases[0]?.testedModel, overrides.testedModel);
+      assert.equal(result.suite.testCases[0]?.judgeModel, overrides.judgeModel);
+      assert.equal(Object.hasOwn(result.suite, 'defaultTestedModel'), false);
+      assert.equal(Object.hasOwn(result.suite, 'defaultJudgeModel'), false);
+      assert.deepEqual(result.suite.testCases[0]?.assertions.map((item) => item.id), ['contains-help']);
+    }
+  });
+
+  it('rejects malformed, empty, and unknown case model fields without echoing values', () => {
+    const invalidValues: unknown[] = ['', ' ', null, 42, {}, [], ' fake/target', '../escape',
+      'fake\\target', 'fake\nmodel', 'fake;command', 'a'.repeat(121)];
+    for (const field of ['testedModel', 'judgeModel']) {
+      for (const value of invalidValues) {
+        const result = validateEvalSuiteContract(validSuite({ testCases: [validCase({ [field]: value })] }));
+        assert.equal(result.status, 'invalid', `${field}: ${String(value)}`);
+        if (result.status === 'invalid') {
+          assert.ok(result.diagnostics.some((item) => item.reason === 'case-model-override-invalid'
+            && item.location === `suite:testCases[0].${field}`));
+          assert.doesNotMatch(JSON.stringify(result), /fake;command|fake\\\\target/);
+        }
+      }
+    }
+    for (const field of ['model', 'defaultTestedModel', 'defaultJudgeModel', 'testedModell']) {
+      const result = validateEvalSuiteContract(validSuite({ testCases: [validCase({ [field]: 'fake/target' })] }));
+      assert.equal(result.status, 'invalid', field);
+      if (result.status === 'invalid') assert.ok(result.diagnostics.some((item) => item.reason === 'field-undeclared'));
+    }
   });
 
   it('normalizes independent tested and judge defaults, including a deterministic-only suite', () => {
