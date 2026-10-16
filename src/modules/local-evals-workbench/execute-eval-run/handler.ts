@@ -54,9 +54,13 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
   };
   const evidence = (outcome: Attempt['outcome'], assertions: Attempt['assertions'] = [], calls: number | null = null, cost: number | null = null): Attempt => {
     if (!current) throw new Error('missing-attempt');
-    const visibleAssertions = assertions.length ? assertions : current.gradingErrors.map(item => ({
+    const visibleAssertions = assertions.length ? assertions : [
+      ...current.graders.map(item => normalizeGraderOutcome(
+        cases[caseIndex]!.graders.find(grader => grader.id === item.checkId)!, item, activeJudge)),
+      ...current.gradingErrors.map(item => ({
       id: item.checkId, kind: 'grader' as const, outcome: 'incomplete' as const, score: null,
-      expected: 'rubric judgment', actual: '', diagnostics: [item.code], turnIds: [], toolIds: [], gradingError: { code: item.code } }));
+      expected: 'rubric judgment', actual: '', diagnostics: [item.code], turnIds: [], toolIds: [], gradingError: { code: item.code } })),
+    ];
     return { version: 1, suiteId: suite.id, runId, caseId: current.caseId, number: current.number, outcome,
       durationMs: Math.max(0, ports.clock() - current.began), calls, cost, output: current.output,
       truncated: false, diagnostics: [...current.diagnostics], turns: [...current.turns], tools: [...current.tools], assertions: visibleAssertions,
