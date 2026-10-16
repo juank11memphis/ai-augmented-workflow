@@ -48,6 +48,48 @@ it('sets, changes, and resets one field, preserving unrelated bytes and semantic
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+it('sets, changes, and resets case roles without changing suite defaults or unrelated bytes', async () => {
+  const { root, file, before } = await fixture();
+  try {
+    const adapter = new NodeProjectSuiteChoiceFile(root);
+    let original = before;
+    for (const [role, first, second, field] of [
+      ['tested', 'X', 'Y', 'testedModel'], ['judge', 'J', 'K', 'judgeModel'],
+    ] as const) {
+      for (const modelId of [first, second, null]) {
+        const snapshot = await adapter.read('suite');
+        if (!('token' in snapshot)) assert.fail('fixture must be valid');
+        const result = await adapter.save('suite', role, modelId, snapshot.token, 'case');
+        assert.equal(result.status, 'saved');
+        if (result.status === 'saved') assert.equal(result.caseId, 'case');
+        const current = await readFile(file, 'utf8');
+        const parsed = JSON.parse(current) as { testCases: Record<string, unknown>[]; defaultTestedModel?: string; defaultJudgeModel?: string };
+        assert.equal(parsed.testCases[0]?.[field], modelId ?? undefined);
+        assert.equal(parsed.defaultTestedModel, undefined);
+        assert.equal(parsed.defaultJudgeModel, undefined);
+        if (modelId === null) assert.equal(current, original);
+      }
+      original = await readFile(file, 'utf8');
+    }
+    assert.equal(await readFile(file, 'utf8'), before);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+it('preserves another case role and existing suite defaults during one case edit', async () => {
+  const { root, file, before } = await fixture();
+  try {
+    const source = before.replace('"testCases": [', '"defaultTestedModel": "A", "defaultJudgeModel": "B", "testCases": [')
+      .replace('"name": "Case",', '"name": "Case", "judgeModel": "J",');
+    await writeFile(file, source);
+    const adapter = new NodeProjectSuiteChoiceFile(root);
+    const snapshot = await adapter.read('suite');
+    if (!('token' in snapshot)) assert.fail('fixture must be valid');
+    assert.equal((await adapter.save('suite', 'tested', 'X', snapshot.token, 'case')).status, 'saved');
+    const current = await readFile(file, 'utf8');
+    assert.equal(current.replace(',"testedModel": "X"', ''), source);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 it('refuses malformed and oversized suites, direct path attacks, and symlink escapes', async () => {
   const { root, file, before } = await fixture();
   try {
@@ -87,5 +129,26 @@ it('keeps prior bytes intact on injected failure', async () => {
     if (!('token' in snapshot)) assert.fail('fixture must be valid');
     assert.deepEqual(await adapter.save('suite', 'judge', 'J', snapshot.token), { status: 'blocked', reason: 'write-failed' });
     assert.equal(await readFile(file, 'utf8'), before);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+it('keeps case bytes intact for invalid case, stale token, concurrent edit, and failed write', async () => {
+  const { root, file, before } = await fixture();
+  try {
+    const adapter = new NodeProjectSuiteChoiceFile(root);
+    const snapshot = await adapter.read('suite');
+    if (!('token' in snapshot)) assert.fail('fixture must be valid');
+    assert.deepEqual(await adapter.save('suite', 'tested', 'X', snapshot.token, 'absent'), { status: 'blocked', reason: 'case-unavailable' });
+    assert.deepEqual(await adapter.save('suite', 'tested', 'X', 'b'.repeat(64), 'case'), { status: 'conflict', reason: 'suite-changed' });
+    assert.equal(await readFile(file, 'utf8'), before);
+    const edited = before.replace('Safe suite.', 'Edited suite.');
+    const concurrent = new NodeProjectSuiteChoiceFile(root, async () => { await writeFile(file, edited); });
+    assert.deepEqual(await concurrent.save('suite', 'tested', 'X', snapshot.token, 'case'), { status: 'conflict', reason: 'suite-changed' });
+    assert.equal(await readFile(file, 'utf8'), edited);
+    const failed = new NodeProjectSuiteChoiceFile(root, async () => { throw new Error('injected'); });
+    const next = await failed.read('suite');
+    if (!('token' in next)) assert.fail('fixture must be valid');
+    assert.deepEqual(await failed.save('suite', 'judge', 'J', next.token, 'case'), { status: 'blocked', reason: 'write-failed' });
+    assert.equal(await readFile(file, 'utf8'), edited);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

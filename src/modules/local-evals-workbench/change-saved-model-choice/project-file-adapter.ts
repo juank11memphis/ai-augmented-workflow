@@ -22,14 +22,18 @@ export class NodeProjectSuiteChoiceFile implements SavedSuiteFilePort {
     return 'status' in state ? state : { suite: state.suite, token: state.token };
   }
 
-  async save(suiteId: string, role: 'tested' | 'judge', modelId: string | null, expectedToken: string): Promise<ChangeSavedModelChoiceResult> {
+  async save(suiteId: string, role: 'tested' | 'judge', modelId: string | null, expectedToken: string, caseId?: string): Promise<ChangeSavedModelChoiceResult> {
     const state = await this.readState(suiteId);
     if ('status' in state) return state;
     if (state.token !== expectedToken) return { status: 'conflict', reason: 'suite-changed' };
-    const field = role === 'tested' ? 'defaultTestedModel' : 'defaultJudgeModel';
+    if (caseId !== undefined && !state.suite.testCases.some(testCase => testCase.id === caseId)) return { status: 'blocked', reason: 'case-unavailable' };
+    const field = caseId === undefined
+      ? role === 'tested' ? 'defaultTestedModel' : 'defaultJudgeModel'
+      : role === 'tested' ? 'testedModel' : 'judgeModel';
     let next: string;
     try {
-      next = changeTopLevelProperty(state.bytes.toString('utf8'), field, modelId);
+      const source = state.bytes.toString('utf8');
+      next = caseId === undefined ? changeObjectProperty(source, field, modelId) : changeCaseProperty(source, caseId, field, modelId);
       const validated = validateEvalSuiteContract(JSON.parse(next) as unknown);
       if (validated.status !== 'valid' || validated.suite.id !== suiteId) return { status: 'blocked', reason: 'suite-invalid' };
     } catch { return { status: 'blocked', reason: 'suite-invalid' }; }
@@ -46,7 +50,7 @@ export class NodeProjectSuiteChoiceFile implements SavedSuiteFilePort {
       if ('status' in current || current.token !== state.token || current.identity !== state.identity) return { status: 'conflict', reason: 'suite-changed' };
       await rename(temporary, state.path);
       temporary = undefined;
-      return { status: 'saved', suiteId, role, modelId, token: digest(Buffer.from(next)) };
+      return { status: 'saved', suiteId, ...(caseId === undefined ? {} : { caseId }), role, modelId, token: digest(Buffer.from(next)) };
     } catch { return { status: 'blocked', reason: 'write-failed' }; }
     finally { if (temporary) await rm(temporary, { force: true }).catch(() => undefined); }
   }
@@ -83,7 +87,7 @@ export class NodeProjectSuiteChoiceFile implements SavedSuiteFilePort {
 function digest(bytes: Buffer): string { return createHash('sha256').update(bytes).digest('hex'); }
 
 /** Locate only top-level JSON property spans, leaving all unrelated source bytes alone. */
-function changeTopLevelProperty(source: string, field: string, value: string | null): string {
+function changeObjectProperty(source: string, field: string, value: string | null): string {
   const properties: { key: string; start: number; valueStart: number; end: number }[] = [];
   let cursor = skipSpace(source, 0);
   if (source[cursor++] !== '{') throw new Error('not-object');
@@ -114,7 +118,49 @@ function changeTopLevelProperty(source: string, field: string, value: string | n
   }
   if (value === null) return source;
   const insertion = `${properties.length ? ',' : ''}"${field}": ${JSON.stringify(value)}`;
-  return source.slice(0, closing) + insertion + source.slice(closing);
+  const insertionPoint = properties.length ? properties[properties.length - 1]!.end : closing;
+  return source.slice(0, insertionPoint) + insertion + source.slice(insertionPoint);
+}
+
+/** Replace only the selected case object's chosen field, retaining the surrounding suite bytes. */
+function changeCaseProperty(source: string, caseId: string, field: string, value: string | null): string {
+  const suite = JSON.parse(source) as { testCases?: unknown };
+  if (!Array.isArray(suite.testCases)) throw new Error('invalid-cases');
+  const index = suite.testCases.findIndex((item: unknown) => item && typeof item === 'object' && 'id' in item && item.id === caseId);
+  if (index < 0) throw new Error('case-unavailable');
+  const casesStart = findTopLevelValueStart(source, 'testCases');
+  let cursor = skipSpace(source, casesStart);
+  if (source[cursor++] !== '[') throw new Error('invalid-cases');
+  for (let current = 0; current <= index; current++) {
+    cursor = skipSpace(source, cursor);
+    const start = cursor;
+    cursor = skipValue(source, cursor);
+    if (current === index) {
+      const changed = changeObjectProperty(source.slice(start, cursor), field, value);
+      return source.slice(0, start) + changed + source.slice(cursor);
+    }
+    cursor = skipSpace(source, cursor);
+    if (source[cursor++] !== ',') throw new Error('invalid-cases');
+  }
+  throw new Error('case-unavailable');
+}
+
+function findTopLevelValueStart(source: string, field: string): number {
+  let cursor = skipSpace(source, 0);
+  if (source[cursor++] !== '{') throw new Error('not-object');
+  while (source[cursor] !== '}') {
+    cursor = skipSpace(source, cursor);
+    const keyEnd = scanString(source, cursor);
+    const key = JSON.parse(source.slice(cursor, keyEnd)) as string;
+    cursor = skipSpace(source, keyEnd);
+    if (source[cursor++] !== ':') throw new Error('invalid-property');
+    cursor = skipSpace(source, cursor);
+    if (key === field) return cursor;
+    cursor = skipSpace(source, skipValue(source, cursor));
+    if (source[cursor] !== ',') break;
+    cursor = skipSpace(source, cursor + 1);
+  }
+  throw new Error('missing-property');
 }
 
 function skipSpace(source: string, index: number): number { while (/\s/.test(source[index] ?? '')) index++; return index; }

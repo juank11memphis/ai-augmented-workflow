@@ -18,7 +18,9 @@ export async function handleSavedChoiceRoute(
     const snapshot = await dependencies.files.read(suiteId);
     if ('status' in snapshot) { write(422, snapshot); return; }
     write(200, { status: 'ready', suiteId, token: snapshot.token,
-      defaultTestedModel: snapshot.suite.defaultTestedModel ?? null, defaultJudgeModel: snapshot.suite.defaultJudgeModel ?? null });
+      defaultTestedModel: snapshot.suite.defaultTestedModel ?? null, defaultJudgeModel: snapshot.suite.defaultJudgeModel ?? null,
+      cases: snapshot.suite.testCases.map(testCase => ({ caseId: testCase.id,
+        testedModel: testCase.testedModel ?? null, judgeModel: testCase.judgeModel ?? null })) });
     return;
   }
   const body = await readBody();
@@ -31,10 +33,12 @@ export async function handleSavedChoiceRoute(
 function parseSavedChoiceRequest(payload: unknown): ChangeSavedModelChoiceCommand | undefined {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return undefined;
   const value = payload as Record<string, unknown>;
-  if (Object.keys(value).some(key => !['suiteId', 'role', 'action', 'modelId', 'expectedToken'].includes(key))) return undefined;
+  if (Object.keys(value).some(key => !['suiteId', 'caseId', 'role', 'action', 'modelId', 'expectedToken'].includes(key))) return undefined;
   if (typeof value.suiteId !== 'string' || typeof value.expectedToken !== 'string'
     || (value.role !== 'tested' && value.role !== 'judge') || (value.action !== 'set' && value.action !== 'reset')
-    || (value.modelId !== undefined && typeof value.modelId !== 'string')) return undefined;
+    || (value.modelId !== undefined && typeof value.modelId !== 'string')
+    || (value.caseId !== undefined && typeof value.caseId !== 'string')) return undefined;
   return { suiteId: value.suiteId, expectedToken: value.expectedToken, role: value.role, action: value.action,
+    ...(typeof value.caseId === 'string' ? { caseId: value.caseId } : {}),
     ...(typeof value.modelId === 'string' ? { modelId: value.modelId } : {}) };
 }
