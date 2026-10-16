@@ -27,6 +27,7 @@ import { StartReferenceRegistry } from './start-reference-registry.js';
 import { analysisIssue, invalidAnalysisIssue, unknownAnalysisIssue } from './analysis-public-issue.js';
 import { invalidProposalIssue, proposalIssue, unknownProposalIssue } from './proposal-public-issue.js';
 import { emitApplyResponseFailure, handleApplyRepairRoute } from './apply-repair-route.js';
+import { handleSavedChoiceRoute } from './saved-choice-route.js';
 
 const LOCAL_WORKBENCH_HOST = '127.0.0.1' as const;
 const MAX_JSON_BODY_BYTES = 64 * 1024;
@@ -93,6 +94,8 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
           const issue = unknownModelCheckIssue(reference);
           emitRequestIssue(this.logger, issue);
           try { writeJson(response, 500, { status: 'blocked', reason: 'unknown', issue }, reference); } catch { /* The response may already be closed. */ }
+        } else if (httpRequest.url === '/api/eval-suites/saved-choice') {
+          try { writeJson(response, 500, { status: 'blocked', reason: 'write-failed' }, reference); } catch { /* Response may already be closed. */ }
         } else if (httpRequest.url === '/api/eval-runs/preview') {
           const issue = unknownPreviewIssue(reference);
           emitRequestIssue(this.logger, issue);
@@ -142,6 +145,10 @@ export class NodeLocalWorkbenchServerStarter implements LocalWorkbenchServerStar
 async function routeLocalRequest(request: LocalHttpRequest, response: LocalHttpResponse, startRequest: LocalWorkbenchServerStartRequest, dependencies: LocalWorkbenchRuntimeDependencies, reference: string, logger: LocalEvalsWorkbenchLoggerPort, startReferences: StartReferenceRegistry, analysisTerminalReported: () => void, proposalTerminalReported: () => void): Promise<void> {
   const publicDiscoveryResult = toPublicEvalSuiteDiscoveryResult(startRequest.initialDiscoveryResult);
   const url = new URL(request.url ?? '/', 'http://localhost');
+  if (url.pathname === '/api/eval-suites/saved-choice') {
+    await handleSavedChoiceRoute(request.method, response, dependencies.savedChoice, () => readJsonBody(request), reference, url.searchParams.get('suiteId'));
+    return;
+  }
   if (url.pathname === '/api/eval-runs/start') {
     if (request.method !== 'POST') { writeJson(response, 405, { status: 'blocked', reason: 'method-not-allowed', issue: invalidStartIssue(reference), reference }, reference); return; }
     if (!dependencies.start) { const issue = startIssue({ status: 'blocked', reason: 'runner-unavailable' }, reference); emitRequestIssue(logger, issue); writeJson(response, 503, { status: 'blocked', reason: 'runner-unavailable', issue, reference }, reference); return; }

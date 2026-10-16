@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, readFile, symlink, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, symlink, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -9,7 +9,7 @@ let body=''; for await(const chunk of process.stdin) body+=chunk;
 const q=JSON.parse(body); let n=0;
 function emit(type,caseId,data){process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,sequence:n++,type,
   runId:q.operation==='execute'?q.runId:null,caseId,attempt:caseId?1:null,data})+'\\n');}
-if(q.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn'],models:['fake'],judgeModels:[],requiredEnvironment:[]});
+if(q.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn','rubric'],models:['fake'],judgeModels:[],requiredEnvironment:[]});
 else if(q.operation==='execute') { emit('run-started',null,{model:q.model,judgeModel:null});
   for(const item of q.testCases) { emit('case-attempt-started',item.id,{});
     if(existsSync('src/interrupt-mode.txt') && item.id==='second') process.exit(7);
@@ -47,6 +47,7 @@ async function createProject(root) {
   }));
   await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify({
     version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline', description: 'Synthetic fixture',
+    defaultTestedModel: 'fake',
     target: { id: 'target', kind: 'integration', path: 'src/target.mjs' },
     coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases,
@@ -59,12 +60,23 @@ async function createProject(root) {
   return { git, suitePath: path.join(root, 'evals/offline.json') };
 }
 
-function expectBlocked(executable, npmBinPath, root, name, args, reason, env) {
+async function artifactIds(root) {
+  try { return await readdir(path.join(root, 'evals/artifacts/offline')); }
+  catch (error) { if (error.code === 'ENOENT') return []; throw error; }
+}
+
+async function expectBlocked(executable, npmBinPath, root, name, args, reason, env, details = {}) {
+  const suitePath = path.join(root, 'evals/offline.json');
+  const suiteBefore = await readFile(suitePath, 'utf8');
+  const artifactsBefore = await artifactIds(root);
   const { value, exitCode } = invoke(executable, npmBinPath, root, args, env);
   assert.equal(exitCode, 1, `${name}: expected failure exit`);
   assert.equal(value.status, 'blocked', `${name}: ${JSON.stringify(value)}`);
   assert.equal(value.reason, reason, name);
   assert.equal(value.runId, undefined, name);
+  for (const [key, expected] of Object.entries(details)) assert.equal(value[key], expected, `${name}: ${key}`);
+  assert.equal(await readFile(suitePath, 'utf8'), suiteBefore, `${name}: suite changed`);
+  assert.deepEqual(await artifactIds(root), artifactsBefore, `${name}: run artifact allocated`);
   console.log(`Packed headless blocked probe: ${name} (${reason})`);
 }
 
@@ -72,6 +84,7 @@ function expectBlocked(executable, npmBinPath, root, name, args, reason, env) {
 export async function validatePackedHeadlessEvals({ workspace, installedPackageRoot, installedExecutable, npmBinPath }) {
   const root = path.join(workspace, 'headless-evals');
   const project = await createProject(root);
+  const readySuiteBytes = await readFile(project.suitePath, 'utf8');
   const initialStatus = project.git('status', '--porcelain').stdout;
   const run = (args, env) => invoke(installedExecutable, npmBinPath, root, args, env);
 
@@ -90,11 +103,13 @@ export async function validatePackedHeadlessEvals({ workspace, installedPackageR
   const selectedLocator = selected.value.cases.find(item => item.caseId === 'first')?.attempts[0];
   assert.deepEqual(selectedLocator, { number: 1, outcome: 'failed', failedAssertionIds: ['expected'], locatorStatus: 'available' });
   assert.doesNotMatch(JSON.stringify(selected.value), /fake:first|different/);
-  const all = run(['run', 'offline', '--model', 'fake']);
+  assert.equal(await readFile(project.suitePath, 'utf8'), readySuiteBytes, 'selected run must not save temporary choice');
+  const all = run(['run', 'offline']);
   assert.equal(all.exitCode, 1);
   assert.equal(all.value.status, 'completed');
   assert.equal(all.value.outcome, 'failed');
   assert.ok(all.value.runId && all.value.runId !== selected.value.runId);
+  assert.equal(await readFile(project.suitePath, 'utf8'), readySuiteBytes, 'full-suite run must not edit saved choice');
   const runCase = all.value.cases.find(item => item.caseId === 'first');
   const locator = runCase?.attempts[0];
   assert.deepEqual(locator, selectedLocator);
@@ -138,30 +153,46 @@ export async function validatePackedHeadlessEvals({ workspace, installedPackageR
   assert.deepEqual(uiRead.value.summary.cases.map(item => item.caseId), result.value.summary.cases.map(item => item.caseId));
   console.log(`Packed headless installed binary: ${installedExecutable}; run: ${all.value.runId}; terminal manifest: completed; HTTP server: none`);
 
-  expectBlocked(installedExecutable, npmBinPath, root, 'invalid suite ID', ['describe', '../offline'], 'invalid-suite-id');
-  expectBlocked(installedExecutable, npmBinPath, root, 'invalid case ID', ['run', 'offline', '--case', 'absent', '--model', 'fake'], 'case-unavailable');
-  expectBlocked(installedExecutable, npmBinPath, root, 'unavailable model', ['run', 'offline', '--model', 'absent'], 'model-unavailable');
-  expectBlocked(installedExecutable, npmBinPath, root, 'unavailable judge', ['run', 'offline', '--model', 'fake', '--judge', 'absent'], 'judge-unavailable');
-  const suite = JSON.parse(await readFile(project.suitePath, 'utf8'));
+  await expectBlocked(installedExecutable, npmBinPath, root, 'invalid suite ID', ['describe', '../offline'], 'invalid-suite-id');
+  await expectBlocked(installedExecutable, npmBinPath, root, 'invalid case ID', ['run', 'offline', '--case', 'absent'], 'case-unavailable');
+  await expectBlocked(installedExecutable, npmBinPath, root, 'full-suite temporary choice', ['run', 'offline', '--model', 'fake'], 'run-only-scope-unsupported');
+  await expectBlocked(installedExecutable, npmBinPath, root, 'unavailable temporary tested model',
+    ['run', 'offline', '--case', 'first', '--model', 'absent'], 'run-only-model-unavailable', undefined,
+    { caseId: 'first', role: 'tested' });
+  const suite = JSON.parse(readySuiteBytes);
+  suite.defaultTestedModel = 'not-advertised';
+  await writeFile(project.suitePath, JSON.stringify(suite));
+  await expectBlocked(installedExecutable, npmBinPath, root, 'unavailable saved tested model',
+    ['run', 'offline', '--case', 'first'], 'saved-model-unavailable', undefined, { caseId: 'first', role: 'tested' });
+  await writeFile(project.suitePath, readySuiteBytes);
+  const rubricSuite = JSON.parse(readySuiteBytes);
+  rubricSuite.defaultJudgeModel = 'not-advertised-judge';
+  rubricSuite.testCases[1].graders = [{ id: 'quality', type: 'rubric',
+    rubric: { type: 'inline', text: 'Useful answer' }, threshold: 0.8 }];
+  await writeFile(project.suitePath, JSON.stringify(rubricSuite));
+  await expectBlocked(installedExecutable, npmBinPath, root, 'unavailable saved Judge model',
+    ['run', 'offline', '--case', 'second'], 'saved-model-unavailable', undefined, { caseId: 'second', role: 'judge' });
+  await writeFile(project.suitePath, readySuiteBytes);
   suite.runner.requiredEnvironment = ['SIBU_PACKED_MISSING_CREDENTIAL'];
   await writeFile(project.suitePath, JSON.stringify(suite));
-  expectBlocked(installedExecutable, npmBinPath, root, 'missing declared credential', ['run', 'offline', '--model', 'fake'], 'environment-missing', { SIBU_PACKED_MISSING_CREDENTIAL: '' });
-  suite.runner.requiredEnvironment = [];
-  await writeFile(project.suitePath, JSON.stringify(suite));
+  await expectBlocked(installedExecutable, npmBinPath, root, 'missing declared credential',
+    ['run', 'offline'], 'environment-missing', { SIBU_PACKED_MISSING_CREDENTIAL: '' });
+  await writeFile(project.suitePath, readySuiteBytes);
 
   const unsafeRoot = path.join(workspace, 'headless-unsafe');
   await createProject(unsafeRoot);
   await symlink(unsafeRoot, path.join(unsafeRoot, 'evals/artifacts'));
-  expectBlocked(installedExecutable, npmBinPath, unsafeRoot, 'unsafe artifact symlink', ['run', 'offline', '--model', 'fake'], 'artifact-root-unsafe');
+  await expectBlocked(installedExecutable, npmBinPath, unsafeRoot, 'unsafe artifact symlink', ['run', 'offline'], 'artifact-root-unsafe');
   const interruptFlag = path.join(root, 'src/interrupt-mode.txt');
   await writeFile(interruptFlag, 'interrupt second case\n');
-  const interrupted = run(['run', 'offline', '--model', 'fake']);
+  const interrupted = run(['run', 'offline']);
   await unlink(interruptFlag);
   assert.equal(interrupted.exitCode, 1);
   assert.ok(['partial', 'interrupted'].includes(interrupted.value.status), JSON.stringify(interrupted.value));
   assert.ok(interrupted.value.runId);
   const interruptedManifest = JSON.parse(await readFile(path.join(root, 'evals/artifacts/offline', interrupted.value.runId, 'run.json'), 'utf8'));
   assert.equal(interruptedManifest.state, interrupted.value.status);
+  assert.equal(await readFile(project.suitePath, 'utf8'), readySuiteBytes, 'interrupted run must not edit suite');
   console.log(`Packed headless interrupted probe: ${interrupted.value.status} (${interrupted.value.runId})`);
   assert.equal(project.git('status', '--porcelain').stdout, initialStatus, 'headless probes must preserve pre-existing project edits');
   assert.equal(await readFile(path.join(root, 'src/notes.txt'), 'utf8'), 'pre-existing user edit\n');

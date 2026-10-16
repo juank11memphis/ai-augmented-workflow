@@ -19,7 +19,14 @@ const configKeys = 'suiteId caseIds scope testedModel judgeModel';
 const entryKeys = 'runId suiteId state createdAt updatedAt finishedAt outcome testedModel judgeModel scope calls cost';
 export function configuration(v: unknown): v is RunConfiguration & Record<string, unknown> {
   return record(v) && logicalId(v.suiteId) && ids(v.caseIds) && v.caseIds.length > 0 && enumValue(v.scope, ['all', 'selected'])
-    && text(v.testedModel) && v.testedModel.length > 0 && (v.judgeModel === null || text(v.judgeModel));
+    && text(v.testedModel) && v.testedModel.length > 0 && (v.judgeModel === null || text(v.judgeModel))
+    && (v.caseSelections === undefined || validSelections(v.caseIds, v.caseSelections));
+}
+function validSelections(caseIds: readonly string[], selections: unknown): boolean {
+  return Array.isArray(selections) && selections.length === caseIds.length
+    && selections.every((choice, index) => record(choice) && keys(choice, 'caseId testedModel judgeModel')
+      && choice.caseId === caseIds[index] && text(choice.testedModel) && choice.testedModel.length > 0
+      && (choice.judgeModel === null || text(choice.judgeModel) && choice.judgeModel.length > 0));
 }
 function entry(v: unknown): boolean {
   return record(v) && logicalId(v.suiteId) && logicalId(v.runId) && state(v.state) && outcome(v.outcome)
@@ -34,7 +41,10 @@ export function manifest(v: unknown): v is Manifest {
   if (!record(v) || !configuration(v) || !entry(v) || v.version !== 1 || !keys(v, `${configKeys} ${entryKeys} version owner diagnostics cases`)
     || !record(v.owner) || !keys(v.owner, 'pid token') || !integer(v.owner.pid) || v.owner.pid < 1 || !logicalId(v.owner.token)
     || !texts(v.diagnostics) || !Array.isArray(v.cases) || v.cases.length !== v.caseIds.length) return false;
-  return v.cases.every((c, i) => record(c) && keys(c, 'caseId state attempts') && c.caseId === v.caseIds[i]
+  const labeled = v.cases.some(c => record(c) && ('testedModel' in c || 'judgeModel' in c));
+  if (labeled && !v.cases.every(c => record(c) && text(c.testedModel) && c.testedModel.length > 0
+    && (c.judgeModel === null || text(c.judgeModel) && c.judgeModel.length > 0))) return false;
+  return v.cases.every((c, i) => record(c) && keys(c, 'caseId state attempts testedModel judgeModel') && c.caseId === v.caseIds[i]
     && enumValue(c.state, ['not-run', 'incomplete', 'completed']) && Array.isArray(c.attempts) && c.attempts.length <= 1
     && c.attempts.every((a, n) => record(a) && keys(a, 'number outcome durationMs calls cost rubricScores') && a.number === n + 1 && outcome(a.outcome) && integer(a.durationMs) && calls(a.calls) && amount(a.cost)
       && (a.rubricScores === undefined || Array.isArray(a.rubricScores) && a.rubricScores.length <= LIMITS.evidenceItems && a.rubricScores.every(score => typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 1)))

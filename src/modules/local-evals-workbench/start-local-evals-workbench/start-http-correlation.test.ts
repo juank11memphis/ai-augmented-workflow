@@ -13,7 +13,7 @@ const missing = '123e4567-e89b-42d3-a456-426614174002';
 
 it('returns a confirmed queue reference and resolves only its exact History association', async () => {
   await withOfflineWorkbench(async ({ post, get }) => {
-    const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/available' };
+    const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' } };
     const payload = selection;
     const [a, b] = await Promise.all([post('/api/eval-runs/start', payload, first), post('/api/eval-runs/start', payload, second)]);
     assert.equal(a.code, 202);
@@ -49,7 +49,7 @@ it('rejects obsolete review payloads and malformed input without reflecting secr
     assert.match(String(bad.payload.reference), /^[a-f0-9-]{36}$/);
     assert.doesNotMatch(JSON.stringify(bad.payload) + JSON.stringify([...bad.headers]), /sk-secret|private prompt|injected/);
 
-    const legacy = await post('/api/eval-runs/start', { suiteId: 'offline', scope: { type: 'all' }, model: 'fake/available',
+    const legacy = await post('/api/eval-runs/start', { suiteId: 'offline', scope: { type: 'all' },
       review: { selectedCaseIds: ['first'] } }, first);
     assert.equal(legacy.code, 400);
     const issue = legacy.payload.issue as Record<string, unknown>;
@@ -74,7 +74,7 @@ it('uses only bounded transient associations and makes reuse permanently ambiguo
 it('keeps blocked and queued HTTP outcomes unchanged when the terminal logger throws', async () => {
   const brokenLogger = { info: () => { throw new Error('sk-secret'); }, warn: () => { throw new Error('sk-secret'); }, error: () => { throw new Error('sk-secret'); } };
   await withOfflineWorkbench(async ({ post }) => {
-    const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/available' };
+    const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' } };
     const invalid = await post('/api/eval-runs/start', { prompt: 'private prompt' }, first);
     assert.equal(invalid.code, 400);
     assert.equal((invalid.payload.issue as { category: string }).category, 'invalid-request');
@@ -90,6 +90,7 @@ it('does not rewrite a queued run as blocked when response writing fails', async
   const cases = [{ id: 'case', name: 'Case', turns: [{ role: 'user' as const, content: { type: 'inline' as const, text: 'secret prompt' } }],
     toolMocks: [], assertions: [{ id: 'check', type: 'output-contains' as const, expected: 'answer' }], graders: [] }];
   const suite = { version: 2 as const, kind: 'sibu-eval-suite' as const, id: 'suite', name: 'Suite', description: '',
+    defaultTestedModel: 'fake',
     target: { id: 'target', kind: 'integration' as const, path: 'src/target.mjs' }, coverage: { categories: [], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases: cases };
   let scheduled = 0;
@@ -114,7 +115,7 @@ it('does not rewrite a queued run as blocked when response writing fails', async
     const request = { url: '/api/eval-runs/start', method: 'POST', headers: { 'x-sibu-request-reference': first },
       on: (event: string, callback: Function) => { listeners.set(event, callback); } };
     fake.handler?.(request, { writeHead: () => { writes++; throw new Error('sk-secret response closed'); }, end: () => assert.fail('closed response') });
-    listeners.get('data')?.(JSON.stringify({ suiteId: 'suite', model: 'fake', scope: { type: 'all' } }));
+    listeners.get('data')?.(JSON.stringify({ suiteId: 'suite', scope: { type: 'all' } }));
     listeners.get('end')?.();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(scheduled, 1);

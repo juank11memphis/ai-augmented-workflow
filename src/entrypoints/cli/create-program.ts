@@ -33,11 +33,20 @@ export function createProgram(): CommanderCommand {
     .action((suiteId: string, options: { case?: string }) => executeCliCommand({ type: 'evals:describe', suiteId, ...(options.case !== undefined ? { caseId: options.case } : {}) }));
   evals.command('run <suite>').description('Run a suite or one case to a terminal result as JSON')
     .option('--case <case_id>', 'Run one case (default: all cases)')
-    .option('--model <model_id>', 'Evaluation model')
-    .option('--judge <model_id>', 'Judge model when required')
+    .option('--model <model_id>', 'This-run-only evaluation model for one case')
+    .option('--judge <model_id>', 'This-run-only judge model for one case')
     .action((suiteId: string, options: { case?: string; model?: string; judge?: string }) => executeCliCommand({
       type: 'evals:run', suiteId, scope: options.case !== undefined ? { type: 'test_case', testCaseId: options.case } : { type: 'all' },
-      model: options.model ?? '', ...(options.judge !== undefined ? { judgeModel: options.judge } : {}),
+      ...(options.model !== undefined ? { model: options.model } : {}), ...(options.judge !== undefined ? { judgeModel: options.judge } : {}),
+    }));
+  evals.command('choice <suite>').description('Explicitly set or reset a saved suite model as JSON')
+    .requiredOption('--role <role>', 'tested or judge')
+    .requiredOption('--token <token>', 'Choice token from evals describe')
+    .option('--set <model_id>', 'Set saved model')
+    .option('--reset', 'Reset saved model')
+    .action((suiteId: string, options: { role: string; token: string; set?: string; reset?: boolean }) => executeCliCommand({
+      type: 'evals:choice', suiteId, role: options.role as 'tested' | 'judge', expectedToken: options.token,
+      action: options.reset ? 'reset' : 'set', ...(options.set !== undefined ? { modelId: options.set } : {}),
     }));
   evals.command('result <suite> <run>').description('Read bounded run evidence as JSON')
     .option('--case <case_id>', 'Selected failed case')

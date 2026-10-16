@@ -1,17 +1,29 @@
 export const WORKSPACE_RUN_START_CLIENT = String.raw`
   async function startRun() {
     readSetup();
-    if (!runtime || !setup.model || needsJudge() && !setup.judgeModel) {
-      one('[data-setup-status]').textContent = needsJudge() && !setup.judgeModel ? 'Choose a compatible Judge model.' : 'Choose a compatible model.';
+    if (!runtime || setup.scope === 'one' && setup.choice === 'temporary' && (!setup.temporaryModel || needsJudge() && !setup.temporaryJudge)) {
+      one('[data-setup-status]').textContent = needsJudge() && !setup.temporaryJudge ? 'Choose a compatible Judge model.' : 'Choose a compatible model.';
       return;
     }
-    if (startPending || startUncertain || isActive()) return;
+    if (previewingStart || startPending || startUncertain || isActive()) return;
+    if (one('[data-run-preview-list]')) {
+      previewingStart = true;
+      const preview = await previewRun();
+      previewingStart = false;
+      if (preview?.status !== 'ready') {
+        if (preview?.status === 'blocked' && ['missing-suite-default', 'saved-model-unavailable'].includes(preview.reason)) {
+          sheetReturn = setupRegion.querySelector('[data-action="start"]');
+          await openSuiteModels(preview.role);
+        }
+        return;
+      }
+    }
     const reference = globalThis.crypto?.randomUUID?.();
     if (!safeReference(reference)) {
       showStartNotice('Run start unavailable', 'Sibu could not prepare a safe start reference. Check browser support before trying again.');
       return;
     }
-    const request = command();
+    const request = { ...command(), ...(previewToken ? { previewToken } : {}) };
     startReference = reference;
     startSuiteId = suite.id;
     startPending = true;
@@ -29,6 +41,10 @@ export const WORKSPACE_RUN_START_CLIENT = String.raw`
           showStartNotice(blocked.copy.title, blocked.copy.explanation + ' ' + blocked.copy.nextStep, blocked.details, blocked.copy.recoveryAction);
           status('Run start blocked.');
           startReference = null; startSuiteId = null;
+          if (['missing-suite-default', 'saved-model-unavailable'].includes(payload.reason)) {
+            sheetReturn = setupRegion.querySelector('[data-action="start"]');
+            await openSuiteModels(payload.role);
+          }
         } else {
           startUncertain = true;
           showStartNotice('Run start not confirmed', 'The response could not confirm the start. The run may already exist. Check History before starting another.', null, 'history');

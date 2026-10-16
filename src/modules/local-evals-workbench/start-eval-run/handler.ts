@@ -1,8 +1,9 @@
 import type { StartEvalRunCommand } from './command.js';
 import type { StartEvalRunResult } from './result.js';
 import type { StartEvalRunDependencies } from './ports.js';
-import { compatibleDescription, hasRubric, requiredCapabilities } from '../runtime-description.js';
+import { resolveRunSnapshot } from '../resolve-run-snapshot.js';
 import { logicalId } from '../run-history/validation.js';
+import { orderedRunPlan } from '../run-execution/contracts.js';
 
 const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
@@ -11,6 +12,8 @@ const SAFE_REASONS = new Set([
   'runner-request-invalid', 'runner-protocol-invalid', 'runner-invalid', 'runner-timeout', 'environment-missing',
   'required-setting-rejected', 'runner-request-too-large', 'environment-undeclared',
   'capability-unsupported', 'model-unavailable', 'judge-unavailable', 'case-unavailable',
+  'missing-suite-default', 'saved-model-unavailable', 'invalid-run-only-choice',
+  'run-only-scope-unsupported', 'run-only-model-unavailable', 'suite-changed',
   'artifact-unsafe', 'artifact-not-ignored', 'artifact-tracked',
   'artifact-git-unavailable', 'artifact-root-unsafe', 'input-unsafe',
   'invalid-input', 'unsafe-path', 'not-ignored', 'tracked-artifacts', 'git-unavailable',
@@ -29,33 +32,30 @@ export async function startEvalRun(command: StartEvalRunCommand, ports: StartEva
         durationMs: Math.max(0, Date.now() - began) });
     } catch { /* Noncritical sink. */ }
   };
-  const blocked = (reason: Extract<StartEvalRunResult, { status: 'blocked' }>['reason']): StartEvalRunResult => {
+  const blocked = (reason: Extract<StartEvalRunResult, { status: 'blocked' }>['reason'], caseId?: string, role?: 'tested' | 'judge'): StartEvalRunResult => {
     log('blocked', reason);
-    return { status: 'blocked', reason };
+    return { status: 'blocked', reason, ...(caseId ? { caseId } : {}), ...(role ? { role } : {}) };
   };
   try {
-    if (!logicalId(command.suiteId) || !command.model) return blocked('input-unsafe');
-    const suite = await ports.suites.load(command.suiteId);
-    if (!suite) return blocked('suite-unavailable');
-    const selectedId = command.scope.type === 'test_case' ? command.scope.testCaseId : undefined;
-    const cases = selectedId === undefined ? suite.testCases : suite.testCases.filter(item => item.id === selectedId);
-    if (!cases.length || command.scope.type === 'test_case' && cases.length !== 1) return blocked('case-unavailable');
-    const description = await ports.runner.describe(suite);
-    if (description.status === 'blocked') return blocked(description.reason);
-    const compatibility = compatibleDescription(suite, description.value);
-    if (compatibility) return blocked(compatibility);
-    if (requiredCapabilities(cases).some(capability => !description.value.capabilities.includes(capability))) return blocked('capability-unsupported');
-    if (!description.value.models.includes(command.model)) return blocked('model-unavailable');
-    const judgeRequired = hasRubric(cases);
-    const judgeModel = judgeRequired ? command.judgeModel : null;
-    if (judgeRequired && (!judgeModel || !description.value.judgeModels.includes(judgeModel)) || !judgeRequired && command.judgeModel) return blocked('judge-unavailable');
+    if (!logicalId(command.suiteId)) return blocked('input-unsafe');
+    const snapshot = await resolveRunSnapshot({ suiteId: command.suiteId, scope: command.scope,
+      ...(command.runOnly ? { runOnly: command.runOnly } : {}) }, ports);
+    if (snapshot.selection.status === 'blocked') return blocked(snapshot.selection.reason, snapshot.selection.caseId, snapshot.selection.role);
+    if (command.previewToken && command.previewToken !== snapshot.previewToken) return blocked('suite-changed');
+    const suite = snapshot.suite!;
+    const cases = snapshot.selection.cases.map(selected => suite.testCases.find(item => item.id === selected.caseId)!);
+    const caseSelections = orderedRunPlan(cases.map(item => item.id), snapshot.selection.cases);
+    if (!caseSelections) return blocked('invalid-input');
+    const model = snapshot.selection.cases[0]!.testedModel;
+    const judgeModel = snapshot.selection.cases[0]!.judgeModel;
     const ready = await ports.artifacts.check();
     if (ready.status === 'blocked') return blocked(ready.reason);
     const inputs = await ports.inputs.resolve(cases);
     if (inputs.status === 'blocked') return blocked(inputs.reason);
-    const queued = await ports.store.create({ suiteId: suite.id, caseIds: cases.map(item => item.id), scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: command.model, judgeModel: judgeModel ?? null });
+    if (inputs.value.length !== cases.length || inputs.value.some((item, index) => item.id !== caseSelections[index]?.caseId)) return blocked('invalid-input');
+    const queued = await ports.store.create({ suiteId: suite.id, caseIds: cases.map(item => item.id), scope: command.scope.type === 'all' ? 'all' : 'selected', testedModel: model, judgeModel, caseSelections });
     if (queued.status === 'blocked') return blocked(queued.reason);
-    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model: command.model, judgeModel: judgeModel ?? null, ...(reference ? { reference } : {}) }); }
+    try { ports.scheduler.schedule({ runId: queued.value.runId, suite, cases: inputs.value, model, judgeModel, caseSelections, ...(reference ? { reference } : {}) }); }
     catch {
       await ports.store.finalize(suite.id, queued.value.runId, 'error', ['schedule-failed']);
       return blocked('schedule-failed');

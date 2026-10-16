@@ -19,6 +19,8 @@ export type NormalizedEvalSuite = {
   readonly id: string;
   readonly name: string;
   readonly description: string;
+  readonly defaultTestedModel?: string;
+  readonly defaultJudgeModel?: string;
   readonly target: { readonly id: string; readonly kind: TargetKind; readonly path: string };
   readonly coverage: {
     readonly categories: readonly { readonly id: string; readonly status: CoverageStatus; readonly reason?: string }[];

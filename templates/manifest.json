@@ -1,5 +1,5 @@
 {
-  "templateVersion": "226",
+  "templateVersion": "227",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -324,17 +324,17 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Requires generated runner tests to validate emitted execute events against Sibu's workbench contract when available."
+        "Uses saved suite defaults for full-suite authoring previews and limits temporary model choices to one case."
       ]
     },
     "skills/agent-guided-evals/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Mandatory shared Codex and Claude Code guidance for sequential troubleshooting of one Sibu eval case or a full suite.",
       "changes": [
-        "Adds one-at-a-time full-suite troubleshooting with fresh focused verification and a final suite rerun while preserving single-case approval and edit safeguards."
+        "Uses saved suite defaults for full runs, blocks missing or unavailable choices, and confines temporary model choices to one case."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
@@ -388,17 +388,17 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "5",
+      "version": "6",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Aligns runner grader and tool events with the workbench validator so generated runs do not fail on protocol incompatibility."
+        "Documents optional tested and Judge suite defaults, saved-choice runs, and blocked or temporary one-case choices."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {
-      "version": "2",
+      "version": "3",
       "description": "Checks an authored suite through Sibu's real no-model-call preview path.",
       "changes": [
-        "Reports selected cases from the readiness preview without call counts or cost estimates."
+        "Previews full suites from saved defaults without model flags and rejects full-suite temporary choices."
       ]
     }
   }

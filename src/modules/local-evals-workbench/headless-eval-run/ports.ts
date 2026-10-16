@@ -2,6 +2,7 @@ import type { NormalizedEvalSuite, NormalizedEvalTestCase } from '../discover-co
 import type { ArtifactReadinessPort, CaseInputResolverPort } from '../run-configuration.js';
 import type { SuiteRuntimeRegistryPort, RunnerDescriptorPort } from '../runtime-ports.js';
 import type { ArtifactReaderPort, ArtifactStorePort } from '../run-history/contracts.js';
+import type { OrderedRunPlan } from '../run-execution/contracts.js';
 
 export interface HeadlessRunExecutorPort {
   execute(selection: {
@@ -10,6 +11,7 @@ export interface HeadlessRunExecutorPort {
     readonly cases: readonly NormalizedEvalTestCase[];
     readonly model: string;
     readonly judgeModel: string | null;
+    readonly caseSelections: OrderedRunPlan;
   }): Promise<{ readonly status: 'completed' | 'partial' | 'blocked' | 'error' | 'interrupted' | 'storage-failed'; readonly runId: string; readonly reason?: string }>;
 }
 

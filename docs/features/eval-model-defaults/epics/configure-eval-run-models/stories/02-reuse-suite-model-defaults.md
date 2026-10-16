@@ -6,7 +6,7 @@
 
 [Configure Eval Run Models](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 
@@ -25,11 +25,11 @@ As an engineer running evals, I want to save separate suite defaults for evaluat
 - Let users set, change, and reset defaults through the Suite models dialog; a change is saved only on explicit Save and protected from unsafe paths or concurrent edits.
 - Make preview/start use valid suite defaults for full-suite and single-case runs, require missing defaults when needed, and pause on unavailable suite choices without fallback.
 - Let a single-case run use a temporary Model or applicable Judge model without saving it; reject run-only model inputs for full-suite scope.
-- Apply the same defaults and blocking choices in the UI and agent-guided flow, including updated distributed guidance. Preserve preview, existing runner execution, and result detail behavior.
+- Apply the same defaults and blocking choices in the UI and agent-guided flow, including updated distributed guidance. Preserve preview and result detail behavior. Execute a full suite with both deterministic and rubric cases safely: cases without an applicable Judge model must not cause later rubric cases to run without their saved Judge model. Keep one logical run and the existing one-pair-per-request runner protocol.
 
 ## Out of Scope
 
-- Test-case overrides, mixed-model full-suite execution, automatic recommendations/fallback, and UI automation.
+- Test-case overrides and mixed tested-model full-suite execution caused by overrides, automatic recommendations/fallback, and UI automation. EMD-S03 extends the batch orchestration for case overrides and interrupted mixed-model runs.
 
 ## Acceptance Criteria
 
@@ -38,11 +38,14 @@ As an engineer running evals, I want to save separate suite defaults for evaluat
 - **AC-03 — Unavailable choice:** An unavailable saved suite model blocks preview/start until a compatible replacement is explicitly saved, with no paid runner call or silent substitution. Source: BRD REQ-05, AC-05. Verification: test.
 - **AC-04 — Temporary single-case choice:** A single-case run can choose another compatible Model or applicable Judge model without changing saved suite defaults; full-suite scope rejects that temporary input. Source: BRD REQ-04, AC-04. Verification: test.
 - **AC-05 — Surface parity:** The UI and agent-guided flow reach the same defaults and blocked outcomes; the user judges suite controls and dialogs against binding phone/tablet/desktop UX mockups afterward. Source: BRD REQ-06, AC-06. Verification: deterministic Node contract tests plus later user QA.
+- **AC-06 — Judge applicability in a full suite:** When deterministic and rubric cases share suite defaults, one logical full-suite run uses the saved Judge model for rubric cases and no Judge model for deterministic cases, preserving case order and actual per-case evidence. No case silently inherits the first case's inapplicable Judge choice. Source: BRD REQ-03, REQ-06, AC-05, AC-06; SDD Main Flow and Runner Coordination. Verification: deterministic fake-runner and artifact integration test.
 
 ## Verification Expectations
 
 - Fake-port handler and suite-file fixture tests show valid set/change/reset, no accidental mutation on preview/run/Cancel, old suite compatibility, symlink/root-escape refusal, concurrent-edit conflicts, and no fallback.
 - Deterministic Node integration and UI contract tests show the same effective choice through preview and start, a single-case temporary choice not persisted, and agent-facing result parity. No live LLM, headless-browser UI test, or automated visual/accessibility review.
+- A disposable fake-runner full-suite test with deterministic and rubric cases proves ordered one-logical-run execution, the applicable saved Judge model on rubric cases, no Judge on deterministic cases, and truthful persisted per-case labels. EMD-S03 separately proves overridden tested-model batching and partial interruption.
+- Deterministic Node UI contract tests assert that preview and model-choice controls do not display call-count or price estimates; no browser review is claimed.
 - The user performs post-implementation QA of suite summary, Suite models dialog, missing/unavailable states, This run only controls, and phone/tablet/desktop fidelity.
 
 ## Validation
@@ -67,7 +70,7 @@ No silent fallback, unsafe suite-file write, lost concurrent edit, or credential
 
 ## Deployability and Feature Flag
 
-**Behind flag:** no. With no test-case overrides yet, every case inherits the working suite pair, which the existing runner protocol can execute. A missing or unavailable suite default yields the complete reviewed stop-and-recover path; no unmerged Story is needed for safe use.
+**Behind flag:** no. With no test-case overrides yet, every case inherits the suite tested-model default; Judge applicability can still differ between deterministic and rubric cases, so this Story executes their ordered model-pair batches under one logical run. A missing or unavailable suite default yields the complete reviewed stop-and-recover path; no unmerged Story is needed for safe use.
 
 ## Dependencies
 

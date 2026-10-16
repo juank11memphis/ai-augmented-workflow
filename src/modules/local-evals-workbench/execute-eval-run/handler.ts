@@ -7,6 +7,7 @@ import { normalizeGraderOutcome, normalizeGraderOutcomes } from '../run-executio
 import { boundedJson, attempt as validAttempt } from '../run-history/validation.js';
 import { LIMITS } from '../run-history/limits.js';
 import { reviewSources } from './review-sources.js';
+import { executionBatches } from '../run-execution/batches.js';
 
 const MAX_DIAGNOSTICS = 20;
 const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -22,6 +23,7 @@ type Current = { caseId: string; number: number; began: number; turns: TurnEvide
 
 export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: ExecuteEvalRunDependencies): Promise<ExecuteEvalRunResult> {
   const { suite, runId, cases } = command;
+  const batches = executionBatches(command);
   const began = ports.clock();
   const log = (event: 'eval_run_started' | 'eval_run_finished' | 'eval_run_start_blocked' | 'eval_run_storage_failed',
     outcome: 'started' | 'completed' | 'blocked' | 'partial' | 'interrupted' | 'failed', reason?: string): void => {
@@ -31,6 +33,7 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       ...(SAFE_RUN_ID.test(runId) ? { runId } : {}), durationMs: Math.max(0, ports.clock() - began) });
     } catch { /* Noncritical sink. */ }
   };
+  if (!batches) { log('eval_run_start_blocked', 'blocked', 'runner-protocol-invalid'); return { status: 'blocked', runId, reason: 'runner-protocol-invalid' }; }
   const started = await ports.store.start(suite.id, runId);
   if (started.status === 'blocked') { log('eval_run_start_blocked', 'blocked', started.reason); return { status: 'blocked', runId, reason: started.reason }; }
   log('eval_run_started', 'started');
@@ -41,6 +44,7 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
   let attemptNumber = 1;
   let completed = 0;
   let terminal: 'completed' | 'error' | 'interrupted' | undefined;
+  let activeJudge: string | null = null;
   const persist = async (attempt: Attempt): Promise<void> => {
     if (!boundedJson(attempt, LIMITS.attemptBytes) || !validAttempt(attempt)) throw new EvidenceLimitStopped();
     const result = await ports.store.append(suite.id, runId, attempt);
@@ -77,9 +81,9 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         || current.graders.some(item => item.checkId === event.checkId)) throw new Error('grader-order');
       const grader = cases[caseIndex]?.graders.find(item => item.id === event.checkId);
       if (!grader) throw new Error('grader-result-invalid');
-      const result = normalizeGraderOutcome(grader, event, command.judgeModel ?? null);
+      const result = normalizeGraderOutcome(grader, event, activeJudge);
       const previous = current.graders.map(item => normalizeGraderOutcome(
-        cases[caseIndex]!.graders.find(grader => grader.id === item.checkId)!, item, command.judgeModel ?? null));
+        cases[caseIndex]!.graders.find(grader => grader.id === item.checkId)!, item, activeJudge));
       current.graders.push(event);
       await persist(evidence('incomplete', [...previous, result]));
     } else if (event.type === 'case-completed') {
@@ -90,7 +94,7 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         const assertions = ports.evaluator.evaluate(selected.assertions, { output: current.output, turns: current.turns, tools: current.tools });
         if (assertions.length !== selected.assertions.length || new Set(assertions.map(item => item.id)).size !== assertions.length
           || selected.assertions.some(item => !assertions.some(result => result.id === item.id))) throw new Error('assertion-results-invalid');
-        const graders = normalizeGraderOutcomes(selected.graders, current.graders, command.judgeModel ?? null);
+        const graders = normalizeGraderOutcomes(selected.graders, current.graders, activeJudge);
         const results = [...assertions, ...graders];
         await persist(evidence(results.every(item => item.outcome === 'passed') ? 'passed' : 'failed', results,
           event.calls ?? null, event.cost ?? null));
@@ -110,7 +114,15 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     } else if (event.type === 'run-completed') terminal = event.status;
   };
   try {
-    const outcome = await ports.runner.execute(command, consume);
+    let outcome: Awaited<ReturnType<typeof ports.runner.execute>> = { status: 'completed' };
+    for (const batch of batches) {
+      const expectedEnd = caseIndex + batch.cases.length;
+      terminal = undefined;
+      activeJudge = batch.judgeModel ?? null;
+      outcome = await ports.runner.execute(batch, consume);
+      if (outcome.status !== 'completed') break;
+      if (terminal !== 'completed' || caseIndex !== expectedEnd || current) throw new Error('batch-incomplete');
+    }
     const status: Exclude<RunState, 'queued' | 'running'> = outcome.status === 'blocked' && completed === 0 ? 'blocked'
       : outcome.status === 'interrupted' ? 'interrupted'
       : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length ? 'completed'

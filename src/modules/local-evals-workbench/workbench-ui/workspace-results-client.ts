@@ -103,6 +103,10 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       return;
     }
     suite = nextSuite;
+    if (typeof savedSuiteGeneration !== 'undefined') {
+      savedSuiteGeneration++; savedSuiteModels = null; suiteModelsDraft = null;
+      suiteModelStatus(''); renderSuiteModelSummary();
+    }
     if (taskView === 'new-run') showTaskView('results');
     run = null; history = []; selectedRunId = null; latestKnownRunId = null; acceptedRunId = null; runtime = null;
     runGeneration++; historyGeneration++; detailGeneration++;
@@ -115,8 +119,8 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     detail.hidden = true; failuresOnly = false; search = '';
     const searchInput = resultContainer.querySelector?.('[data-action="search"]');
     if (searchInput) searchInput.value = '';
-    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '' };
-    renderWorkspace(); void loadRuntime(); void loadHistory();
+    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '', choice: 'saved', temporaryModel: '', temporaryJudge: '' };
+    renderWorkspace(); void loadRuntime(); if (typeof loadSavedSuiteModels === 'function') void loadSavedSuiteModels(); void loadHistory();
   }
   function caseStatus(caseId) {
     const item = run?.cases.find(value => value.caseId === caseId);
@@ -135,7 +139,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       const attempt = record.attempts.at(-1);
       if (!attempt || attempt.outcome === 'incomplete') return [];
       return [{ caseId, name: suite?.testCases.find(item => item.id === caseId)?.name || caseId,
-        status: attempt.outcome, model: run.testedModel, judgeModel: run.judgeModel,
+        status: attempt.outcome, model: record.testedModel || run.testedModel, judgeModel: record.judgeModel === undefined ? run.judgeModel : record.judgeModel,
         detail: { caseId, attempt: attempt.number } }];
     });
   }
@@ -151,7 +155,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     setupRegion.hidden = taskView !== 'new-run' || !suite;
     const startForm = one('[data-start-form]'); if (startForm) startForm.hidden = startUncertain;
     const startAction = setupRegion.querySelector('[data-action="start"]');
-    if (startAction) startAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
+    if (startAction) startAction.disabled = Boolean(!runtime || setup.scope === 'one' && setup.choice === 'temporary' && (!setup.temporaryModel || needsJudge() && !setup.temporaryJudge));
     refreshSetupControls();
     const historical = run && latestKnownRunId && !latestRun();
     one('[data-latest-label]').textContent = run ? (historical ? 'Past run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';
@@ -172,7 +176,6 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       const metrics = [];
       if (run.finishedAt != null && run.createdAt != null) metrics.push('Elapsed ' + Math.max(0, (run.finishedAt - run.createdAt) / 1000).toFixed(1) + 's');
       if (run.cost != null) metrics.push('Cost ' + run.cost);
-      if (run.testedModel) metrics.unshift('Model: ' + run.testedModel);
       one('[data-run-metrics]').textContent = metrics.join(' · ');
     } else if (acceptedRunId) status('Run queued. Loading saved progress…');
     else if (suite) status('0/' + suite.testCases.length + ' complete');
@@ -425,5 +428,5 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
   });
   document.addEventListener('input', event => { if (event.target.matches('[data-action="search"]')) { search = event.target.value; renderWorkspace(); } });
   setup.caseId = suite?.testCases[0]?.id || '';
-  void loadDiscovery(); void loadRuntime(); void loadHistory();
+  void loadDiscovery(); void loadRuntime(); if (typeof loadSavedSuiteModels === 'function') void loadSavedSuiteModels(); void loadHistory();
 `;

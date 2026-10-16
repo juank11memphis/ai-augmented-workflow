@@ -31,6 +31,8 @@ import { InMemoryFailureAnalysisStore } from './repair-context/analysis-store.js
 import { loadEvalEnvironment } from './eval-environment.js';
 import { createAnalysisContextReader } from './analyze-failed-assertion/context-reader.js';
 import { readProjectFileState } from './repair-context/project-file-state.js';
+import { NodeProjectSuiteChoiceFile } from './change-saved-model-choice/index.js';
+import type { ChangeSavedModelChoicePorts } from './change-saved-model-choice/index.js';
 
 export type LocalWorkbenchRuntimeDependencies = {
   readonly run: RunLocalEvalSuiteDependencies;
@@ -42,6 +44,7 @@ export type LocalWorkbenchRuntimeDependencies = {
   readonly start?: StartEvalRunDependencies;
   readonly get?: (command: GetEvalRunCommand) => Promise<GetEvalRunResult>;
   readonly list?: (command: ListEvalRunsCommand) => Promise<ListEvalRunsResult>;
+  readonly savedChoice?: ChangeSavedModelChoicePorts;
 };
 
 export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRequest): LocalWorkbenchRuntimeDependencies {
@@ -103,6 +106,8 @@ export function createWorkbenchDependencies(request: LocalWorkbenchServerStartRe
     },
     get: command => history.get(command),
     list: command => history.list(command),
+    savedChoice: { files: new NodeProjectSuiteChoiceFile(request.projectRoot), runner,
+      log: event => { try { console.info(JSON.stringify(event)); } catch { /* Noncritical sink. */ } } },
   };
 }
 

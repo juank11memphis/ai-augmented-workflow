@@ -11,6 +11,8 @@ export type HeadlessEvalRunResult = {
   readonly status: RunState;
   readonly runId?: string;
   readonly reason?: string;
+  readonly caseId?: string;
+  readonly role?: 'tested' | 'judge';
   readonly outcome?: CheckOutcome;
   readonly cases?: readonly HeadlessRunCase[];
   readonly diagnostics?: readonly string[];

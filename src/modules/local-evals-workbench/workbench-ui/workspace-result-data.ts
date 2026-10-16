@@ -22,8 +22,8 @@ export function completedCaseResults(run: Manifest | null, suite: EvalSuiteSumma
       caseId,
       name: suite?.testCases.find(item => item.id === caseId)?.name ?? caseId,
       status: attempt.outcome,
-      model: run.testedModel,
-      judgeModel: run.judgeModel,
+      model: record.testedModel ?? run.testedModel,
+      judgeModel: record.judgeModel === undefined ? run.judgeModel : record.judgeModel,
       detail: { caseId, attempt: attempt.number },
     }];
   });

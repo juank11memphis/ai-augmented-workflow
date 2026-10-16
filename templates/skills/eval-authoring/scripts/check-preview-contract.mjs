@@ -14,12 +14,14 @@ function selectionFromArgs(args) {
     }
     values.set(name, value);
   }
-  if (!values.has('--suite') || !values.has('--model')) throw new Error('usage');
+  if (!values.has('--suite') || ((values.has('--model') || values.has('--judge')) && !values.has('--case'))) throw new Error('usage');
   return {
     suiteId: values.get('--suite'),
     scope: values.has('--case') ? { type: 'test_case', testCaseId: values.get('--case') } : { type: 'all' },
-    model: values.get('--model'),
-    judgeModel: values.get('--judge') ?? null,
+    ...((values.has('--model') || values.has('--judge')) ? { runOnly: {
+      ...(values.has('--model') ? { testedModel: values.get('--model') } : {}),
+      ...(values.has('--judge') ? { judgeModel: values.get('--judge') } : {}),
+    } } : {}),
   };
 }
 
@@ -67,14 +69,15 @@ async function main() {
     const result = await response.json();
     if (response.status !== 200 || result.status !== 'ready') {
       const category = result.issue?.category ?? result.reason ?? 'unknown';
-      throw new Error(`preview-blocked:${String(category).slice(0, 80)}`);
+      const role = result.role ? `:${String(result.role).slice(0, 20)}` : '';
+      throw new Error(`preview-blocked:${String(category).slice(0, 80)}${role}`);
     }
     console.log(JSON.stringify({ status: 'ready', suiteId: result.suiteId,
       selectedCaseIds: result.selectedCaseIds }));
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'unknown';
     console.error(`Sibu preview contract check failed: ${reason === 'usage'
-      ? 'use --suite ID --model ID [--judge ID] [--case ID]' : reason}`);
+      ? 'use --suite ID [--case ID [--model ID] [--judge ID]]' : reason}`);
     process.exitCode = 1;
   } finally {
     workbench?.child.kill('SIGTERM');

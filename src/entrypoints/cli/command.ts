@@ -12,6 +12,7 @@ import type {
   SetModelRouteCommand,
 } from '../../modules/workflow-configuration-manager/index.js';
 import type { SyncProjectCommand } from '../../modules/sync-review-orchestrator/index.js';
+import type { ChangeSavedModelChoiceCommand } from '../../modules/local-evals-workbench/change-saved-model-choice/index.js';
 
 export type SibuCliCommand =
   | InitProjectCommand
@@ -27,6 +28,7 @@ export type SibuCliCommand =
   | { readonly type: 'evals:suites' }
   | ({ readonly type: 'evals:describe' } & DescribeEvalSuiteRuntimeCommand)
   | ({ readonly type: 'evals:run' } & HeadlessEvalRunCommand)
+  | ({ readonly type: 'evals:choice' } & ChangeSavedModelChoiceCommand)
   | { readonly type: 'evals:result'; readonly suiteId: string; readonly runId: string; readonly caseId?: string; readonly assertionId?: string }
   | ResolveModelRouteCommand
   | SetModelRouteCommand

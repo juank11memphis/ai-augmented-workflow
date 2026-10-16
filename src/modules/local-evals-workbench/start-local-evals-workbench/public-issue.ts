@@ -4,6 +4,7 @@ import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-sui
 import type { DescribeEvalSuiteRuntimeResult } from '../describe-eval-suite-runtime/result.js';
 import type { PreviewEvalRunResult, PreviewStage } from '../preview-eval-run/result.js';
 import type { StartEvalRunResult } from '../start-eval-run/result.js';
+import type { SelectionBlockReason } from '../resolve-eval-run-selection/result.js';
 import type { Reason, RunState } from '../run-history/contracts.js';
 import { isSafeEnvironmentName, type RuntimeBlockReason } from '../runtime-description.js';
 import type { ApplyApprovedEvalRepairResult } from '../apply-approved-eval-repair/result.js';
@@ -63,7 +64,7 @@ export type PublicPreviewIssue = {
   readonly stage: 'preview';
   readonly observedStage?: PreviewStage;
   readonly outcome: 'blocked' | 'failed';
-  readonly category: RuntimeBlockReason | 'invalid-request' | 'unknown';
+  readonly category: SelectionBlockReason | 'invalid-request' | 'unknown';
   readonly title: string;
   readonly explanation: string;
   readonly nextStep: string;
@@ -157,7 +158,12 @@ const modelCheckCopy: Record<RuntimeBlockReason, ModelCheckCopy> = {
 };
 
 // Separate exhaustive map: preview guidance must not inherit model-check wording.
-const previewCopy: Record<RuntimeBlockReason, ModelCheckCopy> = {
+const previewCopy: Record<SelectionBlockReason, ModelCheckCopy> = {
+  'missing-suite-default': copy('Suite model not set', 'The suite needs a saved model choice.', 'Save the missing model choice, then preview again.', 'edit-suites'),
+  'saved-model-unavailable': copy('Saved model unavailable', 'A saved model is not advertised by the runner.', 'Choose and save a compatible model, then preview again.', 'edit-suites'),
+  'invalid-run-only-choice': copy('Run-only choice invalid', 'The temporary choice cannot be used.', 'Choose a compatible single-case model, then preview again.', 'edit-suites'),
+  'run-only-scope-unsupported': copy('Run-only scope unsupported', 'Temporary choices apply to one case only.', 'Select one case, then preview again.', 'edit-suites'),
+  'run-only-model-unavailable': copy('Run-only model unavailable', 'The temporary model is not advertised by the runner.', 'Choose a compatible model, then preview again.', 'edit-suites'),
   'suite-unavailable': copy('Suite unavailable', 'The selected suite could not be used for preview.', 'Check the suite definition, then preview again.', 'edit-suites'),
   'runner-unavailable': copy('Runner unavailable', 'The suite runner could not be used for preview.', 'Check the runner command, then preview again.', 'edit-suites'),
   'runner-absent': copy('Runner not found', 'The configured runner was not found.', 'Install or correct the runner command, then preview again.', 'edit-suites'),
@@ -185,6 +191,12 @@ const previewCopy: Record<RuntimeBlockReason, ModelCheckCopy> = {
 
 // Start-specific wording: a blocked start does not mean execution failed.
 export const startCopy: Record<StartReason, ModelCheckCopy> = {
+  'suite-changed': copy('Preview changed', 'The suite or runner catalog changed since preview.', 'Review the updated preview and explicitly start again.', 'retry'),
+  'missing-suite-default': copy('Suite model not set', 'The suite needs a saved model choice.', 'Save the missing model choice, then start again.', 'edit-suites'),
+  'saved-model-unavailable': copy('Saved model unavailable', 'A saved model is not advertised by the runner.', 'Choose and save a compatible model, then start again.', 'edit-suites'),
+  'invalid-run-only-choice': copy('Run-only choice invalid', 'The temporary choice cannot be used.', 'Choose a compatible single-case model, then start again.', 'edit-suites'),
+  'run-only-scope-unsupported': copy('Run-only scope unsupported', 'Temporary choices apply to one case only.', 'Select one case, then start again.', 'edit-suites'),
+  'run-only-model-unavailable': copy('Run-only model unavailable', 'The temporary model is not advertised by the runner.', 'Choose a compatible model, then start again.', 'edit-suites'),
   'suite-unavailable': copy('Suite unavailable', 'The selected suite could not be used to start a run.', 'Check the suite definition, then start again.', 'edit-suites'),
   'runner-unavailable': copy('Runner unavailable', 'The suite runner could not be used to start a run.', 'Check the runner command, then start again.', 'edit-suites'),
   'runner-absent': copy('Runner not found', 'The configured runner was not found before queueing.', 'Install or correct the runner command, then try again.', 'edit-suites'),

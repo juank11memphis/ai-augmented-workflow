@@ -16,7 +16,7 @@ const references = {
   absent: '123e4567-e89b-42d3-a456-426614174014',
 };
 const secret = /SYNTHETIC_SECRET_SENTINEL|sk-synthetic-secret|private synthetic prompt|private synthetic runner content/;
-const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' }, model: 'fake/available' };
+const selection = { suiteId: 'offline', scope: { type: 'test_case', testCaseId: 'first' } };
 type Workbench = Parameters<Parameters<typeof withOfflineWorkbench>[0]>[0];
 
 async function reviewedStart(workbench: Workbench, reference: string) {
@@ -230,7 +230,7 @@ test('lost response keeps one saved run, exact History association and prior evi
       const issue = blocked.payload.issue as { stage: string; outcome: string; category: string; reference: string; recoveryAction: string };
       assert.equal(issue.stage, 'run-start');
       assert.equal(issue.outcome, 'blocked');
-      assert.equal(issue.category, 'model-unavailable');
+      assert.equal(issue.category, 'saved-model-unavailable');
       assert.equal(issue.reference, references.absent);
       assert.equal(issue.recoveryAction, 'edit-suites');
       const copied = `Stage: ${issue.stage}\nOutcome: ${issue.outcome}\nCategory: ${issue.category}\nReference: ${issue.reference}`;
