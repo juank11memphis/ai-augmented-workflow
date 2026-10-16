@@ -23,8 +23,8 @@ As an engineer running a full eval suite, I want selected test cases to use thei
 
 - Let users select one test case, set/change either model override, and reset it to suite inheritance through the Test-case models dialog; keep the saved suite default required.
 - Resolve all selected cases before paid execution, pause for unavailable overrides, and offer explicit replacement or reset to inheritance in both UI and agent-guided flow.
-- Execute mixed-model suites as ordered model-homogeneous batches under one logical run without changing the project runner protocol, and retain honest partial outcomes.
-- Persist actual per-case tested/judge models, preserve old run-history reads, show actual choices in the case-first results from EMD-S01, and keep preview estimates aligned with the resolved plan.
+- Extend the ordered model-pair batching established in EMD-S02 to case-specific tested or Judge overrides under one logical run without changing the project runner protocol, and retain honest partial outcomes.
+- Persist actual per-case tested/judge models, preserve old run-history reads, and show actual choices in the case-first results from EMD-S01 and the run preview.
 
 ## Out of Scope
 

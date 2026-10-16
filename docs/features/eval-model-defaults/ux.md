@@ -32,6 +32,7 @@ Reduce routine setup without taking control from the engineer. Keep the Model Un
 - **Results:** case-first status list. Model labels are supporting metadata, not the primary result hierarchy.
 - Visible copy uses **Model**, **Judge model**, **Suite models**, **Test-case models**, **Inherited from suite**, **Override**, **Not set**, **Unavailable**, **This run only**, **Reset override**, and **Start run**. Avoid internal IDs, provider errors, implementation terms, or an unexplained gear.
 - The summary shows a judge only when relevant to the suite or selected case. A temporary choice appears only for one-case scope. (RULE-01, RULE-03 in source BRD)
+- Preview and model-choice controls show model names, not expected-call counts, prices, or cost estimates.
 
 ## Responsive Layout and Component Strategy
 
@@ -62,7 +63,6 @@ These mockups are authoritative for hierarchy, visible content, and dominant int
 │ ( ) One test case            │
 │                              │
 │ [Start run]                  │
-│ Expected calls · Est. cost   │
 └──────────────────────────────┘
 ```
 
@@ -198,7 +198,7 @@ opens the corresponding dialog from Start run before execution.
 │ • Customer       │ Model X · Judge Model J                                │
 │   support        │                                                       │
 │ • Other suite    │ Run scope  (●) All test cases  ( ) One test case       │
-│                 │ [Start run]  Expected calls · Est. cost                │
+│                 │ [Start run]                                           │
 │                 │                                                       │
 │                 │ Results                                               │
 │                 │ Case                  Status  Model    Judge  Action    │
