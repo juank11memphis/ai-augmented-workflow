@@ -6,7 +6,7 @@
 
 [Configure Eval Run Models](../epic_brief.md)
 
-**Status:** in-progress
+**Status:** verified/integrated
 
 ## User Story
 

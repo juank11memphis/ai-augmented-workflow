@@ -45,3 +45,8 @@ Acceptance check: given a failed multi-turn assertion, an LLM using only the run
 - Compare focused failures against the observed Epic/base head in isolation, and distinguish pre-existing regressions and host/test-runner failures from changes introduced by the current Story. Permit narrowly reviewed prerequisite repairs for pre-existing failures when ownership and safety are clear.
 - Preserve the blocked Task's unstaged edits. For clear, bounded, path-disjoint same-Story regressions, add independently reviewed follow-up checked Tasks, execute them in order, then resume the blocked Task and rerun checks made stale by the repairs. Use a reviewed same-Task continuation when edits overlap.
 - Continue without routine human approval only while attribution, source alignment, checks, evidence, Git state, and progress stay clear. Stop for material decisions, ambiguous causes, unsafe overlap, or non-convergence; never weaken checks or claim a failed run passed.
+
+## Verify PR merge requirements through GitHub MCP
+
+- Avoid shell `gh api` calls for repository rulesets and branch protection when GitHub MCP can provide the required-check and merge-policy facts.
+- If MCP cannot provide them, explain the capability gap and minimize host approval prompts for read-only verification during Story and Epic PR handoffs.
