@@ -4,10 +4,54 @@ import vm from 'node:vm';
 import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
 import { renderWorkspaceShell } from './workspace-layout.js';
 import { startCopy } from '../start-local-evals-workbench/public-issue.js';
+import { WORKSPACE_RUN_START_CLIENT } from './workspace-run-start-client.js';
+import { WORKSPACE_RUN_PREVIEW_CLIENT } from './workspace-run-preview-client.js';
 
 const reference = '123e4567-e89b-42d3-a456-426614174000';
 const secret = 'sk-SYNTHETIC-SECRET-MARKER';
 const suite = { id: 'suite', name: 'Suite', testCases: [{ id: 'case', name: 'Case' }] };
+
+test('preview renders resolver-ordered case pairs with optional Judge and no estimates or extra case list', async () => {
+  const list = { innerHTML: '' }, message = { textContent: '' };
+  const api = vm.runInNewContext('(()=>{' + `let suite={id:'suite',testCases:[{id:'a',name:'First'},{id:'b',name:'Second'}]},runtimeState='ready';
+    const one=globalThis.one,esc=value=>String(value),post=globalThis.post,command=()=>({suiteId:'suite'}),
+      selectedCaseIds=()=>['a','b'],needsJudge=()=>true;
+    ${WORKSPACE_RUN_PREVIEW_CLIENT}
+    return {previewRun};` + '})()', {
+    one: (selector: string) => selector === '[data-run-preview-list]' ? list : selector === '[data-run-preview-status]' ? message : null,
+    post: async () => ({ status: 'ready', previewToken: 'token', caseSelections: [
+      { caseId: 'a', testedModel: 'X', judgeModel: null }, { caseId: 'b', testedModel: 'Y', judgeModel: 'J' }] }),
+  }) as { previewRun(): Promise<unknown> };
+  await api.previewRun();
+  assert.match(list.innerHTML, /First.*Model X.*Second.*Model Y.*Judge model J/s);
+  assert.equal((list.innerHTML.match(/<li>/g) || []).length, 2);
+  assert.equal((list.innerHTML.match(/Judge model/g) || []).length, 1);
+  assert.doesNotMatch(list.innerHTML + message.textContent, /estimate|price|cost|calls|case list/i);
+});
+
+test('unavailable case override opens its own role dialog before a paid start', async () => {
+  const openings: unknown[][] = [];
+  let paidStarts = 0;
+  const script = `let runtime={models:['X'],rubricCaseIds:[]},setup={scope:'all',choice:'saved'},
+    previewingStart=false,startPending=false,startUncertain=false,startReference=null,startSuiteId=null,acceptedRunId=null,
+    suite={id:'suite'},previewToken=null,sheetReturn=null;
+    const one=globalThis.one,setupRegion=globalThis.setupRegion,readSetup=()=>{},needsJudge=()=>false,
+      isActive=()=>false,previewRun=globalThis.previewRun,openCaseModels=globalThis.openCaseModels,
+      openSuiteModels=globalThis.openSuiteModels,status=()=>{},command=()=>({suiteId:'suite',scope:{type:'all'}});
+    ${WORKSPACE_RUN_START_CLIENT}
+    return {startRun};`;
+  const api = vm.runInNewContext('(()=>{' + script + '})()', {
+    one: (selector: string) => selector === '[data-run-preview-list]' ? {} : null,
+    setupRegion: { querySelector: () => ({ focus() {} }) },
+    previewRun: async () => ({ status: 'blocked', reason: 'saved-model-unavailable', source: 'case-override', caseId: 'case', role: 'judge' }),
+    openCaseModels: async (...args: unknown[]) => { openings.push(args); },
+    openSuiteModels: async () => { throw new Error('wrong dialog'); },
+    fetch: async () => { paidStarts++; throw new Error('must not start'); },
+  }) as { startRun(): Promise<void> };
+  await api.startRun();
+  assert.deepEqual(openings.map(value => JSON.parse(JSON.stringify(value))), [['judge', 'case']]);
+  assert.equal(paidStarts, 0);
+});
 
 function startHarness(response: () => Promise<{ status: number; json(): Promise<unknown> }>) {
   const listeners = new Map<string, (event: { target: { closest(): { dataset: { action: string } } } }) => void>();

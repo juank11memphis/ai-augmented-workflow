@@ -105,6 +105,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     suite = nextSuite;
     if (typeof savedSuiteGeneration !== 'undefined') {
       savedSuiteGeneration++; savedSuiteModels = null; suiteModelsDraft = null;
+      if (typeof caseModelsDraft !== 'undefined') caseModelsDraft = null;
       suiteModelStatus(''); renderSuiteModelSummary();
     }
     if (taskView === 'new-run') showTaskView('results');
