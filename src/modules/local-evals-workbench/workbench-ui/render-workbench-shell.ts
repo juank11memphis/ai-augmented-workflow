@@ -96,8 +96,7 @@ function renderModelOptions(models: readonly WorkbenchViewModel['modelOptions'][
 }
 
 function renderModelOption(model: WorkbenchViewModel['modelOptions'][number]): string {
-  const price = model.priceEstimate ? ` · ${model.priceEstimate}` : '';
-  return `<option value="${escapeAttribute(model.id)}" ${optionSelected(model.selected)}>${escapeHtml(`${model.label}${price}`)}</option>`;
+  return `<option value="${escapeAttribute(model.id)}" ${optionSelected(model.selected)}>${escapeHtml(model.label)}</option>`;
 }
 
 function renderTestCasePicker(viewModel: WorkbenchViewModel): string {

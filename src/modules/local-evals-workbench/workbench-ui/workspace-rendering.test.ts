@@ -124,7 +124,7 @@ it('renders safe labeled results with only inspectable actions and no broad evid
   }] }, run: { version: 1, suiteId: 'suite', runId: 'run', caseIds: ['a"<', 'b'], state: 'completed',
     owner: { pid: 1, token: 'test' }, createdAt: 1, updatedAt: 2, finishedAt: 2,
     testedModel: 'model', judgeModel: null, scope: 'all', outcome: 'failed', calls: null, cost: null,
-    cases: [{ caseId: 'a"<', state: 'completed', attempts: [
+    cases: [{ caseId: 'a"<', state: 'completed', testedModel: 'actual-model', judgeModel: 'actual-judge', attempts: [
       { number: 1, outcome: 'failed', durationMs: 1, calls: 0, cost: null },
       { number: 2, outcome: 'passed', durationMs: 1, calls: 0, cost: null },
     ] }], diagnostics: [],
@@ -132,7 +132,9 @@ it('renders safe labeled results with only inspectable actions and no broad evid
   const html = renderWorkspaceResults(model);
   assert.match(html, /class="result-head" aria-hidden="true"/);
   assert.match(html, /<span class="result-label">Status: <\/span>Pass/);
-  assert.match(html, /<span class="result-label">Model: <\/span>model/);
+  assert.match(html, /<span class="result-label">Model: <\/span>actual-model/);
+  assert.match(html, /<span class="result-label">Judge model: <\/span>actual-judge/);
+  assert.doesNotMatch(html, /<span class="result-label">Model: <\/span>model/);
   assert.match(html, /data-case-id="a&quot;&lt;"/);
   assert.doesNotMatch(html, /data-case-id="b"/);
   assert.doesNotMatch(html, /<private>|raw response|aria-label="[^"]*private/);

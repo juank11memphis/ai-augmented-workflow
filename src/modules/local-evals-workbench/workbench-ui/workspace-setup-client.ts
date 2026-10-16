@@ -1,5 +1,6 @@
 import { startCopy as safeStartCopy } from '../start-local-evals-workbench/public-issue.js';
 import { WORKSPACE_RUN_START_CLIENT } from './workspace-run-start-client.js';
+import { WORKSPACE_RUN_PREVIEW_CLIENT } from './workspace-run-preview-client.js';
 
 export const WORKSPACE_SETUP_CLIENT = String.raw`
   const root = document.querySelector('[data-workspace]');
@@ -13,8 +14,8 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   let strictRuntimeChoices = false;
   let runtimeState = 'loading', runtimeMessage = 'Loading compatible models…';
   let modelIssue = null;
-  let setup = { scope: 'all', caseId: '', model: '', judgeModel: '' };
-  let sheetReturn = null, startPending = false, startUncertain = false, startReference = null, startSuiteId = null, activePanel = null;
+  let setup = { scope: 'all', caseId: '', model: '', judgeModel: '', choice: 'saved', temporaryModel: '', temporaryJudge: '' };
+  let sheetReturn = null, startPending = false, previewingStart = false, startUncertain = false, startReference = null, startSuiteId = null, activePanel = null;
   let startIssueDetails = null;
   const startCopy = ${JSON.stringify(safeStartCopy)};
   const one = selector => document.querySelector(selector);
@@ -73,7 +74,9 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       else { const host = one('[data-discovery-notice]'); if (host) host.hidden = true; copyableIssue = null; }
     } catch { showDiscoveryNotice(connectionCopy.noResponse); }
   }
-  const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId }, model: setup.model, judgeModel: needsJudge() ? setup.judgeModel || null : null });
+  const command = () => ({ suiteId: suite.id, scope: setup.scope === 'all' ? { type: 'all' } : { type: 'test_case', testCaseId: setup.caseId },
+    ...(setup.scope === 'one' && setup.choice === 'temporary' ? { runOnly: { testedModel: setup.temporaryModel,
+      ...(needsJudge() ? { judgeModel: setup.temporaryJudge } : {}) } } : {}) });
   const modelCopy = {
     'suite-unavailable': 'Sibu could not open this eval suite. Share the issue details with the person who set it up.',
     'runner-unavailable': 'Sibu could not start this suite. Share the issue details with the person who set it up.',
@@ -171,15 +174,17 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   }
   function setupMarkup() {
     const cases = (suite?.testCases || []).map(item => '<option value="' + esc(item.id) + '"' + (setup.caseId === item.id ? ' selected' : '') + '>' + esc(item.name) + '</option>').join('');
-    const models = (runtime?.models || []).map(id => '<option value="' + esc(id) + '"' + (setup.model === id ? ' selected' : '') + '>' + esc(id) + '</option>').join('');
-    const judges = (runtime?.judgeModels || []).map(id => '<option value="' + esc(id) + '"' + (setup.judgeModel === id ? ' selected' : '') + '>' + esc(id) + '</option>').join('');
+    const models = (runtime?.models || []).map(id => '<option value="' + esc(id) + '"' + (setup.temporaryModel === id ? ' selected' : '') + '>' + esc(id) + '</option>').join('');
+    const judges = (runtime?.judgeModels || []).map(id => '<option value="' + esc(id) + '"' + (setup.temporaryJudge === id ? ' selected' : '') + '>' + esc(id) + '</option>').join('');
     return '<fieldset><legend>Run scope</legend><label><input type="radio" name="scope" value="all"' + (setup.scope === 'all' ? ' checked' : '') + '> All ' + esc(suite?.testCases.length || 0) + ' cases</label><label><input type="radio" name="scope" value="one"' + (setup.scope === 'one' ? ' checked' : '') + '> One case</label></fieldset>'
       + '<label class="field" data-case-field' + (setup.scope === 'one' ? '' : ' hidden') + '>Test case<select data-field="case">' + cases + '</select></label>'
       + (runtimeState === 'blocked'
         ? '<div class="field" role="group" aria-labelledby="model-label" aria-describedby="model-readiness"><strong id="model-label">Model being tested</strong><div class="model-notice"><h3 tabindex="-1" data-model-notice-heading>Can\'t check models</h3><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p><div class="model-notice-actions"><button type="button" data-action="retry-model">Try again</button>' + (modelIssue?.details ? '<button type="button" data-action="copy-model-issue">Copy issue details</button>' : '') + '</div>' + (modelIssue?.details ? '<pre data-model-issue-details>' + esc(modelIssue.details) + '</pre>' : '') + '<p>Start run unavailable</p><p role="status" data-model-copy-status></p></div></div>'
-        : '<label class="field">Model being tested<select data-field="model" aria-describedby="model-readiness"' + (runtimeState === 'ready' ? '' : ' disabled') + '><option value="">Choose model</option>' + models + '</select></label><p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
+        : '<p id="model-readiness" data-model-readiness>' + esc(runtimeMessage) + '</p>')
       + '<details><summary>Model support</summary><p>Tests can use models supported by this suite.</p></details>'
-      + (needsJudge() ? '<label class="field">Judge model<select data-field="judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '');
+      + (setup.scope === 'one' ? '<fieldset><legend>Models for this case</legend><label><input type="radio" name="modelChoice" value="saved"' + (setup.choice === 'saved' ? ' checked' : '') + '> Use saved models</label><label><input type="radio" name="modelChoice" value="temporary"' + (setup.choice === 'temporary' ? ' checked' : '') + '> This run only</label></fieldset>'
+        + (setup.choice === 'temporary' ? '<div data-run-only><p>For this run only</p><label class="field">Model<select data-field="temporary-model"><option value="">Choose model</option>' + models + '</select></label>'
+          + (needsJudge() ? '<label class="field">Judge model<select data-field="temporary-judge"><option value="">Choose Judge model</option>' + judges + '</select></label>' : '') + '</div>' : '') : '');
   }
   function showSetup() {
     if (!suite || isActive() || startPending || startUncertain) return;
@@ -194,14 +199,19 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       : focused?.dataset?.field ? '[data-field="' + focused.dataset.field + '"]' : null;
     fields.innerHTML = setupMarkup();
     const startAction = setupRegion.querySelector('[data-action="start"]');
-    if (startAction) startAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
+    if (startAction) startAction.disabled = Boolean(runtimeState !== 'ready' || setup.scope === 'one' && setup.choice === 'temporary' && (!setup.temporaryModel || needsJudge() && !setup.temporaryJudge));
     if (selector) fields.querySelector(selector)?.focus();
   }
   function readSetup() {
     const judge = setupRegion.querySelector('[data-field="judge"]');
-    setup = { scope: setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all', caseId: setupRegion.querySelector('[data-field="case"]')?.value || '', model: setupRegion.querySelector('[data-field="model"]')?.value || '', judgeModel: judge ? judge.value : setup.judgeModel };
+    const scope = setupRegion.querySelector('input[name="scope"]:checked')?.value || 'all';
+    setup = { ...setup, scope, caseId: setupRegion.querySelector('[data-field="case"]')?.value || setup.caseId,
+      model: setupRegion.querySelector('[data-field="model"]')?.value || setup.model, judgeModel: judge ? judge.value : setup.judgeModel,
+      choice: scope === 'one' ? setupRegion.querySelector('input[name="modelChoice"]:checked')?.value || setup.choice : 'saved',
+      temporaryModel: scope === 'one' ? setupRegion.querySelector('[data-field="temporary-model"]')?.value || setup.temporaryModel : '',
+      temporaryJudge: scope === 'one' ? setupRegion.querySelector('[data-field="temporary-judge"]')?.value || setup.temporaryJudge : '' };
     const startAction = setupRegion.querySelector('[data-action="start"]');
-    if (startAction) startAction.disabled = Boolean(runtimeState !== 'ready' || !setup.model || needsJudge() && !setup.judgeModel);
+    if (startAction) startAction.disabled = Boolean(runtimeState !== 'ready' || setup.scope === 'one' && setup.choice === 'temporary' && (!setup.temporaryModel || needsJudge() && !setup.temporaryJudge));
   }
   async function loadRuntime(userRetry = false) {
     if (!suite) return;
@@ -215,6 +225,8 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       if (payload.status !== 'ready') { modelIssue = modelNotice(payload); setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); return; }
       if (!payload.models?.length) { modelIssue = modelNotice(payload, 'model-unavailable'); setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); return; }
       runtime = payload;
+      if (!(payload.models || []).includes(setup.temporaryModel)) setup.temporaryModel = payload.models[0] || '';
+      if (!(payload.judgeModels || []).includes(setup.temporaryJudge)) setup.temporaryJudge = payload.judgeModels?.[0] || '';
       if (typeof renderSuiteModelSummary === 'function') renderSuiteModelSummary();
       if (!(payload.models || []).includes(setup.model)) setup.model = strictRuntimeChoices || hadModel ? '' : payload.models[0];
       if (!(payload.judgeModels || []).includes(setup.judgeModel)) setup.judgeModel = strictRuntimeChoices || hadJudge ? '' : payload.judgeModels?.[0] || '';
@@ -223,8 +235,10 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
       if (strictRuntimeChoices && (!setup.model || needsJudge() && !setup.judgeModel)) status('Previous model choice is unavailable. Choose compatible models before starting.');
       strictRuntimeChoices = false;
       refreshSetupControls();
+      void previewRun();
     } catch { if (suite?.id === current && generation === runtimeGeneration) { modelIssue = { guidance: 'Cause unknown. The model check received no response. Check the connection and try again. A matching terminal event may not exist.', details: null }; setRuntimeState('blocked', modelIssue.guidance); refreshSetupControls(); if (userRetry) setupRegion.querySelector('[data-model-notice-heading]')?.focus(); } }
   }
+  ${WORKSPACE_RUN_PREVIEW_CLIENT}
   ${WORKSPACE_RUN_START_CLIENT}
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-action]'); if (!target) return;
@@ -266,7 +280,7 @@ export const WORKSPACE_SETUP_CLIENT = String.raw`
   document.addEventListener('keydown', event => { if (sheetSlot.querySelector('[role="dialog"]')) trapSheet(event); });
   document.addEventListener('change', event => {
     if (event.target.matches('[data-action="suite-select"]')) selectSuite(event.target.value);
-    if (event.target.matches('input[name="scope"]')) { readSetup(); refreshSetupControls(); }
-    if (event.target.matches('[data-field]')) { readSetup(); if (event.target.matches('[data-field="case"]')) refreshSetupControls(); }
+    if (event.target.matches('input[name="scope"]') || event.target.matches('input[name="modelChoice"]')) { readSetup(); refreshSetupControls(); void previewRun(); }
+    if (event.target.matches('[data-field]')) { readSetup(); if (event.target.matches('[data-field="case"]')) refreshSetupControls(); void previewRun(); }
   });
 `;

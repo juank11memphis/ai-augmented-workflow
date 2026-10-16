@@ -48,7 +48,7 @@ export const WORKSPACE_SUITE_MODELS_CLIENT = String.raw`
       + '<p role="status" data-suite-dialog-status>' + esc(message) + '</p>';
     openSheet('Suite models', content, '<button type="button" data-action="cancel-suite-models">Cancel</button><button type="button" data-action="save-suite-models">Save</button>');
   }
-  async function openSuiteModels() {
+  async function openSuiteModels(focusRole = 'tested') {
     if (!suite || suiteModelsSaving) return;
     if (!savedSuiteModels) await loadSavedSuiteModels();
     if (!savedSuiteModels || runtimeState !== 'ready') {
@@ -57,6 +57,7 @@ export const WORKSPACE_SUITE_MODELS_CLIENT = String.raw`
     }
     suiteModelsDraft = { tested: savedSuiteModels.defaultTestedModel || '', judge: savedSuiteModels.defaultJudgeModel || '' };
     renderSuiteModelsDialog();
+    one('[data-suite-role="' + (focusRole === 'judge' && suiteHasJudge() ? 'judge' : 'tested') + '"]')?.focus();
   }
   async function saveSuiteModels() {
     if (!suiteModelsDraft || !savedSuiteModels || !suite || suiteModelsSaving) return;
@@ -89,6 +90,7 @@ export const WORKSPACE_SUITE_MODELS_CLIENT = String.raw`
       suiteModelsDraft = null;
       closeSheet();
       suiteModelStatus(changes.length ? 'Suite models saved. Start run when ready.' : 'Suite models unchanged.');
+      if (typeof previewRun === 'function') void previewRun();
     } catch {
       one('[data-suite-dialog-status]').textContent = 'Could not save this choice. Check the connection and try again.';
     } finally {

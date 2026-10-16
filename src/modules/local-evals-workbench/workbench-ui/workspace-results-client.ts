@@ -119,7 +119,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     detail.hidden = true; failuresOnly = false; search = '';
     const searchInput = resultContainer.querySelector?.('[data-action="search"]');
     if (searchInput) searchInput.value = '';
-    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '' };
+    setup = { scope: 'all', caseId: suite?.testCases[0]?.id || '', model: '', judgeModel: '', choice: 'saved', temporaryModel: '', temporaryJudge: '' };
     renderWorkspace(); void loadRuntime(); if (typeof loadSavedSuiteModels === 'function') void loadSavedSuiteModels(); void loadHistory();
   }
   function caseStatus(caseId) {
@@ -139,7 +139,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
       const attempt = record.attempts.at(-1);
       if (!attempt || attempt.outcome === 'incomplete') return [];
       return [{ caseId, name: suite?.testCases.find(item => item.id === caseId)?.name || caseId,
-        status: attempt.outcome, model: run.testedModel, judgeModel: run.judgeModel,
+        status: attempt.outcome, model: record.testedModel || run.testedModel, judgeModel: record.judgeModel === undefined ? run.judgeModel : record.judgeModel,
         detail: { caseId, attempt: attempt.number } }];
     });
   }
@@ -155,7 +155,7 @@ export const WORKSPACE_RESULTS_CLIENT = String.raw`
     setupRegion.hidden = taskView !== 'new-run' || !suite;
     const startForm = one('[data-start-form]'); if (startForm) startForm.hidden = startUncertain;
     const startAction = setupRegion.querySelector('[data-action="start"]');
-    if (startAction) startAction.disabled = Boolean(!runtime || !setup.model || needsJudge() && !setup.judgeModel);
+    if (startAction) startAction.disabled = Boolean(!runtime || setup.scope === 'one' && setup.choice === 'temporary' && (!setup.temporaryModel || needsJudge() && !setup.temporaryJudge));
     refreshSetupControls();
     const historical = run && latestKnownRunId && !latestRun();
     one('[data-latest-label]').textContent = run ? (historical ? 'Past run · read-only' : 'Latest run · ' + new Date(run.createdAt).toLocaleString()) : acceptedRunId ? 'Latest run · queued' : 'Latest run · none';

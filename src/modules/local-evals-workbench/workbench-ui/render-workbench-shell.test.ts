@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import vm from 'node:vm';
 
 import type { EvalSuiteDiscoveryResult } from '../discover-conventional-eval-suites/result.js';
 import type { EvalCell, RunLocalEvalSuiteResult } from '../run-local-eval-suite/result.js';
@@ -8,6 +9,7 @@ import { renderWorkbenchShell } from './render-workbench-shell.js';
 import { renderWorkspaceShell } from './workspace-layout.js';
 import { WORKSPACE_STYLES } from './workspace-styles.js';
 import { WORKBENCH_CLIENT_SCRIPT } from './workbench-client.js';
+import { WORKBENCH_CLIENT_RENDERING_SECTION } from './workbench-client-rendering.js';
 
 describe('WORKBENCH_CLIENT_SCRIPT', () => {
   it('contains drawer focus trap, Escape close, overlay close, focus restoration, and retry hooks', () => {
@@ -55,6 +57,20 @@ it('keeps the read notice in existing context across phone, tablet, and desktop 
 });
 
 describe('renderWorkbenchShell', () => {
+  it('shows model names and families without fixture price estimates in visible choices', () => {
+    const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery() }), '');
+    const controls = html.slice(html.indexOf('<section class="workbench__controls"'), html.indexOf('<section data-run-panel'));
+    assert.match(controls, /<optgroup label="GPT-4 family">/);
+    assert.match(controls, /GPT-4o mini<\/option>/);
+    assert.match(controls, /selected>GPT-4o mini|selected>GPT-5 mini/);
+    assert.doesNotMatch(controls, /\$0\.15|\$0\.60|\$0\.25|\$2\.00|per 1M/);
+    const option = vm.runInNewContext(WORKBENCH_CLIENT_RENDERING_SECTION.source + ';modelOption({id:"X",label:"Model X",priceEstimate:"PRICE-SENTINEL"})', {
+      state: { selectedEvalRunModel: 'X' }, Option: class { constructor(readonly label: string, readonly value: string,
+        readonly defaultSelected: boolean, readonly selected: boolean) {} },
+    }) as { label: string; value: string; selected: boolean };
+    assert.deepEqual([option.label, option.value, option.selected], ['Model X', 'X', true]);
+    assert.doesNotMatch(option.label, /PRICE-SENTINEL/);
+  });
   it('renders accessible suite controls, labels, summary, filters, and progress', () => {
     const html = renderWorkbenchShell(createWorkbenchViewModel({ discovery: readyDiscovery() }), '');
 
@@ -69,7 +85,7 @@ describe('renderWorkbenchShell', () => {
     assert.match(html, /<button[^>]*>Start run<\/button>/);
     assert.match(html, /<label class="field">Model/);
     assert.match(html, /<optgroup label="GPT-4 family">/);
-    assert.match(html, /GPT-4o mini · ~\$0\.15 in \/ \$0\.60 out per 1M/);
+    assert.match(html, /GPT-4o mini<\/option>/);
     assert.match(html, /<optgroup label="GPT-5 family">/);
     assert.match(html, /aria-live="polite"/);
     assert.match(html, /<progress[^>]+aria-label="Eval run progress"/);
