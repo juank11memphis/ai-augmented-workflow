@@ -40,6 +40,7 @@ export async function offlineProject() {
       { id: 'unsupported', type: 'json-schema', schema: { type: 'object', properties: { value: { pattern: '(a+)+$' } } } },
     ], graders: [] });
   await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify({ version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline', description: 'Synthetic only',
+    defaultTestedModel: 'fake',
     target: { id: 'target', kind: 'integration', path: 'src/target.mjs' },
     coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases }));
@@ -108,6 +109,7 @@ export async function target(caseId,turnIndex,attempt,input,mock,state){
       assertions: [{ id: 'answer', type: 'output-contains', expected: 'verified' }], graders: [] },
   ];
   await writeFile(path.join(project.root, 'evals/offline.json'), JSON.stringify({ version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Deep offline', description: 'Synthetic',
+    defaultTestedModel: 'fake', defaultJudgeModel: 'fake-judge',
     target: { id: 'target', kind: 'agent', path: 'src/deep-target.mjs' }, coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases: cases }));
   return { ...project, clearStateBetweenTurns: async () => project.changeRunner(deepRunner.replace('const conversationState={};', 'let conversationState={};').replace('const turnId=\'turn-\'+(turnIndex+1); const calls=[];', "if(turnIndex>0) conversationState={}; const turnId='turn-'+(turnIndex+1); const calls=[];")),
