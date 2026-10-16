@@ -5,7 +5,7 @@
 ## Epic
 [Diagnose Eval Failures from Selected CLI Evidence](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 As an engineer diagnosing a failed deterministic eval assertion, I want the selected CLI result to show the actual model reply and context it received, so that I can explain the observed failure without relying on a paraphrase or bulk artifact.

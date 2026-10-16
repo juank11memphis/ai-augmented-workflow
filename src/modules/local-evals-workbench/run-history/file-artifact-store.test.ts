@@ -8,6 +8,10 @@ import { config, evidence } from './test-fixtures.js';
 import { LIMITS } from './limits.js';
 import { manifest } from './validation.js';
 import { orderedRunPlan } from '../run-execution/contracts.js';
+import type { SourceRecordWrite } from './contracts.js';
+import { executeEvalRun } from '../execute-eval-run/handler.js';
+import type { ExecutionEvent } from '../run-execution/contracts.js';
+import { FileArtifactReader } from './file-artifact-reader.js';
 
 it('records a complete source-ordered immutable per-case plan with explicit deterministic Judge null', async () => {
   const p = await project(); try {
@@ -24,6 +28,69 @@ it('records a complete source-ordered immutable per-case plan with explicit dete
     const disk = JSON.parse(await readFile(path.join(a.paths.artifactRoot, a.paths.run('suite', created.value.runId)), 'utf8'));
     assert.deepEqual(disk.cases.map(({ caseId, testedModel, judgeModel }: { caseId: string; testedModel: string; judgeModel: string | null }) => ({ caseId, testedModel, judgeModel })), selections);
     assert.equal('caseSelections' in disk, false);
+  } finally { await p.cleanup(); }
+});
+
+it('durably publishes a complete linked source record before an interrupted later capture gap', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail(JSON.stringify(created));
+    const runId = created.value.runId; await a.store.start('suite', runId);
+    const raw = '☃'.repeat(9_000);
+    const source: SourceRecordWrite = { version: 1, suiteId: 'suite', runId, caseId: 'case', attempt: 1, sequence: 0,
+      record: { kind: 'model-call', id: 'first', turnId: 'turn', checkId: 'assertion', modelId: 'model', phase: 'initial',
+        elapsedMs: 1, inputMessages: [{ role: 'user', content: 'hello' }], rawText: raw, rawToolCalls: [], normalizedOutput: 'short' } };
+    const saved = await a.store.saveSourceRecord(source); assert.equal(saved.status, 'ok');
+    if (saved.status !== 'ok') return;
+    const attempt = { ...evidence(runId), outcome: 'incomplete' as const, turns: [{ id: 'turn', role: 'assistant' as const, content: 'short' }],
+      sourceCapture: { records: [saved.value], gaps: [{ reason: 'incomplete' as const, recordId: 'later' }] } };
+    assert.equal((await a.store.append('suite', runId, attempt)).status, 'ok');
+    assert.equal((await a.store.finalize('suite', runId, 'interrupted')).status, 'ok');
+    const b = fixture(p.root);
+    const savedAttempt = await b.reader.read(b.paths.attempt('suite', runId, 'case', 1), LIMITS.attemptBytes, value =>
+      typeof value === 'object' && value !== null && 'sourceCapture' in value);
+    assert.equal(savedAttempt.status, 'ok');
+    const manifestBytes = await readFile(path.join(p.root, 'evals/artifacts', b.paths.run('suite', runId)), 'utf8');
+    assert.ok(!manifestBytes.includes(raw));
+    assert.ok(!JSON.stringify(savedAttempt).includes(raw));
+    const records = await readdir(path.join(p.root, 'evals/artifacts', b.paths.source('suite', runId, 'case', 1, 'first'), '..'));
+    assert.deepEqual(records, ['first.json']);
+  } finally { await p.cleanup(); }
+});
+it('run slice reopens earlier raw bytes after a later source gap and interruption', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const runId = created.value.runId; const raw = 'exact-☃'.repeat(2_000);
+    const selectedCase = { id: 'case', name: 'Case', turns: [{ role: 'user' as const, content: { type: 'inline' as const, text: 'hello' } }],
+      toolMocks: [], assertions: [{ id: 'assertion', type: 'output-contains' as const, expected: 'ok' }], graders: [] };
+    const selection = { runId, model: 'model', suite: { version: 2 as const, kind: 'sibu-eval-suite' as const,
+      id: 'suite', name: 'Suite', description: '', target: { id: 'target', kind: 'integration' as const, path: 'src/target.mjs' },
+      coverage: { categories: [], gaps: [] }, runner: { command: ['node', 'runner.mjs'], requiredEnvironment: [] }, testCases: [selectedCase] },
+      cases: [selectedCase] };
+    const events: ExecutionEvent[] = [
+      { type: 'case-started', caseId: 'case', attempt: 1 },
+      { type: 'turn-completed', caseId: 'case', attempt: 1, turnId: 'turn', output: 'ok' },
+      { type: 'source-record', caseId: 'case', attempt: 1, sequence: 0, record: { kind: 'model-call', id: 'first', turnId: 'turn',
+        checkId: 'assertion', modelId: 'model', phase: 'initial', elapsedMs: 1, inputMessages: [], rawText: raw,
+        rawToolCalls: [], normalizedOutput: 'ok' } },
+      { type: 'source-gap', caseId: 'case', attempt: 1, reason: 'incomplete', recordId: 'later' },
+    ];
+    const result = await executeEvalRun(selection, { store: a.store, clock: Date.now,
+      evaluator: { evaluate() { return []; } },
+      runner: { async execute(_selection, consume) { for (const event of events) await consume(event); return { status: 'interrupted' as const }; } } });
+    assert.equal(result.status, 'interrupted');
+    const reopened = new FileArtifactReader(fixture(p.root).paths, fixture(p.root).reader);
+    const selected = { caseId: 'case', attempt: 1, assertionId: 'assertion' };
+    const attempt = await reopened.get('suite', runId, { caseId: 'case', attempt: 1 });
+    assert.equal(attempt.status, 'ok');
+    if (attempt.status === 'ok') assert.deepEqual(attempt.value.evidence?.sourceCapture?.gaps, [{ reason: 'incomplete', recordId: 'later' }]);
+    const linked = await reopened.sourceRecord('suite', runId, selected, 'first');
+    assert.equal(linked.status === 'ok' && linked.value.record.kind === 'model-call' && linked.value.record.rawText, raw);
+    assert.deepEqual(await reopened.sourceRecord('suite', runId, selected, 'later'), { status: 'blocked', reason: 'not-found' });
+    const onDisk = await readFile(path.join(p.root, 'evals/artifacts', a.paths.source('suite', runId, 'case', 1, 'first')), 'utf8');
+    assert.ok(onDisk.includes(raw));
+    assert.ok(!JSON.stringify(attempt).includes(raw));
   } finally { await p.cleanup(); }
 });
 

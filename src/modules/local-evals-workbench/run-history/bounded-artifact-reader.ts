@@ -5,7 +5,7 @@ import { ArtifactPaths, ArtifactFault, failure } from './artifact-paths.js';
 import { boundedJson } from './validation.js';
 export class BoundedArtifactReader {
   constructor(readonly paths: ArtifactPaths, private readonly onRead?: (relative: string) => void) {}
-  async read<T>(relative: string, maxBytes: number, validate: (value: unknown) => value is T): Promise<Outcome<T>> {
+  async read<T>(relative: string, maxBytes: number, validate: (value: unknown) => value is T, largeText = false): Promise<Outcome<T>> {
     try {
       const target = await this.paths.verify(relative);
       const file = await open(target, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
@@ -27,7 +27,7 @@ export class BoundedArtifactReader {
         let value: unknown;
         try { value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, length))); }
         catch { throw new ArtifactFault('corrupt'); }
-        if (!boundedJson(value, maxBytes) || !validate(value)) throw new ArtifactFault('corrupt');
+        if ((!largeText && !boundedJson(value, maxBytes)) || !validate(value)) throw new ArtifactFault('corrupt');
         return { status: 'ok', value };
       } finally { await file.close(); }
     } catch (error) { return failure(error); }

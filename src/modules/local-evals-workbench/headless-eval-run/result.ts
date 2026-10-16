@@ -18,5 +18,6 @@ export type HeadlessEvalRunResult = {
   readonly source?: 'suite-default' | 'case-override' | 'run-only';
   readonly outcome?: CheckOutcome;
   readonly cases?: readonly HeadlessRunCase[];
+  readonly nextLocatorOffset?: number;
   readonly diagnostics?: readonly string[];
 };

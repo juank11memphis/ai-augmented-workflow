@@ -172,7 +172,7 @@ export async function validatePackedHeadlessEvals({ workspace, installedPackageR
   assert.doesNotMatch(JSON.stringify(result.value), /fake:first|different/);
   assert.equal(result.value.failure, undefined);
   const failure = run(['result', 'offline', all.value.runId, '--case', runCase.caseId,
-    '--assertion', locator.failedAssertionIds[0]]);
+    '--attempt', '1', '--assertion', locator.failedAssertionIds[0]]);
   assert.equal(failure.exitCode, 0);
   assert.equal(failure.value.failure.assertionId, 'expected');
   assert.equal(failure.value.failure.actual, 'fake:first');

@@ -25,6 +25,9 @@ function harness(events: readonly ExecutionEvent[], outcome: 'completed' | 'erro
     async create() { writes.push('create'); return ok; },
     async start() { writes.push('start'); return ok; },
     async append(_suite, _run, attempt) { writes.push('append:' + attempt.outcome); attempts.push(attempt); return ok; },
+    async saveSourceRecord(value) { writes.push('source:' + value.record.id); return { status: 'ok', value: {
+      id: value.record.id, kind: value.record.kind, status: 'complete', checkId: value.record.checkId, turnId: value.record.turnId,
+      sequence: value.sequence, byteLength: Buffer.byteLength(JSON.stringify(value.record)) } }; },
     async finalize(_suite, _run, state, diagnostics) { writes.push('finalize:' + state); finalDiagnostics.push(...diagnostics ?? []); return ok; },
   };
   const finalDiagnostics: string[] = [];

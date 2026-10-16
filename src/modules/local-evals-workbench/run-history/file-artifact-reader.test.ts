@@ -7,7 +7,40 @@ import { project } from './test-project.js';
 import { config, evidence } from './test-fixtures.js';
 import { FileArtifactReader } from './file-artifact-reader.js';
 import { InterruptedRunRecovery } from './interrupted-run-recovery.js';
+import type { SourceRecordWrite } from './contracts.js';
 export function historyReader(a: ReturnType<typeof fixture>) { return new FileArtifactReader(a.paths, a.reader, new InterruptedRunRecovery(a.owner, Date.now, a.store)); }
+it('reopens exact linked UTF-8 field ranges and rejects wrong assertions, gaps, and corrupt identity', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const runId = created.value.runId; await a.store.start('suite', runId);
+    const raw = 'ü☃'.repeat(8_000);
+    const source: SourceRecordWrite = { version: 1, suiteId: 'suite', runId, caseId: 'case', attempt: 1, sequence: 0,
+      record: { kind: 'model-call', id: 'first', turnId: 'turn', checkId: 'assertion', modelId: 'model', phase: 'initial',
+        elapsedMs: 1, inputMessages: [{ role: 'user', content: 'input' }], rawText: raw, rawToolCalls: [], normalizedOutput: 'short' } };
+    const saved = await a.store.saveSourceRecord(source); if (saved.status !== 'ok') return assert.fail(JSON.stringify(saved));
+    const base = evidence(runId);
+    await a.store.append('suite', runId, { ...base, outcome: 'failed', turns: [{ id: 'turn', role: 'assistant', content: 'short' }],
+      assertions: [{ ...base.assertions[0]!, outcome: 'failed', turnIds: ['turn'] }, { ...base.assertions[0]!, id: 'other', outcome: 'failed' }],
+      sourceCapture: { records: [saved.value], gaps: [{ reason: 'incomplete', recordId: 'later' }] } });
+    await a.store.finalize('suite', runId, 'partial');
+    const reader = historyReader(fixture(p.root)); const selection = { caseId: 'case', attempt: 1, assertionId: 'assertion' };
+    const parts: Buffer[] = []; let offset = 0;
+    while (true) {
+      const range = await reader.sourceFieldRange('suite', runId, selection, 'first~rawText', offset);
+      if (range.status !== 'ok') return assert.fail(JSON.stringify(range));
+      parts.push(Buffer.from(range.value.bytes));
+      if (range.value.nextOffset === null) break;
+      offset = range.value.nextOffset;
+    }
+    assert.equal(Buffer.concat(parts).toString('utf8'), raw);
+    assert.deepEqual(await reader.sourceRecord('suite', runId, { ...selection, assertionId: 'other' }, 'first'), { status: 'blocked', reason: 'not-found' });
+    assert.deepEqual(await reader.sourceRecord('suite', runId, selection, 'later'), { status: 'blocked', reason: 'not-found' });
+    await writeFile(path.join(p.root, 'evals/artifacts', a.paths.source('suite', runId, 'case', 1, 'first')),
+      JSON.stringify({ ...source, caseId: 'different' }));
+    assert.deepEqual(await reader.sourceRecord('suite', runId, selection, 'first'), { status: 'blocked', reason: 'corrupt' });
+  } finally { await p.cleanup(); }
+});
 it('restores missing/stale index and reads summaries without opening any attempt', async () => {
   const p = await project(); const reads: string[] = []; try {
     const a = fixture(p.root, { onRead: relative => reads.push(relative) }); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Attempt, Manifest, RunDetail } from '../run-history/index.js';
 import { headlessEvalResult } from './handler.js';
+import type { SourceEvidence } from '../run-history/contracts.js';
 
 const summary: Manifest = {
   version: 1, suiteId: 'suite', runId: 'run', caseIds: ['case'], scope: 'selected', testedModel: 'model', judgeModel: null,
@@ -105,4 +106,94 @@ test('document cap follows case order and marks later failed attempts truncated'
   assert.deepEqual(result.summary.cases[0]?.attempts[0]?.failedAssertionIds, first.assertions.map(item => item.id));
   assert.deepEqual(result.summary.cases[1]?.attempts[0], { number: 1, outcome: 'failed', failedAssertionIds: [], locatorStatus: 'truncated' });
   assert.equal(attemptReads, 1);
+});
+
+const field = (locator: string, value: string) => ({ status: 'available' as const, locator, byteLength: Buffer.byteLength(value), value });
+const source: SourceEvidence = {
+  version: 2, assertionId: 'check',
+  modelCalls: [
+    { id: 'call-2', turnId: 'turn-2', sequence: 4, modelId: 'model',
+      inputMessages: [{ role: 'tool', content: field('message-2', 'delivered result') }],
+      rawText: field('raw-2', 'raw answer'), rawToolCalls: [], normalizedOutput: field('normalized-2', 'normalized answer') },
+    { id: 'call-1', turnId: 'turn-1', sequence: 1, modelId: 'model',
+      inputMessages: [{ role: 'user', content: field('message-1', 'original question') }],
+      rawText: field('raw-1', 'calling tool'),
+      rawToolCalls: [{ id: 'tool-1', name: 'lookup', arguments: field('arguments-1', '{"q":"exact"}') }],
+      normalizedOutput: field('normalized-1', 'tool requested') },
+  ],
+  toolEvents: [{ id: 'event-1', modelCallId: 'call-1', sequence: 2, name: 'lookup',
+    request: field('request-1', '{"q":"exact"}'), result: field('result-1', 'delivered result'), outcome: 'result' }],
+  approvedFacts: [{ modelCallId: 'call-2', factId: 'fact-1', provenance: 'attested-input' }],
+};
+
+test('selected source keeps exact raw and normalized values, structured calls, and ordered linked context', async () => {
+  const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'available', evidence: { ...evidence, sourceEvidence: source } }));
+  assert.equal(result.status, 'ready');
+  if (result.status !== 'ready' || !('failure' in result) || !('modelCalls' in result.failure.source)) assert.fail('Expected source');
+  assert.deepEqual(result.failure.source.modelCalls.map(call => call.id), ['call-1', 'call-2']);
+  assert.deepEqual(result.failure.source.modelCalls[0]?.rawText, { status: 'available', locator: 'raw-1', byteLength: 12, truncated: false, value: 'calling tool' });
+  assert.equal(result.failure.source.modelCalls[1]?.normalizedOutput.status, 'available');
+  assert.notDeepEqual(result.failure.source.modelCalls[1]?.rawText, result.failure.source.modelCalls[1]?.normalizedOutput);
+  assert.equal(result.failure.source.modelCalls[0]?.rawToolCalls[0]?.arguments.status, 'available');
+  assert.deepEqual(result.failure.source.toolEvents.map(event => event.sequence), [2]);
+  assert.deepEqual(result.failure.source.approvedFacts, source.approvedFacts);
+  assert.equal(result.failure.assertionId, 'check');
+});
+
+test('old, incomplete, and runner-redacted evidence report typed gaps without reconstructed raw text', async () => {
+  const old = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary, evidenceStatus: 'available', evidence }));
+  assert.equal(old.status, 'ready');
+  if (old.status !== 'ready' || !('failure' in old)) assert.fail('Expected failure');
+  assert.deepEqual(old.failure.source, { status: 'gap', reason: 'not-captured' });
+  const redactedSource: SourceEvidence = { ...source, modelCalls: [{ ...source.modelCalls[0]!, rawText: { status: 'gap', reason: 'redacted' },
+    normalizedOutput: { status: 'gap', reason: 'incomplete' } }] };
+  const redacted = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'available', evidence: { ...evidence, sourceEvidence: redactedSource } }));
+  assert.equal(redacted.status, 'ready');
+  if (redacted.status !== 'ready' || !('failure' in redacted) || !('modelCalls' in redacted.failure.source)) assert.fail('Expected source');
+  assert.deepEqual(redacted.failure.source.modelCalls[0]?.rawText, { status: 'gap', reason: 'redacted' });
+  assert.deepEqual(redacted.failure.source.modelCalls[0]?.normalizedOutput, { status: 'gap', reason: 'incomplete' });
+  assert.doesNotMatch(JSON.stringify(redacted.failure.source), /raw answer/);
+});
+
+test('large retained UTF-8 field has byte-range continuation that reconstructs exact bytes', async () => {
+  const raw = 'é'.repeat(700);
+  const largeSource: SourceEvidence = { ...source, modelCalls: [{ ...source.modelCalls[0]!, rawText: field('call-2~rawText', raw) }] };
+  const detail = { summary, evidenceStatus: 'available' as const, evidence: { ...evidence, sourceEvidence: largeSource } };
+  const bytes = Buffer.from(raw);
+  const reader = { get: async () => ({ status: 'ok' as const, value: detail }),
+    readField: async (_suite: string, _run: string, _selected: object, locator: string, offset: number, limit: number) => ({
+      status: 'ok' as const, value: { locator, offset, byteLength: bytes.length,
+        bytes: bytes.subarray(offset, offset + limit), nextOffset: offset + limit >= bytes.length ? null : offset + limit },
+    }) };
+  const selected = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, { reader });
+  assert.equal(selected.status, 'ready');
+  if (selected.status !== 'ready' || !('failure' in selected) || !('modelCalls' in selected.failure.source)) assert.fail('Expected source');
+  assert.deepEqual(selected.failure.source.modelCalls[0]?.rawText, { status: 'available', locator: 'call-2~rawText', byteLength: 1400, truncated: true });
+  const chunks: Buffer[] = [];
+  let offset = 0;
+  while (offset < bytes.length) {
+    const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'call-2~rawText', offset } }, { reader });
+    assert.equal(result.status, 'ready');
+    if (result.status !== 'ready' || !('field' in result)) assert.fail('Expected range');
+    chunks.push(Buffer.from(result.field.bytesBase64, 'base64'));
+    offset = result.field.nextOffset ?? bytes.length;
+  }
+  assert.equal(Buffer.concat(chunks).toString('utf8'), raw);
+});
+
+test('wrong assertion, field locator, or offset refuses cross-selection reads', async () => {
+  let fieldReads = 0;
+  const reader = { get: async () => ({ status: 'ok' as const, value: { summary, evidenceStatus: 'available' as const,
+    evidence: { ...evidence, sourceEvidence: source } } }), readField: async () => { fieldReads++; throw Error('must not read'); } };
+  const wrong = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection: { ...selection, assertionId: 'other' } }, { reader });
+  assert.deepEqual(wrong, { status: 'blocked', reason: 'selection-mismatch' });
+  const locator = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'other~rawText', offset: 0 } }, { reader });
+  assert.deepEqual(locator, { status: 'blocked', reason: 'selection-mismatch' });
+  const malformed = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'not-linked', offset: 0 } }, { reader });
+  assert.deepEqual(malformed, { status: 'blocked', reason: 'invalid-input' });
+  const offset = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection, field: { locator: 'call-1~rawText', offset: -1 } }, { reader });
+  assert.deepEqual(offset, { status: 'blocked', reason: 'invalid-input' });
+  assert.equal(fieldReads, 0);
 });

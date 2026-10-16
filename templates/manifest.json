@@ -1,5 +1,5 @@
 {
-  "templateVersion": "228",
+  "templateVersion": "229",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "7",
+      "version": "8",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Documents case model fields alongside required suite defaults, inheritance reset, ordered mixed-model runs, and actual per-case evidence."
+        "Adds version-two project-runner source-evidence events, chunk completion rules, deterministic assertion links, and safe capture guidance."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {

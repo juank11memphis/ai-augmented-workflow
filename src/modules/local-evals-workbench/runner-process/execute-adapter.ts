@@ -80,6 +80,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
             const event = validator.accept(raw);
             if (!firstEvent) { firstEvent = true; clearTimeout(startup); }
             resetIdle();
+            if (event.type === 'source-chunk-accepted') return;
             try { await consume(event); }
             catch (error) { consumerFailure = error; throw error; }
           });
@@ -95,6 +96,8 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       }
       if (!failure && code !== 0) failure = 'runner-exited';
       if (!failure && !validator.completion) failure = 'runner-protocol-invalid';
+      const sourceGap = validator.incompleteSource;
+      if (sourceGap) await consume(sourceGap);
       const status = failure ? 'error' : validator.completion!;
       log('eval_runner_execute_finished', failure ?? status);
       return { status, ...(failure ? { reason: failure } : {}) };

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { writeFile, mkdir, symlink } from 'node:fs/promises';
+import { writeFile, mkdir, symlink, link } from 'node:fs/promises';
 import path from 'node:path';
 import { ArtifactPaths } from './artifact-paths.js';
 import { ArtifactSafetyAdapter } from './artifact-safety-adapter.js';
@@ -11,6 +11,33 @@ it('rechecks ignore changes and leaf/index/temp symlinks on every call', async (
     await writeFile(path.join(p.root, '.gitignore'), ''); assert.equal((await safety.check()).status, 'blocked');
     await writeFile(path.join(p.root, '.gitignore'), '/evals/artifacts/\n'); await mkdir(path.join(p.root, 'evals/artifacts/suite'), { recursive: true });
     for (const leaf of ['index.json', 'tmp-file']) { await symlink('/not-to-read', path.join(p.root, 'evals/artifacts/suite', leaf)); assert.equal((await safety.check([`suite/${leaf}`])).status, 'blocked'); }
+  } finally { await p.cleanup(); }
+});
+it('applies ignore and leaf safety to linked source record paths', async () => {
+  const p = await project(); try {
+    const paths = new ArtifactPaths(p.root); const safety = new ArtifactSafetyAdapter(paths);
+    const relative = paths.source('suite', 'run', 'case', 1, 'record');
+    assert.equal((await safety.check([relative])).status, 'ok');
+    await writeFile(path.join(p.root, '.gitignore'), '');
+    assert.deepEqual(await safety.check([relative]), { status: 'blocked', reason: 'not-ignored' });
+    await writeFile(path.join(p.root, '.gitignore'), '/evals/artifacts/\n');
+    await mkdir(path.dirname(path.join(p.root, 'evals/artifacts', relative)), { recursive: true });
+    await symlink('/not-to-read', path.join(p.root, 'evals/artifacts', relative));
+    assert.deepEqual(await safety.check([relative]), { status: 'blocked', reason: 'unsafe-path' });
+  } finally { await p.cleanup(); }
+});
+it('rejects tracked and hard-linked linked source records', async () => {
+  const p = await project(); try {
+    const paths = new ArtifactPaths(p.root); const safety = new ArtifactSafetyAdapter(paths);
+    const relative = paths.source('suite', 'run', 'case', 1, 'record');
+    const target = path.join(p.root, 'evals/artifacts', relative);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, '{}');
+    p.git('add', '-f', `evals/artifacts/${relative}`);
+    assert.deepEqual(await safety.check([relative]), { status: 'blocked', reason: 'tracked-artifacts' });
+    p.git('rm', '--cached', '-q', `evals/artifacts/${relative}`);
+    await link(target, `${target}.other`);
+    assert.deepEqual(await safety.check([relative]), { status: 'blocked', reason: 'unsafe-path' });
   } finally { await p.cleanup(); }
 });
 it('refuses a root replacement between readiness and the next write without outside mutation', async () => {
