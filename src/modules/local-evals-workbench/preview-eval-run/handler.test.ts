@@ -56,7 +56,7 @@ test('rubric suites keep Judge readiness explicit even for a deterministic case'
   deps.suites.load = async () => ({ ...rubricSuite, defaultJudgeModel: 'fake/unavailable-judge' });
   deps.runner.describe = async () => ({ status: 'ready', value: { ...description, capabilities: ['single-turn', 'rubric'], judgeModels: ['fake/judge'] } });
   assert.deepEqual(await previewEvalRun({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'rubric' }, model: 'fake/target' }, deps),
-    { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', caseId: 'rubric', role: 'judge' });
+    { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', source: 'suite-default', caseId: 'rubric', role: 'judge' });
   deps.suites.load = async () => rubricSuite;
   const ready = await previewEvalRun({ suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'rubric' }, model: 'fake/target', judgeModel: 'fake/judge' }, deps);
   assert.equal(ready.status, 'ready');
@@ -178,10 +178,10 @@ test('missing and unavailable saved selections block without partial choices or 
   deps.inputs.resolve = async cases => { inputCalls++; return { status: 'ready', value: cases }; };
   deps.suites.load = async () => ({ ...suite, defaultTestedModel: undefined });
   const missing = await previewEvalRun(command, deps);
-  assert.deepEqual(missing, { status: 'blocked', stage: 'selection', reason: 'missing-suite-default', caseId: 'case', role: 'tested' });
+  assert.deepEqual(missing, { status: 'blocked', stage: 'selection', reason: 'missing-suite-default', source: 'suite-default', caseId: 'case', role: 'tested' });
   deps.suites.load = async () => ({ ...suite, defaultTestedModel: 'fake/gone' });
   const unavailable = await previewEvalRun(command, deps);
-  assert.deepEqual(unavailable, { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested' });
+  assert.deepEqual(unavailable, { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', source: 'suite-default', caseId: 'case', role: 'tested' });
   assert.equal('caseSelections' in missing || 'caseSelections' in unavailable, false);
   assert.deepEqual([readinessCalls, inputCalls], [0, 0]);
 });
