@@ -117,6 +117,23 @@ sibu mcp stop github
 
 Sibu writes supported agent config files, but runtime prerequisites, credentials, provider login, and permissions remain yours.
 
+### Inspect local eval failures
+
+Run an eval, then use its compact `runId`, `caseId`, attempt number, and ordered `failedAssertionIds` to select one failure:
+
+```sh
+sibu evals run my-suite
+sibu evals result my-suite my-run --case my-case --attempt 1 --assertion my-check
+```
+
+The run JSON contains locators and states, not model transcripts. If a failed attempt has `locatorStatus: "truncated"`, continue its ordered locator list with `sibu evals result my-suite my-run --locator-offset 32`; use `summary.nextLocatorOffset` for further pages. A selected field marked `truncated: true` has a retained `locator` and UTF-8 `byteLength`. Fetch its bytes in bounded Base64 chunks, following `nextOffset` until it is `null`:
+
+```sh
+sibu evals result my-suite my-run --case my-case --attempt 1 --assertion my-check --field call-1~rawText --offset 0
+```
+
+An older runner may report `not-captured`; that does **not** mean its normalized output is the raw provider response. `capture-failed`, `incomplete`, and `redacted` are distinct gaps, not empty raw values. Runner authors should use the managed [version-2 producer contract](templates/skills/eval-authoring/references/version-2-contract.md) to emit source evidence for future runs. Detailed artifacts remain local and subject to Sibu's Git-ignore/tracked-artifact checks; Git-ignore alone is not complete privacy protection.
+
 ## The Sibu Workflow Loop
 
 Sibu works best when AI collaboration stays small, explicit, and reviewable. The loop is the rhythm: orient before building, build in focused slices, validate the result, and keep the workflow healthy over time.

@@ -28,12 +28,13 @@ export type HeadlessEvalSummary = {
   readonly judgeModel: string | null;
   readonly cases: readonly { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed';
     readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[];
+  readonly nextLocatorOffset?: number;
 };
 
 export type HeadlessEvalResult =
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly artifactPath?: string }
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly failure: {
-      readonly caseId: string; readonly attempt: 1; readonly assertionId: string;
+      readonly caseId: string; readonly attempt: number; readonly assertionId: string;
       readonly kind: 'assertion' | 'grader'; readonly actual: string; readonly expected: string;
       readonly diagnostics: readonly string[]; readonly artifactPath?: string; readonly truncated: boolean;
       readonly source: SelectedSourceEvidence | { readonly status: 'gap'; readonly reason: EvidenceGap };

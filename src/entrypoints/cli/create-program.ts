@@ -52,11 +52,19 @@ export function createProgram(): CommanderCommand {
     }));
   evals.command('result <suite> <run>').description('Read bounded run evidence as JSON')
     .option('--case <case_id>', 'Selected failed case')
-    .option('--assertion <assertion_id>', 'Selected failed assertion (requires --case)')
-    .action((suiteId: string, runId: string, options: { case?: string; assertion?: string }) => executeCliCommand({
+    .option('--attempt <number>', 'Selected attempt (requires --case and --assertion)', Number)
+    .option('--assertion <assertion_id>', 'Selected failed assertion (requires --case and --attempt)')
+    .option('--field <locator>', 'Retained evidence field (requires a full selection)')
+    .option('--offset <byte>', 'UTF-8 byte offset for --field', Number)
+    .option('--locator-offset <number>', 'Continue the ordered failed-assertion locator list', Number)
+    .action((suiteId: string, runId: string, options: { case?: string; attempt?: number; assertion?: string; field?: string; offset?: number; locatorOffset?: number }) => executeCliCommand({
       type: 'evals:result', suiteId, runId,
       ...(options.case !== undefined ? { caseId: options.case } : {}),
+      ...(options.attempt !== undefined ? { attempt: options.attempt } : {}),
       ...(options.assertion !== undefined ? { assertionId: options.assertion } : {}),
+      ...(options.field !== undefined ? { field: options.field } : {}),
+      ...(options.offset !== undefined ? { offset: options.offset } : {}),
+      ...(options.locatorOffset !== undefined ? { locatorOffset: options.locatorOffset } : {}),
     }));
 
   const skills = cli.command('skills').description('Manage Sibu workflow skills');

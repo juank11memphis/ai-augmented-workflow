@@ -19,6 +19,12 @@ describe('createProgram', () => {
     assert.equal(evalsCommand.commands.some((command) => ['repair', 'apply', 'approve'].includes(command.name())), false);
   });
 
+  it('exposes explicit selected-result and continuation options', () => {
+    const result = createProgram().commands.find(command => command.name() === 'evals')?.commands.find(command => command.name() === 'result');
+    assert.ok(result);
+    assert.deepEqual(result.options.map(option => option.long), ['--case', '--attempt', '--assertion', '--field', '--offset', '--locator-offset']);
+  });
+
   it('registers the mcp list command', () => {
     const program = createProgram();
     const mcpCommand = program.commands.find((command) => command.name() === 'mcp');

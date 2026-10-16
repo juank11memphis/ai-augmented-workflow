@@ -10,6 +10,7 @@ import type { ExecutionEvent, ExecutionSelection } from '../run-execution/contra
 import { project } from '../run-history/test-project.js';
 import { fixture as artifactFixture } from '../run-history/store-fixture.js';
 import { FileArtifactReader } from '../run-history/file-artifact-reader.js';
+import { failedAssertionLocators } from '../run-history/failed-assertion-locators.js';
 
 const basic = { id: 'case', name: 'Case', turns: [{ role: 'user' as const, content: { type: 'inline' as const, text: 'Hi' } }],
   toolMocks: [], assertions: [{ id: 'contains', type: 'output-contains' as const, expected: 'Hi' }], graders: [] };
@@ -145,6 +146,10 @@ test('failed run exposes bounded ordered locators, not raw evidence or logs', as
   const located = result.cases?.[0]?.attempts[0];
   assert.deepEqual(located?.failedAssertionIds, attempts.slice(0, 32).map(item => item.id));
   assert.equal(located?.locatorStatus, 'truncated');
+  assert.equal(result.nextLocatorOffset, 32);
+  const page = await failedAssertionLocators(manifest('completed', 'failed'), reader, result.nextLocatorOffset!);
+  assert.deepEqual(page.cases[0]?.attempts[0]?.failedAssertionIds, ['check-32']);
+  assert.equal(page.nextLocatorOffset, null);
   assert.doesNotMatch(JSON.stringify(result) + JSON.stringify(f.events), /raw-secret|output|turns|tools/);
 });
 

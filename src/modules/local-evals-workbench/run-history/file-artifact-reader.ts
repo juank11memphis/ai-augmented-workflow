@@ -68,8 +68,10 @@ export class FileArtifactReader implements ArtifactReaderPort {
       || Buffer.byteLength(JSON.stringify(value.record)) !== reference.byteLength) return { status: 'blocked', reason: 'corrupt' };
     return stored;
   }
-  async sourceFieldRange(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number): Promise<Outcome<EvidenceFieldRange>> {
-    if (!Number.isSafeInteger(offset) || offset < 0 || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/.test(locator))
+  async sourceFieldRange(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number,
+    limit = LIMITS.sourceFieldRangeBytes): Promise<Outcome<EvidenceFieldRange>> {
+    if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > LIMITS.sourceFieldRangeBytes ||
+      !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/.test(locator))
       return { status: 'blocked', reason: 'invalid-input' };
     const split = locator.indexOf('~');
     const stored = await this.sourceRecord(suiteId, runId, selection, locator.slice(0, split));
@@ -81,7 +83,7 @@ export class FileArtifactReader implements ArtifactReaderPort {
     if (field === undefined) return { status: 'blocked', reason: 'not-found' };
     const bytes = Buffer.from(field, 'utf8');
     if (offset > bytes.length) return { status: 'blocked', reason: 'invalid-input' };
-    const end = Math.min(bytes.length, offset + LIMITS.sourceFieldRangeBytes);
+    const end = Math.min(bytes.length, offset + limit);
     return { status: 'ok', value: { locator, offset, byteLength: bytes.length, bytes: bytes.subarray(offset, end),
       nextOffset: end < bytes.length ? end : null } };
   }

@@ -56,6 +56,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   const { selection } = command;
   if (!ID.test(command.suiteId) || !ID.test(command.runId) ||
     selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || !ID.test(selection.assertionId)) ||
+    command.locatorOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0) ||
     command.field && (!selection || !ID.test(command.field.locator) || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
     return { status: 'blocked', reason: 'invalid-input' };
   }
@@ -69,13 +70,15 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   }
   const { summary: manifest, evidence, evidenceStatus, reviewArtifactPath } = read.value;
   if (manifest.suiteId !== command.suiteId || manifest.runId !== command.runId) return { status: 'blocked', reason: 'corrupt-artifact' };
+  const locators = selection ? undefined : await failedAssertionLocators(manifest, dependencies.reader, command.locatorOffset ?? 0);
   const summary: HeadlessEvalSummary = {
     suiteId: manifest.suiteId, runId: manifest.runId, state: manifest.state, outcome: manifest.outcome,
     scope: manifest.scope, testedModel: manifest.testedModel, judgeModel: manifest.judgeModel,
     cases: selection ? manifest.cases.map(item => ({ caseId: item.caseId, state: item.state,
       testedModel: item.testedModel ?? manifest.testedModel, judgeModel: item.judgeModel !== undefined ? item.judgeModel : manifest.judgeModel,
       attempts: item.attempts.map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) }))
-      : await failedAssertionLocators(manifest, dependencies.reader),
+      : locators!.cases,
+    ...(locators?.nextLocatorOffset !== null && locators?.nextLocatorOffset !== undefined ? { nextLocatorOffset: locators.nextLocatorOffset } : {}),
   };
   const artifactPath = safeArtifactPath(reviewArtifactPath);
   if (!selection) {
@@ -110,8 +113,9 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
       value.nextOffset !== (next === value.byteLength ? null : next) || next > value.byteLength) {
       return { status: 'blocked', reason: 'corrupt-artifact' };
     }
-    return { status: 'ready', summary, field: { locator: value.locator, offset: value.offset, byteLength: value.byteLength,
+    const result = { status: 'ready' as const, summary, field: { locator: value.locator, offset: value.offset, byteLength: value.byteLength,
       bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
   }
   const failure = {
     caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id, kind: assertion.kind,
