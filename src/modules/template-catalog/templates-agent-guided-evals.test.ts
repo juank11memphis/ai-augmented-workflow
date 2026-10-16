@@ -10,9 +10,11 @@ test('agent-guided skill uses the JSON CLI for one case or the full suite and bo
   assert.match(skill, /one case or all cases/);
   assert.match(skill, /sibu evals describe <suite>` for all cases/);
   assert.match(skill, /sibu evals describe <suite> --case <case_id>/);
-  assert.match(skill, /sibu evals run <suite> --model <model_id>` for all cases, without `--case`/);
-  assert.match(skill, /sibu evals run <suite> --case <case_id> --model <model_id>/);
-  assert.match(skill, /--judge <model_id>.*only when required/);
+  assert.match(skill, /sibu evals run <suite>` for all cases, without `--case` or run-wide model flags/);
+  assert.match(skill, /sibu evals run <suite> --case <case_id>` with saved choices/);
+  assert.match(skill, /temporary `--model <model_id>` and `--judge <model_id>` only when applicable/);
+  assert.match(skill, /missing or unavailable required tested\/Judge suite default blocks the run/);
+  assert.match(skill, /One-case temporary choices never persist or become full-suite overrides/);
   assert.match(skill, /cases\[\]\.caseId.*attempts\[\]\.number/);
   assert.match(skill, /first unresolved failed assertion in stable suite\/case\/check order from `failedAssertionIds` with `locatorStatus: available`/);
   assert.match(skill, /source run ID and `\(caseId, attempt number, assertionId\)`/);
@@ -58,11 +60,11 @@ test('agent-guided skill and current-version sync metadata ship together', () =>
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-  assert.equal(manifest.templateVersion, '226');
-  assert.equal(entry?.version, '2');
+  assert.equal(manifest.templateVersion, '227');
+  assert.equal(entry?.version, '3');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
-    'Adds one-at-a-time full-suite troubleshooting with fresh focused verification and a final suite rerun while preserving single-case approval and edit safeguards.',
+    'Uses saved suite defaults for full runs, blocks missing or unavailable choices, and confines temporary model choices to one case.',
   ]);
 });
 
@@ -103,10 +105,10 @@ test('eval troubleshooting route stays distinct from mandatory authoring and bro
 
 test('unchanged AGENTS route metadata remains version 56 while the shared skill advances', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '226');
+  assert.equal(manifest.templateVersion, '227');
   assert.equal(manifest.templates['AGENTS.md']?.version, '56');
   assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
     'Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate.',
   ]);
-  assert.equal(manifest.templates[path]?.version, '2');
+  assert.equal(manifest.templates[path]?.version, '3');
 });

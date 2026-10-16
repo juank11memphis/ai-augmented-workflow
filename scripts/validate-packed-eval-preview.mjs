@@ -13,6 +13,7 @@ export async function validatePackedEvalPreview({ workspace, installedPackageRoo
   await writeFile(path.join(projectRoot, 'src/target.mjs'), 'export const target = null;\n');
   const suite = {
     version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline', description: 'Synthetic fixture',
+    defaultTestedModel: 'fake/available',
     target: { id: 'target', kind: 'agent', path: 'src/target.mjs' },
     coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] },
@@ -46,12 +47,18 @@ process.stdin.on('end', () => {
   const described = await describeEvalSuiteRuntime({ suiteId: 'offline' }, { suites, runner });
   assert.equal(described.status, 'ready');
   const dependencies = { suites, runner, artifacts: new PreviewArtifactReadiness(projectRoot), inputs: { resolve: (cases) => resolveSuiteInputs(projectRoot, cases) } };
-  for (const model of ['fake/available', 'fake/unavailable']) {
-    const result = await previewEvalRun({ suiteId: 'offline', scope: { type: 'all' }, model }, dependencies);
-    assert.equal(result.status, 'ready');
-    assert.deepEqual(result.selectedCaseIds, ['case']);
-    assert.equal('cost' in result, false);
-    assert.equal('totalCalls' in result, false);
-  }
+  const ready = await previewEvalRun({ suiteId: 'offline', scope: { type: 'all' } }, dependencies);
+  assert.equal(ready.status, 'ready');
+  assert.deepEqual(ready.selectedCaseIds, ['case']);
+  assert.equal(ready.model, 'fake/available');
+  assert.equal('cost' in ready, false);
+  assert.equal('totalCalls' in ready, false);
+  await writeFile(path.join(projectRoot, 'evals/offline.json'), JSON.stringify({ ...suite, defaultTestedModel: 'fake/not-advertised' }));
+  const blocked = await previewEvalRun({ suiteId: 'offline', scope: { type: 'all' } }, dependencies);
+  assert.equal(blocked.status, 'blocked');
+  assert.equal(blocked.reason, 'saved-model-unavailable');
+  assert.equal(blocked.stage, 'description');
+  assert.equal(blocked.caseId, 'case');
+  assert.equal(blocked.role, 'tested');
   console.log('Packed offline eval describe/preview smoke passed.');
 }
