@@ -1,8 +1,8 @@
 import type { HeadlessEvalResultCommand } from './command.js';
 import type { HeadlessEvalResultDependencies } from './ports.js';
-import type { HeadlessEvalResult, HeadlessEvalSummary, SelectedEvidenceField, SelectedSourceEvidence } from './result.js';
+import type { HeadlessEvalResult, HeadlessEvalSummary, SelectedEvidenceField, SelectedGrading, SelectedSourceEvidence } from './result.js';
 import { failedAssertionLocators } from '../run-history/failed-assertion-locators.js';
-import type { EvidenceField, SourceEvidence } from '../run-history/contracts.js';
+import type { AssertionEvidence, EvidenceField, SourceEvidence } from '../run-history/contracts.js';
 
 const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const MAX_TEXT = 600;
@@ -25,7 +25,24 @@ function fieldsOf(source: SourceEvidence): EvidenceField[] {
       ...call.rawToolCalls.map(tool => tool.arguments), call.normalizedOutput,
     ]),
     ...source.toolEvents.flatMap(event => [event.request, event.result]),
+    ...(source.judge ? [source.judge.evaluatedRubric, source.judge.request, source.judge.response, source.judge.rationale] : []),
   ];
+}
+
+function projectGrading(assertion: AssertionEvidence, source: SourceEvidence | undefined): SelectedGrading {
+  if (assertion.kind !== 'grader' || assertion.judgeModel === undefined && assertion.threshold === undefined && !source?.judge) {
+    return { kind: 'deterministic' };
+  }
+  const judge = source?.judge;
+  return { kind: 'rubric',
+    evaluatedRubric: judge ? projectField(judge.evaluatedRubric) : { status: 'gap', reason: 'not-captured' },
+    score: assertion.score, threshold: assertion.threshold ?? null, comparison: assertion.outcome,
+    judgeModel: judge?.judgeModel ?? assertion.judgeModel ?? null,
+    ...(assertion.gradingError || judge?.error ? { error: assertion.gradingError ?? judge?.error } : {}),
+    judge: judge ? { version: 1, request: projectField(judge.request), response: projectField(judge.response),
+      rationale: projectField(judge.rationale), ...(judge.error ? { error: judge.error } : {}) }
+      : { status: 'gap', reason: 'not-captured' },
+  };
 }
 
 function projectField(field: EvidenceField): SelectedEvidenceField {
@@ -94,7 +111,6 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   }
   const assertion = evidence.assertions.find(item => item.id === selection.assertionId);
   if (!assertion || evidence.assertions.length !== 1) return { status: 'blocked', reason: 'selection-mismatch' };
-  if (evidence.outcome !== 'failed' || assertion.outcome !== 'failed') return { status: 'blocked', reason: 'non-failed-assertion' };
   let source = evidence.sourceEvidence;
   if (!source && dependencies.reader.readSource) {
     let assembled;
@@ -108,6 +124,15 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   if (source && (source.version !== 2 || source.assertionId !== selection.assertionId)) {
     return { status: 'blocked', reason: 'selection-mismatch' };
   }
+  if (source?.judge && assertion.judgeModel && source.judge.judgeModel !== assertion.judgeModel) {
+    return { status: 'blocked', reason: 'corrupt-artifact' };
+  }
+  const grading = projectGrading(assertion, source);
+  const isFailedAssertion = evidence.outcome === 'failed' && assertion.outcome === 'failed' &&
+    (grading.kind !== 'rubric' || grading.score !== null);
+  const isGradingIssue = grading.kind === 'rubric' && assertion.outcome === 'incomplete' && assertion.score === null &&
+    (assertion.gradingError !== undefined || source?.judge?.error !== undefined);
+  if (!isFailedAssertion && !isGradingIssue) return { status: 'blocked', reason: 'non-failed-assertion' };
   if (command.field) {
     const matching = source && fieldsOf(source).filter(field => field.status === 'available' && field.locator === command.field!.locator);
     if (!matching || matching.length !== 1 || matching[0]?.status !== 'available' || command.field.offset >= matching[0].byteLength ||
@@ -128,6 +153,13 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
       bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
     return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
   }
+  if (isGradingIssue && grading.kind === 'rubric') {
+    const result = { status: 'ready' as const, summary, gradingIssue: {
+      caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id,
+      grading, source: source ? projectSource(source) : { status: 'gap' as const, reason: 'not-captured' as const },
+    } };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+  }
   const failure = {
     caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id, kind: assertion.kind,
     actual: clipped(assertion.actual), expected: clipped(assertion.expected),
@@ -135,6 +167,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     ...(artifactPath ? { artifactPath } : {}),
     truncated: assertion.actual.length > MAX_TEXT || assertion.expected.length > MAX_TEXT || assertion.diagnostics.length > MAX_DIAGNOSTICS || assertion.diagnostics.some(item => item.length > MAX_TEXT),
     source: source ? projectSource(source) : { status: 'gap' as const, reason: 'not-captured' as const },
+    grading,
   };
   const result = { status: 'ready' as const, summary, failure };
   return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };

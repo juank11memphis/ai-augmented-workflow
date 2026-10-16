@@ -8,6 +8,8 @@ import { evaluateOutputAssertions } from '../run-execution/output-assertions.js'
 import { fixture } from '../run-history/store-fixture.js';
 import { project } from '../run-history/test-project.js';
 import { FileArtifactReader } from '../run-history/file-artifact-reader.js';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 const testCase = { id: 'case', name: 'Case', turns: [{ role: 'user' as const, content: { type: 'inline' as const, text: 'hello' } }], toolMocks: [],
   assertions: [{ id: 'check', type: 'output-contains' as const, expected: 'actual' }], graders: [] };
@@ -54,6 +56,92 @@ test('starts before runner, checkpoints output, grades actual evidence and final
   assert.equal(h.attempts.at(-1)?.calls, null);
   assert.deepEqual(h.attempts.at(-1)?.review, { runPath: 'evals/artifacts/suite/run/run.json', suitePath: null, targetPath: 'src/target.mjs',
     runnerPath: 'evals/runner.mjs', inputPaths: [], omittedInputPathCount: 0, context: 'current-repo-files' });
+});
+
+test('judge source is linked before store, while malformed scoring stays an incomplete grading error', async () => {
+  const rubricCase = { ...testCase, graders: [{ id: 'quality', type: 'rubric' as const,
+    rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+  const command = { ...selection, suite: { ...selection.suite, testCases: [rubricCase] }, cases: [rubricCase], judgeModel: 'judge' };
+  const base: ExecutionEvent[] = [{ type: 'case-started', caseId: 'case', attempt: 1 },
+    { type: 'turn-completed', caseId: 'case', attempt: 1, turnId: 'turn-1', output: 'actual' }];
+  const source = { kind: 'judge-exchange' as const, id: 'judge-1', turnId: 'turn-1', checkId: 'quality',
+    judgeModel: 'judge', eventSequence: 3, elapsedMs: 4, evaluatedRubric: 'quality >= 0.8',
+    request: 'instructions\nactual\nreferences', response: '{bad', rationale: 'malformed',
+    result: { status: 'grading-error' as const, code: 'malformed-score' } };
+  const error: ExecutionEvent = { type: 'grading-error', caseId: 'case', attempt: 1, checkId: 'quality',
+    judgeModel: 'judge', code: 'malformed-score', sequence: 3 };
+  const h = harness([...base, error, { type: 'source-record', caseId: 'case', attempt: 1, sequence: 4, record: source },
+    { type: 'case-completed', caseId: 'case', attempt: 1, status: 'error', sourceCapture: 'incomplete' }], 'error');
+  const logs: unknown[] = [];
+  const result = await executeEvalRun(command, { ...h, clock: Date.now, logger: { record: item => { logs.push(item); } } });
+  assert.equal(result.status, 'error');
+  assert.ok(h.writes.includes('source:judge-1'));
+  assert.equal(h.attempts.at(-1)?.assertions[0]?.gradingError?.code, 'malformed-score');
+  assert.equal(h.attempts.at(-1)?.assertions[0]?.score, null);
+  assert.equal(h.attempts.at(-1)?.assertions[0]?.outcome, 'incomplete');
+  assert.doesNotMatch(JSON.stringify(logs), /instructions|references|malformed/);
+
+  const wrong = harness([...base, error, { type: 'source-record', caseId: 'case', attempt: 1, sequence: 4,
+    record: { ...source, judgeModel: 'other' } }], 'error');
+  assert.equal((await executeEvalRun(command, { ...wrong, clock: Date.now })).reason, 'runner-protocol-invalid');
+  assert.equal(wrong.writes.some(item => item.startsWith('source:')), false);
+});
+
+test('real artifact store reopens scored judge checkpoint and scoreless grading error', async () => {
+  for (const status of ['completed', 'grading-error'] as const) {
+    const p = await project();
+    try {
+      const artifact = fixture(p.root);
+      const created = await artifact.store.create({ suiteId: 'suite', caseIds: ['case'], scope: 'all',
+        testedModel: 'synthetic', judgeModel: 'judge' });
+      assert.equal(created.status, 'ok');
+      if (created.status !== 'ok') return;
+      const runId = created.value.runId;
+      const rubricCase = { ...testCase, graders: [{ id: 'quality', type: 'rubric' as const,
+        rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] };
+      const command = { ...selection, runId, suite: { ...selection.suite, testCases: [rubricCase] },
+        cases: [rubricCase], judgeModel: 'judge' };
+      const result = status === 'completed'
+        ? { status, score: 0.9, threshold: 0.8, passed: true }
+        : { status, code: 'malformed-score' };
+      const record = { kind: 'judge-exchange' as const, id: 'judge-1', turnId: 'turn-1', checkId: 'quality',
+        judgeModel: 'judge', eventSequence: 3, elapsedMs: 4, evaluatedRubric: 'quality >= 0.8',
+        request: 'PRIVATE_REQUEST', response: 'PRIVATE_RESPONSE', rationale: 'safe rationale', result };
+      const grader: ExecutionEvent = status === 'completed'
+        ? { type: 'grader-completed', caseId: 'case', attempt: 1, checkId: 'quality', grader: 'rubric',
+          passed: true, score: 0.9, threshold: 0.8, judgeModel: 'judge', evidence: 'safe', diagnostics: [], sequence: 3 }
+        : { type: 'grading-error', caseId: 'case', attempt: 1, checkId: 'quality',
+          judgeModel: 'judge', code: 'malformed-score', sequence: 3 };
+      const events: ExecutionEvent[] = [{ type: 'case-started', caseId: 'case', attempt: 1 },
+        { type: 'turn-completed', caseId: 'case', attempt: 1, turnId: 'turn-1', output: 'actual' }, grader,
+        { type: 'source-record', caseId: 'case', attempt: 1, sequence: 4, record },
+        { type: 'case-completed', caseId: 'case', attempt: 1, status: status === 'completed' ? 'completed' : 'error',
+          sourceCapture: status === 'completed' ? 'complete' : 'incomplete' },
+        { type: 'run-completed', status: status === 'completed' ? 'completed' : 'error' }];
+      const runner = { async execute(_selection: ExecutionSelection, consume: (event: ExecutionEvent) => Promise<void>) {
+        for (const event of events) await consume(event);
+        return { status: status === 'completed' ? 'completed' as const : 'error' as const };
+      } };
+      assert.equal((await executeEvalRun(command, { store: artifact.store, runner,
+        evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now })).status,
+      status === 'completed' ? 'completed' : 'error');
+      const reader = new FileArtifactReader(fixture(p.root).paths, fixture(p.root).reader);
+      const selected = await reader.get('suite', runId, { caseId: 'case', attempt: 1, assertionId: 'quality' });
+      assert.equal(selected.status, 'ok');
+      if (selected.status !== 'ok') return;
+      const assertion = selected.value.evidence?.assertions.find(item => item.id === 'quality');
+      assert.equal(assertion?.score, status === 'completed' ? 0.9 : null);
+      assert.equal(assertion?.threshold, status === 'completed' ? 0.8 : undefined);
+      assert.equal(assertion?.outcome, status === 'completed' ? 'passed' : 'incomplete');
+      assert.equal(assertion?.judgeModel, status === 'completed' ? 'judge' : undefined);
+      assert.equal(assertion?.gradingError?.code, status === 'grading-error' ? 'malformed-score' : undefined);
+      const source = await reader.sourceRecord('suite', runId, { caseId: 'case', attempt: 1, assertionId: 'quality' }, 'judge-1');
+      assert.equal(source.status, 'ok');
+      if (source.status === 'ok') assert.match(JSON.stringify(source.value.record), /PRIVATE_RESPONSE/);
+      const manifest = await readFile(path.join(p.root, 'evals/artifacts', artifact.paths.run('suite', runId)), 'utf8');
+      assert.doesNotMatch(JSON.stringify(selected.value) + manifest, /PRIVATE_REQUEST|PRIVATE_RESPONSE/);
+    } finally { await p.cleanup(); }
+  }
 });
 
 test('ordered deterministic-rubric-deterministic batches retain one logical run and actual Judge evidence', async () => {

@@ -132,6 +132,8 @@ The run JSON contains locators and states, not model transcripts. If a failed at
 sibu evals result my-suite my-run --case my-case --attempt 1 --assertion my-check --field call-1~rawText --offset 0
 ```
 
+For a failed rubric, select its `failedAssertionIds` entry and read `failure.grading`: the evaluated rubric, numeric `score`, `threshold`, comparison, and actual `judgeModel` are separate from `judge.request`, `judge.response`, and `judge.rationale`. Follow a truncated judge field's locator the same way (for example, `--field judge-1~request --offset 0`), decoding each `bytesBase64` range and continuing at `nextOffset`. A score is the judge's result, not proof that its judgment is correct. Deterministic checks have no judge score. A malformed judge response is a grading issue with no completed comparison; if no failed assertion exists, inspect the run/case error and gap rather than inventing a failure locator.
+
 An older runner may report `not-captured`; that does **not** mean its normalized output is the raw provider response. `capture-failed`, `incomplete`, and `redacted` are distinct gaps, not empty raw values. Runner authors should use the managed [version-2 producer contract](templates/skills/eval-authoring/references/version-2-contract.md) to emit source evidence for future runs. Detailed artifacts remain local and subject to Sibu's Git-ignore/tracked-artifact checks; Git-ignore alone is not complete privacy protection.
 
 ## The Sibu Workflow Loop

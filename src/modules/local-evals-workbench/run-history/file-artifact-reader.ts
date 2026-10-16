@@ -7,7 +7,7 @@ import { LIMITS } from './limits.js';
 import { compact, indexFrom, manifestCandidates } from './history-index.js';
 import { boundedArtifact } from './bounded-artifact.js';
 import { ArtifactSafetyAdapter } from './artifact-safety-adapter.js';
-import { sourceField, storedSourceRecord } from './source-artifact.js';
+import { judgeMatchesAssertion, sourceField, storedSourceRecord } from './source-artifact.js';
 import { selectedSourceEvidence } from './selected-source-evidence.js';
 export class FileArtifactReader implements ArtifactReaderPort {
   constructor(private readonly paths: ArtifactPaths, private readonly reader: BoundedArtifactReader,
@@ -67,14 +67,15 @@ export class FileArtifactReader implements ArtifactReaderPort {
       || value.record.id !== reference.id || value.record.checkId !== reference.checkId || value.record.turnId !== reference.turnId
       || value.record.kind !== reference.kind || value.status !== reference.status || value.sequence !== reference.sequence
       || Buffer.byteLength(JSON.stringify(value.record)) !== reference.byteLength) return { status: 'blocked', reason: 'corrupt' };
+    if (!judgeMatchesAssertion(value.record, detail.value.evidence?.assertions ?? [])) return { status: 'blocked', reason: 'corrupt' };
     return stored;
   }
   async selectedSource(suiteId: string, runId: string, selection: Required<Selection>): Promise<Outcome<SourceEvidence | undefined>> {
     const selected = await this.get(suiteId, runId, { caseId: selection.caseId, attempt: selection.attempt });
     if (selected.status !== 'ok') return selected;
     const attempt = selected.value.evidence;
-    if (!attempt || attempt.outcome !== 'failed'
-      || !attempt.assertions.some(item => item.id === selection.assertionId && item.outcome === 'failed'))
+    if (!attempt || !attempt.assertions.some(item => item.id === selection.assertionId
+      && (item.outcome === 'failed' || item.gradingError !== undefined)))
       return { status: 'blocked', reason: 'not-found' };
     const references = attempt.sourceCapture?.records.filter(item => item.checkId === selection.assertionId) ?? [];
     const records: StoredSourceRecord[] = [];

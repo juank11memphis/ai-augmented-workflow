@@ -37,12 +37,15 @@ export class ExecuteEventValidator {
   private readonly chunks = new SourceRecordChunks();
   private readonly sourceCalls = new Map<string, { turnId: string; checkId: string }>();
   private readonly sourceTools = new Set<string>();
+  private readonly judgments = new Map<string, { sequence: number; status: 'completed' | 'grading-error'; score?: number; threshold?: number; passed?: boolean; code?: string }>();
+  private readonly judgeSources = new Set<string>();
   constructor(private readonly requestId: string, private readonly selection: ExecutionSelection) {}
 
   get completion() { return this.terminal; }
-  get incompleteSource() { return this.activeCase && this.chunks.incompleteId
+  get incompleteSource() { return this.activeCase && (this.chunks.incompleteId || this.chunks.captureFailedId)
     ? { type: 'source-gap' as const, caseId: this.activeCase, attempt: this.attemptNumber,
-      reason: 'incomplete' as const, recordId: this.chunks.incompleteId } : undefined; }
+      reason: this.chunks.captureFailedId ? 'capture-failed' as const : 'incomplete' as const,
+      recordId: this.chunks.captureFailedId ?? this.chunks.incompleteId } : undefined; }
 
   accept(raw: unknown): ExecutionEvent {
     if (!record(raw) || (raw.protocolVersion !== 1 && raw.protocolVersion !== 2)
@@ -83,7 +86,7 @@ export class ExecuteEventValidator {
     if (raw.type === 'case-attempt-started') {
       if (this.activeCase || Object.keys(data).length) throw new Error('invalid-case-start');
       this.activeCase = caseId; this.turns = 0; this.tools = 0; this.turnIds.clear(); this.toolIds.clear(); this.graders.clear();
-      this.chunks.reset(); this.sourceCalls.clear(); this.sourceTools.clear(); this.toolDetails.clear();
+      this.chunks.reset(); this.sourceCalls.clear(); this.sourceTools.clear(); this.toolDetails.clear(); this.judgments.clear(); this.judgeSources.clear();
       return { type: 'case-started', caseId, attempt: this.attemptNumber };
     }
     if (!this.activeCase) throw new Error('case-not-started');
@@ -91,8 +94,18 @@ export class ExecuteEventValidator {
       if (this.version !== 2) throw new Error('unsupported-event');
       const source = this.chunks.accept(data);
       if (!source) return { type: 'source-chunk-accepted' };
-      if (!this.turnIds.has(source.turnId) || !selected.assertions.some(item => item.id === source.checkId)) throw new Error('invalid-source-link');
-      if (source.kind === 'model-call') {
+      if (!this.turnIds.has(source.turnId) || ![...selected.assertions, ...selected.graders].some(item => item.id === source.checkId)) throw new Error('invalid-source-link');
+      if (source.kind === 'judge-exchange') {
+        const declared = selected.graders.find(item => item.id === source.checkId);
+        const judgment = this.judgments.get(source.checkId);
+        if (declared?.type !== 'rubric' || source.judgeModel !== this.selection.judgeModel
+          || !judgment || source.eventSequence !== judgment.sequence || raw.sequence <= judgment.sequence
+          || source.result.status !== judgment.status || this.judgeSources.has(source.checkId)
+          || judgment.status === 'completed' && (source.result.status !== 'completed'
+            || source.result.score !== judgment.score || source.result.threshold !== judgment.threshold || source.result.passed !== judgment.passed)
+          || judgment.status === 'grading-error' && (source.result.status !== 'grading-error' || source.result.code !== judgment.code)) throw new Error('invalid-source-judge');
+        this.judgeSources.add(source.checkId);
+      } else if (source.kind === 'model-call') {
         if (source.modelId !== this.selection.model || this.sourceCalls.has(source.id)
           || source.phase === 'post-tool' && this.sourceTools.size === 0) throw new Error('invalid-source-call');
         this.sourceCalls.set(source.id, { turnId: source.turnId, checkId: source.checkId });
@@ -139,14 +152,27 @@ export class ExecuteEventValidator {
         || typeof data.score !== 'number' || data.passed !== (data.score >= declared.threshold))) throw new Error('invalid-rubric');
       if (grader === 'custom' && (data.judgeModel !== undefined || data.threshold !== undefined)) throw new Error('invalid-custom');
       this.graders.add(declared.id);
+      if (grader === 'rubric') this.judgments.set(declared.id, { sequence: raw.sequence as number,
+        status: 'completed', score: data.score as number, threshold: data.threshold as number, passed: data.passed });
       return { type: 'grader-completed', caseId, attempt: this.attemptNumber, checkId: declared.id, grader,
         passed: data.passed, score: data.score, ...(grader === 'rubric' ? { threshold: data.threshold as number, judgeModel: data.judgeModel as string } : {}),
-        evidence: data.evidence, diagnostics: data.diagnostics as string[] };
+        evidence: data.evidence, diagnostics: data.diagnostics as string[], sequence: raw.sequence as number };
+    }
+    if (raw.type === 'rubric-judgment-error') {
+      const declared = selected.graders.find(item => item.id === data.checkId);
+      if (!keys(data, ['checkId', 'judgeModel', 'code']) || declared?.type !== 'rubric'
+        || data.judgeModel !== this.selection.judgeModel || this.judgments.has(declared.id)
+        || typeof data.code !== 'string' || !/^[a-z][a-z0-9-]{0,79}$/.test(data.code)) throw new Error('invalid-grading-error');
+      this.judgments.set(declared.id, { sequence: raw.sequence as number, status: 'grading-error', code: data.code });
+      return { type: 'grading-error', caseId, attempt: this.attemptNumber, checkId: declared.id,
+        judgeModel: data.judgeModel as string, code: data.code, sequence: raw.sequence as number };
     }
     if (raw.type === 'case-attempt-completed') {
-      if (!keys(data, ['status', 'calls', 'cost', 'sourceEvidenceComplete']) || data.status !== 'completed' && data.status !== 'error'
+      if (!keys(data, ['status', 'calls', 'cost', 'sourceEvidenceComplete', 'judgeEvidenceComplete']) || data.status !== 'completed' && data.status !== 'error'
         || (this.version === 1 && data.sourceEvidenceComplete !== undefined)
         || (this.version === 2 && typeof data.sourceEvidenceComplete !== 'boolean')
+        || (data.judgeEvidenceComplete !== undefined && (this.version !== 2 || typeof data.judgeEvidenceComplete !== 'boolean'))
+        || (data.judgeEvidenceComplete === true && [...this.judgments.keys()].some(id => !this.judgeSources.has(id)))
         || (data.sourceEvidenceComplete === true && (this.chunks.incompleteId || this.sourceCalls.size === 0
           || this.turnIds.size !== new Set([...this.sourceCalls.values()].map(call => call.turnId)).size
           || this.toolIds.size !== this.sourceTools.size))

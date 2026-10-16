@@ -57,6 +57,32 @@ it('durably publishes a complete linked source record before an interrupted late
     assert.deepEqual(records, ['first.json']);
   } finally { await p.cleanup(); }
 });
+it('refuses false-complete and over-limit judge records without publishing references', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const runId = created.value.runId; await a.store.start('suite', runId);
+    const source = { version: 1, suiteId: 'suite', runId, caseId: 'case', attempt: 1, sequence: 0,
+      record: { kind: 'judge-exchange', id: 'judge', turnId: 'turn', checkId: 'rubric', judgeModel: 'judge-model',
+        eventSequence: 0, elapsedMs: 1, evaluatedRubric: 'quality >= 0.8', request: 'raw request',
+        response: 'raw response', rationale: 'why', result: { status: 'completed', score: 0.2, threshold: 0.8, passed: false } } } satisfies SourceRecordWrite;
+    assert.deepEqual(await a.store.saveSourceRecord({ ...source, record: { ...source.record, response: undefined } }),
+      { status: 'blocked', reason: 'invalid-input' });
+    assert.deepEqual(await a.store.saveSourceRecord({ ...source, record: { ...source.record, request: 'x'.repeat(LIMITS.sourceRecordBytes) } }),
+      { status: 'blocked', reason: 'invalid-input' });
+    const complete = await a.store.saveSourceRecord(source); if (complete.status !== 'ok') return assert.fail(JSON.stringify(complete));
+    const base = evidence(runId);
+    const grader = { ...base.assertions[0]!, id: 'rubric', kind: 'grader' as const, outcome: 'failed' as const,
+      score: 0.2, threshold: 0.8, judgeModel: 'judge-model' };
+    assert.equal((await a.store.append('suite', runId, { ...base, outcome: 'failed', turns: [{ id: 'turn', role: 'assistant', content: '' }],
+      assertions: [grader], sourceCapture: { records: [complete.value], gaps: [{ reason: 'incomplete', recordId: 'judge' }] } })).status, 'blocked');
+    assert.equal((await a.store.append('suite', runId, { ...base, outcome: 'incomplete', turns: [{ id: 'turn', role: 'assistant', content: '' }],
+      sourceCapture: { records: [], gaps: [{ reason: 'capture-failed', recordId: 'judge' }] } })).status, 'ok');
+    const reader = new FileArtifactReader(fixture(p.root).paths, fixture(p.root).reader);
+    assert.deepEqual(await reader.sourceRecord('suite', runId, { caseId: 'case', attempt: 1, assertionId: 'rubric' }, 'judge'),
+      { status: 'blocked', reason: 'not-found' });
+  } finally { await p.cleanup(); }
+});
 it('run slice reopens earlier raw bytes after a later source gap and interruption', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const created = await a.store.create(config);

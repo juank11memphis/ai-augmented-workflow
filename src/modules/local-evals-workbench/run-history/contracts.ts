@@ -27,6 +27,7 @@ export type AssertionEvidence = {
   readonly score: number | null; readonly threshold?: number; readonly expected: string; readonly actual: string;
   readonly diagnostics: readonly string[]; readonly turnIds: readonly string[]; readonly toolIds: readonly string[];
   readonly judgeModel?: string;
+  readonly gradingError?: { readonly code: string };
 };
 export type EvidenceGap = 'not-captured' | 'incomplete' | 'redacted' | 'capture-failed';
 export type EvidenceField =
@@ -48,13 +49,20 @@ export type SourceEvidence = {
   readonly version: 2; readonly assertionId: string;
   readonly modelCalls: readonly ModelCallEvidence[]; readonly toolEvents: readonly DeliveredToolEvidence[];
   readonly approvedFacts: readonly { readonly modelCallId: string; readonly factId: string; readonly provenance: string }[];
+  readonly judge?: JudgeExchangeEvidence;
   readonly gaps?: readonly { readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string }[];
+};
+export type JudgeExchangeEvidence = {
+  readonly version: 1; readonly judgeModel: string;
+  readonly evaluatedRubric: EvidenceField;
+  readonly request: EvidenceField; readonly response: EvidenceField; readonly rationale: EvidenceField;
+  readonly error?: { readonly code: string };
 };
 export type EvidenceFieldRange = {
   readonly locator: string; readonly offset: number; readonly byteLength: number;
   readonly bytes: Uint8Array; readonly nextOffset: number | null;
 };
-export type SourceReference = { readonly id: string; readonly kind: 'model-call' | 'tool-delivery'; readonly status: 'complete';
+export type SourceReference = { readonly id: string; readonly kind: 'model-call' | 'tool-delivery' | 'judge-exchange'; readonly status: 'complete';
   readonly checkId: string; readonly turnId: string; readonly sequence: number; readonly byteLength: number };
 export type SourceCapture = { readonly records: readonly SourceReference[];
   readonly gaps: readonly { readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string }[] };

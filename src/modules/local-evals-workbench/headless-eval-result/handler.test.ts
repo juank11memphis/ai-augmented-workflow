@@ -197,3 +197,81 @@ test('wrong assertion, field locator, or offset refuses cross-selection reads', 
   assert.deepEqual(offset, { status: 'blocked', reason: 'invalid-input' });
   assert.equal(fieldReads, 0);
 });
+
+const rubricAssertion = { ...evidence.assertions[0]!, kind: 'grader' as const, score: 0.4,
+  threshold: 0.7, judgeModel: 'actual-judge' };
+const rubricSource: SourceEvidence = { ...source, judge: { version: 1, judgeModel: 'actual-judge',
+  evaluatedRubric: field('judge-1~rubric', 'Evaluate factual accuracy, not style'),
+  request: field('judge-1~request', 'Instructions: grade answer A against reference R'),
+  response: field('judge-1~response', '{"score":0.4,"reason":"Missing R"}'),
+  rationale: field('judge-1~rationale', 'Missing R'),
+} };
+
+test('rubric selection separates exact judge fields from numeric score, threshold, and comparison', async () => {
+  const selected = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'available', evidence: { ...evidence, assertions: [rubricAssertion], sourceEvidence: rubricSource } }));
+  assert.equal(selected.status, 'ready');
+  if (selected.status !== 'ready' || !('failure' in selected)) assert.fail('Expected failed rubric');
+  assert.deepEqual(selected.failure.grading, { kind: 'rubric',
+    evaluatedRubric: { ...field('judge-1~rubric', 'Evaluate factual accuracy, not style'), truncated: false },
+    score: 0.4, threshold: 0.7, comparison: 'failed', judgeModel: 'actual-judge',
+    judge: { version: 1,
+      request: { ...field('judge-1~request', 'Instructions: grade answer A against reference R'), truncated: false },
+      response: { ...field('judge-1~response', '{"score":0.4,"reason":"Missing R"}'), truncated: false },
+      rationale: { ...field('judge-1~rationale', 'Missing R'), truncated: false },
+    },
+  });
+  const compact = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, ready({ summary, evidenceStatus: 'not-requested' }));
+  assert.doesNotMatch(JSON.stringify(compact), /Missing R|grade answer A/);
+});
+
+test('deterministic checks have no judge exchange and old rubric runs have a typed judge gap', async () => {
+  const deterministic = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'available', evidence: { ...evidence, sourceEvidence: source } }));
+  if (deterministic.status !== 'ready' || !('failure' in deterministic)) assert.fail('Expected deterministic failure');
+  assert.deepEqual(deterministic.failure.grading, { kind: 'deterministic' });
+  const oldRubric = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'available', evidence: { ...evidence, assertions: [rubricAssertion] } }));
+  if (oldRubric.status !== 'ready' || !('failure' in oldRubric) || oldRubric.failure.grading.kind !== 'rubric') assert.fail('Expected old rubric');
+  assert.deepEqual(oldRubric.failure.grading.judge, { status: 'gap', reason: 'not-captured' });
+  assert.deepEqual(oldRubric.failure.grading.evaluatedRubric, { status: 'gap', reason: 'not-captured' });
+});
+
+test('malformed judge response exposes grading issue without claiming a model assertion failure', async () => {
+  const malformed = { ...rubricSource, judge: { ...rubricSource.judge!, response: field('judge-1~response', 'not-json'),
+    rationale: { status: 'gap' as const, reason: 'incomplete' as const }, error: { code: 'malformed-response' } } };
+  const issue = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary: { ...summary, outcome: 'incomplete' },
+    evidenceStatus: 'available', evidence: { ...evidence, outcome: 'incomplete', assertions: [{ ...rubricAssertion,
+      outcome: 'incomplete', score: null, gradingError: { code: 'malformed-response' } }], sourceEvidence: malformed } }));
+  if (issue.status !== 'ready' || !('gradingIssue' in issue)) assert.fail('Expected grading issue');
+  assert.equal(issue.gradingIssue.grading.comparison, 'incomplete');
+  assert.deepEqual(issue.gradingIssue.grading.error, { code: 'malformed-response' });
+  assert.deepEqual(issue.gradingIssue.grading.judge, { version: 1,
+    request: { ...field('judge-1~request', 'Instructions: grade answer A against reference R'), truncated: false },
+    response: { ...field('judge-1~response', 'not-json'), truncated: false },
+    rationale: { status: 'gap', reason: 'incomplete' }, error: { code: 'malformed-response' },
+  });
+  assert.equal('failure' in issue, false);
+});
+
+test('failed judge without captured exchange reports error and gaps, not a model failure', async () => {
+  const issue = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary: { ...summary, outcome: 'incomplete' },
+    evidenceStatus: 'available', evidence: { ...evidence, outcome: 'incomplete', assertions: [{ ...rubricAssertion,
+      outcome: 'incomplete', score: null, gradingError: { code: 'judge-unavailable' } }] } }));
+  if (issue.status !== 'ready' || !('gradingIssue' in issue)) assert.fail('Expected grading issue');
+  assert.deepEqual(issue.gradingIssue.grading.error, { code: 'judge-unavailable' });
+  assert.deepEqual(issue.gradingIssue.grading.judge, { status: 'gap', reason: 'not-captured' });
+  assert.deepEqual(issue.gradingIssue.source, { status: 'gap', reason: 'not-captured' });
+  assert.equal('failure' in issue, false);
+});
+
+test('judge field continuation rejects a locator absent from the selected assertion', async () => {
+  let reads = 0;
+  const reader = { get: async () => ({ status: 'ok' as const, value: { summary, evidenceStatus: 'available' as const,
+    evidence: { ...evidence, assertions: [rubricAssertion], sourceEvidence: rubricSource } } }),
+  readField: async () => { reads++; throw Error('must not read'); } };
+  const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection,
+    field: { locator: 'other-judge~response', offset: 0 } }, { reader });
+  assert.deepEqual(result, { status: 'blocked', reason: 'selection-mismatch' });
+  assert.equal(reads, 0);
+});

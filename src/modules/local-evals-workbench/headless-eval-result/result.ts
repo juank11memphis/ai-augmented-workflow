@@ -5,6 +5,15 @@ import type { EvidenceGap } from '../run-history/contracts.js';
 export type SelectedEvidenceField =
   | { readonly status: 'available'; readonly locator: string; readonly byteLength: number; readonly truncated: boolean; readonly value?: string }
   | { readonly status: 'gap'; readonly reason: EvidenceGap };
+export type SelectedGrading =
+  | { readonly kind: 'deterministic' }
+  | { readonly kind: 'rubric'; readonly evaluatedRubric: SelectedEvidenceField;
+      readonly score: number | null; readonly threshold: number | null;
+      readonly comparison: 'passed' | 'failed' | 'incomplete'; readonly judgeModel: string | null;
+      readonly error?: { readonly code: string };
+      readonly judge: { readonly version: 1; readonly request: SelectedEvidenceField;
+        readonly response: SelectedEvidenceField; readonly rationale: SelectedEvidenceField;
+        readonly error?: { readonly code: string } } | { readonly status: 'gap'; readonly reason: EvidenceGap } };
 export type SelectedSourceEvidence = {
   readonly version: 2;
   readonly modelCalls: readonly { readonly id: string; readonly turnId: string; readonly sequence: number; readonly modelId: string;
@@ -38,6 +47,12 @@ export type HeadlessEvalResult =
       readonly caseId: string; readonly attempt: number; readonly assertionId: string;
       readonly kind: 'assertion' | 'grader'; readonly actual: string; readonly expected: string;
       readonly diagnostics: readonly string[]; readonly artifactPath?: string; readonly truncated: boolean;
+      readonly source: SelectedSourceEvidence | { readonly status: 'gap'; readonly reason: EvidenceGap };
+      readonly grading: SelectedGrading;
+    } }
+  | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly gradingIssue: {
+      readonly caseId: string; readonly attempt: number; readonly assertionId: string;
+      readonly grading: Extract<SelectedGrading, { kind: 'rubric' }>;
       readonly source: SelectedSourceEvidence | { readonly status: 'gap'; readonly reason: EvidenceGap };
     } }
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly field: { readonly locator: string; readonly offset: number; readonly byteLength: number;
