@@ -235,3 +235,29 @@ test('single-case run-only choice travels to actual queued evidence without muta
   assert.equal((await startEvalRun({ suiteId: 'suite', scope: { type: 'all' }, runOnly }, h.ports)).status, 'blocked');
   assert.equal(h.schedules.length, 1);
 });
+
+test('preview and start recheck saved override changes and current catalog before scheduling', async () => {
+  for (const change of ['suite', 'catalog'] as const) {
+    const h = harness();
+    let currentSuite = { ...suite, testCases: [{ ...one, testedModel: 'override' }] };
+    let models = ['fake', 'override', 'replacement'];
+    h.ports.suites.load = async () => currentSuite;
+    h.ports.runner.describe = async () => ({ status: 'ready', value: { runnerId: 'runner', capabilities: ['single-turn'] as const,
+      models, judgeModels: [], requiredEnvironment: [] } });
+    const preview = await previewEvalRun({ suiteId: 'suite', scope: { type: 'all' } }, previewPorts(h));
+    assert.equal(preview.status, 'ready');
+    if (preview.status !== 'ready') return;
+    assert.deepEqual(preview.caseSelections.map(item => item.testedModel), ['override']);
+    if (change === 'suite') currentSuite = { ...currentSuite, testCases: [{ ...one, testedModel: 'replacement' }] };
+    else models = ['fake', 'replacement'];
+    const result = await startEvalRun({ suiteId: 'suite', scope: { type: 'all' }, previewToken: preview.previewToken }, h.ports);
+    assert.deepEqual(result, change === 'suite' ? { status: 'blocked', reason: 'suite-changed' } :
+      { status: 'blocked', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested', source: 'case-override' });
+    assert.equal(h.events.includes('create'), false);
+    assert.equal(h.events.includes('schedule'), false);
+    assert.deepEqual(h.diagnostics.at(-1) && { reason: (h.diagnostics.at(-1) as { reason: string }).reason,
+      caseId: (h.diagnostics.at(-1) as { caseId?: string }).caseId, role: (h.diagnostics.at(-1) as { role?: string }).role },
+      change === 'suite' ? { reason: 'suite-changed', caseId: undefined, role: undefined } :
+        { reason: 'saved-model-unavailable', caseId: 'case', role: 'tested' });
+  }
+});

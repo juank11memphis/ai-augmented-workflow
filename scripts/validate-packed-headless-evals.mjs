@@ -9,7 +9,7 @@ let body=''; for await(const chunk of process.stdin) body+=chunk;
 const q=JSON.parse(body); let n=0;
 function emit(type,caseId,data){process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,sequence:n++,type,
   runId:q.operation==='execute'?q.runId:null,caseId,attempt:caseId?1:null,data})+'\\n');}
-if(q.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn','rubric'],models:['fake'],judgeModels:[],requiredEnvironment:[]});
+if(q.operation==='describe') emit('description',null,{runnerId:'offline',capabilities:['single-turn','rubric'],models:['fake','fake/alternate'],judgeModels:[],requiredEnvironment:[]});
 else if(q.operation==='execute') { emit('run-started',null,{model:q.model,judgeModel:null});
   for(const item of q.testCases) { emit('case-attempt-started',item.id,{});
     if(existsSync('src/interrupt-mode.txt') && item.id==='second') process.exit(7);
@@ -45,12 +45,18 @@ async function createProject(root) {
     turns: [{ role: 'user', content: { type: 'inline', text: id } }], toolMocks: [],
     assertions: [{ id: 'expected', type: 'output-contains', expected: id === 'first' ? 'different' : 'fake:second' }], graders: [],
   }));
-  await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify({
+  const suite = {
     version: 2, kind: 'sibu-eval-suite', id: 'offline', name: 'Offline', description: 'Synthetic fixture',
     defaultTestedModel: 'fake',
     target: { id: 'target', kind: 'integration', path: 'src/target.mjs' },
     coverage: { categories: [{ id: 'synthetic', status: 'covered' }], gaps: [] },
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases,
+  };
+  await writeFile(path.join(root, 'evals/offline.json'), JSON.stringify(suite));
+  await writeFile(path.join(root, 'evals/legacy.json'), JSON.stringify({ ...suite, id: 'legacy', defaultTestedModel: undefined }));
+  await writeFile(path.join(root, 'evals/overridden.json'), JSON.stringify({ ...suite, id: 'overridden',
+    testCases: [testCases[0], { ...testCases[1], testedModel: 'fake/alternate',
+      assertions: [{ id: 'expected', type: 'output-contains', expected: 'fake/alternate:second' }] }],
   }));
   const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
   assert.equal(git('init', '-q').status, 0);
@@ -91,10 +97,53 @@ export async function validatePackedHeadlessEvals({ workspace, installedPackageR
   const suites = run(['suites']);
   assert.equal(suites.exitCode, 0);
   assert.equal(suites.value.status, 'ready');
-  assert.deepEqual(suites.value.suites.map(item => [item.id, item.testCases.map(test => test.id)]), [['offline', ['first', 'second']]]);
+  assert.deepEqual(suites.value.suites.map(item => [item.id, item.testCases.map(test => test.id)]), [
+    ['legacy', ['first', 'second']], ['offline', ['first', 'second']], ['overridden', ['first', 'second']],
+  ]);
   const described = run(['describe', 'offline']);
   assert.equal(described.exitCode, 0);
-  assert.deepEqual(described.value.models, ['fake']);
+  assert.deepEqual(described.value.models, ['fake', 'fake/alternate']);
+  const legacyPath = path.join(root, 'evals/legacy.json');
+  const legacyBytes = await readFile(legacyPath, 'utf8');
+  const legacyBlocked = run(['run', 'legacy']);
+  assert.equal(legacyBlocked.exitCode, 1);
+  assert.equal(legacyBlocked.value.reason, 'missing-suite-default');
+  assert.equal(legacyBlocked.value.runId, undefined);
+  const legacyDescribe = run(['describe', 'legacy']);
+  const legacySave = run(['choice', 'legacy', '--role', 'tested', '--token', legacyDescribe.value.choiceToken, '--set', 'fake']);
+  assert.equal(legacySave.exitCode, 0);
+  assert.equal(run(['run', 'legacy']).value.status, 'completed');
+  await writeFile(legacyPath, legacyBytes);
+
+  const overridePath = path.join(root, 'evals/overridden.json');
+  const overrideBytes = await readFile(overridePath, 'utf8');
+  const mixed = run(['run', 'overridden']);
+  assert.equal(mixed.value.status, 'completed');
+  assert.deepEqual(mixed.value.cases.map(item => [item.caseId, item.testedModel]), [
+    ['first', 'fake'], ['second', 'fake/alternate'],
+  ]);
+  const mixedResult = run(['result', 'overridden', mixed.value.runId]);
+  assert.deepEqual(mixedResult.value.summary.cases.map(item => [item.caseId, item.testedModel]), [
+    ['first', 'fake'], ['second', 'fake/alternate'],
+  ]);
+  const unavailable = JSON.parse(overrideBytes);
+  unavailable.testCases[1].testedModel = 'unavailable/model';
+  await writeFile(overridePath, JSON.stringify(unavailable));
+  const overrideBlocked = run(['run', 'overridden']);
+  assert.equal(overrideBlocked.exitCode, 1);
+  assert.equal(overrideBlocked.value.reason, 'saved-model-unavailable');
+  assert.equal(overrideBlocked.value.source, 'case-override');
+  assert.equal(overrideBlocked.value.caseId, 'second');
+  assert.equal(overrideBlocked.value.runId, undefined);
+  assert.match(overrideBlocked.value.nextAction, /Replace.*Inherit/);
+  const overrideDescribe = run(['describe', 'overridden', '--case', 'second']);
+  const inherited = run(['choice', 'overridden', '--case', 'second', '--role', 'tested',
+    '--token', overrideDescribe.value.choiceToken, '--reset']);
+  assert.equal(inherited.exitCode, 0);
+  const recovered = run(['run', 'overridden']);
+  assert.equal(recovered.value.status, 'completed');
+  assert.deepEqual(recovered.value.cases.map(item => item.testedModel), ['fake', 'fake']);
+  await writeFile(overridePath, overrideBytes);
   const selected = run(['run', 'offline', '--case', 'first', '--model', 'fake']);
   assert.equal(selected.exitCode, 1); // Completed assertion failure is not CLI success.
   assert.equal(selected.value.status, 'completed');

@@ -4,6 +4,7 @@ import type { StartEvalRunDependencies } from './ports.js';
 import { resolveRunSnapshot } from '../resolve-run-snapshot.js';
 import { logicalId } from '../run-history/validation.js';
 import { orderedRunPlan } from '../run-execution/contracts.js';
+import type { ModelChoiceSource } from '../resolve-eval-run-selection/result.js';
 
 const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
@@ -24,23 +25,24 @@ const SAFE_REASONS = new Set([
 export async function startEvalRun(command: StartEvalRunCommand, ports: StartEvalRunDependencies): Promise<StartEvalRunResult> {
   const began = Date.now();
   const reference = typeof command.reference === 'string' && SAFE_REFERENCE.test(command.reference) ? command.reference : undefined;
-  const log = (outcome: 'blocked' | 'queued', reason?: string, runId?: string): void => {
+  const log = (outcome: 'blocked' | 'queued', reason?: string, runId?: string, caseId?: string, role?: 'tested' | 'judge'): void => {
     try {
       ports.logger?.record({ event: outcome === 'queued' ? 'eval_run_queued' : 'eval_run_start_blocked',
         stage: 'run-start', outcome, ...(reason ? { reason: SAFE_REASONS.has(reason) ? reason as Extract<StartEvalRunResult, { status: 'blocked' }>['reason'] : 'unavailable' } : {}),
         ...(reference ? { reference } : {}), ...(runId && SAFE_RUN_ID.test(runId) ? { runId } : {}),
+        ...(caseId && logicalId(caseId) ? { caseId } : {}), ...(role ? { role } : {}),
         durationMs: Math.max(0, Date.now() - began) });
     } catch { /* Noncritical sink. */ }
   };
-  const blocked = (reason: Extract<StartEvalRunResult, { status: 'blocked' }>['reason'], caseId?: string, role?: 'tested' | 'judge'): StartEvalRunResult => {
-    log('blocked', reason);
-    return { status: 'blocked', reason, ...(caseId ? { caseId } : {}), ...(role ? { role } : {}) };
+  const blocked = (reason: Extract<StartEvalRunResult, { status: 'blocked' }>['reason'], caseId?: string, role?: 'tested' | 'judge', source?: ModelChoiceSource): StartEvalRunResult => {
+    log('blocked', reason, undefined, caseId, role);
+    return { status: 'blocked', reason, ...(caseId ? { caseId } : {}), ...(role ? { role } : {}), ...(source ? { source } : {}) };
   };
   try {
     if (!logicalId(command.suiteId)) return blocked('input-unsafe');
     const snapshot = await resolveRunSnapshot({ suiteId: command.suiteId, scope: command.scope,
       ...(command.runOnly ? { runOnly: command.runOnly } : {}) }, ports);
-    if (snapshot.selection.status === 'blocked') return blocked(snapshot.selection.reason, snapshot.selection.caseId, snapshot.selection.role);
+    if (snapshot.selection.status === 'blocked') return blocked(snapshot.selection.reason, snapshot.selection.caseId, snapshot.selection.role, snapshot.selection.source);
     if (command.previewToken && command.previewToken !== snapshot.previewToken) return blocked('suite-changed');
     const suite = snapshot.suite!;
     const cases = snapshot.selection.cases.map(selected => suite.testCases.find(item => item.id === selected.caseId)!);

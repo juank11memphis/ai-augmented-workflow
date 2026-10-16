@@ -137,7 +137,10 @@ describe('local server suite contract boundaries', () => {
       const before = await readFile(file, 'utf8');
       const noSave = await fetch(`${server.url}api/eval-suites/saved-choice?suiteId=suite`);
       assert.equal(noSave.status, 200);
-      assert.match(await noSave.text(), /"status":"ready"/);
+      const ready = await noSave.json() as { status: string; cases: { caseId: string; testedModel: string | null }[]; token: string };
+      assert.equal(ready.status, 'ready');
+      assert.equal(ready.cases[0]?.testedModel, null);
+      assert.ok(ready.cases[0]?.caseId);
       const cancelEquivalent = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
       assert.equal(cancelEquivalent.status, 400);
       assert.equal(await readFile(file, 'utf8'), before);
@@ -151,6 +154,14 @@ describe('local server suite contract boundaries', () => {
         body: JSON.stringify({ suiteId: 'suite', role: 'tested', action: 'set', modelId: 'X', expectedToken: snapshot.token }) });
       assert.equal(stale.status, 409);
       assert.equal((await stale.json() as { reason: string }).reason, 'suite-changed');
+      assert.equal((JSON.parse(await readFile(file, 'utf8')) as { defaultTestedModel: string }).defaultTestedModel, 'X');
+      const caseSave = await fetch(`${server.url}api/eval-suites/saved-choice`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ suiteId: 'suite', caseId: ready.cases[0]!.caseId, role: 'tested', action: 'set', modelId: 'X', expectedToken: (await adapter.read('suite') as { token: string }).token }) });
+      assert.equal(caseSave.status, 200);
+      const caseResult = await caseSave.json() as { caseId: string; status: string };
+      assert.equal(caseResult.caseId, ready.cases[0]!.caseId);
+      const afterCase = await fetch(`${server.url}api/eval-suites/saved-choice?suiteId=suite`).then(response => response.json()) as typeof ready;
+      assert.equal(afterCase.cases[0]?.testedModel, 'X');
       assert.equal((JSON.parse(await readFile(file, 'utf8')) as { defaultTestedModel: string }).defaultTestedModel, 'X');
     } finally { await server.stop?.(); await rm(root, { recursive: true, force: true }); }
   });

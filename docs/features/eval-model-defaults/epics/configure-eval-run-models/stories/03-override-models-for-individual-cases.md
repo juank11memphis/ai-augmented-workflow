@@ -6,7 +6,7 @@
 
 [Configure Eval Run Models](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 

@@ -8,14 +8,32 @@ export function readOptionalSuiteModelDefault(
   location: string,
   diagnostics: EvalSuiteDiscoveryDiagnostic[],
 ): string | undefined {
+  return readOptionalModelId(value, location, diagnostics, 'suite-model-default-invalid', 'Suite model default');
+}
+
+export function readOptionalCaseModelOverride(
+  value: unknown,
+  location: string,
+  diagnostics: EvalSuiteDiscoveryDiagnostic[],
+): string | undefined {
+  return readOptionalModelId(value, location, diagnostics, 'case-model-override-invalid', 'Case model override');
+}
+
+function readOptionalModelId(
+  value: unknown,
+  location: string,
+  diagnostics: EvalSuiteDiscoveryDiagnostic[],
+  reason: string,
+  label: string,
+): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value === 'string' && MODEL_ID_PATTERN.test(value)) return value;
   diagnostics.push({
     code: 'suite-definition-malformed',
-    reason: 'suite-model-default-invalid',
+    reason,
     severity: 'error',
     location,
-    message: 'Suite model default must be a non-empty supported model identifier.',
+    message: `${label} must be a non-empty supported model identifier.`,
   });
   return undefined;
 }

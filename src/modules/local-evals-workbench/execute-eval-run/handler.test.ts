@@ -88,23 +88,28 @@ test('ordered deterministic-rubric-deterministic batches retain one logical run 
   }
 });
 
-test('fake runner persists actual per-case labels readable from one completed artifact', async () => {
+test('one nine-case run persists the executed tested and independent judge pairs', async () => {
   const p = await project();
   try {
     const artifact = fixture(p.root);
-    const cases = [testCase, { ...testCase, id: 'rubric', graders: [{ id: 'quality', type: 'rubric' as const,
-      rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] }, { ...testCase, id: 'last' }];
-    const choices = cases.map(item => ({ caseId: item.id, testedModel: 'synthetic', judgeModel: item.id === 'rubric' ? 'judge' : null }));
+    const cases = Array.from({ length: 9 }, (_, index) => ({ ...testCase, id: `case-${index + 1}`,
+      graders: index === 2 || index === 3 ? [{ id: 'quality', type: 'rubric' as const,
+        rubric: { type: 'inline' as const, text: 'quality' }, threshold: 0.8 }] : [] }));
+    const choices = cases.map((item, index) => ({ caseId: item.id, testedModel: index === 8 ? 'model-y' : 'model-x',
+      judgeModel: index === 2 ? 'judge-a' : index === 3 ? 'judge-b' : null }));
     const created = await artifact.store.create({ suiteId: 'suite', caseIds: cases.map(item => item.id), scope: 'all',
-      testedModel: 'synthetic', judgeModel: null, caseSelections: choices });
+      testedModel: 'model-x', judgeModel: null, caseSelections: choices });
     assert.equal(created.status, 'ok');
     if (created.status !== 'ok') return;
     const runId = created.value.runId;
+    const requests: { runId: string; ids: string[]; testedModel: string; judgeModel: string | null }[] = [];
     const runner = { async execute(batch: ExecutionSelection, consume: (event: ExecutionEvent) => Promise<void>) {
+      requests.push({ runId: batch.runId, ids: batch.cases.map(item => item.id),
+        testedModel: batch.model, judgeModel: batch.judgeModel ?? null });
       for (const item of batch.cases) {
         await consume({ type: 'case-started', caseId: item.id });
         await consume({ type: 'turn-completed', caseId: item.id, turnId: `${item.id}-turn`, output: 'actual' });
-        if (item.id === 'rubric') await consume({ type: 'grader-completed', caseId: item.id, attempt: 1, checkId: 'quality',
+        if (item.graders.length) await consume({ type: 'grader-completed', caseId: item.id, attempt: 1, checkId: 'quality',
           grader: 'rubric', passed: true, score: 0.9, threshold: 0.8, judgeModel: batch.judgeModel ?? undefined,
           evidence: 'quality', diagnostics: [] });
         await consume({ type: 'case-completed', caseId: item.id, status: 'completed' });
@@ -112,16 +117,25 @@ test('fake runner persists actual per-case labels readable from one completed ar
       await consume({ type: 'run-completed', status: 'completed' });
       return { status: 'completed' as const };
     } };
-    const result = await executeEvalRun({ ...selection, runId, suite: { ...selection.suite, testCases: cases }, cases,
+    const result = await executeEvalRun({ ...selection, runId, model: 'model-x', suite: { ...selection.suite, testCases: cases }, cases,
       caseSelections: choices }, { runner, store: artifact.store, evaluator: { evaluate: evaluateOutputAssertions }, clock: Date.now });
     assert.equal(result.status, 'completed');
+    assert.deepEqual(requests.map(item => item.ids), [
+      ['case-1', 'case-2'], ['case-3'], ['case-4'], ['case-5', 'case-6', 'case-7', 'case-8'], ['case-9'],
+    ]);
+    assert.ok(requests.every(item => item.runId === runId));
+    assert.deepEqual(requests.map(({ testedModel, judgeModel }) => ({ testedModel, judgeModel })), [
+      { testedModel: 'model-x', judgeModel: null }, { testedModel: 'model-x', judgeModel: 'judge-a' },
+      { testedModel: 'model-x', judgeModel: 'judge-b' }, { testedModel: 'model-x', judgeModel: null },
+      { testedModel: 'model-y', judgeModel: null },
+    ]);
     const reader = new FileArtifactReader(artifact.paths, artifact.reader);
-    const detail = await reader.get('suite', runId, { caseId: 'rubric', attempt: 1 });
+    const detail = await reader.get('suite', runId, { caseId: 'case-4', attempt: 1 });
     assert.equal(detail.status, 'ok');
     if (detail.status !== 'ok') return;
     assert.deepEqual(detail.value.summary.cases.map(({ caseId, testedModel, judgeModel }) => ({ caseId, testedModel, judgeModel })), choices);
     assert.equal(detail.value.summary.state, 'completed');
-    assert.equal(detail.value.evidence?.assertions.find(item => item.id === 'quality')?.judgeModel, 'judge');
+    assert.equal(detail.value.evidence?.assertions.find(item => item.id === 'quality')?.judgeModel, 'judge-b');
   } finally { await p.cleanup(); }
 });
 

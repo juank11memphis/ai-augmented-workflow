@@ -165,6 +165,7 @@ test('blocked Start opens the affected Suite models choice and does not start af
       browserState,
       document: { addEventListener(name: string, listener: (event: unknown) => void) { listeners.set(name, listener); } },
       setupRegion: { querySelector: () => start },
+      refreshSetupControls() {},
       requests,
       isActive: () => false, needsJudge: () => false,
       previewRun: async () => ({ status: 'blocked', reason, role: 'judge' }),

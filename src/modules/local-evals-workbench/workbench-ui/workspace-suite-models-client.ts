@@ -27,6 +27,7 @@ export const WORKSPACE_SUITE_MODELS_CLIENT = String.raw`
       if (result?.status !== 'ready' || !/^[a-f0-9]{64}$/.test(result.token)) throw new Error('Unavailable snapshot');
       savedSuiteModels = result;
       renderSuiteModelSummary();
+      if (typeof refreshSetupControls === 'function') refreshSetupControls();
     } catch {
       if (generation === savedSuiteGeneration && suite?.id === id) suiteModelStatus('Saved models could not be read. Try Models again.');
     }
@@ -86,6 +87,7 @@ export const WORKSPACE_SUITE_MODELS_CLIENT = String.raw`
         savedSuiteModels = { ...savedSuiteModels, token: result.token,
           [role === 'tested' ? 'defaultTestedModel' : 'defaultJudgeModel']: result.modelId };
         renderSuiteModelSummary();
+        refreshSetupControls();
       }
       suiteModelsDraft = null;
       closeSheet();

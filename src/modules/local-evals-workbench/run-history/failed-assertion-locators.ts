@@ -14,7 +14,8 @@ const MAX_IDS = 32;
 export async function failedAssertionLocators(
   manifest: Manifest,
   reader: Pick<ArtifactReaderPort, 'get'>,
-): Promise<readonly { readonly caseId: string; readonly state: Manifest['cases'][number]['state']; readonly attempts: readonly LocatedAttempt[] }[]> {
+): Promise<readonly { readonly caseId: string; readonly state: Manifest['cases'][number]['state'];
+  readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[]> {
   let remaining = MAX_IDS;
   const cases = [];
   for (const item of manifest.cases) {
@@ -47,7 +48,8 @@ export async function failedAssertionLocators(
         attempts.push({ number: attempt.number, outcome: attempt.outcome, failedAssertionIds: [], locatorStatus: 'unavailable' });
       }
     }
-    cases.push({ caseId: item.caseId, state: item.state, attempts });
+    cases.push({ caseId: item.caseId, state: item.state,
+      testedModel: item.testedModel ?? manifest.testedModel, judgeModel: item.judgeModel !== undefined ? item.judgeModel : manifest.judgeModel, attempts });
   }
   return cases;
 }

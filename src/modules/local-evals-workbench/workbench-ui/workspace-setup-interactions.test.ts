@@ -20,6 +20,7 @@ test('Suite models keeps draft changes local until Save and resets roles indepen
     let runtimeState = 'ready', sheetReturn = null;
     const one = globalThis.one, esc = value => String(value ?? ''), json = globalThis.json,
       post = globalThis.post, openSheet = globalThis.openSheet, closeSheet = globalThis.closeSheet;
+    const refreshSetupControls = () => {};
     ${WORKSPACE_SUITE_MODELS_CLIENT}
     return {loadSavedSuiteModels, openSuiteModels, saveSuiteModels, renderSuiteModelSummary, choiceMarkup,
       draft:()=>suiteModelsDraft, setDraft: value => {suiteModelsDraft=value},
@@ -86,6 +87,13 @@ test('Suite models Cancel, Close, and Save restore focus without starting a run'
   const trigger = one('[data-action="suite-models"]');
   const heading = { focus() { activeElement = heading; } };
   const testedChoice = one('[data-suite-role="tested"]');
+  const setupFields = { innerHTML: '', querySelector() { return null; } };
+  const startAction = { disabled: false };
+  const setupRegion = { querySelector(selector: string) {
+    if (selector === '[data-setup-fields]') return setupFields;
+    if (selector === '[data-action="start"]') return startAction;
+    return null;
+  } };
   const sheetSlot = {
     set innerHTML(value: string) { markup = value; },
     set textContent(value: string) { if (!value) markup = ''; },
@@ -99,7 +107,8 @@ test('Suite models Cancel, Close, and Save restore focus without starting a run'
   const document = {
     get activeElement() { return activeElement; },
     set activeElement(value: unknown) { activeElement = value; },
-    querySelector(selector: string) { return selector === '[data-workspace]' ? {} : selector === '[data-sheet-slot]' ? sheetSlot : one(selector); },
+    querySelector(selector: string) { return selector === '[data-workspace]' ? {} : selector === '[data-sheet-slot]' ? sheetSlot
+      : selector === '[data-run-setup]' ? setupRegion : one(selector); },
     getElementById() { return { textContent: '{"suites":[{"id":"suite","name":"Suite","testCases":[]}]}' }; },
     addEventListener(name: string, listener: (event: any) => void) { listeners.set(name, [...(listeners.get(name) || []), listener]); },
   };

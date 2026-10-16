@@ -59,12 +59,12 @@ test('deterministic-only scope needs no saved or advertised judge model', async 
 test('old unset suite defaults block before description, even with a temporary choice', async () => {
   const context = fake({ ...suite, defaultTestedModel: undefined, defaultJudgeModel: undefined });
   assert.deepEqual(await resolveEvalRunSelection({ ...one, runOnly: { testedModel: 'run/tested' } }, context.ports), {
-    status: 'blocked', reason: 'missing-suite-default', suiteId: 'suite', caseId: 'rubric', role: 'tested',
+    status: 'blocked', reason: 'missing-suite-default', suiteId: 'suite', caseId: 'rubric', role: 'tested', source: 'suite-default',
   });
   assert.deepEqual(context.calls(), { describes: 0, executionCalls: 0 });
   const missingJudge = fake({ ...suite, defaultJudgeModel: undefined });
   assert.deepEqual(await resolveEvalRunSelection(one, missingJudge.ports), {
-    status: 'blocked', reason: 'missing-suite-default', suiteId: 'suite', caseId: 'rubric', role: 'judge',
+    status: 'blocked', reason: 'missing-suite-default', suiteId: 'suite', caseId: 'rubric', role: 'judge', source: 'suite-default',
   });
 });
 
@@ -75,7 +75,7 @@ test('unavailable saved tested or judge choice blocks without fallback after a c
   ] as const) {
     const context = fake(suite, changed);
     const result = await resolveEvalRunSelection({ ...one, runOnly: { testedModel: 'run/tested', judgeModel: 'run/judge' } }, context.ports);
-    assert.deepEqual(result, { status: 'blocked', reason: 'saved-model-unavailable', suiteId: 'suite', caseId: 'rubric', role });
+    assert.deepEqual(result, { status: 'blocked', reason: 'saved-model-unavailable', suiteId: 'suite', caseId: 'rubric', role, source: 'suite-default' });
     assert.deepEqual(context.calls(), { describes: 1, executionCalls: 0 });
   }
 });
@@ -96,10 +96,39 @@ test('full-suite run-only and malformed or unavailable temporary choices block w
     status: 'blocked', reason: 'run-only-scope-unsupported', suiteId: 'suite',
   });
   assert.deepEqual(await resolveEvalRunSelection({ ...one, runOnly: { judgeModel: '' } }, context.ports), {
-    status: 'blocked', reason: 'invalid-run-only-choice', suiteId: 'suite', caseId: 'rubric', role: 'judge',
+    status: 'blocked', reason: 'invalid-run-only-choice', suiteId: 'suite', caseId: 'rubric', role: 'judge', source: 'run-only',
   });
   assert.deepEqual(await resolveEvalRunSelection({ ...one, runOnly: { testedModel: 'not/advertised' } }, context.ports), {
-    status: 'blocked', reason: 'run-only-model-unavailable', suiteId: 'suite', caseId: 'rubric', role: 'tested',
+    status: 'blocked', reason: 'run-only-model-unavailable', suiteId: 'suite', caseId: 'rubric', role: 'tested', source: 'run-only',
   });
   assert.deepEqual(context.calls(), { describes: 1, executionCalls: 0 });
+});
+
+test('nine cases resolve in order with independent tested and judge overrides; reset inherits', async () => {
+  const cases: NormalizedEvalSuite['testCases'][number][] = Array.from({ length: 9 }, (_, index) => ({ ...rubricCase, id: `case-${index}` }));
+  cases[4] = { ...cases[4]!, testedModel: 'run/tested' };
+  cases[6] = { ...cases[6]!, judgeModel: 'run/judge' };
+  const selected = { ...suite, testCases: cases };
+  const ready = await resolveEvalRunSelection(all, fake(selected).ports);
+  assert.equal(ready.status, 'ready');
+  if (ready.status !== 'ready') return;
+  assert.deepEqual(ready.cases.map(item => item.caseId), cases.map(item => item.id));
+  assert.deepEqual(ready.cases.map(item => item.testedModel), cases.map((_, index) => index === 4 ? 'run/tested' : 'saved/tested'));
+  assert.deepEqual(ready.cases.map(item => item.judgeModel), cases.map((_, index) => index === 6 ? 'run/judge' : 'saved/judge'));
+  const reset = await resolveEvalRunSelection(all, fake({ ...selected, testCases: cases.map(item => item.id === 'case-4' ? { ...item, testedModel: undefined } : item) }).ports);
+  assert.equal(reset.status, 'ready');
+  if (reset.status === 'ready') assert.equal(reset.cases[4]?.testedModel, 'saved/tested');
+});
+
+test('missing or unavailable default blocks even when every case overrides; unavailable override never falls back', async () => {
+  const overridden = { ...suite, testCases: [{ ...rubricCase, testedModel: 'run/tested', judgeModel: 'run/judge' }] };
+  assert.deepEqual(await resolveEvalRunSelection(all, fake({ ...overridden, defaultTestedModel: undefined }).ports),
+    { status: 'blocked', reason: 'missing-suite-default', suiteId: 'suite', caseId: 'rubric', role: 'tested', source: 'suite-default' });
+  assert.deepEqual(await resolveEvalRunSelection(all, fake({ ...overridden, defaultJudgeModel: undefined }).ports),
+    { status: 'blocked', reason: 'missing-suite-default', suiteId: 'suite', caseId: 'rubric', role: 'judge', source: 'suite-default' });
+  for (const [role, changed] of [
+    ['tested', { ...description, models: ['saved/tested'] }],
+    ['judge', { ...description, judgeModels: ['saved/judge'] }],
+  ] as const) assert.deepEqual(await resolveEvalRunSelection(all, fake(overridden, changed).ports),
+    { status: 'blocked', reason: 'saved-model-unavailable', suiteId: 'suite', caseId: 'rubric', role, source: 'case-override' });
 });

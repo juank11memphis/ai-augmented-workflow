@@ -51,10 +51,10 @@ function fixture(overrides: Partial<HeadlessEvalRunDependencies> = {}) {
 test('selected and all scopes await execution then persisted readback', async () => {
   const f = fixture();
   assert.deepEqual(await headlessEvalRun(command, f.ports), { status: 'completed', runId: 'run-1', outcome: 'passed',
-    cases: [{ caseId: 'case', state: 'completed', attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
+    cases: [{ caseId: 'case', state: 'completed', testedModel: 'fake/model', judgeModel: null, attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
   assert.equal(f.reads(), 1);
   assert.deepEqual(await headlessEvalRun({ ...command, scope: { type: 'test_case', testCaseId: 'other' } }, f.ports),
-    { status: 'completed', runId: 'run-1', outcome: 'passed', cases: [{ caseId: 'case', state: 'completed', attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
+    { status: 'completed', runId: 'run-1', outcome: 'passed', cases: [{ caseId: 'case', state: 'completed', testedModel: 'fake/model', judgeModel: null, attempts: [{ number: 1, outcome: 'passed' }] }], diagnostics: [] });
   assert.deepEqual(f.selected, [['case', 'other'], ['other']]);
 });
 
@@ -84,7 +84,7 @@ test('rubric scope requires compatible judge and accepts one', async () => {
   const rubric = { ...basic, id: 'rubric', graders: [{ id: 'judge', type: 'rubric' as const,
     rubric: { type: 'inline' as const, text: 'Safe' }, threshold: 0.8 }] };
   const f = fixture({ suites: { load: async () => ({ ...suite, testCases: [rubric] }) } });
-  assert.deepEqual(await headlessEvalRun(command, f.ports), { status: 'blocked', reason: 'missing-suite-default', caseId: 'rubric', role: 'judge' });
+  assert.deepEqual(await headlessEvalRun(command, f.ports), { status: 'blocked', reason: 'missing-suite-default', caseId: 'rubric', role: 'judge', source: 'suite-default' });
   assert.equal((await headlessEvalRun(command, { ...f.ports, suites: { load: async () => ({ ...suite, defaultJudgeModel: 'fake/judge', testCases: [rubric] }) } })).status, 'completed');
 });
 
@@ -92,9 +92,9 @@ test('saved and temporary choices share preview selection policy and block befor
   let paidCalls = 0;
   const f = fixture({ executor: { execute: async () => { paidCalls++; return { status: 'completed', runId: 'run-1' }; } } });
   const missing = await headlessEvalRun(command, { ...f.ports, suites: { load: async () => ({ ...suite, defaultTestedModel: undefined }) } });
-  assert.deepEqual(missing, { status: 'blocked', reason: 'missing-suite-default', caseId: 'case', role: 'tested' });
+  assert.deepEqual(missing, { status: 'blocked', reason: 'missing-suite-default', caseId: 'case', role: 'tested', source: 'suite-default' });
   const unavailable = await headlessEvalRun(command, { ...f.ports, suites: { load: async () => ({ ...suite, defaultTestedModel: 'retired' }) } });
-  assert.deepEqual(unavailable, { status: 'blocked', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested' });
+  assert.deepEqual(unavailable, { status: 'blocked', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested', source: 'suite-default' });
   const temporary = await headlessEvalRun({ ...command, scope: { type: 'test_case', testCaseId: 'case' }, model: 'fake/model' }, f.ports);
   assert.equal(temporary.status, 'completed');
   assert.equal(paidCalls, 1);

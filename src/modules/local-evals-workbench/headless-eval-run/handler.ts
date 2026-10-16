@@ -24,8 +24,8 @@ export async function headlessEvalRun(command: HeadlessEvalRunCommand, ports: He
     } catch { /* Logging is not part of the run outcome. */ }
     return result;
   };
-  const blocked = (reason: string, caseId?: string, role?: 'tested' | 'judge'): HeadlessEvalRunResult =>
-    finish({ status: 'blocked', ...(runId ? { runId } : {}), reason, ...(caseId ? { caseId } : {}), ...(role ? { role } : {}) });
+  const blocked = (reason: string, caseId?: string, role?: 'tested' | 'judge', source?: 'suite-default' | 'case-override' | 'run-only'): HeadlessEvalRunResult =>
+    finish({ status: 'blocked', ...(runId ? { runId } : {}), reason, ...(caseId ? { caseId } : {}), ...(role ? { role } : {}), ...(source ? { source } : {}) });
   try {
     if (!logicalId(command.suiteId) ||
       command.scope.type === 'test_case' && !logicalId(command.scope.testCaseId)) return blocked('invalid-input');
@@ -34,7 +34,7 @@ export async function headlessEvalRun(command: HeadlessEvalRunCommand, ports: He
       : undefined);
     const snapshot = await resolveRunSnapshot({ suiteId: command.suiteId, scope: command.scope,
       ...(runOnly ? { runOnly } : {}) }, ports);
-    if (snapshot.selection.status === 'blocked') return blocked(snapshot.selection.reason, snapshot.selection.caseId, snapshot.selection.role);
+    if (snapshot.selection.status === 'blocked') return blocked(snapshot.selection.reason, snapshot.selection.caseId, snapshot.selection.role, snapshot.selection.source);
     const suite = snapshot.suite!;
     const cases = snapshot.selection.cases.map(selected => suite.testCases.find(item => item.id === selected.caseId));
     const resolvedCases = cases.filter((item): item is NonNullable<typeof item> => item !== undefined);

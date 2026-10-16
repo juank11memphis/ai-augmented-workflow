@@ -3,6 +3,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { WORKSPACE_RESULTS_CLIENT } from './workspace-results-client.js';
 import { WORKSPACE_CASE_DETAIL_CLIENT } from './workspace-case-detail.js';
+import { WORKSPACE_CASE_MODELS_CLIENT } from './workspace-case-models-client.js';
 
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
@@ -97,4 +98,68 @@ test('compact detail closes back to invoking row and list position', async () =>
   assert.equal(app.document.activeElement, app.caseButton);
   assert.equal(app.list.scrollTop, 41);
   assert.equal(app.detail.hidden, true);
+});
+
+test('selected-case models save and reset roles independently; cancel and conflict never start a run', async () => {
+  const listeners = new Map<string, ((event: any) => void)[]>();
+  const nodes = new Map<string, { textContent: string; disabled: boolean; focus(): void }>();
+  let focused = '', dialog = '', closes = 0, refreshes = 0, previews = 0;
+  const writes: Record<string, unknown>[] = [];
+  let conflict = false;
+  const one = (key: string) => {
+    if (!nodes.has(key)) nodes.set(key, { textContent: '', disabled: false, focus() { focused = key; } });
+    return nodes.get(key)!;
+  };
+  const script = `let suite = {id:'suite',testCases:[{id:'a',name:'Case A'},{id:'b',name:'Case B'}]};
+    let setup = {scope:'one',caseId:'b'}, runtimeState = 'ready', sheetReturn = null, savedSuiteGeneration = 0;
+    let runtime = {models:['X','Y'],judgeModels:['J','K'],rubricCaseIds:['b']};
+    let savedSuiteModels = {token:'${'a'.repeat(64)}',defaultTestedModel:'X',defaultJudgeModel:'J',cases:[
+      {caseId:'a',testedModel:null,judgeModel:null},{caseId:'b',testedModel:'Y',judgeModel:null}]};
+    const one=globalThis.one,esc=value=>String(value??''),post=globalThis.post,
+      openSheet=globalThis.openSheet,closeSheet=globalThis.closeSheet,
+      refreshSetupControls=globalThis.refreshSetupControls,previewRun=globalThis.previewRun;
+    ${WORKSPACE_CASE_MODELS_CLIENT}
+    return {caseModelSummary,openCaseModels,saveCaseModels,draft:()=>caseModelsDraft,
+      saved:()=>savedSuiteModels,setDraft:value=>{caseModelsDraft=value}};`;
+  const api = vm.runInNewContext('(()=>{' + script + '})()', {
+    one, document: { addEventListener(type: string, listener: (event: any) => void) {
+      listeners.set(type, [...listeners.get(type) || [], listener]); } },
+    post: async (_url: string, body: Record<string, unknown>) => { writes.push(body);
+      return conflict ? { status: 'conflict' } : { status: 'saved', token: String(writes.length).repeat(64), modelId: body.modelId || null }; },
+    openSheet: (_title: string, content: string) => { dialog = content; },
+    closeSheet: () => { closes++; }, refreshSetupControls: () => { refreshes++; }, previewRun: () => { previews++; },
+  }) as { caseModelSummary(): string; openCaseModels(role?: string, caseId?: string): Promise<void>; saveCaseModels(): Promise<void>;
+    draft(): { tested: string; judge: string; caseId: string } | null; saved(): { cases: { testedModel: string | null; judgeModel: string | null }[] };
+    setDraft(value: { tested: string; judge: string; caseId: string }): void };
+  assert.match(api.caseModelSummary(), /Case B.*Y.*Override.*J.*Inherited from suite.*data-action="case-models"/s);
+  assert.doesNotMatch(api.caseModelSummary(), /Case A/);
+  await api.openCaseModels();
+  assert.match(dialog, /Inherit X.*Override.*Reset override.*Inherit J.*Override/s);
+  assert.equal(focused, 'input[name="case-tested-choice"]:checked');
+  listeners.get('click')!.at(-1)!({ target: { closest: () => ({ dataset: { action: 'cancel-case-models' } }) } });
+  assert.equal(writes.length, 0); assert.equal(closes, 1);
+  await api.openCaseModels();
+  listeners.get('click')!.at(-1)!({ target: { closest: () => ({ dataset: { action: 'reset-case-tested' } }) } });
+  assert.equal(api.draft()?.tested, '');
+  assert.equal(api.draft()?.judge, '');
+  assert.equal(writes.length, 0, 'Reset remains draft-only');
+  api.setDraft({ tested: '', judge: 'K', caseId: 'b' });
+  await api.saveCaseModels();
+  assert.deepEqual(writes.map(item => JSON.parse(JSON.stringify(item))), [
+    { suiteId: 'suite', caseId: 'b', role: 'tested', action: 'reset', expectedToken: 'a'.repeat(64) },
+    { suiteId: 'suite', caseId: 'b', role: 'judge', action: 'set', modelId: 'K', expectedToken: '1'.repeat(64) },
+  ]);
+  assert.equal(api.saved().cases[1]?.testedModel, null);
+  assert.equal(api.saved().cases[1]?.judgeModel, 'K');
+  assert.match(api.caseModelSummary(), /X.*Inherited from suite.*K.*Override/s);
+  assert.equal(focused, '[data-action="case-models"]');
+  assert.equal(refreshes, 1); assert.equal(previews, 1);
+  await api.openCaseModels(); conflict = true;
+  api.setDraft({ tested: 'Y', judge: 'K', caseId: 'b' });
+  await api.saveCaseModels();
+  assert.match(one('[data-case-dialog-status]').textContent, /changed elsewhere/);
+  assert.ok(api.draft(), 'conflict keeps dialog open');
+  assert.equal(closes, 2); assert.equal(previews, 1);
+  listeners.get('click')!.at(-1)!({ target: { closest: () => ({ dataset: { action: 'close-sheet' } }) } });
+  assert.equal(api.draft(), null, 'Close discards the conflicting draft');
 });

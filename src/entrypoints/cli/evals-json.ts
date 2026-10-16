@@ -16,6 +16,7 @@ function invalidReason(command: EvalCliCommand): string | undefined {
     if (command.judgeModel !== undefined && command.judgeModel !== null && !command.judgeModel.trim()) return 'invalid-judge-model';
   }
   if (command.type === 'evals:choice') {
+    if (command.caseId !== undefined && !SAFE_ID.test(command.caseId)) return 'invalid-case-id';
     if (command.role !== 'tested' && command.role !== 'judge') return 'invalid-role';
     if (command.action !== 'set' && command.action !== 'reset') return 'invalid-action';
     if (!/^[a-f0-9]{64}$/.test(command.expectedToken)) return 'invalid-token';
@@ -31,11 +32,13 @@ function invalidReason(command: EvalCliCommand): string | undefined {
   return undefined;
 }
 
-function nextAction(result: { readonly status?: unknown; readonly reason?: unknown; readonly role?: unknown; readonly caseId?: unknown }): string | undefined {
+function nextAction(result: { readonly status?: unknown; readonly reason?: unknown; readonly role?: unknown; readonly caseId?: unknown; readonly source?: unknown }): string | undefined {
   if (result.status === 'conflict') return 'Describe the suite again, then explicitly retry the saved choice.';
   if (result.status !== 'blocked') return undefined;
   if (result.reason === 'missing-suite-default') return `Set the suite ${result.role} default with evals choice, then retry.`;
-  if (result.reason === 'saved-model-unavailable') return `Replace the saved ${result.role} model${result.caseId ? ` for case ${result.caseId}` : ''} explicitly, then retry.`;
+  if (result.reason === 'saved-model-unavailable' && result.source === 'case-override')
+    return `Case ${result.caseId}, ${result.role}: Replace the override with evals choice --case ${result.caseId} --set, or Inherit with evals choice --case ${result.caseId} --reset. Describe for a current token first; then explicitly start again.`;
+  if (result.reason === 'saved-model-unavailable') return `Replace the suite ${result.role} default explicitly, then retry.`;
   if (result.reason === 'run-only-scope-unsupported') return 'Remove the run-only model flags for a full-suite run.';
   if (result.reason === 'run-only-model-unavailable' || result.reason === 'invalid-run-only-choice') return 'Choose a compatible this-run-only model for one case or omit the run-only flags.';
   if (result.reason === 'model-unavailable') return 'Describe compatible models, then explicitly set another saved choice.';
@@ -72,7 +75,8 @@ export async function handleEvalsJsonCommand(
       : command.type === 'evals:run' ? await workbench.run({ suiteId: command.suiteId, scope: command.scope,
         ...(command.model !== undefined ? { model: command.model } : {}), ...(command.judgeModel !== undefined ? { judgeModel: command.judgeModel } : {}) })
       : command.type === 'evals:choice' ? await workbench.changeChoice({ suiteId: command.suiteId, role: command.role,
-        action: command.action, expectedToken: command.expectedToken, ...(command.modelId !== undefined ? { modelId: command.modelId } : {}) })
+        action: command.action, expectedToken: command.expectedToken, ...(command.caseId !== undefined ? { caseId: command.caseId } : {}),
+        ...(command.modelId !== undefined ? { modelId: command.modelId } : {}) })
       : await workbench.result({ suiteId: command.suiteId, runId: command.runId,
         ...(command.caseId && command.assertionId ? { selection: { caseId: command.caseId, attempt: 1 as const, assertionId: command.assertionId } } : {}) });
     dependencies.output.write(JSON.stringify({ schemaVersion: 1, operation, ...result, ...('status' in result && nextAction(result) ? { nextAction: nextAction(result) } : {}) }));

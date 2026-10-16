@@ -1,6 +1,7 @@
 import type { RuntimeBlockReason } from '../runtime-description.js';
 
 export type ModelRole = 'tested' | 'judge';
+export type ModelChoiceSource = 'suite-default' | 'case-override' | 'run-only';
 export type ResolvedCaseSelection = {
   readonly caseId: string;
   readonly testedModel: string;
@@ -16,4 +17,4 @@ export type SelectionBlockReason =
 export type ResolveEvalRunSelectionResult =
   | { readonly status: 'ready'; readonly suiteId: string; readonly cases: readonly ResolvedCaseSelection[] }
   | { readonly status: 'blocked'; readonly reason: SelectionBlockReason; readonly suiteId: string;
-      readonly caseId?: string; readonly role?: ModelRole };
+      readonly caseId?: string; readonly role?: ModelRole; readonly source?: ModelChoiceSource };

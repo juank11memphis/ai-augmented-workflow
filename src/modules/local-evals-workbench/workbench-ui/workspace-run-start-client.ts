@@ -13,7 +13,8 @@ export const WORKSPACE_RUN_START_CLIENT = String.raw`
       if (preview?.status !== 'ready') {
         if (preview?.status === 'blocked' && ['missing-suite-default', 'saved-model-unavailable'].includes(preview.reason)) {
           sheetReturn = setupRegion.querySelector('[data-action="start"]');
-          await openSuiteModels(preview.role);
+          if (preview.source === 'case-override' && typeof openCaseModels === 'function') await openCaseModels(preview.role, preview.caseId);
+          else await openSuiteModels(preview.role);
         }
         return;
       }
@@ -43,7 +44,8 @@ export const WORKSPACE_RUN_START_CLIENT = String.raw`
           startReference = null; startSuiteId = null;
           if (['missing-suite-default', 'saved-model-unavailable'].includes(payload.reason)) {
             sheetReturn = setupRegion.querySelector('[data-action="start"]');
-            await openSuiteModels(payload.role);
+            if (payload.source === 'case-override' && typeof openCaseModels === 'function') await openCaseModels(payload.role, payload.caseId);
+            else await openSuiteModels(payload.role);
           }
         } else {
           startUncertain = true;

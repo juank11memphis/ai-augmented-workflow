@@ -36,6 +36,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     suiteId: manifest.suiteId, runId: manifest.runId, state: manifest.state, outcome: manifest.outcome,
     scope: manifest.scope, testedModel: manifest.testedModel, judgeModel: manifest.judgeModel,
     cases: selection ? manifest.cases.map(item => ({ caseId: item.caseId, state: item.state,
+      testedModel: item.testedModel ?? manifest.testedModel, judgeModel: item.judgeModel !== undefined ? item.judgeModel : manifest.judgeModel,
       attempts: item.attempts.map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) }))
       : await failedAssertionLocators(manifest, dependencies.reader),
   };
