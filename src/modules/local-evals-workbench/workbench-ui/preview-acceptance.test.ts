@@ -5,6 +5,7 @@ import { WORKBENCH_CLIENT_SCRIPT } from './workbench-client.js';
 import { WORKSPACE_RUN_PREVIEW_CLIENT } from './workspace-run-preview-client.js';
 import { WORKSPACE_RUN_START_CLIENT } from './workspace-run-start-client.js';
 import { WORKSPACE_SETUP_CLIENT } from './workspace-setup-client.js';
+import { WORKSPACE_SUITE_MODELS_CLIENT } from './workspace-suite-models-client.js';
 
 type FakeElement = { value: string; disabled: boolean; hidden: boolean; textContent: string; add(option: { value: string }): void; focus(): void };
 function element(value = ''): FakeElement {
@@ -75,14 +76,22 @@ test('selected rubric case sends separate judge model directly to start', async 
 
 test('run-only payload is one-case only and ordered preview renders server choices without estimates', async () => {
   const setupApi = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
-    + '; return {command, set: value => {setup=value}};})()', {
+    + '; return {command, setupMarkup, set: value => {setup=value}, setRuntime: value => {runtime=value}, setSuite: value => {suite=value}};})()', {
       document: { querySelector: (key: string) => key === '[data-workspace]' ? {} : null,
         getElementById: () => ({ textContent: '{"suites":[{"id":"suite","testCases":[{"id":"a"},{"id":"b"}]}]}' }), addEventListener() {} },
-    }) as { command(): Record<string, unknown>; set(value: unknown): void };
+      needsJudge: () => true,
+    }) as { command(): Record<string, unknown>; setupMarkup(): string; set(value: unknown): void;
+      setRuntime(value: unknown): void; setSuite(value: unknown): void };
+  setupApi.setSuite({ testCases: [{ id: 'a', name: 'First' }, { id: 'b', name: 'Second' }] });
+  setupApi.setRuntime({ models: ['Y'], judgeModels: ['J'], rubricCaseIds: ['b'] });
   setupApi.set({ scope: 'one', caseId: 'b', choice: 'temporary', temporaryModel: 'Y', temporaryJudge: 'J' });
-  assert.deepEqual(JSON.parse(JSON.stringify(setupApi.command())).runOnly, { testedModel: 'Y' });
+  assert.deepEqual(JSON.parse(JSON.stringify(setupApi.command())).runOnly, { testedModel: 'Y', judgeModel: 'J' });
+  assert.match(setupApi.setupMarkup(), /data-run-only[\s\S]*data-field="temporary-model"[\s\S]*data-field="temporary-judge"/,
+    'one-case temporary selection presents tested-model and applicable Judge controls');
   setupApi.set({ scope: 'all', caseId: 'b', choice: 'temporary', temporaryModel: 'Y', temporaryJudge: 'J' });
   assert.equal('runOnly' in setupApi.command(), false);
+  assert.doesNotMatch(setupApi.setupMarkup(), /data-run-only|temporary-model|temporary-judge/,
+    'full-suite scope omits temporary model controls');
 
   const list = { innerHTML: '' }, status = { textContent: '' };
   const requests: unknown[] = [];
@@ -132,20 +141,47 @@ test('one-case preview and start carry the same temporary choices without saving
 });
 
 test('blocked Start opens the affected Suite models choice and does not start after the decision', async () => {
-  for (const reason of ['missing-suite-default', 'saved-model-unavailable']) {
-    const opened: string[] = [];
+  for (const [reason, outcome] of [
+    ['missing-suite-default', 'save'], ['missing-suite-default', 'cancel'],
+    ['saved-model-unavailable', 'save'], ['saved-model-unavailable', 'cancel'],
+  ] as const) {
     const requests: string[] = [];
-    const button = { disabled: false };
-    const api = vm.runInNewContext('(() => {' + WORKSPACE_RUN_START_CLIENT + ';return {startRun};})()', {
-      readSetup() {}, runtime: {}, setup: { scope: 'all', choice: 'saved' }, previewingStart: false,
-      startPending: false, startUncertain: false, isActive: () => false, needsJudge: () => false,
-      one: () => ({}), setupRegion: { querySelector: () => button },
+    const listeners = new Map<string, (event: unknown) => void>();
+    const browserState = { dialog: '', focused: '' };
+    const start = { disabled: false, focus() { browserState.focused = 'start'; } };
+    const api = vm.runInNewContext('(() => { let suite = {id:"suite",name:"Suite"}; '
+      + 'let runtime = {models:["X"],judgeModels:["J"],rubricCaseIds:["rubric"]}; let runtimeState="ready", sheetReturn=null; '
+      + 'let setup={scope:"all",choice:"saved"}, previewingStart=false, startPending=false, startUncertain=false; '
+      + 'const one = selector => ({textContent:"", disabled:false, focus(){browserState.focused=selector}}); '
+      + 'const esc = value => String(value ?? ""); '
+      + 'const readSetup=()=>{}; '
+      + 'const json = async () => ({status:"ready",token:"' + 'a'.repeat(64) + '",defaultTestedModel:"X",defaultJudgeModel:'
+      + JSON.stringify(reason === 'missing-suite-default' ? null : 'old') + '}); '
+      + 'const post = async (route, body) => { requests.push(route); return {status:"saved",token:"' + 'b'.repeat(64) + '",modelId:body.modelId ?? null}; }; '
+      + 'const openSheet = (_title, content) => {browserState.dialog=content}; '
+      + 'const closeSheet = () => {browserState.dialog=""; sheetReturn?.focus(); sheetReturn=null}; '
+      + WORKSPACE_SUITE_MODELS_CLIENT + WORKSPACE_RUN_START_CLIENT
+      + '\nreturn {startRun, saveSuiteModels};})()', {
+      browserState,
+      document: { addEventListener(name: string, listener: (event: unknown) => void) { listeners.set(name, listener); } },
+      setupRegion: { querySelector: () => start },
+      requests,
+      isActive: () => false, needsJudge: () => false,
       previewRun: async () => ({ status: 'blocked', reason, role: 'judge' }),
-      openSuiteModels: async (role: string) => { opened.push(role); },
-      fetch: async (route: string) => { requests.push(route); throw Error('Unexpected start'); },
-    }) as { startRun(): Promise<void> };
+      fetch: async (route: string) => { requests.push(route); throw Error('Unexpected run start'); },
+    }) as { startRun(): Promise<void>; saveSuiteModels(): Promise<void>; openSuiteModels(role: string): Promise<void> };
     await api.startRun();
-    assert.deepEqual(opened, ['judge']);
-    assert.deepEqual(requests, []);
+    assert.match(browserState.dialog, /id="suite-judge"/, 'blocked Start opens the real Suite models dialog');
+    assert.equal(browserState.focused, '[data-suite-role="judge"]', 'real dialog focuses the affected role choice');
+    if (outcome === 'save') {
+      listeners.get('change')!({ target: { dataset: { suiteRole: 'judge' }, value: 'J' } });
+      await api.saveSuiteModels();
+      assert.equal(browserState.focused, 'start', 'Save returns focus to Start run');
+    } else {
+      listeners.get('click')!({ target: { closest: () => ({ dataset: { action: 'cancel-suite-models' } }) } });
+      assert.equal(browserState.focused, 'start', 'Cancel returns focus to Start run');
+    }
+    assert.deepEqual(requests, outcome === 'save' ? ['/api/eval-suites/saved-choice'] : [],
+      'neither blocked decision dispatches a run');
   }
 });
