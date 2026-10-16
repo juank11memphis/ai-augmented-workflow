@@ -21,7 +21,7 @@ function startHarness(response: () => Promise<{ status: number; json(): Promise<
   const form = { hidden: false };
   const startButton = { disabled: false };
   const region = { hidden: false, querySelector: (key: string) => key === '[data-action="start"]' ? startButton
-    : key === 'input[name="scope"]:checked' ? { value: 'all' } : key === '[data-field="model"]' ? { value: 'model' } : null };
+    : key === 'input[name="scope"]:checked' ? { value: 'all' } : null };
   const sheet = { textContent: '', querySelector: () => null };
   const progress = { textContent: '' };
   const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [suite] }) }),
@@ -37,8 +37,8 @@ function startHarness(response: () => Promise<{ status: number; json(): Promise<
       requests.push({ url, options }); return response();
     } };
   const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + ';'
-    + 'closeSheet=()=>{}; clearSelectedDetail=()=>{}; renderWorkspace=()=>{}; pollRun=()=>{}; loadHistory=()=>{}; renderHistory=()=>{}; focusPanel=()=>{};'
-    + 'runtime={models:["model"],judgeModels:[],rubricCaseIds:[]};setup.model="model";'
+    + 'closeSheet=()=>{}; openSuiteModels=async()=>{}; clearSelectedDetail=()=>{}; renderWorkspace=()=>{}; pollRun=()=>{}; loadHistory=()=>{}; renderHistory=()=>{}; focusPanel=()=>{};'
+    + 'runtime={models:["model"],judgeModels:[],rubricCaseIds:[]};'
     + 'return {startRun,state:()=>({startUncertain,acceptedRunId,startReference})};})()', context) as {
       startRun(): Promise<void>; state(): { startUncertain: boolean; acceptedRunId: string | null; startReference: string | null };
     };
@@ -47,7 +47,10 @@ function startHarness(response: () => Promise<{ status: number; json(): Promise<
 }
 
 test('every known run-start block uses allowlisted title, explanation, next step and permitted action', async () => {
-  assert.equal(Object.keys(startCopy).length, 37);
+  for (const reason of ['missing-suite-default', 'saved-model-unavailable', 'invalid-run-only-choice',
+    'run-only-scope-unsupported', 'run-only-model-unavailable'] as const) {
+    assert.ok(startCopy[reason], `required choice block ${reason} has safe copy`);
+  }
   for (const [reason, copy] of Object.entries(startCopy)) {
     const browser = startHarness(async () => ({ status: 422, json: async () => ({ status: 'blocked', reason, reference,
       issue: { stage: 'run-start', outcome: 'blocked', category: reason, reference,
@@ -63,6 +66,7 @@ test('every known run-start block uses allowlisted title, explanation, next step
     assert.equal(browser.nodes.get('[data-start-announcement]')?.textContent, copy.title, reason);
     assert.equal(browser.api.state().startUncertain, false, reason);
     assert.equal(browser.requests.length, 1, reason);
+    assert.deepEqual(JSON.parse(browser.requests[0]!.options.body), { suiteId: 'suite', scope: { type: 'all' } }, reason);
     assert.equal(browser.requests[0]?.options.headers['x-sibu-request-reference'], reference, reason);
     browser.click('copy-start-issue');
     await new Promise(resolve => setImmediate(resolve));

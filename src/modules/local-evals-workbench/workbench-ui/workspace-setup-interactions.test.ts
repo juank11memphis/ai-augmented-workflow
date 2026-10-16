@@ -85,6 +85,7 @@ test('Suite models Cancel, Close, and Save restore focus without starting a run'
   };
   const trigger = one('[data-action="suite-models"]');
   const heading = { focus() { activeElement = heading; } };
+  const testedChoice = one('[data-suite-role="tested"]');
   const sheetSlot = {
     set innerHTML(value: string) { markup = value; },
     set textContent(value: string) { if (!value) markup = ''; },
@@ -124,7 +125,7 @@ test('Suite models Cancel, Close, and Save restore focus without starting a run'
   const open = async () => {
     activeElement = trigger;
     await api.openSuiteModels();
-    assert.equal(activeElement, heading, 'opening the dialog moves focus inside');
+    assert.equal(activeElement, testedChoice, 'opening the dialog focuses the tested-model choice');
   };
   api.setRuntime({ models: ['X', 'Y'], judgeModels: ['J'], rubricCaseIds: ['rubric'] });
   api.setRuntimeState('ready', 'Compatible models ready.');
@@ -168,7 +169,8 @@ test('loading and known blocked reasons stay beside an unavailable model choice'
       loadRuntime(): Promise<void>; refreshSetupControls(): void;
     };
   api.refreshSetupControls();
-  assert.match(fields.innerHTML, /Model being tested<select[^>]*disabled[^>]*>/);
+  assert.match(fields.innerHTML, /Loading compatible models/);
+  assert.doesNotMatch(fields.innerHTML, /data-field="model"/);
   assert.match(fields.innerHTML, /Loading compatible models/);
   assert.equal(review.disabled, true);
   const loading = api.loadRuntime();
@@ -182,15 +184,15 @@ test('loading and known blocked reasons stay beside an unavailable model choice'
   assert.doesNotMatch(fields.innerHTML, /OPENAI_API_KEY/);
 });
 
-test('a late suite description cannot replace a newer suite and an invalid prior choice stays unselected', async () => {
+test('a late suite description cannot replace a newer suite catalog', async () => {
   const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [
     { id: 'first', testCases: [] }, { id: 'second', testCases: [] }] }) }),
     querySelector: (selector: string) => selector === '[data-workspace]' ? {} : null, addEventListener() {} };
   const resolves: ((value: unknown) => void)[] = [];
   const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
-    + '; return {loadRuntime, chooseSecond(){suite=suites[1];setup.model="old";}, get:()=>({model:setup.model,state:runtimeState})};})()',
+    + '; return {loadRuntime, chooseSecond(){suite=suites[1];}, get:()=>({models:runtime?.models,state:runtimeState})};})()',
     { document, fetch: async () => ({ json: () => new Promise(done => { resolves.push(done); }) }) }) as {
-      loadRuntime(): Promise<void>; chooseSecond(): void; get(): { model: string; state: string };
+      loadRuntime(): Promise<void>; chooseSecond(): void; get(): { models: string[]; state: string };
     };
   const first = api.loadRuntime();
   await new Promise(done => setImmediate(done));
@@ -201,28 +203,27 @@ test('a late suite description cannot replace a newer suite and an invalid prior
   await second;
   resolves[0]({ status: 'ready', models: ['stale'], judgeModels: [], rubricCaseIds: [] });
   await first;
-  assert.equal(api.get().model, '');
+  assert.deepEqual(JSON.parse(JSON.stringify(api.get().models)), ['new']);
   assert.equal(api.get().state, 'ready');
 });
 
-test('rerun runtime refresh never silently replaces an unavailable prior model', async () => {
+test('runtime refresh does not offer a run-wide model control', async () => {
   const progress = { textContent: '' };
   const slot = { querySelector: () => null };
   const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [{ id: 'case' }] }] }) }),
     querySelector: (selector: string) => ({ '[data-workspace]': {}, '[data-sheet-slot]': slot, '[data-progress]': progress })[selector], addEventListener() {} };
-  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return { loadRuntime, setPrior(){setup.model="prior"; strictRuntimeChoices=true;}, getSetup:()=>setup }; })()',
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return { loadRuntime, setupMarkup }; })()',
     { document, fetch: async () => ({ json: async () => ({ status: 'ready', models: ['other'], judgeModels: [], rubricCaseIds: [] }) }) }) as {
-      loadRuntime(): Promise<void>; setPrior(): void; getSetup(): { model: string };
+      loadRuntime(): Promise<void>; setupMarkup(): string;
     };
-  api.setPrior();
   await api.loadRuntime();
-  assert.equal(api.getSetup().model, '');
-  assert.match(progress.textContent, /Previous model choice is unavailable/);
+  assert.doesNotMatch(api.setupMarkup(), /data-field="model"|name="modelChoice"/);
+  assert.doesNotMatch(progress.textContent, /Previous model choice is unavailable/);
 });
 
 test('case switches and late discovery keep conditional Judge options and keyboard focus in sync', async () => {
   const listeners = new Map<string, (event: { target: { matches: (selector: string) => boolean } }) => void>();
-  const controls = { scope: 'one', caseId: 'plain', model: '', judge: '' };
+  const controls = { scope: 'one', caseId: 'plain', choice: 'saved', model: '', judge: '' };
   const document: { activeElement: unknown; getElementById: (id: string) => { textContent: string }; querySelector: (selector: string) => unknown;
     addEventListener: (name: string, listener: (event: { target: { matches: (selector: string) => boolean } }) => void) => void } = {
     activeElement: null,
@@ -239,8 +240,9 @@ test('case switches and late discovery keep conditional Judge options and keyboa
     if (selector === '[data-action="start"]') return reviewAction;
     if (selector === 'input[name="scope"]:checked') return { value: controls.scope };
     if (selector === '[data-field="case"]') return { value: controls.caseId };
-    if (selector === '[data-field="model"]') return { value: controls.model };
-    if (selector === '[data-field="judge"]') return fields.innerHTML.includes('data-field="judge"') ? { value: controls.judge } : null;
+    if (selector === 'input[name="modelChoice"]:checked') return { value: controls.choice };
+    if (selector === '[data-field="temporary-model"]') return fields.innerHTML.includes('data-field="temporary-model"') ? { value: controls.model } : null;
+    if (selector === '[data-field="temporary-judge"]') return fields.innerHTML.includes('data-field="temporary-judge"') ? { value: controls.judge } : null;
     return null;
   } };
   let finishDiscovery!: (value: unknown) => void;
@@ -248,7 +250,7 @@ test('case switches and late discovery keep conditional Judge options and keyboa
     fetch: async () => ({ json: async () => new Promise(resolve => { finishDiscovery = resolve; }) }) };
   const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT + '; return {showSetup, readSetup, refreshSetupControls, loadRuntime, needsJudge, getSetup:()=>setup}; })()', context) as {
     showSetup(): void; readSetup(): void; refreshSetupControls(): void; loadRuntime(): Promise<void>;
-    needsJudge(): boolean; getSetup(): { judgeModel: string };
+    needsJudge(): boolean; getSetup(): { temporaryJudge: string };
   };
   api.showSetup();
   assert.equal(slot.innerHTML, '');
@@ -259,51 +261,55 @@ test('case switches and late discovery keep conditional Judge options and keyboa
   await new Promise(resolve => setImmediate(resolve));
   finishDiscovery({ status: 'ready', models: ['tested'], judgeModels: ['judge-a'], rubricCaseIds: ['rubric'] });
   await loading;
-  assert.match(fields.innerHTML, /value="tested"/);
+  assert.match(fields.innerHTML, /Use saved models/);
   assert.equal(reviewAction.disabled, false);
-  assert.doesNotMatch(fields.innerHTML, /data-field="judge"/);
+  assert.doesNotMatch(fields.innerHTML, /data-field="temporary-judge"/);
 
   controls.caseId = 'rubric';
   document.activeElement = focusable('case');
   api.readSetup(); api.refreshSetupControls();
   assert.equal(api.needsJudge(), true);
-  assert.match(fields.innerHTML, /data-field="judge"/);
-  assert.match(fields.innerHTML, /value="judge-a"/);
+  assert.doesNotMatch(fields.innerHTML, /data-field="temporary-judge"/);
   assert.equal((document.activeElement as { dataset: { field: string } }).dataset.field, 'case');
 
+  controls.choice = 'temporary';
+  controls.model = 'tested';
   controls.judge = 'judge-a';
-  api.readSetup();
+  api.readSetup(); api.refreshSetupControls();
+  assert.match(fields.innerHTML, /This run only/);
+  assert.match(fields.innerHTML, /data-field="temporary-judge"/);
+  assert.match(fields.innerHTML, /value="judge-a"/);
   controls.caseId = 'plain';
   api.readSetup(); api.refreshSetupControls();
-  assert.doesNotMatch(fields.innerHTML, /data-field="judge"/);
+  assert.doesNotMatch(fields.innerHTML, /data-field="temporary-judge"/);
   controls.caseId = 'rubric';
   api.readSetup(); api.refreshSetupControls();
-  assert.equal(api.getSetup().judgeModel, 'judge-a');
-  assert.match(fields.innerHTML, /data-field="judge"/);
+  assert.equal(api.getSetup().temporaryJudge, 'judge-a');
+  assert.match(fields.innerHTML, /data-field="temporary-judge"/);
   controls.scope = 'all';
   api.readSetup(); api.refreshSetupControls();
   assert.match(fields.innerHTML, /data-case-field hidden/);
-  assert.match(fields.innerHTML, /data-field="judge"/);
+  assert.doesNotMatch(fields.innerHTML, /This run only|data-field="temporary-judge"/);
   controls.scope = 'one';
   controls.caseId = 'plain';
   api.readSetup(); api.refreshSetupControls();
-  assert.doesNotMatch(fields.innerHTML, /data-case-field hidden|data-field="judge"/);
+  assert.doesNotMatch(fields.innerHTML, /data-case-field hidden|data-field="temporary-judge"/);
 });
 
-test('one-click Start submits selection once without review and preserves blocked guidance', async () => {
+test('one-click Start uses saved selection once without review and preserves blocked guidance', async () => {
   const button = { disabled: false };
   const progress = { textContent: '' };
   const notice = startNotice();
   const region = { hidden: false, querySelector: (key: string) => key === '[data-action="start"]' ? button
     : key === 'input[name="scope"]:checked' ? { value: 'one' } : key === '[data-field="case"]' ? { value: 'case' }
-    : key === '[data-field="model"]' ? { value: 'model' } : null };
+    : key === 'input[name="modelChoice"]:checked' ? { value: 'saved' } : null };
   const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [{ id: 'case' }] }] }) }),
     querySelector: (key: string) => ({ '[data-workspace]': {}, '[data-run-setup]': region,
       '[data-progress]': progress, '[data-start-notice]': notice })[key], addEventListener() {} };
   let finish!: (value: unknown) => void;
   const requests: Record<string, unknown>[] = [];
   const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
-    + '; runtime={models:["model"],judgeModels:[],rubricCaseIds:[]};setup.model="model";return {startRun};})()',
+    + '; runtime={models:["model"],judgeModels:[],rubricCaseIds:[]};return {startRun};})()',
     { document, crypto: { randomUUID: () => startReference }, fetch: async (_url: string, options: { body: string }) => {
       requests.push(JSON.parse(options.body) as Record<string, unknown>);
       return { status: 422, json: () => new Promise(resolve => { finish = resolve; }) };
@@ -312,10 +318,33 @@ test('one-click Start submits selection once without review and preserves blocke
   await api.startRun();
   assert.equal(requests.length, 1);
   assert.deepEqual(JSON.parse(JSON.stringify(requests[0])), { suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'case' },
-    model: 'model', judgeModel: null });
+  });
   finish({ status: 'blocked', reason: 'runner-timeout', reference: startReference,
     issue: { stage: 'run-start', outcome: 'blocked', category: 'runner-timeout', reference: startReference, recoveryAction: 'retry' } });
   await pending;
   assert.match(progress.textContent, /Run start blocked/);
   assert.equal(notice.hidden, false);
+});
+
+test('This run only sends a one-case choice without a saved-choice write', async () => {
+  const requests: { url: string; body: Record<string, unknown> }[] = [];
+  const region = { querySelector: (key: string) => key === '[data-action="start"]' ? { disabled: false }
+    : key === 'input[name="scope"]:checked' ? { value: 'one' }
+    : key === '[data-field="case"]' ? { value: 'rubric' }
+    : key === 'input[name="modelChoice"]:checked' ? { value: 'temporary' }
+    : key === '[data-field="temporary-model"]' ? { value: 'other' }
+    : key === '[data-field="temporary-judge"]' ? { value: 'judge-b' } : null };
+  const document = { getElementById: () => ({ textContent: JSON.stringify({ suites: [{ id: 'suite', testCases: [{ id: 'rubric' }] }] }) }),
+    querySelector: (key: string) => ({ '[data-workspace]': {}, '[data-run-setup]': region })[key], addEventListener() {} };
+  const api = vm.runInNewContext('(() => {' + WORKSPACE_SETUP_CLIENT
+    + '; runtime={models:["saved","other"],judgeModels:["judge-a","judge-b"],rubricCaseIds:["rubric"]};return {startRun};})()',
+    { document, crypto: { randomUUID: () => startReference }, fetch: async (url: string, options: { body: string }) => {
+      requests.push({ url, body: JSON.parse(options.body) as Record<string, unknown> });
+      return { status: 202, json: async () => ({ status: 'queued', suiteId: 'suite', runId: 'run-1', reference: startReference }) };
+    } }) as { startRun(): Promise<void> };
+  await api.startRun();
+  assert.deepEqual(JSON.parse(JSON.stringify(requests)), [{ url: '/api/eval-runs/start', body: {
+    suiteId: 'suite', scope: { type: 'test_case', testCaseId: 'rubric' },
+    runOnly: { testedModel: 'other', judgeModel: 'judge-b' },
+  } }]);
 });
