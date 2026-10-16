@@ -1,5 +1,5 @@
 import type { SourceRecord } from '../run-execution/contracts.js';
-import type { StoredSourceRecord } from './contracts.js';
+import type { AssertionEvidence, StoredSourceRecord } from './contracts.js';
 import { LIMITS } from './limits.js';
 import { integer, logicalId, record } from './validation.js';
 
@@ -77,4 +77,15 @@ export function sourceField(recordValue: SourceRecord, key: string): string | un
     if (key === 'evaluatedRubric' || key === 'request' || key === 'response' || key === 'rationale') return recordValue[key];
   } else if (key === 'request' || key === 'result') return JSON.stringify(recordValue[key]);
   return undefined;
+}
+
+export function judgeMatchesAssertion(recordValue: SourceRecord, assertions: readonly AssertionEvidence[]): boolean {
+  if (recordValue.kind !== 'judge-exchange') return true;
+  const assertion = assertions.find(item => item.id === recordValue.checkId);
+  if (!assertion || assertion.kind !== 'grader') return false;
+  if (recordValue.result.status === 'grading-error') return assertion.gradingError?.code === recordValue.result.code
+    && assertion.score === null && assertion.outcome === 'incomplete';
+  return assertion.judgeModel === recordValue.judgeModel && assertion.score === recordValue.result.score
+    && assertion.threshold === recordValue.result.threshold
+    && assertion.outcome === (recordValue.result.passed ? 'passed' : 'failed');
 }

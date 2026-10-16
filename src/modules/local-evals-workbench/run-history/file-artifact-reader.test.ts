@@ -41,6 +41,87 @@ it('reopens exact linked UTF-8 field ranges and rejects wrong assertions, gaps, 
     assert.deepEqual(await reader.sourceRecord('suite', runId, selection, 'first'), { status: 'blocked', reason: 'corrupt' });
   } finally { await p.cleanup(); }
 });
+it('reopens complete judge fields with bounded UTF-8 continuation and no summary leakage', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const runId = created.value.runId; await a.store.start('suite', runId);
+    const request = 'instruction + answer + reference ☃'.repeat(500);
+    const record: SourceRecordWrite = { version: 1, suiteId: 'suite', runId, caseId: 'case', attempt: 1, sequence: 0,
+      record: { kind: 'judge-exchange', id: 'judge', turnId: 'turn', checkId: 'rubric', judgeModel: 'judge-model',
+        eventSequence: 0, elapsedMs: 3, evaluatedRubric: 'quality >= 0.8', request,
+        response: 'raw score: 0.2', rationale: 'exact rationale ☃', result: { status: 'completed', score: 0.2, threshold: 0.8, passed: false } } };
+    const saved = await a.store.saveSourceRecord(record); if (saved.status !== 'ok') return assert.fail(JSON.stringify(saved));
+    const base = evidence(runId);
+    assert.equal((await a.store.append('suite', runId, { ...base, outcome: 'failed', turns: [{ id: 'turn', role: 'assistant', content: '' }],
+      assertions: [{ ...base.assertions[0]!, id: 'rubric', kind: 'grader', outcome: 'failed', score: 0.2,
+        threshold: 0.8, judgeModel: 'judge-model', turnIds: ['turn'] }],
+      sourceCapture: { records: [saved.value], gaps: [] } })).status, 'ok');
+    const reader = historyReader(fixture(p.root)); const selection = { caseId: 'case', attempt: 1, assertionId: 'rubric' };
+    const selected = await reader.selectedSource('suite', runId, selection);
+    assert.equal(selected.status, 'ok'); if (selected.status !== 'ok') return;
+    assert.deepEqual(selected.value?.judge?.response, { status: 'available', locator: 'judge~response', byteLength: 14, value: 'raw score: 0.2' });
+    assert.equal(selected.value?.judge?.rationale.status, 'available');
+    assert.deepEqual(selected.value?.judge?.request, { status: 'available', locator: 'judge~request', byteLength: Buffer.byteLength(request) });
+    const parts: Buffer[] = []; let offset = 0;
+    do {
+      const range = await reader.sourceFieldRange('suite', runId, selection, 'judge~request', offset);
+      if (range.status !== 'ok') return assert.fail(JSON.stringify(range));
+      parts.push(Buffer.from(range.value.bytes)); offset = range.value.nextOffset ?? -1;
+    } while (offset >= 0);
+    assert.equal(Buffer.concat(parts).toString('utf8'), request);
+    const ordinary = await readFile(path.join(p.root, 'evals/artifacts', a.paths.attempt('suite', runId, 'case', 1)), 'utf8');
+    const manifest = await readFile(path.join(p.root, 'evals/artifacts', a.paths.run('suite', runId)), 'utf8');
+    assert.ok(!ordinary.includes(request) && !manifest.includes(request));
+    assert.deepEqual(await reader.sourceFieldRange('suite', runId, { ...selection, assertionId: 'other' }, 'judge~request', 0),
+      { status: 'blocked', reason: 'not-found' });
+  } finally { await p.cleanup(); }
+});
+it('reopens scoreless grading-error bytes and preserves missing and redacted fields as gaps', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const runId = created.value.runId; await a.store.start('suite', runId);
+    const record: SourceRecordWrite = { version: 1, suiteId: 'suite', runId, caseId: 'case', attempt: 1, sequence: 0,
+      record: { kind: 'judge-exchange', id: 'judge-error', turnId: 'turn', checkId: 'rubric', judgeModel: 'judge-model',
+        eventSequence: 0, elapsedMs: 3, evaluatedRubric: 'quality >= 0.8', request: 'exact request',
+        response: '{malformed ☃', redactedFields: ['request'], result: { status: 'grading-error', code: 'malformed-response' } } };
+    const saved = await a.store.saveSourceRecord(record); if (saved.status !== 'ok') return assert.fail(JSON.stringify(saved));
+    const base = evidence(runId);
+    assert.equal((await a.store.append('suite', runId, { ...base, outcome: 'incomplete', turns: [{ id: 'turn', role: 'assistant', content: '' }],
+      assertions: [{ ...base.assertions[0]!, id: 'rubric', kind: 'grader', outcome: 'incomplete', score: null,
+        gradingError: { code: 'malformed-response' }, turnIds: ['turn'] }],
+      sourceCapture: { records: [saved.value], gaps: [{ reason: 'capture-failed', recordId: 'later' }] } })).status, 'ok');
+    const reader = historyReader(fixture(p.root)); const selection = { caseId: 'case', attempt: 1, assertionId: 'rubric' };
+    const selected = await reader.selectedSource('suite', runId, selection);
+    assert.equal(selected.status, 'ok'); if (selected.status !== 'ok') return;
+    assert.equal(selected.value?.judge?.error?.code, 'malformed-response');
+    assert.deepEqual(selected.value?.judge?.request, { status: 'gap', reason: 'redacted' });
+    assert.deepEqual(selected.value?.judge?.rationale, { status: 'gap', reason: 'not-captured' });
+    assert.deepEqual(selected.value?.judge?.response, { status: 'available', locator: 'judge-error~response',
+      byteLength: Buffer.byteLength('{malformed ☃'), value: '{malformed ☃' });
+    assert.deepEqual(selected.value?.gaps, [{ reason: 'capture-failed', recordId: 'later' }]);
+    assert.deepEqual(await reader.sourceFieldRange('suite', runId, selection, 'judge-error~request', 0), { status: 'blocked', reason: 'unavailable' });
+    assert.equal((await reader.sourceFieldRange('suite', runId, selection, 'judge-error~response', 0)).status, 'ok');
+    assert.deepEqual(await reader.sourceFieldRange('suite', runId, selection, 'judge-error~rationale', 0), { status: 'blocked', reason: 'not-found' });
+  } finally { await p.cleanup(); }
+});
+it('keeps old rubric attempts readable without inventing judge evidence', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const runId = created.value.runId; await a.store.start('suite', runId);
+    const base = evidence(runId);
+    assert.equal((await a.store.append('suite', runId, { ...base, outcome: 'failed', assertions: [
+      { ...base.assertions[0]!, id: 'rubric', kind: 'grader', outcome: 'failed', score: 0.2,
+        threshold: 0.8, judgeModel: 'historic-judge' },
+    ] })).status, 'ok');
+    const reader = historyReader(fixture(p.root)); const selection = { caseId: 'case', attempt: 1, assertionId: 'rubric' };
+    const detail = await reader.get('suite', runId, selection);
+    assert.equal(detail.status === 'ok' && detail.value.evidenceStatus, 'available');
+    assert.deepEqual(await reader.selectedSource('suite', runId, selection), { status: 'ok', value: undefined });
+  } finally { await p.cleanup(); }
+});
 it('restores missing/stale index and reads summaries without opening any attempt', async () => {
   const p = await project(); const reads: string[] = []; try {
     const a = fixture(p.root, { onRead: relative => reads.push(relative) }); const run = await a.store.create(config); if (run.status !== 'ok') return assert.fail(JSON.stringify(run));

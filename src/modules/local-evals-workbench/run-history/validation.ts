@@ -95,8 +95,10 @@ export function attempt(v: unknown): v is Attempt {
     || !Array.isArray(v.assertions) || v.assertions.length > LIMITS.evidenceItems) return false;
   const turns = v.turns.map(t => t.id), tools = v.tools.map(t => t.id);
   if (v.sourceCapture !== undefined) {
-    const capture = v.sourceCapture as { records: { turnId: string; checkId: string }[] };
-    if (!capture.records.every(item => turns.includes(item.turnId)
+    const capture = v.sourceCapture as { records: { id: string; turnId: string; checkId: string }[];
+      gaps: { recordId?: string }[] };
+    if (capture.gaps.some(gap => gap.recordId !== undefined && capture.records.some(reference => reference.id === gap.recordId))
+      || !capture.records.every(item => turns.includes(item.turnId)
       && (v.outcome === 'incomplete' || (v.assertions as { id: string }[]).some(assertion => assertion.id === item.checkId)))) return false;
   }
   return new Set(turns).size === turns.length && new Set(tools).size === tools.length

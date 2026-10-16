@@ -10,7 +10,7 @@ import { runIdentity } from './run-identity.js';
 import { serialized } from './active-run-owner.js';
 import { appendAttempt, transition } from './lifecycle.js';
 import { collectHistory, compact, indexFrom } from './history-index.js';
-import { storedSourceRecord } from './source-artifact.js';
+import { judgeMatchesAssertion, storedSourceRecord } from './source-artifact.js';
 export type StoreDependencies = {
   readonly files: AtomicArtifactFile; readonly reader: BoundedArtifactReader; readonly owner: OwnerPort;
   readonly clock: () => number; readonly logger: ArtifactLogger;
@@ -51,6 +51,7 @@ export class FileArtifactStore implements ArtifactStorePort {
           || stored.value.record.checkId !== reference.checkId || stored.value.record.turnId !== reference.turnId
           || stored.value.sequence !== reference.sequence || Buffer.byteLength(JSON.stringify(stored.value.record)) !== reference.byteLength)
           return { status: 'blocked', reason: 'corrupt' };
+        if (!judgeMatchesAssertion(stored.value.record, safe.value.assertions)) return { status: 'blocked', reason: 'corrupt' };
       }
       const valid = this.safeManifest(updated.value); if (valid.status !== 'ok') return valid;
       await this.dependencies.files.write(this.paths.attempt(suiteId, runId, safe.value.caseId, safe.value.number), safe.value);

@@ -1,4 +1,5 @@
-import type { Attempt, DeliveredToolEvidence, EvidenceField, ModelCallEvidence, SourceEvidence, StoredSourceRecord } from './contracts.js';
+import type { Attempt, DeliveredToolEvidence, EvidenceField, JudgeExchangeEvidence, ModelCallEvidence, SourceEvidence, StoredSourceRecord } from './contracts.js';
+import { judgeMatchesAssertion } from './source-artifact.js';
 
 const INLINE_BYTES = 350;
 
@@ -23,6 +24,7 @@ export function selectedSourceEvidence(attempt: Attempt, assertionId: string,
   const modelCalls: ModelCallEvidence[] = [];
   const toolEvents: DeliveredToolEvidence[] = [];
   const approvedFacts: SourceEvidence['approvedFacts'][number][] = [];
+  let judge: JudgeExchangeEvidence | undefined;
   for (const stored of records) {
     const source = stored.record;
     const hidden = (key: string): boolean => source.redactedFields?.some(field => field === key) ?? false;
@@ -40,8 +42,19 @@ export function selectedSourceEvidence(attempt: Attempt, assertionId: string,
       toolEvents.push({ id: source.id, modelCallId: source.modelCallId, sequence: stored.sequence, name: source.name,
         request: field(source.id, 'request', JSON.stringify(source.request), hidden('request')),
         result: field(source.id, 'result', JSON.stringify(source.result), hidden('result')), outcome: source.outcome });
+    } else {
+      if (judge) return undefined;
+      if (!judgeMatchesAssertion(source, attempt.assertions)) return undefined;
+      const available = (key: 'response' | 'rationale'): EvidenceField => hidden(key)
+        ? { status: 'gap', reason: 'redacted' }
+        : source[key] === undefined ? { status: 'gap', reason: 'not-captured' } : field(source.id, key, source[key], false);
+      judge = { version: 1, judgeModel: source.judgeModel,
+        evaluatedRubric: field(source.id, 'evaluatedRubric', source.evaluatedRubric, hidden('evaluatedRubric')),
+        request: field(source.id, 'request', source.request, hidden('request')),
+        response: available('response'), rationale: available('rationale'),
+        ...(source.result.status === 'grading-error' ? { error: { code: source.result.code } } : {}) };
     }
   }
-  return { version: 2, assertionId, modelCalls, toolEvents, approvedFacts,
+  return { version: 2, assertionId, modelCalls, toolEvents, approvedFacts, ...(judge ? { judge } : {}),
     gaps: capture.gaps.map(gap => ({ ...gap })) };
 }
