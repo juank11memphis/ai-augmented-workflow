@@ -3,6 +3,7 @@ import type { ArtifactStorePort } from '../run-history/contracts.js';
 import type { ArtifactReadinessPort, CaseInputResolverPort } from '../run-configuration.js';
 import type { RunnerDescriptorPort, SuiteRuntimeRegistryPort } from '../runtime-ports.js';
 import type { StartEvalRunResult } from './result.js';
+import type { ModelRole } from '../resolve-eval-run-selection/result.js';
 import type { OrderedRunPlan } from '../run-execution/contracts.js';
 
 export type StartRunDiagnostic = {
@@ -10,6 +11,8 @@ export type StartRunDiagnostic = {
   readonly stage: 'run-start';
   readonly outcome: 'blocked' | 'queued';
   readonly reason?: Extract<StartEvalRunResult, { status: 'blocked' }>['reason'];
+  readonly caseId?: string;
+  readonly role?: ModelRole;
   readonly reference?: string;
   readonly runId?: string;
   readonly durationMs: number;

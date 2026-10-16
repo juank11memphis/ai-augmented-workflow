@@ -114,9 +114,9 @@ test('preview retains observed runner boundary categories without guessing a pro
         logger: { record: (event) => { events.push(event); } },
       });
     const unavailable = await preview({ ...selected, defaultTestedModel: 'fake/not-advertised' });
-    assert.deepEqual(unavailable, { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested' });
+    assert.deepEqual(unavailable, { status: 'blocked', stage: 'description', reason: 'saved-model-unavailable', caseId: 'case', role: 'tested', source: 'suite-default' });
     const missingDefault = await preview({ ...selected, defaultTestedModel: undefined });
-    assert.deepEqual(missingDefault, { status: 'blocked', stage: 'selection', reason: 'missing-suite-default', caseId: 'case', role: 'tested' });
+    assert.deepEqual(missingDefault, { status: 'blocked', stage: 'selection', reason: 'missing-suite-default', caseId: 'case', role: 'tested', source: 'suite-default' });
     const expectBlocked = async (reason: string, stage: string, candidate = selected, requestBytes?: number) => {
       const result = await preview(candidate, requestBytes);
       assert.deepEqual(result, { status: 'blocked', stage, reason });
