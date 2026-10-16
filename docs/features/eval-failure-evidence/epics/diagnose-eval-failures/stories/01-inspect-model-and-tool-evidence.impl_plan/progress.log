@@ -1,0 +1,3 @@
+Plan review 1 | EFE-S01-plan-v1 | findings F1 runner producer documentation (T02/T04), F2 redaction marker scenario (T01/T05), F3 per-Task source-size gate (T01–T05) | bounded planner revision requested | no execution or commits
+Plan revision 1 | EFE-S01-plan-v2 | F1 adds runner contract/template guidance and check, F2 adds redaction marker evidence, F3 adds pre-commit size checks per Task | fresh independent review requested | no execution or commits
+Plan review 2 | EFE-S01-plan-v2 | all categories none; F1/F2/F3 resolved; unresolved risks none | main agent accepted exact unchanged v2 through clean-review rule | no Task execution yet
