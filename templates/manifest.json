@@ -1,5 +1,5 @@
 {
-  "templateVersion": "230",
+  "templateVersion": "231",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "9",
+      "version": "10",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Documents exact rubric-judge exchange records, scored and scoreless grading outcomes, evidence completeness, and safe capture for future runs."
+        "Adds the version-3 tested-model response emission contract, failure-path fixture, and explicit missing-response guidance."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {
