@@ -96,3 +96,43 @@ for (const scenario of ['malformed', 'non-success', 'adapter-failure', 'unavaila
     } finally { await project.cleanup(); }
   });
 }
+
+test('incomplete approximate-price is diagnosable from its saved target-2 response without an assertion field read', async () => {
+  const project = await offlineProject();
+  try {
+    const suitePath = path.join(project.root, 'evals/offline.json');
+    const suite = JSON.parse(await readFile(suitePath, 'utf8')) as { testCases: { id: string; name: string }[] };
+    suite.testCases = [{ ...suite.testCases[0]!, id: 'approximate-price', name: 'Approximate price' }];
+    await writeFile(suitePath, JSON.stringify(suite));
+    await project.changeRunner(runner('malformed').replaceAll('call-1', 'target-2'));
+
+    const run = invoke(project.root, 'run'); safe(run);
+    const runId = run.json.runId as string;
+    assert.ok(runId);
+    const selected = invoke(project.root, 'result', runId, '--case', 'approximate-price', '--attempt', '1');
+    safe(selected);
+    assert.equal(selected.json.status, 'ready');
+
+    const runRoot = path.join(project.root, 'evals/artifacts/offline', runId);
+    const manifest = JSON.parse(await readFile(path.join(runRoot, 'run.json'), 'utf8')) as { state: string };
+    const attempt = JSON.parse(await readFile(path.join(runRoot, 'cases/approximate-price/1.json'), 'utf8')) as {
+      outcome: string; diagnostics: string[]; assertions: unknown[];
+      providerResponses: { records: { callId: string; locator: string }[] };
+    };
+    assert.equal(manifest.state, 'error');
+    assert.equal(attempt.outcome, 'incomplete');
+    assert.deepEqual(attempt.assertions, []);
+    assert.ok(attempt.diagnostics.includes('malformed-output'));
+    const response = attempt.providerResponses.records.find(item => item.callId === 'target-2');
+    assert.ok(response);
+    assert.match(response.locator, /^offline\/[A-Za-z0-9._-]+\/responses\/[a-f0-9]{64}\.bin$/);
+    const savedResponse = await readFile(path.join(project.root, 'evals/artifacts', response.locator));
+    assert.deepEqual(savedResponse, Buffer.from(body));
+    assert.throws(() => JSON.parse(savedResponse.toString('utf8')), SyntaxError);
+
+    const assertionField = invoke(project.root, 'result', runId, '--case', 'approximate-price', '--attempt', '1',
+      '--assertion', 'contains', '--field', response.locator);
+    safe(assertionField);
+    assert.equal(assertionField.json.status, 'blocked');
+  } finally { await project.cleanup(); }
+});

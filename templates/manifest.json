@@ -1,5 +1,5 @@
 {
-  "templateVersion": "232",
+  "templateVersion": "233",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -331,10 +331,10 @@
       ]
     },
     "skills/agent-guided-evals/SKILL.md": {
-      "version": "4",
+      "version": "5",
       "description": "Mandatory shared Codex and Claude Code guidance for sequential troubleshooting of one Sibu eval case or a full suite.",
       "changes": [
-        "Guides explicit case override set/reset and unavailable-choice recovery with truthful per-case run results."
+        "Allows safe, targeted inspection of saved output, diagnostics, and raw responses for failed or incomplete eval attempts without requiring an assertion locator; paid reruns need explicit authorization."
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
