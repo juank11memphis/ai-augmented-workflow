@@ -9,6 +9,27 @@ import { FileArtifactReader } from './file-artifact-reader.js';
 import { InterruptedRunRecovery } from './interrupted-run-recovery.js';
 import type { SourceRecordWrite } from './contracts.js';
 export function historyReader(a: ReturnType<typeof fixture>) { return new FileArtifactReader(a.paths, a.reader, new InterruptedRunRecovery(a.owner, Date.now, a.store)); }
+it('reads an incomplete attempt without assertion and leaves legacy provenance unclassified', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const id = created.value.runId; await a.store.start('suite', id);
+    const base = evidence(id);
+    assert.equal((await a.store.append('suite', id, { ...base, outcome: 'incomplete', assertions: [],
+      diagnostics: ['malformed-output'], diagnosticLinks: [{ code: 'malformed-output', turnId: 'turn' }],
+      turns: [{ id: 'turn', role: 'assistant', content: 'unselected private body' }] })).status, 'ok');
+    await a.store.finalize('suite', id, 'error');
+    const selected = await historyReader(fixture(p.root)).get('suite', id, { caseId: 'case', attempt: 1 });
+    assert.equal(selected.status, 'ok'); if (selected.status !== 'ok') return;
+    assert.equal(selected.value.evidenceStatus, 'available');
+    assert.equal(selected.value.evidence?.outcome, 'incomplete');
+    assert.equal(selected.value.summary.failureProvenance, undefined);
+    assert.equal(selected.value.evidence?.failureProvenance, undefined);
+    assert.deepEqual(selected.value.evidence?.diagnosticLinks, [{ code: 'malformed-output', turnId: 'turn' }]);
+    const wrong = await historyReader(fixture(p.root)).get('suite', id, { caseId: 'other', attempt: 1 });
+    assert.equal(wrong.status === 'ok' && wrong.value.evidenceStatus, 'unavailable');
+  } finally { await p.cleanup(); }
+});
 it('reopens exact linked UTF-8 field ranges and rejects wrong assertions, gaps, and corrupt identity', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const created = await a.store.create(config);

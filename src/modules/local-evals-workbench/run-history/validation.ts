@@ -1,5 +1,6 @@
 import { LIMITS } from './limits.js';
 import type { Attempt, Manifest, RunConfiguration, HistoryIndex } from './contracts.js';
+import { validDiagnosticLink, validFailureProvenance } from './failure-provenance.js';
 export function logicalId(value: unknown): value is string {
   return typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/.test(value);
 }
@@ -38,9 +39,11 @@ function entry(v: unknown): boolean {
     && calls(v.calls) && amount(v.cost);
 }
 export function manifest(v: unknown): v is Manifest {
-  if (!record(v) || !configuration(v) || !entry(v) || v.version !== 1 || !keys(v, `${configKeys} ${entryKeys} version owner diagnostics cases`)
+  if (!record(v) || !configuration(v) || !entry(v) || v.version !== 1 || !keys(v, `${configKeys} ${entryKeys} version owner diagnostics cases failureProvenance`)
     || !record(v.owner) || !keys(v.owner, 'pid token') || !integer(v.owner.pid) || v.owner.pid < 1 || !logicalId(v.owner.token)
-    || !texts(v.diagnostics) || !Array.isArray(v.cases) || v.cases.length !== v.caseIds.length) return false;
+    || !texts(v.diagnostics) || v.failureProvenance !== undefined && (!validFailureProvenance(v.failureProvenance)
+      || v.state === 'queued' || v.state === 'running' || v.state === 'completed')
+    || !Array.isArray(v.cases) || v.cases.length !== v.caseIds.length) return false;
   const labeled = v.cases.some(c => record(c) && ('testedModel' in c || 'judgeModel' in c));
   if (labeled && !v.cases.every(c => record(c) && text(c.testedModel) && c.testedModel.length > 0
     && (c.judgeModel === null || text(c.judgeModel) && c.judgeModel.length > 0))) return false;
@@ -67,9 +70,14 @@ function validTotals(v: Record<string, unknown>): boolean {
   return true;
 }
 export function attempt(v: unknown): v is Attempt {
-  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics turns tools assertions review sourceCapture') || v.version !== 1
+  if (!record(v)) return false;
+  const diagnostics = v.diagnostics;
+  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture') || v.version !== 1
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
-    || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(v.diagnostics)) return false;
+    || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(diagnostics)
+    || v.diagnosticLinks !== undefined && (!Array.isArray(v.diagnosticLinks) || v.diagnosticLinks.length > LIMITS.diagnostics
+      || !v.diagnosticLinks.every(validDiagnosticLink) || !v.diagnosticLinks.every(link => diagnostics.includes(link.code)))
+    || v.failureProvenance !== undefined && (!validFailureProvenance(v.failureProvenance) || v.outcome !== 'incomplete')) return false;
   if (v.review !== undefined && (!record(v.review) || !keys(v.review, 'runPath suitePath targetPath runnerPath inputPaths omittedInputPathCount context')
     || v.review.context !== 'current-repo-files' || !reviewPath(v.review.runPath)
     || v.review.targetPath !== null && !reviewPath(v.review.targetPath)

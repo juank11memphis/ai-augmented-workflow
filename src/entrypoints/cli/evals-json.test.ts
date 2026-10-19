@@ -62,7 +62,12 @@ describe('evals JSON CLI adapter', () => {
       { type: 'evals:run', suiteId: 'suite', scope: { type: 'test_case', testCaseId: '../bad' }, model: 'm' },
       { type: 'evals:result', suiteId: 'suite', runId: '../bad' },
       { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case' },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', attempt: 1 },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', assertionId: 'assertion' },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: '../bad', attempt: 1 },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 1, assertionId: '../bad' },
       { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 0, assertionId: 'assertion' },
+      { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 1, field: 'call~rawText' },
       { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 1, assertionId: 'assertion', field: '../unsafe' },
       { type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 1, assertionId: 'assertion', offset: 3 },
       { type: 'evals:result', suiteId: 'suite', runId: 'run', locatorOffset: -1 },
@@ -146,6 +151,11 @@ describe('evals JSON CLI adapter', () => {
   });
 
   it('routes explicit attempt, field bytes, and locator continuation without reading files in the CLI', async () => {
+    const incomplete = await invoke({ type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 2 },
+      { status: 'ready', incompleteAttempt: { caseId: 'case', attempt: 2, state: 'incomplete' } });
+    assert.deepEqual(incomplete.calls, [{ operation: 'result', command: { suiteId: 'suite', runId: 'run',
+      selection: { caseId: 'case', attempt: 2 } } }]);
+    assert.equal(incomplete.json.status, 'ready');
     const selected = await invoke({ type: 'evals:result', suiteId: 'suite', runId: 'run', caseId: 'case', attempt: 2,
       assertionId: 'assertion', field: 'call~rawText', offset: 17 },
     { status: 'ready', summary: { suiteId: 'suite', runId: 'run' }, field: { locator: 'call~rawText', offset: 17,

@@ -1,5 +1,5 @@
 import { mkdir } from 'node:fs/promises';
-import type { ArtifactStorePort, ArtifactLogger, Attempt, Manifest, Outcome, OwnerPort, RunConfiguration, RunState, SourceReference, SourceRecordWrite } from './contracts.js';
+import type { ArtifactStorePort, ArtifactLogger, Attempt, FailureProvenance, Manifest, Outcome, OwnerPort, RunConfiguration, RunState, SourceReference, SourceRecordWrite } from './contracts.js';
 import { ArtifactFault, component, failure } from './artifact-paths.js';
 import { AtomicArtifactFile, SafetyFault } from './atomic-artifact-file.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
@@ -83,11 +83,11 @@ export class FileArtifactStore implements ArtifactStorePort {
       });
     } catch (error) { return error instanceof SafetyFault ? { status: 'blocked', reason: error.reason } : failure(error); }
   }
-  async finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[]): Promise<Outcome<Manifest>> {
+  async finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[], failureProvenance?: FailureProvenance): Promise<Outcome<Manifest>> {
     if (!['completed', 'partial', 'blocked', 'error', 'interrupted'].includes(state)) return { status: 'blocked', reason: 'invalid-transition' };
     return this.update(suiteId, runId, async run => {
       const integrity = await this.attemptIntegrity(run); if (!integrity) return { status: 'blocked', reason: 'corrupt' };
-      return transition(run, state, this.dependencies.clock(), diagnostics);
+      return transition(run, state, this.dependencies.clock(), diagnostics, failureProvenance);
     });
   }
   async recover(suiteId: string, runId: string): Promise<Outcome<Manifest>> {
