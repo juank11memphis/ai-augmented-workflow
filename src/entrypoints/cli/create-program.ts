@@ -51,10 +51,10 @@ export function createProgram(): CommanderCommand {
       action: options.reset ? 'reset' : 'set', ...(options.set !== undefined ? { modelId: options.set } : {}),
     }));
   evals.command('result <suite> <run>').description('Read bounded run evidence as JSON')
-    .option('--case <case_id>', 'Selected failed case')
-    .option('--attempt <number>', 'Selected attempt (requires --case and --assertion)', Number)
+    .option('--case <case_id>', 'Selected failed or incomplete case (requires --attempt)')
+    .option('--attempt <number>', 'Selected attempt (requires --case)', Number)
     .option('--assertion <assertion_id>', 'Selected failed assertion (requires --case and --attempt)')
-    .option('--field <locator>', 'Retained evidence field (requires a full selection)')
+    .option('--field <locator>', 'Retained assertion evidence field (requires --assertion)')
     .option('--offset <byte>', 'UTF-8 byte offset for --field', Number)
     .option('--locator-offset <number>', 'Continue the ordered failed-assertion locator list', Number)
     .action((suiteId: string, runId: string, options: { case?: string; attempt?: number; assertion?: string; field?: string; offset?: number; locatorOffset?: number }) => executeCliCommand({

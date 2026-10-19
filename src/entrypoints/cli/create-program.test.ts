@@ -23,6 +23,9 @@ describe('createProgram', () => {
     const result = createProgram().commands.find(command => command.name() === 'evals')?.commands.find(command => command.name() === 'result');
     assert.ok(result);
     assert.deepEqual(result.options.map(option => option.long), ['--case', '--attempt', '--assertion', '--field', '--offset', '--locator-offset']);
+    assert.match(result.options.find(option => option.long === '--attempt')!.description, /requires --case/);
+    assert.doesNotMatch(result.options.find(option => option.long === '--attempt')!.description, /--assertion/);
+    assert.match(result.options.find(option => option.long === '--field')!.description, /requires --assertion/);
   });
 
   it('registers the mcp list command', () => {
