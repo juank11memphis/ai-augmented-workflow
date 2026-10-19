@@ -171,6 +171,16 @@ This deterministic fixture shows an observation emitted before malformed-output 
 
 The `fake`/`bad` values are synthetic. This fixture proves contract acceptance, not live-provider emission. Existing GeniusCR code-only output needs a **separate project-side runner update** to capture and emit bytes on failure paths. Sibu cannot reconstruct historical responses from those codes.
 
+### Version-3 judge responses and failure gaps
+
+For **both** the tested-model and judge roles, observe response bytes before parsing or grading, including non-success responses. Emit an observation before a malformed-output diagnostic or `rubric-judgment-error`; a grading error is not a completed judgment or a score. A judge response carries `role: "judge"`, the selected `modelId`, and the rubric `checkId` in addition to the call and provisional-turn IDs. Do not attach a judge response to an assertion or invent a completed turn. This runnable synthetic fixture uses the same version-3 execute envelope and active case/attempt as the tested-model fixture:
+
+```judge-response-json
+{"observed":[{"type":"provider-response-started","data":{"role":"judge","checkId":"quality","modelId":"fake/judge","callId":"judge-1","provisionalTurnId":"pending-turn","contentType":"application/json","originalByteLength":3}},{"type":"provider-response-chunk","data":{"callId":"judge-1","index":0,"base64":"YmFk"}},{"type":"provider-response-completed","data":{"callId":"judge-1","completeness":"complete"}},{"type":"rubric-judgment-error","data":{"checkId":"quality","judgeModel":"fake/judge","code":"malformed-score"}}],"unavailable":[{"type":"provider-response-gap","data":{"role":"judge","checkId":"quality","modelId":"fake/judge","callId":"judge-2","provisionalTurnId":"pending-turn","reason":"not-observed"}},{"type":"rubric-judgment-error","data":{"checkId":"quality","judgeModel":"fake/judge","code":"no-response"}}]}
+```
+
+When no response arrives, emit `not-observed`; when one arrives but the runner cannot emit it, use `not-emitted`; when capture fails, use `capture-failed`. An emitted observation rejected by Sibu's protocol validator, or accepted but not persisted, is a **Sibu-side** rejected/not-persisted gap where known—not a runner claim that no provider response arrived. If the runner cannot distinguish these states, report only the observed boundary. Older v1/v2 runners cannot supply v3 observations; missing bytes from them are `not-captured`. Keep bodies out of stderr, diagnostics, routine JSON and logs; only selected bounded source-field reads expose safely retained bytes. This example proves protocol shape, not that a real project runner emits it.
+
 ## Project-owned implementation
 
 After commands/results, define injected ports for target/model invocation, separately selected judge invocation, mock-tool dispatch and safe event emission. Implement a transport-agnostic handler, project-specific SDK/framework adapters, then thin stdin/stdout entrypoint and separate composition wiring. Handlers do not construct clients or access process/filesystem globals. Do not import Sibu slice internals or add a Sibu runtime generator.
