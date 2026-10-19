@@ -102,18 +102,18 @@ test('startup, idle, and overall timers terminate active invocations', async () 
     await project.changeRunner(`process.on('SIGTERM',()=>{}); setInterval(()=>{},1000);`);
     const startup = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS,
       startupMs: 100, idleMs: 500, overallMs: 1000, cleanupMs: 40 }).execute(selection, async () => undefined);
-    assert.deepEqual(startup, { status: 'error', reason: 'runner-timeout' });
+    assert.deepEqual(startup, { status: 'error', reason: 'runner-timeout', failureProvenance: { stage: 'timeout' } });
     const running = `let raw=''; for await(const c of process.stdin) raw+=c; const q=JSON.parse(raw); let n=0;
       function emit(type,data){process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,sequence:n++,type,runId:q.runId,caseId:null,attempt:null,data})+'\\n');}
       emit('run-started',{model:q.model,judgeModel:null}); process.on('SIGTERM',()=>{});`;
     await project.changeRunner(running + `setInterval(()=>{},1000);`);
     const idle = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS,
       startupMs: 500, idleMs: 100, overallMs: 1000, cleanupMs: 40 }).execute(selection, async () => undefined);
-    assert.deepEqual(idle, { status: 'error', reason: 'runner-timeout' });
+    assert.deepEqual(idle, { status: 'error', reason: 'runner-timeout', failureProvenance: { stage: 'timeout' } });
     await project.changeRunner(running + `setInterval(()=>emit('run-diagnostic',{code:'working',message:'Still working'}),30);`);
     const overall = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS,
       startupMs: 500, idleMs: 150, overallMs: 200, cleanupMs: 40 }).execute(selection, async () => undefined);
-    assert.deepEqual(overall, { status: 'error', reason: 'runner-timeout' });
+    assert.deepEqual(overall, { status: 'error', reason: 'runner-timeout', failureProvenance: { stage: 'timeout' } });
   });
 });
 
@@ -131,7 +131,7 @@ test('timeout settles when a descendant keeps the runner output pipes open', asy
     const started = Date.now();
     const result = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS,
       startupMs: 500, idleMs: 120, overallMs: 800, cleanupMs: 60 }).execute(selection, async event => { received.push(event); });
-    assert.deepEqual(result, { status: 'error', reason: 'runner-timeout' });
+    assert.deepEqual(result, { status: 'error', reason: 'runner-timeout', failureProvenance: { stage: 'timeout' } });
     assert.equal(received.at(-1)?.type, 'case-completed');
     assert.ok(Date.now() - started < 700, 'execution settles before the descendant closes its pipes');
   });
@@ -152,7 +152,7 @@ test('protocol failure settles when a descendant keeps the runner output pipes o
     const started = Date.now();
     const result = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS,
       startupMs: 500, idleMs: 800, overallMs: 1000, cleanupMs: 60 }).execute(selection, async event => { received.push(event); });
-    assert.deepEqual(result, { status: 'error', reason: 'runner-protocol-invalid' });
+    assert.deepEqual(result, { status: 'error', reason: 'runner-protocol-invalid', failureProvenance: { stage: 'protocol-rejection' } });
     assert.equal(received.at(-1)?.type, 'case-completed');
     assert.ok(Date.now() - started < 700, 'protocol failure settles before the descendant closes its pipes');
   });
@@ -171,6 +171,6 @@ test('stderr and retained output limits reject oversized evidence', async () => 
       emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
       emit('conversation-turn-completed','first',{turnIndex:0,role:'assistant',output:'x'.repeat(9000)});`);
     const output = await new ProjectRunnerExecuteAdapter(project.root).execute(selection, async () => undefined);
-    assert.deepEqual(output, { status: 'error', reason: 'runner-protocol-invalid' });
+    assert.deepEqual(output, { status: 'error', reason: 'runner-protocol-invalid', failureProvenance: { stage: 'protocol-rejection' } });
   });
 });

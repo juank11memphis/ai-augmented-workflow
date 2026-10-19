@@ -5,6 +5,7 @@ import path from 'node:path';
 import { declaredRunnerFile } from '../discover-conventional-eval-suites/index.js';
 import type { RunnerExecutorPort } from '../execute-eval-run/ports.js';
 import type { ExecutionEvent, ExecutionSelection, RunnerExecutionOutcome } from '../run-execution/contracts.js';
+import type { FailureProvenance } from '../run-history/contracts.js';
 import type { PreviewLoggerPort } from '../runtime-ports.js';
 import { runnerEnvironment } from './environment.js';
 import { ExecuteEventValidator } from './execute-events.js';
@@ -44,6 +45,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
     let consumerFailure: unknown;
     let stderrBytes = 0;
     let firstEvent = false;
+    let runnerReport: Extract<ExecutionEvent, { type: 'run-completed' }> | undefined;
     const stream = new BoundedExecuteStream(this.limits);
     let forceKill: NodeJS.Timeout | undefined;
     let settleAbort: (() => void) | undefined;
@@ -81,6 +83,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
             if (!firstEvent) { firstEvent = true; clearTimeout(startup); }
             resetIdle();
             if (event.type === 'source-chunk-accepted') return;
+            if (event.type === 'run-completed') runnerReport = event;
             try { await consume(event); }
             catch (error) { consumerFailure = error; throw error; }
           });
@@ -99,8 +102,15 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       const sourceGap = validator.incompleteSource;
       if (sourceGap) await consume(sourceGap);
       const status = failure ? 'error' : validator.completion!;
+      const failureProvenance: FailureProvenance | undefined = failure === 'runner-timeout' ? { stage: 'timeout' }
+        : failure === 'runner-protocol-invalid' ? { stage: 'protocol-rejection' }
+        : runnerReport && runnerReport.status !== 'completed' ? { stage: 'runner-report',
+          runnerReport: { status: runnerReport.status, ...(runnerReport.code ? { code: runnerReport.code } : {}) },
+          ...(failure === 'runner-exited' ? { processExit: { code } } : {}) }
+        : failure === 'runner-exited' ? { stage: 'unexpected-process-exit', processExit: { code } }
+        : undefined;
       log('eval_runner_execute_finished', failure ?? status);
-      return { status, ...(failure ? { reason: failure } : {}) };
+      return { status, ...(failure ? { reason: failure } : {}), ...(failureProvenance ? { failureProvenance } : {}) };
     } finally {
       clearTimeout(startup); clearTimeout(idle); clearTimeout(overall); clearTimeout(forceKill);
       if (failure && child.exitCode === null) child.kill('SIGKILL');

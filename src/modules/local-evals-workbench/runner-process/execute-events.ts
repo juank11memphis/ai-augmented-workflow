@@ -71,12 +71,14 @@ export class ExecuteEventValidator {
         ...(this.activeCase ? { attempt: this.attemptNumber } : {}) };
     }
     if (raw.type === 'run-completed') {
-      if (raw.caseId !== null || raw.attempt !== null || !keys(data, ['status'])
-        || !['completed', 'error', 'interrupted'].includes(String(data.status))) throw new Error('invalid-run-end');
+      if (raw.caseId !== null || raw.attempt !== null || !keys(data, ['status', 'code'])
+        || !['completed', 'error', 'interrupted'].includes(String(data.status))
+        || data.code !== undefined && (data.status !== 'error' && data.status !== 'interrupted'
+          || typeof data.code !== 'string' || !/^[a-z][a-z0-9-]{0,79}$/.test(data.code))) throw new Error('invalid-run-end');
       if (data.status === 'completed' && (this.activeCase || this.caseIndex !== this.selection.cases.length || this.chunks.incompleteId)) throw new Error('incomplete-run');
       this.terminal = data.status as 'completed' | 'error' | 'interrupted';
       this.state = 'finished';
-      return { type: 'run-completed', status: this.terminal };
+      return { type: 'run-completed', status: this.terminal, ...(data.code === undefined ? {} : { code: data.code as string }) };
     }
     if (this.failedCase) throw new Error('case-already-failed');
     if (raw.attempt !== this.attemptNumber || raw.caseId !== (this.activeCase ?? this.selection.cases[this.caseIndex]?.id)) throw new Error('invalid-case');

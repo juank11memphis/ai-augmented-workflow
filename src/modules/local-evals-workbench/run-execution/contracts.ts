@@ -32,7 +32,7 @@ export type ExecutionEvent = SourceExecutionEvent
   | { readonly type: 'grader-completed'; readonly caseId: string; readonly attempt: number; readonly checkId: string; readonly grader: 'custom' | 'rubric'; readonly passed: boolean; readonly score: number | null; readonly threshold?: number; readonly judgeModel?: string; readonly evidence: string; readonly diagnostics: readonly string[]; readonly sequence?: number }
   | { readonly type: 'grading-error'; readonly caseId: string; readonly attempt: number; readonly checkId: string; readonly judgeModel: string; readonly code: string; readonly sequence: number }
   | { readonly type: 'case-completed'; readonly caseId: string; readonly attempt?: number; readonly status: 'completed' | 'error'; readonly calls?: number | null; readonly cost?: number | null; readonly sourceCapture?: 'complete' | 'not-captured' | 'incomplete' }
-  | { readonly type: 'run-completed'; readonly status: 'completed' | 'error' | 'interrupted' }
+  | { readonly type: 'run-completed'; readonly status: 'completed' | 'error' | 'interrupted'; readonly code?: string }
   | { readonly type: 'diagnostic'; readonly code: string; readonly caseId: string | null; readonly attempt?: number | null;
       readonly turnId?: string; readonly callId?: string };
 export type SourceRecord =
