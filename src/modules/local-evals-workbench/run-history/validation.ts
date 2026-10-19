@@ -98,8 +98,10 @@ export function attempt(v: unknown): v is Attempt {
       && enumValue(item.reason, ['incomplete', 'capture-failed']) && (item.recordId === undefined || logicalId(item.recordId))))) return false;
   if (v.providerResponses !== undefined && (!record(v.providerResponses) || !keys(v.providerResponses, 'records gaps')
     || !Array.isArray(v.providerResponses.records) || v.providerResponses.records.length > LIMITS.evidenceItems
-    || !v.providerResponses.records.every(item => record(item) && keys(item, 'callId provisionalTurnId status locator byteLength contentType originalByteLength')
+    || !v.providerResponses.records.every(item => record(item) && keys(item, 'callId provisionalTurnId role checkId status locator byteLength contentType originalByteLength')
       && logicalId(item.callId) && logicalId(item.provisionalTurnId)
+      && (item.role === undefined || enumValue(item.role, ['tested-model', 'judge']))
+      && (item.role === 'judge' ? logicalId(item.checkId) : item.checkId === undefined)
       && enumValue(item.status, ['complete', 'truncated', 'incomplete'])
       && typeof item.locator === 'string' && item.locator.length > 0 && item.locator.length <= 400
       && !/[\u0000-\u001f\u007f]/.test(item.locator) && integer(item.byteLength, LIMITS.sourceRecordBytes)
@@ -110,9 +112,11 @@ export function attempt(v: unknown): v is Attempt {
       && (item.status !== 'complete' || item.originalByteLength === undefined || item.originalByteLength === item.byteLength))
     || new Set(v.providerResponses.records.map(item => item.callId)).size !== v.providerResponses.records.length
     || !Array.isArray(v.providerResponses.gaps) || v.providerResponses.gaps.length > LIMITS.evidenceItems
-    || !v.providerResponses.gaps.every(item => record(item) && keys(item, 'callId provisionalTurnId reason')
+    || !v.providerResponses.gaps.every(item => record(item) && keys(item, 'callId provisionalTurnId role checkId reason')
       && logicalId(item.callId) && logicalId(item.provisionalTurnId)
-      && enumValue(item.reason, ['not-observed', 'not-emitted', 'capture-failed', 'incomplete']))
+      && (item.role === undefined || enumValue(item.role, ['tested-model', 'judge']))
+      && (item.role === 'judge' ? logicalId(item.checkId) : item.checkId === undefined)
+      && enumValue(item.reason, ['not-observed', 'not-emitted', 'not-persisted', 'capture-failed', 'incomplete']))
     || new Set(v.providerResponses.gaps.map(item => item.callId)).size !== v.providerResponses.gaps.length
     || v.providerResponses.gaps.some(gap => (v.providerResponses as { records: { callId: string }[] }).records
       .some(item => item.callId === gap.callId)))) return false;

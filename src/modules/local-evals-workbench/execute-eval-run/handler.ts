@@ -26,9 +26,12 @@ type Current = { caseId: string; number: number; began: number; turns: TurnEvide
   providerResponses: ProviderResponseReference[]; providerResponseGaps: ProviderResponseGap[] };
 
 function validResponseLink(current: Current | undefined, event: Extract<ExecutionEvent,
-  { type: 'provider-response-observed' | 'provider-response-gap' }>): current is Current {
+  { type: 'provider-response-observed' | 'provider-response-gap' }>, rubricChecks: readonly string[]): current is Current {
   return !!current && current.caseId === event.caseId && current.number === event.attempt
     && logicalId(event.callId) && logicalId(event.provisionalTurnId)
+    && (event.role === undefined || event.role === 'tested-model' || event.role === 'judge')
+    && (event.role === 'judge' ? logicalId(event.checkId) && rubricChecks.includes(event.checkId)
+      : event.checkId === undefined)
     && !current.providerResponses.some(item => item.callId === event.callId)
     && !current.providerResponseGaps.some(item => item.callId === event.callId);
 }
@@ -102,7 +105,8 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], gradingErrors: [], output: '', diagnostics: [], diagnosticLinks: [], sourceRecords: [], sourceGaps: [], providerResponses: [], providerResponseGaps: [] };
       await persist(evidence('incomplete'));
     } else if (event.type === 'provider-response-observed') {
-      if (!validResponseLink(current, event) || !(event.bytes instanceof Uint8Array)
+      if (!validResponseLink(current, event, cases[caseIndex]!.graders.filter(item => item.type === 'rubric').map(item => item.id))
+        || event.role === 'judge' && !activeJudge || !(event.bytes instanceof Uint8Array)
         || event.bytes.byteLength > LIMITS.sourceRecordBytes
         || event.contentType !== undefined && (typeof event.contentType !== 'string' || Buffer.byteLength(event.contentType) > 256)
         || event.originalByteLength !== undefined && (!Number.isSafeInteger(event.originalByteLength)
@@ -115,6 +119,8 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         if (ports.store.saveProviderResponse) saved = await ports.store.saveProviderResponse({
           suiteId: suite.id, runId, caseId: current.caseId, attempt: current.number, callId: event.callId,
           provisionalTurnId: event.provisionalTurnId, bytes: event.bytes, completeness: event.completeness,
+          ...(event.role === undefined ? {} : { role: event.role }),
+          ...(event.checkId === undefined ? {} : { checkId: event.checkId }),
           ...(event.contentType === undefined ? {} : { contentType: event.contentType }),
           ...(event.originalByteLength === undefined ? {} : { originalByteLength: event.originalByteLength }),
         });
@@ -122,20 +128,29 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       if (saved.status === 'ok') {
         const reference = saved.value;
         if (reference.callId !== event.callId || reference.provisionalTurnId !== event.provisionalTurnId
+          || reference.role !== undefined && reference.role !== event.role
+          || reference.checkId !== undefined && reference.checkId !== event.checkId
           || reference.status !== event.completeness || reference.byteLength !== event.bytes.byteLength
           || reference.contentType !== event.contentType || reference.originalByteLength !== event.originalByteLength
           || !reference.locator) throw new PersistenceStopped();
-        current.providerResponses.push(reference);
+        current.providerResponses.push({ ...reference,
+          ...(event.role === undefined ? {} : { role: event.role }),
+          ...(event.checkId === undefined ? {} : { checkId: event.checkId }) });
       } else {
-        current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId, reason: 'capture-failed' });
+        current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId,
+          ...(event.role === undefined ? {} : { role: event.role }),
+          ...(event.checkId === undefined ? {} : { checkId: event.checkId }), reason: 'not-persisted' });
         addDiagnostic(current.diagnostics, 'provider-response-capture-failed');
       }
       await persist(evidence('incomplete'));
     } else if (event.type === 'provider-response-gap') {
-      if (!validResponseLink(current, event)
+      if (!validResponseLink(current, event, cases[caseIndex]!.graders.filter(item => item.type === 'rubric').map(item => item.id))
+        || event.role === 'judge' && !activeJudge
         || !['not-observed', 'not-emitted', 'capture-failed', 'incomplete'].includes(event.reason))
         throw new Error('provider-response-gap-link');
-      current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId, reason: event.reason });
+      current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId,
+        ...(event.role === undefined ? {} : { role: event.role }),
+        ...(event.checkId === undefined ? {} : { checkId: event.checkId }), reason: event.reason });
       await persist(evidence('incomplete'));
     } else if (event.type === 'source-record') {
       if (!current || current.caseId !== event.caseId || current.number !== event.attempt
