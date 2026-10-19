@@ -1,10 +1,10 @@
 import type { ExecuteEvalRunCommand } from './command.js';
 import type { ExecuteEvalRunResult } from './result.js';
 import type { ExecuteEvalRunDependencies } from './ports.js';
-import type { Attempt, DiagnosticLink, FailureProvenance, RunState, SourceReference, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
+import type { Attempt, DiagnosticLink, FailureProvenance, ProviderResponseGap, ProviderResponseReference, RunState, SourceReference, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
 import type { ExecutionEvent, RunnerExecutionOutcome } from '../run-execution/contracts.js';
 import { normalizeGraderOutcome, normalizeGraderOutcomes, validJudgeSource } from '../run-execution/attempt-evidence.js';
-import { boundedJson, attempt as validAttempt } from '../run-history/validation.js';
+import { boundedJson, attempt as validAttempt, logicalId } from '../run-history/validation.js';
 import { LIMITS } from '../run-history/limits.js';
 import { reviewSources } from './review-sources.js';
 import { executionBatches } from '../run-execution/batches.js';
@@ -22,7 +22,16 @@ class EvidenceLimitStopped extends Error {}
 type Current = { caseId: string; number: number; began: number; turns: TurnEvidence[]; tools: ToolEvidence[];
   graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[]; diagnosticLinks: DiagnosticLink[];
   gradingErrors: Extract<ExecutionEvent, { type: 'grading-error' }>[];
-  sourceRecords: SourceReference[]; sourceGaps: { reason: 'incomplete' | 'capture-failed'; recordId?: string }[] };
+  sourceRecords: SourceReference[]; sourceGaps: { reason: 'incomplete' | 'capture-failed'; recordId?: string }[];
+  providerResponses: ProviderResponseReference[]; providerResponseGaps: ProviderResponseGap[] };
+
+function validResponseLink(current: Current | undefined, event: Extract<ExecutionEvent,
+  { type: 'provider-response-observed' | 'provider-response-gap' }>): current is Current {
+  return !!current && current.caseId === event.caseId && current.number === event.attempt
+    && logicalId(event.callId) && logicalId(event.provisionalTurnId)
+    && !current.providerResponses.some(item => item.callId === event.callId)
+    && !current.providerResponseGaps.some(item => item.callId === event.callId);
+}
 
 function observedFailure(outcome: RunnerExecutionOutcome, terminal: 'completed' | 'error' | 'interrupted' | undefined): FailureProvenance | undefined {
   if (outcome.failureProvenance !== undefined) {
@@ -82,13 +91,51 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       truncated: false, diagnostics: [...current.diagnostics], diagnosticLinks: [...current.diagnosticLinks],
       ...(failureProvenance ? { failureProvenance } : {}), turns: [...current.turns], tools: [...current.tools], assertions: visibleAssertions,
       sourceCapture: { records: [...current.sourceRecords], gaps: [...current.sourceGaps] },
+      ...(current.providerResponses.length || current.providerResponseGaps.length ? { providerResponses: {
+        records: [...current.providerResponses], gaps: [...current.providerResponseGaps] } } : {}),
       review: reviewSources(command, current.caseId) };
   };
   const consume = async (event: ExecutionEvent): Promise<void> => {
     if (terminal) throw new Error('event-after-terminal');
     if (event.type === 'case-started') {
       if (current || cases[caseIndex]?.id !== event.caseId || (event.attempt ?? 1) !== attemptNumber) throw new Error('attempt-order');
-      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], gradingErrors: [], output: '', diagnostics: [], diagnosticLinks: [], sourceRecords: [], sourceGaps: [] };
+      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], gradingErrors: [], output: '', diagnostics: [], diagnosticLinks: [], sourceRecords: [], sourceGaps: [], providerResponses: [], providerResponseGaps: [] };
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'provider-response-observed') {
+      if (!validResponseLink(current, event) || !(event.bytes instanceof Uint8Array)
+        || event.bytes.byteLength > LIMITS.sourceRecordBytes
+        || event.contentType !== undefined && (typeof event.contentType !== 'string' || Buffer.byteLength(event.contentType) > 256)
+        || event.originalByteLength !== undefined && (!Number.isSafeInteger(event.originalByteLength)
+          || event.originalByteLength < event.bytes.byteLength)
+        || event.completeness === 'complete' && event.originalByteLength !== undefined
+          && event.originalByteLength !== event.bytes.byteLength) throw new Error('provider-response-link');
+      let saved: Awaited<ReturnType<NonNullable<typeof ports.store.saveProviderResponse>>> =
+        { status: 'blocked', reason: 'unavailable' };
+      try {
+        if (ports.store.saveProviderResponse) saved = await ports.store.saveProviderResponse({
+          suiteId: suite.id, runId, caseId: current.caseId, attempt: current.number, callId: event.callId,
+          provisionalTurnId: event.provisionalTurnId, bytes: event.bytes, completeness: event.completeness,
+          ...(event.contentType === undefined ? {} : { contentType: event.contentType }),
+          ...(event.originalByteLength === undefined ? {} : { originalByteLength: event.originalByteLength }),
+        });
+      } catch { /* A failed body write is a gap only if its checkpoint can be saved. */ }
+      if (saved.status === 'ok') {
+        const reference = saved.value;
+        if (reference.callId !== event.callId || reference.provisionalTurnId !== event.provisionalTurnId
+          || reference.status !== event.completeness || reference.byteLength !== event.bytes.byteLength
+          || reference.contentType !== event.contentType || reference.originalByteLength !== event.originalByteLength
+          || !reference.locator) throw new PersistenceStopped();
+        current.providerResponses.push(reference);
+      } else {
+        current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId, reason: 'capture-failed' });
+        addDiagnostic(current.diagnostics, 'provider-response-capture-failed');
+      }
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'provider-response-gap') {
+      if (!validResponseLink(current, event)
+        || !['not-observed', 'not-emitted', 'capture-failed', 'incomplete'].includes(event.reason))
+        throw new Error('provider-response-gap-link');
+      current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId, reason: event.reason });
       await persist(evidence('incomplete'));
     } else if (event.type === 'source-record') {
       if (!current || current.caseId !== event.caseId || current.number !== event.attempt

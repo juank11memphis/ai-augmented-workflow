@@ -9,6 +9,7 @@ import { boundedArtifact } from './bounded-artifact.js';
 import { ArtifactSafetyAdapter } from './artifact-safety-adapter.js';
 import { judgeMatchesAssertion, sourceField, storedSourceRecord } from './source-artifact.js';
 import { selectedSourceEvidence } from './selected-source-evidence.js';
+import { ProviderResponseArtifact } from './provider-response-artifact.js';
 export class FileArtifactReader implements ArtifactReaderPort {
   constructor(private readonly paths: ArtifactPaths, private readonly reader: BoundedArtifactReader,
     private readonly recovery?: InterruptedRunRecovery) {}
@@ -69,6 +70,16 @@ export class FileArtifactReader implements ArtifactReaderPort {
       || Buffer.byteLength(JSON.stringify(value.record)) !== reference.byteLength) return { status: 'blocked', reason: 'corrupt' };
     if (!judgeMatchesAssertion(value.record, detail.value.evidence?.assertions ?? [])) return { status: 'blocked', reason: 'corrupt' };
     return stored;
+  }
+  async providerResponseRange(suiteId: string, runId: string, selection: Selection, locator: string, offset: number,
+    limit = LIMITS.providerResponseRangeBytes): Promise<Outcome<EvidenceFieldRange>> {
+    if (selection.assertionId !== undefined || !logicalId(selection.caseId) || selection.attempt !== 1 || typeof locator !== 'string')
+      return { status: 'blocked', reason: 'invalid-input' };
+    const detail = await this.get(suiteId, runId, selection);
+    if (detail.status !== 'ok') return detail;
+    const reference = detail.value.evidence?.providerResponses?.records.find(item => item.locator === locator);
+    if (!reference) return { status: 'blocked', reason: 'not-found' };
+    return new ProviderResponseArtifact(this.paths).range(suiteId, runId, selection.caseId, selection.attempt, reference, offset, limit);
   }
   async selectedSource(suiteId: string, runId: string, selection: Required<Selection>): Promise<Outcome<SourceEvidence | undefined>> {
     const selected = await this.get(suiteId, runId, { caseId: selection.caseId, attempt: selection.attempt });

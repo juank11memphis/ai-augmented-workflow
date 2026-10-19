@@ -10,6 +10,38 @@ const selection: ExecutionSelection = { runId: 'run', model: 'fake',
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases: [singleCase] }, cases: [singleCase] };
 const event = (sequence: number, type: string, caseId: string | null, data: unknown) =>
   ({ protocolVersion: 1, requestId: 'request', sequence, type, runId: 'run', caseId, attempt: caseId ? 1 : null, data });
+test('v3 accepts a provisional response before turn completion and rejects v2 opt-in events', () => {
+  const e = (sequence: number, type: string, caseId: string | null, data: unknown, version = 3) =>
+    ({ ...event(sequence, type, caseId, data), protocolVersion: version });
+  const validator = new ExecuteEventValidator('request', selection);
+  validator.accept(e(0, 'run-started', null, { model: 'fake', judgeModel: null }));
+  validator.accept(e(1, 'case-attempt-started', 'case', {}));
+  validator.accept(e(2, 'provider-response-started', 'case', { callId: 'call-1', provisionalTurnId: 'turn-1', modelId: 'fake', originalByteLength: 3 }));
+  validator.accept(e(3, 'provider-response-chunk', 'case', { callId: 'call-1', index: 0, base64: Buffer.from('bad').toString('base64') }));
+  const observed = validator.accept(e(4, 'provider-response-completed', 'case', { callId: 'call-1', completeness: 'complete' }));
+  assert.equal(observed.type, 'provider-response-observed');
+  if (observed.type === 'provider-response-observed') assert.deepEqual(observed.bytes, Buffer.from('bad'));
+  validator.accept(e(5, 'case-attempt-completed', 'case', { status: 'error', sourceEvidenceComplete: false }));
+  validator.accept(e(6, 'run-completed', null, { status: 'error', code: 'malformed-output' }));
+  const old = new ExecuteEventValidator('request', selection);
+  old.accept(e(0, 'run-started', null, { model: 'fake', judgeModel: null }, 2));
+  old.accept(e(1, 'case-attempt-started', 'case', {}, 2));
+  assert.throws(() => old.accept(e(2, 'provider-response-gap', 'case',
+    { callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'not-observed' }, 2)), /unsupported-event/);
+});
+test('v3 rejects a response event from another attempt without losing an earlier accepted response', () => {
+  const e = (sequence: number, type: string, data: unknown, attempt = 1) =>
+    ({ ...event(sequence, type, 'case', data), protocolVersion: 3, attempt });
+  const validator = new ExecuteEventValidator('request', selection);
+  validator.accept({ ...e(0, 'run-started', { model: 'fake', judgeModel: null }), caseId: null, attempt: null });
+  validator.accept(e(1, 'case-attempt-started', {}));
+  validator.accept(e(2, 'provider-response-started', { callId: 'call-1', provisionalTurnId: 'turn-1', modelId: 'fake' }));
+  validator.accept(e(3, 'provider-response-chunk', { callId: 'call-1', index: 0, base64: Buffer.from('valid').toString('base64') }));
+  assert.equal(validator.accept(e(4, 'provider-response-completed', { callId: 'call-1', completeness: 'complete' })).type,
+    'provider-response-observed');
+  assert.throws(() => validator.accept(e(5, 'provider-response-gap',
+    { callId: 'call-2', provisionalTurnId: 'turn-2', reason: 'not-observed' }, 2)), /invalid-case/);
+});
 test('valid ordered stream yields one completed case and terminal event', () => {
   const validator = new ExecuteEventValidator('request', selection);
   assert.equal(validator.accept(event(0, 'run-started', null, { model: 'fake', judgeModel: null })).type, 'run-started');

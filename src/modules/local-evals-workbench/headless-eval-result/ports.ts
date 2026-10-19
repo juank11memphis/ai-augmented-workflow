@@ -7,6 +7,8 @@ export type HeadlessEvalResultReaderPort = {
   readSource?(suiteId: string, runId: string, selection: Required<Selection>): Promise<Outcome<SourceEvidence | undefined>>;
   /** Reads only a locator exposed by the selected source, including judge fields. */
   readField?(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number, limit: number): Promise<Outcome<EvidenceFieldRange>>;
+  /** Reads a selected tested-model response; the adapter verifies the artifact reference. */
+  readProviderResponse?(suiteId: string, runId: string, selection: Selection, locator: string, offset: number, limit: number): Promise<Outcome<EvidenceFieldRange>>;
 };
 
 export type HeadlessEvalResultDependencies = { readonly reader: HeadlessEvalResultReaderPort };

@@ -1,5 +1,5 @@
 import { mkdir } from 'node:fs/promises';
-import type { ArtifactStorePort, ArtifactLogger, Attempt, FailureProvenance, Manifest, Outcome, OwnerPort, RunConfiguration, RunState, SourceReference, SourceRecordWrite } from './contracts.js';
+import type { ArtifactStorePort, ArtifactLogger, Attempt, FailureProvenance, Manifest, Outcome, OwnerPort, ProviderResponseReference, ProviderResponseWrite, RunConfiguration, RunState, SourceReference, SourceRecordWrite } from './contracts.js';
 import { ArtifactFault, component, failure } from './artifact-paths.js';
 import { AtomicArtifactFile, SafetyFault } from './atomic-artifact-file.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
@@ -11,6 +11,7 @@ import { serialized } from './active-run-owner.js';
 import { appendAttempt, transition } from './lifecycle.js';
 import { collectHistory, compact, indexFrom } from './history-index.js';
 import { judgeMatchesAssertion, storedSourceRecord } from './source-artifact.js';
+import { ProviderResponseArtifact } from './provider-response-artifact.js';
 export type StoreDependencies = {
   readonly files: AtomicArtifactFile; readonly reader: BoundedArtifactReader; readonly owner: OwnerPort;
   readonly clock: () => number; readonly logger: ArtifactLogger;
@@ -53,6 +54,11 @@ export class FileArtifactStore implements ArtifactStorePort {
           return { status: 'blocked', reason: 'corrupt' };
         if (!judgeMatchesAssertion(stored.value.record, safe.value.assertions)) return { status: 'blocked', reason: 'corrupt' };
       }
+      const responses = new ProviderResponseArtifact(this.paths);
+      for (const reference of safe.value.providerResponses?.records ?? []) {
+        const linked = await responses.verify(suiteId, runId, safe.value.caseId, safe.value.number, reference);
+        if (linked.status !== 'ok') return linked;
+      }
       const valid = this.safeManifest(updated.value); if (valid.status !== 'ok') return valid;
       await this.dependencies.files.write(this.paths.attempt(suiteId, runId, safe.value.caseId, safe.value.number), safe.value);
       return valid;
@@ -80,6 +86,22 @@ export class FileArtifactStore implements ArtifactStorePort {
         await this.dependencies.files.write(path, complete);
         return { status: 'ok', value: { id: record.id, kind: record.kind, status: 'complete', checkId: record.checkId,
           turnId: record.turnId, sequence: value.sequence, byteLength: bytes } };
+      });
+    } catch (error) { return error instanceof SafetyFault ? { status: 'blocked', reason: error.reason } : failure(error); }
+  }
+  async saveProviderResponse(value: ProviderResponseWrite): Promise<Outcome<ProviderResponseReference>> {
+    if (![value.suiteId, value.runId, value.caseId].every(logicalId) || value.attempt !== 1)
+      return { status: 'blocked', reason: 'invalid-input' };
+    try {
+      return await serialized(this.paths.root, async () => {
+        const loaded = await this.load(value.suiteId, value.runId);
+        if (loaded.status !== 'ok') return loaded;
+        if (loaded.value.state !== 'running' || !loaded.value.cases.some(item => item.caseId === value.caseId
+          && (item.attempts.length === 0 || item.state === 'incomplete' && item.attempts.length === 1
+            && item.attempts[0]?.number === value.attempt && item.attempts[0].outcome === 'incomplete'))
+          || loaded.value.owner.pid !== this.dependencies.owner.identity.pid
+          || loaded.value.owner.token !== this.dependencies.owner.identity.token) return { status: 'blocked', reason: 'invalid-transition' };
+        return new ProviderResponseArtifact(this.paths, this.dependencies.files).save(value);
       });
     } catch (error) { return error instanceof SafetyFault ? { status: 'blocked', reason: error.reason } : failure(error); }
   }

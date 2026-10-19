@@ -34,5 +34,7 @@ export function createRunHistory(projectRoot: string, dependencies: {
       reader.selectedSource(suiteId, runId, selection),
     readField: (suiteId: string, runId: string, selection: Required<import('./contracts.js').Selection>, locator: string, offset: number, limit: number) =>
       reader.sourceFieldRange(suiteId, runId, selection, locator, offset, limit),
+    readProviderResponse: (suiteId: string, runId: string, selection: import('./contracts.js').Selection, locator: string, offset: number, limit: number) =>
+      reader.providerResponseRange(suiteId, runId, selection, locator, offset, limit),
   };
 }

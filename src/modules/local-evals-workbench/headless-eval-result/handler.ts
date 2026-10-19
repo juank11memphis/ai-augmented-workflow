@@ -10,6 +10,7 @@ const MAX_DIAGNOSTICS = 3;
 const MAX_JSON = 4800;
 const MAX_FIELD_BYTES = 1024;
 const SAFE_CODE = /^[a-z][a-z0-9-]{0,79}$/;
+const RESPONSE_LOCATOR = /^[A-Za-z0-9._/-]{1,240}$/;
 
 function safeArtifactPath(path: string | undefined): string | undefined {
   return path && /^(?!.*(?:^|\/)\.\.?\/)[A-Za-z0-9._/-]+$/.test(path) && !path.startsWith('/') ? path : undefined;
@@ -85,7 +86,8 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   if (!ID.test(command.suiteId) || !ID.test(command.runId) ||
     selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || selection.assertionId !== undefined && !ID.test(selection.assertionId)) ||
     command.locatorOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0) ||
-    command.field && (!selection || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/.test(command.field.locator)
+    command.field && (!selection || !(selection.assertionId === undefined ? RESPONSE_LOCATOR
+      : /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/).test(command.field.locator)
       || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
     return { status: 'blocked', reason: 'invalid-input' };
   }
@@ -128,8 +130,39 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     const selectedAttempt = selectedCase?.attempts.find(item => item.number === selection.attempt);
     if (selectedCase?.state !== 'incomplete' || selectedAttempt?.outcome !== 'incomplete' || evidence.outcome !== 'incomplete')
       return { status: 'blocked', reason: 'selection-mismatch' };
-    if (command.field) return { status: 'blocked', reason: 'invalid-input' };
     const links = (evidence.diagnosticLinks ?? []).slice(0, MAX_DIAGNOSTICS);
+    const captured = evidence.providerResponses;
+    const source = captured ? { status: 'available' as const,
+      records: captured.records.slice(0, 6).map(record => ({
+        callId: record.callId, provisionalTurnId: record.provisionalTurnId, locator: record.locator,
+        status: record.status, byteLength: record.byteLength,
+        ...(record.contentType ? { contentType: record.contentType } : {}),
+        ...(record.originalByteLength !== undefined ? { originalByteLength: record.originalByteLength,
+          missingByteLength: record.originalByteLength - record.byteLength } : {}),
+      })), gaps: captured.gaps.slice(0, 6),
+      truncated: captured.records.length > 6 || captured.gaps.length > 6,
+    } : { status: 'gap' as const, reason: 'not-captured' as const };
+    if (command.field) {
+      const matching = captured?.records.filter(record => record.locator === command.field!.locator) ?? [];
+      if (matching.length !== 1 || command.field.offset >= matching[0]!.byteLength || !dependencies.reader.readProviderResponse)
+        return { status: 'blocked', reason: 'selection-mismatch' };
+      let range;
+      try { range = await dependencies.reader.readProviderResponse(command.suiteId, command.runId, selection,
+        command.field.locator, command.field.offset, MAX_FIELD_BYTES); }
+      catch { return { status: 'blocked', reason: 'unavailable' }; }
+      if (range.status === 'blocked') return { status: 'blocked', reason: range.reason === 'not-found' ? 'missing-artifact'
+        : ['unsafe-path', 'not-ignored', 'tracked-artifacts', 'unverifiable-root'].includes(range.reason) ? 'unsafe-artifact'
+          : range.reason === 'corrupt' ? 'corrupt-artifact' : 'unavailable' };
+      const value = range.value;
+      const next = command.field.offset + value.bytes.length;
+      if (value.locator !== command.field.locator || value.offset !== command.field.offset || value.byteLength !== value.bytes.length ||
+        value.bytes.length < 1 || value.bytes.length > MAX_FIELD_BYTES ||
+        value.nextOffset !== (next === matching[0]!.byteLength ? null : next) || next > matching[0]!.byteLength)
+        return { status: 'blocked', reason: 'corrupt-artifact' };
+      const result = { status: 'ready' as const, summary, field: { locator: value.locator, offset: value.offset,
+        byteLength: matching[0]!.byteLength, bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
+      return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+    }
     const result = { status: 'ready' as const, summary, incompleteAttempt: {
       caseId: selection.caseId, attempt: selection.attempt, state: 'incomplete' as const,
       diagnostics: evidence.diagnostics.filter(code => SAFE_CODE.test(code)).slice(0, MAX_DIAGNOSTICS),
@@ -137,7 +170,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
       ...(evidence.failureProvenance || manifest.failureProvenance ? { failureProvenance: evidence.failureProvenance ?? manifest.failureProvenance } : {}),
       turnIds: [...new Set(links.flatMap(link => link.turnId ? [link.turnId] : []))],
       callIds: [...new Set(links.flatMap(link => link.callId ? [link.callId] : []))],
-      source: { status: 'gap' as const, reason: 'not-captured' as const },
+      source,
     } };
     return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
   }

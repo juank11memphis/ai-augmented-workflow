@@ -101,6 +101,8 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       if (!failure && !validator.completion) failure = 'runner-protocol-invalid';
       const sourceGap = validator.incompleteSource;
       if (sourceGap) await consume(sourceGap);
+      const responseGap = validator.incompleteResponse;
+      if (responseGap) await consume(responseGap);
       const status = failure ? 'error' : validator.completion!;
       const failureProvenance: FailureProvenance | undefined = failure === 'runner-timeout' ? { stage: 'timeout' }
         : failure === 'runner-protocol-invalid' ? { stage: 'protocol-rejection' }

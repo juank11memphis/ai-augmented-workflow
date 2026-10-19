@@ -31,7 +31,8 @@ function invalidReason(command: EvalCliCommand): string | undefined {
     if (command.caseId !== undefined && !SAFE_ID.test(command.caseId)) return 'invalid-case-id';
     if (command.assertionId !== undefined && !SAFE_ID.test(command.assertionId)) return 'invalid-assertion-id';
     if (command.attempt !== undefined && (!Number.isSafeInteger(command.attempt) || command.attempt < 1)) return 'invalid-attempt';
-    if (command.field !== undefined && (command.assertionId === undefined || !SAFE_FIELD.test(command.field))) return 'invalid-field';
+    if (command.field !== undefined && (!selected || command.assertionId === undefined && !/^[A-Za-z0-9._/-]{1,240}$/.test(command.field)
+      || command.assertionId !== undefined && !SAFE_FIELD.test(command.field))) return 'invalid-field';
     if (command.offset !== undefined && (command.field === undefined || !Number.isSafeInteger(command.offset) || command.offset < 0)) return 'invalid-offset';
     if (command.locatorOffset !== undefined && (selected || command.field !== undefined || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0)) return 'invalid-locator-offset';
   }
