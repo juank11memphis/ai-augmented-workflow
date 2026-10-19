@@ -33,3 +33,20 @@ it('rejects contradictory persisted Judge evidence on save and read boundaries',
   assert.equal(attempt({ ...base, assertions: [{ ...grader, outcome: 'passed' }] }), false);
   assert.equal(attempt({ ...base, outcome: 'failed', assertions: [{ ...grader, threshold: 1.2 }] }), false);
 });
+
+it('accepts legacy artifacts and bounded observed failure provenance without a fabricated cause', () => {
+  assert.ok(manifest(queued())); assert.ok(attempt(evidence()));
+  const partial = { ...evidence(), outcome: 'incomplete', assertions: [], diagnostics: ['provider-malformed'],
+    diagnosticLinks: [{ code: 'provider-malformed', turnId: 'turn-1', callId: 'call-1' }],
+    failureProvenance: { stage: 'runner-report', runnerReport: { status: 'error', code: 'provider-malformed' }, processExit: { code: 2 } } };
+  assert.ok(attempt(partial));
+  assert.ok(manifest({ ...queued(), state: 'error', finishedAt: 100,
+    failureProvenance: partial.failureProvenance }));
+  assert.equal(manifest({ ...queued(), state: 'completed', finishedAt: 100,
+    failureProvenance: partial.failureProvenance }), false);
+  assert.equal(attempt({ ...partial, diagnosticLinks: [{ code: 'PRIVATE_RESPONSE' }] }), false);
+  assert.equal(attempt({ ...partial, diagnosticLinks: Array(21).fill({ code: 'safe' }) }), false);
+  assert.equal(attempt({ ...partial, failureProvenance: { stage: 'runner-report', runnerReport: { status: 'error', code: 'PRIVATE_RESPONSE' } } }), false);
+  assert.equal(attempt({ ...partial, failureProvenance: { stage: 'unexpected-process-exit', runnerReport: { status: 'error' } } }), false);
+  assert.equal(attempt({ ...partial, failureProvenance: { stage: 'timeout', rawBody: 'PRIVATE_RESPONSE' } }), false);
+});

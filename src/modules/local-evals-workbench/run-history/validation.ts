@@ -1,5 +1,6 @@
 import { LIMITS } from './limits.js';
 import type { Attempt, Manifest, RunConfiguration, HistoryIndex } from './contracts.js';
+import { validDiagnosticLink, validFailureProvenance } from './failure-provenance.js';
 export function logicalId(value: unknown): value is string {
   return typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/.test(value);
 }
@@ -38,9 +39,11 @@ function entry(v: unknown): boolean {
     && calls(v.calls) && amount(v.cost);
 }
 export function manifest(v: unknown): v is Manifest {
-  if (!record(v) || !configuration(v) || !entry(v) || v.version !== 1 || !keys(v, `${configKeys} ${entryKeys} version owner diagnostics cases`)
+  if (!record(v) || !configuration(v) || !entry(v) || v.version !== 1 || !keys(v, `${configKeys} ${entryKeys} version owner diagnostics cases failureProvenance`)
     || !record(v.owner) || !keys(v.owner, 'pid token') || !integer(v.owner.pid) || v.owner.pid < 1 || !logicalId(v.owner.token)
-    || !texts(v.diagnostics) || !Array.isArray(v.cases) || v.cases.length !== v.caseIds.length) return false;
+    || !texts(v.diagnostics) || v.failureProvenance !== undefined && (!validFailureProvenance(v.failureProvenance)
+      || v.state === 'queued' || v.state === 'running' || v.state === 'completed')
+    || !Array.isArray(v.cases) || v.cases.length !== v.caseIds.length) return false;
   const labeled = v.cases.some(c => record(c) && ('testedModel' in c || 'judgeModel' in c));
   if (labeled && !v.cases.every(c => record(c) && text(c.testedModel) && c.testedModel.length > 0
     && (c.judgeModel === null || text(c.judgeModel) && c.judgeModel.length > 0))) return false;
@@ -67,9 +70,14 @@ function validTotals(v: Record<string, unknown>): boolean {
   return true;
 }
 export function attempt(v: unknown): v is Attempt {
-  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics turns tools assertions review sourceCapture') || v.version !== 1
+  if (!record(v)) return false;
+  const diagnostics = v.diagnostics;
+  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture providerResponses') || v.version !== 1
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
-    || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(v.diagnostics)) return false;
+    || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(diagnostics)
+    || v.diagnosticLinks !== undefined && (!Array.isArray(v.diagnosticLinks) || v.diagnosticLinks.length > LIMITS.diagnostics
+      || !v.diagnosticLinks.every(validDiagnosticLink) || !v.diagnosticLinks.every(link => diagnostics.includes(link.code)))
+    || v.failureProvenance !== undefined && (!validFailureProvenance(v.failureProvenance) || v.outcome !== 'incomplete')) return false;
   if (v.review !== undefined && (!record(v.review) || !keys(v.review, 'runPath suitePath targetPath runnerPath inputPaths omittedInputPathCount context')
     || v.review.context !== 'current-repo-files' || !reviewPath(v.review.runPath)
     || v.review.targetPath !== null && !reviewPath(v.review.targetPath)
@@ -88,6 +96,30 @@ export function attempt(v: unknown): v is Attempt {
     || !Array.isArray(v.sourceCapture.gaps) || v.sourceCapture.gaps.length > LIMITS.evidenceItems
     || !v.sourceCapture.gaps.every(item => record(item) && keys(item, 'reason recordId')
       && enumValue(item.reason, ['incomplete', 'capture-failed']) && (item.recordId === undefined || logicalId(item.recordId))))) return false;
+  if (v.providerResponses !== undefined && (!record(v.providerResponses) || !keys(v.providerResponses, 'records gaps')
+    || !Array.isArray(v.providerResponses.records) || v.providerResponses.records.length > LIMITS.evidenceItems
+    || !v.providerResponses.records.every(item => record(item) && keys(item, 'callId provisionalTurnId role checkId status locator byteLength contentType originalByteLength')
+      && logicalId(item.callId) && logicalId(item.provisionalTurnId)
+      && (item.role === undefined || enumValue(item.role, ['tested-model', 'judge']))
+      && (item.role === 'judge' ? logicalId(item.checkId) : item.checkId === undefined)
+      && enumValue(item.status, ['complete', 'truncated', 'incomplete'])
+      && typeof item.locator === 'string' && item.locator.length > 0 && item.locator.length <= 400
+      && !/[\u0000-\u001f\u007f]/.test(item.locator) && integer(item.byteLength, LIMITS.sourceRecordBytes)
+      && (item.contentType === undefined || typeof item.contentType === 'string' && item.contentType.length <= 256
+        && /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\/-]*(?:; ?[A-Za-z0-9=._+-]+)*$/.test(item.contentType))
+      && (item.originalByteLength === undefined || integer(item.originalByteLength))
+      && (item.originalByteLength === undefined || item.originalByteLength >= item.byteLength)
+      && (item.status !== 'complete' || item.originalByteLength === undefined || item.originalByteLength === item.byteLength))
+    || new Set(v.providerResponses.records.map(item => item.callId)).size !== v.providerResponses.records.length
+    || !Array.isArray(v.providerResponses.gaps) || v.providerResponses.gaps.length > LIMITS.evidenceItems
+    || !v.providerResponses.gaps.every(item => record(item) && keys(item, 'callId provisionalTurnId role checkId reason')
+      && logicalId(item.callId) && logicalId(item.provisionalTurnId)
+      && (item.role === undefined || enumValue(item.role, ['tested-model', 'judge']))
+      && (item.role === 'judge' ? logicalId(item.checkId) : item.checkId === undefined)
+      && enumValue(item.reason, ['not-observed', 'not-emitted', 'not-persisted', 'capture-failed', 'incomplete']))
+    || new Set(v.providerResponses.gaps.map(item => item.callId)).size !== v.providerResponses.gaps.length
+    || v.providerResponses.gaps.some(gap => (v.providerResponses as { records: { callId: string }[] }).records
+      .some(item => item.callId === gap.callId)))) return false;
   if (!Array.isArray(v.turns) || v.turns.length > LIMITS.evidenceItems || !v.turns.every(t => record(t) && keys(t, 'id role content') && logicalId(t.id) && enumValue(t.role, ['user', 'assistant', 'system', 'tool']) && text(t.content))
     || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result turnId position outcome') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result)
       && (t.turnId === undefined || logicalId(t.turnId)) && (t.position === undefined || integer(t.position, LIMITS.evidenceItems))

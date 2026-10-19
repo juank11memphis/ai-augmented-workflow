@@ -1,5 +1,6 @@
 import { lstat, realpath } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import type { Outcome } from './contracts.js';
 import { logicalId } from './validation.js';
 export class ArtifactFault extends Error {
@@ -38,6 +39,13 @@ export class ArtifactPaths {
   source(suiteId: string, runId: string, caseId: string, number: number, recordId: string): string {
     this.ids(recordId);
     return `${this.attempt(suiteId, runId, caseId, number).slice(0, -5)}/source/${component(recordId)}.json`;
+  }
+  responses(suiteId: string, runId: string): string { this.ids(suiteId, runId); return `${component(suiteId)}/${component(runId)}/responses`; }
+  response(suiteId: string, runId: string, caseId: string, number: number, callId: string): string {
+    this.ids(caseId, callId);
+    if (number !== 1) throw new ArtifactFault('unsafe-path');
+    const name = createHash('sha256').update(JSON.stringify([caseId, number, callId])).digest('hex');
+    return `${this.responses(suiteId, runId)}/${name}.bin`;
   }
   index(suiteId: string): string { this.ids(suiteId); return `${component(suiteId)}/index.json`; }
   private ids(...ids: string[]) { if (!ids.every(logicalId)) throw new ArtifactFault('unsafe-path'); }

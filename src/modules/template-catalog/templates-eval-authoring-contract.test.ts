@@ -88,8 +88,8 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.equal(metadata?.version, '9');
-  assert.match(metadata?.changes.join(' ') ?? '', /rubric-judge exchange records/);
+  assert.equal(metadata?.version, '11');
+  assert.match(metadata?.changes.join(' ') ?? '', /version-3 judge response/);
 });
 
 test('distributed authoring guidance distinguishes saved full-suite and temporary one-case preview', () => {
@@ -129,6 +129,59 @@ test('protocol examples and evidence define independent version, identity and or
   }
 });
 
+test('installed version-3 fixture accepts observation before malformed diagnostic and no-response gap', () => {
+    const fixture = JSON.parse(reference.match(/```provider-response-json\n([\s\S]*?)\n```/)![1]!) as {
+        observed: { type: string; data: Record<string, unknown> }[];
+        unavailable: { type: string; data: Record<string, unknown> }[];
+    };
+    assert.match(reference, /before parsing/);
+    assert.match(reference, /separate project-side runner update/);
+    assert.match(reference, /cannot reconstruct historical responses/);
+    const selected = { runId: 'run', model: 'fake', suite: example(), cases: [{
+        id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Hello.' } }],
+        toolMocks: [], assertions: [], graders: [],
+    }] } as unknown as ConstructorParameters<typeof ExecuteEventValidator>[1];
+    for (const [scenario, events] of Object.entries(fixture)) {
+        const validator = new ExecuteEventValidator('request', selected);
+        const wrap = (sequence: number, type: string, data: Record<string, unknown>, caseId: string | null) => ({
+            protocolVersion: 3, requestId: 'request', runId: 'run', sequence, type, caseId,
+            attempt: caseId ? 1 : null, data,
+        });
+        validator.accept(wrap(0, 'run-started', { model: 'fake', judgeModel: null }, null));
+        validator.accept(wrap(1, 'case-attempt-started', {}, 'case'));
+        for (const [index, event] of events.entries()) validator.accept(wrap(index + 2, event.type, event.data, 'case'));
+        assert.equal(events.at(-1)?.type, 'run-diagnostic', scenario);
+        if (scenario === 'observed') assert.equal(events[0]?.type, 'provider-response-started');
+        else assert.equal(events[0]?.data.reason, 'not-observed');
+    }
+});
+test('distributed judge v3 example observes response or gap before grading error', () => {
+  const fixture = JSON.parse(reference.match(/```judge-response-json\n([\s\S]*?)\n```/)![1]!) as Record<
+    'observed' | 'unavailable', { type: string; data: Record<string, unknown> }[]>;
+  assert.match(reference, /both.*tested-model and judge roles/i);
+  assert.match(reference, /not-emitted/);
+  assert.match(reference, /not persisted/);
+  const selected = { runId: 'run', model: 'fake', judgeModel: 'fake/judge', suite: example(), cases: [{
+    id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Hello.' } }],
+    toolMocks: [], assertions: [], graders: [{ id: 'quality', type: 'rubric',
+      rubric: { type: 'inline', text: 'Quality' }, threshold: 0.8 }],
+  }] } as unknown as ConstructorParameters<typeof ExecuteEventValidator>[1];
+  for (const [scenario, events] of Object.entries(fixture)) {
+    const validator = new ExecuteEventValidator('request', selected);
+    const wrap = (sequence: number, type: string, data: Record<string, unknown>, caseId: string | null) => ({
+      protocolVersion: 3, requestId: 'request', runId: 'run', sequence, type, caseId,
+      attempt: caseId ? 1 : null, data,
+    });
+    validator.accept(wrap(0, 'run-started', { model: 'fake', judgeModel: 'fake/judge' }, null));
+    validator.accept(wrap(1, 'case-attempt-started', {}, 'case'));
+    for (const [index, event] of events.entries()) validator.accept(wrap(index + 2, event.type, event.data, 'case'));
+    assert.equal(events.at(-1)?.type, 'rubric-judgment-error', scenario);
+    assert.equal(events[0]?.data.role, 'judge', scenario);
+    assert.equal(events[0]?.data.checkId, 'quality', scenario);
+    assert.equal(events[0]?.data.modelId, 'fake/judge', scenario);
+    assert.equal(events[0]?.type, scenario === 'observed' ? 'provider-response-started' : 'provider-response-gap');
+  }
+});
 test('distributed minimal source record passes production validator; wrong link and incomplete chunk fail', () => {
   const source = JSON.parse(reference.match(/```source-record-json\n([\s\S]*?)\n```/)![1]!) as Record<string, unknown>;
   const bytes = Buffer.from(JSON.stringify(source));

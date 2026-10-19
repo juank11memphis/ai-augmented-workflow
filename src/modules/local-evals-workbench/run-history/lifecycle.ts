@@ -1,8 +1,10 @@
-import type { Attempt, Manifest, Outcome, RunState } from './contracts.js';
+import type { Attempt, FailureProvenance, Manifest, Outcome, RunState } from './contracts.js';
 import { active, manifest } from './validation.js';
-export function transition(run: Manifest, state: RunState, now: number, diagnostics: readonly string[] = run.diagnostics): Outcome<Manifest> {
+export function transition(run: Manifest, state: RunState, now: number, diagnostics: readonly string[] = run.diagnostics,
+  failureProvenance?: FailureProvenance): Outcome<Manifest> {
   if (!active(run.state) || state === 'queued' || state === 'running' && run.state !== 'queued' || now < run.updatedAt) return { status: 'blocked', reason: 'invalid-transition' };
   const value: Manifest = { ...run, state, updatedAt: now, finishedAt: active(state) ? null : now, diagnostics,
+    ...(failureProvenance ? { failureProvenance } : {}),
     outcome: state === 'completed' ? run.cases.some(c => c.attempts.some(a => a.outcome === 'failed')) ? 'failed' : 'passed' : 'incomplete' };
   return manifest(value) ? { status: 'ok', value } : { status: 'blocked', reason: 'invalid-transition' };
 }

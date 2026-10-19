@@ -24,8 +24,10 @@ export class AtomicArtifactFile {
     }
   }
   async write(relative: string, value: unknown): Promise<void> {
-    // Caller supplies validated and sanitized data; no raw input ever reaches a temp file.
-    const bytes = Buffer.from(JSON.stringify(value));
+    // JSON callers supply validated and sanitized data.
+    await this.writeBytes(relative, Buffer.from(JSON.stringify(value)));
+  }
+  async writeBytes(relative: string, bytes: Uint8Array): Promise<void> {
     await this.directory(relative.split('/').slice(0, -1).join('/'));
     const temp = `${relative}.tmp-${randomBytes(8).toString('hex')}`;
     const temporaryPath = await this.ready(temp);

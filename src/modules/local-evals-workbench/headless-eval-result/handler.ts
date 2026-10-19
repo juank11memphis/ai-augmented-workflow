@@ -9,6 +9,8 @@ const MAX_TEXT = 600;
 const MAX_DIAGNOSTICS = 3;
 const MAX_JSON = 4800;
 const MAX_FIELD_BYTES = 1024;
+const SAFE_CODE = /^[a-z][a-z0-9-]{0,79}$/;
+const RESPONSE_LOCATOR = /^[A-Za-z0-9._/-]{1,240}$/;
 
 function safeArtifactPath(path: string | undefined): string | undefined {
   return path && /^(?!.*(?:^|\/)\.\.?\/)[A-Za-z0-9._/-]+$/.test(path) && !path.startsWith('/') ? path : undefined;
@@ -82,9 +84,10 @@ function projectSource(source: SourceEvidence): SelectedSourceEvidence {
 export async function headlessEvalResult(command: HeadlessEvalResultCommand, dependencies: HeadlessEvalResultDependencies): Promise<HeadlessEvalResult> {
   const { selection } = command;
   if (!ID.test(command.suiteId) || !ID.test(command.runId) ||
-    selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || !ID.test(selection.assertionId)) ||
+    selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || selection.assertionId !== undefined && !ID.test(selection.assertionId)) ||
     command.locatorOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0) ||
-    command.field && (!selection || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/.test(command.field.locator)
+    command.field && (!selection || !(selection.assertionId === undefined ? RESPONSE_LOCATOR
+      : /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/).test(command.field.locator)
       || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
     return { status: 'blocked', reason: 'invalid-input' };
   }
@@ -102,6 +105,10 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   const summary: HeadlessEvalSummary = {
     suiteId: manifest.suiteId, runId: manifest.runId, state: manifest.state, outcome: manifest.outcome,
     scope: manifest.scope, testedModel: manifest.testedModel, judgeModel: manifest.judgeModel,
+    counts: { completed: manifest.cases.filter(item => item.state === 'completed').length,
+      incomplete: manifest.cases.filter(item => item.state === 'incomplete').length,
+      notRun: manifest.cases.filter(item => item.state === 'not-run').length },
+    ...(manifest.failureProvenance ? { failureProvenance: manifest.failureProvenance } : {}),
     cases: selection ? manifest.cases.map(item => ({ caseId: item.caseId, state: item.state,
       testedModel: item.testedModel ?? manifest.testedModel, judgeModel: item.judgeModel !== undefined ? item.judgeModel : manifest.judgeModel,
       attempts: item.attempts.map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) }))
@@ -118,12 +125,67 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     !manifest.cases.some(item => item.caseId === selection.caseId && item.attempts.some(attempt => attempt.number === selection.attempt))) {
     return { status: 'blocked', reason: 'selection-mismatch' };
   }
+  if (selection.assertionId === undefined) {
+    const selectedCase = manifest.cases.find(item => item.caseId === selection.caseId);
+    const selectedAttempt = selectedCase?.attempts.find(item => item.number === selection.attempt);
+    if (selectedCase?.state !== 'incomplete' || selectedAttempt?.outcome !== 'incomplete' || evidence.outcome !== 'incomplete')
+      return { status: 'blocked', reason: 'selection-mismatch' };
+    const links = (evidence.diagnosticLinks ?? []).slice(0, MAX_DIAGNOSTICS);
+    const captured = evidence.providerResponses;
+    const source = captured ? { status: 'available' as const,
+      records: captured.records.slice(0, 6).map(record => ({
+        callId: record.callId, provisionalTurnId: record.provisionalTurnId, locator: record.locator,
+        ...(record.role === undefined ? {} : { role: record.role }),
+        ...(record.checkId === undefined ? {} : { checkId: record.checkId }),
+        status: record.status, byteLength: record.byteLength,
+        ...(record.contentType ? { contentType: record.contentType } : {}),
+        ...(record.originalByteLength !== undefined ? { originalByteLength: record.originalByteLength,
+          missingByteLength: record.originalByteLength - record.byteLength } : {}),
+      })), gaps: captured.gaps.slice(0, 6),
+      truncated: captured.records.length > 6 || captured.gaps.length > 6,
+    } : { status: 'gap' as const, reason: 'not-captured' as const };
+    if (command.field) {
+      const matching = captured?.records.filter(record => record.locator === command.field!.locator) ?? [];
+      if (matching.length !== 1 || command.field.offset >= matching[0]!.byteLength || !dependencies.reader.readProviderResponse)
+        return { status: 'blocked', reason: 'selection-mismatch' };
+      let range;
+      try { range = await dependencies.reader.readProviderResponse(command.suiteId, command.runId, {
+        ...selection, providerResponse: { role: matching[0]!.role ?? 'tested-model',
+          ...(matching[0]!.checkId === undefined ? {} : { checkId: matching[0]!.checkId }) },
+      },
+        command.field.locator, command.field.offset, MAX_FIELD_BYTES); }
+      catch { return { status: 'blocked', reason: 'unavailable' }; }
+      if (range.status === 'blocked') return { status: 'blocked', reason: range.reason === 'not-found' ? 'missing-artifact'
+        : ['unsafe-path', 'not-ignored', 'tracked-artifacts', 'unverifiable-root'].includes(range.reason) ? 'unsafe-artifact'
+          : range.reason === 'corrupt' ? 'corrupt-artifact' : 'unavailable' };
+      const value = range.value;
+      const next = command.field.offset + value.bytes.length;
+      if (value.locator !== command.field.locator || value.offset !== command.field.offset || value.byteLength !== value.bytes.length ||
+        value.bytes.length < 1 || value.bytes.length > MAX_FIELD_BYTES ||
+        value.nextOffset !== (next === matching[0]!.byteLength ? null : next) || next > matching[0]!.byteLength)
+        return { status: 'blocked', reason: 'corrupt-artifact' };
+      const result = { status: 'ready' as const, summary, field: { locator: value.locator, offset: value.offset,
+        byteLength: matching[0]!.byteLength, bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
+      return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+    }
+    const result = { status: 'ready' as const, summary, incompleteAttempt: {
+      caseId: selection.caseId, attempt: selection.attempt, state: 'incomplete' as const,
+      diagnostics: evidence.diagnostics.filter(code => SAFE_CODE.test(code)).slice(0, MAX_DIAGNOSTICS),
+      diagnosticLinks: links,
+      ...(evidence.failureProvenance || manifest.failureProvenance ? { failureProvenance: evidence.failureProvenance ?? manifest.failureProvenance } : {}),
+      turnIds: [...new Set(links.flatMap(link => link.turnId ? [link.turnId] : []))],
+      callIds: [...new Set(links.flatMap(link => link.callId ? [link.callId] : []))],
+      source,
+    } };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+  }
+  const assertionSelection = { caseId: selection.caseId, attempt: selection.attempt, assertionId: selection.assertionId };
   const assertion = evidence.assertions.find(item => item.id === selection.assertionId);
   if (!assertion || evidence.assertions.length !== 1) return { status: 'blocked', reason: 'selection-mismatch' };
   let source = evidence.sourceEvidence;
   if (!source && dependencies.reader.readSource) {
     let assembled;
-    try { assembled = await dependencies.reader.readSource(command.suiteId, command.runId, selection); }
+    try { assembled = await dependencies.reader.readSource(command.suiteId, command.runId, assertionSelection); }
     catch { return { status: 'blocked', reason: 'unavailable' }; }
     if (assembled.status === 'blocked') return { status: 'blocked', reason: assembled.reason === 'corrupt' ? 'corrupt-artifact'
       : ['unsafe-path', 'not-ignored', 'tracked-artifacts', 'unverifiable-root'].includes(assembled.reason)
@@ -150,7 +212,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     if (!matching || matching.length !== 1 || matching[0]?.status !== 'available' || command.field.offset >= matching[0].byteLength ||
       !dependencies.reader.readField) return { status: 'blocked', reason: 'selection-mismatch' };
     let range;
-    try { range = await dependencies.reader.readField(command.suiteId, command.runId, selection, command.field.locator,
+    try { range = await dependencies.reader.readField(command.suiteId, command.runId, assertionSelection, command.field.locator,
       command.field.offset, MAX_FIELD_BYTES); }
     catch { return { status: 'blocked', reason: 'unavailable' }; }
     if (range.status === 'blocked') return { status: 'blocked', reason: range.reason === 'not-found' ? 'missing-artifact' : 'unavailable' };

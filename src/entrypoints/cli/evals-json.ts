@@ -26,12 +26,13 @@ function invalidReason(command: EvalCliCommand): string | undefined {
   }
   if (command.type === 'evals:result') {
     if (!SAFE_ID.test(command.runId)) return 'invalid-run-id';
-    const selected = command.caseId !== undefined && command.attempt !== undefined && command.assertionId !== undefined;
-    if (!selected && (command.caseId !== undefined || command.attempt !== undefined || command.assertionId !== undefined)) return 'case-attempt-and-assertion-required-together';
+    const selected = command.caseId !== undefined && command.attempt !== undefined;
+    if (!selected && (command.caseId !== undefined || command.attempt !== undefined || command.assertionId !== undefined)) return 'case-and-attempt-required-together';
     if (command.caseId !== undefined && !SAFE_ID.test(command.caseId)) return 'invalid-case-id';
     if (command.assertionId !== undefined && !SAFE_ID.test(command.assertionId)) return 'invalid-assertion-id';
     if (command.attempt !== undefined && (!Number.isSafeInteger(command.attempt) || command.attempt < 1)) return 'invalid-attempt';
-    if (command.field !== undefined && (!selected || !SAFE_FIELD.test(command.field))) return 'invalid-field';
+    if (command.field !== undefined && (!selected || command.assertionId === undefined && !/^[A-Za-z0-9._/-]{1,240}$/.test(command.field)
+      || command.assertionId !== undefined && !SAFE_FIELD.test(command.field))) return 'invalid-field';
     if (command.offset !== undefined && (command.field === undefined || !Number.isSafeInteger(command.offset) || command.offset < 0)) return 'invalid-offset';
     if (command.locatorOffset !== undefined && (selected || command.field !== undefined || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0)) return 'invalid-locator-offset';
   }
@@ -84,8 +85,9 @@ export async function handleEvalsJsonCommand(
         action: command.action, expectedToken: command.expectedToken, ...(command.caseId !== undefined ? { caseId: command.caseId } : {}),
         ...(command.modelId !== undefined ? { modelId: command.modelId } : {}) })
       : await workbench.result({ suiteId: command.suiteId, runId: command.runId,
-        ...(command.caseId !== undefined && command.attempt !== undefined && command.assertionId !== undefined
-          ? { selection: { caseId: command.caseId, attempt: command.attempt, assertionId: command.assertionId } } : {}),
+        ...(command.caseId !== undefined && command.attempt !== undefined
+          ? { selection: { caseId: command.caseId, attempt: command.attempt,
+            ...(command.assertionId !== undefined ? { assertionId: command.assertionId } : {}) } } : {}),
         ...(command.field !== undefined ? { field: { locator: command.field, offset: command.offset ?? 0 } } : {}),
         ...(command.locatorOffset !== undefined ? { locatorOffset: command.locatorOffset } : {}) });
     dependencies.output.write(JSON.stringify({ schemaVersion: 1, operation, ...result, ...('status' in result && nextAction(result) ? { nextAction: nextAction(result) } : {}) }));

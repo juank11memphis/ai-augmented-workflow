@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { mkdir, writeFile, unlink } from 'node:fs/promises';
+import { mkdir, writeFile, unlink, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { GitArtifactSafety } from './git-artifact-safety.js';
 import { project } from './test-project.js';
+import { fixture } from './store-fixture.js';
+import { config, evidence } from './test-fixtures.js';
+import { FileArtifactReader } from './file-artifact-reader.js';
 it('checks ignored future destinations and detects tracked files even after deletion', async () => {
   const p = await project(); try {
     const safety = new GitArtifactSafety(p.root); assert.equal((await safety.check()).status, 'ok');
@@ -32,4 +35,32 @@ it('fails closed for subprocess timeout/error statuses, repository mismatch and 
   }
   assert.deepEqual(await new GitArtifactSafety(root, async () => ({ code: 128, stdout: 'SECRET' })).check(), { status: 'blocked', reason: 'unverifiable-root' });
   assert.deepEqual(await new GitArtifactSafety(root, async args => args[0] === 'rev-parse' ? { code: 0, stdout: root } : { code: 128, stdout: 'SECRET' }).check(), { status: 'blocked', reason: 'git-unavailable' });
+});
+it('blocks response writes and reads when response artifacts are tracked or unsafe', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const created = await a.store.create(config);
+    if (created.status !== 'ok') return assert.fail();
+    const runId = created.value.runId; await a.store.start('suite', runId);
+    const input = { suiteId: 'suite', runId, caseId: 'case', attempt: 1, callId: 'call-1', provisionalTurnId: 'turn-1',
+      bytes: Buffer.from('synthetic'), completeness: 'complete' as const };
+    const saved = await a.store.saveProviderResponse(input);
+    if (saved.status !== 'ok') return assert.fail(JSON.stringify(saved));
+    p.git('add', '-f', `evals/artifacts/${saved.value.locator}`);
+    assert.deepEqual(await a.store.saveProviderResponse({ ...input, callId: 'call-2' }),
+      { status: 'blocked', reason: 'tracked-artifacts' });
+    p.git('rm', '--cached', '-q', `evals/artifacts/${saved.value.locator}`);
+    assert.equal((await a.store.append('suite', runId, { ...evidence(runId), outcome: 'incomplete', assertions: [],
+      providerResponses: { records: [saved.value], gaps: [] } })).status, 'ok');
+    const reader = new FileArtifactReader(a.paths, a.reader);
+    const selected = { caseId: 'case', attempt: 1 };
+    assert.equal((await reader.providerResponseRange('suite', runId, selected, saved.value.locator, 0)).status, 'ok');
+    p.git('add', '-f', `evals/artifacts/${saved.value.locator}`);
+    assert.deepEqual(await reader.providerResponseRange('suite', runId, selected, saved.value.locator, 0),
+      { status: 'blocked', reason: 'tracked-artifacts' });
+    p.git('rm', '--cached', '-q', `evals/artifacts/${saved.value.locator}`);
+    await unlink(path.join(p.root, 'evals/artifacts', saved.value.locator));
+    await symlink(path.join(p.root, '.gitignore'), path.join(p.root, 'evals/artifacts', saved.value.locator));
+    assert.deepEqual(await reader.providerResponseRange('suite', runId, selected, saved.value.locator, 0),
+      { status: 'blocked', reason: 'unsafe-path' });
+  } finally { await p.cleanup(); }
 });

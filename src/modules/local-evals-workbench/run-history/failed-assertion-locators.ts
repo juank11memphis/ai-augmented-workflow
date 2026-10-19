@@ -5,6 +5,7 @@ export type LocatedAttempt = {
   readonly number: number;
   readonly outcome: 'passed' | 'failed' | 'incomplete';
   readonly failedAssertionIds?: readonly string[];
+  readonly incompleteLocator?: { readonly caseId: string; readonly attempt: number };
   readonly locatorStatus?: 'available' | 'unavailable' | 'truncated';
 };
 
@@ -25,6 +26,11 @@ export async function failedAssertionLocators(
   for (const item of manifest.cases) {
     const attempts: LocatedAttempt[] = [];
     for (const attempt of item.attempts) {
+      if (attempt.outcome === 'incomplete') {
+        attempts.push({ number: attempt.number, outcome: attempt.outcome,
+          incompleteLocator: { caseId: item.caseId, attempt: attempt.number } });
+        continue;
+      }
       if (attempt.outcome !== 'failed') {
         attempts.push({ number: attempt.number, outcome: attempt.outcome });
         continue;

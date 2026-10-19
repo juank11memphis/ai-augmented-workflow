@@ -1,13 +1,14 @@
 import type { ExecuteEvalRunCommand } from './command.js';
 import type { ExecuteEvalRunResult } from './result.js';
 import type { ExecuteEvalRunDependencies } from './ports.js';
-import type { Attempt, RunState, SourceReference, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
-import type { ExecutionEvent } from '../run-execution/contracts.js';
+import type { Attempt, DiagnosticLink, FailureProvenance, ProviderResponseGap, ProviderResponseReference, RunState, SourceReference, ToolEvidence, TurnEvidence } from '../run-history/contracts.js';
+import type { ExecutionEvent, RunnerExecutionOutcome } from '../run-execution/contracts.js';
 import { normalizeGraderOutcome, normalizeGraderOutcomes, validJudgeSource } from '../run-execution/attempt-evidence.js';
-import { boundedJson, attempt as validAttempt } from '../run-history/validation.js';
+import { boundedJson, attempt as validAttempt, logicalId } from '../run-history/validation.js';
 import { LIMITS } from '../run-history/limits.js';
 import { reviewSources } from './review-sources.js';
 import { executionBatches } from '../run-execution/batches.js';
+import { validDiagnosticLink, validFailureProvenance } from '../run-history/failure-provenance.js';
 
 const MAX_DIAGNOSTICS = 20;
 const SAFE_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -19,9 +20,35 @@ const SAFE_REASONS = new Set(['runner-absent', 'runner-unavailable', 'runner-sta
 class PersistenceStopped extends Error {}
 class EvidenceLimitStopped extends Error {}
 type Current = { caseId: string; number: number; began: number; turns: TurnEvidence[]; tools: ToolEvidence[];
-  graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[];
+  graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[]; diagnosticLinks: DiagnosticLink[];
   gradingErrors: Extract<ExecutionEvent, { type: 'grading-error' }>[];
-  sourceRecords: SourceReference[]; sourceGaps: { reason: 'incomplete' | 'capture-failed'; recordId?: string }[] };
+  sourceRecords: SourceReference[]; sourceGaps: { reason: 'incomplete' | 'capture-failed'; recordId?: string }[];
+  providerResponses: ProviderResponseReference[]; providerResponseGaps: ProviderResponseGap[] };
+
+function validResponseLink(current: Current | undefined, event: Extract<ExecutionEvent,
+  { type: 'provider-response-observed' | 'provider-response-gap' }>, rubricChecks: readonly string[]): current is Current {
+  return !!current && current.caseId === event.caseId && current.number === event.attempt
+    && logicalId(event.callId) && logicalId(event.provisionalTurnId)
+    && (event.role === undefined || event.role === 'tested-model' || event.role === 'judge')
+    && (event.role === 'judge' ? logicalId(event.checkId) && rubricChecks.includes(event.checkId)
+      : event.checkId === undefined)
+    && !current.providerResponses.some(item => item.callId === event.callId)
+    && !current.providerResponseGaps.some(item => item.callId === event.callId);
+}
+
+function observedFailure(outcome: RunnerExecutionOutcome, terminal: 'completed' | 'error' | 'interrupted' | undefined): FailureProvenance | undefined {
+  if (outcome.failureProvenance !== undefined) {
+    if (!validFailureProvenance(outcome.failureProvenance) || outcome.status === 'completed'
+      || outcome.failureProvenance.runnerReport && outcome.failureProvenance.runnerReport.status !== terminal)
+      throw new Error('invalid-failure-provenance');
+    return outcome.failureProvenance;
+  }
+  if (terminal === 'error' || terminal === 'interrupted') return { stage: 'runner-report', runnerReport: { status: terminal } };
+  if (outcome.reason === 'runner-exited') return { stage: 'unexpected-process-exit', processExit: { code: null } };
+  if (outcome.reason === 'runner-timeout') return { stage: 'timeout' };
+  if (outcome.reason === 'runner-protocol-invalid') return { stage: 'protocol-rejection' };
+  return undefined;
+}
 
 export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: ExecuteEvalRunDependencies): Promise<ExecuteEvalRunResult> {
   const { suite, runId, cases } = command;
@@ -52,7 +79,8 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     const result = await ports.store.append(suite.id, runId, attempt);
     if (result.status !== 'ok') throw result.reason === 'limit-exceeded' ? new EvidenceLimitStopped() : new PersistenceStopped();
   };
-  const evidence = (outcome: Attempt['outcome'], assertions: Attempt['assertions'] = [], calls: number | null = null, cost: number | null = null): Attempt => {
+  const evidence = (outcome: Attempt['outcome'], assertions: Attempt['assertions'] = [], calls: number | null = null,
+    cost: number | null = null, failureProvenance?: FailureProvenance): Attempt => {
     if (!current) throw new Error('missing-attempt');
     const visibleAssertions = assertions.length ? assertions : [
       ...current.graders.map(item => normalizeGraderOutcome(
@@ -63,15 +91,66 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     ];
     return { version: 1, suiteId: suite.id, runId, caseId: current.caseId, number: current.number, outcome,
       durationMs: Math.max(0, ports.clock() - current.began), calls, cost, output: current.output,
-      truncated: false, diagnostics: [...current.diagnostics], turns: [...current.turns], tools: [...current.tools], assertions: visibleAssertions,
+      truncated: false, diagnostics: [...current.diagnostics], diagnosticLinks: [...current.diagnosticLinks],
+      ...(failureProvenance ? { failureProvenance } : {}), turns: [...current.turns], tools: [...current.tools], assertions: visibleAssertions,
       sourceCapture: { records: [...current.sourceRecords], gaps: [...current.sourceGaps] },
+      ...(current.providerResponses.length || current.providerResponseGaps.length ? { providerResponses: {
+        records: [...current.providerResponses], gaps: [...current.providerResponseGaps] } } : {}),
       review: reviewSources(command, current.caseId) };
   };
   const consume = async (event: ExecutionEvent): Promise<void> => {
     if (terminal) throw new Error('event-after-terminal');
     if (event.type === 'case-started') {
       if (current || cases[caseIndex]?.id !== event.caseId || (event.attempt ?? 1) !== attemptNumber) throw new Error('attempt-order');
-      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], gradingErrors: [], output: '', diagnostics: [], sourceRecords: [], sourceGaps: [] };
+      current = { caseId: event.caseId, number: attemptNumber, began: ports.clock(), turns: [], tools: [], graders: [], gradingErrors: [], output: '', diagnostics: [], diagnosticLinks: [], sourceRecords: [], sourceGaps: [], providerResponses: [], providerResponseGaps: [] };
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'provider-response-observed') {
+      if (!validResponseLink(current, event, cases[caseIndex]!.graders.filter(item => item.type === 'rubric').map(item => item.id))
+        || event.role === 'judge' && !activeJudge || !(event.bytes instanceof Uint8Array)
+        || event.bytes.byteLength > LIMITS.sourceRecordBytes
+        || event.contentType !== undefined && (typeof event.contentType !== 'string' || Buffer.byteLength(event.contentType) > 256)
+        || event.originalByteLength !== undefined && (!Number.isSafeInteger(event.originalByteLength)
+          || event.originalByteLength < event.bytes.byteLength)
+        || event.completeness === 'complete' && event.originalByteLength !== undefined
+          && event.originalByteLength !== event.bytes.byteLength) throw new Error('provider-response-link');
+      let saved: Awaited<ReturnType<NonNullable<typeof ports.store.saveProviderResponse>>> =
+        { status: 'blocked', reason: 'unavailable' };
+      try {
+        if (ports.store.saveProviderResponse) saved = await ports.store.saveProviderResponse({
+          suiteId: suite.id, runId, caseId: current.caseId, attempt: current.number, callId: event.callId,
+          provisionalTurnId: event.provisionalTurnId, bytes: event.bytes, completeness: event.completeness,
+          ...(event.role === undefined ? {} : { role: event.role }),
+          ...(event.checkId === undefined ? {} : { checkId: event.checkId }),
+          ...(event.contentType === undefined ? {} : { contentType: event.contentType }),
+          ...(event.originalByteLength === undefined ? {} : { originalByteLength: event.originalByteLength }),
+        });
+      } catch { /* A failed body write is a gap only if its checkpoint can be saved. */ }
+      if (saved.status === 'ok') {
+        const reference = saved.value;
+        if (reference.callId !== event.callId || reference.provisionalTurnId !== event.provisionalTurnId
+          || reference.role !== undefined && reference.role !== event.role
+          || reference.checkId !== undefined && reference.checkId !== event.checkId
+          || reference.status !== event.completeness || reference.byteLength !== event.bytes.byteLength
+          || reference.contentType !== event.contentType || reference.originalByteLength !== event.originalByteLength
+          || !reference.locator) throw new PersistenceStopped();
+        current.providerResponses.push({ ...reference,
+          ...(event.role === undefined ? {} : { role: event.role }),
+          ...(event.checkId === undefined ? {} : { checkId: event.checkId }) });
+      } else {
+        current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId,
+          ...(event.role === undefined ? {} : { role: event.role }),
+          ...(event.checkId === undefined ? {} : { checkId: event.checkId }), reason: 'not-persisted' });
+        addDiagnostic(current.diagnostics, 'provider-response-capture-failed');
+      }
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'provider-response-gap') {
+      if (!validResponseLink(current, event, cases[caseIndex]!.graders.filter(item => item.type === 'rubric').map(item => item.id))
+        || event.role === 'judge' && !activeJudge
+        || !['not-observed', 'not-emitted', 'capture-failed', 'incomplete'].includes(event.reason))
+        throw new Error('provider-response-gap-link');
+      current.providerResponseGaps.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId,
+        ...(event.role === undefined ? {} : { role: event.role }),
+        ...(event.checkId === undefined ? {} : { checkId: event.checkId }), reason: event.reason });
       await persist(evidence('incomplete'));
     } else if (event.type === 'source-record') {
       if (!current || current.caseId !== event.caseId || current.number !== event.attempt
@@ -162,9 +241,15 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         await persist(evidence('incomplete'));
       }
     } else if (event.type === 'diagnostic') {
+      if (!validDiagnosticLink({ code: event.code, ...(event.turnId ? { turnId: event.turnId } : {}),
+        ...(event.callId ? { callId: event.callId } : {}) })) throw new Error('invalid-diagnostic');
       addDiagnostic(runDiagnostics, event.code);
       if (current && event.caseId === current.caseId && (event.attempt === undefined || event.attempt === current.number)) {
-        addDiagnostic(current.diagnostics, event.code);
+        if (current.diagnostics.length < MAX_DIAGNOSTICS) {
+          current.diagnostics.push(event.code);
+          current.diagnosticLinks.push({ code: event.code, ...(event.turnId ? { turnId: event.turnId } : {}),
+            ...(event.callId ? { callId: event.callId } : {}) });
+        }
         await persist(evidence('incomplete'));
       }
     } else if (event.type === 'run-completed') terminal = event.status;
@@ -179,18 +264,19 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       if (outcome.status !== 'completed') break;
       if (terminal !== 'completed' || caseIndex !== expectedEnd || current) throw new Error('batch-incomplete');
     }
+    const failureProvenance = observedFailure(outcome, terminal);
     if (current && (current.sourceRecords.length > 0 || current.sourceGaps.length > 0)) {
       if (current.sourceGaps.length === 0) current.sourceGaps.push({ reason: 'incomplete' });
       addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
-      await persist(evidence('incomplete'));
     }
+    if (current && (failureProvenance || current.sourceGaps.length > 0)) await persist(evidence('incomplete', [], null, null, failureProvenance));
     const status: Exclude<RunState, 'queued' | 'running'> = outcome.status === 'blocked' && completed === 0 ? 'blocked'
       : outcome.status === 'interrupted' ? 'interrupted'
       : outcome.status === 'completed' && terminal === 'completed' && completed === cases.length ? 'completed'
       : completed ? 'partial' : 'error';
     const reason = outcome.reason ? SAFE_REASONS.has(outcome.reason) ? outcome.reason : 'unavailable' : undefined;
     if (reason) addDiagnostic(runDiagnostics, reason);
-    const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics);
+    const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics, failureProvenance);
     if (finished.status === 'blocked') { log('eval_run_storage_failed', 'failed', finished.reason); return { status: 'storage-failed', runId, reason: finished.reason }; }
     log('eval_run_finished', status === 'error' ? 'failed' : status, reason);
     return { status, runId, ...(reason ? { reason } : {}) };
@@ -198,14 +284,17 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     if (error instanceof PersistenceStopped) { log('eval_run_storage_failed', 'failed', 'unavailable'); return { status: 'storage-failed', runId }; }
     const status = completed ? 'partial' : 'error';
     const reason = error instanceof EvidenceLimitStopped ? 'evidence-limit-exceeded' : 'runner-protocol-invalid';
+    const failureProvenance: FailureProvenance | undefined = error instanceof EvidenceLimitStopped ? undefined : { stage: 'protocol-rejection' };
     addDiagnostic(runDiagnostics, reason);
-    if (current && current.sourceRecords.length > 0) {
-      if (current.sourceGaps.length === 0) current.sourceGaps.push({ reason: 'incomplete' });
-      addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
-      try { await persist(evidence('incomplete')); }
+    if (current && (current.sourceRecords.length > 0 || failureProvenance)) {
+      if (current.sourceRecords.length > 0) {
+        if (current.sourceGaps.length === 0) current.sourceGaps.push({ reason: 'incomplete' });
+        addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
+      }
+      try { await persist(evidence('incomplete', [], null, null, failureProvenance)); }
       catch { log('eval_run_storage_failed', 'failed', 'unavailable'); return { status: 'storage-failed', runId }; }
     }
-    const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics);
+    const finished = await ports.store.finalize(suite.id, runId, status, runDiagnostics, failureProvenance);
     if (finished.status === 'blocked') { log('eval_run_storage_failed', 'failed', finished.reason); return { status: 'storage-failed', runId, reason: finished.reason }; }
     log('eval_run_finished', status === 'error' ? 'failed' : status, reason);
     return { status, runId, reason };

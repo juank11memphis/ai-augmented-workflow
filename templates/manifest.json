@@ -1,5 +1,5 @@
 {
-  "templateVersion": "230",
+  "templateVersion": "232",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "9",
+      "version": "11",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Documents exact rubric-judge exchange records, scored and scoreless grading outcomes, evidence completeness, and safe capture for future runs."
+        "Adds version-3 judge response and grading-error examples, with both-role failure-gap guidance."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {
