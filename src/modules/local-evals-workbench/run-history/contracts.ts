@@ -117,6 +117,7 @@ export interface ArtifactReaderPort {
   get(suiteId: string, runId: string, selection?: Selection): Promise<Outcome<RunDetail>>;
   sourceRecord?(suiteId: string, runId: string, selection: Required<Selection>, recordId: string): Promise<Outcome<StoredSourceRecord>>;
   sourceFieldRange?(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number): Promise<Outcome<EvidenceFieldRange>>;
+  providerResponseRange?(suiteId: string, runId: string, selection: Selection, locator: string, offset: number, limit?: number): Promise<Outcome<EvidenceFieldRange>>;
 }
 export interface ArtifactStorePort {
   create(configuration: RunConfiguration): Promise<Outcome<Manifest>>;
