@@ -24,6 +24,38 @@ function response(runId: string, bytes: Uint8Array, callId = 'call-1'): Provider
     bytes, completeness: 'complete', contentType: 'application/octet-stream' };
 }
 
+it('saves a response after its matching incomplete checkpoint without completing the attempt', async () => {
+  const p = await project(); try {
+    const a = fixture(p.root); const runId = await running(a);
+    const checkpoint = { ...evidence(runId), outcome: 'incomplete' as const, output: '', turns: [], assertions: [] };
+    assert.equal((await a.store.append('suite', runId, checkpoint)).status, 'ok');
+    const raw = Buffer.from([0, 255, 128, 42]);
+    assert.deepEqual(await a.store.saveProviderResponse({ ...response(runId, raw), caseId: 'wrong' }),
+      { status: 'blocked', reason: 'invalid-transition' });
+    assert.deepEqual(await a.store.saveProviderResponse({ ...response(runId, raw), attempt: 2 }),
+      { status: 'blocked', reason: 'invalid-input' });
+    const saved = await a.store.saveProviderResponse(response(runId, raw));
+    if (saved.status !== 'ok') return assert.fail(JSON.stringify(saved));
+    assert.equal((await a.store.append('suite', runId, { ...checkpoint,
+      providerResponses: { records: [saved.value], gaps: [] } })).status, 'ok');
+    const selected = await historyReader(fixture(p.root)).get('suite', runId, { caseId: 'case', attempt: 1 });
+    if (selected.status !== 'ok') return assert.fail(JSON.stringify(selected));
+    assert.equal(selected.value.summary.state, 'running');
+    assert.equal(selected.value.summary.cases[0]?.state, 'incomplete');
+    assert.equal(selected.value.evidence?.outcome, 'incomplete');
+    assert.deepEqual(selected.value.evidence?.turns, []);
+    assert.deepEqual(selected.value.evidence?.assertions, []);
+    assert.deepEqual(selected.value.evidence?.providerResponses?.records, [saved.value]);
+    const read = await historyReader(fixture(p.root)).providerResponseRange('suite', runId,
+      { caseId: 'case', attempt: 1 }, saved.value.locator, 0);
+    if (read.status !== 'ok') return assert.fail(JSON.stringify(read));
+    assert.deepEqual(Buffer.from(read.value.bytes), raw);
+    assert.equal((await a.store.append('suite', runId, evidence(runId))).status, 'ok');
+    assert.deepEqual(await a.store.saveProviderResponse(response(runId, raw, 'call-2')),
+      { status: 'blocked', reason: 'invalid-transition' });
+  } finally { await p.cleanup(); }
+});
+
 it('reopens exact binary and split UTF-8 ranges without leaking bodies into compact artifacts or logs', async () => {
   const p = await project(); try {
     const logs: string[] = [];

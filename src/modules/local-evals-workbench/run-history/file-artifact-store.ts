@@ -96,7 +96,9 @@ export class FileArtifactStore implements ArtifactStorePort {
       return await serialized(this.paths.root, async () => {
         const loaded = await this.load(value.suiteId, value.runId);
         if (loaded.status !== 'ok') return loaded;
-        if (loaded.value.state !== 'running' || !loaded.value.cases.some(item => item.caseId === value.caseId && item.attempts.length === 0)
+        if (loaded.value.state !== 'running' || !loaded.value.cases.some(item => item.caseId === value.caseId
+          && (item.attempts.length === 0 || item.state === 'incomplete' && item.attempts.length === 1
+            && item.attempts[0]?.number === value.attempt && item.attempts[0].outcome === 'incomplete'))
           || loaded.value.owner.pid !== this.dependencies.owner.identity.pid
           || loaded.value.owner.token !== this.dependencies.owner.identity.token) return { status: 'blocked', reason: 'invalid-transition' };
         return new ProviderResponseArtifact(this.paths, this.dependencies.files).save(value);
