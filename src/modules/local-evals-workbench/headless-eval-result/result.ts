@@ -1,6 +1,6 @@
 import type { CheckOutcome, RunState } from '../run-history/index.js';
 import type { LocatedAttempt } from '../run-history/failed-assertion-locators.js';
-import type { EvidenceGap } from '../run-history/contracts.js';
+import type { DiagnosticLink, EvidenceGap, FailureProvenance } from '../run-history/contracts.js';
 
 export type SelectedEvidenceField =
   | { readonly status: 'available'; readonly locator: string; readonly byteLength: number; readonly truncated: boolean; readonly value?: string }
@@ -38,6 +38,8 @@ export type HeadlessEvalSummary = {
   readonly scope: 'all' | 'selected';
   readonly testedModel: string;
   readonly judgeModel: string | null;
+  readonly counts: { readonly completed: number; readonly incomplete: number; readonly notRun: number };
+  readonly failureProvenance?: FailureProvenance;
   readonly cases: readonly { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed';
     readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[];
   readonly nextLocatorOffset?: number;
@@ -45,6 +47,13 @@ export type HeadlessEvalSummary = {
 
 export type HeadlessEvalResult =
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly artifactPath?: string }
+  | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly incompleteAttempt: {
+      readonly caseId: string; readonly attempt: number; readonly state: 'incomplete';
+      readonly diagnostics: readonly string[]; readonly diagnosticLinks: readonly DiagnosticLink[];
+      readonly failureProvenance?: FailureProvenance;
+      readonly turnIds: readonly string[]; readonly callIds: readonly string[];
+      readonly source: { readonly status: 'gap'; readonly reason: 'not-captured' };
+    } }
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly failure: {
       readonly caseId: string; readonly attempt: number; readonly assertionId: string;
       readonly kind: 'assertion' | 'grader'; readonly actual: string; readonly expected: string;
