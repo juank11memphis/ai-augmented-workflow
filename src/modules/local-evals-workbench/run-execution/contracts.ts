@@ -1,4 +1,5 @@
 import type { NormalizedEvalSuite, NormalizedEvalTestCase } from '../discover-conventional-eval-suites/index.js';
+import type { FailureProvenance } from '../run-history/contracts.js';
 
 export type OrderedRunPlanChoice = { readonly caseId: string; readonly testedModel: string; readonly judgeModel: string | null };
 export type OrderedRunPlan = readonly OrderedRunPlanChoice[];
@@ -32,7 +33,8 @@ export type ExecutionEvent = SourceExecutionEvent
   | { readonly type: 'grading-error'; readonly caseId: string; readonly attempt: number; readonly checkId: string; readonly judgeModel: string; readonly code: string; readonly sequence: number }
   | { readonly type: 'case-completed'; readonly caseId: string; readonly attempt?: number; readonly status: 'completed' | 'error'; readonly calls?: number | null; readonly cost?: number | null; readonly sourceCapture?: 'complete' | 'not-captured' | 'incomplete' }
   | { readonly type: 'run-completed'; readonly status: 'completed' | 'error' | 'interrupted' }
-  | { readonly type: 'diagnostic'; readonly code: string; readonly caseId: string | null; readonly attempt?: number | null };
+  | { readonly type: 'diagnostic'; readonly code: string; readonly caseId: string | null; readonly attempt?: number | null;
+      readonly turnId?: string; readonly callId?: string };
 export type SourceRecord =
   | { readonly kind: 'model-call'; readonly id: string; readonly turnId: string; readonly checkId: string;
       readonly modelId: string; readonly phase: 'initial' | 'post-tool'; readonly elapsedMs: number;
@@ -54,4 +56,5 @@ export type SourceExecutionEvent =
   | { readonly type: 'source-chunk-accepted' }
   | { readonly type: 'source-record'; readonly caseId: string; readonly attempt: number; readonly sequence: number; readonly record: SourceRecord }
   | { readonly type: 'source-gap'; readonly caseId: string; readonly attempt: number; readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string };
-export type RunnerExecutionOutcome = { readonly status: 'completed' | 'error' | 'interrupted' | 'blocked'; readonly reason?: string };
+export type RunnerExecutionOutcome = { readonly status: 'completed' | 'error' | 'interrupted' | 'blocked'; readonly reason?: string;
+  readonly failureProvenance?: FailureProvenance };

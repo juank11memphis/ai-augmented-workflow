@@ -1,5 +1,11 @@
 export type RunState = 'queued' | 'running' | 'completed' | 'partial' | 'blocked' | 'error' | 'interrupted';
 export type CheckOutcome = 'passed' | 'failed' | 'incomplete';
+export type FailureProvenance = {
+  readonly stage: 'runner-report' | 'unexpected-process-exit' | 'timeout' | 'protocol-rejection';
+  readonly runnerReport?: { readonly status: 'error' | 'interrupted'; readonly code?: string };
+  readonly processExit?: { readonly code: number | null };
+};
+export type DiagnosticLink = { readonly code: string; readonly turnId?: string; readonly callId?: string };
 export type Reason = 'invalid-input' | 'unsafe-path' | 'not-ignored' | 'tracked-artifacts' | 'git-unavailable' | 'unverifiable-root' | 'unavailable' | 'not-found' | 'corrupt' | 'limit-exceeded' | 'invalid-transition' | 'owner-unknown' | 'index-stale';
 export type Failure = { readonly status: 'blocked'; readonly reason: Reason };
 export type Outcome<T> = { readonly status: 'ok'; readonly value: T; readonly warnings?: readonly Reason[] } | Failure;
@@ -21,6 +27,7 @@ export type Manifest = Omit<RunConfiguration, 'caseSelections'> & {
   readonly createdAt: number; readonly updatedAt: number; readonly finishedAt: number | null;
   readonly outcome: CheckOutcome; readonly calls: number | null; readonly cost: number | null;
   readonly diagnostics: readonly string[]; readonly cases: readonly CaseSummary[];
+  readonly failureProvenance?: FailureProvenance;
 };
 export type AssertionEvidence = {
   readonly id: string; readonly kind: 'assertion' | 'grader'; readonly outcome: CheckOutcome;
@@ -77,7 +84,8 @@ export type Attempt = {
   readonly version: 1; readonly suiteId: string; readonly runId: string; readonly caseId: string;
   readonly number: number; readonly outcome: CheckOutcome; readonly durationMs: number;
   readonly calls: number | null; readonly cost: number | null; readonly output: string;
-  readonly truncated: boolean; readonly diagnostics: readonly string[]; readonly turns: readonly TurnEvidence[];
+  readonly truncated: boolean; readonly diagnostics: readonly string[]; readonly diagnosticLinks?: readonly DiagnosticLink[];
+  readonly failureProvenance?: FailureProvenance; readonly turns: readonly TurnEvidence[];
   readonly tools: readonly ToolEvidence[]; readonly assertions: readonly AssertionEvidence[];
   readonly sourceEvidence?: SourceEvidence;
   readonly sourceCapture?: SourceCapture;
@@ -102,7 +110,7 @@ export interface ArtifactStorePort {
   start(suiteId: string, runId: string): Promise<Outcome<Manifest>>;
   append(suiteId: string, runId: string, attempt: Attempt): Promise<Outcome<Manifest>>;
   saveSourceRecord?(record: SourceRecordWrite): Promise<Outcome<SourceReference>>;
-  finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[]): Promise<Outcome<Manifest>>;
+  finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[], failureProvenance?: FailureProvenance): Promise<Outcome<Manifest>>;
 }
 export type ArtifactEvent = { readonly event: 'artifact-persisted' | 'artifact-blocked' | 'artifact-recovered' | 'artifact-read'; readonly reason?: Reason; readonly state?: RunState; readonly count?: number };
 export interface ArtifactLogger { emit(event: ArtifactEvent): void }
