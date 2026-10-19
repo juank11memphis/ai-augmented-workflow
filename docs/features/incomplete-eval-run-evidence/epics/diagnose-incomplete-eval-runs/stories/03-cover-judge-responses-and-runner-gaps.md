@@ -6,7 +6,7 @@
 
 [Diagnose Incomplete Eval Runs](../epic_brief.md)
 
-**Status:** in-progress
+**Status:** done
 
 ## User Story
 
