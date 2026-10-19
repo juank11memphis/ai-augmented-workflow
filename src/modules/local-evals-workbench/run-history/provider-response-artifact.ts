@@ -17,6 +17,8 @@ export class ProviderResponseArtifact {
   async save(value: ProviderResponseWrite): Promise<Outcome<ProviderResponseReference>> {
     if (![value.suiteId, value.runId, value.caseId, value.callId, value.provisionalTurnId].every(logicalId)
       || value.attempt !== 1 || !(value.bytes instanceof Uint8Array)
+      || (value.role !== undefined && !['tested-model', 'judge'].includes(value.role))
+      || (value.role === 'judge' ? !logicalId(value.checkId) : value.checkId !== undefined)
       || !['complete', 'truncated', 'incomplete'].includes(value.completeness)
       || value.contentType !== undefined && !contentType(value.contentType)
       || value.originalByteLength !== undefined && (!integer(value.originalByteLength) || value.originalByteLength < value.bytes.byteLength)
@@ -34,6 +36,8 @@ export class ProviderResponseArtifact {
       const status = clipped ? 'truncated' : value.completeness;
       const reference: ProviderResponseReference = {
         callId: value.callId, provisionalTurnId: value.provisionalTurnId, status, locator: relative,
+        ...(value.role === undefined ? {} : { role: value.role }),
+        ...(value.checkId === undefined ? {} : { checkId: value.checkId }),
         byteLength: retained, ...(value.contentType === undefined ? {} : { contentType: value.contentType }),
         ...((value.originalByteLength !== undefined || clipped && value.completeness === 'complete')
           ? { originalByteLength: value.originalByteLength ?? value.bytes.byteLength } : {}),
@@ -45,6 +49,8 @@ export class ProviderResponseArtifact {
 
   async verify(suiteId: string, runId: string, caseId: string, attempt: number, reference: ProviderResponseReference): Promise<Outcome<null>> {
     if (![suiteId, runId, caseId, reference.callId, reference.provisionalTurnId].every(logicalId) || attempt !== 1
+      || (reference.role !== undefined && !['tested-model', 'judge'].includes(reference.role))
+      || (reference.role === 'judge' ? !logicalId(reference.checkId) : reference.checkId !== undefined)
       || !integer(reference.byteLength, LIMITS.providerResponseBytes)
       || !['complete', 'truncated', 'incomplete'].includes(reference.status)
       || reference.contentType !== undefined && !contentType(reference.contentType)
