@@ -139,3 +139,24 @@ test('compiled CLI keeps assertion selection and blocks dangling or unsupported 
     }
   } finally { await project.cleanup(); }
 });
+
+test('assertion failure remains a real completed-case failure beside the incomplete attempt', async () => {
+  const project = await fixture('report-only');
+  try {
+    const suitePath = path.join(project.root, 'evals/offline.json');
+    const suite = JSON.parse(await readFile(suitePath, 'utf8')) as {
+      testCases: { assertions: { expected: string }[] }[] };
+    suite.testCases[0]!.assertions[0]!.expected = 'NEVER_IN_SAFE_OUTPUT';
+    await writeFile(suitePath, JSON.stringify(suite));
+    const run = invoke(project.root, 'run');
+    const runId = run.json.runId as string;
+    assert.ok(runId);
+    const assertion = invoke(project.root, 'result', runId, '--case', 'done-a', '--attempt', '1', '--assertion', 'contains');
+    assert.equal(assertion.json.status, 'ready', JSON.stringify(assertion.json));
+    const failure = assertion.json.failure as { caseId: string; attempt: number; assertionId: string };
+    assert.deepEqual([failure.caseId, failure.attempt, failure.assertionId], ['done-a', 1, 'contains']);
+    const incomplete = invoke(project.root, 'result', runId, '--case', 'approximate-price', '--attempt', '1');
+    assert.equal(incomplete.json.status, 'ready');
+    assertSafe(run); assertSafe(assertion); assertSafe(incomplete);
+  } finally { await project.cleanup(); }
+});

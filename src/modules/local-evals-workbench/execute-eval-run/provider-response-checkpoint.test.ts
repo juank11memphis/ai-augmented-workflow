@@ -96,12 +96,12 @@ test('pre-turn response is durable before malformed trailing event is rejected',
   assertIncomplete(h.snapshots.at(-1));
 });
 
-test('rejected or partial body write yields capture-failed gap, never complete locator', async () => {
+test('rejected or partial body write yields not-persisted gap, never complete locator', async () => {
   for (const options of [{ rejectBody: true }, { partialWrite: true }, { throwBody: true }]) {
     const h = fixture([start, observed], { status: 'error', reason: 'runner-exited' }, options);
     assert.equal((await executeEvalRun(command, h.ports)).status, 'error');
     assert.deepEqual(h.snapshots.at(-1)?.providerResponses, { records: [], gaps: [
-      { callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'capture-failed' }] });
+      { callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'not-persisted' }] });
     assertIncomplete(h.snapshots.at(-1));
   }
 });

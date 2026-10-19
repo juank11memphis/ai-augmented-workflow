@@ -82,7 +82,7 @@ describe('safe Epic integration base template contract', () => {
 
   it('versions the packaged guidance and verifies the installed gatekeeper is synced', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '231');
+    assert.equal(manifest.templateVersion, '232');
     assert.equal(manifest.templates[templatePath]?.version, '71');
     assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /overlapping uncommitted Task failures.*reviewed same-Task continuation/i);
     assert.match(installed, /Preserve the blocked Task's uncommitted edits/);

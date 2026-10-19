@@ -98,7 +98,8 @@ export class ExecuteEventValidator {
     if (!this.activeCase) throw new Error('case-not-started');
     if (typeof raw.type === 'string' && raw.type.startsWith('provider-response-')) {
       if (this.version !== 3) throw new Error('unsupported-event');
-      return this.responses.accept(raw.type, data, caseId, this.attemptNumber, this.selection.model);
+      return this.responses.accept(raw.type, data, caseId, this.attemptNumber, this.selection.model,
+        this.selection.judgeModel, selected.graders.filter(item => item.type === 'rubric').map(item => item.id));
     }
     if (raw.type === 'source-record-chunk') {
       if (this.version === 1) throw new Error('unsupported-event');

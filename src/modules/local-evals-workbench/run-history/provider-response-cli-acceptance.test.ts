@@ -7,7 +7,7 @@ import { offlineProject } from '../run-execution/offline-project-fixture.js';
 
 const cli = path.resolve('bin/sibu.js');
 const body = 'SYNTHETIC_PROVIDER_BODY_PRIVATE';
-type Scenario = 'malformed' | 'non-success' | 'unavailable' | 'oversized' | 'exit-after-observation';
+type Scenario = 'malformed' | 'non-success' | 'adapter-failure' | 'unavailable' | 'oversized' | 'exit-after-observation';
 function invoke(root: string, operation: 'run' | 'result', ...args: string[]) {
   const child = spawnSync(process.execPath, [cli, 'evals', operation, 'offline', ...args],
     { cwd: root, encoding: 'utf8', timeout: 45_000 });
@@ -38,12 +38,12 @@ function runner(scenario: Scenario) {
         contentType:'application/octet-stream',originalByteLength:${payload.length}});
         ${chunks.map((chunk, index) => `emit('provider-response-chunk',caseId,{callId:'call-1',index:${index},base64:'${Buffer.from(chunk).toString('base64')}'});`).join('\n')}
         emit('provider-response-completed',caseId,{callId:'call-1',completeness:'complete'});`}
-      ${scenario === 'exit-after-observation' ? 'process.exit(7);' : `emit('run-diagnostic',caseId,{code:'${unavailable ? 'provider-no-response' : scenario === 'non-success' ? 'provider-non-success' : 'malformed-output'}'});
-      emit('run-completed',null,{status:'error',code:'${unavailable ? 'provider-no-response' : scenario === 'non-success' ? 'provider-non-success' : 'malformed-output'}'});`}
+      ${scenario === 'exit-after-observation' ? 'process.exit(7);' : `emit('run-diagnostic',caseId,{code:'${unavailable ? 'provider-no-response' : scenario === 'non-success' ? 'provider-non-success' : scenario === 'adapter-failure' ? 'adapter-failure' : 'malformed-output'}'});
+      emit('run-completed',null,{status:'error',code:'${unavailable ? 'provider-no-response' : scenario === 'non-success' ? 'provider-non-success' : scenario === 'adapter-failure' ? 'adapter-failure' : 'malformed-output'}'});`}
     }`;
 }
 
-for (const scenario of ['malformed', 'non-success', 'unavailable', 'oversized', 'exit-after-observation'] as const) {
+for (const scenario of ['malformed', 'non-success', 'adapter-failure', 'unavailable', 'oversized', 'exit-after-observation'] as const) {
   test(`compiled CLI selects ${scenario} tested-model evidence without ordinary body leakage`, async () => {
     const project = await offlineProject();
     try {
@@ -60,8 +60,15 @@ for (const scenario of ['malformed', 'non-success', 'unavailable', 'oversized', 
       assert.equal(selected.json.status, 'ready', JSON.stringify(selected.json));
       const incomplete = selected.json.incompleteAttempt as { source: {
         status: string; records: { locator: string; status: string; byteLength: number; originalByteLength?: number; missingByteLength?: number }[];
-        gaps: { reason: string }[] } };
+        gaps: { reason: string }[] }; diagnostics: string[];
+        failureProvenance: { stage: string; runnerReport?: { code: string } } };
       assert.equal(incomplete.source.status, 'available');
+      assert.equal(incomplete.failureProvenance.stage,
+        scenario === 'exit-after-observation' ? 'unexpected-process-exit' : 'runner-report');
+      if (scenario === 'adapter-failure') {
+        assert.ok(incomplete.diagnostics.includes('adapter-failure'));
+        assert.equal(incomplete.failureProvenance.runnerReport?.code, 'adapter-failure');
+      }
       const artifact = await readFile(path.join(project.root, 'evals/artifacts/offline', runId, 'cases/case/1.json'), 'utf8');
       assert.doesNotMatch(artifact, /SYNTHETIC_PROVIDER_BODY_PRIVATE/);
       if (scenario === 'unavailable') {

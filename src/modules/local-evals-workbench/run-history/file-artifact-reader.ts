@@ -1,4 +1,4 @@
-import type { ArtifactReaderPort, Attempt, EvidenceFieldRange, HistoryEntry, Manifest, Outcome, Reason, RunDetail, Selection, SourceEvidence, StoredSourceRecord } from './contracts.js';
+import type { ArtifactReaderPort, Attempt, EvidenceFieldRange, HistoryEntry, Manifest, Outcome, ProviderResponseSelection, Reason, RunDetail, Selection, SourceEvidence, StoredSourceRecord } from './contracts.js';
 import { ArtifactPaths, failure } from './artifact-paths.js';
 import { BoundedArtifactReader } from './bounded-artifact-reader.js';
 import { InterruptedRunRecovery } from './interrupted-run-recovery.js';
@@ -71,7 +71,7 @@ export class FileArtifactReader implements ArtifactReaderPort {
     if (!judgeMatchesAssertion(value.record, detail.value.evidence?.assertions ?? [])) return { status: 'blocked', reason: 'corrupt' };
     return stored;
   }
-  async providerResponseRange(suiteId: string, runId: string, selection: Selection, locator: string, offset: number,
+  async providerResponseRange(suiteId: string, runId: string, selection: ProviderResponseSelection, locator: string, offset: number,
     limit = LIMITS.providerResponseRangeBytes): Promise<Outcome<EvidenceFieldRange>> {
     if (selection.assertionId !== undefined || !logicalId(selection.caseId) || selection.attempt !== 1 || typeof locator !== 'string')
       return { status: 'blocked', reason: 'invalid-input' };
@@ -79,6 +79,8 @@ export class FileArtifactReader implements ArtifactReaderPort {
     if (detail.status !== 'ok') return detail;
     const reference = detail.value.evidence?.providerResponses?.records.find(item => item.locator === locator);
     if (!reference) return { status: 'blocked', reason: 'not-found' };
+    if (selection.providerResponse && (selection.providerResponse.role !== (reference.role ?? 'tested-model')
+      || selection.providerResponse.checkId !== reference.checkId)) return { status: 'blocked', reason: 'not-found' };
     return new ProviderResponseArtifact(this.paths).range(suiteId, runId, selection.caseId, selection.attempt, reference, offset, limit);
   }
   async selectedSource(suiteId: string, runId: string, selection: Required<Selection>): Promise<Outcome<SourceEvidence | undefined>> {

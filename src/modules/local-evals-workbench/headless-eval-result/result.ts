@@ -4,6 +4,7 @@ import type { DiagnosticLink, EvidenceGap, FailureProvenance, ProviderResponseGa
 
 export type SelectedProviderResponses = { readonly status: 'available'; readonly records: readonly {
   readonly callId: string; readonly provisionalTurnId: string; readonly locator: string;
+  readonly role?: 'tested-model' | 'judge'; readonly checkId?: string;
   readonly status: 'complete' | 'truncated' | 'incomplete'; readonly byteLength: number;
   readonly originalByteLength?: number; readonly missingByteLength?: number; readonly contentType?: string;
 }[]; readonly gaps: readonly ProviderResponseGap[]; readonly truncated: boolean };

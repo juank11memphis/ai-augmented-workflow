@@ -135,6 +135,8 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     const source = captured ? { status: 'available' as const,
       records: captured.records.slice(0, 6).map(record => ({
         callId: record.callId, provisionalTurnId: record.provisionalTurnId, locator: record.locator,
+        ...(record.role === undefined ? {} : { role: record.role }),
+        ...(record.checkId === undefined ? {} : { checkId: record.checkId }),
         status: record.status, byteLength: record.byteLength,
         ...(record.contentType ? { contentType: record.contentType } : {}),
         ...(record.originalByteLength !== undefined ? { originalByteLength: record.originalByteLength,
@@ -147,7 +149,10 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
       if (matching.length !== 1 || command.field.offset >= matching[0]!.byteLength || !dependencies.reader.readProviderResponse)
         return { status: 'blocked', reason: 'selection-mismatch' };
       let range;
-      try { range = await dependencies.reader.readProviderResponse(command.suiteId, command.runId, selection,
+      try { range = await dependencies.reader.readProviderResponse(command.suiteId, command.runId, {
+        ...selection, providerResponse: { role: matching[0]!.role ?? 'tested-model',
+          ...(matching[0]!.checkId === undefined ? {} : { checkId: matching[0]!.checkId }) },
+      },
         command.field.locator, command.field.offset, MAX_FIELD_BYTES); }
       catch { return { status: 'blocked', reason: 'unavailable' }; }
       if (range.status === 'blocked') return { status: 'blocked', reason: range.reason === 'not-found' ? 'missing-artifact'
