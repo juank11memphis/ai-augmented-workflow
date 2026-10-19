@@ -72,7 +72,7 @@ function validTotals(v: Record<string, unknown>): boolean {
 export function attempt(v: unknown): v is Attempt {
   if (!record(v)) return false;
   const diagnostics = v.diagnostics;
-  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture') || v.version !== 1
+  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture providerResponses') || v.version !== 1
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
     || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(diagnostics)
     || v.diagnosticLinks !== undefined && (!Array.isArray(v.diagnosticLinks) || v.diagnosticLinks.length > LIMITS.diagnostics
@@ -96,6 +96,25 @@ export function attempt(v: unknown): v is Attempt {
     || !Array.isArray(v.sourceCapture.gaps) || v.sourceCapture.gaps.length > LIMITS.evidenceItems
     || !v.sourceCapture.gaps.every(item => record(item) && keys(item, 'reason recordId')
       && enumValue(item.reason, ['incomplete', 'capture-failed']) && (item.recordId === undefined || logicalId(item.recordId))))) return false;
+  if (v.providerResponses !== undefined && (!record(v.providerResponses) || !keys(v.providerResponses, 'records gaps')
+    || !Array.isArray(v.providerResponses.records) || v.providerResponses.records.length > LIMITS.evidenceItems
+    || !v.providerResponses.records.every(item => record(item) && keys(item, 'callId provisionalTurnId status locator byteLength contentType originalByteLength')
+      && logicalId(item.callId) && logicalId(item.provisionalTurnId)
+      && enumValue(item.status, ['complete', 'truncated', 'incomplete'])
+      && typeof item.locator === 'string' && item.locator.length > 0 && item.locator.length <= 400
+      && !/[\u0000-\u001f\u007f]/.test(item.locator) && integer(item.byteLength, LIMITS.sourceRecordBytes)
+      && (item.contentType === undefined || text(item.contentType))
+      && (item.originalByteLength === undefined || integer(item.originalByteLength))
+      && (item.originalByteLength === undefined || item.originalByteLength >= item.byteLength)
+      && (item.status !== 'complete' || item.originalByteLength === undefined || item.originalByteLength === item.byteLength))
+    || new Set(v.providerResponses.records.map(item => item.callId)).size !== v.providerResponses.records.length
+    || !Array.isArray(v.providerResponses.gaps) || v.providerResponses.gaps.length > LIMITS.evidenceItems
+    || !v.providerResponses.gaps.every(item => record(item) && keys(item, 'callId provisionalTurnId reason')
+      && logicalId(item.callId) && logicalId(item.provisionalTurnId)
+      && enumValue(item.reason, ['not-observed', 'not-emitted', 'capture-failed', 'incomplete']))
+    || new Set(v.providerResponses.gaps.map(item => item.callId)).size !== v.providerResponses.gaps.length
+    || v.providerResponses.gaps.some(gap => (v.providerResponses as { records: { callId: string }[] }).records
+      .some(item => item.callId === gap.callId)))) return false;
   if (!Array.isArray(v.turns) || v.turns.length > LIMITS.evidenceItems || !v.turns.every(t => record(t) && keys(t, 'id role content') && logicalId(t.id) && enumValue(t.role, ['user', 'assistant', 'system', 'tool']) && text(t.content))
     || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result turnId position outcome') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result)
       && (t.turnId === undefined || logicalId(t.turnId)) && (t.position === undefined || integer(t.position, LIMITS.evidenceItems))

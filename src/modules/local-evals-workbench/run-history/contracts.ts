@@ -77,6 +77,17 @@ export type StoredSourceRecord = { readonly version: 1; readonly suiteId: string
   readonly caseId: string; readonly attempt: number; readonly sequence: number; readonly status: 'complete'; readonly byteLength: number;
   readonly record: import('../run-execution/contracts.js').SourceRecord };
 export type SourceRecordWrite = Omit<StoredSourceRecord, 'status' | 'byteLength'>;
+export type ProviderResponseWrite = { readonly suiteId: string; readonly runId: string; readonly caseId: string;
+  readonly attempt: number; readonly callId: string; readonly provisionalTurnId: string;
+  readonly bytes: Uint8Array; readonly contentType?: string; readonly originalByteLength?: number;
+  readonly completeness: 'complete' | 'truncated' | 'incomplete' };
+export type ProviderResponseReference = { readonly callId: string; readonly provisionalTurnId: string;
+  readonly status: 'complete' | 'truncated' | 'incomplete'; readonly locator: string;
+  readonly byteLength: number; readonly contentType?: string; readonly originalByteLength?: number };
+export type ProviderResponseGap = { readonly callId: string; readonly provisionalTurnId: string;
+  readonly reason: 'not-observed' | 'not-emitted' | 'capture-failed' | 'incomplete' };
+export type ProviderResponseCapture = { readonly records: readonly ProviderResponseReference[];
+  readonly gaps: readonly ProviderResponseGap[] };
 export type TurnEvidence = { readonly id: string; readonly role: 'user' | 'assistant' | 'system' | 'tool'; readonly content: string };
 export type ToolEvidence = { readonly id: string; readonly name: string; readonly arguments: string; readonly result: string;
   readonly turnId?: string; readonly position?: number; readonly outcome?: 'result' | 'error' | 'unexpected-response' };
@@ -89,6 +100,8 @@ export type Attempt = {
   readonly tools: readonly ToolEvidence[]; readonly assertions: readonly AssertionEvidence[];
   readonly sourceEvidence?: SourceEvidence;
   readonly sourceCapture?: SourceCapture;
+  /** Absent on legacy attempts; never infer a response from that absence. */
+  readonly providerResponses?: ProviderResponseCapture;
   /** Repo-relative sources for a repo-aware reviewer; saved outputs and check results are above. */
   readonly review?: { readonly runPath: string; readonly suitePath: string | null; readonly targetPath: string | null; readonly runnerPath: string | null;
     readonly inputPaths: readonly string[]; readonly omittedInputPathCount: number; readonly context: 'current-repo-files' };
@@ -110,6 +123,7 @@ export interface ArtifactStorePort {
   start(suiteId: string, runId: string): Promise<Outcome<Manifest>>;
   append(suiteId: string, runId: string, attempt: Attempt): Promise<Outcome<Manifest>>;
   saveSourceRecord?(record: SourceRecordWrite): Promise<Outcome<SourceReference>>;
+  saveProviderResponse?(response: ProviderResponseWrite): Promise<Outcome<ProviderResponseReference>>;
   finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[], failureProvenance?: FailureProvenance): Promise<Outcome<Manifest>>;
 }
 export type ArtifactEvent = { readonly event: 'artifact-persisted' | 'artifact-blocked' | 'artifact-recovered' | 'artifact-read'; readonly reason?: Reason; readonly state?: RunState; readonly count?: number };
