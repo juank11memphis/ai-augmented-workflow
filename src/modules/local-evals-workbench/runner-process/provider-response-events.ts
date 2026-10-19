@@ -4,7 +4,8 @@ import { logicalId, record } from '../run-history/validation.js';
 export const RESPONSE_BYTES = 128_000;
 export const RUN_RESPONSE_BYTES = 512_000;
 
-type Link = { caseId: string; attempt: number; callId: string; provisionalTurnId: string };
+type Link = { caseId: string; attempt: number; callId: string; provisionalTurnId: string;
+  role?: 'tested-model' | 'judge'; checkId?: string };
 type Pending = Link & { contentType?: string; originalByteLength?: number; index: number; seen: number;
   retained: Buffer[]; retainedBytes: number; truncated: boolean };
 
@@ -23,13 +24,22 @@ export class ProviderResponseEvents {
   get incomplete(): ExecutionEvent | undefined {
     const value = this.pending;
     return value && { type: 'provider-response-gap', caseId: value.caseId, attempt: value.attempt,
-      callId: value.callId, provisionalTurnId: value.provisionalTurnId, reason: 'incomplete' };
+      callId: value.callId, provisionalTurnId: value.provisionalTurnId,
+      ...(value.role === undefined ? {} : { role: value.role }),
+      ...(value.checkId === undefined ? {} : { checkId: value.checkId }), reason: 'incomplete' };
   }
 
-  accept(type: string, data: Record<string, unknown>, caseId: string, attempt: number, model: string): ExecutionEvent {
+  accept(type: string, data: Record<string, unknown>, caseId: string, attempt: number, model: string,
+    judgeModel?: string | null, rubricChecks: readonly string[] = []): ExecutionEvent {
+    const role = data.role;
+    const judge = role === 'judge';
+    const identityValid = (role === undefined || role === 'tested-model' || judge)
+      && (judge ? typeof judgeModel === 'string' && data.modelId === judgeModel
+        && logicalId(data.checkId) && rubricChecks.includes(data.checkId)
+        : data.modelId === model && data.checkId === undefined);
     if (type === 'provider-response-started') {
-      if (!exactKeys(data, ['callId', 'provisionalTurnId', 'modelId'], ['contentType', 'originalByteLength'])
-        || !logicalId(data.callId) || !logicalId(data.provisionalTurnId) || data.modelId !== model
+      if (!exactKeys(data, ['callId', 'provisionalTurnId', 'modelId'], ['role', 'checkId', 'contentType', 'originalByteLength'])
+        || !logicalId(data.callId) || !logicalId(data.provisionalTurnId) || !identityValid
         || this.pending || this.calls.has(data.callId)
         || data.contentType !== undefined && (typeof data.contentType !== 'string' || !data.contentType
           || Buffer.byteLength(data.contentType) > 200)
@@ -37,18 +47,25 @@ export class ProviderResponseEvents {
           || (data.originalByteLength as number) < 0)) throw new Error('invalid-response-start');
       this.calls.add(data.callId);
       this.pending = { caseId, attempt, callId: data.callId, provisionalTurnId: data.provisionalTurnId,
+        ...(role === undefined ? {} : { role: role as 'tested-model' | 'judge' }),
+        ...(judge ? { checkId: data.checkId as string } : {}),
         ...(data.contentType === undefined ? {} : { contentType: data.contentType as string }),
         ...(data.originalByteLength === undefined ? {} : { originalByteLength: data.originalByteLength as number }),
         index: 0, seen: 0, retained: [], retainedBytes: 0, truncated: false };
       return { type: 'source-chunk-accepted' };
     }
     if (type === 'provider-response-gap') {
-      if (!exactKeys(data, ['callId', 'provisionalTurnId', 'reason']) || !logicalId(data.callId)
+      if (!exactKeys(data, ['callId', 'provisionalTurnId', 'reason'], ['role', 'checkId', 'modelId']) || !logicalId(data.callId)
         || !logicalId(data.provisionalTurnId) || !['not-observed', 'not-emitted', 'capture-failed'].includes(String(data.reason))
+        || !(judge ? identityValid : (role === undefined || role === 'tested-model')
+          && data.checkId === undefined && (data.modelId === undefined || data.modelId === model))
         || this.pending || this.calls.has(data.callId)) throw new Error('invalid-response-gap');
       this.calls.add(data.callId);
       return { type: 'provider-response-gap', caseId, attempt, callId: data.callId,
-        provisionalTurnId: data.provisionalTurnId, reason: data.reason as 'not-observed' | 'not-emitted' | 'capture-failed' };
+        provisionalTurnId: data.provisionalTurnId,
+        ...(role === undefined ? {} : { role: role as 'tested-model' | 'judge' }),
+        ...(judge ? { checkId: data.checkId as string } : {}),
+        reason: data.reason as 'not-observed' | 'not-emitted' | 'capture-failed' };
     }
     const pending = this.pending;
     if (!pending || !exactKeys(data, ['callId', ...(type === 'provider-response-chunk' ? ['index', 'base64'] : ['completeness'])])
@@ -78,6 +95,8 @@ export class ProviderResponseEvents {
     const completeness = pending.truncated || data.completeness === 'truncated' ? 'truncated' : data.completeness;
     return { type: 'provider-response-observed', caseId, attempt, callId: pending.callId,
       provisionalTurnId: pending.provisionalTurnId, bytes: Buffer.concat(pending.retained),
+      ...(pending.role === undefined ? {} : { role: pending.role }),
+      ...(pending.checkId === undefined ? {} : { checkId: pending.checkId }),
       ...(pending.contentType === undefined ? {} : { contentType: pending.contentType }),
       ...(pending.originalByteLength === undefined ? {} : { originalByteLength: pending.originalByteLength }),
       completeness: completeness as 'complete' | 'truncated' | 'incomplete' };

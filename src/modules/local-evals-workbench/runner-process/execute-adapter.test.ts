@@ -110,6 +110,60 @@ test('version-three runner preserves last response and emits unfinished call gap
   });
 });
 
+test('judge response before grading error survives a valid error report followed by nonzero exit', async () => {
+  await withSelection(async (project, base) => {
+    const selection = { ...base, judgeModel: 'judge', cases: [{ ...base.cases[0]!, graders: [{
+      id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'Quality' }, threshold: 0.8,
+    }] }] };
+    await project.changeRunner(`let input=''; for await(const c of process.stdin) input+=c; const q=JSON.parse(input); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:3,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:q.judgeModel}); emit('case-attempt-started','first',{});
+      const body=Buffer.from([0,255,195,169]);
+      emit('provider-response-started','first',{role:'judge',checkId:'quality',modelId:q.judgeModel,
+        callId:'judge-1',provisionalTurnId:'pending-turn',originalByteLength:body.length});
+      emit('provider-response-chunk','first',{callId:'judge-1',index:0,base64:body.toString('base64')});
+      emit('provider-response-completed','first',{callId:'judge-1',completeness:'complete'});
+      emit('rubric-judgment-error','first',{checkId:'quality',judgeModel:q.judgeModel,code:'malformed-output'});
+      emit('case-attempt-completed','first',{status:'error',sourceEvidenceComplete:false});
+      emit('run-completed',null,{status:'error',code:'grading-failed'}); process.exitCode=7;`);
+    const received: ExecutionEvent[] = [];
+    const result = await new ProjectRunnerExecuteAdapter(project.root).execute(selection, async item => { received.push(item); });
+    assert.deepEqual(result, { status: 'error', reason: 'runner-exited', failureProvenance: {
+      stage: 'runner-report', runnerReport: { status: 'error', code: 'grading-failed' }, processExit: { code: 7 } } });
+    assert.deepEqual(received.map(item => item.type), ['run-started', 'case-started', 'provider-response-observed',
+      'grading-error', 'case-completed', 'run-completed']);
+    const response = received[2];
+    assert.equal(response?.type, 'provider-response-observed');
+    if (response?.type === 'provider-response-observed') {
+      assert.deepEqual(response.bytes, Buffer.from([0, 255, 195, 169]));
+      assert.equal(response.role, 'judge'); assert.equal(response.checkId, 'quality');
+      assert.equal(response.provisionalTurnId, 'pending-turn');
+    }
+    assert.equal(received.some(item => item.type === 'grader-completed'), false);
+  });
+});
+
+test('judge event followed by missing terminal report retains observation and classifies unexpected exit', async () => {
+  await withSelection(async (project, base) => {
+    const selection = { ...base, judgeModel: 'judge', cases: [{ ...base.cases[0]!, graders: [{
+      id: 'quality', type: 'rubric' as const, rubric: { type: 'inline' as const, text: 'Quality' }, threshold: 0.8,
+    }] }] };
+    await project.changeRunner(`let input=''; for await(const c of process.stdin) input+=c; const q=JSON.parse(input); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:3,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:q.judgeModel}); emit('case-attempt-started','first',{});
+      emit('provider-response-gap','first',{role:'judge',checkId:'quality',modelId:q.judgeModel,
+        callId:'judge-1',provisionalTurnId:'pending-turn',reason:'not-emitted'}); process.exitCode=7;`);
+    const received: ExecutionEvent[] = [];
+    const result = await new ProjectRunnerExecuteAdapter(project.root).execute(selection, async item => { received.push(item); });
+    assert.deepEqual(result, { status: 'error', reason: 'runner-exited', failureProvenance: {
+      stage: 'unexpected-process-exit', processExit: { code: 7 } } });
+    assert.deepEqual(received.at(-1), { type: 'provider-response-gap', caseId: 'first', attempt: 1,
+      role: 'judge', checkId: 'quality', callId: 'judge-1', provisionalTurnId: 'pending-turn', reason: 'not-emitted' });
+  });
+});
+
 test('preserves preceding accepted events on abnormal process exit and rejects missing terminal', async () => {
   await withSelection(async (project, selection) => {
     await project.changeRunner(`let raw=''; for await(const c of process.stdin) raw+=c; const q=JSON.parse(raw);
