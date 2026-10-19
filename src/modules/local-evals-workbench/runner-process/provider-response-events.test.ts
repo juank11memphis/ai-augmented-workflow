@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ProviderResponseEvents, RESPONSE_BYTES, RUN_RESPONSE_BYTES } from './provider-response-events.js';
+import { ProviderResponseEvents, RESPONSE_BYTES, RESPONSE_CHUNK_BYTES, RUN_RESPONSE_BYTES } from './provider-response-events.js';
 
 const link = { callId: 'call-1', provisionalTurnId: 'turn-1', modelId: 'fake', contentType: 'application/json' };
 function started(events: ProviderResponseEvents, extras: Record<string, unknown> = {}) {
@@ -37,6 +37,24 @@ test('v3 response rejects duplicate, reordered, invalid-size, and cross-model ob
   chunk(events, 0, Buffer.from('a'));
   assert.throws(() => completed(events), /invalid-response-end/);
   assert.deepEqual(events.incomplete, { type: 'provider-response-gap', caseId: 'case', attempt: 1,
+    callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete' });
+});
+
+test('v3 response accepts exactly 40,000 decoded chunk bytes and rejects larger or malformed chunks', () => {
+  const exact = new ProviderResponseEvents();
+  const body = Buffer.alloc(RESPONSE_CHUNK_BYTES, 65);
+  started(exact, { originalByteLength: body.length });
+  chunk(exact, 0, body);
+  const result = completed(exact);
+  assert.equal(result.type, 'provider-response-observed');
+  if (result.type === 'provider-response-observed') assert.deepEqual(result.bytes, body);
+
+  const oversized = new ProviderResponseEvents();
+  started(oversized);
+  assert.throws(() => chunk(oversized, 0, Buffer.alloc(RESPONSE_CHUNK_BYTES + 1, 65)), /invalid-response-size/);
+  assert.throws(() => oversized.accept('provider-response-chunk',
+    { callId: 'call-1', index: 0, base64: '%%%=' }, 'case', 1, 'fake'), /invalid-response-chunk/);
+  assert.deepEqual(oversized.incomplete, { type: 'provider-response-gap', caseId: 'case', attempt: 1,
     callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete' });
 });
 

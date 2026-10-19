@@ -3,6 +3,7 @@ import { logicalId, record } from '../run-history/validation.js';
 
 export const RESPONSE_BYTES = 128_000;
 export const RUN_RESPONSE_BYTES = 512_000;
+export const RESPONSE_CHUNK_BYTES = 40_000;
 
 type Link = { caseId: string; attempt: number; callId: string; provisionalTurnId: string;
   role?: 'tested-model' | 'judge'; checkId?: string };
@@ -71,11 +72,12 @@ export class ProviderResponseEvents {
     if (!pending || !exactKeys(data, ['callId', ...(type === 'provider-response-chunk' ? ['index', 'base64'] : ['completeness'])])
       || data.callId !== pending.callId) throw new Error('invalid-response-order');
     if (type === 'provider-response-chunk') {
-      if (data.index !== pending.index || typeof data.base64 !== 'string' || data.base64.length > 60_000
+      if (data.index !== pending.index || typeof data.base64 !== 'string'
+        || data.base64.length > 4 * Math.ceil(RESPONSE_CHUNK_BYTES / 3)
         || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(data.base64))
         throw new Error('invalid-response-chunk');
       const bytes = Buffer.from(data.base64, 'base64');
-      if (!bytes.length || pending.seen + bytes.length > Number.MAX_SAFE_INTEGER
+      if (!bytes.length || bytes.length > RESPONSE_CHUNK_BYTES || pending.seen + bytes.length > Number.MAX_SAFE_INTEGER
         || pending.originalByteLength !== undefined && pending.seen + bytes.length > pending.originalByteLength)
         throw new Error('invalid-response-size');
       pending.index++;

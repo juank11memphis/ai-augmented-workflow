@@ -14,7 +14,7 @@ function keys(value: Record<string, unknown>, allowed: readonly string[]): boole
 }
 function eventSize(value: Record<string, unknown>): boolean {
   try {
-    return value.type === 'source-record-chunk'
+    return value.type === 'source-record-chunk' || value.type === 'provider-response-chunk'
       ? Buffer.byteLength(JSON.stringify(value)) <= 64_000
       : boundedJson(value, 64_000);
   } catch { return false; }

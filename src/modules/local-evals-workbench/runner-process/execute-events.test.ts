@@ -29,6 +29,44 @@ test('v3 accepts a provisional response before turn completion and rejects v2 op
   assert.throws(() => old.accept(e(2, 'provider-response-gap', 'case',
     { callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'not-observed' }, 2)), /unsupported-event/);
 });
+test('v3 accepts a 40,000-byte response chunk through a completed execute sequence', () => {
+  const validator = new ExecuteEventValidator('request', selection);
+  const body = Buffer.alloc(40_000, 65);
+  const e = (sequence: number, type: string, caseId: string | null, data: unknown) =>
+    ({ ...event(sequence, type, caseId, data), protocolVersion: 3 });
+  validator.accept(e(0, 'run-started', null, { model: 'fake', judgeModel: null }));
+  validator.accept(e(1, 'case-attempt-started', 'case', {}));
+  validator.accept(e(2, 'provider-response-started', 'case',
+    { callId: 'call-1', provisionalTurnId: 'turn-1', modelId: 'fake', originalByteLength: body.length }));
+  assert.equal(validator.accept(e(3, 'provider-response-chunk', 'case',
+    { callId: 'call-1', index: 0, base64: body.toString('base64') })).type, 'source-chunk-accepted');
+  const observed = validator.accept(e(4, 'provider-response-completed', 'case',
+    { callId: 'call-1', completeness: 'complete' }));
+  assert.equal(observed.type, 'provider-response-observed');
+  if (observed.type === 'provider-response-observed') assert.deepEqual(observed.bytes, body);
+  validator.accept(e(5, 'conversation-turn-completed', 'case', { turnIndex: 0, turnId: 'turn-1', role: 'assistant', output: 'done' }));
+  validator.accept(e(6, 'case-attempt-completed', 'case', { status: 'completed', sourceEvidenceComplete: false }));
+  assert.equal(validator.accept(e(7, 'run-completed', null, { status: 'completed' })).type, 'run-completed');
+  assert.equal(validator.completion, 'completed');
+});
+test('v3 rejects oversized or malformed chunks without exposing response bodies', () => {
+  const e = (sequence: number, type: string, data: unknown) =>
+    ({ ...event(sequence, type, 'case', data), protocolVersion: 3 });
+  const ready = () => {
+    const validator = new ExecuteEventValidator('request', selection);
+    validator.accept({ ...e(0, 'run-started', { model: 'fake', judgeModel: null }), caseId: null, attempt: null });
+    validator.accept(e(1, 'case-attempt-started', {}));
+    validator.accept(e(2, 'provider-response-started',
+      { callId: 'call-1', provisionalTurnId: 'turn-1', modelId: 'fake' }));
+    return validator;
+  };
+  const chunk = (base64: string) => e(3, 'provider-response-chunk', { callId: 'call-1', index: 0, base64 });
+  assert.throws(() => ready().accept(chunk(Buffer.alloc(40_001, 65).toString('base64'))), /invalid-response-size/);
+  assert.throws(() => ready().accept(chunk('secret-body%%%')), /invalid-response-chunk/);
+  const overLine = { ...chunk(Buffer.alloc(40_000, 65).toString('base64')), padding: 'x'.repeat(11_000) };
+  assert.ok(Buffer.byteLength(JSON.stringify(overLine)) > 64_000);
+  assert.throws(() => ready().accept(overLine), /invalid-envelope/);
+});
 test('v3 rejects a response event from another attempt without losing an earlier accepted response', () => {
   const e = (sequence: number, type: string, data: unknown, attempt = 1) =>
     ({ ...event(sequence, type, 'case', data), protocolVersion: 3, attempt });
