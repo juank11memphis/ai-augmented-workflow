@@ -61,6 +61,55 @@ test('version-two runner delivers complete source while operational logs omit it
   });
 });
 
+test('version-three runner delivers exact pre-turn response before malformed-output failure and keeps logs body-free', async () => {
+  await withSelection(async (project, selection) => {
+    await project.changeRunner(`let input=''; for await(const c of process.stdin) input+=c; const q=JSON.parse(input); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:3,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
+      const body=Buffer.from([0,255,83,89,78,84,72,69,84,73,67,95,82,65,87]);
+      emit('provider-response-started','first',{callId:'call-1',provisionalTurnId:'turn-1',modelId:q.model,
+        contentType:'application/octet-stream',originalByteLength:body.length});
+      emit('provider-response-chunk','first',{callId:'call-1',index:0,base64:body.toString('base64')});
+      emit('provider-response-completed','first',{callId:'call-1',completeness:'complete'});
+      emit('run-diagnostic','first',{code:'malformed-output'});
+      emit('case-attempt-completed','first',{status:'error',sourceEvidenceComplete:false});
+      emit('run-completed',null,{status:'error',code:'malformed-output'});`);
+    const received: ExecutionEvent[] = []; const logs: unknown[] = [];
+    const result = await new ProjectRunnerExecuteAdapter(project.root, EXECUTE_LIMITS, process.env,
+      { record: item => { logs.push(item); } }).execute(selection, async item => { received.push(item); });
+    assert.equal(result.status, 'error');
+    assert.deepEqual(received.map(item => item.type), ['run-started', 'case-started', 'provider-response-observed',
+      'diagnostic', 'case-completed', 'run-completed']);
+    const observed = received[2];
+    assert.equal(observed?.type, 'provider-response-observed');
+    if (observed?.type === 'provider-response-observed') assert.deepEqual(observed.bytes, Buffer.from([0,255,83,89,78,84,72,69,84,73,67,95,82,65,87]));
+    assert.doesNotMatch(JSON.stringify(logs), /SYNTHETIC_RAW/);
+  });
+});
+
+test('version-three runner preserves last response and emits unfinished call gap on trailing protocol failure', async () => {
+  await withSelection(async (project, selection) => {
+    await project.changeRunner(`let input=''; for await(const c of process.stdin) input+=c; const q=JSON.parse(input); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:3,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
+      emit('provider-response-started','first',{callId:'call-1',provisionalTurnId:'turn-1',modelId:q.model});
+      emit('provider-response-chunk','first',{callId:'call-1',index:0,base64:Buffer.from('first').toString('base64')});
+      emit('provider-response-completed','first',{callId:'call-1',completeness:'complete'});
+      emit('provider-response-started','first',{callId:'call-2',provisionalTurnId:'turn-2',modelId:q.model});
+      emit('provider-response-chunk','first',{callId:'call-2',index:0,base64:Buffer.from('partial').toString('base64')});
+      emit('provider-response-chunk','first',{callId:'call-2',index:0,base64:Buffer.from('bad').toString('base64')});`);
+    const received: ExecutionEvent[] = [];
+    const result = await new ProjectRunnerExecuteAdapter(project.root).execute(selection, async item => { received.push(item); });
+    assert.equal(result.reason, 'runner-protocol-invalid');
+    assert.equal(received[2]?.type, 'provider-response-observed');
+    if (received[2]?.type === 'provider-response-observed') assert.deepEqual(received[2].bytes, Buffer.from('first'));
+    assert.deepEqual(received.at(-1), { type: 'provider-response-gap', caseId: 'first', attempt: 1,
+      callId: 'call-2', provisionalTurnId: 'turn-2', reason: 'incomplete' });
+  });
+});
+
 test('preserves preceding accepted events on abnormal process exit and rejects missing terminal', async () => {
   await withSelection(async (project, selection) => {
     await project.changeRunner(`let raw=''; for await(const c of process.stdin) raw+=c; const q=JSON.parse(raw);
