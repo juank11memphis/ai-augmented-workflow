@@ -1,5 +1,5 @@
 {
-  "templateVersion": "237",
+  "templateVersion": "238",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -324,10 +324,10 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Explains independent test-case overrides, inheritance reset, required saved suite defaults, and unavailable-choice recovery."
+        "Requires generated runners to provide safe, call-linked failure evidence and deterministic fake-response tests before they are considered ready."
       ]
     },
     "skills/agent-guided-evals/SKILL.md": {
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "13",
+      "version": "14",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Documents version-4 model-call lifecycle events and honest pending-call evidence for interrupted eval runs."
+        "Requires specific diagnostics for response capture failures, bounded redacted structural evidence, and fake-response checks without live eval calls."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {

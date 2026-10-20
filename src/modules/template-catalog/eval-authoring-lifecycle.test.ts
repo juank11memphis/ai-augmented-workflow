@@ -77,27 +77,28 @@ test('stale managed guidance gets meaningful updates and healthy doctor state', 
     state.managedFiles[target(template)] = { template, templateVersion: '0', sha256: sha256(stale), status: 'managed' };
     const change = preview(rootPath, state, template);
     assert.equal(change.status, 'update-available');
-    assert.match(change.changes.join(' '), /suite defaults|preview|case model|override|source-evidence|rubric-judge|typed operational-error|model-call lifecycle/i);
+    assert.match(change.changes.join(' '), /safe, call-linked failure evidence|response capture failures|previews full suites/i);
     state = apply(rootPath, state, template, 'apply-update');
     assert.equal(fs.readFileSync(path.join(rootPath, target(template)), 'utf8'), readTemplate(template));
   }
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
 
-test('updated runner judge guidance is installed with its current sync note', async (t) => {
+test('updated runner capture guidance is installed with its current sync note', async (t) => {
   let { rootPath, state } = await initialize(t, [SUPPORTED_AGENTS[0]!]);
   const reference = 'skills/eval-authoring/references/version-2-contract.md';
   const installed = fs.readFileSync(path.join(rootPath, target(reference)), 'utf8');
   assert.match(installed, /judge-exchange` is the third shape/);
   assert.match(installed, /scoreless error/);
   assert.match(installed, /older version-1 run is `not-captured`/);
+  assert.match(installed, /unqualified `capture-failed` is insufficient/);
   assert.doesNotMatch(installed, /do not attach rubric judge exchanges in this extension/);
   const stale = '# Prior synthetic runner contract\n';
   fs.writeFileSync(path.join(rootPath, target(reference)), stale);
   state.managedFiles[target(reference)] = { template: reference, templateVersion: '8', sha256: sha256(stale), status: 'managed' };
   const change = preview(rootPath, state, reference);
   assert.equal(change.status, 'update-available');
-  assert.match(change.changes.join(' '), /model-call lifecycle/);
+  assert.match(change.changes.join(' '), /response capture failures/);
   state = apply(rootPath, state, reference, 'apply-update');
   assert.equal(fs.readFileSync(path.join(rootPath, target(reference)), 'utf8'), installed);
   assert.deepEqual(diagnoseState({ rootPath, state }), []);

@@ -10,7 +10,7 @@ function section(name: string): string {
 
 test('generation is per confirmed target, versioned, real and adapted to project language', () => {
   const generation = section('Generate version-2 artifacts');
-  for (const phrase of ['references/version-2-contract.md', 'version 2', 'every confirmed target', 'without silently dropping', 'language', 'clean-code', 'structured-logging', 'separate repository code-change permission', 'real target integration', 'separately selected optional Judge Model', 'fake model/judge ports', 'executing generated evals is not', 'unfamiliar framework', 'stop generation', 'placeholder runnable']) {
+  for (const phrase of ['references/version-2-contract.md', 'version 2', 'every confirmed target', 'without silently dropping', 'language', 'clean-code', 'structured-logging', 'separate repository code-change permission', 'real target integration', 'separately selected optional Judge Model', 'fake model/judge responses', 'executing generated evals is not', 'unfamiliar framework', 'stop generation', 'placeholder runnable']) {
     assert.ok(generation.includes(phrase), phrase);
   }
   assert.doesNotMatch(skill, /Sibu MVP|\.gitkeep|implemented only when/);

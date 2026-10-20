@@ -88,8 +88,8 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.equal(metadata?.version, '13');
-  assert.match(metadata?.changes.join(' ') ?? '', /version-4 model-call lifecycle events/);
+  assert.equal(metadata?.version, '14');
+  assert.match(metadata?.changes.join(' ') ?? '', /capture failures.*structural evidence/);
   assert.match(reference, /model-call-started.*before.*invoking the provider/);
   assert.match(reference, /pending.*termination source it observed/);
 });
@@ -154,8 +154,27 @@ test('installed version-3 fixture accepts observation before malformed diagnosti
         for (const [index, event] of events.entries()) validator.accept(wrap(index + 2, event.type, event.data, 'case'));
         assert.equal(events.at(-1)?.type, 'run-diagnostic', scenario);
         if (scenario === 'observed') assert.equal(events[0]?.type, 'provider-response-started');
-        else assert.equal(events[0]?.data.reason, 'not-observed');
+        else assert.equal(events[0]?.data.reason, scenario === 'captureFailure' ? 'capture-failed' : 'not-observed');
     }
+});
+test('distributed authoring requires diagnosable, safely redacted capture failures', () => {
+  const skill = readTemplate('skills/eval-authoring/SKILL.md');
+  const fixture = JSON.parse(reference.match(/```provider-response-json\n([\s\S]*?)\n```/)![1]!) as {
+    captureFailure: { type: string; data: Record<string, unknown> }[];
+  };
+  assert.match(skill, /Make failure evidence a runner acceptance criterion/);
+  assert.match(skill, /fake model\/judge responses/);
+  assert.match(reference, /unqualified `capture-failed` is insufficient/);
+  assert.match(reference, /fixed allowlisted envelope field types/);
+  assert.match(reference, /unsafe synthetic secret and personal-data sentinels/);
+  assert.match(reference, /preview contract check proves suite setup, \*\*not\*\* this evidence gate/);
+  assert.deepEqual(fixture.captureFailure.map((item) => item.type), [
+    'provider-response-gap', 'run-diagnostic', 'run-diagnostic',
+  ]);
+  assert.equal(fixture.captureFailure[0]?.data.reason, 'capture-failed');
+  assert.equal(fixture.captureFailure[1]?.data.code, 'capture-call-3-unsafe-content');
+  assert.equal(fixture.captureFailure[2]?.data.code, 'shape-call-3-json-object-choices-array');
+  assert.doesNotMatch(JSON.stringify(fixture.captureFailure), /sk-|@|https?:\/\//);
 });
 test('distributed judge v3 example observes response or gap before grading error', () => {
   const fixture = JSON.parse(reference.match(/```judge-response-json\n([\s\S]*?)\n```/)![1]!) as Record<
