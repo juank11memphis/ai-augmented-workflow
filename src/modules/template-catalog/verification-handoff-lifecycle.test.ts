@@ -69,13 +69,13 @@ test('stale managed handoff guidance offers a current note and updates safely', 
   const relativePath = `.agents/${template}`;
   const stale = '# Previous synthetic guidance\n';
   fs.writeFileSync(path.join(rootPath, relativePath), stale);
-  state.managedFiles[relativePath] = { template, templateVersion: '69', sha256: sha256(stale), status: 'managed' };
+  state.managedFiles[relativePath] = { template, templateVersion: '71', sha256: sha256(stale), status: 'managed' };
   const manifest = readTemplateManifest();
   const preview = getSyncPreviews({ rootPath, state, manifest }).find((item) => item.relativePath === relativePath);
   assert.ok(preview);
   assert.equal(preview.status, 'update-available');
   assert.deepEqual(preview.changes, manifest.templates[template]?.changes);
-  assert.match(preview.changes.join(' '), /overlapping uncommitted Task failures.*reviewed same-Task continuation/);
+  assert.match(preview.changes.join(' '), /complete grouped failure inventory.*isolated observed-Epic-head comparison/);
   const result = applySyncAction({ rootPath, state, manifest, preview, action: 'apply-update' });
   assert.equal(fs.readFileSync(path.join(rootPath, relativePath), 'utf8'), installedSource(template));
   assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);
@@ -83,11 +83,11 @@ test('stale managed handoff guidance offers a current note and updates safely', 
 
 test('reviewing a customized handoff template preserves its bytes and ownership', async (t) => {
   const { rootPath, state } = await initialize(t);
-  const template = templates[5]!;
+  const template = templates[4]!;
   const relativePath = `.agents/${template}`;
   const customized = `${fs.readFileSync(path.join(rootPath, relativePath), 'utf8')}\nLocal synthetic customization.\n`;
   fs.writeFileSync(path.join(rootPath, relativePath), customized);
-  state.managedFiles[relativePath]!.templateVersion = '27';
+  state.managedFiles[relativePath]!.templateVersion = '71';
   const manifest = readTemplateManifest();
   const preview = getSyncPreviews({ rootPath, state, manifest }).find((item) => item.relativePath === relativePath);
   assert.ok(preview);
