@@ -20,6 +20,7 @@ const SAFE_REASONS = new Set(['runner-absent', 'runner-unavailable', 'runner-sta
 class PersistenceStopped extends Error {}
 class EvidenceLimitStopped extends Error {}
 type Current = { caseId: string; number: number; began: number; turns: TurnEvidence[]; tools: ToolEvidence[];
+  operationalError?: { code: string; message: string };
   graders: Extract<ExecutionEvent, { type: 'grader-completed' }>[]; output: string; diagnostics: string[]; diagnosticLinks: DiagnosticLink[];
   gradingErrors: Extract<ExecutionEvent, { type: 'grading-error' }>[];
   sourceRecords: SourceReference[]; sourceGaps: { reason: 'incomplete' | 'capture-failed'; recordId?: string }[];
@@ -93,6 +94,7 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       durationMs: Math.max(0, ports.clock() - current.began), calls, cost, output: current.output,
       truncated: false, diagnostics: [...current.diagnostics], diagnosticLinks: [...current.diagnosticLinks],
       ...(failureProvenance ? { failureProvenance } : {}), turns: [...current.turns], tools: [...current.tools], assertions: visibleAssertions,
+      ...(current.operationalError ? { operationalError: current.operationalError } : {}),
       sourceCapture: { records: [...current.sourceRecords], gaps: [...current.sourceGaps] },
       ...(current.providerResponses.length || current.providerResponseGaps.length ? { providerResponses: {
         records: [...current.providerResponses], gaps: [...current.providerResponseGaps] } } : {}),
@@ -186,9 +188,17 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       await persist(evidence('incomplete'));
     } else if (event.type === 'turn-completed') {
       if (!current || current.caseId !== event.caseId || (event.attempt ?? 1) !== current.number
-        || (event.turnIndex ?? current.turns.length) !== current.turns.length || current.turns.some(turn => turn.id === event.turnId)) throw new Error('turn-order');
+        || (event.turnIndex ?? current.turns.length) !== current.turns.length || current.turns.some(turn => turn.id === event.turnId)
+        || current.operationalError) throw new Error('turn-order');
       current.output = event.output;
       current.turns.push({ id: event.turnId, role: 'assistant', content: event.output });
+      await persist(evidence('incomplete'));
+    } else if (event.type === 'operational-error-observed') {
+      if (!current || current.caseId !== event.caseId || current.number !== event.attempt
+        || !cases[caseIndex]?.expectedOutcome || current.operationalError || current.turns.length > 0
+        || current.graders.length > 0 || !/^[a-z][a-z0-9-]{0,79}$/.test(event.error.code)
+        || !event.error.message || Buffer.byteLength(event.error.message) > 500) throw new Error('operational-error-order');
+      current.operationalError = { code: event.error.code, message: event.error.message };
       await persist(evidence('incomplete'));
     } else if (event.type === 'tool-recorded') {
       if (!current || current.caseId !== event.caseId || event.attempt !== current.number
@@ -202,6 +212,9 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         || current.graders.some(item => item.checkId === event.checkId)) throw new Error('grader-order');
       const grader = cases[caseIndex]?.graders.find(item => item.id === event.checkId);
       if (!grader) throw new Error('grader-result-invalid');
+      if (cases[caseIndex]?.expectedOutcome && (!current.operationalError || grader.type !== 'custom'
+        || event.actualError?.code !== current.operationalError.code || event.actualError.message !== current.operationalError.message))
+        throw new Error('grader-result-invalid');
       const result = normalizeGraderOutcome(grader, event, activeJudge);
       const previous = current.graders.map(item => normalizeGraderOutcome(
         cases[caseIndex]!.graders.find(grader => grader.id === item.checkId)!, item, activeJudge));
@@ -224,7 +237,8 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         addDiagnostic(current.diagnostics, 'source-evidence-incomplete');
       }
       if (event.status === 'completed') {
-        if (current.turns.length !== cases[caseIndex]!.turns.length) throw new Error('missing-turn');
+        if (current.turns.length !== (cases[caseIndex]!.expectedOutcome ? 0 : cases[caseIndex]!.turns.length)
+          || !!cases[caseIndex]!.expectedOutcome !== !!current.operationalError) throw new Error('missing-turn');
         const selected = cases[caseIndex]!;
         const assertions = ports.evaluator.evaluate(selected.assertions, { output: current.output, turns: current.turns, tools: current.tools });
         if (assertions.length !== selected.assertions.length || new Set(assertions.map(item => item.id)).size !== assertions.length

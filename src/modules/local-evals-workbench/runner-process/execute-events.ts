@@ -31,6 +31,7 @@ export class ExecuteEventValidator {
   private toolIds = new Set<string>();
   private toolDetails = new Map<string, { turnId: string; name: string; outcome: string }>();
   private graders = new Set<string>();
+  private operationalError: { code: string; message: string } | undefined;
   private failedCase = false;
   private state: 'initial' | 'running' | 'finished' = 'initial';
   private terminal: 'completed' | 'error' | 'interrupted' | undefined;
@@ -91,7 +92,7 @@ export class ExecuteEventValidator {
     if (!selected) throw new Error('invalid-case');
     if (raw.type === 'case-attempt-started') {
       if (this.activeCase || Object.keys(data).length) throw new Error('invalid-case-start');
-      this.activeCase = caseId; this.turns = 0; this.tools = 0; this.turnIds.clear(); this.toolIds.clear(); this.graders.clear();
+      this.activeCase = caseId; this.turns = 0; this.tools = 0; this.turnIds.clear(); this.toolIds.clear(); this.graders.clear(); this.operationalError = undefined;
       this.chunks.reset(); this.responses.resetAttempt(); this.sourceCalls.clear(); this.sourceTools.clear(); this.toolDetails.clear(); this.judgments.clear(); this.judgeSources.clear();
       return { type: 'case-started', caseId, attempt: this.attemptNumber };
     }
@@ -132,12 +133,21 @@ export class ExecuteEventValidator {
     }
     if (raw.type === 'conversation-turn-completed') {
       if (!keys(data, ['turnIndex', 'turnId', 'role', 'output']) || data.turnIndex !== this.turns
-        || data.role !== 'assistant' || !text(data.output) || this.turns >= selected.turns.length) throw new Error('invalid-turn');
+        || data.role !== 'assistant' || !text(data.output) || this.turns >= selected.turns.length
+        || this.operationalError) throw new Error('invalid-turn');
       const turnId = data.turnId === undefined ? `turn-${this.turns + 1}` : data.turnId;
       if (!logicalId(turnId) || this.turnIds.has(turnId)) throw new Error('invalid-turn');
       this.turnIds.add(turnId);
       const turnIndex = this.turns++;
       return { type: 'turn-completed', caseId, attempt: this.attemptNumber, turnId, turnIndex, output: data.output };
+    }
+    if (raw.type === 'operational-error-observed') {
+      if (!selected.expectedOutcome || this.operationalError || this.graders.size > 0 || this.turns > 0
+        || !keys(data, ['code', 'message']) || typeof data.code !== 'string'
+        || !/^[a-z][a-z0-9-]{0,79}$/.test(data.code) || !text(data.message, 500) || !data.message)
+        throw new Error('invalid-operational-error');
+      this.operationalError = { code: data.code, message: data.message };
+      return { type: 'operational-error-observed', caseId, attempt: this.attemptNumber, error: this.operationalError };
     }
     if (raw.type === 'tool-interaction-recorded') {
       if (!keys(data, ['toolId', 'turnId', 'position', 'name', 'arguments', 'outcome', 'result'])
@@ -154,19 +164,24 @@ export class ExecuteEventValidator {
     if (raw.type === 'custom-assertion-completed' || raw.type === 'rubric-judgment-completed') {
       const grader = raw.type === 'custom-assertion-completed' ? 'custom' : 'rubric';
       const declared = selected.graders.find(item => item.id === data.checkId);
-      if (!keys(data, ['checkId', 'passed', 'score', 'threshold', 'judgeModel', 'evidence', 'diagnostics'])
+      if (!keys(data, ['checkId', 'passed', 'score', 'threshold', 'judgeModel', 'evidence', 'diagnostics', 'actualError'])
         || !declared || declared.type !== grader || this.graders.has(declared.id)
         || typeof data.passed !== 'boolean' || !amount(data.score) || data.score !== null && data.score > 1
         || !text(data.evidence, 500) || !data.evidence || !Array.isArray(data.diagnostics)
         || data.diagnostics.length > 20 || !data.diagnostics.every(item => text(item, 500))) throw new Error('invalid-grader');
       if (declared.type === 'rubric' && (data.judgeModel !== this.selection.judgeModel || data.threshold !== declared.threshold
         || typeof data.score !== 'number' || data.passed !== (data.score >= declared.threshold))) throw new Error('invalid-rubric');
-      if (grader === 'custom' && (data.judgeModel !== undefined || data.threshold !== undefined)) throw new Error('invalid-custom');
+      if (grader === 'custom' && (data.judgeModel !== undefined || data.threshold !== undefined
+        || !!selected.expectedOutcome !== !!this.operationalError
+        || selected.expectedOutcome && (!record(data.actualError) || !keys(data.actualError, ['code', 'message'])
+          || data.actualError.code !== this.operationalError?.code || data.actualError.message !== this.operationalError?.message)
+        || !selected.expectedOutcome && data.actualError !== undefined)) throw new Error('invalid-custom');
       this.graders.add(declared.id);
       if (grader === 'rubric') this.judgments.set(declared.id, { sequence: raw.sequence as number,
         status: 'completed', score: data.score as number, threshold: data.threshold as number, passed: data.passed });
       return { type: 'grader-completed', caseId, attempt: this.attemptNumber, checkId: declared.id, grader,
         passed: data.passed, score: data.score, ...(grader === 'rubric' ? { threshold: data.threshold as number, judgeModel: data.judgeModel as string } : {}),
+        ...(this.operationalError ? { actualError: this.operationalError } : {}),
         evidence: data.evidence, diagnostics: data.diagnostics as string[], sequence: raw.sequence as number };
     }
     if (raw.type === 'rubric-judgment-error') {
@@ -190,7 +205,8 @@ export class ExecuteEventValidator {
         || (data.status === 'completed' && (this.chunks.incompleteId || this.responses.incomplete))
         || data.calls !== undefined && !(data.calls === null || typeof data.calls === 'number' && Number.isSafeInteger(data.calls) && data.calls >= 0)
         || data.cost !== undefined && !amount(data.cost)
-        || data.status === 'completed' && (this.turns !== selected.turns.length || this.graders.size !== selected.graders.length)) throw new Error('invalid-case-end');
+        || data.status === 'completed' && (this.turns !== (selected.expectedOutcome ? 0 : selected.turns.length)
+          || !!selected.expectedOutcome !== !!this.operationalError || this.graders.size !== selected.graders.length)) throw new Error('invalid-case-end');
       this.activeCase = undefined;
       if (data.status === 'completed') {
         this.caseIndex++;

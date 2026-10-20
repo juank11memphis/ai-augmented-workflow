@@ -100,6 +100,7 @@ export type Attempt = {
   readonly calls: number | null; readonly cost: number | null; readonly output: string;
   readonly truncated: boolean; readonly diagnostics: readonly string[]; readonly diagnosticLinks?: readonly DiagnosticLink[];
   readonly failureProvenance?: FailureProvenance; readonly turns: readonly TurnEvidence[];
+  readonly operationalError?: { readonly code: string; readonly message: string };
   readonly tools: readonly ToolEvidence[]; readonly assertions: readonly AssertionEvidence[];
   readonly sourceEvidence?: SourceEvidence;
   readonly sourceCapture?: SourceCapture;

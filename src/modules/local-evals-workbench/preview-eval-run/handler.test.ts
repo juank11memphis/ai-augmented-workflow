@@ -31,7 +31,19 @@ test('preview returns selected cases without invoking the model', async () => {
   assert.equal(result.status, 'ready');
   if (result.status === 'ready') {
     assert.deepEqual(result.selectedCaseIds, ['case']);
+    assert.deepEqual(result.expectedOutcomes, [{ caseId: 'case', type: 'assistant-reply' }]);
   }
+});
+test('preview identifies operational-error cases without executing them', async () => {
+  const deps = dependencies();
+  deps.suites.load = async () => ({ ...suite, testCases: [{ ...suite.testCases[0]!,
+    expectedOutcome: { type: 'operational-error' }, assertions: [],
+    graders: [{ id: 'checks-error', type: 'custom', name: 'Checks actual error' }] }] });
+  deps.runner.describe = async () => ({ status: 'ready', value: { ...description, capabilities: ['single-turn', 'custom'] } });
+  const result = await previewEvalRun(command, deps);
+  assert.equal(result.status, 'ready');
+  if (result.status === 'ready') assert.deepEqual(result.expectedOutcomes,
+    [{ caseId: 'case', type: 'operational-error' }]);
 });
 test('selection and readiness blocks before queueing', async () => {
   for (const command of [

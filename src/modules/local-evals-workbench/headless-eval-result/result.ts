@@ -64,6 +64,7 @@ export type HeadlessEvalResult =
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly failure: {
       readonly caseId: string; readonly attempt: number; readonly assertionId: string;
       readonly kind: 'assertion' | 'grader'; readonly actual: string; readonly expected: string;
+      readonly operationalError?: { readonly code: string; readonly message: string };
       readonly diagnostics: readonly string[]; readonly artifactPath?: string; readonly truncated: boolean;
       readonly source: SelectedSourceEvidence | { readonly status: 'gap'; readonly reason: EvidenceGap };
       readonly grading: SelectedGrading;

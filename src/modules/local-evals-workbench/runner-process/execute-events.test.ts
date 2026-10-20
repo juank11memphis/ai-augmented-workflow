@@ -10,6 +10,41 @@ const selection: ExecutionSelection = { runId: 'run', model: 'fake',
     runner: { command: ['node', 'evals/runner.mjs'], requiredEnvironment: [] }, testCases: [singleCase] }, cases: [singleCase] };
 const event = (sequence: number, type: string, caseId: string | null, data: unknown) =>
   ({ protocolVersion: 1, requestId: 'request', sequence, type, runId: 'run', caseId, attempt: caseId ? 1 : null, data });
+test('declared operational error needs observed error and a matching custom assertion before zero-turn completion', () => {
+  const errorCase = { ...singleCase, expectedOutcome: { type: 'operational-error' as const },
+    graders: [{ id: 'checks-error', type: 'custom' as const, name: 'Checks error' }] };
+  const chosen = { ...selection, cases: [errorCase], suite: { ...selection.suite, testCases: [errorCase] } };
+  const started = () => {
+    const validator = new ExecuteEventValidator('request', chosen);
+    validator.accept(event(0, 'run-started', null, { model: 'fake', judgeModel: null }));
+    validator.accept(event(1, 'case-attempt-started', 'case', {}));
+    return validator;
+  };
+  const actualError = { code: 'invalid-input', message: 'Input rejected.' };
+  const custom = (passed: boolean, error = actualError) => ({ checkId: 'checks-error', passed, score: null,
+    evidence: 'Checked actual code and message', diagnostics: [], actualError: error });
+  assert.throws(() => started().accept(event(2, 'case-attempt-completed', 'case', { status: 'completed' })), /invalid-case-end/);
+  assert.throws(() => started().accept(event(2, 'custom-assertion-completed', 'case', custom(true))), /invalid-custom/);
+  const mismatched = started();
+  mismatched.accept(event(2, 'operational-error-observed', 'case', actualError));
+  assert.throws(() => mismatched.accept(event(3, 'custom-assertion-completed', 'case', custom(true,
+    { code: 'different', message: actualError.message }))), /invalid-custom/);
+  for (const passed of [true, false]) {
+    const validator = started();
+    assert.equal(validator.accept(event(2, 'operational-error-observed', 'case', actualError)).type, 'operational-error-observed');
+    assert.equal(validator.accept(event(3, 'custom-assertion-completed', 'case', custom(passed))).type, 'grader-completed');
+    assert.equal(validator.accept(event(4, 'case-attempt-completed', 'case', { status: 'completed' })).type, 'case-completed');
+    assert.equal(validator.accept(event(5, 'run-completed', null, { status: 'completed' })).type, 'run-completed');
+  }
+  const ordinary = new ExecuteEventValidator('request', selection);
+  ordinary.accept(event(0, 'run-started', null, { model: 'fake', judgeModel: null }));
+  ordinary.accept(event(1, 'case-attempt-started', 'case', {}));
+  assert.throws(() => ordinary.accept(event(2, 'operational-error-observed', 'case', actualError)), /invalid-operational-error/);
+  const missingReply = new ExecuteEventValidator('request', selection);
+  missingReply.accept(event(0, 'run-started', null, { model: 'fake', judgeModel: null }));
+  missingReply.accept(event(1, 'case-attempt-started', 'case', {}));
+  assert.throws(() => missingReply.accept(event(2, 'case-attempt-completed', 'case', { status: 'completed' })), /invalid-case-end/);
+});
 test('v3 accepts a provisional response before turn completion and rejects v2 opt-in events', () => {
   const e = (sequence: number, type: string, caseId: string | null, data: unknown, version = 3) =>
     ({ ...event(sequence, type, caseId, data), protocolVersion: version });

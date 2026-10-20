@@ -72,12 +72,16 @@ function validTotals(v: Record<string, unknown>): boolean {
 export function attempt(v: unknown): v is Attempt {
   if (!record(v)) return false;
   const diagnostics = v.diagnostics;
-  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture providerResponses') || v.version !== 1
+  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture providerResponses operationalError') || v.version !== 1
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
     || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(diagnostics)
     || v.diagnosticLinks !== undefined && (!Array.isArray(v.diagnosticLinks) || v.diagnosticLinks.length > LIMITS.diagnostics
       || !v.diagnosticLinks.every(validDiagnosticLink) || !v.diagnosticLinks.every(link => diagnostics.includes(link.code)))
-    || v.failureProvenance !== undefined && (!validFailureProvenance(v.failureProvenance) || v.outcome !== 'incomplete')) return false;
+    || v.failureProvenance !== undefined && (!validFailureProvenance(v.failureProvenance) || v.outcome !== 'incomplete')
+    || v.operationalError !== undefined && (!record(v.operationalError) || !keys(v.operationalError, 'code message')
+      || typeof v.operationalError.code !== 'string' || !/^[a-z][a-z0-9-]{0,79}$/.test(v.operationalError.code)
+      || !text(v.operationalError.message) || !v.operationalError.message || !Array.isArray(v.turns)
+      || v.turns.length !== 0 || v.output !== '')) return false;
   if (v.review !== undefined && (!record(v.review) || !keys(v.review, 'runPath suitePath targetPath runnerPath inputPaths omittedInputPathCount context')
     || v.review.context !== 'current-repo-files' || !reviewPath(v.review.runPath)
     || v.review.targetPath !== null && !reviewPath(v.review.targetPath)
@@ -148,6 +152,7 @@ export function attempt(v: unknown): v is Attempt {
         && a.kind === 'grader' && a.outcome === 'incomplete' && a.score === null)
       && ids(a.turnIds, LIMITS.evidenceItems) && a.turnIds.every(id => turns.includes(id)) && ids(a.toolIds, LIMITS.evidenceItems) && a.toolIds.every(id => tools.includes(id)))
     && new Set(v.assertions.map(a => a.id)).size === v.assertions.length
+    && (v.operationalError === undefined || v.outcome === 'incomplete' || v.assertions.some(a => a.kind === 'grader' && a.outcome !== 'incomplete' && a.judgeModel === undefined))
     && (v.outcome !== 'passed' || v.assertions.length > 0 && v.assertions.every(a => a.outcome === 'passed'));
 }
 function reviewPath(value: unknown): value is string {

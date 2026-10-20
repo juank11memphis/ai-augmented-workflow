@@ -41,6 +41,16 @@ test('one failed assertion has capped selected context and safe artifact referen
   assert.doesNotMatch(JSON.stringify(result), /full-run|full-trace/);
 });
 
+test('failed operational-error assertion reports the observed typed error without fabricating a turn', async () => {
+  const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary,
+    evidenceStatus: 'available', evidence: { ...evidence, output: '', turns: [],
+      operationalError: { code: 'invalid-input', message: 'Input rejected.' },
+      assertions: [{ ...evidence.assertions[0]!, kind: 'grader', turnIds: [] }] } }));
+  assert.equal(result.status, 'ready');
+  if (result.status !== 'ready' || !('failure' in result)) assert.fail('Expected selected failure');
+  assert.deepEqual(result.failure.operationalError, { code: 'invalid-input', message: 'Input rejected.' });
+});
+
 test('unsafe or missing artifacts and runtime reader failures return typed blocks', async () => {
   const unsafe = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, { reader: { get: async () => ({ status: 'blocked', reason: 'unsafe-path' }) } });
   assert.deepEqual(unsafe, { status: 'blocked', reason: 'unsafe-artifact' });

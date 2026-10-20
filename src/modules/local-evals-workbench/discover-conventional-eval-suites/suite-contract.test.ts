@@ -4,6 +4,22 @@ import { describe, it } from 'node:test';
 import { validateEvalSuiteContract } from './suite-contract.js';
 
 describe('version-2 eval suite contract', () => {
+  it('requires a declared custom assertion for operational-error cases and preserves ordinary cases', () => {
+    const errorCase = validCase({ expectedOutcome: { type: 'operational-error' }, assertions: [],
+      graders: [{ id: 'checks-error', type: 'custom', name: 'Checks actual error' }] });
+    const valid = validateEvalSuiteContract(validSuite({ testCases: [errorCase, validCase({ id: 'normal' })] }));
+    assert.equal(valid.status, 'valid');
+    if (valid.status === 'valid') {
+      assert.deepEqual(valid.suite.testCases[0]?.expectedOutcome, { type: 'operational-error' });
+      assert.equal(valid.suite.testCases[1]?.expectedOutcome, undefined);
+    }
+    for (const changed of [
+      { ...errorCase, graders: [] },
+      { ...errorCase, expectedOutcome: { type: 'operational-error', allowMissingReply: true } },
+      { ...errorCase, expectedOutcome: { type: 'anything' } },
+      { ...errorCase, graders: [{ id: 'rubric', type: 'rubric', rubric: { type: 'inline', text: 'reply' }, threshold: 0.8 }] },
+    ]) assert.equal(validateEvalSuiteContract(validSuite({ testCases: [changed] })).status, 'invalid');
+  });
   it('keeps old suites valid without inventing defaults', () => {
     const result = validateEvalSuiteContract(validSuite());
     assert.equal(result.status, 'valid');

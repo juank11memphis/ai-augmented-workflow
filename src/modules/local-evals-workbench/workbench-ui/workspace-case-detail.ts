@@ -13,6 +13,8 @@ export const WORKSPACE_CASE_DETAIL_CLIENT = String.raw`
     return '<div class="section-heading"><button type="button" data-action="close-detail" class="detail-back">‹ Results · ' + esc(suiteName)
       + '</button><button type="button" data-action="close-detail" class="detail-close">Close</button></div>'
       + '<h2 tabindex="-1">' + esc(caseName) + ' · ' + esc(evidence.outcome) + '</h2>'
+      + (evidence.operationalError ? '<p class="detail-check-status">Observed operational error: <code>'
+        + esc(evidence.operationalError.code) + '</code> · ' + esc(evidence.operationalError.message) + '</p>' : '')
       + (latest ? '' : '<p class="readonly">Historical run · read-only</p>')
       + attemptChoices + failedChoices
       + (selectedCheck ? '<p class="detail-check-status">Selected check: ' + esc(selectedCheck.id) + ' · ' + esc(selectedCheck.outcome) + '</p>'

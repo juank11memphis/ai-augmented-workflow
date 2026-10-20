@@ -51,6 +51,8 @@ export async function previewEvalRun(command: PreviewEvalRunCommand, dependencie
     return {
       status: 'ready', suiteId: suite.id, selectedCaseIds: cases.map((testCase) => testCase.id),
       caseSelections: snapshot.selection.cases,
+      expectedOutcomes: cases.map(testCase => ({ caseId: testCase.id,
+        type: testCase.expectedOutcome?.type ?? 'assistant-reply' })),
       model: snapshot.selection.cases[0]!.testedModel, judgeModel: snapshot.selection.cases[0]!.judgeModel,
       previewToken: snapshot.previewToken!,
     };

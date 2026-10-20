@@ -35,6 +35,7 @@ export type NormalizedEvalTestCase = {
   readonly name: string;
   readonly testedModel?: string;
   readonly judgeModel?: string;
+  readonly expectedOutcome?: { readonly type: 'operational-error' };
   readonly turns: readonly { readonly role: TurnRole; readonly content: TextContent }[];
   readonly fixture?: FixtureContent;
   readonly reference?: TextContent;

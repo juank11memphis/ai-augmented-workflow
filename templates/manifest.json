@@ -1,5 +1,5 @@
 {
-  "templateVersion": "235",
+  "templateVersion": "236",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "11",
+      "version": "12",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Adds version-3 judge response and grading-error examples, with both-role failure-gap guidance."
+        "Documents typed operational-error eval cases, required custom assertions, and zero-reply event order."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {

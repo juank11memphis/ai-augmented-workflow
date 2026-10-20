@@ -4,12 +4,14 @@ export const WORKSPACE_RUN_PREVIEW_CLIENT = String.raw`
     const node = one('[data-run-preview-status]');
     if (node) node.textContent = message;
   }
-  function previewRows(selections) {
+  function previewRows(selections, outcomes = []) {
     const list = one('[data-run-preview-list]');
     if (!list) return;
     list.innerHTML = selections.map(item => {
       const name = suite?.testCases.find(testCase => testCase.id === item.caseId)?.name || item.caseId;
+      const expectedOutcome = outcomes.find(outcome => outcome.caseId === item.caseId)?.type;
       return '<li><strong>' + esc(name) + '</strong><span>Model ' + esc(item.testedModel) + '</span>'
+        + (expectedOutcome === 'operational-error' ? '<span>Expected: operational error</span>' : '')
         + (item.judgeModel ? '<span>Judge model ' + esc(item.judgeModel) + '</span>' : '') + '</li>';
     }).join('');
   }
@@ -30,7 +32,7 @@ export const WORKSPACE_RUN_PREVIEW_CLIENT = String.raw`
       if (response?.status === 'ready' && Array.isArray(response.caseSelections)
         && response.caseSelections.length === selectedCaseIds().length) {
         previewToken = response.previewToken;
-        previewRows(response.caseSelections);
+        previewRows(response.caseSelections, response.expectedOutcomes);
         previewMessage('Models for this run');
         return response;
       }

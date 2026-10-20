@@ -126,11 +126,18 @@ function readTestCases(value: unknown, source: string, diagnostics: EvalSuiteDis
   return value.flatMap((item, index) => {
     const location = `${source}:testCases[${index}]`;
     if (!isRecord(item)) { diagnostics.push(problem(location, 'test-case-invalid', 'Test case must be an object.')); return []; }
-    rejectUnknownKeys(item, ['id', 'name', 'testedModel', 'judgeModel', 'turns', 'fixture', 'reference', 'toolMocks', 'assertions', 'graders'], location, diagnostics);
+    rejectUnknownKeys(item, ['id', 'name', 'testedModel', 'judgeModel', 'expectedOutcome', 'turns', 'fixture', 'reference', 'toolMocks', 'assertions', 'graders'], location, diagnostics);
     const id = readId(item.id, `${location}.id`, diagnostics);
     const name = item.name === undefined ? id : readText(item.name, `${location}.name`, diagnostics);
     const testedModel = readOptionalCaseModelOverride(item.testedModel, `${location}.testedModel`, diagnostics);
     const judgeModel = readOptionalCaseModelOverride(item.judgeModel, `${location}.judgeModel`, diagnostics);
+    let expectedOutcome: NormalizedEvalTestCase['expectedOutcome'];
+    if (item.expectedOutcome !== undefined) {
+      if (!isRecord(item.expectedOutcome) || item.expectedOutcome.type !== 'operational-error'
+        || Object.keys(item.expectedOutcome).some(key => key !== 'type'))
+        diagnostics.push(problem(`${location}.expectedOutcome`, 'expected-outcome-invalid', 'Expected outcome must be { type: "operational-error" }.'));
+      else expectedOutcome = { type: 'operational-error' };
+    }
     const turns = readTurns(item.turns, location, diagnostics);
     const fixture = item.fixture === undefined ? undefined : readFixtureContent(item.fixture, `${location}.fixture`, diagnostics);
     const reference = item.reference === undefined ? undefined : readTextContent(item.reference, `${location}.reference`, diagnostics);
@@ -139,8 +146,13 @@ function readTestCases(value: unknown, source: string, diagnostics: EvalSuiteDis
     const graders = readGraders(item.graders, location, diagnostics);
     checkUnique([...assertions, ...graders].map((entry) => entry.id), `${location}.checks`, 'check-id-duplicate', diagnostics);
     if (assertions.length + graders.length === 0) diagnostics.push(problem(`${location}.checks`, 'checks-empty', 'At least one assertion or grader is required.'));
+    if (expectedOutcome && !graders.some(grader => grader.type === 'custom'))
+      diagnostics.push(problem(`${location}.graders`, 'error-custom-required', 'Operational-error cases require a custom assertion.'));
+    if (expectedOutcome && graders.some(grader => grader.type === 'rubric'))
+      diagnostics.push(problem(`${location}.graders`, 'error-rubric-unsupported', 'Operational-error cases cannot use reply rubrics.'));
     return id && name && turns.length > 0 ? [{ id, name,
       ...(testedModel ? { testedModel } : {}), ...(judgeModel ? { judgeModel } : {}),
+      ...(expectedOutcome ? { expectedOutcome } : {}),
       turns, ...(fixture ? { fixture } : {}), ...(reference ? { reference } : {}), toolMocks, assertions, graders }] : [];
   });
 }

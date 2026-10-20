@@ -246,6 +246,8 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   const failure = {
     caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id, kind: assertion.kind,
     actual: clipped(assertion.actual), expected: clipped(assertion.expected),
+    ...(evidence.operationalError ? { operationalError: { code: evidence.operationalError.code,
+      message: clipped(evidence.operationalError.message) } } : {}),
     diagnostics: assertion.diagnostics.slice(0, MAX_DIAGNOSTICS).map(clipped),
     ...(artifactPath ? { artifactPath } : {}),
     truncated: assertion.actual.length > MAX_TEXT || assertion.expected.length > MAX_TEXT || assertion.diagnostics.length > MAX_DIAGNOSTICS || assertion.diagnostics.some(item => item.length > MAX_TEXT),

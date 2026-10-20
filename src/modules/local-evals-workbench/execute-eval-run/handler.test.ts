@@ -44,6 +44,30 @@ function harness(events: readonly ExecutionEvent[], outcome: 'completed' | 'erro
   return { writes, attempts, finalDiagnostics, store, runner, evaluator };
 }
 
+test('operational error completes without a reply only when its custom assertion passes', async () => {
+  const errorCase = { ...testCase, expectedOutcome: { type: 'operational-error' as const }, assertions: [],
+    graders: [{ id: 'checks-error', type: 'custom' as const, name: 'Checks actual error' }] };
+  const chosen: ExecutionSelection = { ...selection, suite: { ...selection.suite, testCases: [errorCase] }, cases: [errorCase] };
+  const actualError = { code: 'invalid-input', message: 'Input rejected.' };
+  const base: ExecutionEvent[] = [{ type: 'run-started' }, { type: 'case-started', caseId: 'case' },
+    { type: 'operational-error-observed', caseId: 'case', attempt: 1, error: actualError }];
+  for (const passed of [true, false]) {
+    const h = harness([...base, { type: 'grader-completed', caseId: 'case', attempt: 1, checkId: 'checks-error',
+      grader: 'custom', passed, score: null, evidence: 'Checked actual error', diagnostics: [], actualError },
+    { type: 'case-completed', caseId: 'case', status: 'completed' }, { type: 'run-completed', status: 'completed' }]);
+    const result = await executeEvalRun(chosen, { ...h, evaluator: { evaluate: () => [] }, clock: Date.now });
+    assert.equal(result.status, 'completed');
+    assert.equal(h.attempts.at(-1)?.outcome, passed ? 'passed' : 'failed');
+    assert.deepEqual(h.attempts.at(-1)?.turns, []);
+    assert.deepEqual(h.attempts.at(-1)?.operationalError, actualError);
+  }
+  const missing = harness([{ type: 'run-started' }, { type: 'case-started', caseId: 'case' },
+    { type: 'case-completed', caseId: 'case', status: 'completed' }]);
+  assert.equal((await executeEvalRun(chosen, { ...missing, evaluator: { evaluate: () => [] }, clock: Date.now })).status, 'error');
+  const unexpected = harness([...base, { type: 'case-completed', caseId: 'case', status: 'completed' }]);
+  assert.equal((await executeEvalRun(selection, { ...unexpected, clock: Date.now })).status, 'error');
+});
+
 test('starts before runner, checkpoints output, grades actual evidence and finalizes', async () => {
   const h = harness([{ type: 'run-started' }, { type: 'case-started', caseId: 'case' },
     { type: 'turn-completed', caseId: 'case', turnId: 'case-turn-1', output: 'actual response' },
