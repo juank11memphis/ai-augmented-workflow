@@ -5,7 +5,7 @@
 ## Epic
 [Blocked Task Recovery](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 As an engineer running a Story AFK, I want failed checks inventoried and compared with the Epic baseline, so that a repair decision is grounded in the actual blocker rather than a truncated log or guess.

@@ -5,7 +5,7 @@
 ## Epic
 [Blocked Task Recovery](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 As an engineer running a Story AFK, I want bounded, clearly attributable failures repaired through reviewed checked work, so that the Story can resume without losing Task edits or bypassing evidence.

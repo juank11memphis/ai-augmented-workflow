@@ -1,5 +1,5 @@
 {
-  "templateVersion": "233",
+  "templateVersion": "235",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -142,31 +142,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "34",
+      "version": "35",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Adds same-Task plan revision for bounded overlapping failures in uncommitted checked Tasks."
+        "Extends same-Task plan revision for bounded overlapping failures and path-disjoint prerequisites with fresh review identity."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "22",
+      "version": "23",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Revises a failed checked Task for continuation while preserving its check and single-commit authority."
+        "Extends failed checked Task continuation with preserved-edit inventory, path-disjoint repair checks, and single-commit authority."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "71",
+      "version": "73",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Recovers bounded overlapping uncommitted Task failures through reviewed same-Task continuation without weakening checks or commit gates."
+        "Extends complete grouped failure inventory and isolated observed-Epic-head comparison with reviewed bounded recovery, safe dispatch, and current evidence gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "29",
+      "version": "30",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Resumes a reviewed failed Task with inventoried edits while preserving its exact check and one scoped commit."
+        "Extends reviewed failed Task with inventoried edits, preserving its exact check and one scoped commit while revalidating recovery."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
