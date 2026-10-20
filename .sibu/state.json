@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "235",
+  "templateVersion": "236",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-20T03:16:17.548Z",
+  "updatedAt": "2026-10-20T17:49:00.589Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -288,8 +288,8 @@
     },
     ".agents/skills/eval-authoring/references/version-2-contract.md": {
       "template": "skills/eval-authoring/references/version-2-contract.md",
-      "templateVersion": "11",
-      "sha256": "ba265b9c00105cb1562b9d7f69bae0c440689d9b1407f91f635d4063b332937f",
+      "templateVersion": "12",
+      "sha256": "a7767862ef70997af2f3c0fb9acdc4c5fc14538e458eefe84247e50310da908b",
       "status": "managed"
     },
     ".agents/skills/feature-idea-capture/SKILL.md": {

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "236",
+  "templateVersion": "237",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "12",
+      "version": "13",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Documents typed operational-error eval cases, required custom assertions, and zero-reply event order."
+        "Documents version-4 model-call lifecycle events and honest pending-call evidence for interrupted eval runs."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {

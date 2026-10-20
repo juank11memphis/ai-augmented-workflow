@@ -22,12 +22,15 @@ export class ProviderResponseEvents {
   private runBytes = 0;
 
   resetAttempt(): void { this.pending = undefined; this.calls.clear(); }
+  hasCall(callId: string): boolean { return this.calls.has(callId); }
   get incomplete(): ExecutionEvent | undefined {
     const value = this.pending;
     return value && { type: 'provider-response-gap', caseId: value.caseId, attempt: value.attempt,
       callId: value.callId, provisionalTurnId: value.provisionalTurnId,
       ...(value.role === undefined ? {} : { role: value.role }),
-      ...(value.checkId === undefined ? {} : { checkId: value.checkId }), reason: 'incomplete' };
+      ...(value.checkId === undefined ? {} : { checkId: value.checkId }),
+      ...(value.contentType === undefined ? {} : { contentType: value.contentType }),
+      ...(value.originalByteLength === undefined ? {} : { originalByteLength: value.originalByteLength }), reason: 'incomplete' };
   }
 
   accept(type: string, data: Record<string, unknown>, caseId: string, attempt: number, model: string,

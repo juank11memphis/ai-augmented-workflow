@@ -88,6 +88,53 @@ test('observed response survives unexpected process exit before turn completion'
   assertIncomplete(h.snapshots.at(-1));
 });
 
+test('pending call cancellation saves observed timing and deadline without inventing a response', async () => {
+  const h = fixture([start, { type: 'model-call-started', caseId: 'case', attempt: 1,
+    callId: 'call-1', provisionalTurnId: 'turn-1', role: 'tested-model', modelId: 'synthetic', phase: 'initial' },
+  { type: 'provider-response-gap', caseId: 'case', attempt: 1, callId: 'call-1', provisionalTurnId: 'turn-1',
+    reason: 'incomplete' }], { status: 'error', reason: 'runner-timeout', failureProvenance: { stage: 'timeout' } });
+  assert.equal((await executeEvalRun(command, h.ports)).status, 'error');
+  const saved = h.snapshots.at(-1);
+  assert.equal(saved?.modelCalls?.[0]?.status, 'pending');
+  assert.equal(saved?.modelCalls?.[0]?.terminationSource, 'application-deadline');
+  assert.ok(saved?.modelCalls?.[0]?.observedUntilMs !== undefined);
+  assert.ok(saved.modelCalls[0]!.observedUntilMs! >= saved.modelCalls[0]!.startedAtMs);
+  assert.deepEqual(saved.providerResponses, { records: [], gaps: [
+    { callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete' }] });
+  assert.equal(h.writes.length, 0);
+  assert.doesNotMatch(JSON.stringify(h.logs), /PRIVATE_RESPONSE_SENTINEL/);
+});
+
+test('runner-reported call outcomes retain their observed end and safe termination source', async () => {
+  for (const [status, source] of [
+    ['completed', undefined], ['failed', 'provider-timeout'], ['cancelled', 'application-deadline'],
+  ] as const) {
+    const h = fixture([start, { type: 'model-call-started', caseId: 'case', attempt: 1,
+      callId: 'call-1', provisionalTurnId: 'turn-1', role: 'tested-model', modelId: 'synthetic', phase: 'initial' },
+    { type: 'provider-response-gap', caseId: 'case', attempt: 1, callId: 'call-1', provisionalTurnId: 'turn-1',
+      reason: 'not-observed' },
+    { type: 'model-call-ended', caseId: 'case', attempt: 1, callId: 'call-1', status,
+      ...(source ? { terminationSource: source } : {}) }], { status: 'error', reason: 'runner-exited' });
+    assert.equal((await executeEvalRun(command, h.ports)).status, 'error');
+    assert.deepEqual(h.snapshots.at(-1)?.modelCalls?.[0], { callId: 'call-1', provisionalTurnId: 'turn-1',
+      role: 'tested-model', modelId: 'synthetic', phase: 'initial', startedAtMs: 100,
+      endedAtMs: 100, status, ...(source ? { terminationSource: source } : {}) });
+    assert.equal(h.writes.length, 0);
+  }
+});
+
+test('unfinished response preserves declared metadata but no response record', async () => {
+  const h = fixture([start, { type: 'provider-response-gap', caseId: 'case', attempt: 1,
+    callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete',
+    contentType: 'application/json', originalByteLength: 42 }],
+  { status: 'error', reason: 'runner-exited' });
+  assert.equal((await executeEvalRun(command, h.ports)).status, 'error');
+  assert.deepEqual(h.snapshots.at(-1)?.providerResponses, { records: [], gaps: [
+    { callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete',
+      contentType: 'application/json', originalByteLength: 42 }] });
+  assert.equal(h.writes.length, 0);
+});
+
 test('pre-turn response is durable before malformed trailing event is rejected', async () => {
   const h = fixture([start, observed, { type: 'turn-completed', caseId: 'wrong', turnId: 'invented', output: 'bad' }],
     { status: 'error' });

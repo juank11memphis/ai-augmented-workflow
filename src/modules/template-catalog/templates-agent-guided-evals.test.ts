@@ -74,7 +74,7 @@ test('agent-guided skill and current-version sync metadata ship together', () =>
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-  assert.equal(manifest.templateVersion, '236');
+  assert.equal(manifest.templateVersion, '237');
   assert.equal(entry?.version, '5');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
@@ -119,7 +119,7 @@ test('eval troubleshooting route stays distinct from mandatory authoring and bro
 
 test('unchanged AGENTS route metadata remains version 56 while the shared skill advances', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '236');
+  assert.equal(manifest.templateVersion, '237');
   assert.equal(manifest.templates['AGENTS.md']?.version, '56');
   assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
     'Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate.',

@@ -88,8 +88,10 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.equal(metadata?.version, '12');
-  assert.match(metadata?.changes.join(' ') ?? '', /typed operational-error eval cases/);
+  assert.equal(metadata?.version, '13');
+  assert.match(metadata?.changes.join(' ') ?? '', /version-4 model-call lifecycle events/);
+  assert.match(reference, /model-call-started.*before.*invoking the provider/);
+  assert.match(reference, /pending.*termination source it observed/);
 });
 
 test('distributed authoring guidance distinguishes saved full-suite and temporary one-case preview', () => {

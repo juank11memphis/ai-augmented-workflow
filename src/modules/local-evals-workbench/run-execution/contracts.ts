@@ -25,12 +25,19 @@ export type ExecutionSelection = {
   readonly reference?: string;
 };
 export type ExecutionEvent = SourceExecutionEvent
+  | { readonly type: 'model-call-started'; readonly caseId: string; readonly attempt: number;
+      readonly callId: string; readonly provisionalTurnId: string; readonly role: 'tested-model' | 'judge';
+      readonly checkId?: string; readonly modelId: string; readonly phase: 'initial' | 'post-tool' | 'judge' }
+  | { readonly type: 'model-call-ended'; readonly caseId: string; readonly attempt: number;
+      readonly callId: string; readonly status: 'completed' | 'failed' | 'cancelled';
+      readonly terminationSource?: 'application-deadline' | 'provider-timeout' | 'runner-failure' | 'unknown' }
   | { readonly type: 'provider-response-observed'; readonly caseId: string; readonly attempt: number;
       readonly callId: string; readonly provisionalTurnId: string; readonly role?: 'tested-model' | 'judge'; readonly checkId?: string; readonly bytes: Uint8Array;
       readonly contentType?: string; readonly originalByteLength?: number; readonly completeness: 'complete' | 'truncated' | 'incomplete' }
   | { readonly type: 'provider-response-gap'; readonly caseId: string; readonly attempt: number;
       readonly callId: string; readonly provisionalTurnId: string; readonly role?: 'tested-model' | 'judge'; readonly checkId?: string;
-      readonly reason: 'not-observed' | 'not-emitted' | 'capture-failed' | 'incomplete' }
+      readonly reason: 'not-observed' | 'not-emitted' | 'capture-failed' | 'incomplete';
+      readonly contentType?: string; readonly originalByteLength?: number }
   | { readonly type: 'run-started' }
   | { readonly type: 'case-started'; readonly caseId: string; readonly attempt?: number }
   | { readonly type: 'turn-completed'; readonly caseId: string; readonly attempt?: number; readonly turnId: string; readonly turnIndex?: number; readonly output: string }

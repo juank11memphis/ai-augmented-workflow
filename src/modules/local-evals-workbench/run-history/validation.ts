@@ -72,7 +72,7 @@ function validTotals(v: Record<string, unknown>): boolean {
 export function attempt(v: unknown): v is Attempt {
   if (!record(v)) return false;
   const diagnostics = v.diagnostics;
-  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture providerResponses operationalError') || v.version !== 1
+  if (!record(v) || !keys(v, 'version suiteId runId caseId number outcome durationMs calls cost output truncated diagnostics diagnosticLinks failureProvenance turns tools assertions review sourceCapture providerResponses modelCalls operationalError') || v.version !== 1
     || ![v.suiteId, v.runId, v.caseId].every(logicalId) || v.number !== 1 || !outcome(v.outcome)
     || !integer(v.durationMs) || !calls(v.calls) || !amount(v.cost) || !text(v.output) || typeof v.truncated !== 'boolean' || !texts(diagnostics)
     || v.diagnosticLinks !== undefined && (!Array.isArray(v.diagnosticLinks) || v.diagnosticLinks.length > LIMITS.diagnostics
@@ -116,14 +116,33 @@ export function attempt(v: unknown): v is Attempt {
       && (item.status !== 'complete' || item.originalByteLength === undefined || item.originalByteLength === item.byteLength))
     || new Set(v.providerResponses.records.map(item => item.callId)).size !== v.providerResponses.records.length
     || !Array.isArray(v.providerResponses.gaps) || v.providerResponses.gaps.length > LIMITS.evidenceItems
-    || !v.providerResponses.gaps.every(item => record(item) && keys(item, 'callId provisionalTurnId role checkId reason')
+    || !v.providerResponses.gaps.every(item => record(item) && keys(item, 'callId provisionalTurnId role checkId reason contentType originalByteLength')
       && logicalId(item.callId) && logicalId(item.provisionalTurnId)
       && (item.role === undefined || enumValue(item.role, ['tested-model', 'judge']))
       && (item.role === 'judge' ? logicalId(item.checkId) : item.checkId === undefined)
-      && enumValue(item.reason, ['not-observed', 'not-emitted', 'not-persisted', 'capture-failed', 'incomplete']))
+      && enumValue(item.reason, ['not-observed', 'not-emitted', 'not-persisted', 'capture-failed', 'incomplete'])
+      && (item.contentType === undefined || typeof item.contentType === 'string' && item.contentType.length <= 256
+        && /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\/-]*(?:; ?[A-Za-z0-9=._+-]+)*$/.test(item.contentType))
+      && (item.originalByteLength === undefined || integer(item.originalByteLength)))
     || new Set(v.providerResponses.gaps.map(item => item.callId)).size !== v.providerResponses.gaps.length
     || v.providerResponses.gaps.some(gap => (v.providerResponses as { records: { callId: string }[] }).records
       .some(item => item.callId === gap.callId)))) return false;
+  if (v.modelCalls !== undefined && (!Array.isArray(v.modelCalls) || v.modelCalls.length > LIMITS.evidenceItems
+    || !v.modelCalls.every(call => record(call) && keys(call, 'callId provisionalTurnId role checkId modelId phase startedAtMs endedAtMs observedUntilMs status terminationSource')
+      && logicalId(call.callId) && logicalId(call.provisionalTurnId) && text(call.modelId) && call.modelId.length > 0
+      && (call.role === 'judge' ? logicalId(call.checkId) && call.phase === 'judge'
+        : call.role === 'tested-model' && call.checkId === undefined && enumValue(call.phase, ['initial', 'post-tool']))
+      && integer(call.startedAtMs) && enumValue(call.status, ['pending', 'completed', 'failed', 'cancelled'])
+      && (call.status === 'pending' ? call.endedAtMs === undefined
+        : integer(call.endedAtMs) && call.endedAtMs >= call.startedAtMs && call.observedUntilMs === undefined)
+      && (call.observedUntilMs === undefined || call.status === 'pending' && integer(call.observedUntilMs)
+        && call.observedUntilMs >= call.startedAtMs)
+      && (call.endedAtMs === undefined || Number(call.endedAtMs) - Number(call.startedAtMs) <= 86_400_000)
+      && (call.observedUntilMs === undefined || Number(call.observedUntilMs) - Number(call.startedAtMs) <= 86_400_000)
+      && (call.status === 'completed' ? call.terminationSource === undefined
+        : call.terminationSource === undefined && call.status === 'pending'
+          || enumValue(call.terminationSource, ['application-deadline', 'provider-timeout', 'runner-failure', 'unknown'])))
+    || new Set(v.modelCalls.map(call => call.callId)).size !== v.modelCalls.length)) return false;
   if (!Array.isArray(v.turns) || v.turns.length > LIMITS.evidenceItems || !v.turns.every(t => record(t) && keys(t, 'id role content') && logicalId(t.id) && enumValue(t.role, ['user', 'assistant', 'system', 'tool']) && text(t.content))
     || !Array.isArray(v.tools) || v.tools.length > LIMITS.evidenceItems || !v.tools.every(t => record(t) && keys(t, 'id name arguments result turnId position outcome') && logicalId(t.id) && text(t.name) && text(t.arguments) && text(t.result)
       && (t.turnId === undefined || logicalId(t.turnId)) && (t.position === undefined || integer(t.position, LIMITS.evidenceItems))

@@ -174,7 +174,10 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
       diagnosticLinks: links,
       ...(evidence.failureProvenance || manifest.failureProvenance ? { failureProvenance: evidence.failureProvenance ?? manifest.failureProvenance } : {}),
       turnIds: [...new Set(links.flatMap(link => link.turnId ? [link.turnId] : []))],
-      callIds: [...new Set(links.flatMap(link => link.callId ? [link.callId] : []))],
+      callIds: [...new Set([...links.flatMap(link => link.callId ? [link.callId] : []),
+        ...(evidence.modelCalls ?? []).slice(0, 6).map(call => call.callId)])],
+      ...(evidence.modelCalls?.length ? { modelCalls: { records: evidence.modelCalls.slice(0, 6),
+        truncated: evidence.modelCalls.length > 6 } } : {}),
       source,
     } };
     return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };

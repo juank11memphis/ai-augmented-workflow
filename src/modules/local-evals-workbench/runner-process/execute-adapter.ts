@@ -103,6 +103,7 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       if (sourceGap) await consume(sourceGap);
       const responseGap = validator.incompleteResponse;
       if (responseGap) await consume(responseGap);
+      for (const gap of validator.missingCallResponses) await consume(gap);
       const status = failure ? 'error' : validator.completion!;
       const failureProvenance: FailureProvenance | undefined = failure === 'runner-timeout' ? { stage: 'timeout' }
         : failure === 'runner-protocol-invalid' ? { stage: 'protocol-rejection' }

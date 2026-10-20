@@ -83,6 +83,14 @@ The synthetic content files contain: `inputs/lookup.txt`: `Find synthetic order 
 
 ## Independent runner protocol: version 1
 
+### Expected operational errors
+
+Ordinary cases omit `expectedOutcome` and require one assistant reply for every declared input turn. To test an operation that should throw instead of replying, declare `"expectedOutcome": { "type": "operational-error" }` on that case and include at least one `custom` grader; reply rubrics are not supported for this outcome. For example, `"graders": [{ "id": "reject-invalid-input", "type": "custom", "name": "Checks the actual error code and message" }]`. The input `turns` array remains nonempty, but a completed operational-error attempt has **zero** assistant turns.
+
+The runner emits `operational-error-observed` with `data: { "code": "invalid-input", "message": "Safe error summary" }` after `case-attempt-started`, then emits each declared `custom-assertion-completed` with its normal result fields **and** `actualError` equal to the observed `{ code, message }`. The custom assertion must inspect the actual caught error and decide `passed`; it must not infer success merely because an error occurred. The required sequence is attempt start → operational error → custom assertion(s) → completed attempt → completed run. A missing error, missing custom result, assistant reply in an error case, or unexpected error in an ordinary case cannot pass. An assertion reporting `passed: false` produces a completed **failed** case. A runner failure still uses the existing attempt/run `error` statuses and remains incomplete.
+
+Error codes use lowercase letters, digits and hyphens, starting with a letter. The message is a nonempty safe summary of at most 500 UTF-8 bytes; do not expose secrets or raw exception payloads. Error cases using source-evidence protocol v2/v3 report `sourceEvidenceComplete: false` because no assistant turn or model-call source record exists. Do not synthesize a turn, tool event, or source record to satisfy evidence completeness.
+
 One UTF-8 JSON request per process on stdin; NDJSON on stdout only. Diagnostics go to bounded stderr, never mixed with protocol output. Use project-root cwd, a validated command argument array with `shell: false`, base process environment plus declared environment names only, and explicit `SIBU_EVAL_MODE=1` for every operation. Environment values never enter requests, files, diagnostics or events. Reject unsupported versions, malformed requests, unknown models, empty selections, duplicate cases, unsupported repeat fields and missing eval mode before target initialization. Requests/events are untrusted; bound input, lines, total output, traces and stderr, and enforce startup/idle/overall timeouts in the caller. Stop/terminate on protocol violations and report interruption honestly.
 
 ### Commands and results first
@@ -117,8 +125,9 @@ Event `type` and `data` contracts:
 | `run-started` | `model`, `judgeModel` |
 | `case-attempt-started` | `{}` |
 | `conversation-turn-completed` | `turnIndex` (zero-based input turn), optional unique `turnId`, `role` (`assistant`), `output` (bounded redacted string) |
+| `operational-error-observed` | `code` (safe typed error code), `message` (nonempty bounded safe summary); only for a declared operational-error case before custom assertions |
 | `tool-interaction-recorded` | Unique `toolId`, prior `turnId`, zero-based `position`, `name`, `arguments` (bounded JSON), `outcome` (`result`, `error`, or `unexpected-response`), `result` (bounded JSON mock outcome) |
-| `custom-assertion-completed` | `checkId`, `passed` (boolean), `score` (0–1 or `null`), nonempty `evidence` (at most 500 UTF-8 bytes), `diagnostics` (safe strings) |
+| `custom-assertion-completed` | `checkId`, `passed` (boolean), `score` (0–1 or `null`), nonempty `evidence` (at most 500 UTF-8 bytes), `diagnostics` (safe strings); error cases also require `actualError` matching the observed error |
 | `rubric-judgment-completed` | Custom result fields plus `judgeModel`, numeric `score` (0–1), `threshold`; `passed` equals `score >= threshold` |
 | `rubric-judgment-error` | `checkId`, actual `judgeModel`, safe reason `code` (lowercase letters, digits and hyphens, starting with a letter); no score or model-failure claim |
 | `case-attempt-completed` | `status`: `completed` or `error` |

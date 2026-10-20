@@ -77,7 +77,7 @@ test('stale managed guidance gets meaningful updates and healthy doctor state', 
     state.managedFiles[target(template)] = { template, templateVersion: '0', sha256: sha256(stale), status: 'managed' };
     const change = preview(rootPath, state, template);
     assert.equal(change.status, 'update-available');
-    assert.match(change.changes.join(' '), /suite defaults|preview|case model|override|source-evidence|rubric-judge|typed operational-error/i);
+    assert.match(change.changes.join(' '), /suite defaults|preview|case model|override|source-evidence|rubric-judge|typed operational-error|model-call lifecycle/i);
     state = apply(rootPath, state, template, 'apply-update');
     assert.equal(fs.readFileSync(path.join(rootPath, target(template)), 'utf8'), readTemplate(template));
   }
@@ -97,7 +97,7 @@ test('updated runner judge guidance is installed with its current sync note', as
   state.managedFiles[target(reference)] = { template: reference, templateVersion: '8', sha256: sha256(stale), status: 'managed' };
   const change = preview(rootPath, state, reference);
   assert.equal(change.status, 'update-available');
-  assert.match(change.changes.join(' '), /typed operational-error/);
+  assert.match(change.changes.join(' '), /model-call lifecycle/);
   state = apply(rootPath, state, reference, 'apply-update');
   assert.equal(fs.readFileSync(path.join(rootPath, target(reference)), 'utf8'), installed);
   assert.deepEqual(diagnoseState({ rootPath, state }), []);

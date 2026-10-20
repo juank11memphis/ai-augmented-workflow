@@ -1,6 +1,6 @@
 import type { CheckOutcome, RunState } from '../run-history/index.js';
 import type { LocatedAttempt } from '../run-history/failed-assertion-locators.js';
-import type { DiagnosticLink, EvidenceGap, FailureProvenance, ProviderResponseGap } from '../run-history/contracts.js';
+import type { DiagnosticLink, EvidenceGap, FailureProvenance, ModelCallLifecycle, ProviderResponseGap } from '../run-history/contracts.js';
 
 export type SelectedProviderResponses = { readonly status: 'available'; readonly records: readonly {
   readonly callId: string; readonly provisionalTurnId: string; readonly locator: string;
@@ -59,6 +59,7 @@ export type HeadlessEvalResult =
       readonly diagnostics: readonly string[]; readonly diagnosticLinks: readonly DiagnosticLink[];
       readonly failureProvenance?: FailureProvenance;
       readonly turnIds: readonly string[]; readonly callIds: readonly string[];
+      readonly modelCalls?: { readonly records: readonly ModelCallLifecycle[]; readonly truncated: boolean };
       readonly source: SelectedProviderResponses | { readonly status: 'gap'; readonly reason: 'not-captured' };
     } }
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly failure: {

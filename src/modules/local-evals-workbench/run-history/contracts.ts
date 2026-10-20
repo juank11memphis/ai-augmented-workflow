@@ -88,7 +88,13 @@ export type ProviderResponseReference = { readonly callId: string; readonly prov
   readonly byteLength: number; readonly contentType?: string; readonly originalByteLength?: number };
 export type ProviderResponseGap = { readonly callId: string; readonly provisionalTurnId: string;
   readonly role?: 'tested-model' | 'judge'; readonly checkId?: string;
-  readonly reason: 'not-observed' | 'not-emitted' | 'not-persisted' | 'capture-failed' | 'incomplete' };
+  readonly reason: 'not-observed' | 'not-emitted' | 'not-persisted' | 'capture-failed' | 'incomplete';
+  readonly contentType?: string; readonly originalByteLength?: number };
+export type ModelCallLifecycle = { readonly callId: string; readonly provisionalTurnId: string;
+  readonly role: 'tested-model' | 'judge'; readonly checkId?: string; readonly modelId: string;
+  readonly phase: 'initial' | 'post-tool' | 'judge'; readonly startedAtMs: number; readonly endedAtMs?: number;
+  readonly observedUntilMs?: number; readonly status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  readonly terminationSource?: 'application-deadline' | 'provider-timeout' | 'runner-failure' | 'unknown' };
 export type ProviderResponseCapture = { readonly records: readonly ProviderResponseReference[];
   readonly gaps: readonly ProviderResponseGap[] };
 export type TurnEvidence = { readonly id: string; readonly role: 'user' | 'assistant' | 'system' | 'tool'; readonly content: string };
@@ -106,6 +112,8 @@ export type Attempt = {
   readonly sourceCapture?: SourceCapture;
   /** Absent on legacy attempts; never infer a response from that absence. */
   readonly providerResponses?: ProviderResponseCapture;
+  /** Runner-declared calls, timed when Sibu receives lifecycle events. Pending calls have no inferred response. */
+  readonly modelCalls?: readonly ModelCallLifecycle[];
   /** Repo-relative sources for a repo-aware reviewer; saved outputs and check results are above. */
   readonly review?: { readonly runPath: string; readonly suitePath: string | null; readonly targetPath: string | null; readonly runnerPath: string | null;
     readonly inputPaths: readonly string[]; readonly omittedInputPathCount: number; readonly context: 'current-repo-files' };

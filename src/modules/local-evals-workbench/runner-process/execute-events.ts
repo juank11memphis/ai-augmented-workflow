@@ -35,7 +35,8 @@ export class ExecuteEventValidator {
   private failedCase = false;
   private state: 'initial' | 'running' | 'finished' = 'initial';
   private terminal: 'completed' | 'error' | 'interrupted' | undefined;
-  private version: 1 | 2 | 3 | undefined;
+  private version: 1 | 2 | 3 | 4 | undefined;
+  private readonly modelCalls = new Map<string, { caseId: string; attempt: number; provisionalTurnId: string; role: string; checkId?: string; modelId: string; ended: boolean }>();
   private readonly chunks = new SourceRecordChunks();
   private readonly responses = new ProviderResponseEvents();
   private readonly sourceCalls = new Map<string, { turnId: string; checkId: string }>();
@@ -50,9 +51,16 @@ export class ExecuteEventValidator {
       reason: this.chunks.captureFailedId ? 'capture-failed' as const : 'incomplete' as const,
       recordId: this.chunks.captureFailedId ?? this.chunks.incompleteId } : undefined; }
   get incompleteResponse() { return this.responses.incomplete; }
+  get missingCallResponses(): ExecutionEvent[] {
+    if (this.version !== 4) return [];
+    return [...this.modelCalls.entries()].filter(([callId]) => !this.responses.hasCall(callId))
+      .map(([callId, call]) => ({ type: 'provider-response-gap', caseId: call.caseId, attempt: call.attempt,
+        callId, provisionalTurnId: call.provisionalTurnId, role: call.role as 'tested-model' | 'judge',
+        ...(call.checkId === undefined ? {} : { checkId: call.checkId }), reason: 'incomplete' }));
+  }
 
   accept(raw: unknown): ExecutionEvent {
-    if (!record(raw) || (raw.protocolVersion !== 1 && raw.protocolVersion !== 2 && raw.protocolVersion !== 3)
+    if (!record(raw) || (raw.protocolVersion !== 1 && raw.protocolVersion !== 2 && raw.protocolVersion !== 3 && raw.protocolVersion !== 4)
       || (this.version !== undefined && raw.protocolVersion !== this.version) || raw.requestId !== this.requestId
       || raw.runId !== this.selection.runId || raw.sequence !== this.sequence++
       || this.state === 'finished' || !record(raw.data) || !eventSize(raw)
@@ -80,7 +88,7 @@ export class ExecuteEventValidator {
         || data.code !== undefined && (data.status !== 'error' && data.status !== 'interrupted'
           || typeof data.code !== 'string' || !/^[a-z][a-z0-9-]{0,79}$/.test(data.code))) throw new Error('invalid-run-end');
       if (data.status === 'completed' && (this.activeCase || this.caseIndex !== this.selection.cases.length
-        || this.chunks.incompleteId || this.responses.incomplete)) throw new Error('incomplete-run');
+        || this.chunks.incompleteId || this.responses.incomplete || [...this.modelCalls.values()].some(call => !call.ended))) throw new Error('incomplete-run');
       this.terminal = data.status as 'completed' | 'error' | 'interrupted';
       this.state = 'finished';
       return { type: 'run-completed', status: this.terminal, ...(data.code === undefined ? {} : { code: data.code as string }) };
@@ -93,12 +101,46 @@ export class ExecuteEventValidator {
     if (raw.type === 'case-attempt-started') {
       if (this.activeCase || Object.keys(data).length) throw new Error('invalid-case-start');
       this.activeCase = caseId; this.turns = 0; this.tools = 0; this.turnIds.clear(); this.toolIds.clear(); this.graders.clear(); this.operationalError = undefined;
-      this.chunks.reset(); this.responses.resetAttempt(); this.sourceCalls.clear(); this.sourceTools.clear(); this.toolDetails.clear(); this.judgments.clear(); this.judgeSources.clear();
+      this.chunks.reset(); this.responses.resetAttempt(); this.modelCalls.clear(); this.sourceCalls.clear(); this.sourceTools.clear(); this.toolDetails.clear(); this.judgments.clear(); this.judgeSources.clear();
       return { type: 'case-started', caseId, attempt: this.attemptNumber };
     }
     if (!this.activeCase) throw new Error('case-not-started');
+    if (raw.type === 'model-call-started') {
+      const judge = data.role === 'judge';
+      if (this.version !== 4 || !keys(data, ['callId', 'provisionalTurnId', 'role', 'checkId', 'modelId', 'phase'])
+        || !logicalId(data.callId) || !logicalId(data.provisionalTurnId) || this.modelCalls.has(data.callId)
+        || (judge ? data.phase !== 'judge' || data.modelId !== this.selection.judgeModel
+          || !logicalId(data.checkId) || !selected.graders.some(item => item.type === 'rubric' && item.id === data.checkId)
+          : data.role !== 'tested-model' || data.checkId !== undefined || data.modelId !== this.selection.model
+            || !['initial', 'post-tool'].includes(String(data.phase)))) throw new Error('invalid-call-start');
+      this.modelCalls.set(data.callId, { caseId, attempt: this.attemptNumber, provisionalTurnId: data.provisionalTurnId, role: data.role as string,
+        ...(judge ? { checkId: data.checkId as string } : {}), modelId: data.modelId as string, ended: false });
+      return { type: 'model-call-started', caseId, attempt: this.attemptNumber, callId: data.callId,
+        provisionalTurnId: data.provisionalTurnId, role: data.role as 'tested-model' | 'judge',
+        ...(judge ? { checkId: data.checkId as string } : {}), modelId: data.modelId as string,
+        phase: data.phase as 'initial' | 'post-tool' | 'judge' };
+    }
+    if (raw.type === 'model-call-ended') {
+      const call = this.modelCalls.get(data.callId as string);
+      if (this.version !== 4 || !keys(data, ['callId', 'status', 'terminationSource']) || !call || call.ended
+        || !['completed', 'failed', 'cancelled'].includes(String(data.status))
+        || (data.status === 'completed' ? data.terminationSource !== undefined
+          : !['application-deadline', 'provider-timeout', 'runner-failure', 'unknown'].includes(String(data.terminationSource))))
+        throw new Error('invalid-call-end');
+      call.ended = true;
+      return { type: 'model-call-ended', caseId, attempt: this.attemptNumber, callId: data.callId as string,
+        status: data.status as 'completed' | 'failed' | 'cancelled',
+        ...(data.terminationSource === undefined ? {} : { terminationSource: data.terminationSource as 'application-deadline' | 'provider-timeout' | 'runner-failure' | 'unknown' }) };
+    }
     if (typeof raw.type === 'string' && raw.type.startsWith('provider-response-')) {
-      if (this.version !== 3) throw new Error('unsupported-event');
+      if (this.version !== 3 && this.version !== 4) throw new Error('unsupported-event');
+      if (this.version === 4) {
+        const call = this.modelCalls.get(data.callId as string);
+        if (!call || call.ended || (raw.type === 'provider-response-started' || raw.type === 'provider-response-gap')
+          && (call.provisionalTurnId !== data.provisionalTurnId || call.role !== (data.role ?? 'tested-model')
+            || call.checkId !== data.checkId || (data.modelId !== undefined && call.modelId !== data.modelId)))
+          throw new Error('invalid-response-call-link');
+      }
       return this.responses.accept(raw.type, data, caseId, this.attemptNumber, this.selection.model,
         this.selection.judgeModel, selected.graders.filter(item => item.type === 'rubric').map(item => item.id));
     }
@@ -202,7 +244,9 @@ export class ExecuteEventValidator {
         || (data.sourceEvidenceComplete === true && (this.chunks.incompleteId || this.sourceCalls.size === 0
           || this.turnIds.size !== new Set([...this.sourceCalls.values()].map(call => call.turnId)).size
           || this.toolIds.size !== this.sourceTools.size))
-        || (data.status === 'completed' && (this.chunks.incompleteId || this.responses.incomplete))
+        || (data.status === 'completed' && (this.chunks.incompleteId || this.responses.incomplete
+          || [...this.modelCalls.values()].some(call => !call.ended)
+          || [...this.modelCalls.keys()].some(callId => !this.responses.hasCall(callId))))
         || data.calls !== undefined && !(data.calls === null || typeof data.calls === 'number' && Number.isSafeInteger(data.calls) && data.calls >= 0)
         || data.cost !== undefined && !amount(data.cost)
         || data.status === 'completed' && (this.turns !== (selected.expectedOutcome ? 0 : selected.turns.length)

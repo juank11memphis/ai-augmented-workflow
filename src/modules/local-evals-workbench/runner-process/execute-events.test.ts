@@ -64,6 +64,22 @@ test('v3 accepts a provisional response before turn completion and rejects v2 op
   assert.throws(() => old.accept(e(2, 'provider-response-gap', 'case',
     { callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'not-observed' }, 2)), /unsupported-event/);
 });
+
+test('v4 records call lifecycle before any response and rejects a fabricated completion', () => {
+  const e = (sequence: number, type: string, caseId: string | null, data: unknown) =>
+    ({ ...event(sequence, type, caseId, data), protocolVersion: 4 });
+  const validator = new ExecuteEventValidator('request', selection);
+  validator.accept(e(0, 'run-started', null, { model: 'fake', judgeModel: null }));
+  validator.accept(e(1, 'case-attempt-started', 'case', {}));
+  assert.deepEqual(validator.accept(e(2, 'model-call-started', 'case', { callId: 'call-1',
+    provisionalTurnId: 'turn-1', role: 'tested-model', modelId: 'fake', phase: 'initial' })),
+  { type: 'model-call-started', caseId: 'case', attempt: 1, callId: 'call-1',
+    provisionalTurnId: 'turn-1', role: 'tested-model', modelId: 'fake', phase: 'initial' });
+  assert.deepEqual(validator.missingCallResponses, [{ type: 'provider-response-gap', caseId: 'case',
+    attempt: 1, callId: 'call-1', provisionalTurnId: 'turn-1', role: 'tested-model', reason: 'incomplete' }]);
+  assert.throws(() => validator.accept(e(3, 'case-attempt-completed', 'case',
+    { status: 'completed', sourceEvidenceComplete: false })), /invalid-case-end/);
+});
 test('v3 accepts a 40,000-byte response chunk through a completed execute sequence', () => {
   const validator = new ExecuteEventValidator('request', selection);
   const body = Buffer.alloc(40_000, 65);

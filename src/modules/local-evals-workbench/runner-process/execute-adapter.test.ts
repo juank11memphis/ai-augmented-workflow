@@ -110,6 +110,26 @@ test('version-three runner preserves last response and emits unfinished call gap
   });
 });
 
+test('version-four pending call is observable on cancellation without response bytes', async () => {
+  await withSelection(async (project, selection) => {
+    await project.changeRunner(`let input=''; for await(const c of process.stdin) input+=c; const q=JSON.parse(input); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:4,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
+      emit('model-call-started','first',{callId:'call-1',provisionalTurnId:'turn-1',role:'tested-model',modelId:q.model,phase:'initial'});
+      setTimeout(()=>{}, 1000);`);
+    const received: ExecutionEvent[] = [];
+    const limits = { ...EXECUTE_LIMITS, startupMs: 100, idleMs: 80, overallMs: 150, cleanupMs: 20 };
+    const outcome = await new ProjectRunnerExecuteAdapter(project.root, limits).execute(selection,
+      async item => { received.push(item); });
+    assert.equal(outcome.reason, 'runner-timeout');
+    assert.deepEqual(received.map(item => item.type), ['run-started', 'case-started', 'model-call-started',
+      'provider-response-gap']);
+    assert.deepEqual(received.at(-1), { type: 'provider-response-gap', caseId: 'first', attempt: 1,
+      callId: 'call-1', provisionalTurnId: 'turn-1', role: 'tested-model', reason: 'incomplete' });
+  });
+});
+
 test('judge response before grading error survives a valid error report followed by nonzero exit', async () => {
   await withSelection(async (project, base) => {
     const selection = { ...base, judgeModel: 'judge', cases: [{ ...base.cases[0]!, graders: [{

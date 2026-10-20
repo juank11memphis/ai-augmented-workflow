@@ -37,7 +37,16 @@ test('v3 response rejects duplicate, reordered, invalid-size, and cross-model ob
   chunk(events, 0, Buffer.from('a'));
   assert.throws(() => completed(events), /invalid-response-end/);
   assert.deepEqual(events.incomplete, { type: 'provider-response-gap', caseId: 'case', attempt: 1,
-    callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete' });
+    callId: 'call-1', provisionalTurnId: 'turn-1', contentType: 'application/json', originalByteLength: 2,
+    reason: 'incomplete' });
+});
+
+test('unfinished response gap retains only metadata actually declared at response start', () => {
+  const events = new ProviderResponseEvents();
+  started(events, { contentType: 'application/json', originalByteLength: 123 });
+  assert.deepEqual(events.incomplete, { type: 'provider-response-gap', caseId: 'case', attempt: 1,
+    callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete',
+    contentType: 'application/json', originalByteLength: 123 });
 });
 
 test('v3 response accepts exactly 40,000 decoded chunk bytes and rejects larger or malformed chunks', () => {
@@ -55,7 +64,7 @@ test('v3 response accepts exactly 40,000 decoded chunk bytes and rejects larger 
   assert.throws(() => oversized.accept('provider-response-chunk',
     { callId: 'call-1', index: 0, base64: '%%%=' }, 'case', 1, 'fake'), /invalid-response-chunk/);
   assert.deepEqual(oversized.incomplete, { type: 'provider-response-gap', caseId: 'case', attempt: 1,
-    callId: 'call-1', provisionalTurnId: 'turn-1', reason: 'incomplete' });
+    callId: 'call-1', provisionalTurnId: 'turn-1', contentType: 'application/json', reason: 'incomplete' });
 });
 
 test('v3 response bounds retained prefix and reports known original size', () => {

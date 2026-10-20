@@ -45,6 +45,19 @@ test('selected incomplete response lists safe locator, truthful missing extent, 
   assert.ok(JSON.stringify(result).length <= 4800);
 });
 
+test('selected pending call shows lifecycle timing without claiming a provider response', async () => {
+  const pending: Attempt = { ...attempt, providerResponses: { records: [], gaps: [{ callId: 'call-3',
+    provisionalTurnId: 'turn-3', reason: 'incomplete' }] }, modelCalls: [{ callId: 'call-3',
+    provisionalTurnId: 'turn-3', role: 'tested-model', modelId: 'fake', phase: 'post-tool',
+    startedAtMs: 100, observedUntilMs: 120, status: 'pending', terminationSource: 'application-deadline' }] };
+  const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, dependencies(pending));
+  if (result.status !== 'ready' || !('incompleteAttempt' in result)) return assert.fail();
+  assert.deepEqual(result.incompleteAttempt.callIds, ['call-3']);
+  assert.deepEqual(result.incompleteAttempt.modelCalls, { records: pending.modelCalls, truncated: false });
+  assert.deepEqual(result.incompleteAttempt.source, { status: 'available', records: [], gaps: [
+    { callId: 'call-3', provisionalTurnId: 'turn-3', reason: 'incomplete' }], truncated: false });
+});
+
 test('explicit selected field returns only bounded Base64 bytes and continuation', async () => {
   const first = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection,
     field: { locator, offset: 0 } }, dependencies());
