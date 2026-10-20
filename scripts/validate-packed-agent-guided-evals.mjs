@@ -17,13 +17,14 @@ export async function validatePackedAgentGuidedEvals({ installedPackageRoot }) {
   assert.match(skill, /sibu evals run <suite> --case <case_id>/);
   assert.match(skill, /sibu evals run <suite>` for all cases, without `--case` or run-wide model flags/);
   assert.match(skill, /A missing or unavailable required tested\/Judge suite default blocks the run/);
-  assert.match(skill, /first unresolved failed assertion in stable suite\/case\/check order/);
-  assert.match(skill, /Advance only if the fresh completed result demonstrates that assertion passing/);
-  assert.match(skill, /if its evidence predates an intervening edit, run that case once/);
+  assert.match(skill, /Select one active issue in stable suite\/case\/check order/);
+  assert.match(skill, /For a completed failing attempt, prefer its first unresolved `failedAssertionIds` entry/);
+  assert.match(skill, /Advance only if the fresh completed result demonstrates the active assertion passing or the incomplete execution issue resolved/);
+  assert.match(skill, /if its evidence predates an intervening edit, ask authorization for a paid refresh, then run that case once/);
   assert.match(skill, /rerun the full suite exactly as originally scoped, without `--case`/);
   assert.match(skill, /Claim suite success only from this terminal run's actual completed, passing outcome/);
   assert.match(skill, /If it fails, re-enter the same one-at-a-time loop/);
-  assert.match(skill, /sibu evals result <suite> <run_id> --case <case_id> --assertion <assertion_id>/);
+  assert.match(skill, /Use `sibu evals result <suite> <run_id>` and a selected result when useful, but \*\*not as the only evidence source\*\*/);
   assert.match(agents, /run, inspect, troubleshoot, or fix an existing Sibu eval case.*use `agent-guided-evals`/);
   assert.match(agents, /create, revise, or maintain Sibu eval suites.*use `eval-authoring`/);
 
