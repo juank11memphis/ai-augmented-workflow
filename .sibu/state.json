@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "234",
+  "templateVersion": "235",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-20T02:28:06.298Z",
+  "updatedAt": "2026-10-20T03:16:17.548Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -231,15 +231,16 @@
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
       "templateVersion": "32",
-      "sha256": "0d14d71b223b62b8cd9bff5127c53554798e59d902c503ddf534b5ee426f5b4f",
+      "sha256": "4c11316ff5264fc522365493547b2398dd78a956eacb2d280d76c9cf52a6ae82",
       "status": "customized",
-      "lastReviewedTemplateVersion": "34"
+      "lastReviewedTemplateVersion": "35"
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
       "templateVersion": "22",
-      "sha256": "c8f4bd1553a0d444f1b108a2dae79f116871752ec49393edd1322cb4e3de5e9e",
-      "status": "managed"
+      "sha256": "0ba13ee36ae0603a7b34ed5e1c947ec519a4e383132b75b96b614d6a3902566d",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "23"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
       "template": ".codex/agents/sibu-implementation-planner.toml",
@@ -250,14 +251,16 @@
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
       "templateVersion": "72",
-      "sha256": "b1810c7835bd45c56eab73c2d5207f0eb9356683dfc8b0f815ce179b02d64db0",
-      "status": "managed"
+      "sha256": "7434c70e95d661346126bf9f6cdbb1312f9aaf15a17a6961595ae3325d98b336",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "73"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
       "templateVersion": "29",
-      "sha256": "2c1e699ba50a456e9588b3d78321f31196ac9f21baaf8ed0f145892ba887a35d",
-      "status": "managed"
+      "sha256": "81d80af4b50bfe4c119720457b1b8274e75891e41424666634012dbe6133664a",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "30"
     },
     ".agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md",
