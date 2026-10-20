@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ExecuteEventValidator } from './execute-events.js';
-import { ProviderResponseEvents, RESPONSE_BYTES, RUN_RESPONSE_BYTES } from './provider-response-events.js';
+import { ProviderResponseEvents } from './provider-response-events.js';
 import type { ExecutionSelection } from '../run-execution/contracts.js';
 
 const caseSelection = { id: 'case', name: 'Case', turns: [{ role: 'user' as const,
@@ -92,7 +92,7 @@ test('malformed trailing judge event does not erase the last valid observation',
     callId: 'judge-2', provisionalTurnId: 'pending-turn', role: 'judge', checkId: 'quality', reason: 'incomplete' });
 });
 
-test('one oversized judge response retains its bounded exact prefix', () => {
+test('one large judge response retains every byte', () => {
   const responses = new ProviderResponseEvents();
   const part = Buffer.alloc(30_000, 0xfd);
   responses.accept('provider-response-started', { ...identity, originalByteLength: 150_000 }, 'case', 1,
@@ -103,14 +103,14 @@ test('one oversized judge response retains its bounded exact prefix', () => {
     'case', 1, 'tested', 'judge', ['quality']);
   assert.equal(observed.type, 'provider-response-observed');
   if (observed.type === 'provider-response-observed') {
-    assert.equal(observed.bytes.length, RESPONSE_BYTES);
-    assert.deepEqual(observed.bytes, Buffer.alloc(RESPONSE_BYTES, 0xfd));
+    assert.equal(observed.bytes.length, 150_000);
+    assert.deepEqual(observed.bytes, Buffer.alloc(150_000, 0xfd));
     assert.equal(observed.originalByteLength, 150_000);
-    assert.equal(observed.completeness, 'truncated');
+    assert.equal(observed.completeness, 'complete');
   }
 });
 
-test('judge retention applies response and run-wide byte limits without claiming complete capture', () => {
+test('judge retention keeps every call after the former run-wide limit', () => {
   const responses = new ProviderResponseEvents();
   const piece = Buffer.alloc(25_000, 0xfe);
   let last: ReturnType<ProviderResponseEvents['accept']> | undefined;
@@ -129,11 +129,10 @@ test('judge retention applies response and run-wide byte limits without claiming
   }
   assert.equal(last?.type, 'provider-response-observed');
   if (last?.type === 'provider-response-observed') {
-    assert.equal(last.bytes.length, RUN_RESPONSE_BYTES - 500_000);
-    assert.equal(last.completeness, 'truncated');
+    assert.equal(last.bytes.length, 100_000);
+    assert.equal(last.completeness, 'complete');
     assert.equal(last.originalByteLength, 100_000);
   }
-  assert.ok(RESPONSE_BYTES < RUN_RESPONSE_BYTES);
 });
 
 test('v1 and v2 refuse judge response events without weakening source-record validation', () => {

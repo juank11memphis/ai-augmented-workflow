@@ -1,14 +1,12 @@
 import type { ExecutionEvent } from '../run-execution/contracts.js';
 import { logicalId, record } from '../run-history/validation.js';
 
-export const RESPONSE_BYTES = 128_000;
-export const RUN_RESPONSE_BYTES = 512_000;
 export const RESPONSE_CHUNK_BYTES = 40_000;
 
 type Link = { caseId: string; attempt: number; callId: string; provisionalTurnId: string;
   role?: 'tested-model' | 'judge'; checkId?: string };
 type Pending = Link & { contentType?: string; originalByteLength?: number; index: number; seen: number;
-  retained: Buffer[]; retainedBytes: number; truncated: boolean };
+  chunks: Buffer[] };
 
 function exactKeys(value: Record<string, unknown>, required: readonly string[], optional: readonly string[] = []): boolean {
   return required.every(key => Object.hasOwn(value, key))
@@ -19,7 +17,6 @@ function exactKeys(value: Record<string, unknown>, required: readonly string[], 
 export class ProviderResponseEvents {
   private pending: Pending | undefined;
   private readonly calls = new Set<string>();
-  private runBytes = 0;
 
   resetAttempt(): void { this.pending = undefined; this.calls.clear(); }
   hasCall(callId: string): boolean { return this.calls.has(callId); }
@@ -31,6 +28,18 @@ export class ProviderResponseEvents {
       ...(value.checkId === undefined ? {} : { checkId: value.checkId }),
       ...(value.contentType === undefined ? {} : { contentType: value.contentType }),
       ...(value.originalByteLength === undefined ? {} : { originalByteLength: value.originalByteLength }), reason: 'incomplete' };
+  }
+
+  get receivedBeforeInterruption(): ExecutionEvent | undefined {
+    const value = this.pending;
+    if (!value || value.seen === 0) return undefined;
+    return { type: 'provider-response-observed', caseId: value.caseId, attempt: value.attempt,
+      callId: value.callId, provisionalTurnId: value.provisionalTurnId,
+      bytes: Buffer.concat(value.chunks, value.seen), completeness: 'incomplete',
+      ...(value.role === undefined ? {} : { role: value.role }),
+      ...(value.checkId === undefined ? {} : { checkId: value.checkId }),
+      ...(value.contentType === undefined ? {} : { contentType: value.contentType }),
+      ...(value.originalByteLength === undefined ? {} : { originalByteLength: value.originalByteLength }) };
   }
 
   accept(type: string, data: Record<string, unknown>, caseId: string, attempt: number, model: string,
@@ -55,7 +64,7 @@ export class ProviderResponseEvents {
         ...(judge ? { checkId: data.checkId as string } : {}),
         ...(data.contentType === undefined ? {} : { contentType: data.contentType as string }),
         ...(data.originalByteLength === undefined ? {} : { originalByteLength: data.originalByteLength as number }),
-        index: 0, seen: 0, retained: [], retainedBytes: 0, truncated: false };
+        index: 0, seen: 0, chunks: [] };
       return { type: 'source-chunk-accepted' };
     }
     if (type === 'provider-response-gap') {
@@ -85,10 +94,7 @@ export class ProviderResponseEvents {
         throw new Error('invalid-response-size');
       pending.index++;
       pending.seen += bytes.length;
-      const available = Math.max(0, Math.min(RESPONSE_BYTES - pending.retainedBytes, RUN_RESPONSE_BYTES - this.runBytes));
-      const retained = bytes.subarray(0, available);
-      if (retained.length) { pending.retained.push(retained); pending.retainedBytes += retained.length; this.runBytes += retained.length; }
-      if (retained.length < bytes.length) pending.truncated = true;
+      pending.chunks.push(bytes);
       return { type: 'source-chunk-accepted' };
     }
     if (type !== 'provider-response-completed' || !['complete', 'truncated', 'incomplete'].includes(String(data.completeness))
@@ -97,13 +103,12 @@ export class ProviderResponseEvents {
       || data.completeness === 'truncated' && pending.originalByteLength !== undefined
         && pending.seen >= pending.originalByteLength) throw new Error('invalid-response-end');
     this.pending = undefined;
-    const completeness = pending.truncated || data.completeness === 'truncated' ? 'truncated' : data.completeness;
     return { type: 'provider-response-observed', caseId, attempt, callId: pending.callId,
-      provisionalTurnId: pending.provisionalTurnId, bytes: Buffer.concat(pending.retained),
+      provisionalTurnId: pending.provisionalTurnId, bytes: Buffer.concat(pending.chunks, pending.seen),
       ...(pending.role === undefined ? {} : { role: pending.role }),
       ...(pending.checkId === undefined ? {} : { checkId: pending.checkId }),
       ...(pending.contentType === undefined ? {} : { contentType: pending.contentType }),
       ...(pending.originalByteLength === undefined ? {} : { originalByteLength: pending.originalByteLength }),
-      completeness: completeness as 'complete' | 'truncated' | 'incomplete' };
+      completeness: data.completeness as 'complete' | 'truncated' | 'incomplete' };
   }
 }

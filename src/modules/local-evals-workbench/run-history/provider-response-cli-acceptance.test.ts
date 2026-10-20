@@ -79,11 +79,11 @@ for (const scenario of ['malformed', 'non-success', 'adapter-failure', 'unavaila
       const record = incomplete.source.records[0];
       assert.ok(record, JSON.stringify({ run: run.json, selected: selected.json }));
       assert.ok(record.locator);
-      assert.equal(record.status, scenario === 'oversized' ? 'truncated' : 'complete');
+      assert.equal(record.status, 'complete');
       if (scenario === 'oversized') {
-        assert.equal(record.byteLength, 128000);
+        assert.equal(record.byteLength, 128100);
         assert.equal(record.originalByteLength, 128100);
-        assert.equal(record.missingByteLength, 100);
+        assert.equal(record.missingByteLength, 0);
       }
       const field = invoke(project.root, 'result', runId, '--case', 'case', '--attempt', '1', '--field', record.locator, '--offset', '0');
       assert.equal(field.json.status, 'ready', JSON.stringify(field.json));

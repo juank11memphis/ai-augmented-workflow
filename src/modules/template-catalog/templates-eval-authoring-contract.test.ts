@@ -88,8 +88,8 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.equal(metadata?.version, '14');
-  assert.match(metadata?.changes.join(' ') ?? '', /capture failures.*structural evidence/);
+  assert.equal(metadata?.version, '15');
+  assert.match(metadata?.changes.join(' ') ?? '', /complete raw response retention/);
   assert.match(reference, /model-call-started.*before.*invoking the provider/);
   assert.match(reference, /pending.*termination source it observed/);
 });
@@ -126,7 +126,7 @@ test('protocol examples and evidence define independent version, identity and or
     assert.equal(item.judgeModel, 'fake/judge');
     assert.equal('repeats' in item, false);
   }
-  for (const requirement of ['judgeModels', 'runId', 'caseId', 'attempt', 'sequence', 'redaction uncertainty', 'hidden chain-of-thought', 'execute-event validator', 'Sibu-owned deterministic']) {
+  for (const requirement of ['judgeModels', 'runId', 'caseId', 'attempt', 'sequence', 'Git-ignored response artifacts', 'hidden chain-of-thought', 'execute-event validator', 'Sibu-owned deterministic']) {
     assert.ok(reference.includes(requirement), requirement);
   }
 });
@@ -157,22 +157,22 @@ test('installed version-3 fixture accepts observation before malformed diagnosti
         else assert.equal(events[0]?.data.reason, scenario === 'captureFailure' ? 'capture-failed' : 'not-observed');
     }
 });
-test('distributed authoring requires diagnosable, safely redacted capture failures', () => {
+test('distributed authoring requires raw capture and diagnosable genuine failures', () => {
   const skill = readTemplate('skills/eval-authoring/SKILL.md');
   const fixture = JSON.parse(reference.match(/```provider-response-json\n([\s\S]*?)\n```/)![1]!) as {
     captureFailure: { type: string; data: Record<string, unknown> }[];
   };
   assert.match(skill, /Make failure evidence a runner acceptance criterion/);
   assert.match(skill, /fake model\/judge responses/);
-  assert.match(reference, /unqualified `capture-failed` is insufficient/);
+  assert.match(reference, /Do not treat potential sensitive content as a reason to omit received bytes/);
   assert.match(reference, /fixed allowlisted envelope field types/);
-  assert.match(reference, /unsafe synthetic secret and personal-data sentinels/);
+  assert.match(reference, /synthetic secret and personal-data sentinels/);
   assert.match(reference, /preview contract check proves suite setup, \*\*not\*\* this evidence gate/);
   assert.deepEqual(fixture.captureFailure.map((item) => item.type), [
     'provider-response-gap', 'run-diagnostic', 'run-diagnostic',
   ]);
   assert.equal(fixture.captureFailure[0]?.data.reason, 'capture-failed');
-  assert.equal(fixture.captureFailure[1]?.data.code, 'capture-call-3-unsafe-content');
+  assert.equal(fixture.captureFailure[1]?.data.code, 'capture-call-3-read-failed');
   assert.equal(fixture.captureFailure[2]?.data.code, 'shape-call-3-json-object-choices-array');
   assert.doesNotMatch(JSON.stringify(fixture.captureFailure), /sk-|@|https?:\/\//);
 });

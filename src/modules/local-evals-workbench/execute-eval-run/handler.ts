@@ -139,7 +139,6 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
     } else if (event.type === 'provider-response-observed') {
       if (!validResponseLink(current, event, cases[caseIndex]!.graders.filter(item => item.type === 'rubric').map(item => item.id))
         || event.role === 'judge' && !activeJudge || !(event.bytes instanceof Uint8Array)
-        || event.bytes.byteLength > LIMITS.sourceRecordBytes
         || event.contentType !== undefined && (typeof event.contentType !== 'string' || Buffer.byteLength(event.contentType) > 256)
         || event.originalByteLength !== undefined && (!Number.isSafeInteger(event.originalByteLength)
           || event.originalByteLength < event.bytes.byteLength)

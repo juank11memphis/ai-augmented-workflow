@@ -1,5 +1,5 @@
 {
-  "templateVersion": "238",
+  "templateVersion": "239",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -324,10 +324,10 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Requires generated runners to provide safe, call-linked failure evidence and deterministic fake-response tests before they are considered ready."
+        "Requires byte-exact capture of every received tested-model and Judge response in Git-ignored artifacts, without content-based rejection or silent size truncation."
       ]
     },
     "skills/agent-guided-evals/SKILL.md": {
@@ -388,10 +388,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "14",
+      "version": "15",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Requires specific diagnostics for response capture failures, bounded redacted structural evidence, and fake-response checks without live eval calls."
+        "Requires complete raw response retention, including malformed and interrupted responses, while limiting diagnostics and reporting genuine capture failures."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {

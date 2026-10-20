@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ProviderResponseEvents, RESPONSE_BYTES, RESPONSE_CHUNK_BYTES, RUN_RESPONSE_BYTES } from './provider-response-events.js';
+import { ProviderResponseEvents, RESPONSE_CHUNK_BYTES } from './provider-response-events.js';
 
 const link = { callId: 'call-1', provisionalTurnId: 'turn-1', modelId: 'fake', contentType: 'application/json' };
 function started(events: ProviderResponseEvents, extras: Record<string, unknown> = {}) {
@@ -67,7 +67,7 @@ test('v3 response accepts exactly 40,000 decoded chunk bytes and rejects larger 
     callId: 'call-1', provisionalTurnId: 'turn-1', contentType: 'application/json', reason: 'incomplete' });
 });
 
-test('v3 response bounds retained prefix and reports known original size', () => {
+test('v3 response retains every byte beyond the former per-response ceiling', () => {
   const events = new ProviderResponseEvents();
   const piece = Buffer.alloc(30_000, 65);
   started(events, { originalByteLength: 150_000 });
@@ -75,15 +75,14 @@ test('v3 response bounds retained prefix and reports known original size', () =>
   const result = completed(events);
   assert.equal(result.type, 'provider-response-observed');
   if (result.type === 'provider-response-observed') {
-    assert.equal(result.bytes.length, RESPONSE_BYTES);
+    assert.equal(result.bytes.length, 150_000);
     assert.equal(result.originalByteLength, 150_000);
-    assert.equal(result.completeness, 'truncated');
+    assert.equal(result.completeness, 'complete');
     assert.deepEqual(result.bytes.subarray(0, 5), Buffer.alloc(5, 65));
   }
-  assert.ok(RUN_RESPONSE_BYTES > RESPONSE_BYTES);
 });
 
-test('v3 response applies the run-wide retained-byte ceiling across distinct calls', () => {
+test('v3 response retains every call beyond the former run-wide ceiling', () => {
   const events = new ProviderResponseEvents();
   const part = Buffer.alloc(25_000, 66);
   let last: ReturnType<typeof completed> | undefined;
@@ -96,9 +95,22 @@ test('v3 response applies the run-wide retained-byte ceiling across distinct cal
   }
   assert.equal(last?.type, 'provider-response-observed');
   if (last?.type === 'provider-response-observed') {
-    assert.equal(last.bytes.length, RUN_RESPONSE_BYTES - 5 * 100_000);
+    assert.equal(last.bytes.length, 100_000);
     assert.equal(last.originalByteLength, 100_000);
-    assert.equal(last.completeness, 'truncated');
+    assert.equal(last.completeness, 'complete');
+  }
+});
+
+test('v3 interrupted response retains every received chunk as incomplete evidence', () => {
+  const events = new ProviderResponseEvents();
+  started(events, { originalByteLength: 6 });
+  chunk(events, 0, Buffer.from('abc'));
+  const partial = events.receivedBeforeInterruption;
+  assert.equal(partial?.type, 'provider-response-observed');
+  if (partial?.type === 'provider-response-observed') {
+    assert.deepEqual(partial.bytes, Buffer.from('abc'));
+    assert.equal(partial.completeness, 'incomplete');
+    assert.equal(partial.originalByteLength, 6);
   }
 });
 

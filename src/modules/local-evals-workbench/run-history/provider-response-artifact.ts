@@ -1,5 +1,5 @@
 import { constants } from 'node:fs';
-import { lstat, open, readdir } from 'node:fs/promises';
+import { lstat, open } from 'node:fs/promises';
 import type { EvidenceFieldRange, Outcome, ProviderResponseReference, ProviderResponseWrite } from './contracts.js';
 import { ArtifactFault, ArtifactPaths, failure, missing } from './artifact-paths.js';
 import { AtomicArtifactFile, SafetyFault } from './atomic-artifact-file.js';
@@ -27,22 +27,17 @@ export class ProviderResponseArtifact {
     if (!this.files) return { status: 'blocked', reason: 'unavailable' };
     try {
       const relative = this.paths.response(value.suiteId, value.runId, value.caseId, value.attempt, value.callId);
-      const used = await this.runBytes(value.suiteId, value.runId);
       const existing = await this.paths.verify(relative);
       try { await lstat(existing); return { status: 'blocked', reason: 'corrupt' }; }
       catch (error) { if (!missing(error)) throw error; }
-      const retained = Math.min(value.bytes.byteLength, LIMITS.providerResponseBytes, Math.max(0, LIMITS.providerResponseRunBytes - used));
-      const clipped = retained < value.bytes.byteLength;
-      const status = clipped ? 'truncated' : value.completeness;
       const reference: ProviderResponseReference = {
-        callId: value.callId, provisionalTurnId: value.provisionalTurnId, status, locator: relative,
+        callId: value.callId, provisionalTurnId: value.provisionalTurnId, status: value.completeness, locator: relative,
         ...(value.role === undefined ? {} : { role: value.role }),
         ...(value.checkId === undefined ? {} : { checkId: value.checkId }),
-        byteLength: retained, ...(value.contentType === undefined ? {} : { contentType: value.contentType }),
-        ...((value.originalByteLength !== undefined || clipped && value.completeness === 'complete')
-          ? { originalByteLength: value.originalByteLength ?? value.bytes.byteLength } : {}),
+        byteLength: value.bytes.byteLength, ...(value.contentType === undefined ? {} : { contentType: value.contentType }),
+        ...(value.originalByteLength === undefined ? {} : { originalByteLength: value.originalByteLength }),
       };
-      await this.files.writeBytes(relative, value.bytes.subarray(0, retained));
+      await this.files.writeBytes(relative, value.bytes);
       return { status: 'ok', value: reference };
     } catch (error) { return error instanceof SafetyFault ? { status: 'blocked', reason: error.reason } : failure(error); }
   }
@@ -51,7 +46,7 @@ export class ProviderResponseArtifact {
     if (![suiteId, runId, caseId, reference.callId, reference.provisionalTurnId].every(logicalId) || attempt !== 1
       || (reference.role !== undefined && !['tested-model', 'judge'].includes(reference.role))
       || (reference.role === 'judge' ? !logicalId(reference.checkId) : reference.checkId !== undefined)
-      || !integer(reference.byteLength, LIMITS.providerResponseBytes)
+      || !integer(reference.byteLength)
       || !['complete', 'truncated', 'incomplete'].includes(reference.status)
       || reference.contentType !== undefined && !contentType(reference.contentType)
       || reference.originalByteLength !== undefined && (!integer(reference.originalByteLength) || reference.originalByteLength < reference.byteLength)
@@ -97,21 +92,4 @@ export class ProviderResponseArtifact {
     } catch (error) { return failure(error); }
   }
 
-  private async runBytes(suiteId: string, runId: string): Promise<number> {
-    const relative = this.paths.responses(suiteId, runId);
-    const safety = await new ArtifactSafetyAdapter(this.paths).check([relative]);
-    if (safety.status !== 'ok') throw new SafetyFault(safety.reason);
-    let entries: string[];
-    try { entries = await readdir(await this.paths.verify(relative)); }
-    catch (error) { if (missing(error)) return 0; throw error; }
-    let total = 0;
-    for (const name of entries) {
-      if (!/^[A-Za-z0-9._-]+\.bin$/.test(name)) throw new ArtifactFault('unsafe-path');
-      const stat = await lstat(await this.paths.verify(`${relative}/${name}`));
-      if (!stat.isFile() || stat.nlink !== 1 || stat.size > LIMITS.providerResponseBytes) throw new ArtifactFault('unsafe-path');
-      total += stat.size;
-      if (total > LIMITS.providerResponseRunBytes) throw new ArtifactFault('limit-exceeded');
-    }
-    return total;
-  }
 }

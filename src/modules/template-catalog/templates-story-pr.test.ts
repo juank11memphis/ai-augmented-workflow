@@ -73,7 +73,7 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '238');
+    assert.equal(manifest.templateVersion, '239');
     const executorTemplate = manifest.templates[templatePath];
     assert.equal(executorTemplate?.version, '73');
     assert.match(executorTemplate?.changes.join(' ') ?? '', /complete grouped failure inventory.*isolated observed-Epic-head comparison/);

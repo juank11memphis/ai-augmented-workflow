@@ -108,7 +108,7 @@ export function attempt(v: unknown): v is Attempt {
       && (item.role === 'judge' ? logicalId(item.checkId) : item.checkId === undefined)
       && enumValue(item.status, ['complete', 'truncated', 'incomplete'])
       && typeof item.locator === 'string' && item.locator.length > 0 && item.locator.length <= 400
-      && !/[\u0000-\u001f\u007f]/.test(item.locator) && integer(item.byteLength, LIMITS.sourceRecordBytes)
+      && !/[\u0000-\u001f\u007f]/.test(item.locator) && integer(item.byteLength)
       && (item.contentType === undefined || typeof item.contentType === 'string' && item.contentType.length <= 256
         && /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\/-]*(?:; ?[A-Za-z0-9=._+-]+)*$/.test(item.contentType))
       && (item.originalByteLength === undefined || integer(item.originalByteLength))

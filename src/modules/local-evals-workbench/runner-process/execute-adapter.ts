@@ -17,8 +17,8 @@ export type ExecuteLimits = {
   readonly idleMs: number; readonly overallMs: number; readonly cleanupMs: number;
 };
 export const EXECUTE_LIMITS: ExecuteLimits = {
-  requestBytes: 256_000, lineBytes: 64_000, stdoutBytes: 1_000_000, stderrBytes: 16_000,
-  events: 1_000, startupMs: 5_000, idleMs: 30_000, overallMs: 120_000, cleanupMs: 1_000,
+  requestBytes: 256_000, lineBytes: 64_000, stdoutBytes: Number.MAX_SAFE_INTEGER, stderrBytes: 16_000,
+  events: Number.MAX_SAFE_INTEGER, startupMs: 5_000, idleMs: 30_000, overallMs: 120_000, cleanupMs: 1_000,
 };
 
 export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
@@ -101,8 +101,12 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       if (!failure && !validator.completion) failure = 'runner-protocol-invalid';
       const sourceGap = validator.incompleteSource;
       if (sourceGap) await consume(sourceGap);
-      const responseGap = validator.incompleteResponse;
-      if (responseGap) await consume(responseGap);
+      const partialResponse = validator.receivedBeforeInterruption;
+      if (partialResponse) await consume(partialResponse);
+      else {
+        const responseGap = validator.incompleteResponse;
+        if (responseGap) await consume(responseGap);
+      }
       for (const gap of validator.missingCallResponses) await consume(gap);
       const status = failure ? 'error' : validator.completion!;
       const failureProvenance: FailureProvenance | undefined = failure === 'runner-timeout' ? { stage: 'timeout' }

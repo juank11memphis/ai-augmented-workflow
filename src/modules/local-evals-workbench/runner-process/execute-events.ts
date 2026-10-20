@@ -51,6 +51,7 @@ export class ExecuteEventValidator {
       reason: this.chunks.captureFailedId ? 'capture-failed' as const : 'incomplete' as const,
       recordId: this.chunks.captureFailedId ?? this.chunks.incompleteId } : undefined; }
   get incompleteResponse() { return this.responses.incomplete; }
+  get receivedBeforeInterruption() { return this.responses.receivedBeforeInterruption; }
   get missingCallResponses(): ExecutionEvent[] {
     if (this.version !== 4) return [];
     return [...this.modelCalls.entries()].filter(([callId]) => !this.responses.hasCall(callId))

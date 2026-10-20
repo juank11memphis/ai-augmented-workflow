@@ -16,9 +16,9 @@ test('generation is per confirmed target, versioned, real and adapted to project
   assert.doesNotMatch(skill, /Sibu MVP|\.gitkeep|implemented only when/);
 });
 
-test('safety guidance preserves production, fail-closed isolation and contained redacted evidence', () => {
+test('safety guidance preserves production isolation and separates raw artifacts from redacted diagnostics', () => {
   const safety = section('Tool and data safety');
-  for (const phrase of ['before target initialization', 'eval-mode marker', 'selection', 'arguments and order', 'unexpected-response', 'Fail closed', 'never fall back', 'stop rather than modifying production files', 'synthetic or redacted', 'nearest existing real paths', 'symlink', 'without shells', 'environment names only', 'safe redaction is uncertain', 'not an OS sandbox']) {
+  for (const phrase of ['before target initialization', 'eval-mode marker', 'selection', 'arguments and order', 'unexpected-response', 'Fail closed', 'never fall back', 'stop rather than modifying production files', 'synthetic or redacted', 'nearest existing real paths', 'symlink', 'without shells', 'environment names only', 'Git-ignored response artifacts', 'redact routine diagnostics', 'not an OS sandbox']) {
     assert.ok(safety.includes(phrase), phrase);
   }
 });

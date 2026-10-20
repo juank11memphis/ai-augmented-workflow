@@ -88,7 +88,35 @@ test('version-three runner delivers exact pre-turn response before malformed-out
   });
 });
 
-test('version-three runner preserves last response and emits unfinished call gap on trailing protocol failure', async () => {
+test('default execute transport accepts a complete raw response beyond one megabyte', async () => {
+  await withSelection(async (project, selection) => {
+    await project.changeRunner(`let input=''; for await(const c of process.stdin) input+=c; const q=JSON.parse(input); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:3,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
+      emit('provider-response-started','first',{callId:'call-1',provisionalTurnId:'turn-1',modelId:q.model,
+        originalByteLength:1200000});
+      const part=Buffer.alloc(40000,97);
+      for(let index=0;index<30;index++) emit('provider-response-chunk','first',
+        {callId:'call-1',index,base64:part.toString('base64')});
+      emit('provider-response-completed','first',{callId:'call-1',completeness:'complete'});
+      emit('case-attempt-completed','first',{status:'error',sourceEvidenceComplete:false});
+      emit('run-completed',null,{status:'error',code:'malformed-output'});`);
+    const received: ExecutionEvent[] = [];
+    const outcome = await new ProjectRunnerExecuteAdapter(project.root).execute(selection,
+      async event => { received.push(event); });
+    assert.equal(outcome.reason, undefined);
+    const response = received.find(event => event.type === 'provider-response-observed');
+    assert.equal(response?.type, 'provider-response-observed');
+    if (response?.type === 'provider-response-observed') {
+      assert.equal(response.bytes.byteLength, 1_200_000);
+      assert.deepEqual(response.bytes, Buffer.alloc(1_200_000, 97));
+      assert.equal(response.completeness, 'complete');
+    }
+  });
+});
+
+test('version-three runner preserves completed and partial raw responses on trailing protocol failure', async () => {
   await withSelection(async (project, selection) => {
     await project.changeRunner(`let input=''; for await(const c of process.stdin) input+=c; const q=JSON.parse(input); let n=0;
       const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:3,requestId:q.requestId,
@@ -105,8 +133,8 @@ test('version-three runner preserves last response and emits unfinished call gap
     assert.equal(result.reason, 'runner-protocol-invalid');
     assert.equal(received[2]?.type, 'provider-response-observed');
     if (received[2]?.type === 'provider-response-observed') assert.deepEqual(received[2].bytes, Buffer.from('first'));
-    assert.deepEqual(received.at(-1), { type: 'provider-response-gap', caseId: 'first', attempt: 1,
-      callId: 'call-2', provisionalTurnId: 'turn-2', reason: 'incomplete' });
+    assert.deepEqual(received.at(-1), { type: 'provider-response-observed', caseId: 'first', attempt: 1,
+      callId: 'call-2', provisionalTurnId: 'turn-2', bytes: Buffer.from('partial'), completeness: 'incomplete' });
   });
 });
 

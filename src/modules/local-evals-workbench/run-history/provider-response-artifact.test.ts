@@ -91,13 +91,13 @@ it('reopens exact binary and split UTF-8 ranges without leaking bodies into comp
   } finally { await p.cleanup(); }
 });
 
-it('enforces response and cumulative run byte ceilings with truthful truncation metadata', async () => {
+it('persists every byte beyond the former response and run ceilings', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const runId = await running(a);
     const large = Buffer.alloc(129_000, 7);
     const first = await a.store.saveProviderResponse(response(runId, large, 'call-1'));
     if (first.status !== 'ok') return assert.fail(JSON.stringify(first));
-    assert.deepEqual([first.value.status, first.value.byteLength, first.value.originalByteLength], ['truncated', 128_000, 129_000]);
+    assert.deepEqual([first.value.status, first.value.byteLength, first.value.originalByteLength], ['complete', 129_000, undefined]);
     for (let index = 2; index <= 4; index++) {
       const saved = await a.store.saveProviderResponse(response(runId, Buffer.alloc(128_000, index), `call-${index}`));
       if (saved.status !== 'ok') return assert.fail(JSON.stringify(saved));
@@ -105,10 +105,10 @@ it('enforces response and cumulative run byte ceilings with truthful truncation 
     }
     const last = await a.store.saveProviderResponse(response(runId, Buffer.alloc(128_000, 5), 'call-5'));
     if (last.status !== 'ok') return assert.fail(JSON.stringify(last));
-    assert.equal(last.value.byteLength, 0); assert.equal(last.value.status, 'truncated');
-    assert.equal(last.value.originalByteLength, 128_000);
+    assert.equal(last.value.byteLength, 128_000); assert.equal(last.value.status, 'complete');
+    assert.equal(last.value.originalByteLength, undefined);
     const stored = await readFile(path.join(p.root, 'evals/artifacts', first.value.locator));
-    assert.equal(stored.length, 128_000);
+    assert.equal(stored.length, 129_000);
   } finally { await p.cleanup(); }
 });
 

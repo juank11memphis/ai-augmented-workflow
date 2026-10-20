@@ -82,16 +82,16 @@ it('rejects invalid judge identity, unsafe paths and non-excluded artifact roots
   } finally { await q.cleanup(); }
 });
 
-it('retains capped prefixes and missing extent under response and run ceilings', async () => {
+it('retains every judge byte beyond the former response and run ceilings', async () => {
   const p = await project(); try {
     const a = fixture(p.root); const runId = await running(a);
     const first = await a.store.saveProviderResponse(response(runId, Buffer.alloc(129_000, 3), 'judge-1'));
     if (first.status !== 'ok') return assert.fail(JSON.stringify(first));
-    assert.deepEqual([first.value.status, first.value.byteLength, first.value.originalByteLength], ['truncated', 128_000, 129_000]);
+    assert.deepEqual([first.value.status, first.value.byteLength, first.value.originalByteLength], ['complete', 129_000, undefined]);
     for (let n = 2; n <= 4; n++) assert.equal((await a.store.saveProviderResponse(response(runId, Buffer.alloc(128_000), `judge-${n}`))).status, 'ok');
     const last = await a.store.saveProviderResponse(response(runId, Buffer.alloc(17), 'judge-5'));
     if (last.status !== 'ok') return assert.fail(JSON.stringify(last));
-    assert.deepEqual([last.value.status, last.value.byteLength, last.value.originalByteLength], ['truncated', 0, 17]);
+    assert.deepEqual([last.value.status, last.value.byteLength, last.value.originalByteLength], ['complete', 17, undefined]);
   } finally { await p.cleanup(); }
 });
 
