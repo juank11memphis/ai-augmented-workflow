@@ -1,5 +1,5 @@
 {
-  "templateVersion": "233",
+  "templateVersion": "234",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "71",
+      "version": "72",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Recovers bounded overlapping uncommitted Task failures through reviewed same-Task continuation without weakening checks or commit gates."
+        "Requires a complete grouped failure inventory and isolated observed-Epic-head comparison before blocked-check recovery, with human stops when evidence or isolation is unsafe."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
