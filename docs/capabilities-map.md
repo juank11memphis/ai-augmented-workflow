@@ -60,6 +60,8 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Keep progression user-directed**: require sufficiently clear upstream context, while letting the user choose when to request the next artifact without BRD, SAD, or SDD approval statuses, signatures, or sign-off gates.
 - **Preserve artifact ownership boundaries**: keep each skill focused on its owned artifact instead of producing unrelated downstream outputs.
 - **Carry reviewed context downstream**: use accepted upstream artifacts as the source of truth for later planning and implementation work.
+- **Reuse approved feature decisions**: carry each unchanged, explicitly approved SDD Feature Decision into the downstream work it governs without asking the human again; stop when a required decision is missing or its choice or scope changed materially.
+- **Keep operational authority separate**: never treat an approved Feature Decision as permission for access, destructive actions, model-route choices, or final Epic acceptance.
 - **Carry architecture guidance downstream**: use the repo's selected architecture skill as required context for project SAD authoring, feature SDD authoring, implementation planning, and implementation execution.
 - **Hard-stop on missing architecture guidance**: refuse downstream technical or implementation work when the repo has no selected architecture skill, directing the user to repair workflow configuration instead of inventing guidance.
 - **Keep narrow fixes lightweight**: avoid forcing the full product pipeline for small code, documentation, or maintenance tasks when direction and ownership are already clear.
@@ -143,6 +145,8 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Define skill boundaries**: make each skill's purpose, required inputs, owned outputs, hard stops, and handoffs clear.
 - **Support optional skill selection**: let users include non-architecture workflow guidance relevant to their project without forcing every optional skill into every repo.
 - **Preserve skill handoffs**: ensure skills pass the right reviewed context downstream while avoiding responsibility for artifacts outside their scope.
+- **Discover feature decision gates during SDD authoring**: identify known applicable human choices from the feature and its downstream skills, ask only relevant questions in the existing design interview, and pause SDD finalization until each required choice is answered.
+- **Record scoped feature approvals**: make each human-approved Feature Decision, including applicable eval targets and coverage, available in the SDD without imposing an artifact-wide SDD sign-off.
 - **Guide plan architecture reviews**: provide focused, read-only plan-review guidance that challenges over-engineering and premature optimization, with evidence tied to the reviewed plan version.
 - **Guide eval authoring**: provide focused guidance so agents create and maintain eval suites, test cases, assertions/graders, fixtures, and expected/reference artifacts in Sibu's expected format.
 - **Discover evaluation targets**: help agents identify likely repo-local generative-AI integrations, agents, prompts, and workflows, then ask the user to confirm which targets need evals.
@@ -194,6 +198,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Workflow Maintenance & Sync Review** depends on **Template Catalog** for current template and recommendation versions, meaningful update notes, and authoritative non-architecture skill-retirement notices; **Skill Guidance** to repair missing or unsupported architecture skill selections; and **Agent Support Selection** to interpret unavailable or superseded model routes.
 - **Retired-skill cleanup** depends on recorded Sibu-managed file ownership and routing context; architecture guidance remains outside this cleanup capability and under intentional configuration management.
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
+- **Feature decision reuse** depends on **Skill Guidance** identifying and recording applicable approved choices during SDD authoring before the **AI-Augmented Development Pipeline** hands them to planning and implementation.
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
 - **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
 - **Plan architecture review** depends on one complete story plan, project SAD, feature SDD, selected architecture guidance, and task-level objective checks; it precedes any unattended execution.
@@ -204,6 +209,7 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Sequential Story integration** depends on verified Story completion, established required-check and merge-policy facts from external source control, and safe squash-merge into the Epic branch; the next Story starts only from the updated Epic branch.
 - **Final Epic review** occurs through the consolidated Epic PR after every Story PR has merged and Epic-level verification passes. PR hosting remains an external source-control capability; production deployment is not part of this pipeline capability.
 - **Skill Guidance** must discover and confirm Evaluation Targets, obtain approval for the Eval Coverage Plan, and generate runnable suites before the **Local Evals Workbench** can execute them.
+- **Planned-feature eval authoring** may reuse unchanged, explicitly approved SDD Feature Decisions for Evaluation Targets and Eval Coverage Plans; independent eval work still obtains its own target confirmation and coverage approval.
 - **Local Evals Workbench** depends on **Skill Guidance** and **Template Catalog** for Sibu's eval-authoring conventions, while Evaluation Targets, suite definitions, fixtures, and test-support files remain project-owned.
 - **Eval run execution** depends on user-selected suite model defaults and any test-case overrides; a missing required suite default pauses execution for an explicit user choice, while a single-case one-run choice does not change saved defaults.
 - **Eval run execution** also depends on the availability of each effective model choice; an unavailable saved choice requires a user decision before the affected run proceeds.

@@ -78,6 +78,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **User-Selected Model Route**: a route the user chooses instead of Sibu's current recommendation. It remains fully supported as a user choice and is clearly distinguished from a Sibu recommendation.
 - **Model Route Review**: the user-controlled decision to select, retain, replace, or reset a role-and-workload model route after first use, unavailability, or a catalog update.
 - **Artifact**: a project-owned document or plan produced by a skill and used as input for later work.
+- **Feature Decision**: an applicable, feature-specific human choice required before planned implementation, recorded with its scope and explicit approval in the feature SDD for downstream reuse. It is not a blanket approval of the SDD or permission for an operational action.
 - **Local Eval Artifact**: a project-owned eval definition, test case, fixture, prompt reference, assertion, grader, expected/reference output, or run result used by the Local Evals Workbench.
 - **Evaluation Target**: a repo-local generative-AI integration, agent, prompt, or AI-assisted workflow whose behavior the user wants to evaluate.
 - **Eval Coverage Plan**: a user-reviewed proposal describing which confirmed Evaluation Targets, behavior categories, risks, and scenarios an eval suite will cover before suite artifacts are generated.
@@ -371,6 +372,12 @@ The project-level architectural source of truth at `docs/architecture.md`. Its b
 
 The per-feature implementation-oriented design at `docs/features/<feature-slug>/sdd.md`. It uses the feature BRD, project SAD, selected architecture skill, and required UX context to explain how the feature works internally. It references BRD requirement IDs and existing SAD modules instead of redefining system architecture. At least one Mermaid diagram explains the main flow: a sequence diagram by default, or a justified alternative when no meaningful interaction flow exists. Implementation checklists remain separate.
 
+During design discovery, the SDD also captures each known applicable Feature Decision, its scope, and the human's explicit approval before the design is finalized. For example, planned eval work may need confirmed Evaluation Targets and an approved Eval Coverage Plan. An unchanged approved decision is reused by downstream planning and implementation without a repeat approval request; a material change to that decision or its scope requires renewed approval. This is decision-specific evidence, not SDD sign-off metadata.
+
+#### Feature Decision
+
+A human-owned choice identified during feature design because a downstream skill would otherwise pause for it. Its lifecycle is identified, proposed, explicitly approved, then reused while its meaning and scope remain unchanged; a material change returns only the affected decision for approval. A required unanswered decision blocks SDD finalization. Git base/target choices, model routes, access permissions, destructive operations, and final Epic review remain separate operational or later-stage decisions.
+
 #### Architectural Change Boundary
 
 A feature that requires a change to module boundaries or system-wide architectural decisions must pause SDD authoring and route to SAD authoring first. Once the SAD reflects the intended change, the user can resume the SDD. Details that fit the SAD remain feature-local. This protects context consistency, not an approval chain; neither SAD nor SDD requires sign-off metadata.
@@ -498,6 +505,7 @@ define focused task
 - A **Model Recommendation Catalog** has a version, supported agent environments, role-to-workload assignments, provider mappings, concise research-informed rationales, review dates, and user-facing change notes.
 - A **Model Route Review** has a triggering condition, current route when present, current recommendation, user decision, and resulting recorded route.
 - An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
+- A **Feature Decision** has a purpose, applicable downstream gate, approved choice, scope, and human approval evidence; materially changing the choice or scope invalidates that approval.
 - A **Story Implementation Plan** has one User Story, one or more ordered Milestones, bounded Tasks, acceptance-criteria coverage, and a reviewed version.
 - A **Milestone** has a reviewable outcome and one or more Tasks; earlier Milestones advance after verified Task evidence.
 - A **Task** has an ID, one outcome, bounded scope, source decisions and pointers, dependencies, applicable skills, and its own executable Task Check.
@@ -547,6 +555,7 @@ define focused task
 - One **Retired Sibu-Provided Skill** may have installed copies and Sibu-managed routing references across several selected agents; each affected project retains control of its copies.
 - A **Skill** may guide use of an MCP-provided tool, but the MCP server remains an external integration.
 - An **Artifact** can be required by one or more downstream **Skills**.
+- One feature SDD can record many **Feature Decisions**; each applicable downstream skill may reuse only the approved decision that governs its work.
 - A **Project / Repo** can contain many **Eval Suites**.
 - A **Project / Repo** can contain many discovered **Evaluation Targets**, of which the user confirms zero or more for coverage.
 - One approved **Eval Coverage Plan** covers one or more confirmed **Evaluation Targets** and identifies zero or more **Coverage Gaps**.
@@ -609,6 +618,8 @@ define focused task
 - Technical design, implementation planning, and implementation execution should apply the selected architecture skill as binding guidance when shaping technical decisions.
 - Each pipeline skill owns a specific artifact and should not write unrelated downstream artifacts. SDD authors route architectural changes to the SAD writer rather than silently editing the SAD or inventing new boundaries.
 - Each pipeline skill must hard-stop when required upstream artifacts are missing or insufficient.
+- A feature SDD cannot be finalized while a known applicable Feature Decision requiring human input remains unanswered. Downstream skills reuse an unchanged, explicitly approved Feature Decision without asking again, but a materially changed or missing decision remains a hard stop.
+- Approval of a Feature Decision never substitutes for operational permissions, destructive-action confirmation, model-route selection, or final human Epic review; no blanket SDD sign-off is required.
 - Narrow fixes and normal repo work do not require the full product pipeline unless the work creates product, domain, feature, architecture, planning, or implementation-plan ambiguity.
 - AI-assisted work should be small, explicit, validated where possible, and reviewable by the engineer.
 - Every Story Implementation Plan must contain at least one Milestone; earlier Milestones do not require routine human review after verified completion.
@@ -676,6 +687,7 @@ define focused task
 - When planned feature work triggers a downstream skill without prerequisites, that skill should hard-stop and identify the missing upstream artifact.
 - When technical design, implementation planning, or implementation execution starts, the selected architecture skill should be carried into the work as repo-level workflow context.
 - When a skill produces an artifact, that artifact should clarify one layer of decision-making before downstream work starts.
+- When SDD discovery finds a known feature-specific human gate, it should obtain and record the scoped Feature Decision before finalizing the SDD; downstream work should honor that approval without a duplicate prompt while the decision remains unchanged.
 - When a user requests a narrow fix, Sibu guidance should avoid unnecessary pipeline ceremony unless scope or ownership is unclear.
 - When the planner cannot define a concrete pass/fail check for a Task, it should split or clarify the Task; judgment needed before safe continuation requires a human stop, while final outcome judgment belongs at the Epic PR.
 - When a plan is ready, a fresh architecture reviewer should identify unnecessary complexity and premature optimization first, then assess normal architectural and verification concerns before the plan is conditionally accepted.
@@ -789,9 +801,10 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 1. **Prerequisite Artifact Exists**: upstream artifact is present and sufficient.
 2. **Skill Invoked**: the appropriate skill is triggered for the requested work.
 3. **Hard-Stop Check**: the skill verifies required inputs before proceeding.
-4. **Artifact Created or Updated**: the skill produces its owned artifact.
-5. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. Sufficiently clear BRDs, SADs, and SDDs need no approval status, signature, or sign-off gate; story-plan acceptance and execution safeguards remain in force.
-6. **Downstream Input**: the artifact becomes the basis for the next pipeline stage.
+4. **Applicable Feature Decisions Resolved**: during SDD authoring, known required human choices receive explicit scoped approval; unanswered choices pause SDD finalization.
+5. **Artifact Created or Updated**: the skill produces its owned artifact.
+6. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. Sufficiently clear BRDs, SADs, and SDDs need no artifact-wide approval status, signature, or sign-off gate; story-plan acceptance and execution safeguards remain in force.
+7. **Downstream Input**: the artifact and its unchanged approved Feature Decisions become the basis for the next pipeline stage.
 
 #### Epic and Story Planning and Execution Lifecycle
 
@@ -844,6 +857,8 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 - **Artifact Created**: a skill creates its owned artifact.
 - **Artifact Updated**: a skill revises its owned artifact.
 - **Artifact Accepted for Downstream Work**: an artifact is clear enough to serve as input for the next pipeline stage.
+- **Feature Decision Approved**: the human explicitly accepts one applicable feature-specific choice and scope during SDD discovery.
+- **Feature Decision Reapproval Needed**: the approved choice or scope changes materially, so downstream reuse pauses for a new human decision.
 - **Story Plan Created**: a planner produces one story-local plan with Milestones and checked Tasks.
 - **Plan Architecture Review Completed**: a reviewer reports on the current plan version, including unnecessary complexity and premature optimization.
 - **Plan Cleanly Accepted**: after a complete review with no findings or unresolved risks, the main agent accepts the exact plan and begins execution.
