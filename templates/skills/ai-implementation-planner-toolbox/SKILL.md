@@ -17,6 +17,8 @@ This toolbox is for `sibu-implementation-planner` workers only. It is not a norm
 
 ## Worker packet contract
 
+For applicable planned-feature **Feature Decisions**, use packet IDs and exact SDD path/section pointers only to locate the governing SDD record. Read it and compare the named gate, explicit human-approved choice, and scope with current Story work before relying on it. Carry relevant IDs and pointers into Story steps and curated source packets for fresh checked Tasks. When unchanged and matching, do not ask for duplicate approval. If missing, ambiguous, materially changed, or newly required, stop only affected work and identify the decision requiring an explicit human answer and revised SDD record; an edited record alone does not renew approval. Unrelated SDD prose and unrelated valid decisions remain usable. A generic SDD sign-off is not approval. Preserve independent review of changed reviewable plans.
+
 Use only the narrow packet from the main agent. The packet must include:
 
 - exactly one User Story path

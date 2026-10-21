@@ -77,7 +77,14 @@ test('stale managed guidance gets meaningful updates and healthy doctor state', 
     state.managedFiles[target(template)] = { template, templateVersion: '0', sha256: sha256(stale), status: 'managed' };
     const change = preview(rootPath, state, template);
     assert.equal(change.status, 'update-available');
-    assert.match(change.changes.join(' '), /byte-exact capture of every received tested-model and Judge response|complete raw response retention|previews full suites/i);
+    const expectedNotes: Record<string, RegExp> = {
+      'skills/eval-authoring/SKILL.md': /Reuses separately approved planned-feature eval targets and coverage.*independent-eval approval gates/,
+      'skills/eval-authoring/references/version-2-contract.md': /complete raw response retention.*genuine capture failures/,
+      'skills/eval-authoring/scripts/check-preview-contract.mjs': /Previews full suites from saved defaults.*rejects full-suite temporary choices/,
+    };
+    const expectedNote = expectedNotes[template];
+    assert.ok(expectedNote);
+    assert.match(change.changes.join(' '), expectedNote);
     state = apply(rootPath, state, template, 'apply-update');
     assert.equal(fs.readFileSync(path.join(rootPath, target(template)), 'utf8'), readTemplate(template));
   }
