@@ -75,7 +75,7 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '242');
+    assert.equal(manifest.templateVersion, '243');
     const executorTemplate = manifest.templates[templatePath];
     assert.equal(executorTemplate?.version, '76');
     assert.match(executorTemplate?.changes.join(' ') ?? '', /Reports named Epic checks and host-policy gaps.*removes obsolete separate-QA gates/i);
