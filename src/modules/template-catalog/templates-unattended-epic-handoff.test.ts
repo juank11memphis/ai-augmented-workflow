@@ -51,12 +51,14 @@ describe('future packaged Epic handoff contract', () => {
     assert.match(handoff, /missing body field, mismatched head\/base, changed branch state, or undisclosed host-fact gap is not review-ready/);
   });
 
-  it('reconciles ambiguous creation before retry and reserves Epic merge and next Epic for the human', () => {
+  it('reconciles ambiguous creation and waits for human Epic merge confirmation', () => {
     assert.match(handoff, /timeout or ambiguous creation\/update effect.*querying the host.*before any retry/);
     assert.match(handoff, /reuse a matching existing PR.*stop if identity or effect remains ambiguous/);
     assert.match(handoff, /main agent owns this operation; a checked-Task executor does not create an Epic PR/);
     assert.match(handoff, /Hand the read-back Epic PR URL.*human for review and merge/);
-    assert.match(handoff, /Do not merge the Epic PR.*start another Epic without a new user request/);
+    assert.match(handoff, /Ask the user to tell the agent when the PR is approved and merged/);
+    assert.match(handoff, /confirmation requests safe local Epic-branch cleanup and continuation/);
+    assert.match(handoff, /Do not merge the Epic PR.*start another Epic before that user confirmation/);
   });
 
   it('reports safe outcomes without obsolete QA fields or live-behavior claims', () => {
@@ -67,23 +69,34 @@ describe('future packaged Epic handoff contract', () => {
   });
 
   it('closes a human-merged Epic locally only after host and squash-result verification', () => {
-    assert.match(handoff, /verify its actual merged state, head, and base with the PR host.*GitHub MCP/);
-    assert.match(handoff, /switch to the target base branch, and fast-forward pull it/);
+    assert.match(handoff, /verify the PR's actual merged state, head, and base with the PR host.*GitHub MCP/);
+    assert.match(handoff, /Confirm its base is `main`; otherwise stop for an explicit base decision/);
+    assert.match(handoff, /switch to `main`, and fast-forward pull it/);
+    assert.match(handoff, /Confirm updated `main` contains the merge result/);
     assert.match(handoff, /compare the resulting trees before using force deletion/);
     assert.match(handoff, /Stop on divergent content, ambiguous host state, dirty local state, or blocked Git permissions/);
     assert.match(handoff, /do not delete a remote branch unless separately requested/);
   });
 
+  it('continues only to a planned next Epic or reports the verified feature ready', () => {
+    assert.match(handoff, /After verified merge and safe cleanup, inspect the feature's planned Epics and dependencies/);
+    assert.match(handoff, /If another Epic remains, continue its Start Epic delivery gate from the updated base/);
+    assert.match(handoff, /stop for an ambiguous order, missing prerequisite, or unsafe state/);
+    assert.match(handoff, /If no planned Epic remains and all planned Epic PRs are verified merged, clearly tell the user the feature is ready/);
+    assert.match(handoff, /Do not infer feature completion from the current Epic PR or local files alone/);
+  });
+
   it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '244');
-    assert.equal(manifest.templates[templatePath]?.version, '77');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Reuses matching scoped Feature Decisions.*final Epic review/i);
+    assert.equal(manifest.templateVersion, '245');
+    assert.equal(manifest.templates[templatePath]?.version, '78');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /human Epic PR approval and merge confirmation.*next planned Epic/i);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/i);
     assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
     assert.match(installed, /## Present complete Epic for human review/);
-    assert.match(installed, /verify its actual merged state, head, and base with the PR host.*GitHub MCP/);
+    assert.match(installed, /verify the PR's actual merged state, head, and base with the PR host.*GitHub MCP/);
+    assert.match(installed, /Ask the user to tell the agent when the PR is approved and merged/);
   });
 });

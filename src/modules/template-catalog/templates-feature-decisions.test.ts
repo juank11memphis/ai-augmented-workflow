@@ -61,7 +61,7 @@ test('decision records do not grant operational or final Epic authority', () => 
 
 test('manifest versions and current user-facing sync notes describe the decision contract', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '244');
+  assert.equal(manifest.templateVersion, '245');
   const template = manifest.templates['skills/software-design-writer/SKILL.md'];
   assert.equal(template?.version, '3');
   const notes = template?.changes.join(' ') ?? '';

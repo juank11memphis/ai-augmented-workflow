@@ -1,5 +1,5 @@
 {
-  "templateVersion": "244",
+  "templateVersion": "245",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "77",
+      "version": "78",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Reuses matching scoped Feature Decisions from the governing SDD without bypassing operational permissions or final Epic review."
+        "Asks for human Epic PR approval and merge confirmation, then safely cleans up locally and continues to the next planned Epic or reports the feature ready."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

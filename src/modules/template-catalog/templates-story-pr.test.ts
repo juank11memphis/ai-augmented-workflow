@@ -75,9 +75,9 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '244');
+    assert.equal(manifest.templateVersion, '245');
     const executorTemplate = manifest.templates[templatePath];
-    assert.equal(executorTemplate?.version, '77');
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /Reuses matching scoped Feature Decisions.*final Epic review/i);
+    assert.equal(executorTemplate?.version, '78');
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /human Epic PR approval and merge confirmation.*next planned Epic/i);
   });
 });

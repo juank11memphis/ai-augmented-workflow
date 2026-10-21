@@ -92,7 +92,13 @@ test('stale managed copies of all five skills show current sync notes, update sa
     assert.equal(change.status, 'update-available', template);
     assert.deepEqual(change.changes, manifest.templates[template]?.changes, template);
     assert.equal(change.changes.length, 1, template);
-    assert.match(change.changes[0] ?? '', /Feature Decision|eval targets and coverage/i, template);
+    assert.match(
+      change.changes[0] ?? '',
+      template.endsWith('/ai-implementation-plan-executor/SKILL.md')
+        ? /human Epic PR approval and merge confirmation/i
+        : /Feature Decision|eval targets and coverage/i,
+      template,
+    );
     current = applySyncAction({ rootPath, state: current, manifest, preview: change, action: 'apply-update' }).state;
     assert.equal(fs.readFileSync(path.join(rootPath, installedPath(template)), 'utf8'), installedSource(template), template);
     assert.equal(current.managedFiles[installedPath(template)]?.templateVersion, manifest.templates[template]?.version, template);

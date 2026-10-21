@@ -119,13 +119,16 @@ test('Feature Decisions cannot bypass operational or final Epic gates', () => {
 
 test('manifest bumps every changed template with replacement user-facing current-version sync notes', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '244');
-  const versions = { planner: '36', plannerWorker: '24', executor: '77', executorWorker: '31', eval: '11' };
+  assert.equal(manifest.templateVersion, '245');
+  const versions = { planner: '36', plannerWorker: '24', executor: '78', executorWorker: '31', eval: '11' };
   for (const role of Object.keys(paths) as (keyof typeof paths)[]) {
     const template = manifest.templates[paths[role]];
     assert.equal(template?.version, versions[role], role);
     assert.equal(template?.changes.length, 1, role);
-    assert.match(template.changes[0] ?? '', /Feature Decision|eval targets and coverage/);
+    assert.match(
+      template.changes[0] ?? '',
+      role === 'executor' ? /human Epic PR approval and merge confirmation/ : /Feature Decision|eval targets and coverage/,
+    );
     assert.doesNotMatch(template.changes[0] ?? '', /Extends same-Task|Reports named Epic checks|byte-exact capture/);
   }
 });

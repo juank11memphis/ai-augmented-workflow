@@ -323,7 +323,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Reuses matching scoped Feature Decisions from the governing SDD.*operational permissions or final Epic review/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /human Epic PR approval and merge confirmation.*next planned Epic/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
