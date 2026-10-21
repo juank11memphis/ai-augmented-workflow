@@ -5,7 +5,7 @@
 ## Epic
 [Verified PR Handoff](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** verified/integrated
 
 ## User Story
 As an engineer reviewing an AFK Epic, I want Story merges gated by verified host facts and PR summaries that disclose recovery and checks, so that integration is safe and the final Epic review is informed.
