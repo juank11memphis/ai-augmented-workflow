@@ -26,7 +26,7 @@ describe('future packaged Epic handoff contract', () => {
     assert.match(handoff, /named Epic-level check.*Epic, SDD, or repository convention/);
     assert.match(handoff, /exact check against the latest reconciled Epic head/);
     assert.match(handoff, /name, source, head, and actual result/);
-    assert.match(handoff, /undefined, unavailable, missing, pending, or failed required check stops/);
+    assert.match(handoff, /undefined, unavailable, missing, pending, or failed required Epic-level check stops/);
     assert.match(handoff, /do not invent or substitute a weaker check/);
   });
 
@@ -35,20 +35,20 @@ describe('future packaged Epic handoff contract', () => {
     assert.match(handoff, /changed head\/base or unsafe state requires reconciliation/);
     assert.match(handoff, /one Epic PR.*verified Epic branch to the agreed base only after those gates pass/);
     assert.match(handoff, /link every child PR in planned order/);
-    for (const field of ['change', 'user value', 'local and host verification', 'blockers', 'retries', 'recoveries']) {
+    for (const field of ['change', 'user value', 'actual local and host checks', 'noteworthy failure attribution', 'reviewed repairs', 'unresolved stops']) {
       assert.ok(handoff.includes(field), `${field} is required for each Story`);
     }
-    assert.match(handoff, /aggregate Epic checks/);
-    assert.match(handoff, /human-only QA explicitly marked `not performed`/);
-    assert.match(handoff, /remaining limits.*incomplete or non-applicable fact distinguished from a passing check/);
+    assert.match(handoff, /named Epic-level check with its source, observed head, and actual result/);
+    assert.match(handoff, /known required host-check conclusions and applicable merge-policy status.*explicitly identify each unavailable fact as a verification gap/);
+    assert.match(handoff, /Distinguish incomplete or non-applicable facts from passing checks/);
   });
 
   it('reads back actual body and host state, repairing one PR rather than accepting a mismatch', () => {
     assert.match(handoff, /Query the actual PR after create or update/);
     assert.match(handoff, /identity, open state, full body and every child link, actual head\/base and head commit/);
-    assert.match(handoff, /current required host-check conclusions/);
+    assert.match(handoff, /known required host-check conclusions and merge-policy status or explicit verification gaps/);
     assert.match(handoff, /If the body differs, repair \*\*the same PR\*\* and read it back again/);
-    assert.match(handoff, /missing body field, mismatched head\/base, changed branch state.*not review-ready/);
+    assert.match(handoff, /missing body field, mismatched head\/base, changed branch state, or undisclosed host-fact gap is not review-ready/);
   });
 
   it('reconciles ambiguous creation before retry and reserves Epic merge and next Epic for the human', () => {
@@ -59,11 +59,11 @@ describe('future packaged Epic handoff contract', () => {
     assert.match(handoff, /Do not merge the Epic PR.*start another Epic without a new user request/);
   });
 
-  it('reports safe outcomes and deferred QA without claiming live behavior', () => {
+  it('reports safe outcomes without obsolete QA fields or live-behavior claims', () => {
     assert.match(handoff, /safe outcome\/reason summaries/);
     assert.match(handoff, /never include credentials, secrets, raw private logs, or invented success/);
-    assert.match(handoff, /Deferred human QA remains `not performed`/);
-    assert.match(handoff, /deterministic prompt-contract tests do not prove live host or agent behavior/);
+    assert.doesNotMatch(handoff, /deferred human-only QA|Deferred human QA remains|`not performed`/i);
+    assert.match(handoff, /Deterministic prompt-contract tests do not prove live host or agent behavior/);
   });
 
   it('closes a human-merged Epic locally only after host and squash-result verification', () => {
@@ -76,9 +76,9 @@ describe('future packaged Epic handoff contract', () => {
 
   it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '240');
-    assert.equal(manifest.templates[templatePath]?.version, '74');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /passing unit and integration tests.*Epic-start base.*excludes AI evals/i);
+    assert.equal(manifest.templateVersion, '242');
+    assert.equal(manifest.templates[templatePath]?.version, '76');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Reports named Epic checks and host-policy gaps.*removes obsolete separate-QA gates/i);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/i);
