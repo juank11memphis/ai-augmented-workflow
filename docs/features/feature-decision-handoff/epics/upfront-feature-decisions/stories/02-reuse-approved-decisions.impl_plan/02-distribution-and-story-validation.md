@@ -1,0 +1,25 @@
+# Step: Prove safe distribution and validate the downstream handoff
+
+## Goal
+
+Show that the changed decision-reuse guidance reaches fresh and stale installations with meaningful sync notes while customized copies remain protected, then run the stabilized Story checks.
+
+## Scope
+
+- Task ID: FDH-02-T02; Milestone ID: FDH-02-M02 (safe template distribution and Story confidence); Status: done; Depends on: FDH-02-T03.
+- Story acceptance criteria: FDH-02 AC-01–AC-05 via T01 guidance and T02 distribution; business source `docs/features/feature-decision-handoff/brd.md` REQ-05–REQ-07, AC-03–AC-05, RULE-03–RULE-04. Source decisions: `docs/features/feature-decision-handoff/sdd.md` §§ Ownership and boundaries (Template Catalog/customized-file protection), Quality strategy and planned verification; on-demand pointers: `src/modules/template-catalog/templates-feature-decision-lifecycle.test.ts` and `src/modules/template-catalog/verification-handoff-lifecycle.test.ts` for disposable init/doctor/sync patterns; `package.json`, `scripts/run-tests.mjs`, `scripts/validate-packed-cli-runtime.mjs` for check responsibilities. Applicable skills: `.agents/skills/clean-code/SKILL.md`, `.agents/skills/typescript/SKILL.md`, `.agents/skills/sibu-template-change/SKILL.md`, `.agents/skills/command-pattern/SKILL.md`.
+- In a focused self-contained lifecycle test, cover every changed downstream template from T01: fresh disposable init installs current bytes/versions and doctor reports healthy; a stale managed copy shows the current user-facing sync note and safely updates; a customized copy keeps exact bytes and ownership when reviewed. Use disposable projects and clean them up. Do not run `sibu sync` on this repository, write installed managed skills directly, call a live model, or add CLI behavior.
+- Preserve existing lifecycle/manifest regression coverage. If a likely touched `.ts` file approaches 500 lines, create a cohesive focused test file rather than enlarging a near-limit file. The test may use existing fixture helpers only when their ownership and determinism remain clear.
+- Final validation strategy, only after edits stabilize: run `pnpm verify` once (build plus all compiled deterministic tests, including T01 contract, T02 lifecycle, and existing regressions), then `pnpm run validate:packed-runtime` once (distinct package/install/runtime coverage because changed skill assets ship in the package), then `node .agents/scripts/check-touched-source-file-lines.mjs` (touched source size gate). Do not repeat standalone focused checks as final confidence. Record actual commands and outcomes; use exact-command host escalation once if sandbox blocks the packed check, never a wrapper or substituted method. These methods cannot prove future live-agent compliance or human provenance. No live eval or separate human-judgment check is planned.
+
+## Files
+
+- `src/modules/template-catalog/templates-feature-decision-reuse-lifecycle.test.ts` (new focused disposable-project lifecycle tests)
+- `templates/skills/ai-implementation-planner/SKILL.md`, `templates/skills/ai-implementation-planner-toolbox/SKILL.md`, `templates/skills/ai-implementation-plan-executor/SKILL.md`, `templates/skills/ai-implementation-executor-toolbox/SKILL.md`, `templates/skills/eval-authoring/SKILL.md`, `templates/manifest.json` (T01 outputs consumed by lifecycle tests; amend only for a bounded finding)
+
+## Done when
+
+- Task check: after `pnpm build`, run `node --test bin/modules/template-catalog/templates-feature-decision-reuse-lifecycle.test.js`; pass: all disposable init/doctor/sync scenarios pass for every changed template; expected evidence: named Node subtests for fresh installed bytes/version, stale managed update with current sync notes and healthy state, customized-byte preservation, and fixture cleanup.
+- Lifecycle acceptance/integration evidence shows decision-reuse guidance is distributed rather than source-only and that updating the versioned template cannot silently replace project-customized guidance (AC-01–AC-05; REQ-05, REQ-07). Inspect manifest notes against the T01 changed template set; no unrelated template is bumped.
+- `pnpm verify` passes after stabilization; expected evidence: one successful aggregate build/compiled-suite result covering T01 contract cases, T02 lifecycle cases, and existing template regressions. `pnpm run validate:packed-runtime` passes separately; expected evidence: successful package/install/runtime check for shipped skill assets. A package test does not imply live-agent obedience.
+- `node .agents/scripts/check-touched-source-file-lines.mjs` passes with zero touched source files over 500 lines; expected evidence: checker success. Record each final command/result and every Done when observation in T02's progress entry before its scoped commit; retain no-flag scope, separate operational authorization, newly discovered decision stops, and final human Epic review. No fuzz/mutation/manual-agent exercise is added: the SDD deliberately limits verification to static contracts and disposable lifecycle behavior, leaving live conduct as a known risk.
