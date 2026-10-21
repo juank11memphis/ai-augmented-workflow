@@ -34,9 +34,24 @@ describe('safe Epic integration base template contract', () => {
   it('establishes one Epic branch only from an agreed base after safe observation', () => {
     const guidance = epicGuidance(gatekeeper);
     assert.match(guidance, /Observe the current branch, index, worktree, local\/remote branch identity, and host state before effects/);
-    assert.match(guidance, /With a clean, unambiguous state, establish or reconcile \*\*one Epic integration branch from the agreed base\*\*/);
+    assert.match(guidance, /With a clean, unambiguous state and a passing base test baseline, establish or reconcile \*\*one Epic integration branch from the agreed base\*\*/);
     assert.ok(guidance.indexOf('Observe the current branch') < guidance.indexOf('one Epic integration branch'));
     assert.match(guidance, /observe its actual head/);
+  });
+
+  it('blocks Epic branch creation until all base unit and integration tests pass, excluding AI evals', () => {
+    const guidance = epicGuidance(gatekeeper);
+    const observe = guidance.indexOf('Observe the current branch');
+    const baseline = guidance.indexOf("verify the agreed base head's complete repository test baseline");
+    const branch = guidance.indexOf('establish or reconcile **one Epic integration branch');
+    assert.ok(observe < baseline && baseline < branch);
+    assert.match(guidance, /clean, safe checkout of that exact head/);
+    assert.match(guidance, /run every unit and integration test suite/);
+    assert.match(guidance, /canonical aggregate only when it covers both without running AI evals/);
+    assert.match(guidance, /AI evals are excluded/);
+    assert.match(guidance, /Record the base head, commands, coverage, and results/);
+    assert.match(guidance, /Failed tests, unavailable required services or permissions, uncertain coverage, or an unverified or changed base head block implementation/);
+    assert.match(guidance, /Run this gate once for the agreed Epic-start base, not before each Story/);
   });
 
   it('selects Stories in order from verified integrated Epic ancestry', () => {
@@ -82,9 +97,9 @@ describe('safe Epic integration base template contract', () => {
 
   it('versions the packaged guidance and verifies the installed gatekeeper is synced', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '239');
-    assert.equal(manifest.templates[templatePath]?.version, '73');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /complete grouped failure inventory.*isolated observed-Epic-head comparison/i);
+    assert.equal(manifest.templateVersion, '240');
+    assert.equal(manifest.templates[templatePath]?.version, '74');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /passing unit and integration tests.*Epic-start base.*excludes AI evals/i);
     assert.match(installed, /Preserve the blocked Task's uncommitted edits/);
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);

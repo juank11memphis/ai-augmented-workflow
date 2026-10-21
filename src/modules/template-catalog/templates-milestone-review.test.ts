@@ -89,7 +89,7 @@ describe('Milestone progression written contract', () => {
     assert.ok(Number(manifest.templateVersion) >= 211);
     const executorTemplate = manifest.templates['skills/ai-implementation-plan-executor/SKILL.md'];
     assert.ok(executorTemplate);
-    assert.equal(executorTemplate.version, '73');
-    assert.match(executorTemplate.changes.join(' '), /complete grouped failure inventory.*isolated observed-Epic-head comparison/i);
+    assert.equal(executorTemplate.version, '74');
+    assert.match(executorTemplate.changes.join(' '), /passing unit and integration tests.*Epic-start base.*excludes AI evals/i);
   });
 });

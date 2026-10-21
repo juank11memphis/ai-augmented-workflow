@@ -1,5 +1,5 @@
 {
-  "templateVersion": "239",
+  "templateVersion": "240",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "73",
+      "version": "74",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Extends complete grouped failure inventory and isolated observed-Epic-head comparison with reviewed bounded recovery, safe dispatch, and current evidence gates."
+        "Requires passing unit and integration tests on the agreed Epic-start base before branch creation or implementation; excludes AI evals."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
