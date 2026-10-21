@@ -76,7 +76,7 @@ describe('future packaged Epic handoff contract', () => {
 
   it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '242');
+    assert.equal(manifest.templateVersion, '243');
     assert.equal(manifest.templates[templatePath]?.version, '76');
     assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Reports named Epic checks and host-policy gaps.*removes obsolete separate-QA gates/i);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');

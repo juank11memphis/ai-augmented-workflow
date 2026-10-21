@@ -1,5 +1,5 @@
 {
-  "templateVersion": "242",
+  "templateVersion": "243",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -352,11 +352,11 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Adds a concrete verification proposal and correction during SDD discovery, separate from the final check-in; sync preserves local ownership review.",
-        "Records the settled approach in the SDD quality strategy, including human visual review for UI features without a new approval gate."
+        "Discovers only applicable feature-specific decision gates during SDD interviews and records explicit scoped choices, including separate eval target and coverage approvals.",
+        "Stops SDD finalization for a specific unanswered decision and notes when no gates apply; sync preserves local ownership review."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {

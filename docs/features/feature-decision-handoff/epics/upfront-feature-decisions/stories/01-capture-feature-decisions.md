@@ -5,7 +5,7 @@
 ## Epic
 [Upfront Feature Decisions](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 As an engineer defining a planned feature, I want applicable human decisions raised and recorded during SDD discovery, so that implementation starts with the choices I have already made.
