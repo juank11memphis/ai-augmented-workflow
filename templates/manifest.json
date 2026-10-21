@@ -1,5 +1,5 @@
 {
-  "templateVersion": "240",
+  "templateVersion": "241",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "74",
+      "version": "75",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Requires passing unit and integration tests on the agreed Epic-start base before branch creation or implementation; excludes AI evals."
+        "Verifies current PR checks and merge policy before Story integration, uses a disclosed narrow read-only fallback when GitHub MCP lacks a needed fact, and reads back possible merge effects before retry."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

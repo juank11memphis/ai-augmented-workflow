@@ -21,11 +21,11 @@ function assertInOrder(content: string, phrases: string[]): void {
 describe('future packaged verified Story PR contract', () => {
   it('tries GitHub MCP first without routine branch-rules probing or weaker merge gates', () => {
     assert.match(gatekeeper, /For GitHub PR operations and remote host observations, try the configured GitHub MCP first/);
-    assert.match(gatekeeper, /Use `gh` or another configured host interface only when MCP is unavailable or lacks the needed operation/);
-    assert.match(gatekeeper, /Do not perform standalone branch-rules or branch-protection lookups as a routine prerequisite/);
-    assert.match(gatekeeper, /use PR and check readback plus the host's merge response to identify required checks and protection blockers/);
+    assert.match(gatekeeper, /name the specific missing capability before using `gh` or another configured host interface for only that fact/);
+    assert.match(gatekeeper, /Do not perform broad branch-rules or branch-protection lookups as a routine prerequisite/);
+    assert.match(gatekeeper, /Establish required checks and applicable merge policy from current, narrowly scoped host observations before any merge/);
     assert.match(gatekeeper, /read back its actual state before any retry or fallback/);
-    assert.match(gatekeeper, /An absent, unavailable, or ambiguous required check or host policy is not permission to merge/);
+    assert.match(gatekeeper, /An absent, unavailable, stale, or ambiguous required check or host policy is not permission to merge/);
   });
 
   it('opens one PR only after accepted plan, checked Tasks, and Story validation', () => {
@@ -56,9 +56,9 @@ describe('future packaged verified Story PR contract', () => {
   });
 
   it('blocks unsafe host checks and ambiguous merge effects before later Story work', () => {
-    assert.match(gatekeeper, /failed, pending, missing, or unavailable required check blocks merge and later Story work/);
-    assert.match(gatekeeper, /recheck the accepted plan, Story and Epic branch heads, PR head\/base and body, index\/worktree/);
-    assert.match(gatekeeper, /query PR and Epic-head identity first, then stop until reconciled/);
+    assert.match(gatekeeper, /failed, pending, missing, unavailable, stale, or ambiguous required check or policy fact blocks merge and later Story work/);
+    assert.match(gatekeeper, /recheck the accepted plan, scoped Task commits and every `Done when` item, actual Story-level validation, Story and Epic branch heads, PR head\/base and body, index\/worktree/);
+    assert.match(gatekeeper, /read back actual PR identity, state, head\/base, merge method and Epic-head state before retry or next Story/);
     assert.match(gatekeeper, /record the closed child PR URL and resulting Epic head before allowing the next Story/);
   });
 
@@ -73,9 +73,9 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '240');
+    assert.equal(manifest.templateVersion, '241');
     const executorTemplate = manifest.templates[templatePath];
-    assert.equal(executorTemplate?.version, '74');
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /passing unit and integration tests.*Epic-start base.*excludes AI evals/i);
+    assert.equal(executorTemplate?.version, '75');
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /Verifies current PR checks and merge policy.*narrow read-only fallback.*possible merge effects/i);
   });
 });

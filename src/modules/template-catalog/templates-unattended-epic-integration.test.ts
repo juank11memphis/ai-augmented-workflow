@@ -55,8 +55,8 @@ describe('future packaged verified Story integration contract', () => {
   });
 
   it('rejects failed, pending, missing, and unavailable required host checks', () => {
-    assert.match(integration, /exact PR head and base/);
-    assert.match(integration, /failed, pending, missing, or unavailable required check blocks merge and later Story work/);
+    assert.match(integration, /exact current PR identity, head commit and base branch\/head from host readback/);
+    assert.match(integration, /failed, pending, missing, unavailable, stale, or ambiguous required check or policy fact blocks merge and later Story work/);
     assert.match(integration, /Passing local commands cannot substitute for host checks/);
     assert.match(integration, /host merge policy/);
   });
@@ -71,7 +71,7 @@ describe('future packaged verified Story integration contract', () => {
 
   it('does not blindly retry timeout after possible host effect or advance a later Story', () => {
     assert.match(integration, /command timeout or ambiguous possible host effect/);
-    assert.match(integration, /query PR and Epic-head identity first, then stop until reconciled/);
+    assert.match(integration, /read back actual PR identity, state, head\/base, merge method and Epic-head state before retry or next Story/);
     assert.match(integration, /record the closed child PR URL and resulting Epic head before allowing the next Story/);
     assert.match(integration, /prevents the affected merge or later Story/);
   });
@@ -90,10 +90,10 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '240');
-    assert.equal(manifest.templates[templatePath]?.version, '74');
+    assert.equal(manifest.templateVersion, '241');
+    assert.equal(manifest.templates[templatePath]?.version, '75');
     assert.equal(manifest.templates['AGENTS.md']?.version, '56');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /passing unit and integration tests.*Epic-start base.*excludes AI evals/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Verifies current PR checks and merge policy.*narrow read-only fallback.*possible merge effects/i);
     assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/);
   });
 });
