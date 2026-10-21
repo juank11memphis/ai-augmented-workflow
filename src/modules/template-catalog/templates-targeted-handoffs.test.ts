@@ -69,16 +69,17 @@ describe('targeted handoff instruction contracts', () => {
 
   it('versions each distributed skill with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    for (const name of [
-      'ai-implementation-planner',
-      'ai-implementation-plan-executor',
-      'ai-implementation-planner-toolbox',
-      'ai-implementation-executor-toolbox',
-    ]) {
+    const expectedNotes = {
+      'ai-implementation-planner': /Carries scoped Feature Decision IDs and SDD pointers into planning packets.*changed-plan review/,
+      'ai-implementation-plan-executor': /Reuses matching scoped Feature Decisions from the governing SDD.*final Epic review/,
+      'ai-implementation-planner-toolbox': /Verifies governing SDD Feature Decision records before reuse.*fresh Task context/,
+      'ai-implementation-executor-toolbox': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD.*missing or changed choices/,
+    } as const;
+    for (const [name, expectedNote] of Object.entries(expectedNotes)) {
       const entry = manifest.templates[`skills/${name}/SKILL.md`];
       assert.ok(entry, name);
       assert.equal(entry.changes.length, 1, name);
-      assert.match(entry.changes[0], /handoff|reference|context|foreground progress|Removes|reviewers|review packet|plan review|checked.Task|Story or Epic|Story approval|Milestone|human decision|architecture-review findings|affected plan steps|AFK planner-reviewer|evidence recovery|evidence gaps|Epic prerequisites|agreed integration base|Epic-start base|current Epic head|human Story review|child-PR reconciliation|local branch cleanup|GitHub MCP|same-Task plan revision|same-Task continuation|failed checked Task|failed Task|failure inventory/i, name);
+      assert.match(entry.changes[0], expectedNote, name);
       const template = readTemplate(`skills/${name}/SKILL.md`);
       // Project-owned installed copies adopt source changes only through reviewable Sibu sync.
       assert.match(template, new RegExp(`name: ${name}`));

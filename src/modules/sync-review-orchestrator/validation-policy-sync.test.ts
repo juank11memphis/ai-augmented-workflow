@@ -40,7 +40,15 @@ describe('repository-aware validation guidance lifecycle', () => {
 
       const preview = findManagedPreview(rootPath, state, validationSkill);
       assert.equal(preview.status, 'update-available');
-      assert.match(preview.changes.join('\n'), /verified story-specific|foreground progress|Removes|reviewers|architecture review packet|plan review of the exact Story version|checked.Task|next Story or Epic|Story approval|Milestone|human decision|architecture-review findings|affected plan steps|AFK planner-reviewer|evidence recovery|evidence gaps|agreed integration base|Epic-start base|child-PR reconciliation|local branch cleanup|GitHub MCP|same-Task plan revision|same-Task continuation|failed checked Task|failed Task|failure inventory/i);
+      const expectedNotes: Record<string, RegExp> = {
+        'skills/ai-implementation-planner/SKILL.md': /Carries scoped Feature Decision IDs and SDD pointers into planning packets/,
+        'skills/ai-implementation-planner-toolbox/SKILL.md': /Verifies governing SDD Feature Decision records before reuse/,
+        'skills/ai-implementation-plan-executor/SKILL.md': /Reuses matching scoped Feature Decisions from the governing SDD/,
+        'skills/ai-implementation-executor-toolbox/SKILL.md': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD/,
+      };
+      const expectedNote = expectedNotes[validationSkill.template];
+      assert.ok(expectedNote);
+      assert.match(preview.changes.join('\n'), expectedNote);
 
       const applied = applySyncAction({
         rootPath,

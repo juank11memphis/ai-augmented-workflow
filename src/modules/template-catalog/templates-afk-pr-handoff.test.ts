@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { readTemplate } from './index.js';
 
 const templatePath = 'skills/ai-implementation-plan-executor/SKILL.md';
 const packaged = readTemplate(templatePath);
-const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
 const integration = packaged.slice(packaged.indexOf('## Integrate verified Story:'), packaged.indexOf('## Verified Story metadata'));
 const epicHandoff = packaged.slice(packaged.indexOf('## Present complete Epic for human review'), packaged.indexOf('## Final response behavior'));
 
@@ -34,8 +31,10 @@ function contractDecision(scenario: HostScenario): HostScenario['expected'] {
 }
 
 describe('AFK Story PR host-fact contract scenarios', () => {
-  it('keeps the distributed guidance identical', () => {
-    assert.equal(installed, packaged);
+  it('keeps the packaged guidance scoped without requiring customized installed bytes to match', () => {
+    assert.match(packaged, /For planned-feature \*\*Feature Decisions\*\*, carry relevant stable IDs and exact SDD path\/section pointers/);
+    assert.match(packaged, /read the authoritative SDD record and compare its named gate, explicit human-approved choice, scope, and current work before reuse/);
+    assert.match(packaged, /Preserve changed-plan independent review and separate Git base\/target, model-route, credential, external\/destructive action, and final human Epic-review gates/);
   });
 
   it('models MCP, narrow fallback, unavailable/stale facts, and possible effects', () => {
