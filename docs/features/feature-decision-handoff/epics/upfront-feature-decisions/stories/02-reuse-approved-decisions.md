@@ -5,7 +5,7 @@
 ## Epic
 [Upfront Feature Decisions](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** verified/integrated
 
 ## User Story
 As an engineer implementing a planned feature, I want downstream skills to honor the scoped choices I approved in the SDD, so that work continues without repeat approval requests while genuine changes still return to me.

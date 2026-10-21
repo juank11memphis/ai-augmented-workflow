@@ -214,7 +214,7 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /same-Task plan revision.*bounded overlapping failures/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Carries scoped Feature Decision IDs and SDD pointers into planning packets.*source verification and changed-plan review/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /software-design-writer/);
@@ -253,7 +253,7 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /failed checked Task.*continuation.*single-commit authority/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Verifies governing SDD Feature Decision records before reuse.*Story steps and fresh Task context/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -323,7 +323,7 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Reports named Epic checks and host-policy gaps.*removes obsolete separate-QA gates/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Reuses matching scoped Feature Decisions from the governing SDD.*operational permissions or final Epic review/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);
@@ -369,7 +369,7 @@ describe('Sibu executor worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /executor toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /reviewed failed Task with inventoried edits.*exact check and one scoped commit/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD.*missing or changed choices/i);
     assert.match(rawContents, /name: ai-implementation-executor-toolbox/);
     assert.match(rawContents, /\{\{EXECUTOR_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused executor worker routing/);

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "242",
+  "templateVersion": "244",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -142,31 +142,31 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "35",
+      "version": "36",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Extends same-Task plan revision for bounded overlapping failures and path-disjoint prerequisites with fresh review identity."
+        "Carries scoped Feature Decision IDs and SDD pointers into planning packets while retaining source verification and changed-plan review."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "23",
+      "version": "24",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Extends failed checked Task continuation with preserved-edit inventory, path-disjoint repair checks, and single-commit authority."
+        "Verifies governing SDD Feature Decision records before reuse and carries relevant pointers into Story steps and fresh Task context."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "76",
+      "version": "77",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Reports named Epic checks and host-policy gaps in the human Epic PR, preserves truthful recovery summaries, and removes obsolete separate-QA gates."
+        "Reuses matching scoped Feature Decisions from the governing SDD without bypassing operational permissions or final Epic review."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "30",
+      "version": "31",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Extends reviewed failed Task with inventoried edits, preserving its exact check and one scoped commit while revalidating recovery."
+        "Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD and stop only work affected by missing or changed choices."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -324,10 +324,10 @@
       ]
     },
     "skills/eval-authoring/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory eval-authoring skill for creating and maintaining Sibu-format local eval artifacts.",
       "changes": [
-        "Requires byte-exact capture of every received tested-model and Judge response in Git-ignored artifacts, without content-based rejection or silent size truncation."
+        "Reuses separately approved planned-feature eval targets and coverage when their scoped SDD decisions still match, while preserving independent-eval approval gates."
       ]
     },
     "skills/agent-guided-evals/SKILL.md": {
@@ -352,11 +352,11 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "2",
+      "version": "3",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Adds a concrete verification proposal and correction during SDD discovery, separate from the final check-in; sync preserves local ownership review.",
-        "Records the settled approach in the SDD quality strategy, including human visual review for UI features without a new approval gate."
+        "Discovers only applicable feature-specific decision gates during SDD interviews and records explicit scoped choices, including separate eval target and coverage approvals.",
+        "Stops SDD finalization for a specific unanswered decision and notes when no gates apply; sync preserves local ownership review."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
