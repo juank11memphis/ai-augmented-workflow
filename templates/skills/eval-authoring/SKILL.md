@@ -22,11 +22,15 @@ Do not use this skill for ordinary product tests, CI setup, dashboard workbench 
 
 ## Discover and confirm Evaluation Targets
 
+For eval authoring inside a planned feature, use relevant Feature Decision IDs and exact SDD path/section pointers as navigation only. Read the authoritative SDD record and compare its named eval target-confirmation gate, explicit human-approved targets and scope, and current eval work. If unchanged and matching, reuse confirmation without asking again; a packet summary or generic SDD approval is not evidence. If missing, ambiguous, materially changed, or newly required, stop only the affected eval work for an explicit human answer and revised SDD record. An edited record alone does not renew approval; unrelated SDD prose and unrelated valid decisions remain usable. Independent eval authoring without an applicable feature SDD still requires the target-confirmation question below.
+
 - For a broad request, inspect repo-local AI integrations, prompts, tests, code, and docs. Present a concise list of likely targets with paths and brief evidence; ask the user which targets and scope to evaluate.
 - For a directly named target, inspect that target and relevant repo evidence without an unnecessary broad discovery scan. Confirm the named target and intended scope with the user.
 - **Stop before coverage planning until the user confirms the targets.** Do not infer confirmation from the initial request, even when it directly names a target.
 
 ## Eval Coverage Plan
+
+For planned-feature eval work, separately verify the SDD's approved Eval Coverage Plan Feature Decision against current targets, scenarios and risk categories, grading, simulated tool behavior, gaps or exclusions, and scope. Reuse a matching unchanged approval without a duplicate question. Missing, ambiguous, materially changed, or newly required coverage stops only affected eval work for explicit renewed human approval recorded in the SDD; target confirmation alone never authorizes artifact writes. Independent eval authoring without an applicable SDD still requires the coverage-approval question below. A Feature Decision never authorizes operational access, model routes, Git targets, credentials, external/destructive effects, or final Epic review.
 
 For confirmed targets, present a reviewable plan before generating files. For each target, include proposed scenarios and the evidence for intended behavior; choose deterministic assertions for exact behavior, references for grounded expected content, or inspectable rubrics for qualitative behavior. Describe simulated tool selection, arguments, order, results, errors, and unexpected responses when tools apply; do not plan real external tool side effects.
 
