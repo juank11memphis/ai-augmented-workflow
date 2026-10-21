@@ -59,15 +59,13 @@ test('decision records do not grant operational or final Epic authority', () => 
   assert.match(discovery, /Preserve those operational and final human gates/);
 });
 
-test('manifest versions and current user-facing sync notes describe the decision contract', () => {
+test('manifest versions and current user-facing sync notes describe scenario-separated diagrams', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '246');
+  assert.equal(manifest.templateVersion, '247');
   const template = manifest.templates['skills/software-design-writer/SKILL.md'];
-  assert.equal(template?.version, '3');
+  assert.equal(template?.version, '4');
   const notes = template?.changes.join(' ') ?? '';
-  assert.match(notes, /applicable feature-specific decision gates/);
-  assert.match(notes, /separate eval target and coverage approvals/);
-  assert.match(notes, /specific unanswered decision/);
-  assert.match(notes, /sync preserves local ownership review/);
+  assert.match(notes, /Separates happy-path, failure, and edge scenarios into individual Mermaid diagrams/);
+  assert.match(notes, /instead of combining outcomes in one diagram/);
   assert.doesNotMatch(notes, /concrete verification proposal|settled approach in the SDD quality strategy/);
 });

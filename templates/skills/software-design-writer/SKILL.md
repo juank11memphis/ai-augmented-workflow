@@ -33,7 +33,7 @@ Write the settled verification approach as an easy-to-find SDD quality strategy,
 
 ## Visual explanation
 
-Every SDD embeds at least one explanatory Mermaid diagram. For an interaction-driven feature use a main-flow sequence diagram showing the trigger, relevant participants, interactions/data, responses, and meaningful branches/failures. For a change with no meaningful interaction flow, include a suitable structural flowchart, state or data diagram and explain why a sequence would misrepresent the change. The exception changes diagram type, not the obligation: no completed SDD is diagram-free. Supplement only when useful and never invent unsupported behavior to populate a diagram.
+Every SDD embeds at least one explanatory Mermaid diagram. For an interaction-driven feature, use a main-flow sequence diagram for the happy-path scenario showing the trigger, relevant participants, interactions/data, and response. Keep one scenario per Mermaid diagram: give each meaningful failure or edge case that needs visual explanation its own titled diagram, rather than packing alternative outcomes into the main flow or one omnibus diagram. Describe simple variants in prose instead of diagramming every possibility. For a change with no meaningful interaction flow, include one focused structural flowchart, state or data diagram and explain why a sequence would misrepresent the change. The exception changes diagram type, not the obligation: no completed SDD is diagram-free. Supplement only when useful and never invent unsupported behavior to populate a diagram.
 
 ## Discovery and user control
 

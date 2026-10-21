@@ -43,12 +43,19 @@ describe('SAD/SDD instruction contracts (static, not model behavior)', () => {
   }
 
   it('requires a meaningful embedded diagram even without interaction flow', () => {
-    const sdd = readTemplate(`skills/${writers[1]}/SKILL.md`);
-    assert.match(sdd, /Every SDD embeds at least one explanatory Mermaid diagram/);
-    assert.match(sdd, /main-flow sequence diagram.*trigger.*participants.*responses.*branches\/failures/);
-    assert.match(sdd, /structural flowchart, state or data diagram/);
-    assert.match(sdd, /explain why a sequence would misrepresent/);
-    assert.match(sdd, /no completed SDD is diagram-free/);
+    const packaged = readTemplate(`skills/${writers[1]}/SKILL.md`);
+    const installed = fs.readFileSync(path.resolve(`.agents/skills/${writers[1]}/SKILL.md`), 'utf8');
+    for (const sdd of [packaged, installed]) {
+      assert.match(sdd, /Every SDD embeds at least one explanatory Mermaid diagram/);
+      assert.match(sdd, /main-flow sequence diagram for the happy-path scenario.*trigger.*participants.*response/);
+      assert.match(sdd, /one scenario per Mermaid diagram/);
+      assert.match(sdd, /each meaningful failure or edge case that needs visual explanation its own titled diagram/);
+      assert.match(sdd, /rather than packing alternative outcomes into the main flow or one omnibus diagram/);
+      assert.match(sdd, /Describe simple variants in prose instead of diagramming every possibility/);
+      assert.match(sdd, /structural flowchart, state or data diagram/);
+      assert.match(sdd, /explain why a sequence would misrepresent/);
+      assert.match(sdd, /no completed SDD is diagram-free/);
+    }
   });
 
   it('places a concrete verification proposal and correction before the separate final check-in', () => {
@@ -95,7 +102,7 @@ describe('atomic SAD/SDD distribution and consumer contracts', () => {
     for (const writer of writers) {
       const source = `skills/${writer}/SKILL.md`;
       assert.ok(MANDATORY_SKILLS.some((skill) => skill.templateRelativePath === source));
-      assert.match(manifest.templates[source]?.changes.join(' ') ?? '', writer === 'software-architecture-writer' ? /next step/ : /ownership review/);
+      assert.match(manifest.templates[source]?.changes.join(' ') ?? '', writer === 'software-architecture-writer' ? /next step/ : /individual Mermaid diagrams/);
       for (const agent of SUPPORTED_AGENTS) {
         const targets = getSkillTargetsForAgents(MANDATORY_SKILLS.find((skill) => skill.templateRelativePath === source)!, [agent]);
         assert.ok(targets.some((target) => target.templateRelativePath === source && target.targetRelativePath === `.agents/skills/${writer}/SKILL.md`));

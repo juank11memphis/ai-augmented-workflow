@@ -119,7 +119,7 @@ test('Feature Decisions cannot bypass operational or final Epic gates', () => {
 
 test('manifest bumps every changed template with replacement user-facing current-version sync notes', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '246');
+  assert.equal(manifest.templateVersion, '247');
   const versions = { planner: '36', plannerWorker: '24', executor: '79', executorWorker: '31', eval: '11' };
   for (const role of Object.keys(paths) as (keyof typeof paths)[]) {
     const template = manifest.templates[paths[role]];

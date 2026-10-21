@@ -243,7 +243,7 @@ describe('getSyncPreviews', () => {
     const targetPath = path.join(rootPath, relativePath);
     const currentTemplate = manifest.templates[templatePath];
     assert.ok(currentTemplate);
-    assert.match(currentTemplate.changes.join(' '), /applicable feature-specific decision gates/);
+    assert.match(currentTemplate.changes.join(' '), /individual Mermaid diagrams/);
     state.managedFiles[relativePath].templateVersion = '1';
     fs.appendFileSync(targetPath, '\nLocal SDD writer guidance.\n', 'utf8');
     const localBytes = fs.readFileSync(targetPath);

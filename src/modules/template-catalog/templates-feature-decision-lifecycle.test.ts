@@ -67,14 +67,11 @@ test('stale managed guidance receives current sync notes and a healthy safe upda
   const change = preview(rootPath, state);
   assert.equal(change.status, 'update-available');
   assert.equal(change.changes.join(' '), readTemplateManifest().templates[template]?.changes.join(' '));
-  assert.match(change.changes.join(' '), /applicable feature-specific decision gates/);
-  assert.match(change.changes.join(' '), /separate eval target and coverage approvals/);
-  assert.match(change.changes.join(' '), /specific unanswered decision/);
-  assert.match(change.changes.join(' '), /sync preserves local ownership review/);
+  assert.match(change.changes.join(' '), /individual Mermaid diagrams/);
 
   state = apply(rootPath, state, 'apply-update');
   assert.equal(fs.readFileSync(path.join(rootPath, installedPath), 'utf8'), readTemplate(template));
-  assert.equal(state.managedFiles[installedPath]?.templateVersion, '3');
+  assert.equal(state.managedFiles[installedPath]?.templateVersion, '4');
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
 
