@@ -88,9 +88,9 @@ describe('future packaged Epic handoff contract', () => {
 
   it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '245');
-    assert.equal(manifest.templates[templatePath]?.version, '78');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /human Epic PR approval and merge confirmation.*next planned Epic/i);
+    assert.equal(manifest.templateVersion, '246');
+    assert.equal(manifest.templates[templatePath]?.version, '79');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/i);

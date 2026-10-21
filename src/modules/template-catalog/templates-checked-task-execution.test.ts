@@ -109,7 +109,7 @@ describe('checked Task execution template contract', () => {
     assert.match(plannerToolbox, /Preserve its outcome, check, expected evidence, dependencies, Task ID, single-commit authority/i);
     assert.match(toolbox, /reviewed continuation of the \*\*same uncommitted Task\*\*/i);
     assert.match(toolbox, /do not use a new invocation to repeat an unchanged failure without evidence-guided progress/i);
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /human Epic PR approval and merge confirmation.*next planned Epic/i);
+    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
   });
 
   it('requires declared flag checks and stops on an undeclared flag', () => {

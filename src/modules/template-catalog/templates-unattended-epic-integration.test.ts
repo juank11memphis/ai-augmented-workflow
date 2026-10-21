@@ -90,10 +90,10 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '245');
-    assert.equal(manifest.templates[templatePath]?.version, '78');
+    assert.equal(manifest.templateVersion, '246');
+    assert.equal(manifest.templates[templatePath]?.version, '79');
     assert.equal(manifest.templates['AGENTS.md']?.version, '56');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /human Epic PR approval and merge confirmation.*next planned Epic/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
     assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/);
   });
 });

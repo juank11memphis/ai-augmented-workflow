@@ -43,7 +43,7 @@ describe('repository-aware validation guidance lifecycle', () => {
       const expectedNotes: Record<string, RegExp> = {
         'skills/ai-implementation-planner/SKILL.md': /Carries scoped Feature Decision IDs and SDD pointers into planning packets/,
         'skills/ai-implementation-planner-toolbox/SKILL.md': /Verifies governing SDD Feature Decision records before reuse/,
-        'skills/ai-implementation-plan-executor/SKILL.md': /human Epic PR approval and merge confirmation/,
+        'skills/ai-implementation-plan-executor/SKILL.md': /Starts the first unintegrated Story.*separate human start prompt/,
         'skills/ai-implementation-executor-toolbox/SKILL.md': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD/,
       };
       const expectedNote = expectedNotes[validationSkill.template];

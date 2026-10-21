@@ -1,5 +1,5 @@
 {
-  "templateVersion": "245",
+  "templateVersion": "246",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "78",
+      "version": "79",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Asks for human Epic PR approval and merge confirmation, then safely cleans up locally and continues to the next planned Epic or reports the feature ready."
+        "Starts the first unintegrated Story of an identified Epic without a separate human start prompt, while preserving source and plan-review gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

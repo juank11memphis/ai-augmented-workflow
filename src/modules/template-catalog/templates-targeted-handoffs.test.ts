@@ -71,7 +71,7 @@ describe('targeted handoff instruction contracts', () => {
     const manifest = readTemplateManifest();
     const expectedNotes = {
       'ai-implementation-planner': /Carries scoped Feature Decision IDs and SDD pointers into planning packets.*changed-plan review/,
-      'ai-implementation-plan-executor': /human Epic PR approval and merge confirmation.*next planned Epic/,
+      'ai-implementation-plan-executor': /Starts the first unintegrated Story.*separate human start prompt/,
       'ai-implementation-planner-toolbox': /Verifies governing SDD Feature Decision records before reuse.*fresh Task context/,
       'ai-implementation-executor-toolbox': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD.*missing or changed choices/,
     } as const;

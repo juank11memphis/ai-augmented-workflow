@@ -21,7 +21,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 
 ### What this skill needs
 
-- Exactly one User Story file or one story-local `.impl_plan/` folder.
+- One User Story file or story-local `.impl_plan/` folder, or an identified Epic with ordered Stories from which the main agent selects the next Story.
 - Ordered implementation step files in that `.impl_plan/` folder, creating them through the planner route when missing, then reviewing the resulting plan before execution.
 - The story, Epic brief, BRD, and `sdd.md` as the authoritative software design artifact for the selected plan.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
@@ -38,7 +38,7 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 
 ### When this skill stops
 
-- The user does not provide or clearly identify exactly one User Story file or `.impl_plan/` folder.
+- The user identifies neither one User Story or `.impl_plan/` folder nor an Epic with an unambiguous next Story.
 - Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
 - The story, any step, or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - Selected architecture guidance is missing, unavailable, or ambiguous; stop and tell the user to run `sibu sync` to repair workflow configuration before implementation execution. Do not choose, infer, or substitute architecture guidance yourself.
@@ -64,7 +64,7 @@ When selected architecture guidance is present, treat it as binding execution an
 
 ## Required source context gate
 
-The user must provide or clearly identify exactly one User Story or implementation plan folder:
+For a Story request, the user must provide or clearly identify one User Story or implementation plan folder:
 
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
@@ -75,6 +75,8 @@ or:
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/
 ```
+
+For an identified Epic request, select the first unintegrated Story in its planned order (Story 1 when none is integrated). The Epic implementation request authorizes this selection and the first Story's planning and execution, subject to the existing source, base, independent plan-review, branch, and validation gates. Do not ask whether to start Story 1 or require a separate Story path from the user. Stop only if the next Story or a required gate is genuinely ambiguous or blocked.
 
 Before execution, verify these paths exist and are coherent:
 
@@ -177,7 +179,7 @@ Do not mark steps human-approved or move to the next Story until the main agent 
 
 For GitHub PR operations and remote host observations, try the configured GitHub MCP first. Keep local branch, head, index, and worktree observations in Git. If MCP cannot supply a needed read-only host fact, name the specific missing capability before using `gh` or another configured host interface for only that fact. Do not perform broad branch-rules or branch-protection lookups as a routine prerequisite, repeatedly seek host approval, or treat a merge request or response as evidence of pre-merge permission. Establish required checks and applicable merge policy from current, narrowly scoped host observations before any merge. An absent, unavailable, stale, or ambiguous required check or host policy is not permission to merge. If a host effect may have occurred, read back its actual state before any retry or fallback.
 
-When asked to deliver an identified Epic, the main agent first defines the Start Epic delivery intent and reports either a safe observed state or a specific missing-context/unsafe-state stop. Require the Epic, its ordered Stories, sufficient feature BRD and SDD, project SAD, required UX when applicable, selected architecture guidance, and an agreed initial base and target. Verify usable Git and PR-host access. Name each missing or insufficient prerequisite and stop **before any branch or Task work**; never select an ambiguous base by new Sibu policy.
+When asked to deliver an identified Epic, the main agent first defines the Start Epic delivery intent and reports either a safe observed state or a specific missing-context/unsafe-state stop. This request authorizes dispatching the first unintegrated Story without another human start decision; proceed through the gates below rather than asking whether to begin Story 1. Require the Epic, its ordered Stories, sufficient feature BRD and SDD, project SAD, required UX when applicable, selected architecture guidance, and an agreed initial base and target. Verify usable Git and PR-host access. Name each missing or insufficient prerequisite and stop **before any branch or Task work**; never select an ambiguous base by new Sibu policy.
 
 Observe the current branch, index, worktree, local/remote branch identity, and host state before effects.
 

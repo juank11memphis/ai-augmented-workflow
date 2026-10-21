@@ -95,7 +95,7 @@ test('stale managed copies of all five skills show current sync notes, update sa
     assert.match(
       change.changes[0] ?? '',
       template.endsWith('/ai-implementation-plan-executor/SKILL.md')
-        ? /human Epic PR approval and merge confirmation/i
+        ? /Starts the first unintegrated Story.*separate human start prompt/i
         : /Feature Decision|eval targets and coverage/i,
       template,
     );

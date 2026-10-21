@@ -17,6 +17,16 @@ function epicGuidance(text: string): string {
 }
 
 describe('safe Epic integration base template contract', () => {
+  it('starts the first unintegrated Story from an Epic request without a separate human prompt', () => {
+    for (const guidance of [gatekeeper, installed]) {
+      assert.match(guidance, /identified Epic with ordered Stories from which the main agent selects the next Story/);
+      assert.match(guidance, /select the first unintegrated Story in its planned order \(Story 1 when none is integrated\)/);
+      assert.match(guidance, /Do not ask whether to start Story 1 or require a separate Story path from the user/);
+      assert.match(guidance, /proceed through the gates below rather than asking whether to begin Story 1/);
+      assert.match(guidance, /existing source, base, independent plan-review, branch, and validation gates/);
+    }
+  });
+
   it('names complete prerequisites and stops missing context before branch or Task work', () => {
     for (const guidance of [epicGuidance(gatekeeper), epicGuidance(installed)]) {
       for (const prerequisite of [
@@ -97,9 +107,9 @@ describe('safe Epic integration base template contract', () => {
 
   it('versions the packaged guidance and verifies the installed gatekeeper is synced', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '245');
-    assert.equal(manifest.templates[templatePath]?.version, '78');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /human Epic PR approval and merge confirmation.*next planned Epic/i);
+    assert.equal(manifest.templateVersion, '246');
+    assert.equal(manifest.templates[templatePath]?.version, '79');
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
     assert.match(installed, /Preserve the blocked Task's uncommitted edits/);
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);
