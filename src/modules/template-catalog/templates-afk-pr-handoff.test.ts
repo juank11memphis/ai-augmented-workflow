@@ -9,6 +9,7 @@ const templatePath = 'skills/ai-implementation-plan-executor/SKILL.md';
 const packaged = readTemplate(templatePath);
 const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
 const integration = packaged.slice(packaged.indexOf('## Integrate verified Story:'), packaged.indexOf('## Verified Story metadata'));
+const epicHandoff = packaged.slice(packaged.indexOf('## Present complete Epic for human review'), packaged.indexOf('## Final response behavior'));
 
 type HostScenario = {
   name: string;
@@ -58,5 +59,24 @@ describe('AFK Story PR host-fact contract scenarios', () => {
     assert.match(integration, /\*\*squash-only merge\*\*/);
     assert.match(packaged, /\*\*Do not merge the Epic PR\*\*/);
     assert.match(integration, /Never include credentials, secrets, raw private logs, or invented success/);
+  });
+
+  it('separates Epic-chain blockers from reportable host-fact gaps', () => {
+    assert.match(epicHandoff, /every.*observed merged child Story PR/);
+    assert.match(epicHandoff, /follow the observed integration chain through to the \*\*latest\*\* Epic branch head/);
+    assert.match(epicHandoff, /Missing, duplicate, unmerged, mismatched, or out-of-order children.*stop the handoff/);
+    assert.match(epicHandoff, /named Epic-level check.*name, source, head, and actual result/s);
+    assert.match(epicHandoff, /unavailable host check or merge-policy fact is a verification gap to disclose in the open human Epic PR/);
+    assert.match(epicHandoff, /gap alone does not prevent the PR handoff/);
+  });
+
+  it('requires a truthful open human Epic PR and no separate QA field', () => {
+    assert.match(epicHandoff, /noteworthy failure attribution, reviewed repairs, unresolved stops, and residual limits/);
+    assert.match(epicHandoff, /If no recovery occurred, report only actual checks/);
+    assert.match(epicHandoff, /known required host-check conclusions and applicable merge-policy status.*verification gap/);
+    assert.match(epicHandoff, /identity, open state, full body and every child link, actual head\/base and head commit/);
+    assert.match(epicHandoff, /repair \*\*the same PR\*\* and read it back again/);
+    assert.match(epicHandoff, /\*\*Do not merge the Epic PR\*\*/);
+    assert.doesNotMatch(packaged, /deferred human-only QA|human-only QA prerequisite|QA remains `not performed`|blocked or deferred QA/i);
   });
 });

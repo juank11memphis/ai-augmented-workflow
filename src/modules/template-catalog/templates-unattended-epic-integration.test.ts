@@ -45,12 +45,12 @@ describe('future packaged verified Story integration contract', () => {
     assert.match(integration, /unresolved material decisions or unsafe state require focused human action/);
   });
 
-  it('requires actual PR body readback, safe content, and explicit deferred QA', () => {
+  it('requires actual PR body readback and safe, truthful content without a separate QA gate', () => {
     assert.match(integration, /Read back the actual PR body and verify these fields/);
     assert.match(integration, /repair the \*\*same PR\*\* if its body does not match/);
     assert.match(integration, /Do not treat a submitted create\/update call as PR evidence/);
-    assert.match(integration, /deferred human-only QA as `not performed`/);
-    assert.match(integration, /required human-only QA prerequisite for safe merge blocks unattended integration/);
+    assert.match(integration, /noteworthy failures and their attribution, reviewed repairs, unresolved stops/);
+    assert.doesNotMatch(integration, /deferred human-only QA|human-only QA prerequisite/);
     assert.match(integration, /Never include credentials, secrets, raw private logs, or invented success/);
   });
 
@@ -90,10 +90,10 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '241');
-    assert.equal(manifest.templates[templatePath]?.version, '75');
+    assert.equal(manifest.templateVersion, '242');
+    assert.equal(manifest.templates[templatePath]?.version, '76');
     assert.equal(manifest.templates['AGENTS.md']?.version, '56');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Verifies current PR checks and merge policy.*narrow read-only fallback.*possible merge effects/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Reports named Epic checks and host-policy gaps.*removes obsolete separate-QA gates/i);
     assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/);
   });
 });

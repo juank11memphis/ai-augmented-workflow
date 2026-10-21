@@ -52,7 +52,9 @@ describe('future packaged verified Story PR contract', () => {
     assert.match(gatekeeper, /independent review iterations and finding dispositions/);
     assert.match(gatekeeper, /Read back the actual PR body and verify these fields/);
     assert.match(gatekeeper, /repair the \*\*same PR\*\* if its body does not match/);
-    assert.match(gatekeeper, /deferred human-only QA as `not performed`/);
+    assert.match(gatekeeper, /noteworthy failures and their attribution, reviewed repairs, unresolved stops/);
+    assert.match(gatekeeper, /If no recovery occurred, report only actual checks/);
+    assert.doesNotMatch(gatekeeper, /deferred human-only QA|human-only QA prerequisite|QA remains `not performed`/i);
   });
 
   it('blocks unsafe host checks and ambiguous merge effects before later Story work', () => {
@@ -73,9 +75,9 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '241');
+    assert.equal(manifest.templateVersion, '242');
     const executorTemplate = manifest.templates[templatePath];
-    assert.equal(executorTemplate?.version, '75');
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /Verifies current PR checks and merge policy.*narrow read-only fallback.*possible merge effects/i);
+    assert.equal(executorTemplate?.version, '76');
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /Reports named Epic checks and host-policy gaps.*removes obsolete separate-QA gates/i);
   });
 });
