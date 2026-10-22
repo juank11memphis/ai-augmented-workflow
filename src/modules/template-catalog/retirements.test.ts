@@ -43,7 +43,7 @@ describe('skill retirement catalog', () => {
   it('ships a manifest-adjacent resource without making it an installed target', () => {
     const manifest = readTemplateManifest();
     const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as { files: string[] };
-    assert.equal(manifest.templateVersion, '247');
+    assert.equal(manifest.templateVersion, '248');
     assert.equal(manifest.templates['skill-retirements.json']?.version, '1');
     assert.match(manifest.templates['skill-retirements.json']?.changes.join(' ') ?? '', /retirement catalog/);
     assert.ok(packageJson.files.includes('templates/'));

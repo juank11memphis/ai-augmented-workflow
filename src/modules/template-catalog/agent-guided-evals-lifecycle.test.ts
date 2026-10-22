@@ -23,6 +23,9 @@ function assertSuiteGuidance(rootPath: string): void {
   assert.match(installed, /request explicit authorization before any paid rerun/);
   assert.match(installed, /rerun the full suite exactly as originally scoped, without `--case`/);
   assert.match(installed, /originally selected single case, retain the focused outcome/);
+  assert.match(installed, /\*\*Conversation example:\*\*.*actual originator/);
+  assert.match(installed, /\*\*Problem:\*\*.*likely layer/);
+  assert.match(installed, /\*\*Proposed fix:\*\*.*evidence-supported fix/);
 }
 
 async function initialize(t: TestContext, agent: SupportedAgent): Promise<{ rootPath: string; state: SibuState }> {
@@ -64,7 +67,7 @@ for (const host of hosts) {
     const { rootPath, state } = await initialize(t, host);
     assertSuiteGuidance(rootPath);
     assert.equal(state.managedFiles[target]?.template, template);
-    assert.equal(state.managedFiles[target]?.templateVersion, '5');
+    assert.equal(state.managedFiles[target]?.templateVersion, '6');
     assert.equal(preview(rootPath, state).status, 'up-to-date');
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });
@@ -77,13 +80,13 @@ for (const host of hosts) {
     assert.equal(preview(rootPath, state).status, 'update-available');
     state = apply(rootPath, state, 'apply-update');
     assertSuiteGuidance(rootPath);
-    assert.equal(state.managedFiles[target]?.templateVersion, '5');
+    assert.equal(state.managedFiles[target]?.templateVersion, '6');
     fs.unlinkSync(path.join(rootPath, target));
     delete state.managedFiles[target];
     assert.equal(preview(rootPath, state).status, 'new-template');
     state = apply(rootPath, state, 'apply-update');
     assertSuiteGuidance(rootPath);
-    assert.equal(state.managedFiles[target]?.templateVersion, '5');
+    assert.equal(state.managedFiles[target]?.templateVersion, '6');
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });
 
@@ -97,7 +100,7 @@ for (const host of hosts) {
     assert.equal(fs.readFileSync(path.join(rootPath, target), 'utf8'), custom);
     assert.equal(state.managedFiles[target]?.status, 'customized');
     assert.equal(state.managedFiles[target]?.templateVersion, '0');
-    assert.equal(state.managedFiles[target]?.lastReviewedTemplateVersion, '5');
+    assert.equal(state.managedFiles[target]?.lastReviewedTemplateVersion, '6');
     assert.equal(state.managedFiles[target]?.sha256, sha256(custom));
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });

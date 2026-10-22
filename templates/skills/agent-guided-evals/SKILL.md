@@ -24,6 +24,12 @@ Before any direct read, validate the selected run/case/attempt identity against 
 
 Keep one active issue. State the observed run ID and case/attempt (and assertion, if present), what the selected output/response/diagnostics show, the likely cause, uncertainty, and concise possible fixes. Distinguish a failed assertion from blocked/error/interrupted/partial runs, missing credentials, unavailable runner or judge, invalid configuration, and missing/corrupt/unsafe artifacts. Diagnose an incomplete attempt from saved evidence when possible; otherwise report the known gap and next user action. Do not invent a prompt diagnosis or claim a pass. If the expectation or cause is ambiguous, ask a focused question before proposing an edit.
 
+When presenting an eval review, troubleshooting finding, blocker, or post-rerun finding to the developer, use these three short headings in order:
+
+- **Conversation example:** Show a few brief, redacted messages from the selected saved attempt, labeling each actual originator (for example, `User:`, `Assistant (tested model):`, or `Tool <name>:`). Mark paraphrases as paraphrases. Do not invent messages; if no conversation was captured, say why it is unavailable.
+- **Problem:** Explain the observed failure in plain language, give the run/case/attempt and assertion when present, and name the likely layer: prompt/model behavior, application/tool, eval/assertion, runner/configuration/provider, or unknown. Separate observed evidence from an uncertain cause.
+- **Proposed fix:** Explain the smallest evidence-supported fix in plain language, including exact project-root paths and expected effect when an edit is proposed. If evidence is insufficient, say no fix is proposed yet and give the next needed evidence or user action instead of guessing.
+
 For one concrete fix, name the exact project-root paths, intended changes, rationale, and expected effect on the active issue. Wait for explicit developer approval of that fix and those paths. A decline or changed scope stops without edits. Approval is conversational guidance plus native host permissions, **not** a Sibu-enforced authorization guarantee. Never edit secrets or credentials, even if suggested; ask the developer to handle access separately. There is no Sibu CLI mutation shortcut.
 
 ## Apply once and verify

@@ -57,6 +57,22 @@ test('agent-guided skill bounds diagnosis, approval, edit scope, and focused ver
   assert.match(skill, /not.*Sibu-enforced authorization guarantee/);
 });
 
+test('agent-guided findings use a labeled conversation, plain-language problem layer, and supported fix', () => {
+  const diagnosis = skill.split('## Diagnose and propose\n')[1]?.split('\n## Apply once and verify')[0] ?? '';
+  const conversation = diagnosis.indexOf('**Conversation example:**');
+  const problem = diagnosis.indexOf('**Problem:**');
+  const fix = diagnosis.indexOf('**Proposed fix:**');
+  assert.ok(conversation >= 0 && conversation < problem && problem < fix);
+  assert.match(diagnosis, /labeling each actual originator.*`User:`.*`Assistant \(tested model\):`.*`Tool <name>:`/);
+  assert.match(diagnosis, /Do not invent messages; if no conversation was captured, say why it is unavailable/);
+  assert.match(diagnosis, /Explain the observed failure in plain language/);
+  assert.match(diagnosis, /prompt\/model behavior, application\/tool, eval\/assertion, runner\/configuration\/provider, or unknown/);
+  assert.match(diagnosis, /Separate observed evidence from an uncertain cause/);
+  assert.match(diagnosis, /smallest evidence-supported fix in plain language.*exact project-root paths and expected effect/);
+  assert.match(diagnosis, /no fix is proposed yet.*next needed evidence or user action instead of guessing/);
+  assert.match(diagnosis, /Wait for explicit developer approval of that fix and those paths/);
+});
+
 test('agent-guided full-suite loop refreshes later failures and requires terminal suite verification', () => {
   assert.match(skill, /if its evidence predates an intervening edit, ask authorization for a paid refresh/);
   assert.match(skill, /select its current issue from fresh saved evidence/);
@@ -74,11 +90,11 @@ test('agent-guided skill and current-version sync metadata ship together', () =>
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-  assert.equal(manifest.templateVersion, '247');
-  assert.equal(entry?.version, '5');
+  assert.equal(manifest.templateVersion, '248');
+  assert.equal(entry?.version, '6');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
-    'Allows safe, targeted inspection of saved output, diagnostics, and raw responses for failed or incomplete eval attempts without requiring an assertion locator; paid reruns need explicit authorization.',
+    'Presents eval findings as a labeled conversation example, plain-language problem with its likely layer, and a concise proposed fix or evidence gap.',
   ]);
 });
 
@@ -119,10 +135,10 @@ test('eval troubleshooting route stays distinct from mandatory authoring and bro
 
 test('unchanged AGENTS route metadata remains version 56 while the shared skill advances', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '247');
+  assert.equal(manifest.templateVersion, '248');
   assert.equal(manifest.templates['AGENTS.md']?.version, '56');
   assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
     'Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate.',
   ]);
-  assert.equal(manifest.templates[path]?.version, '5');
+  assert.equal(manifest.templates[path]?.version, '6');
 });

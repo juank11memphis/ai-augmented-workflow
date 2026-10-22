@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "247",
+  "templateVersion": "248",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-21T19:45:35.295Z",
+  "updatedAt": "2026-10-22T00:28:54.504Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -452,8 +452,8 @@
     },
     ".agents/skills/agent-guided-evals/SKILL.md": {
       "template": "skills/agent-guided-evals/SKILL.md",
-      "templateVersion": "5",
-      "sha256": "209472901de46d998134c07af8e1f37585e289d17d2f79e0d19d9e35915d726c",
+      "templateVersion": "6",
+      "sha256": "3279bbf4949a88eeb8d70e7c67ba4adaed3dd13725c4c308897def9cd8b73fbb",
       "status": "managed"
     }
   }
