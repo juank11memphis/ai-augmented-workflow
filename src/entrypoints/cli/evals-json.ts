@@ -35,6 +35,7 @@ function invalidReason(command: EvalCliCommand): string | undefined {
       || command.assertionId !== undefined && !SAFE_FIELD.test(command.field))) return 'invalid-field';
     if (command.offset !== undefined && (command.field === undefined || !Number.isSafeInteger(command.offset) || command.offset < 0)) return 'invalid-offset';
     if (command.locatorOffset !== undefined && (selected || command.field !== undefined || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0)) return 'invalid-locator-offset';
+    if (command.caseOffset !== undefined && (selected || command.field !== undefined || !Number.isSafeInteger(command.caseOffset) || command.caseOffset < 0)) return 'invalid-case-offset';
   }
   return undefined;
 }
@@ -49,6 +50,8 @@ function nextAction(result: { readonly status?: unknown; readonly reason?: unkno
   if (result.reason === 'run-only-scope-unsupported') return 'Remove the run-only model flags for a full-suite run.';
   if (result.reason === 'run-only-model-unavailable' || result.reason === 'invalid-run-only-choice') return 'Choose a compatible this-run-only model for one case or omit the run-only flags.';
   if (result.reason === 'model-unavailable') return 'Describe compatible models, then explicitly set another saved choice.';
+  if (result.reason === 'response-too-large') return 'Select one case and attempt, use --assertion to narrow evidence, or continue the unselected case list with --case-offset.';
+  if (result.reason === 'artifact-too-large') return 'The selected artifact exceeds the safe reader limit; inspect its size and capture settings without bypassing artifact safety.';
   return undefined;
 }
 
@@ -89,7 +92,8 @@ export async function handleEvalsJsonCommand(
           ? { selection: { caseId: command.caseId, attempt: command.attempt,
             ...(command.assertionId !== undefined ? { assertionId: command.assertionId } : {}) } } : {}),
         ...(command.field !== undefined ? { field: { locator: command.field, offset: command.offset ?? 0 } } : {}),
-        ...(command.locatorOffset !== undefined ? { locatorOffset: command.locatorOffset } : {}) });
+        ...(command.locatorOffset !== undefined ? { locatorOffset: command.locatorOffset } : {}),
+        ...(command.caseOffset !== undefined ? { caseOffset: command.caseOffset } : {}) });
     dependencies.output.write(JSON.stringify({ schemaVersion: 1, operation, ...result, ...('status' in result && nextAction(result) ? { nextAction: nextAction(result) } : {}) }));
     if (!succeeded(operation, result)) dependencies.output.setExitCode(1);
   } catch {

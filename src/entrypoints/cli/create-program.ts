@@ -57,7 +57,8 @@ export function createProgram(): CommanderCommand {
     .option('--field <locator>', 'Retained assertion evidence field (requires --assertion)')
     .option('--offset <byte>', 'UTF-8 byte offset for --field', Number)
     .option('--locator-offset <number>', 'Continue the ordered failed-assertion locator list', Number)
-    .action((suiteId: string, runId: string, options: { case?: string; attempt?: number; assertion?: string; field?: string; offset?: number; locatorOffset?: number }) => executeCliCommand({
+    .option('--case-offset <number>', 'Continue the ordered case list', Number)
+    .action((suiteId: string, runId: string, options: { case?: string; attempt?: number; assertion?: string; field?: string; offset?: number; locatorOffset?: number; caseOffset?: number }) => executeCliCommand({
       type: 'evals:result', suiteId, runId,
       ...(options.case !== undefined ? { caseId: options.case } : {}),
       ...(options.attempt !== undefined ? { attempt: options.attempt } : {}),
@@ -65,6 +66,7 @@ export function createProgram(): CommanderCommand {
       ...(options.field !== undefined ? { field: options.field } : {}),
       ...(options.offset !== undefined ? { offset: options.offset } : {}),
       ...(options.locatorOffset !== undefined ? { locatorOffset: options.locatorOffset } : {}),
+      ...(options.caseOffset !== undefined ? { caseOffset: options.caseOffset } : {}),
     }));
 
   const skills = cli.command('skills').description('Manage Sibu workflow skills');

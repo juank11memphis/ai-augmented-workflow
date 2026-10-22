@@ -50,10 +50,18 @@ export type HeadlessEvalSummary = {
   readonly cases: readonly { readonly caseId: string; readonly state: 'not-run' | 'incomplete' | 'completed';
     readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[];
   readonly nextLocatorOffset?: number;
+  readonly nextCaseOffset?: number;
+  readonly selectedAttempt?: { readonly caseId: string; readonly number: number; readonly outcome: 'failed' | 'incomplete';
+    readonly failedAssertionIds: readonly string[]; readonly moreFailedAssertionIds: boolean; readonly diagnostics: readonly string[] };
 };
 
 export type HeadlessEvalResult =
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly artifactPath?: string }
+  | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly firstFailure: {
+      readonly caseId: string; readonly attempt: number; readonly assertionId: string;
+      readonly actual: string; readonly expected: string; readonly diagnostics: readonly string[];
+      readonly detailOmitted: 'response-size-limit';
+    } }
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly incompleteAttempt: {
       readonly caseId: string; readonly attempt: number; readonly state: 'incomplete';
       readonly diagnostics: readonly string[]; readonly diagnosticLinks: readonly DiagnosticLink[];
@@ -82,4 +90,4 @@ export type HeadlessEvalResult =
     } }
   | { readonly status: 'ready'; readonly summary: HeadlessEvalSummary; readonly field: { readonly locator: string; readonly offset: number; readonly byteLength: number;
       readonly bytesBase64: string; readonly nextOffset: number | null } }
-  | { readonly status: 'blocked'; readonly reason: 'invalid-input' | 'unavailable' | 'unsafe-artifact' | 'missing-artifact' | 'corrupt-artifact' | 'selection-mismatch' | 'non-failed-assertion' };
+  | { readonly status: 'blocked'; readonly reason: 'invalid-input' | 'unavailable' | 'unsafe-artifact' | 'missing-artifact' | 'corrupt-artifact' | 'selection-mismatch' | 'non-failed-assertion' | 'response-too-large' | 'artifact-too-large' };

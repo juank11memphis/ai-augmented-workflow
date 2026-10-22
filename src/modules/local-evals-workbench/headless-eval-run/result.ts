@@ -19,5 +19,6 @@ export type HeadlessEvalRunResult = {
   readonly outcome?: CheckOutcome;
   readonly cases?: readonly HeadlessRunCase[];
   readonly nextLocatorOffset?: number;
+  readonly nextCaseOffset?: number;
   readonly diagnostics?: readonly string[];
 };

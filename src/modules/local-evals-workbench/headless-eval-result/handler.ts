@@ -8,6 +8,7 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const MAX_TEXT = 600;
 const MAX_DIAGNOSTICS = 3;
 const MAX_JSON = 4800;
+const MAX_CASES = 20;
 const MAX_FIELD_BYTES = 1024;
 const SAFE_CODE = /^[a-z][a-z0-9-]{0,79}$/;
 const RESPONSE_LOCATOR = /^[A-Za-z0-9._/-]{1,240}$/;
@@ -86,6 +87,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   if (!ID.test(command.suiteId) || !ID.test(command.runId) ||
     selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || selection.assertionId !== undefined && !ID.test(selection.assertionId)) ||
     command.locatorOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0) ||
+    command.caseOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.caseOffset) || command.caseOffset < 0) ||
     command.field && (!selection || !(selection.assertionId === undefined ? RESPONSE_LOCATOR
       : /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/).test(command.field.locator)
       || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
@@ -96,12 +98,16 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   catch { return { status: 'blocked', reason: 'unavailable' }; }
   if (read.status === 'blocked') {
     const reason = read.reason === 'unsafe-path' || read.reason === 'not-ignored' || read.reason === 'tracked-artifacts' || read.reason === 'unverifiable-root'
-      ? 'unsafe-artifact' : read.reason === 'not-found' ? 'missing-artifact' : read.reason === 'corrupt' ? 'corrupt-artifact' : 'unavailable';
+      ? 'unsafe-artifact' : read.reason === 'invalid-input' ? 'selection-mismatch' : read.reason === 'not-found' ? 'missing-artifact' : read.reason === 'corrupt' ? 'corrupt-artifact'
+        : read.reason === 'limit-exceeded' ? 'artifact-too-large' : 'unavailable';
     return { status: 'blocked', reason };
   }
   const { summary: manifest, evidence, evidenceStatus, reviewArtifactPath } = read.value;
   if (manifest.suiteId !== command.suiteId || manifest.runId !== command.runId) return { status: 'blocked', reason: 'corrupt-artifact' };
-  const locators = selection ? undefined : await failedAssertionLocators(manifest, dependencies.reader, command.locatorOffset ?? 0);
+  const caseOffset = command.caseOffset ?? 0;
+  if (caseOffset > manifest.cases.length) return { status: 'blocked', reason: 'invalid-input' };
+  const page = { ...manifest, cases: manifest.cases.slice(caseOffset, caseOffset + MAX_CASES) };
+  const locators = selection ? undefined : await failedAssertionLocators(page, dependencies.reader, command.locatorOffset ?? 0);
   const summary: HeadlessEvalSummary = {
     suiteId: manifest.suiteId, runId: manifest.runId, state: manifest.state, outcome: manifest.outcome,
     scope: manifest.scope, testedModel: manifest.testedModel, judgeModel: manifest.judgeModel,
@@ -109,18 +115,25 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
       incomplete: manifest.cases.filter(item => item.state === 'incomplete').length,
       notRun: manifest.cases.filter(item => item.state === 'not-run').length },
     ...(manifest.failureProvenance ? { failureProvenance: manifest.failureProvenance } : {}),
-    cases: selection ? manifest.cases.map(item => ({ caseId: item.caseId, state: item.state,
+    cases: selection ? manifest.cases.filter(item => item.caseId === selection.caseId).map(item => ({ caseId: item.caseId, state: item.state,
       testedModel: item.testedModel ?? manifest.testedModel, judgeModel: item.judgeModel !== undefined ? item.judgeModel : manifest.judgeModel,
-      attempts: item.attempts.map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) }))
+      attempts: item.attempts.filter(attempt => attempt.number === selection.attempt).map(attempt => ({ number: attempt.number, outcome: attempt.outcome })) }))
       : locators!.cases,
+    ...(!selection && caseOffset + MAX_CASES < manifest.cases.length ? { nextCaseOffset: caseOffset + MAX_CASES } : {}),
     ...(locators?.nextLocatorOffset !== null && locators?.nextLocatorOffset !== undefined ? { nextLocatorOffset: locators.nextLocatorOffset } : {}),
   };
   const artifactPath = safeArtifactPath(reviewArtifactPath);
   if (!selection) {
     const result = { status: 'ready' as const, summary, ...(artifactPath ? { artifactPath } : {}) };
-    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
   }
-  if (evidenceStatus !== 'available' || !evidence) return { status: 'blocked', reason: 'missing-artifact' };
+  if (!manifest.cases.some(item => item.caseId === selection.caseId && item.attempts.some(attempt => attempt.number === selection.attempt)))
+    return { status: 'blocked', reason: 'selection-mismatch' };
+  if (evidenceStatus !== 'available' || !evidence) {
+    const reason = read.warnings?.at(-1);
+    return { status: 'blocked', reason: reason === 'unsafe-path' || reason === 'not-ignored' || reason === 'tracked-artifacts' || reason === 'unverifiable-root'
+      ? 'unsafe-artifact' : reason === 'corrupt' ? 'corrupt-artifact' : reason === 'limit-exceeded' ? 'artifact-too-large' : 'missing-artifact' };
+  }
   if (evidence.suiteId !== command.suiteId || evidence.runId !== command.runId || evidence.caseId !== selection.caseId || evidence.number !== selection.attempt ||
     !manifest.cases.some(item => item.caseId === selection.caseId && item.attempts.some(attempt => attempt.number === selection.attempt))) {
     return { status: 'blocked', reason: 'selection-mismatch' };
@@ -128,8 +141,30 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
   if (selection.assertionId === undefined) {
     const selectedCase = manifest.cases.find(item => item.caseId === selection.caseId);
     const selectedAttempt = selectedCase?.attempts.find(item => item.number === selection.attempt);
-    if (selectedCase?.state !== 'incomplete' || selectedAttempt?.outcome !== 'incomplete' || evidence.outcome !== 'incomplete')
-      return { status: 'blocked', reason: 'selection-mismatch' };
+    if (!selectedCase || !selectedAttempt) return { status: 'blocked', reason: 'selection-mismatch' };
+    if (evidence.outcome === 'failed' && selectedAttempt.outcome === 'failed') {
+      const allFailedAssertionIds = evidence.assertions.filter(item => item.outcome === 'failed').map(item => item.id);
+      if (!allFailedAssertionIds.length || allFailedAssertionIds.some(id => !ID.test(id)) ||
+        new Set(allFailedAssertionIds).size !== allFailedAssertionIds.length) return { status: 'blocked', reason: 'corrupt-artifact' };
+      const failedAssertionIds = allFailedAssertionIds.slice(0, 32);
+      const selectedSummary = { ...summary, selectedAttempt: { caseId: selection.caseId, number: selection.attempt,
+        outcome: 'failed' as const, failedAssertionIds, moreFailedAssertionIds: allFailedAssertionIds.length > failedAssertionIds.length,
+        diagnostics: evidence.diagnostics.slice(0, MAX_DIAGNOSTICS).map(clipped) } };
+      const first = await headlessEvalResult({ ...command, selection: { ...selection, assertionId: failedAssertionIds[0]! } }, dependencies);
+      if (first.status === 'ready') {
+        const result = { ...first, summary: selectedSummary };
+        if (JSON.stringify(result).length <= MAX_JSON) return result;
+      } else if (first.reason !== 'response-too-large') return first;
+      const assertion = evidence.assertions.find(item => item.id === failedAssertionIds[0])!;
+      const compact = { status: 'ready' as const, summary: selectedSummary, firstFailure: {
+        caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id,
+        actual: clipped(assertion.actual), expected: clipped(assertion.expected),
+        diagnostics: assertion.diagnostics.slice(0, MAX_DIAGNOSTICS).map(clipped),
+        detailOmitted: 'response-size-limit' as const,
+      } };
+      return JSON.stringify(compact).length <= MAX_JSON ? compact : { status: 'blocked', reason: 'response-too-large' };
+    }
+    if (selectedAttempt.outcome !== 'incomplete' || evidence.outcome !== 'incomplete') return { status: 'blocked', reason: 'selection-mismatch' };
     const links = (evidence.diagnosticLinks ?? []).slice(0, MAX_DIAGNOSTICS);
     const captured = evidence.providerResponses;
     const source = captured ? { status: 'available' as const,
@@ -166,9 +201,11 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
         return { status: 'blocked', reason: 'corrupt-artifact' };
       const result = { status: 'ready' as const, summary, field: { locator: value.locator, offset: value.offset,
         byteLength: matching[0]!.byteLength, bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
-      return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+      return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
     }
-    const result = { status: 'ready' as const, summary, incompleteAttempt: {
+    const result = { status: 'ready' as const, summary: { ...summary, selectedAttempt: { caseId: selection.caseId, number: selection.attempt,
+      outcome: 'incomplete' as const, failedAssertionIds: [], moreFailedAssertionIds: false,
+      diagnostics: evidence.diagnostics.filter(code => SAFE_CODE.test(code)).slice(0, MAX_DIAGNOSTICS) } }, incompleteAttempt: {
       caseId: selection.caseId, attempt: selection.attempt, state: 'incomplete' as const,
       diagnostics: evidence.diagnostics.filter(code => SAFE_CODE.test(code)).slice(0, MAX_DIAGNOSTICS),
       diagnosticLinks: links,
@@ -180,7 +217,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
         truncated: evidence.modelCalls.length > 6 } } : {}),
       source,
     } };
-    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
   }
   const assertionSelection = { caseId: selection.caseId, attempt: selection.attempt, assertionId: selection.assertionId };
   const assertion = evidence.assertions.find(item => item.id === selection.assertionId);
@@ -228,14 +265,14 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     }
     const result = { status: 'ready' as const, summary, field: { locator: value.locator, offset: value.offset, byteLength: value.byteLength,
       bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
-    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
   }
   if (isGradingIssue && grading.kind === 'rubric') {
     const result = { status: 'ready' as const, summary, gradingIssue: {
       caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id,
       grading, source: source ? projectSource(source) : { status: 'gap' as const, reason: 'not-captured' as const },
     } };
-    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
   }
   if (isExecutionIssue) {
     const code = source?.toolEvents.some(event => event.outcome === 'error') ? 'tool-error'
@@ -244,7 +281,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
       caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id, state: manifest.state, code,
       source: source ? projectSource(source) : { status: 'gap' as const, reason: 'not-captured' as const },
     } };
-    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
   }
   const failure = {
     caseId: selection.caseId, attempt: selection.attempt, assertionId: assertion.id, kind: assertion.kind,
@@ -258,5 +295,5 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     grading,
   };
   const result = { status: 'ready' as const, summary, failure };
-  return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'unavailable' };
+  return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
 }

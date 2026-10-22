@@ -18,8 +18,8 @@ function assertSuiteGuidance(rootPath: string): void {
   const installed = fs.readFileSync(path.join(rootPath, target), 'utf8');
   assert.equal(installed, readTemplate(template));
   assert.match(installed, /sibu evals run <suite>` for all cases, without `--case` or run-wide model flags/);
-  assert.match(installed, /partial or incomplete attempts without failed assertions/);
-  assert.match(installed, /assertion-based `--field` read is not required/);
+  assert.match(installed, /Select the first failing or incomplete attempt/);
+  assert.match(installed, /--case <case_id> --attempt <number>` without `--assertion`/);
   assert.match(installed, /request explicit authorization before any paid rerun/);
   assert.match(installed, /rerun the full suite exactly as originally scoped, without `--case`/);
   assert.match(installed, /originally selected single case, retain the focused outcome/);
@@ -67,7 +67,7 @@ for (const host of hosts) {
     const { rootPath, state } = await initialize(t, host);
     assertSuiteGuidance(rootPath);
     assert.equal(state.managedFiles[target]?.template, template);
-    assert.equal(state.managedFiles[target]?.templateVersion, '6');
+    assert.equal(state.managedFiles[target]?.templateVersion, '7');
     assert.equal(preview(rootPath, state).status, 'up-to-date');
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });
@@ -80,13 +80,13 @@ for (const host of hosts) {
     assert.equal(preview(rootPath, state).status, 'update-available');
     state = apply(rootPath, state, 'apply-update');
     assertSuiteGuidance(rootPath);
-    assert.equal(state.managedFiles[target]?.templateVersion, '6');
+    assert.equal(state.managedFiles[target]?.templateVersion, '7');
     fs.unlinkSync(path.join(rootPath, target));
     delete state.managedFiles[target];
     assert.equal(preview(rootPath, state).status, 'new-template');
     state = apply(rootPath, state, 'apply-update');
     assertSuiteGuidance(rootPath);
-    assert.equal(state.managedFiles[target]?.templateVersion, '6');
+    assert.equal(state.managedFiles[target]?.templateVersion, '7');
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });
 
@@ -100,7 +100,7 @@ for (const host of hosts) {
     assert.equal(fs.readFileSync(path.join(rootPath, target), 'utf8'), custom);
     assert.equal(state.managedFiles[target]?.status, 'customized');
     assert.equal(state.managedFiles[target]?.templateVersion, '0');
-    assert.equal(state.managedFiles[target]?.lastReviewedTemplateVersion, '6');
+    assert.equal(state.managedFiles[target]?.lastReviewedTemplateVersion, '7');
     assert.equal(state.managedFiles[target]?.sha256, sha256(custom));
     assert.deepEqual(diagnoseState({ rootPath, state }), []);
   });

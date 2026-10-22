@@ -25,6 +25,68 @@ test('summary omits full-run output, diagnostics and attempt traces', async () =
   if (result.status === 'ready' && 'artifactPath' in result) assert.equal(result.artifactPath, 'evals/runs/run.json');
 });
 
+test('30-case partial run is paged and selected failure uses first assertion in saved order', async () => {
+  const cases = Array.from({ length: 30 }, (_, index) => ({ caseId: `case-${index}`, state: index === 0 ? 'completed' as const : 'not-run' as const,
+    attempts: index === 0 ? [{ number: 1, outcome: 'failed' as const, durationMs: 1, calls: 1, cost: 0 }] : [] }));
+  const partial: Manifest = { ...summary, scope: 'all', state: 'partial', outcome: 'incomplete', caseIds: cases.map(item => item.caseId), cases };
+  const multiple: Attempt = { ...evidence, caseId: 'case-0', diagnostics: ['runner-error'], assertions: [
+    { ...evidence.assertions[0]!, id: 'second', actual: 'second failure' },
+    { ...evidence.assertions[0]!, id: 'first', actual: 'first failure' },
+  ] };
+  const reader = { get: async (_suite: string, _run: string, selected?: { caseId: string; attempt: number; assertionId?: string }) => ({
+    status: 'ok' as const, value: { summary: partial, evidenceStatus: selected ? 'available' as const : 'not-requested' as const,
+      ...(selected ? { evidence: selected.assertionId ? { ...multiple, assertions: multiple.assertions.filter(item => item.id === selected.assertionId),
+        output: '', diagnostics: [], turns: [], tools: [] } : multiple } : {}) },
+  }) };
+  const firstPage = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, { reader });
+  assert.equal(firstPage.status, 'ready');
+  if (firstPage.status !== 'ready') assert.fail('Expected first page');
+  assert.equal(firstPage.summary.cases.length, 20);
+  assert.equal(firstPage.summary.nextCaseOffset, 20);
+  const secondPage = await headlessEvalResult({ suiteId: 'suite', runId: 'run', caseOffset: 20 }, { reader });
+  assert.equal(secondPage.status, 'ready');
+  if (secondPage.status !== 'ready') assert.fail('Expected second page');
+  assert.deepEqual(secondPage.summary.cases.map(item => item.caseId), cases.slice(20).map(item => item.caseId));
+  const selected = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection: { caseId: 'case-0', attempt: 1 } }, { reader });
+  assert.equal(selected.status, 'ready');
+  if (selected.status !== 'ready' || !('failure' in selected)) assert.fail('Expected failure');
+  assert.deepEqual(selected.summary.cases.map(item => item.caseId), ['case-0']);
+  assert.deepEqual(selected.summary.selectedAttempt?.failedAssertionIds, ['second', 'first']);
+  assert.deepEqual(selected.summary.selectedAttempt?.diagnostics, ['runner-error']);
+  assert.equal(selected.failure.assertionId, 'second');
+  assert.equal(selected.failure.actual, 'second failure');
+});
+
+test('selected attempt distinguishes invalid selection, unsafe and missing artifacts, and oversized responses', async () => {
+  const chosen = { suiteId: 'suite', runId: 'run', selection: { caseId: 'case', attempt: 1 } };
+  const missing = await headlessEvalResult(chosen, ready({ summary, evidenceStatus: 'unavailable' }));
+  assert.deepEqual(missing, { status: 'blocked', reason: 'missing-artifact' });
+  const unsafe = await headlessEvalResult(chosen, { reader: { get: async () => ({ status: 'ok', value: { summary, evidenceStatus: 'unavailable' }, warnings: ['unsafe-path'] }) } });
+  assert.deepEqual(unsafe, { status: 'blocked', reason: 'unsafe-artifact' });
+  const invalid = await headlessEvalResult({ ...chosen, selection: { caseId: 'wrong', attempt: 1 } }, ready({ summary, evidenceStatus: 'unavailable' }));
+  assert.deepEqual(invalid, { status: 'blocked', reason: 'selection-mismatch' });
+  const oversized = await headlessEvalResult({ suiteId: 'suite', runId: 'run' }, ready({ summary: {
+    ...summary, cases: [{ ...summary.cases[0]!, testedModel: 'x'.repeat(5000) }],
+  }, evidenceStatus: 'not-requested' }));
+  assert.deepEqual(oversized, { status: 'blocked', reason: 'response-too-large' });
+});
+
+test('oversized first-failure detail falls back to actionable compact evidence', async () => {
+  const hugeSource: SourceEvidence = { version: 2, assertionId: 'check', modelCalls: [], toolEvents: [],
+    approvedFacts: Array.from({ length: 100 }, (_, index) => ({ modelCallId: `call-${index}`, factId: `fact-${index}`,
+      provenance: 'x'.repeat(100) })) };
+  const reader = { get: async (_suite: string, _run: string, selected?: { assertionId?: string }) => ({ status: 'ok' as const,
+    value: { summary, evidenceStatus: 'available' as const, evidence: selected?.assertionId
+      ? { ...evidence, assertions: [evidence.assertions[0]!], sourceEvidence: hugeSource }
+      : evidence } }) };
+  const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection: { caseId: 'case', attempt: 1 } }, { reader });
+  assert.equal(result.status, 'ready');
+  if (result.status !== 'ready' || !('firstFailure' in result)) assert.fail('Expected compact failure');
+  assert.equal(result.firstFailure.assertionId, 'check');
+  assert.equal(result.firstFailure.detailOmitted, 'response-size-limit');
+  assert.ok(JSON.stringify(result).length <= 4800);
+});
+
 test('one failed assertion has capped selected context and safe artifact reference', async () => {
   const long = 'a'.repeat(2000);
   const result = await headlessEvalResult({ suiteId: 'suite', runId: 'run', selection }, ready({ summary, evidenceStatus: 'available',

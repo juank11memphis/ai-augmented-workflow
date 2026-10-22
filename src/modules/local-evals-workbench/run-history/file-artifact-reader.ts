@@ -29,7 +29,7 @@ export class FileArtifactReader implements ArtifactReaderPort {
     } catch (error) { return failure(error); }
   }
   async get(suiteId: string, runId: string, selection?: Selection): Promise<Outcome<RunDetail>> {
-    if (![suiteId, runId].every(logicalId) || selection && (!logicalId(selection.caseId) || selection.attempt !== 1 || selection.assertionId !== undefined && !logicalId(selection.assertionId))) return { status: 'blocked', reason: 'invalid-input' };
+    if (![suiteId, runId].every(logicalId) || selection && (!logicalId(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || selection.assertionId !== undefined && !logicalId(selection.assertionId))) return { status: 'blocked', reason: 'invalid-input' };
     try {
       const summary = await this.summary(suiteId, runId); if (summary.status !== 'ok') return summary;
       if (!selection) return { status: 'ok', value: { summary: summary.value, evidenceStatus: 'not-requested' }, warnings: summary.warnings };
@@ -45,7 +45,8 @@ export class FileArtifactReader implements ArtifactReaderPort {
         || JSON.stringify(evidence.assertions.filter(item => item.judgeModel !== undefined && item.score !== null).map(item => item.score)) !== JSON.stringify(referenced.rubricScores ?? [])) return unavailable('corrupt');
       const selected = selectEvidence(evidence, selection.assertionId);
       return selected ? { status: 'ok', value: { summary: summary.value, evidence: selected, evidenceStatus: 'available',
-        ...(evidence.review ? { reviewArtifactPath: `evals/artifacts/${this.paths.attempt(suiteId, runId, selection.caseId, selection.attempt)}` } : {}) }, warnings: summary.warnings } : unavailable('not-found');
+        ...(evidence.review ? { reviewArtifactPath: `evals/artifacts/${this.paths.attempt(suiteId, runId, selection.caseId, selection.attempt)}` } : {}) }, warnings: summary.warnings }
+        : { status: 'blocked', reason: 'invalid-input' };
     } catch (error) { return failure(error); }
   }
   async sourceRecord(suiteId: string, runId: string, selection: Required<Selection>, recordId: string): Promise<Outcome<StoredSourceRecord>> {

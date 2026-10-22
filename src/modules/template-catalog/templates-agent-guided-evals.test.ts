@@ -22,15 +22,14 @@ test('agent-guided skill selects one case or suite and allows saved-artifact dia
   assert.match(skill, /\*\*Replace\*\*.*\*\*Inherit\*\*/);
   assert.match(skill, /actual per-case tested\/Judge model/);
   assert.match(skill, /cases\[\]\.caseId.*attempts\[\]\.number/);
-  assert.match(skill, /first unresolved `failedAssertionIds` entry/);
-  assert.match(skill, /\(runId, caseId, attempt number, assertionId\)/);
-  assert.match(skill, /partial or incomplete attempts without failed assertions/);
-  assert.match(skill, /but \*\*not as the only evidence source\*\*/);
-  assert.match(skill, /assertion-based `--field` read is not required/);
+  assert.match(skill, /Select the first failing or incomplete attempt/);
+  assert.match(skill, /--case-offset <offset>/);
+  assert.match(skill, /--case <case_id> --attempt <number>` without `--assertion`/);
+  assert.match(skill, /Use `--assertion <id>` only to drill into a specific assertion/);
+  assert.match(skill, /\*\*not the only evidence source\*\*/);
   assert.match(skill, /evals\/artifacts\/<suite>\/<run_id>\/run\.json/);
   assert.match(skill, /cases\/<case_id>\/<attempt>\.json/);
-  assert.match(skill, /`approximate-price`.*`target-2`.*`providerResponses\.records`/);
-  assert.match(skill, /saved response `\.bin`/);
+  assert.match(skill, /only the specific source records or raw response files referenced by that attempt/);
   assert.match(skill, /full selected artifact/);
   assert.match(skill, /reject traversal, symlinks, unexpected file types, or a locator pointing outside that run/);
   assert.match(skill, /unsafe, tracked, corrupt, or otherwise blocked artifact, stop/);
@@ -90,11 +89,11 @@ test('agent-guided skill and current-version sync metadata ship together', () =>
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-  assert.equal(manifest.templateVersion, '248');
-  assert.equal(entry?.version, '6');
+  assert.equal(manifest.templateVersion, '249');
+  assert.equal(entry?.version, '7');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
-    'Presents eval findings as a labeled conversation example, plain-language problem with its likely layer, and a concise proposed fix or evidence gap.',
+    'Inspects the first failing or incomplete case attempt through bounded CLI results before troubleshooting subsequent issues, with safe artifact fallback and no automatic paid reruns.',
   ]);
 });
 
@@ -135,10 +134,10 @@ test('eval troubleshooting route stays distinct from mandatory authoring and bro
 
 test('unchanged AGENTS route metadata remains version 56 while the shared skill advances', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '248');
+  assert.equal(manifest.templateVersion, '249');
   assert.equal(manifest.templates['AGENTS.md']?.version, '56');
   assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
     'Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate.',
   ]);
-  assert.equal(manifest.templates[path]?.version, '6');
+  assert.equal(manifest.templates[path]?.version, '7');
 });

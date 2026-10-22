@@ -63,9 +63,10 @@ export async function headlessEvalRun(command: HeadlessEvalRunCommand, ports: He
       return finish({ status: 'error', runId, reason: reason ?? 'nonterminal-artifact' });
     }
     if (manifest.state !== execution.status || execution.runId !== runId) return finish({ status: 'error', runId, reason: 'persisted-state-mismatch' });
-    const locators = await failedAssertionLocators(manifest, ports.reader);
+    const locators = await failedAssertionLocators({ ...manifest, cases: manifest.cases.slice(0, 20) }, ports.reader);
     return finish({ status: manifest.state, runId, ...(reason ? { reason } : {}), outcome: manifest.outcome,
       cases: locators.cases, ...(locators.nextLocatorOffset !== null ? { nextLocatorOffset: locators.nextLocatorOffset } : {}),
+      ...(manifest.cases.length > 20 ? { nextCaseOffset: 20 } : {}),
       diagnostics: manifest.diagnostics.slice(0, 5).filter(item => SAFE_REASON.test(item)) });
   } catch { return finish({ status: 'error', ...(runId ? { runId } : {}), reason: 'unavailable' }); }
 }

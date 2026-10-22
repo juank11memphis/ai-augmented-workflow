@@ -30,7 +30,7 @@ export type SibuCliCommand =
   | ({ readonly type: 'evals:run' } & HeadlessEvalRunCommand)
   | ({ readonly type: 'evals:choice' } & ChangeSavedModelChoiceCommand)
   | { readonly type: 'evals:result'; readonly suiteId: string; readonly runId: string; readonly caseId?: string; readonly attempt?: number;
-      readonly assertionId?: string; readonly field?: string; readonly offset?: number; readonly locatorOffset?: number }
+      readonly assertionId?: string; readonly field?: string; readonly offset?: number; readonly locatorOffset?: number; readonly caseOffset?: number }
   | ResolveModelRouteCommand
   | SetModelRouteCommand
   | { type: 'models:guided' };

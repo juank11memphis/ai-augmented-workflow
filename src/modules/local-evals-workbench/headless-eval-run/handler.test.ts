@@ -153,6 +153,20 @@ test('failed run exposes bounded ordered locators, not raw evidence or logs', as
   assert.doesNotMatch(JSON.stringify(result) + JSON.stringify(f.events), /raw-secret|output|turns|tools/);
 });
 
+test('30-case partial run reports a bounded first case page with continuation', async () => {
+  const f = fixture(); f.setState('partial', 'incomplete');
+  const cases: Manifest['cases'] = Array.from({ length: 30 }, (_, index) => ({ caseId: `case-${index}`,
+    state: index < 2 ? 'completed' : index === 2 ? 'incomplete' : 'not-run',
+    attempts: index === 2 ? [{ number: 1, outcome: 'incomplete', durationMs: 1, calls: null, cost: null }] : [] }));
+  const partial: Manifest = { ...manifest('partial', 'incomplete'), cases, caseIds: cases.map(item => item.caseId) };
+  const result = await headlessEvalRun(command, { ...f.ports, suites: { load: async () => ({ ...suite, testCases: cases.map(item => ({ ...basic, id: item.caseId })) }) },
+    reader: { get: async () => ({ status: 'ok', value: { summary: partial, evidenceStatus: 'not-requested' } }) } });
+  assert.equal(result.status, 'partial');
+  assert.equal(result.cases?.length, 20);
+  assert.equal(result.nextCaseOffset, 20);
+  assert.deepEqual(result.cases?.[2]?.attempts[0]?.incompleteLocator, { caseId: 'case-2', attempt: 1 });
+});
+
 test('missing or corrupt failed attempt yields unavailable while passed attempt has no locator', async () => {
   const f = fixture(); f.setState('partial', 'failed');
   const unavailable = await headlessEvalRun(command, { ...f.ports, reader: { get: async (_suiteId, _runId, selection) => selection

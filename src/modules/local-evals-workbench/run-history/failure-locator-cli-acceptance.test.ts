@@ -159,8 +159,8 @@ test('compiled CLI refuses wrong or unsafe selection and corrupt source without 
     const run = invoke(project.root, 'run');
     const runId = run.json.runId as string;
     assert.ok(runId);
-    assert.equal(selected(project.root, runId, 'multi', 'missing').json.reason, 'missing-artifact');
-    assert.equal(selected(project.root, runId, 'other', 'exact').json.reason, 'missing-artifact');
+    assert.equal(selected(project.root, runId, 'multi', 'missing').json.reason, 'selection-mismatch');
+    assert.equal(selected(project.root, runId, 'other', 'exact').json.reason, 'selection-mismatch');
     assert.equal(selected(project.root, runId, 'multi', 'exact', '--field', '../unsafe', '--offset', '0').json.reason, 'invalid-field');
     const sourcePath = path.join(project.root, 'evals/artifacts/offline', runId, 'cases/multi/1/source/call-1.json');
     const original = await readFile(sourcePath);
