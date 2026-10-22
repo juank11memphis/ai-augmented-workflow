@@ -51,7 +51,7 @@ export type HeadlessEvalSummary = {
     readonly testedModel: string; readonly judgeModel: string | null; readonly attempts: readonly LocatedAttempt[] }[];
   readonly nextLocatorOffset?: number;
   readonly nextCaseOffset?: number;
-  readonly selectedAttempt?: { readonly caseId: string; readonly number: number; readonly outcome: 'failed' | 'incomplete';
+  readonly selectedAttempt?: { readonly caseId: string; readonly number: number; readonly outcome: 'passed' | 'failed' | 'incomplete';
     readonly failedAssertionIds: readonly string[]; readonly moreFailedAssertionIds: boolean; readonly diagnostics: readonly string[] };
 };
 

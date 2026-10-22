@@ -208,6 +208,26 @@ test('compiled CLI keeps a failed assertion in a partial older run with a not-ca
   } finally { await project.cleanup(); }
 });
 
+test('compiled CLI opens a specifically selected passed attempt', async () => {
+  const project = await artifactProject();
+  try {
+    const artifacts = artifactFixture(project.root);
+    const created = await artifacts.store.create({ ...config, suiteId: 'offline' });
+    assert.equal(created.status, 'ok');
+    if (created.status !== 'ok') return;
+    const runId = created.value.runId;
+    assert.equal((await artifacts.store.start('offline', runId)).status, 'ok');
+    assert.equal((await artifacts.store.append('offline', runId, { ...evidence(runId), suiteId: 'offline' })).status, 'ok');
+    assert.equal((await artifacts.store.finalize('offline', runId, 'completed')).status, 'ok');
+    const result = invoke(project.root, 'result', runId, '--case', 'case', '--attempt', '1').json;
+    assert.equal(result.status, 'ready', JSON.stringify(result));
+    assert.deepEqual((result.summary as { selectedAttempt: unknown }).selectedAttempt, {
+      caseId: 'case', number: 1, outcome: 'passed', failedAssertionIds: [], moreFailedAssertionIds: false, diagnostics: [],
+    });
+    assert.equal(result.failure, undefined);
+  } finally { await project.cleanup(); }
+});
+
 test('compiled CLI run gate permits ignored artifacts and refuses unignored or force-tracked artifacts before a new write', async () => {
   const project = await sourceEvidenceProject(['multi']);
   try {

@@ -71,6 +71,26 @@ test('selected attempt distinguishes invalid selection, unsafe and missing artif
   assert.deepEqual(oversized, { status: 'blocked', reason: 'response-too-large' });
 });
 
+test('selected passed attempt opens without exposing raw evidence or permitting assertion detail', async () => {
+  const passedSummary: Manifest = { ...summary, outcome: 'passed', cases: [{ ...summary.cases[0]!, attempts: [
+    { ...summary.cases[0]!.attempts[0]!, outcome: 'passed' },
+  ] }] };
+  const passedEvidence: Attempt = { ...evidence, outcome: 'passed', diagnostics: ['safe-code', 'private diagnostic'],
+    assertions: [{ ...evidence.assertions[0]!, outcome: 'passed' }] };
+  const chosen = { suiteId: 'suite', runId: 'run', selection: { caseId: 'case', attempt: 1 } };
+  const result = await headlessEvalResult(chosen, ready({ summary: passedSummary, evidenceStatus: 'available', evidence: passedEvidence }));
+  assert.equal(result.status, 'ready');
+  if (result.status !== 'ready') assert.fail('Expected passed attempt');
+  assert.deepEqual(result.summary.selectedAttempt, { caseId: 'case', number: 1, outcome: 'passed',
+    failedAssertionIds: [], moreFailedAssertionIds: false, diagnostics: ['safe-code'] });
+  assert.doesNotMatch(JSON.stringify(result), /full-run|private diagnostic|full-trace|expected|actual/);
+  const mismatched = await headlessEvalResult(chosen, ready({ summary, evidenceStatus: 'available', evidence: passedEvidence }));
+  assert.deepEqual(mismatched, { status: 'blocked', reason: 'selection-mismatch' });
+  const assertion = await headlessEvalResult({ ...chosen, selection: { ...chosen.selection, assertionId: 'check' } },
+    ready({ summary: passedSummary, evidenceStatus: 'available', evidence: passedEvidence }));
+  assert.deepEqual(assertion, { status: 'blocked', reason: 'non-failed-assertion' });
+});
+
 test('oversized first-failure detail falls back to actionable compact evidence', async () => {
   const hugeSource: SourceEvidence = { version: 2, assertionId: 'check', modelCalls: [], toolEvents: [],
     approvedFacts: Array.from({ length: 100 }, (_, index) => ({ modelCallId: `call-${index}`, factId: `fact-${index}`,

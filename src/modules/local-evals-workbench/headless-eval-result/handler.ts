@@ -164,6 +164,15 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     const selectedCase = manifest.cases.find(item => item.caseId === selection.caseId);
     const selectedAttempt = selectedCase?.attempts.find(item => item.number === selection.attempt);
     if (!selectedCase || !selectedAttempt) return { status: 'blocked', reason: 'selection-mismatch' };
+    if (evidence.outcome === 'passed' && selectedAttempt.outcome === 'passed') {
+      if (command.field) return { status: 'blocked', reason: 'selection-mismatch' };
+      const result = { status: 'ready' as const, summary: { ...summary, selectedAttempt: {
+        caseId: selection.caseId, number: selection.attempt, outcome: 'passed' as const,
+        failedAssertionIds: [], moreFailedAssertionIds: false,
+        diagnostics: evidence.diagnostics.filter(code => SAFE_CODE.test(code)).slice(0, MAX_DIAGNOSTICS),
+      } } };
+      return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
+    }
     if (evidence.outcome === 'failed' && selectedAttempt.outcome === 'failed') {
       const allFailedAssertionIds = evidence.assertions.filter(item => item.outcome === 'failed').map(item => item.id);
       if (!allFailedAssertionIds.length || allFailedAssertionIds.some(id => !ID.test(id)) ||
