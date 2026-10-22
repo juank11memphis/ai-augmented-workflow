@@ -52,7 +52,7 @@ export function sourceRecord(value: unknown): value is SourceRecord {
   if (value.kind === 'model-call') {
     return exactKeys(value, ['kind', 'id', 'turnId', 'checkId', 'modelId', 'phase', 'elapsedMs', 'inputMessages', 'rawText', 'rawToolCalls', 'normalizedOutput'], ['approvedFacts', 'redactedFields'])
       && boundedText(value.modelId, 200) && value.modelId.length > 0
-      && (value.phase === 'initial' || value.phase === 'post-tool')
+      && (value.phase === 'initial' || value.phase === 'correction' || value.phase === 'post-tool')
       && Array.isArray(value.inputMessages) && value.inputMessages.length <= 100
       && value.inputMessages.every(message => record(message) && exactKeys(message, ['role', 'content'])
         && roles.includes(String(message.role)) && boundedText(message.content))

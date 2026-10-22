@@ -1,5 +1,5 @@
 {
-  "templateVersion": "249",
+  "templateVersion": "250",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -387,10 +387,10 @@
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
-      "version": "15",
+      "version": "16",
       "description": "Version-2 suite and project-owned runner authoring contract.",
       "changes": [
-        "Requires complete raw response retention, including malformed and interrupted responses, while limiting diagnostics and reporting genuine capture failures."
+        "Documents correction model calls that revise an answer without a tool, while preserving post-tool delivery requirements."
       ]
     },
     "skills/eval-authoring/scripts/check-preview-contract.mjs": {

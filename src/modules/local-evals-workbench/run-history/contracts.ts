@@ -96,7 +96,7 @@ export type ProviderResponseGap = { readonly callId: string; readonly provisiona
   readonly contentType?: string; readonly originalByteLength?: number };
 export type ModelCallLifecycle = { readonly callId: string; readonly provisionalTurnId: string;
   readonly role: 'tested-model' | 'judge'; readonly checkId?: string; readonly modelId: string;
-  readonly phase: 'initial' | 'post-tool' | 'judge'; readonly startedAtMs: number; readonly endedAtMs?: number;
+  readonly phase: 'initial' | 'correction' | 'post-tool' | 'judge'; readonly startedAtMs: number; readonly endedAtMs?: number;
   readonly observedUntilMs?: number; readonly status: 'pending' | 'completed' | 'failed' | 'cancelled';
   readonly terminationSource?: 'application-deadline' | 'provider-timeout' | 'runner-failure' | 'unknown' };
 export type ProviderResponseCapture = { readonly records: readonly ProviderResponseReference[];

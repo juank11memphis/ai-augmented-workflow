@@ -131,7 +131,7 @@ export function attempt(v: unknown): v is Attempt {
     || !v.modelCalls.every(call => record(call) && keys(call, 'callId provisionalTurnId role checkId modelId phase startedAtMs endedAtMs observedUntilMs status terminationSource')
       && logicalId(call.callId) && logicalId(call.provisionalTurnId) && text(call.modelId) && call.modelId.length > 0
       && (call.role === 'judge' ? logicalId(call.checkId) && call.phase === 'judge'
-        : call.role === 'tested-model' && call.checkId === undefined && enumValue(call.phase, ['initial', 'post-tool']))
+        : call.role === 'tested-model' && call.checkId === undefined && enumValue(call.phase, ['initial', 'correction', 'post-tool']))
       && integer(call.startedAtMs) && enumValue(call.status, ['pending', 'completed', 'failed', 'cancelled'])
       && (call.status === 'pending' ? call.endedAtMs === undefined
         : integer(call.endedAtMs) && call.endedAtMs >= call.startedAtMs && call.observedUntilMs === undefined)

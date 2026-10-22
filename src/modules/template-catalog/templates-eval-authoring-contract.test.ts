@@ -88,8 +88,8 @@ test('reference installs once for every agent and deduplicates shared selection'
   assert.ok(skill.includes('(references/version-2-contract.md)'));
   const metadata = readTemplateManifest().templates[referencePath];
   assert.ok(metadata?.version);
-  assert.equal(metadata?.version, '15');
-  assert.match(metadata?.changes.join(' ') ?? '', /complete raw response retention/);
+  assert.equal(metadata?.version, '16');
+  assert.match(metadata?.changes.join(' ') ?? '', /correction model calls/);
   assert.match(reference, /model-call-started.*before.*invoking the provider/);
   assert.match(reference, /pending.*termination source it observed/);
 });

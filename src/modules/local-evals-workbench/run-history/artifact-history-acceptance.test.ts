@@ -7,6 +7,7 @@ import { createRunHistory } from '../index.js';
 import { project } from './test-project.js';
 import { config, evidence } from './test-fixtures.js';
 import { fixture } from './store-fixture.js';
+import { FileArtifactReader } from './file-artifact-reader.js';
 import { executeEvalRun } from '../execute-eval-run/handler.js';
 import { evaluateOutputAssertions } from '../run-execution/output-assertions.js';
 import type { ArtifactStorePort } from './contracts.js';
@@ -38,6 +39,68 @@ it('AC-08/10: bounded raw synthetic output survives fresh reads, stays ignored, 
     assert.ok((await contents(path.join(p.root, 'evals/artifacts'))).includes(marker)); assert.ok(!logs.join('').includes(marker));
     const selected = await history.get({ suiteId: 'suite', runId: id, selection: { caseId: 'case', attempt: 1 } });
     assert.equal(selected.status === 'ok' && selected.value.evidence?.output, marker);
+  } finally { await p.cleanup(); }
+});
+
+it('persists and reopens complete initial-to-correction evidence without a tool', async () => {
+  const p = await project();
+  try {
+    const history = createRunHistory(p.root, { log() {} });
+    const created = await history.store.create(config);
+    if (created.status !== 'ok') return assert.fail(JSON.stringify(created));
+    const runId = created.value.runId;
+    const testCase = { id: 'case', name: 'Case', turns: [{ role: 'user' as const,
+      content: { type: 'inline' as const, text: 'request' } }], toolMocks: [],
+      assertions: [{ id: 'assertion', type: 'output-equals' as const,
+        expected: { type: 'inline' as const, text: 'different expected answer' } }], graders: [] };
+    const selection: ExecutionSelection = { runId, model: 'synthetic', suite: { version: 2, kind: 'sibu-eval-suite',
+      id: 'suite', name: 'Suite', description: '', target: { id: 'target', kind: 'integration', path: 'src/target.mjs' },
+      coverage: { categories: [], gaps: [] }, runner: { command: ['node', 'runner.mjs'], requiredEnvironment: [] },
+      testCases: [testCase] }, cases: [testCase] };
+    const call = (id: string, phase: 'initial' | 'correction', rawText: string) => ({ kind: 'model-call' as const,
+      id, turnId: 'turn-1', checkId: 'assertion', modelId: 'synthetic', phase, elapsedMs: 1,
+      inputMessages: [{ role: 'user' as const, content: 'request' }], rawText,
+      rawToolCalls: [], normalizedOutput: rawText });
+    const events: ExecutionEvent[] = [
+      { type: 'case-started', caseId: 'case', attempt: 1 },
+      { type: 'model-call-started', caseId: 'case', attempt: 1, callId: 'call-1', provisionalTurnId: 'turn-1',
+        role: 'tested-model', modelId: 'synthetic', phase: 'initial' },
+      { type: 'provider-response-observed', caseId: 'case', attempt: 1, callId: 'call-1', provisionalTurnId: 'turn-1',
+        role: 'tested-model', bytes: Buffer.from('first'), completeness: 'complete' },
+      { type: 'model-call-ended', caseId: 'case', attempt: 1, callId: 'call-1', status: 'completed' },
+      { type: 'model-call-started', caseId: 'case', attempt: 1, callId: 'call-2', provisionalTurnId: 'turn-1',
+        role: 'tested-model', modelId: 'synthetic', phase: 'correction' },
+      { type: 'provider-response-observed', caseId: 'case', attempt: 1, callId: 'call-2', provisionalTurnId: 'turn-1',
+        role: 'tested-model', bytes: Buffer.from('revised'), completeness: 'complete' },
+      { type: 'model-call-ended', caseId: 'case', attempt: 1, callId: 'call-2', status: 'completed' },
+      { type: 'turn-completed', caseId: 'case', attempt: 1, turnId: 'turn-1', output: 'revised' },
+      { type: 'source-record', caseId: 'case', attempt: 1, sequence: 8, record: call('call-1', 'initial', 'first') },
+      { type: 'source-record', caseId: 'case', attempt: 1, sequence: 9, record: call('call-2', 'correction', 'revised') },
+      { type: 'case-completed', caseId: 'case', attempt: 1, status: 'completed', sourceCapture: 'complete' },
+      { type: 'run-completed', status: 'completed' },
+    ];
+    const outcome = await executeEvalRun(selection, { store: history.store, evaluator: { evaluate: evaluateOutputAssertions },
+      clock: Date.now, runner: { async execute(_selection, consume) {
+        for (const item of events) await consume(item);
+        return { status: 'completed' as const };
+      } } });
+    assert.equal(outcome.status, 'completed');
+    const reopened = createRunHistory(p.root, { log() {} });
+    const chosen = { caseId: 'case', attempt: 1, assertionId: 'assertion' };
+    const attempt = await reopened.get({ suiteId: 'suite', runId, selection: { caseId: 'case', attempt: 1 } });
+    assert.equal(attempt.status, 'ok');
+    if (attempt.status !== 'ok') return;
+    assert.deepEqual(attempt.value.evidence?.modelCalls?.map(item => item.phase), ['initial', 'correction']);
+    assert.deepEqual(attempt.value.evidence?.sourceCapture?.gaps, []);
+    assert.equal(attempt.value.evidence?.tools.length, 0);
+    const source = await reopened.readSource('suite', runId, chosen);
+    assert.equal(source.status, 'ok', JSON.stringify(source));
+    if (source.status !== 'ok') return;
+    assert.deepEqual(source.value?.modelCalls.map(item => item.rawText.status === 'available' ? item.rawText.value : undefined), ['first', 'revised']);
+    assert.deepEqual(source.value?.gaps, []);
+    const saved = await new FileArtifactReader(fixture(p.root).paths, fixture(p.root).reader)
+      .sourceRecord('suite', runId, chosen, 'call-2');
+    assert.equal(saved.status === 'ok' && saved.value.record.kind === 'model-call' && saved.value.record.phase, 'correction');
   } finally { await p.cleanup(); }
 });
 

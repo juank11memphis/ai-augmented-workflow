@@ -27,7 +27,7 @@ export type ExecutionSelection = {
 export type ExecutionEvent = SourceExecutionEvent
   | { readonly type: 'model-call-started'; readonly caseId: string; readonly attempt: number;
       readonly callId: string; readonly provisionalTurnId: string; readonly role: 'tested-model' | 'judge';
-      readonly checkId?: string; readonly modelId: string; readonly phase: 'initial' | 'post-tool' | 'judge' }
+      readonly checkId?: string; readonly modelId: string; readonly phase: 'initial' | 'correction' | 'post-tool' | 'judge' }
   | { readonly type: 'model-call-ended'; readonly caseId: string; readonly attempt: number;
       readonly callId: string; readonly status: 'completed' | 'failed' | 'cancelled';
       readonly terminationSource?: 'application-deadline' | 'provider-timeout' | 'runner-failure' | 'unknown' }
@@ -51,7 +51,7 @@ export type ExecutionEvent = SourceExecutionEvent
       readonly turnId?: string; readonly callId?: string };
 export type SourceRecord =
   | { readonly kind: 'model-call'; readonly id: string; readonly turnId: string; readonly checkId: string;
-      readonly modelId: string; readonly phase: 'initial' | 'post-tool'; readonly elapsedMs: number;
+      readonly modelId: string; readonly phase: 'initial' | 'correction' | 'post-tool'; readonly elapsedMs: number;
       readonly inputMessages: readonly { readonly role: 'system' | 'user' | 'assistant' | 'tool'; readonly content: string }[];
       readonly rawText: string; readonly rawToolCalls: readonly { readonly id: string; readonly name: string; readonly arguments: unknown }[];
       readonly normalizedOutput: string; readonly approvedFacts?: readonly { readonly factId: string; readonly provenance: string }[];

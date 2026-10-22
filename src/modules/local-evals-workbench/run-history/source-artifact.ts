@@ -35,7 +35,7 @@ function sourceRecord(value: unknown): value is SourceRecord {
     && (value.approvedFacts === undefined || Array.isArray(value.approvedFacts) && value.approvedFacts.length <= 100
       && value.approvedFacts.every(fact => record(fact) && keys(fact, ['factId', 'provenance'])
         && logicalId(fact.factId) && bounded(fact.provenance, 1000)))
-    && bounded(value.modelId, 200) && (value.phase === 'initial' || value.phase === 'post-tool')
+    && bounded(value.modelId, 200) && (value.phase === 'initial' || value.phase === 'correction' || value.phase === 'post-tool')
     && Array.isArray(value.inputMessages) && value.inputMessages.length <= 100
     && value.inputMessages.every(message => record(message) && keys(message, ['role', 'content'])
       && ['system', 'user', 'assistant', 'tool'].includes(String(message.role))

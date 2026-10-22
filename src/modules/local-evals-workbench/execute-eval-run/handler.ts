@@ -120,7 +120,7 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
         || (event.role === 'judge' ? event.phase !== 'judge' || event.modelId !== activeJudge
           || !cases[caseIndex]!.graders.some(item => item.type === 'rubric' && item.id === event.checkId)
           : event.role !== 'tested-model' || event.checkId !== undefined || event.modelId !== activeModel
-            || !['initial', 'post-tool'].includes(event.phase))) throw new Error('model-call-link');
+            || !['initial', 'correction', 'post-tool'].includes(event.phase))) throw new Error('model-call-link');
       current.modelCalls.push({ callId: event.callId, provisionalTurnId: event.provisionalTurnId,
         role: event.role, ...(event.checkId ? { checkId: event.checkId } : {}), modelId: event.modelId,
         phase: event.phase, startedAtMs: ports.clock(), status: 'pending' });

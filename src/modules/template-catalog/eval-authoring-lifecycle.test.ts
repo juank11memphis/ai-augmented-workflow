@@ -79,7 +79,7 @@ test('stale managed guidance gets meaningful updates and healthy doctor state', 
     assert.equal(change.status, 'update-available');
     const expectedNotes: Record<string, RegExp> = {
       'skills/eval-authoring/SKILL.md': /Reuses separately approved planned-feature eval targets and coverage.*independent-eval approval gates/,
-      'skills/eval-authoring/references/version-2-contract.md': /complete raw response retention.*genuine capture failures/,
+      'skills/eval-authoring/references/version-2-contract.md': /correction model calls.*post-tool delivery requirements/,
       'skills/eval-authoring/scripts/check-preview-contract.mjs': /Previews full suites from saved defaults.*rejects full-suite temporary choices/,
     };
     const expectedNote = expectedNotes[template];
@@ -105,7 +105,7 @@ test('updated runner capture guidance is installed with its current sync note', 
   state.managedFiles[target(reference)] = { template: reference, templateVersion: '8', sha256: sha256(stale), status: 'managed' };
   const change = preview(rootPath, state, reference);
   assert.equal(change.status, 'update-available');
-  assert.match(change.changes.join(' '), /complete raw response retention/);
+  assert.match(change.changes.join(' '), /correction model calls/);
   state = apply(rootPath, state, reference, 'apply-update');
   assert.equal(fs.readFileSync(path.join(rootPath, target(reference)), 'utf8'), installed);
   assert.deepEqual(diagnoseState({ rootPath, state }), []);

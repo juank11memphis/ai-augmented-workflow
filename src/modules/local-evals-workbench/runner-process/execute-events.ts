@@ -36,7 +36,7 @@ export class ExecuteEventValidator {
   private state: 'initial' | 'running' | 'finished' = 'initial';
   private terminal: 'completed' | 'error' | 'interrupted' | undefined;
   private version: 1 | 2 | 3 | 4 | undefined;
-  private readonly modelCalls = new Map<string, { caseId: string; attempt: number; provisionalTurnId: string; role: string; checkId?: string; modelId: string; ended: boolean }>();
+  private readonly modelCalls = new Map<string, { caseId: string; attempt: number; provisionalTurnId: string; role: string; checkId?: string; modelId: string; ended: boolean; completed: boolean }>();
   private readonly chunks = new SourceRecordChunks();
   private readonly responses = new ProviderResponseEvents();
   private readonly sourceCalls = new Map<string, { turnId: string; checkId: string }>();
@@ -114,13 +114,16 @@ export class ExecuteEventValidator {
         || (judge ? data.phase !== 'judge' || data.modelId !== this.selection.judgeModel
           || !logicalId(data.checkId) || !selected.graders.some(item => item.type === 'rubric' && item.id === data.checkId)
           : data.role !== 'tested-model' || data.checkId !== undefined || data.modelId !== this.selection.model
-            || !['initial', 'post-tool'].includes(String(data.phase)))) throw new Error('invalid-call-start');
+            || !['initial', 'correction', 'post-tool'].includes(String(data.phase))
+            || data.phase === 'correction' && ![...this.modelCalls.values()].some(call =>
+              call.role === 'tested-model' && call.provisionalTurnId === data.provisionalTurnId && call.completed)
+            || data.phase === 'post-tool' && this.sourceTools.size === 0)) throw new Error('invalid-call-start');
       this.modelCalls.set(data.callId, { caseId, attempt: this.attemptNumber, provisionalTurnId: data.provisionalTurnId, role: data.role as string,
-        ...(judge ? { checkId: data.checkId as string } : {}), modelId: data.modelId as string, ended: false });
+        ...(judge ? { checkId: data.checkId as string } : {}), modelId: data.modelId as string, ended: false, completed: false });
       return { type: 'model-call-started', caseId, attempt: this.attemptNumber, callId: data.callId,
         provisionalTurnId: data.provisionalTurnId, role: data.role as 'tested-model' | 'judge',
         ...(judge ? { checkId: data.checkId as string } : {}), modelId: data.modelId as string,
-        phase: data.phase as 'initial' | 'post-tool' | 'judge' };
+        phase: data.phase as 'initial' | 'correction' | 'post-tool' | 'judge' };
     }
     if (raw.type === 'model-call-ended') {
       const call = this.modelCalls.get(data.callId as string);
@@ -130,6 +133,7 @@ export class ExecuteEventValidator {
           : !['application-deadline', 'provider-timeout', 'runner-failure', 'unknown'].includes(String(data.terminationSource))))
         throw new Error('invalid-call-end');
       call.ended = true;
+      call.completed = data.status === 'completed';
       return { type: 'model-call-ended', caseId, attempt: this.attemptNumber, callId: data.callId as string,
         status: data.status as 'completed' | 'failed' | 'cancelled',
         ...(data.terminationSource === undefined ? {} : { terminationSource: data.terminationSource as 'application-deadline' | 'provider-timeout' | 'runner-failure' | 'unknown' }) };
@@ -163,6 +167,7 @@ export class ExecuteEventValidator {
         this.judgeSources.add(source.checkId);
       } else if (source.kind === 'model-call') {
         if (source.modelId !== this.selection.model || this.sourceCalls.has(source.id)
+          || source.phase === 'correction' && ![...this.sourceCalls.values()].some(call => call.turnId === source.turnId)
           || source.phase === 'post-tool' && this.sourceTools.size === 0) throw new Error('invalid-source-call');
         this.sourceCalls.set(source.id, { turnId: source.turnId, checkId: source.checkId });
       } else {

@@ -80,6 +80,75 @@ test('v4 records call lifecycle before any response and rejects a fabricated com
   assert.throws(() => validator.accept(e(3, 'case-attempt-completed', 'case',
     { status: 'completed', sourceEvidenceComplete: false })), /invalid-case-end/);
 });
+
+test('v4 correction needs a preceding completed tested-model call on the same turn, not a tool', () => {
+  const e = (sequence: number, type: string, data: unknown) =>
+    ({ ...event(sequence, type, 'case', data), protocolVersion: 4 });
+  const start = (callId: string, provisionalTurnId: string, phase: string) => ({
+    callId, provisionalTurnId, role: 'tested-model', modelId: 'fake', phase,
+  });
+  const ready = () => {
+    const validator = new ExecuteEventValidator('request', selection);
+    validator.accept({ ...e(0, 'run-started', { model: 'fake', judgeModel: null }), caseId: null, attempt: null });
+    validator.accept(e(1, 'case-attempt-started', {}));
+    return validator;
+  };
+  assert.throws(() => ready().accept(e(2, 'model-call-started', start('call-2', 'turn-1', 'correction'))), /invalid-call-start/);
+  const pending = ready();
+  pending.accept(e(2, 'model-call-started', start('call-1', 'turn-1', 'initial')));
+  assert.throws(() => pending.accept(e(3, 'model-call-started', start('call-2', 'turn-1', 'correction'))), /invalid-call-start/);
+  const failed = ready();
+  failed.accept(e(2, 'model-call-started', start('call-1', 'turn-1', 'initial')));
+  failed.accept(e(3, 'model-call-ended', { callId: 'call-1', status: 'failed', terminationSource: 'runner-failure' }));
+  assert.throws(() => failed.accept(e(4, 'model-call-started', start('call-2', 'turn-1', 'correction'))), /invalid-call-start/);
+  const completed = ready();
+  completed.accept(e(2, 'model-call-started', start('call-1', 'turn-1', 'initial')));
+  completed.accept(e(3, 'model-call-ended', { callId: 'call-1', status: 'completed' }));
+  assert.throws(() => completed.accept(e(4, 'model-call-started', start('call-2', 'turn-2', 'correction'))), /invalid-call-start/);
+  const correction = completed.accept(e(5, 'model-call-started', start('call-2', 'turn-1', 'correction')));
+  assert.equal(correction.type, 'model-call-started');
+  if (correction.type === 'model-call-started') assert.equal(correction.phase, 'correction');
+  assert.throws(() => ready().accept(e(2, 'model-call-started', start('call-2', 'turn-1', 'post-tool'))), /invalid-call-start/);
+});
+
+test('source correction preserves complete model records without tool delivery and rejects wrong turns', () => {
+  const selected: ExecutionSelection = { ...selection, cases: [{ ...singleCase,
+    turns: [...singleCase.turns, singleCase.turns[0]!],
+    assertions: [{ id: 'exact', type: 'output-equals', expected: { type: 'inline', text: 'revised' } }] }] };
+  const e = (sequence: number, type: string, data: unknown, caseId: string | null = 'case') =>
+    ({ protocolVersion: 2, requestId: 'request', runId: 'run', sequence, type, caseId,
+      attempt: caseId ? 1 : null, data });
+  const source = (sequence: number, record: object) => {
+    const bytes = Buffer.from(JSON.stringify(record));
+    return e(sequence, 'source-record-chunk', { recordId: (record as { id: string }).id,
+      index: 0, count: 1, byteLength: bytes.length, base64: bytes.toString('base64') });
+  };
+  const ready = () => {
+    const validator = new ExecuteEventValidator('request', selected);
+    validator.accept(e(0, 'run-started', { model: 'fake', judgeModel: null }, null));
+    validator.accept(e(1, 'case-attempt-started', {}));
+    validator.accept(e(2, 'conversation-turn-completed', { turnIndex: 0, turnId: 'turn-1', role: 'assistant', output: 'revised' }));
+    validator.accept(e(3, 'conversation-turn-completed', { turnIndex: 1, turnId: 'turn-2', role: 'assistant', output: 'revised' }));
+    return validator;
+  };
+  const initial = { kind: 'model-call', id: 'call-1', turnId: 'turn-1', checkId: 'exact', modelId: 'fake',
+    phase: 'initial', elapsedMs: 2, inputMessages: [{ role: 'user', content: 'input' }], rawText: 'first',
+    rawToolCalls: [], normalizedOutput: 'first' };
+  const correction = { ...initial, id: 'call-2', phase: 'correction', rawText: 'revised', normalizedOutput: 'revised' };
+  assert.throws(() => ready().accept(source(4, correction)), /invalid-source-call/);
+  const wrongTurn = ready();
+  wrongTurn.accept(source(4, initial));
+  assert.throws(() => wrongTurn.accept(source(5, { ...correction, turnId: 'turn-2' })), /invalid-source-call/);
+  assert.throws(() => ready().accept(source(4, { ...correction, phase: 'post-tool' })), /invalid-source-call/);
+  const valid = ready();
+  valid.accept(source(4, initial));
+  const accepted = valid.accept(source(5, correction));
+  assert.equal(accepted.type, 'source-record');
+  if (accepted.type === 'source-record' && accepted.record.kind === 'model-call') {
+    assert.equal(accepted.record.phase, 'correction');
+    assert.equal(accepted.record.rawText, 'revised');
+  }
+});
 test('v3 accepts a 40,000-byte response chunk through a completed execute sequence', () => {
   const validator = new ExecuteEventValidator('request', selection);
   const body = Buffer.alloc(40_000, 65);
