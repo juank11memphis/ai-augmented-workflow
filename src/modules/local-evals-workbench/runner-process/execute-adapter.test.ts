@@ -14,10 +14,30 @@ async function withSelection(run: (project: Awaited<ReturnType<typeof offlinePro
   } finally { await project.cleanup(); }
 }
 
-test('execute timeout defaults allow 30 seconds of idle time without changing startup or overall limits', () => {
+test('execute defaults retain startup and cleanup guards without idle or overall deadlines', () => {
   assert.equal(EXECUTE_LIMITS.startupMs, 5_000);
-  assert.equal(EXECUTE_LIMITS.idleMs, 30_000);
-  assert.equal(EXECUTE_LIMITS.overallMs, 120_000);
+  assert.equal(EXECUTE_LIMITS.cleanupMs, 1_000);
+  assert.equal(EXECUTE_LIMITS.idleMs, undefined);
+  assert.equal(EXECUTE_LIMITS.overallMs, undefined);
+});
+
+test('default execution accepts a quiet runner after startup without an idle or overall deadline', async () => {
+  await withSelection(async (project, selection) => {
+    await project.changeRunner(`let raw=''; for await(const c of process.stdin) raw+=c; const q=JSON.parse(raw); let n=0;
+      const emit=(type,caseId,data)=>process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,
+        sequence:n++,type,runId:q.runId,caseId,attempt:caseId?1:null,data})+'\\n');
+      emit('run-started',null,{model:q.model,judgeModel:null});
+      await new Promise(resolve=>setTimeout(resolve,250));
+      emit('case-attempt-started','first',{});
+      emit('conversation-turn-completed','first',{turnIndex:0,role:'assistant',output:'done'});
+      emit('case-attempt-completed','first',{status:'completed'});
+      emit('run-completed',null,{status:'completed'});`);
+    const received: ExecutionEvent[] = [];
+    const outcome = await new ProjectRunnerExecuteAdapter(project.root).execute(selection,
+      async event => { received.push(event); });
+    assert.equal(outcome.status, 'completed');
+    assert.equal(received.at(-1)?.type, 'run-completed');
+  });
 });
 
 test('streams ordered actual output before process exit without exposing runner environment', async () => {

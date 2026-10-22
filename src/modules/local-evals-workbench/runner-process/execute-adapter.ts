@@ -14,11 +14,11 @@ import { BoundedExecuteStream, ExecuteStreamError } from './execute-stream.js';
 export type ExecuteLimits = {
   readonly requestBytes: number; readonly lineBytes: number; readonly stdoutBytes: number;
   readonly stderrBytes: number; readonly events: number; readonly startupMs: number;
-  readonly idleMs: number; readonly overallMs: number; readonly cleanupMs: number;
+  readonly idleMs?: number; readonly overallMs?: number; readonly cleanupMs: number;
 };
 export const EXECUTE_LIMITS: ExecuteLimits = {
   requestBytes: 256_000, lineBytes: 64_000, stdoutBytes: Number.MAX_SAFE_INTEGER, stderrBytes: 16_000,
-  events: Number.MAX_SAFE_INTEGER, startupMs: 5_000, idleMs: 30_000, overallMs: 120_000, cleanupMs: 1_000,
+  events: Number.MAX_SAFE_INTEGER, startupMs: 5_000, cleanupMs: 1_000,
 };
 
 export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
@@ -65,9 +65,14 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
     };
     const startup = setTimeout(() => abort('runner-timeout'), this.limits.startupMs);
     let idle: NodeJS.Timeout | undefined;
-    const resetIdle = (): void => { clearTimeout(idle); idle = setTimeout(() => abort('runner-timeout'), this.limits.idleMs); };
+    const resetIdle = (): void => {
+      if (this.limits.idleMs === undefined) return;
+      clearTimeout(idle);
+      idle = setTimeout(() => abort('runner-timeout'), this.limits.idleMs);
+    };
     resetIdle();
-    const overall = setTimeout(() => abort('runner-timeout'), this.limits.overallMs);
+    const overall = this.limits.overallMs === undefined ? undefined
+      : setTimeout(() => abort('runner-timeout'), this.limits.overallMs);
     child.on('error', () => abort('runner-start-failed'));
     child.stdin.on('error', () => abort('runner-unavailable'));
     child.stderr.on('data', (chunk: Buffer) => {
