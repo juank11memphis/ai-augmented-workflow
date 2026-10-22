@@ -41,7 +41,7 @@ function runner(scenario: Scenario): string {
       emit('case-attempt-started','approximate-price',{});
       emit('run-diagnostic','approximate-price',{code:'malformed-output',message:'${rawSentinel}'});
       ${report ? "emit('run-completed',null,{status:'error',code:'malformed-output'});" : ''}
-      ${scenario === 'malformed-trailing' ? "process.stdout.write('{\\\"private\\\":\\\"${rawSentinel}\\\"}\\n');" : ''}
+      ${scenario === 'malformed-trailing' ? `process.stdout.write(JSON.stringify({private:'${rawSentinel}'})+'\\n');` : ''}
       ${scenario === 'timeout' ? "process.on('SIGTERM',()=>{}); setInterval(()=>{},1000);" : `process.exit(${scenario === 'exit-only' ? 7 : scenario === 'report-plus-exit' ? 8 : 0});`}
     } else process.exit(2);`;
 }
@@ -121,10 +121,53 @@ for (const scenario of ['report-only', 'exit-only', 'report-plus-exit', 'timeout
           processExit: { code: 8 } }
         : scenario === 'exit-only' ? { stage: 'unexpected-process-exit', processExit: { code: 7 } }
         : scenario === 'timeout' ? { stage: 'timeout' } : { stage: 'protocol-rejection' };
-      assert.deepEqual(manifest.failureProvenance, expected);
+      if (scenario === 'malformed-trailing') {
+        const rejected = manifest.failureProvenance as typeof manifest.failureProvenance & { protocolRejection: {
+          sequence: number; eventType: string; code: string; byteCount: number; capturedByteCount: number; locator: string } };
+        assert.equal(rejected.stage, 'protocol-rejection');
+        assert.equal(rejected.protocolRejection.eventType, 'non-protocol-stdout');
+        assert.equal(rejected.protocolRejection.code, 'invalid-envelope');
+        assert.ok(rejected.protocolRejection.byteCount > 0);
+        assert.equal(rejected.protocolRejection.byteCount, rejected.protocolRejection.capturedByteCount);
+        assert.deepEqual(Buffer.from(await readFile(path.join(project.root, 'evals/artifacts', rejected.protocolRejection.locator))),
+          Buffer.from(`{\"private\":\"${rawSentinel}\"}`));
+        const selectedRejection = (selected.json.incompleteAttempt as { failureProvenance: typeof rejected }).failureProvenance.protocolRejection;
+        assert.deepEqual(selectedRejection, rejected.protocolRejection);
+        const field = invoke(project.root, 'result', runId, '--case', 'approximate-price', '--attempt', '1',
+          '--field', rejected.protocolRejection.locator);
+        assert.equal(field.json.status, 'ready');
+        assert.deepEqual(Buffer.from((field.json.field as { bytesBase64: string }).bytesBase64, 'base64'),
+          Buffer.from(`{\"private\":\"${rawSentinel}\"}`));
+        assertSafe(run); assertSafe(summary); assertSafe(selected);
+      } else assert.deepEqual(manifest.failureProvenance, expected);
     } finally { await project.cleanup(); }
   });
 }
+
+test('compiled CLI retains pre-attempt application stdout for explicit bounded read', async () => {
+  const project = await offlineProject();
+  try {
+    await project.changeRunner(`let body=''; for await (const chunk of process.stdin) body+=chunk;
+      const request=JSON.parse(body);
+      if (request.operation==='describe') process.stdout.write(JSON.stringify({protocolVersion:1,
+        requestId:request.requestId,runId:null,sequence:0,type:'description',caseId:null,attempt:null,
+        data:{runnerId:'offline',capabilities:['single-turn'],models:['fake'],judgeModels:[],requiredEnvironment:[]}})+'\\n');
+      else console.log('${rawSentinel}');`);
+    const run = invoke(project.root, 'run', '--case', 'first');
+    assert.equal(run.json.status, 'error', JSON.stringify(run.json));
+    assertSafe(run);
+    const rejection = run.json.protocolRejection as { sequence: number; eventType: string; code: string;
+      byteCount: number; capturedByteCount: number; locator: string };
+    assert.deepEqual({ sequence: rejection.sequence, eventType: rejection.eventType, code: rejection.code },
+      { sequence: 0, eventType: 'non-protocol-stdout', code: 'invalid-json' });
+    assert.equal(rejection.byteCount, Buffer.byteLength(rawSentinel));
+    const runId = run.json.runId as string;
+    const field = invoke(project.root, 'result', runId, '--field', rejection.locator);
+    assert.equal(field.json.status, 'ready', JSON.stringify(field.json));
+    assert.deepEqual(Buffer.from((field.json.field as { bytesBase64: string }).bytesBase64, 'base64'), Buffer.from(rawSentinel));
+    assert.deepEqual(invoke(project.root, 'result', runId, '--field', '../outside').json.status, 'blocked');
+  } finally { await project.cleanup(); }
+});
 
 test('compiled CLI keeps assertion selection and blocks dangling or unsupported selections', async () => {
   const project = await fixture('report-only');

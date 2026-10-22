@@ -311,6 +311,16 @@ export async function executeEvalRun(command: ExecuteEvalRunCommand, ports: Exec
       if (outcome.status !== 'completed') break;
       if (terminal !== 'completed' || caseIndex !== expectedEnd || current) throw new Error('batch-incomplete');
     }
+    if (outcome.rejectedOutput?.length) {
+      const rejection = outcome.failureProvenance?.protocolRejection;
+      if (outcome.reason !== 'runner-protocol-invalid' || !rejection || !ports.store.saveProtocolRejection
+        || outcome.rejectedOutput.length !== rejection.capturedByteCount) throw new PersistenceStopped();
+      const saved = await ports.store.saveProtocolRejection({ suiteId: suite.id, runId, bytes: outcome.rejectedOutput });
+      if (saved.status !== 'ok') throw new PersistenceStopped();
+      outcome = { ...outcome, rejectedOutput: undefined, failureProvenance: {
+        ...outcome.failureProvenance!, protocolRejection: { ...rejection, locator: saved.value },
+      } };
+    }
     const failureProvenance = observedFailure(outcome, terminal);
     closePendingObservation(outcome.reason === 'runner-timeout' ? 'application-deadline'
       : outcome.reason === 'runner-exited' ? 'runner-failure' : 'unknown');

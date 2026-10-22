@@ -36,5 +36,7 @@ export function createRunHistory(projectRoot: string, dependencies: {
       reader.sourceFieldRange(suiteId, runId, selection, locator, offset, limit),
     readProviderResponse: (suiteId: string, runId: string, selection: import('./contracts.js').Selection, locator: string, offset: number, limit: number) =>
       reader.providerResponseRange(suiteId, runId, selection, locator, offset, limit),
+    readProtocolRejection: (suiteId: string, runId: string, locator: string, offset: number, limit: number) =>
+      reader.protocolRejectionRange(suiteId, runId, locator, offset, limit),
   };
 }

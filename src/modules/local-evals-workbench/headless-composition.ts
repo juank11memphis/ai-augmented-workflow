@@ -55,6 +55,7 @@ export async function createHeadlessWorkbench(projectRoot: string) {
       history.get({ suiteId, runId, ...(selection ? { selection } : {}) }),
       readSource: (suiteId, runId, selection) => history.readSource(suiteId, runId, selection),
       readField: (suiteId, runId, selection, locator, offset, limit) => history.readField(suiteId, runId, selection, locator, offset, limit),
-      readProviderResponse: (suiteId, runId, selection, locator, offset, limit) => history.readProviderResponse(suiteId, runId, selection, locator, offset, limit) } }),
+      readProviderResponse: (suiteId, runId, selection, locator, offset, limit) => history.readProviderResponse(suiteId, runId, selection, locator, offset, limit),
+      readProtocolRejection: (suiteId, runId, locator, offset, limit) => history.readProtocolRejection(suiteId, runId, locator, offset, limit) } }),
   };
 }

@@ -45,6 +45,7 @@ export class ExecuteEventValidator {
   private readonly judgeSources = new Set<string>();
   constructor(private readonly requestId: string, private readonly selection: ExecutionSelection) {}
 
+  get expectedSequence() { return this.sequence; }
   get completion() { return this.terminal; }
   get incompleteSource() { return this.activeCase && (this.chunks.incompleteId || this.chunks.captureFailedId)
     ? { type: 'source-gap' as const, caseId: this.activeCase, attempt: this.attemptNumber,

@@ -9,7 +9,7 @@ import type { FailureProvenance } from '../run-history/contracts.js';
 import type { PreviewLoggerPort } from '../runtime-ports.js';
 import { runnerEnvironment } from './environment.js';
 import { ExecuteEventValidator } from './execute-events.js';
-import { BoundedExecuteStream } from './execute-stream.js';
+import { BoundedExecuteStream, ExecuteStreamError } from './execute-stream.js';
 
 export type ExecuteLimits = {
   readonly requestBytes: number; readonly lineBytes: number; readonly stdoutBytes: number;
@@ -46,6 +46,8 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
     let stderrBytes = 0;
     let firstEvent = false;
     let runnerReport: Extract<ExecutionEvent, { type: 'run-completed' }> | undefined;
+    let rejection: { sequence: number; eventType: string; code: string; byteCount: number; capturedByteCount: number } | undefined;
+    let rejectedOutput: Buffer | undefined;
     const stream = new BoundedExecuteStream(this.limits);
     let forceKill: NodeJS.Timeout | undefined;
     let settleAbort: (() => void) | undefined;
@@ -78,8 +80,19 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       for await (const chunk of child.stdout) {
         if (failure) break;
         try {
-          await stream.push(chunk, async raw => {
-            const event = validator.accept(raw);
+          await stream.push(chunk, async (raw, bytes) => {
+            const sequence = validator.expectedSequence;
+            const eventType = raw !== null && typeof raw === 'object' && 'type' in raw
+              && typeof raw.type === 'string' && /^[a-z][a-z0-9-]{0,79}$/.test(raw.type)
+              ? raw.type : 'non-protocol-stdout';
+            let event: ExecutionEvent;
+            try { event = validator.accept(raw); }
+            catch (error) {
+              const code = error instanceof Error && /^[a-z][a-z0-9-]{0,79}$/.test(error.message) ? error.message : 'invalid-event';
+              rejection = { sequence, eventType, code, byteCount: bytes.length, capturedByteCount: Math.min(bytes.length, 64_000) };
+              rejectedOutput = Buffer.from(bytes.subarray(0, 64_000));
+              throw error;
+            }
             if (!firstEvent) { firstEvent = true; clearTimeout(startup); }
             resetIdle();
             if (event.type === 'source-chunk-accepted') return;
@@ -87,7 +100,14 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
             try { await consume(event); }
             catch (error) { consumerFailure = error; throw error; }
           });
-        } catch (error) { abort(error instanceof Error && error.message.includes('limit') ? 'runner-limit' : 'runner-protocol-invalid'); }
+        } catch (error) {
+          if (error instanceof ExecuteStreamError && !rejection && !consumerFailure) {
+            rejection = { sequence: validator.expectedSequence, eventType: 'non-protocol-stdout', code: error.code,
+              byteCount: error.byteCount, capturedByteCount: error.bytes.length };
+            rejectedOutput = error.bytes;
+          }
+          abort(error instanceof Error && error.message.includes('limit') ? 'runner-limit' : 'runner-protocol-invalid');
+        }
       }
       return closed;
     };
@@ -95,10 +115,21 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       const code = await Promise.race([readAndClose(), aborted.then(() => null)]);
       if (consumerFailure) throw consumerFailure;
       if (!failure) {
-        try { stream.finish(); } catch { failure = 'runner-protocol-invalid'; }
+        try { stream.finish(); } catch (error) {
+          failure = 'runner-protocol-invalid';
+          if (error instanceof ExecuteStreamError) {
+            rejection = { sequence: validator.expectedSequence, eventType: 'non-protocol-stdout', code: error.code,
+              byteCount: error.byteCount, capturedByteCount: error.bytes.length };
+            rejectedOutput = error.bytes;
+          }
+        }
       }
       if (!failure && code !== 0) failure = 'runner-exited';
-      if (!failure && !validator.completion) failure = 'runner-protocol-invalid';
+      if (!failure && !validator.completion) {
+        failure = 'runner-protocol-invalid';
+        rejection = { sequence: validator.expectedSequence, eventType: 'non-protocol-stdout', code: 'missing-run-completion',
+          byteCount: 0, capturedByteCount: 0 };
+      }
       const sourceGap = validator.incompleteSource;
       if (sourceGap) await consume(sourceGap);
       const partialResponse = validator.receivedBeforeInterruption;
@@ -110,14 +141,18 @@ export class ProjectRunnerExecuteAdapter implements RunnerExecutorPort {
       for (const gap of validator.missingCallResponses) await consume(gap);
       const status = failure ? 'error' : validator.completion!;
       const failureProvenance: FailureProvenance | undefined = failure === 'runner-timeout' ? { stage: 'timeout' }
-        : failure === 'runner-protocol-invalid' ? { stage: 'protocol-rejection' }
+        : failure === 'runner-protocol-invalid' ? { stage: 'protocol-rejection', ...(rejection ? { protocolRejection: rejection } : {}) }
         : runnerReport && runnerReport.status !== 'completed' ? { stage: 'runner-report',
           runnerReport: { status: runnerReport.status, ...(runnerReport.code ? { code: runnerReport.code } : {}) },
           ...(failure === 'runner-exited' ? { processExit: { code } } : {}) }
         : failure === 'runner-exited' ? { stage: 'unexpected-process-exit', processExit: { code } }
         : undefined;
       log('eval_runner_execute_finished', failure ?? status);
-      return { status, ...(failure ? { reason: failure } : {}), ...(failureProvenance ? { failureProvenance } : {}) };
+      const result: RunnerExecutionOutcome = { status, ...(failure ? { reason: failure } : {}),
+        ...(failureProvenance ? { failureProvenance } : {}) };
+      if (failure === 'runner-protocol-invalid' && rejectedOutput)
+        Object.defineProperty(result, 'rejectedOutput', { value: rejectedOutput, enumerable: false });
+      return result;
     } finally {
       clearTimeout(startup); clearTimeout(idle); clearTimeout(overall); clearTimeout(forceKill);
       if (failure && child.exitCode === null) child.kill('SIGKILL');

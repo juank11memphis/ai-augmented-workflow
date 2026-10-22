@@ -73,8 +73,12 @@ test('timeout and malformed trailing event keep the last valid checkpoint and th
   assert.deepEqual(timed.events.at(-1), { type: 'source-gap', caseId: 'first', attempt: 1,
     reason: 'incomplete', recordId: 'call-1' });
   const malformed = await execute({ trailing: '{"private":"SYNTHETIC_RAW_RESPONSE_SECRET"}\n' });
-  assert.deepEqual(malformed.outcome, { status: 'error', reason: 'runner-protocol-invalid',
-    failureProvenance: { stage: 'protocol-rejection' } });
+  assert.equal(malformed.outcome.reason, 'runner-protocol-invalid');
+  assert.deepEqual(malformed.outcome.failureProvenance?.protocolRejection && {
+    sequence: malformed.outcome.failureProvenance.protocolRejection.sequence,
+    eventType: malformed.outcome.failureProvenance.protocolRejection.eventType,
+    code: malformed.outcome.failureProvenance.protocolRejection.code },
+  { sequence: 3, eventType: 'non-protocol-stdout', code: 'invalid-envelope' });
   assert.equal(malformed.events.at(-1)?.type, 'diagnostic');
   assert.doesNotMatch(JSON.stringify({ outcome: malformed.outcome, logs: malformed.logs }), /SYNTHETIC_(RAW_RESPONSE|STDERR)_SECRET/);
 });
@@ -83,7 +87,8 @@ test('v2 accepts the bounded report code; malformed or unsafe terminal codes are
   const valid = await execute({ version: 2, report: 'error', code: 'judge-failed' });
   assert.deepEqual(valid.outcome.failureProvenance, { stage: 'runner-report', runnerReport: { status: 'error', code: 'judge-failed' } });
   const invalid = await execute({ report: 'error', code: 'SYNTHETIC_RAW_RESPONSE_SECRET' });
-  assert.deepEqual(invalid.outcome.failureProvenance, { stage: 'protocol-rejection' });
+  assert.equal(invalid.outcome.failureProvenance?.stage, 'protocol-rejection');
+  assert.equal(invalid.outcome.failureProvenance?.protocolRejection?.code, 'invalid-run-end');
   assert.equal(invalid.events.at(-1)?.type, 'diagnostic');
   assert.doesNotMatch(JSON.stringify({ outcome: invalid.outcome, logs: invalid.logs }), /SYNTHETIC_(RAW_RESPONSE|STDERR)_SECRET/);
 });

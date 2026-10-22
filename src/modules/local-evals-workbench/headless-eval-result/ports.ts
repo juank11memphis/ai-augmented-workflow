@@ -9,6 +9,7 @@ export type HeadlessEvalResultReaderPort = {
   readField?(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number, limit: number): Promise<Outcome<EvidenceFieldRange>>;
   /** Reads a selected response; the adapter verifies its role, check, and artifact reference. */
   readProviderResponse?(suiteId: string, runId: string, selection: ProviderResponseSelection, locator: string, offset: number, limit: number): Promise<Outcome<EvidenceFieldRange>>;
+  readProtocolRejection?(suiteId: string, runId: string, locator: string, offset: number, limit: number): Promise<Outcome<EvidenceFieldRange>>;
 };
 
 export type HeadlessEvalResultDependencies = { readonly reader: HeadlessEvalResultReaderPort };

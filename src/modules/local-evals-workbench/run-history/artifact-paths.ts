@@ -41,6 +41,10 @@ export class ArtifactPaths {
     return `${this.attempt(suiteId, runId, caseId, number).slice(0, -5)}/source/${component(recordId)}.json`;
   }
   responses(suiteId: string, runId: string): string { this.ids(suiteId, runId); return `${component(suiteId)}/${component(runId)}/responses`; }
+  protocolRejection(suiteId: string, runId: string): string {
+    this.ids(suiteId, runId);
+    return `${component(suiteId)}/${component(runId)}/protocol-rejection.bin`;
+  }
   response(suiteId: string, runId: string, caseId: string, number: number, callId: string): string {
     this.ids(caseId, callId);
     if (number !== 1) throw new ArtifactFault('unsafe-path');

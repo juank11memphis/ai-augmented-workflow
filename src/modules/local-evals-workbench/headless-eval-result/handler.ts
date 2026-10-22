@@ -88,7 +88,7 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     selection && (!ID.test(selection.caseId) || !Number.isSafeInteger(selection.attempt) || selection.attempt < 1 || selection.assertionId !== undefined && !ID.test(selection.assertionId)) ||
     command.locatorOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.locatorOffset) || command.locatorOffset < 0) ||
     command.caseOffset !== undefined && (selection || command.field || !Number.isSafeInteger(command.caseOffset) || command.caseOffset < 0) ||
-    command.field && (!selection || !(selection.assertionId === undefined ? RESPONSE_LOCATOR
+    command.field && (!(selection?.assertionId === undefined ? RESPONSE_LOCATOR
       : /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}~[A-Za-z][A-Za-z0-9-]{0,40}$/).test(command.field.locator)
       || !Number.isSafeInteger(command.field.offset) || command.field.offset < 0)) {
     return { status: 'blocked', reason: 'invalid-input' };
@@ -123,6 +123,28 @@ export async function headlessEvalResult(command: HeadlessEvalResultCommand, dep
     ...(locators?.nextLocatorOffset !== null && locators?.nextLocatorOffset !== undefined ? { nextLocatorOffset: locators.nextLocatorOffset } : {}),
   };
   const artifactPath = safeArtifactPath(reviewArtifactPath);
+  const rejection = manifest.failureProvenance?.protocolRejection;
+  if (command.field && rejection?.locator === command.field.locator) {
+    if (!dependencies.reader.readProtocolRejection || command.field.offset >= rejection.capturedByteCount)
+      return { status: 'blocked', reason: 'selection-mismatch' };
+    let range;
+    try { range = await dependencies.reader.readProtocolRejection(command.suiteId, command.runId,
+      command.field.locator, command.field.offset, MAX_FIELD_BYTES); }
+    catch { return { status: 'blocked', reason: 'unavailable' }; }
+    if (range.status === 'blocked') return { status: 'blocked', reason: range.reason === 'not-found' ? 'missing-artifact'
+      : ['unsafe-path', 'not-ignored', 'tracked-artifacts', 'unverifiable-root'].includes(range.reason) ? 'unsafe-artifact'
+        : range.reason === 'corrupt' ? 'corrupt-artifact' : 'unavailable' };
+    const value = range.value;
+    const next = command.field.offset + value.bytes.length;
+    if (value.locator !== command.field.locator || value.offset !== command.field.offset || value.byteLength !== value.bytes.length
+      || value.bytes.length < 1 || value.bytes.length > MAX_FIELD_BYTES || next > rejection.capturedByteCount
+      || value.nextOffset !== (next === rejection.capturedByteCount ? null : next))
+      return { status: 'blocked', reason: 'corrupt-artifact' };
+    const result = { status: 'ready' as const, summary, field: { locator: value.locator, offset: value.offset,
+      byteLength: rejection.capturedByteCount, bytesBase64: Buffer.from(value.bytes).toString('base64'), nextOffset: value.nextOffset } };
+    return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };
+  }
+  if (command.field && !selection) return { status: 'blocked', reason: 'selection-mismatch' };
   if (!selection) {
     const result = { status: 'ready' as const, summary, ...(artifactPath ? { artifactPath } : {}) };
     return JSON.stringify(result).length <= MAX_JSON ? result : { status: 'blocked', reason: 'response-too-large' };

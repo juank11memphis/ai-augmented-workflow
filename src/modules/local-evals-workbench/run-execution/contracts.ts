@@ -71,4 +71,4 @@ export type SourceExecutionEvent =
   | { readonly type: 'source-record'; readonly caseId: string; readonly attempt: number; readonly sequence: number; readonly record: SourceRecord }
   | { readonly type: 'source-gap'; readonly caseId: string; readonly attempt: number; readonly reason: 'incomplete' | 'capture-failed'; readonly recordId?: string };
 export type RunnerExecutionOutcome = { readonly status: 'completed' | 'error' | 'interrupted' | 'blocked'; readonly reason?: string;
-  readonly failureProvenance?: FailureProvenance };
+  readonly failureProvenance?: FailureProvenance; readonly rejectedOutput?: Uint8Array };

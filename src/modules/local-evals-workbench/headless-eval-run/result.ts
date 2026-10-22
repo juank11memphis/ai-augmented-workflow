@@ -1,4 +1,5 @@
 import type { CheckOutcome, RunState } from '../run-history/contracts.js';
+import type { ProtocolRejection } from '../run-history/contracts.js';
 import type { LocatedAttempt } from '../run-history/failed-assertion-locators.js';
 
 export type HeadlessRunCase = {
@@ -21,4 +22,5 @@ export type HeadlessEvalRunResult = {
   readonly nextLocatorOffset?: number;
   readonly nextCaseOffset?: number;
   readonly diagnostics?: readonly string[];
+  readonly protocolRejection?: ProtocolRejection;
 };

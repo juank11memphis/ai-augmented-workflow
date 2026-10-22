@@ -4,7 +4,11 @@ export type FailureProvenance = {
   readonly stage: 'runner-report' | 'unexpected-process-exit' | 'timeout' | 'protocol-rejection';
   readonly runnerReport?: { readonly status: 'error' | 'interrupted'; readonly code?: string };
   readonly processExit?: { readonly code: number | null };
+  readonly protocolRejection?: ProtocolRejection;
 };
+export type ProtocolRejection = { readonly sequence: number; readonly eventType: string; readonly code: string;
+  readonly byteCount: number; readonly capturedByteCount: number; readonly locator?: string };
+export type ProtocolRejectionWrite = { readonly suiteId: string; readonly runId: string; readonly bytes: Uint8Array };
 export type DiagnosticLink = { readonly code: string; readonly turnId?: string; readonly callId?: string };
 export type Reason = 'invalid-input' | 'unsafe-path' | 'not-ignored' | 'tracked-artifacts' | 'git-unavailable' | 'unverifiable-root' | 'unavailable' | 'not-found' | 'corrupt' | 'limit-exceeded' | 'invalid-transition' | 'owner-unknown' | 'index-stale';
 export type Failure = { readonly status: 'blocked'; readonly reason: Reason };
@@ -133,6 +137,7 @@ export interface ArtifactReaderPort {
   sourceRecord?(suiteId: string, runId: string, selection: Required<Selection>, recordId: string): Promise<Outcome<StoredSourceRecord>>;
   sourceFieldRange?(suiteId: string, runId: string, selection: Required<Selection>, locator: string, offset: number): Promise<Outcome<EvidenceFieldRange>>;
   providerResponseRange?(suiteId: string, runId: string, selection: ProviderResponseSelection, locator: string, offset: number, limit?: number): Promise<Outcome<EvidenceFieldRange>>;
+  protocolRejectionRange?(suiteId: string, runId: string, locator: string, offset: number, limit?: number): Promise<Outcome<EvidenceFieldRange>>;
 }
 export interface ArtifactStorePort {
   create(configuration: RunConfiguration): Promise<Outcome<Manifest>>;
@@ -140,6 +145,7 @@ export interface ArtifactStorePort {
   append(suiteId: string, runId: string, attempt: Attempt): Promise<Outcome<Manifest>>;
   saveSourceRecord?(record: SourceRecordWrite): Promise<Outcome<SourceReference>>;
   saveProviderResponse?(response: ProviderResponseWrite): Promise<Outcome<ProviderResponseReference>>;
+  saveProtocolRejection?(rejection: ProtocolRejectionWrite): Promise<Outcome<string>>;
   finalize(suiteId: string, runId: string, state: Exclude<RunState, 'queued' | 'running'>, diagnostics?: readonly string[], failureProvenance?: FailureProvenance): Promise<Outcome<Manifest>>;
 }
 export type ArtifactEvent = { readonly event: 'artifact-persisted' | 'artifact-blocked' | 'artifact-recovered' | 'artifact-read'; readonly reason?: Reason; readonly state?: RunState; readonly count?: number };

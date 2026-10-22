@@ -12,6 +12,7 @@ import { appendAttempt, transition } from './lifecycle.js';
 import { collectHistory, compact, indexFrom } from './history-index.js';
 import { judgeMatchesAssertion, storedSourceRecord } from './source-artifact.js';
 import { ProviderResponseArtifact } from './provider-response-artifact.js';
+import { ProtocolRejectionArtifact } from './protocol-rejection-artifact.js';
 export type StoreDependencies = {
   readonly files: AtomicArtifactFile; readonly reader: BoundedArtifactReader; readonly owner: OwnerPort;
   readonly clock: () => number; readonly logger: ArtifactLogger;
@@ -102,6 +103,18 @@ export class FileArtifactStore implements ArtifactStorePort {
           || loaded.value.owner.pid !== this.dependencies.owner.identity.pid
           || loaded.value.owner.token !== this.dependencies.owner.identity.token) return { status: 'blocked', reason: 'invalid-transition' };
         return new ProviderResponseArtifact(this.paths, this.dependencies.files).save(value);
+      });
+    } catch (error) { return error instanceof SafetyFault ? { status: 'blocked', reason: error.reason } : failure(error); }
+  }
+  async saveProtocolRejection(value: { readonly suiteId: string; readonly runId: string; readonly bytes: Uint8Array }): Promise<Outcome<string>> {
+    if (![value.suiteId, value.runId].every(logicalId)) return { status: 'blocked', reason: 'invalid-input' };
+    try {
+      return await serialized(this.paths.root, async () => {
+        const loaded = await this.load(value.suiteId, value.runId);
+        if (loaded.status !== 'ok') return loaded;
+        if (loaded.value.state !== 'running' || loaded.value.owner.pid !== this.dependencies.owner.identity.pid
+          || loaded.value.owner.token !== this.dependencies.owner.identity.token) return { status: 'blocked', reason: 'invalid-transition' };
+        return new ProtocolRejectionArtifact(this.paths, this.dependencies.files).save(value.suiteId, value.runId, value.bytes);
       });
     } catch (error) { return error instanceof SafetyFault ? { status: 'blocked', reason: error.reason } : failure(error); }
   }

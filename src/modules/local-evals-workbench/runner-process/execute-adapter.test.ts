@@ -303,7 +303,11 @@ test('protocol failure settles when a descendant keeps the runner output pipes o
     const started = Date.now();
     const result = await new ProjectRunnerExecuteAdapter(project.root, { ...EXECUTE_LIMITS,
       startupMs: 500, idleMs: 800, overallMs: 1000, cleanupMs: 60 }).execute(selection, async event => { received.push(event); });
-    assert.deepEqual(result, { status: 'error', reason: 'runner-protocol-invalid', failureProvenance: { stage: 'protocol-rejection' } });
+    assert.equal(result.reason, 'runner-protocol-invalid');
+    assert.deepEqual(result.failureProvenance?.protocolRejection && {
+      sequence: result.failureProvenance.protocolRejection.sequence, eventType: result.failureProvenance.protocolRejection.eventType,
+      code: result.failureProvenance.protocolRejection.code },
+    { sequence: 4, eventType: 'run-completed', code: 'invalid-envelope' });
     assert.equal(received.at(-1)?.type, 'case-completed');
     assert.ok(Date.now() - started < 700, 'protocol failure settles before the descendant closes its pipes');
   });
@@ -322,6 +326,28 @@ test('stderr and retained output limits reject oversized evidence', async () => 
       emit('run-started',null,{model:q.model,judgeModel:null}); emit('case-attempt-started','first',{});
       emit('conversation-turn-completed','first',{turnIndex:0,role:'assistant',output:'x'.repeat(9000)});`);
     const output = await new ProjectRunnerExecuteAdapter(project.root).execute(selection, async () => undefined);
-    assert.deepEqual(output, { status: 'error', reason: 'runner-protocol-invalid', failureProvenance: { stage: 'protocol-rejection' } });
+    assert.equal(output.reason, 'runner-protocol-invalid');
+    assert.equal(output.failureProvenance?.protocolRejection?.code, 'invalid-envelope');
+    assert.equal(output.failureProvenance?.protocolRejection?.eventType, 'conversation-turn-completed');
+  });
+});
+
+test('ordinary application stdout is rejected and retained only as non-enumerable evidence', async () => {
+  await withSelection(async (project, selection) => {
+    await project.changeRunner(`let input=''; for await (const chunk of process.stdin) input+=chunk;
+      const q=JSON.parse(input);
+      process.stdout.write(JSON.stringify({protocolVersion:1,requestId:q.requestId,runId:q.runId,
+        sequence:0,type:'run-started',caseId:null,attempt:null,data:{model:q.model,judgeModel:null}})+'\\n');
+      console.log('SYNTHETIC_PRIVATE_APPLICATION_LOG');`);
+    const logs: unknown[] = [];
+    const result = await new ProjectRunnerExecuteAdapter(project.root, EXECUTE_LIMITS, process.env,
+      { record: item => { logs.push(item); } }).execute(selection, async () => undefined);
+    assert.equal(result.reason, 'runner-protocol-invalid');
+    assert.deepEqual(result.failureProvenance?.protocolRejection, { sequence: 1,
+      eventType: 'non-protocol-stdout', code: 'invalid-json',
+      byteCount: Buffer.byteLength('SYNTHETIC_PRIVATE_APPLICATION_LOG'),
+      capturedByteCount: Buffer.byteLength('SYNTHETIC_PRIVATE_APPLICATION_LOG') });
+    assert.deepEqual(Buffer.from(result.rejectedOutput ?? []), Buffer.from('SYNTHETIC_PRIVATE_APPLICATION_LOG'));
+    assert.doesNotMatch(JSON.stringify({ result, logs }), /SYNTHETIC_PRIVATE_APPLICATION_LOG/);
   });
 });

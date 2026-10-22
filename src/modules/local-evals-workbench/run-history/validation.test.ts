@@ -49,4 +49,14 @@ it('accepts legacy artifacts and bounded observed failure provenance without a f
   assert.equal(attempt({ ...partial, failureProvenance: { stage: 'runner-report', runnerReport: { status: 'error', code: 'PRIVATE_RESPONSE' } } }), false);
   assert.equal(attempt({ ...partial, failureProvenance: { stage: 'unexpected-process-exit', runnerReport: { status: 'error' } } }), false);
   assert.equal(attempt({ ...partial, failureProvenance: { stage: 'timeout', rawBody: 'PRIVATE_RESPONSE' } }), false);
+  const rejection = { stage: 'protocol-rejection', protocolRejection: { sequence: 2,
+    eventType: 'run-completed', code: 'invalid-run-end', byteCount: 20, capturedByteCount: 20,
+    locator: 'suite/run/protocol-rejection.bin' } };
+  assert.equal(attempt({ ...partial, failureProvenance: rejection }), true);
+  assert.equal(attempt({ ...partial, failureProvenance: { ...rejection, protocolRejection: {
+    ...rejection.protocolRejection, locator: '../private' } } }), false);
+  assert.equal(attempt({ ...partial, failureProvenance: { ...rejection, protocolRejection: {
+    ...rejection.protocolRejection, locator: undefined } } }), false);
+  assert.equal(attempt({ ...partial, failureProvenance: { ...rejection, protocolRejection: {
+    ...rejection.protocolRejection, eventType: 'PRIVATE_RESPONSE' } } }), false);
 });

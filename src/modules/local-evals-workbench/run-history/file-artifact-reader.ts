@@ -10,6 +10,7 @@ import { ArtifactSafetyAdapter } from './artifact-safety-adapter.js';
 import { judgeMatchesAssertion, sourceField, storedSourceRecord } from './source-artifact.js';
 import { selectedSourceEvidence } from './selected-source-evidence.js';
 import { ProviderResponseArtifact } from './provider-response-artifact.js';
+import { ProtocolRejectionArtifact } from './protocol-rejection-artifact.js';
 export class FileArtifactReader implements ArtifactReaderPort {
   constructor(private readonly paths: ArtifactPaths, private readonly reader: BoundedArtifactReader,
     private readonly recovery?: InterruptedRunRecovery) {}
@@ -83,6 +84,14 @@ export class FileArtifactReader implements ArtifactReaderPort {
     if (selection.providerResponse && (selection.providerResponse.role !== (reference.role ?? 'tested-model')
       || selection.providerResponse.checkId !== reference.checkId)) return { status: 'blocked', reason: 'not-found' };
     return new ProviderResponseArtifact(this.paths).range(suiteId, runId, selection.caseId, selection.attempt, reference, offset, limit);
+  }
+  async protocolRejectionRange(suiteId: string, runId: string, locator: string, offset: number,
+    limit = 1024): Promise<Outcome<EvidenceFieldRange>> {
+    const summary = await this.summary(suiteId, runId);
+    if (summary.status !== 'ok') return summary;
+    const rejection = summary.value.failureProvenance?.protocolRejection;
+    if (!rejection?.locator || rejection.locator !== locator) return { status: 'blocked', reason: 'not-found' };
+    return new ProtocolRejectionArtifact(this.paths).range(suiteId, runId, locator, rejection.capturedByteCount, offset, limit);
   }
   async selectedSource(suiteId: string, runId: string, selection: Required<Selection>): Promise<Outcome<SourceEvidence | undefined>> {
     const selected = await this.get(suiteId, runId, { caseId: selection.caseId, attempt: selection.attempt });

@@ -11,8 +11,22 @@ export function validDiagnosticLink(value: unknown): value is DiagnosticLink {
 }
 
 export function validFailureProvenance(value: unknown): value is FailureProvenance {
-  if (!object(value) || !keys(value, ['stage', 'runnerReport', 'processExit'])
+  if (!object(value) || !keys(value, ['stage', 'runnerReport', 'processExit', 'protocolRejection'])
     || !['runner-report', 'unexpected-process-exit', 'timeout', 'protocol-rejection'].includes(String(value.stage))) return false;
+  if (value.protocolRejection !== undefined) {
+    const rejected = value.protocolRejection;
+    if (value.stage !== 'protocol-rejection' || !object(rejected)
+      || !keys(rejected, ['sequence', 'eventType', 'code', 'byteCount', 'capturedByteCount', 'locator'])
+      || !Number.isSafeInteger(rejected.sequence) || Number(rejected.sequence) < 0
+      || !code(rejected.eventType) || !code(rejected.code)
+      || !Number.isSafeInteger(rejected.byteCount) || Number(rejected.byteCount) < 0
+      || !Number.isSafeInteger(rejected.capturedByteCount) || Number(rejected.capturedByteCount) < 0
+      || Number(rejected.capturedByteCount) > Number(rejected.byteCount)
+      || Number(rejected.capturedByteCount) > 0 && rejected.locator === undefined
+      || rejected.locator !== undefined && (typeof rejected.locator !== 'string'
+        || !/^[A-Za-z0-9._/-]{1,240}$/.test(rejected.locator)
+        || rejected.locator.split('/').some(part => !part || part === '.' || part === '..'))) return false;
+  }
   if (value.runnerReport !== undefined && (!object(value.runnerReport) || !keys(value.runnerReport, ['status', 'code'])
     || !['error', 'interrupted'].includes(String(value.runnerReport.status))
     || value.runnerReport.code !== undefined && !code(value.runnerReport.code))) return false;

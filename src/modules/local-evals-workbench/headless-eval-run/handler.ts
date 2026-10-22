@@ -65,6 +65,7 @@ export async function headlessEvalRun(command: HeadlessEvalRunCommand, ports: He
     if (manifest.state !== execution.status || execution.runId !== runId) return finish({ status: 'error', runId, reason: 'persisted-state-mismatch' });
     const locators = await failedAssertionLocators({ ...manifest, cases: manifest.cases.slice(0, 20) }, ports.reader);
     return finish({ status: manifest.state, runId, ...(reason ? { reason } : {}), outcome: manifest.outcome,
+      ...(manifest.failureProvenance?.protocolRejection ? { protocolRejection: manifest.failureProvenance.protocolRejection } : {}),
       cases: locators.cases, ...(locators.nextLocatorOffset !== null ? { nextLocatorOffset: locators.nextLocatorOffset } : {}),
       ...(manifest.cases.length > 20 ? { nextCaseOffset: 20 } : {}),
       diagnostics: manifest.diagnostics.slice(0, 5).filter(item => SAFE_REASON.test(item)) });
