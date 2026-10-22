@@ -116,8 +116,7 @@ export class ExecuteEventValidator {
           : data.role !== 'tested-model' || data.checkId !== undefined || data.modelId !== this.selection.model
             || !['initial', 'correction', 'post-tool'].includes(String(data.phase))
             || data.phase === 'correction' && ![...this.modelCalls.values()].some(call =>
-              call.role === 'tested-model' && call.provisionalTurnId === data.provisionalTurnId && call.completed)
-            || data.phase === 'post-tool' && this.sourceTools.size === 0)) throw new Error('invalid-call-start');
+              call.role === 'tested-model' && call.provisionalTurnId === data.provisionalTurnId && call.completed))) throw new Error('invalid-call-start');
       this.modelCalls.set(data.callId, { caseId, attempt: this.attemptNumber, provisionalTurnId: data.provisionalTurnId, role: data.role as string,
         ...(judge ? { checkId: data.checkId as string } : {}), modelId: data.modelId as string, ended: false, completed: false });
       return { type: 'model-call-started', caseId, attempt: this.attemptNumber, callId: data.callId,

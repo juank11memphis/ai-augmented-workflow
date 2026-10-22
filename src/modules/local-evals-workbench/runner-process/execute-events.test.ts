@@ -108,10 +108,10 @@ test('v4 correction needs a preceding completed tested-model call on the same tu
   const correction = completed.accept(e(5, 'model-call-started', start('call-2', 'turn-1', 'correction')));
   assert.equal(correction.type, 'model-call-started');
   if (correction.type === 'model-call-started') assert.equal(correction.phase, 'correction');
-  assert.throws(() => ready().accept(e(2, 'model-call-started', start('call-2', 'turn-1', 'post-tool'))), /invalid-call-start/);
+  assert.equal(ready().accept(e(2, 'model-call-started', start('call-2', 'turn-1', 'post-tool'))).type, 'model-call-started');
 });
 
-test('source correction preserves complete model records without tool delivery and rejects wrong turns', () => {
+test('source correction needs a prior call and post-tool source still needs tool delivery', () => {
   const selected: ExecutionSelection = { ...selection, cases: [{ ...singleCase,
     turns: [...singleCase.turns, singleCase.turns[0]!],
     assertions: [{ id: 'exact', type: 'output-equals', expected: { type: 'inline', text: 'revised' } }] }] };
@@ -424,4 +424,51 @@ test('version-two source links delivered tool results and post-tool continuation
   assert.deepEqual(validator.accept(source(6, continuation)), { type: 'source-record', caseId: 'case',
     attempt: 1, sequence: 6, record: continuation });
   assert.equal(validator.accept(e(7, 'case-attempt-completed', { status: 'completed', sourceEvidenceComplete: true })).type, 'case-completed');
+});
+
+test('v4 accepts a post-tool call before turn completion and linked sources after tool delivery', () => {
+  const selected: ExecutionSelection = { ...selection, cases: [{ ...singleCase,
+    assertions: [{ id: 'exact', type: 'output-equals', expected: { type: 'inline', text: 'done' } }] }] };
+  const validator = new ExecuteEventValidator('request', selected);
+  let sequence = 0;
+  const accept = (type: string, data: unknown, caseId: string | null = 'case') =>
+    validator.accept({ ...event(sequence++, type, caseId, data), protocolVersion: 4 });
+  const source = (record: { id: string }) => {
+    const bytes = Buffer.from(JSON.stringify(record));
+    return accept('source-record-chunk', { recordId: record.id, index: 0, count: 1,
+      byteLength: bytes.length, base64: bytes.toString('base64') });
+  };
+  const start = (callId: string, phase: 'initial' | 'post-tool') => ({ callId,
+    provisionalTurnId: 'turn-1', role: 'tested-model', modelId: 'fake', phase });
+  const response = (callId: string, body: string) => {
+    const bytes = Buffer.from(body);
+    accept('provider-response-started', { callId, provisionalTurnId: 'turn-1', modelId: 'fake', originalByteLength: bytes.length });
+    accept('provider-response-chunk', { callId, index: 0, base64: bytes.toString('base64') });
+    accept('provider-response-completed', { callId, completeness: 'complete' });
+  };
+  accept('run-started', { model: 'fake', judgeModel: null }, null);
+  accept('case-attempt-started', {});
+  accept('model-call-started', start('call-1', 'initial'));
+  response('call-1', '{"toolCalls":[{"id":"tool-1","name":"lookup"}]}');
+  accept('model-call-ended', { callId: 'call-1', status: 'completed' });
+  assert.equal(accept('model-call-started', start('call-2', 'post-tool')).type, 'model-call-started');
+  response('call-2', 'done');
+  accept('model-call-ended', { callId: 'call-2', status: 'completed' });
+  accept('conversation-turn-completed', { turnIndex: 0, turnId: 'turn-1', role: 'assistant', output: 'done' });
+  accept('tool-interaction-recorded', { toolId: 'tool-1', turnId: 'turn-1', position: 0,
+    name: 'lookup', arguments: { term: 'x' }, outcome: 'result', result: { found: true } });
+  const initial = { kind: 'model-call', id: 'call-1', turnId: 'turn-1', checkId: 'exact', modelId: 'fake',
+    phase: 'initial', elapsedMs: 2, inputMessages: [{ role: 'user', content: 'input' }], rawText: '',
+    rawToolCalls: [{ id: 'tool-1', name: 'lookup', arguments: { term: 'x' } }], normalizedOutput: '' };
+  const delivery = { kind: 'tool-delivery', id: 'tool-1', turnId: 'turn-1', checkId: 'exact',
+    modelCallId: 'call-1', name: 'lookup', request: { term: 'x' }, result: { found: true },
+    outcome: 'result', elapsedMs: 4 };
+  const continuation = { ...initial, id: 'call-2', phase: 'post-tool', rawText: 'done',
+    inputMessages: [...initial.inputMessages, { role: 'tool', content: '{"found":true}' }],
+    rawToolCalls: [], normalizedOutput: 'done' };
+  assert.equal(source(initial).type, 'source-record');
+  assert.equal(source(delivery).type, 'source-record');
+  assert.equal(source(continuation).type, 'source-record');
+  assert.equal(accept('case-attempt-completed', { status: 'completed', sourceEvidenceComplete: true }).type, 'case-completed');
+  assert.equal(accept('run-completed', { status: 'completed' }, null).type, 'run-completed');
 });
