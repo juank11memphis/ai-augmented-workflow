@@ -1,5 +1,5 @@
 {
-  "templateVersion": "262",
+  "templateVersion": "263",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "86",
+      "version": "87",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Guards Story PR readiness and squash merge with current host evidence, and requires verified Story issue closure before the next Story."
+        "Requires human-reviewed Epic PR merge readback before Epic issue closure, and verified Epic merges before Feature issue closure and completion messages."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
