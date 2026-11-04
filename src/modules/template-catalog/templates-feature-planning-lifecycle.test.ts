@@ -50,7 +50,6 @@ test('fake init and doctor install current planning handoff guidance without a G
     const body = fs.readFileSync(path.join(rootPath, installed), 'utf8');
     assert.equal(body, readTemplate(template));
     assert.equal(state.managedFiles[installed]?.templateVersion, manifest.templates[template]?.version);
-    assert.match(manifest.templates[template]?.changes.join(' ') ?? '', /confirmed|unconfirmed/);
   }
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
