@@ -130,6 +130,10 @@ Responsive guidance:
 
 ## Output location
 
+For planned feature work, use the published BRD issue artifact from GitHub MCP as the prerequisite, not an unpublished draft or local substitute. Find the intended Feature issue in the project's GitHub repository before creating one; retain its confirmed issue identity and link as the stable parent/index. After the existing interview and final check-in, publish the completed UX document through GitHub MCP as the UX issue artifact on that Feature issue. Read back the same issue and artifact to confirm its identity and link before announcing success or permitting SDD to read it. On an uncertain write, read back before retrying; do not create a duplicate Feature issue. If confirmation fails, state only confirmed effects, stop, and do not call the in-session draft durable. After confirmation, show the Feature issue link and UX artifact link, then suggest SDD as the next stage without starting it; the user chooses progression.
+
+The local path convention below applies only to explicitly local UX work and is not a planned-feature fallback.
+
 Write to `docs/features/<feature-slug>/ux.md` using the feature artifact slug. Keep same-feature artifacts together; do not write UX specs in product, software design, story, or implementation-plan files.
 
 ## Mockup requirements
@@ -186,7 +190,7 @@ The Binding Mockups section is authoritative for downstream work unless this UX 
 
 ## Final response behavior
 
-After writing the file, final-answer with only the path created or updated. Do not paste the UX spec body, excerpt, outline, mockups, or section summaries.
+For explicitly local UX work, after writing the file, final-answer with only the path created or updated. For planned feature work, use the confirmed issue/artifact links and next-stage message above. Do not paste the UX spec body, excerpt, outline, mockups, or section summaries.
 
 Only include the full UX spec when the user explicitly asks for inline review in the current request.
 

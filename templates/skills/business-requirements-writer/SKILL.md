@@ -103,7 +103,9 @@ If the Capabilities Map is missing:
 
 ## Output location
 
-For planned feature work, first follow the project AGENTS.md GitHub readiness gate before creating the Feature issue or first feature artifact: establish this project's GitHub remote, then verify usable GitHub MCP issue create/read, native sub-issue, and issue-artifact read/write access in that same repository. Config presence is not access. On missing remote or MCP capability, stop with the distinct project-instruction message and next action; create no Feature issue, artifact, or local fallback. Keep local setup, maintenance, and narrow fixes independent. Once ready, publish the completed BRD as an issue artifact on the Feature issue before downstream work uses it; normal host mutation permission still applies. If downstream GitHub Epic/Story planning is unavailable after SDD publication, stop rather than writing local substitutes.
+For planned feature work, first follow the project AGENTS.md GitHub readiness gate before creating the Feature issue or first feature artifact: establish this project's GitHub remote, then verify usable GitHub MCP issue create/read, native sub-issue, and issue-artifact read/write access in that same repository. Config presence is not access. On missing remote or MCP capability, stop with the distinct project-instruction message and next action; create no Feature issue, artifact, or local fallback. Keep local setup, maintenance, and narrow fixes independent. Normal host mutation permission still applies.
+
+After the existing discovery and final check-in, find the intended Feature issue in that repository before creating one; use its confirmed issue identity and link as the stable parent/index. Publish the completed BRD through GitHub MCP as the BRD issue artifact on that Feature issue. Read back that same issue and artifact to confirm its identity and link before reporting publication or allowing downstream use. If a write is uncertain, read back before retrying; never create a duplicate Feature issue or claim an unpublished in-session draft is durable. If confirmation fails, report only confirmed effects and stop. After confirmation, show the Feature issue link and BRD artifact link, then suggest UX for UI-changing work or SDD when prerequisites are ready; the user chooses whether to start that stage. If downstream GitHub Epic/Story planning is unavailable after SDD publication, stop rather than writing local substitutes.
 
 For planned feature work, the GitHub Feature issue artifact is authoritative; the local path convention below does not authorize a substitute file. For other explicitly local BRD work, when asked to create a file, write the BRD to:
 
@@ -301,7 +303,7 @@ If technical or UX decisions come up, either capture the resolved product-level 
 
 ### 6. Save the document
 
-Create the feature directory if needed and save the document at:
+For explicitly local BRD work, create the feature directory if needed and save the document at:
 
 ```txt
 docs/features/<feature-slug>/brd.md
