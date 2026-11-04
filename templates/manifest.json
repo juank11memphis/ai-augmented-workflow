@@ -1,5 +1,5 @@
 {
-  "templateVersion": "260",
+  "templateVersion": "261",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "84",
+      "version": "85",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Clarifies compact, medium, and wide checked Task handoff messages and pauses honestly on partial publication."
+        "Adds current-remote resumption and protected-local-work checks before choosing or publishing a checked Task."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

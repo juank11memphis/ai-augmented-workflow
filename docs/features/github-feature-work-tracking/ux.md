@@ -128,7 +128,7 @@ Task 3 is already complete
 
 Another engineer pushed it.
 Your unfinished Task 3 edits were
-discarded. Other edits remain.
+discarded. No other edits changed.
 
 Next: Task 4
 ```

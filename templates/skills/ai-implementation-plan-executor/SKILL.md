@@ -235,9 +235,41 @@ Before any executor dispatch, verify that every Task in the accepted plan has it
 
 Once the current reviewed identity is accepted automatically or by the human, compare it again immediately before each executor dispatch. Preserve the verified Story integration gate below. Do not introduce automatic code review or a post-code architecture-review/repair loop.
 
+### Resume from the current remote checkpoint
+
+At session start, before choosing a Task, and again before publishing one, identify the exact repository, Story issue, plan artifact, progress artifact, remote Story branch, and draft Story PR when present. Read their current identities and content, plus the local branch, head, index, and worktree. Compare the accepted reviewable plan fingerprint with the authoritative plan, the ordered issue checklist with progress, the remote head with the last verified pushed Task commit, and the PR head/base with the Story/Epic branches. A local status, local commit, submitted push, or unverified PR is not a checkpoint. Missing access, stale fingerprint, missing or disagreeing evidence, unsafe Git state, or a head/base change during observation pauses Task choice and publication for readback and reconciliation; do not infer the next Task.
+
+If the current Task is incomplete remotely, another engineer may restart that same Task from the **last verified pushed checkpoint**, after checking local work safety and the accepted plan. Do not claim an owner, lock, or in-progress handoff of uncommitted edits. If remote evidence shows it completed elsewhere, require both a remote commit attributable to that Task and matching completed Task status and progress naming that commit and check evidence. Never offer the completed Task again. Determine the actual next ordered Task, or the Story or Epic review step when no Task remains, only after reconciling the observed branch, issue, plan, progress, and PR.
+
+Before **any** discard, branch reconciliation, or advancement, inventory local tracked/untracked edits and index state by path and attribution. Unrelated or ambiguous edits are protected: pause with all edits intact, name affected paths in review detail, and ask for attribution or a safe workspace decision. Do not discard even clearly superseded Task edits while protected work remains. Only with no unrelated or ambiguous edits and a safe worktree/index may the main agent discard edits confidently attributable to the remotely completed Task, using path-scoped observed operations, then reconcile the branch and re-read the remote facts before selecting next work. If attribution, operation effect, branch ancestry, or resulting state is uncertain, stop without claiming reconciliation. Never use a broad reset, automatic stash, force push, blind retry, or silent overwrite. A concurrent remote advance or push rejection requires fresh branch/issue/PR readback and a stop, not an automatic retry.
+
+Report resumption in one linear **current state → next action → consequence → optional detail** order, with safe issue/PR and commit identifiers only. At compact width, distinguish:
+
+```text
+Task 3 is already complete
+Another engineer pushed it.
+Your unfinished Task 3 edits were
+discarded. No other edits changed.
+Next: Task 4
+
+Task 3 is already complete
+Your local edits need review.
+Nothing was discarded.
+Feature work is paused.
+Review local edits, then retry.
+
+Cannot choose the next Task
+The Story marks Task 3 complete,
+but the branch lacks its commit.
+No local edits were discarded.
+Review Story and branch, then retry.
+```
+
+Use the first state only after safe attribution and reconciliation; replace Task 4 with the actual Story or Epic step when appropriate. The second covers unrelated or ambiguous edits before any discard or advance. The third states the **observed** issue/branch/PR disagreement, not an assumed direction; use it also for stale or concurrently changed remote evidence with the specific review need. For an incomplete Task, say `Last checkpoint: Task <n> — checked and pushed` and `Next: Restart Task <n+1> from that checkpoint`, without implying its local edits transferred. At medium width, add `Feature / Story`, last verified checkpoint, actual next step, and confirmed `Story`/`Draft PR` links when they fit. At wide width, checkpoint and next-step labels may share a line and confirmed references may align beneath them. For blocked states, show what was **not** discarded, the paths or conflicting references only in expanded detail, and the specific review/retry action. Keep the same reading order at every width; wrap rather than adding a dashboard, and never ask a routine continue question or claim a checkpoint from unverified effects.
+
 ### Checked-Task dispatch on a Story branch
 
-Before branch creation and each dispatch, compare the accepted reviewable plan identity; status and progress alone do not change it. If acceptance is absent or stale, a Task lacks its prescribed executable check and expected evidence, or the next ordered Task is unclear, stop for plan review rather than inventing work or a check. Inspect the current branch, index, worktree, and available isolation. Only after acceptance, create or select one dedicated Story branch. Refuse branch collisions, unrelated staged or user changes, ambiguous pre-existing work, unavailable source control/isolation, or a real-credential need. Reconcile existing plans or branches with the human; never stash, reset, rebase, overwrite, force-add ignored files, or expose credentials to unblock execution.
+Before branch creation and each dispatch, apply the current-remote resumption gate above and compare the accepted reviewable plan identity; status and progress alone do not change it. If acceptance is absent or stale, a Task lacks its prescribed executable check and expected evidence, or the next ordered Task is unclear, stop for plan review rather than inventing work or a check. Inspect the current branch, index, worktree, and available isolation. Only after acceptance, create or select one dedicated Story branch. Refuse branch collisions, unrelated staged or user changes, ambiguous pre-existing work, unavailable source control/isolation, or a real-credential need. Reconcile existing plans or branches with the human; never stash, reset, rebase, overwrite, force-add ignored files, or expose credentials to unblock execution.
 
 After selecting the Story branch and immediately before the first Task dispatch, change only the selected Story file's `**Status:**` field from `ready-for-planning` to `in-progress`. On a resumed Story, preserve `in-progress`; if the field is missing, `draft`, `done`, or otherwise conflicts with the accepted plan and execution evidence, stop and reconcile it with the human. Leave the Story `in-progress` through Task execution, human-decision blockers, PR blockers, and final PR review. This status edit is progress metadata, not plan approval or permission to commit ignored Story files.
 
@@ -245,7 +277,7 @@ Dispatch exactly the next ordered Task to a **fresh** `sibu-implementation-execu
 
 ### Publish each checked Task checkpoint
 
-The main agent owns publication, not the checked-Task worker. Immediately before publication, recheck the accepted exact plan fingerprint against the authoritative Story plan artifact and read back the Story issue checklist, progress artifact, remote Story branch head, and draft PR when present. A stale plan fingerprint, concurrent remote advance, mismatched branch or issue state, unsafe local edits, or uncertain identity stops publication and later Task dispatch for reconciliation; never force push, stash, reset, or blindly retry a create or update.
+The main agent owns publication, not the checked-Task worker. Immediately before publication, repeat the current-remote resumption and protected-local-work gate above: recheck the accepted exact plan fingerprint against the authoritative Story plan artifact and read back the Story issue checklist, progress artifact, remote Story branch head, and draft PR when present. A stale plan fingerprint, concurrent remote advance, mismatched branch or issue state, unsafe local edits, or uncertain identity stops publication and later Task dispatch for reconciliation; never force push, stash, reset, or blindly retry a create or update.
 
 For each Task, use this order: **passing prescribed check and every `Done when` item → scoped Task-ID commit → push that checked commit → publish matching completed Task status in the compact Story issue checklist and append matching progress in its issue artifact → after the first pushed Task, open one draft Story PR targeting the observed Epic branch**. The progress entry records the actual check/result and evidence, pushed commit ID, next Task or workflow step, and safe gotchas; the checklist holds only ordered Task IDs and statuses, not detailed logs. Confirm that the remote Story head contains the Task commit and that the issue checklist and progress artifact name the same completed Task and pushed commit before reporting a cross-machine checkpoint. A local commit, submitted push, or issue write alone is not a handoff. The first Task's handoff additionally requires the draft PR to be confirmed open with the expected Story head and Epic base, including for a one-Task Story. Later Tasks update the same branch and PR without a routine human continuation prompt.
 
