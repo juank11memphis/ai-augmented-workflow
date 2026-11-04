@@ -1,5 +1,5 @@
 {
-  "templateVersion": "255",
+  "templateVersion": "256",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -142,24 +142,24 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "36",
+      "version": "37",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Carries scoped Feature Decision IDs and SDD pointers into planning packets while retaining source verification and changed-plan review."
+        "Publishes exact Story plans and concise progress as confirmed GitHub issue artifacts, with compact ordered Task status in the Story issue."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Verifies governing SDD Feature Decision records before reuse and carries relevant pointers into Story steps and fresh Task context."
+        "Returns exact transient plan content for GitHub Story artifacts without requiring duplicate local planning files."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "79",
+      "version": "80",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Starts the first unintegrated Story of an identified Epic without a separate human start prompt, while preserving source and plan-review gates."
+        "Reviews the exact published Story plan artifact by stable content fingerprint before Task execution."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -359,10 +359,10 @@
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Reviews planned verification against SDD methods, coverage, evidence, and human limits while separating bounded findings from material risks."
+        "Accepts exact GitHub Story, plan, and source artifact identities for independent read-only plan review."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {
