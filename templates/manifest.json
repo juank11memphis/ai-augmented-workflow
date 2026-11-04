@@ -1,5 +1,5 @@
 {
-  "templateVersion": "258",
+  "templateVersion": "259",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "82",
+      "version": "83",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Aligns planning handoff with confirmed Story and plan links and an explicit publication-unconfirmed stop."
+        "Publishes each checked Task checkpoint and opens a draft Story PR after the first pushed Task, with safe readback before continuing."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

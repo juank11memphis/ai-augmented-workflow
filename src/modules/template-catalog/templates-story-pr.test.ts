@@ -28,14 +28,14 @@ describe('future packaged verified Story PR contract', () => {
     assert.match(gatekeeper, /An absent, unavailable, stale, or ambiguous required check or host policy is not permission to merge/);
   });
 
-  it('opens one PR only after accepted plan, checked Tasks, and Story validation', () => {
+  it('makes the existing draft PR ready only after accepted plan, checked Tasks, and Story validation', () => {
     assertInOrder(gatekeeper, [
       'exact accepted plan identity is still current',
       "every Task's prescribed check and each `Done when` item have evidence",
       'actual Story-level validation passes',
     ]);
-    assert.match(gatekeeper, /main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/i);
-    assert.match(gatekeeper, /Do not open a PR early, from another branch, or with missing or failed required local checks/i);
+    assert.match(gatekeeper, /main agent, never the Task executor, makes the existing \*\*draft Story PR\*\*/i);
+    assert.match(gatekeeper, /Do not make the PR ready from another branch or with missing or failed required local checks/i);
   });
 
   it('keeps main-only PR ownership and no routine human Story decision', () => {
@@ -76,6 +76,6 @@ describe('future packaged verified Story PR contract', () => {
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
     const executorTemplate = manifest.templates[templatePath];
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /confirmed Story and plan links.*publication-unconfirmed stop/i);
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /checked Task.*draft Story PR.*safe readback/i);
   });
 });
