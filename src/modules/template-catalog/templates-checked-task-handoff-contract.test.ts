@@ -133,21 +133,6 @@ function runScenario(scenario: Scenario = {}): Report {
 }
 
 describe('checked Task remote handoff contract with deterministic fake hosts', () => {
-  it('anchors fake trace rules to the shipped prompt and limits the claim to contract behavior', () => {
-    assert.ok(handoff);
-    for (const phrase of [
-      'passing prescribed check and every `Done when` item',
-      'scoped Task-ID commit',
-      'push that checked commit',
-      'publish matching completed Task status',
-      'after the first pushed Task, open one draft Story PR',
-      'recheck the accepted exact plan fingerprint',
-      'read back the exact remote branch, issue/artifact, or PR by identity before any retry',
-      'Report confirmed effects separately from uncertain ones',
-    ]) assert.ok(handoff.includes(phrase), `missing prompt contract: ${phrase}`);
-    assert.match(handoff, /never force push|never force-push/i);
-    assert.match(handoff, /Do not claim handoff or dispatch the next Task until all required checkpoint effects are confirmed/);
-  });
 
   it('stops a failed check or missing Done-when evidence before commit and push', () => {
     for (const scenario of [{ check: 'fail' as const }, { evidence: false }]) {

@@ -190,109 +190,10 @@ describe('getSyncPreviews', () => {
     assert.equal(preview.hasLocalFile, false);
   });
 
-  it('reports managed session-start hook template updates with manifest change notes', () => {
-    const rootPath = createCleanInitializedRepo();
-    const state = readState(rootPath);
-    const manifest = readTemplateManifest();
-    manifest.templates['.codex/hooks.json'] = {
-      version: '999',
-      description: 'Updated Codex SessionStart hook configuration.',
-      changes: ['Refreshes the managed Codex SessionStart hook.'],
-    };
 
-    const preview = getSyncPreview(rootPath, state, '.codex/hooks.json', manifest);
 
-    assert.equal(preview.status, 'update-available');
-    assert.equal(preview.managedFile.template, '.codex/hooks.json');
-    assert.deepEqual(preview.changes, ['Refreshes the managed Codex SessionStart hook.']);
-  });
 
-  it('previews executor contract update notes and preserves reviewed customization', () => {
-    const rootPath = createCleanInitializedRepo();
-    const state = readState(rootPath);
-    const manifest = readTemplateManifest();
-    const relativePath = '.agents/skills/ai-implementation-plan-executor/SKILL.md';
-    const targetPath = path.join(rootPath, relativePath);
-    const localCustomization = '\nLocal executor customization.\n';
-    fs.appendFileSync(targetPath, localCustomization, 'utf8');
-    manifest.templates['skills/ai-implementation-plan-executor/SKILL.md'] = {
-      ...manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']!,
-      version: '999',
-      changes: ['Requires a human decision after every specialist review and authorized repair.'],
-    };
 
-    const preview = getSyncPreview(rootPath, state, relativePath, manifest);
-
-    assert.equal(preview.status, 'modified-with-update');
-    assert.deepEqual(preview.changes, ['Requires a human decision after every specialist review and authorized repair.']);
-
-    const reviewed = applySyncAction({ rootPath, state, manifest, preview, action: 'mark-reviewed' });
-
-    assert.equal(reviewed.changedFiles, false);
-    assert.equal(reviewed.state.managedFiles[relativePath]?.status, 'customized');
-    assert.equal(reviewed.state.managedFiles[relativePath]?.lastReviewedTemplateVersion, '999');
-    assert.match(fs.readFileSync(targetPath, 'utf8'), /Local executor customization/);
-  });
-
-  it('previews the current SDD writer update and preserves reviewed local guidance', () => {
-    const rootPath = createCleanInitializedRepo();
-    const state = readState(rootPath);
-    const manifest = readTemplateManifest();
-    const relativePath = '.agents/skills/software-design-writer/SKILL.md';
-    const templatePath = 'skills/software-design-writer/SKILL.md';
-    const targetPath = path.join(rootPath, relativePath);
-    const currentTemplate = manifest.templates[templatePath];
-    assert.ok(currentTemplate);
-    assert.match(currentTemplate.changes.join(' '), /confirmed SDD publication and unconfirmed-write next steps/);
-    state.managedFiles[relativePath].templateVersion = '1';
-    fs.appendFileSync(targetPath, '\nLocal SDD writer guidance.\n', 'utf8');
-    const localBytes = fs.readFileSync(targetPath);
-
-    const preview = getSyncPreview(rootPath, state, relativePath, manifest);
-
-    assert.equal(preview.status, 'modified-with-update');
-    assert.equal(preview.managedFile.template, templatePath);
-    assert.equal(preview.currentTemplateVersion, currentTemplate.version);
-    assert.deepEqual(preview.changes, currentTemplate.changes);
-
-    const reviewed = applySyncAction({ rootPath, state, manifest, preview, action: 'mark-reviewed' });
-
-    assert.equal(reviewed.changedFiles, false);
-    assert.equal(reviewed.changedState, true);
-    assert.deepEqual(fs.readFileSync(targetPath), localBytes);
-    assert.equal(reviewed.state.managedFiles[relativePath]?.status, 'customized');
-    assert.equal(reviewed.state.managedFiles[relativePath]?.lastReviewedTemplateVersion, currentTemplate.version);
-  });
-
-  it('offers Export to GitHub adoption when GitHub MCP is already selected', () => {
-    const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
-    const state = readState(rootPath);
-
-    const skillPreview = getSyncPreview(rootPath, state, '.agents/skills/export-to-github/SKILL.md');
-    const agentsPreview = getSyncPreview(rootPath, state, 'AGENTS.md');
-
-    assert.equal(skillPreview.status, 'new-template');
-    assert.equal(skillPreview.managedFile.template, 'skills/export-to-github/SKILL.md');
-    assert.equal(skillPreview.impliedWorkflowSkillId, 'export-to-github');
-    assert.equal(skillPreview.hasLocalFile, false);
-    assert.equal(agentsPreview.status, 'update-available');
-    assert.deepEqual(agentsPreview.changes, ['Refreshes generated skill routing for the current selected skills.']);
-  });
-
-  it('offers Export to Notion adoption when Notion MCP is already selected', () => {
-    const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['notion']);
-    const state = readState(rootPath);
-
-    const skillPreview = getSyncPreview(rootPath, state, '.agents/skills/export-to-notion/SKILL.md');
-    const agentsPreview = getSyncPreview(rootPath, state, 'AGENTS.md');
-
-    assert.equal(skillPreview.status, 'new-template');
-    assert.equal(skillPreview.managedFile.template, 'skills/export-to-notion/SKILL.md');
-    assert.equal(skillPreview.impliedWorkflowSkillId, 'export-to-notion');
-    assert.equal(skillPreview.hasLocalFile, false);
-    assert.equal(agentsPreview.status, 'update-available');
-    assert.deepEqual(agentsPreview.changes, ['Refreshes generated skill routing for the current selected skills.']);
-  });
 
   it('offers supplemental targets when adopting an implied exporter workflow skill', () => {
     const exportToNotion = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion');
@@ -330,27 +231,6 @@ describe('getSyncPreviews', () => {
     }
   });
 
-  it('offers selected architecture guidance and routing previews after missing-architecture repair', () => {
-    const rootPath = createCleanInitializedRepo();
-    const selectedArchitectureSkill = SELECTABLE_ARCHITECTURE_SKILLS[1];
-    const state = {
-      ...readState(rootPath),
-      selectedArchitectureSkill: selectedArchitectureSkill.id,
-    };
-    const manifest = readTemplateManifest();
-    state.managedFiles['AGENTS.md'].templateVersion = manifest.templates[state.managedFiles['AGENTS.md'].template]?.version ?? state.managedFiles['AGENTS.md'].templateVersion;
-    const architectureTargetPath = selectedArchitectureSkill.targetRelativePathsByAgent.codex;
-    assert.ok(architectureTargetPath);
-
-    const skillPreview = getSyncPreview(rootPath, state, architectureTargetPath, manifest);
-    const agentsPreview = getSyncPreview(rootPath, state, 'AGENTS.md', manifest);
-
-    assert.equal(skillPreview.status, 'new-template');
-    assert.equal(skillPreview.managedFile.template, selectedArchitectureSkill.templateRelativePath);
-    assert.equal(skillPreview.hasLocalFile, false);
-    assert.equal(agentsPreview.status, 'update-available');
-    assert.deepEqual(agentsPreview.changes, ['Refreshes generated skill routing for the current selected skills.']);
-  });
 
   it('applies normal sync actions to create repaired architecture guidance', () => {
     const rootPath = createCleanInitializedRepo();

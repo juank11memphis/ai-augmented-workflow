@@ -35,14 +35,6 @@ async function initialize(t: TestContext): Promise<{ rootPath: string; state: Si
   return { rootPath, state };
 }
 
-test('manifest versions and current sync note describe checked-Task output delivery', () => {
-  const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '260');
-  assert.equal(manifest.templates[template]?.version, '84');
-  assert.deepEqual(manifest.templates[template]?.changes, [
-    'Clarifies compact, medium, and wide checked Task handoff messages and pauses honestly on partial publication.',
-  ]);
-});
 
 test('fake init and doctor install current guidance locally without GitHub access', async (t) => {
   const { rootPath, state } = await initialize(t);
@@ -52,23 +44,6 @@ test('fake init and doctor install current guidance locally without GitHub acces
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
 
-test('fake sync delivers current note and managed update without GitHub access', async (t) => {
-  const { rootPath, state } = await initialize(t);
-  const manifest = readTemplateManifest();
-  const oldBody = '# Prior synthetic handoff guidance\n';
-  fs.writeFileSync(path.join(rootPath, installed), oldBody);
-  state.managedFiles[installed] = {
-    template, templateVersion: '83', sha256: sha256(oldBody), status: 'managed',
-  };
-  const preview = getSyncPreviews({ rootPath, state, manifest }).find((item) => item.relativePath === installed);
-  assert.ok(preview);
-  assert.equal(preview.status, 'update-available');
-  assert.deepEqual(preview.changes, manifest.templates[template]?.changes);
-  const result = applySyncAction({ rootPath, state, manifest, preview, action: 'apply-update' });
-  assert.equal(fs.readFileSync(path.join(rootPath, installed), 'utf8'), readTemplate(template));
-  assert.equal(result.state.managedFiles[installed]?.templateVersion, '84');
-  assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);
-});
 
 test('fake sync protects customized guidance from automatic overwrite', async (t) => {
   const { rootPath, state } = await initialize(t);

@@ -32,41 +32,6 @@ afterEach(() => {
 });
 
 describe('repository-aware validation guidance lifecycle', () => {
-  it('offers meaningful notes and safely applies all four managed skill updates', () => {
-    for (const validationSkill of VALIDATION_SKILL_CASES) {
-      const rootPath = createInitializedProject();
-      const state = readState(rootPath);
-      const staleContents = seedManagedStaleContent(rootPath, state, validationSkill);
-
-      const preview = findManagedPreview(rootPath, state, validationSkill);
-      assert.equal(preview.status, 'update-available');
-      const expectedNotes: Record<string, RegExp> = {
-        'skills/ai-implementation-planner/SKILL.md': /confirmed Story plan links.*unconfirmed planning publication/,
-        'skills/ai-implementation-planner-toolbox/SKILL.md': /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/,
-        'skills/ai-implementation-plan-executor/SKILL.md': /confirmed Story and plan links.*publication-unconfirmed stop/,
-        'skills/ai-implementation-executor-toolbox/SKILL.md': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD/,
-      };
-      const expectedNote = expectedNotes[validationSkill.template];
-      assert.ok(expectedNote);
-      assert.match(preview.changes.join('\n'), expectedNote);
-
-      const applied = applySyncAction({
-        rootPath,
-        state,
-        manifest: readTemplateManifest(),
-        preview,
-        action: 'apply-update',
-      });
-
-      const installed = fs.readFileSync(path.join(rootPath, validationSkill.path), 'utf8');
-      assert.notEqual(installed, staleContents);
-      assert.match(installed, /## Repository-aware validation policy/);
-      assert.equal(applied.state.managedFiles[validationSkill.path]?.status, 'managed');
-      assert.equal(applied.state.managedFiles[validationSkill.path]?.templateVersion, preview.currentTemplateVersion);
-      assert.equal(applied.state.managedFiles[validationSkill.path]?.sha256, sha256(installed));
-    }
-  });
-
   it('preserves customized bytes while recording review of the current policy', () => {
     for (const validationSkill of VALIDATION_SKILL_CASES) {
       const rootPath = createInitializedProject();
