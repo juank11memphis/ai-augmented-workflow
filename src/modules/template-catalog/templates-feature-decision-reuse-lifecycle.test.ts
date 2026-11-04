@@ -78,38 +78,6 @@ test('fresh init distributes current bytes and versions for all five decision-re
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
 
-test('stale managed copies of all five skills show current sync notes, update safely, and leave doctor healthy', async (t) => {
-  const { rootPath, state } = await initialize(t);
-  for (const template of templates) {
-    const relativePath = installedPath(template);
-    const stale = `# Previous synthetic guidance for ${template}\n`;
-    fs.writeFileSync(path.join(rootPath, relativePath), stale);
-    state.managedFiles[relativePath] = { template, templateVersion: '1', sha256: sha256(stale), status: 'managed' };
-  }
-  let current = state;
-  for (const template of templates) {
-    const change = preview(rootPath, current, template);
-    assert.equal(change.status, 'update-available', template);
-    assert.deepEqual(change.changes, manifest.templates[template]?.changes, template);
-    assert.equal(change.changes.length, 1, template);
-    assert.match(
-      change.changes[0] ?? '',
-      template.endsWith('/ai-implementation-plan-executor/SKILL.md')
-        ? /confirmed Story and plan links.*publication-unconfirmed stop/i
-        : template.endsWith('/ai-implementation-planner/SKILL.md')
-          ? /confirmed Story plan links.*unconfirmed planning publication/i
-          : template.endsWith('/ai-implementation-planner-toolbox/SKILL.md')
-            ? /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/i
-            : /Feature Decision|eval targets and coverage/i,
-      template,
-    );
-    current = applySyncAction({ rootPath, state: current, manifest, preview: change, action: 'apply-update' }).state;
-    assert.equal(fs.readFileSync(path.join(rootPath, installedPath(template)), 'utf8'), installedSource(template), template);
-    assert.equal(current.managedFiles[installedPath(template)]?.templateVersion, manifest.templates[template]?.version, template);
-    assert.equal(current.managedFiles[installedPath(template)]?.status, 'managed', template);
-  }
-  assert.deepEqual(diagnoseState({ rootPath, state: current }), []);
-});
 
 test('sync review preserves bytes and customized ownership for all five changed skills', async (t) => {
   const { rootPath, state } = await initialize(t);

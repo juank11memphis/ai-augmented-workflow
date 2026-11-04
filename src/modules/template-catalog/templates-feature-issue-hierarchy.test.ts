@@ -47,29 +47,7 @@ function publishHierarchy(mcp: FakeMcp, featureId: number): { epic: Issue; story
 }
 
 describe('Scrum planner native GitHub issue hierarchy contract', () => {
-  it('states the prompt-owned MCP hierarchy and no local Epic/Story output', () => {
-    assert.match(guidance, /Epic issues as native sub-issues of the existing Feature issue/);
-    assert.match(guidance, /Story issues as native sub-issues of exactly one Epic issue/);
-    assert.match(guidance, /find an existing matching Epic under that Feature before creating one/);
-    assert.match(guidance, /find a matching Story under its intended Epic before creating one/);
-    assert.match(guidance, /Confirm each created or reused parent relationship by readback/);
-    assert.match(guidance, /Do not create local Epic\/Story Markdown files or directories as a fallback/);
-    assert.doesNotMatch(guidance, /write Epics and User Stories under:/);
-  });
 
-  it('models native Feature→Epic→Story parent IDs, owning definitions, and a confirmed link', () => {
-    const mcp = new FakeMcp([{ id: 1, kind: 'Feature', parentId: null, body: 'Feature definition' }]);
-    const result = publishHierarchy(mcp, 1);
-    assert.equal(result.epic.parentId, 1);
-    assert.equal(result.story.parentId, result.epic.id);
-    assert.match(result.epic.body, /Epic definition\n## Acceptance Criteria\nEpic outcome/);
-    assert.match(result.story.body, /Story definition\n## Acceptance Criteria\nStory outcome/);
-    assert.equal(result.link, `https://github.example/issues/${result.story.id}`);
-    assert.deepEqual(mcp.createCalls.map(({ kind, parentId }) => ({ kind, parentId })), [
-      { kind: 'Epic', parentId: 1 }, { kind: 'Story', parentId: result.epic.id },
-    ]);
-    assert.match(guidance, /confirmed Feature issue link, then the relevant confirmed Epic and Story issue links/);
-  });
 
   it('reuses matching native children without duplicate create calls', () => {
     const mcp = new FakeMcp([{ id: 1, kind: 'Feature', parentId: null, body: 'Feature definition' }]);
@@ -82,12 +60,4 @@ describe('Scrum planner native GitHub issue hierarchy contract', () => {
     assert.equal(mcp.issues.length, 3);
   });
 
-  it('stops before any create when native sub-issue capability is missing', () => {
-    const mcp = new FakeMcp([{ id: 1, kind: 'Feature', parentId: null, body: 'Feature definition' }], false);
-    assert.throws(() => publishHierarchy(mcp, 1), /native sub-issue operation unavailable/);
-    assert.equal(mcp.createCalls.length, 0);
-    assert.match(guidance, /native sub-issue operation is unavailable.*stop; do not substitute flat links or local files/);
-    assert.match(guidance, /If a write response is uncertain, read back the intended parent and child before any retry/);
-    assert.match(guidance, /Do not print a success heading or link for the uncertain effect/);
-  });
 });

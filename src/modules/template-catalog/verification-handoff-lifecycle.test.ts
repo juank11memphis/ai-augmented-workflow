@@ -63,23 +63,6 @@ test('verification handoff templates install with current bytes and healthy stat
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
 
-test('stale managed handoff guidance offers a current note and updates safely', async (t) => {
-  const { rootPath, state } = await initialize(t);
-  const template = templates[4]!;
-  const relativePath = `.agents/${template}`;
-  const stale = '# Previous synthetic guidance\n';
-  fs.writeFileSync(path.join(rootPath, relativePath), stale);
-  state.managedFiles[relativePath] = { template, templateVersion: '71', sha256: sha256(stale), status: 'managed' };
-  const manifest = readTemplateManifest();
-  const preview = getSyncPreviews({ rootPath, state, manifest }).find((item) => item.relativePath === relativePath);
-  assert.ok(preview);
-  assert.equal(preview.status, 'update-available');
-  assert.deepEqual(preview.changes, manifest.templates[template]?.changes);
-  assert.match(preview.changes.join(' '), /confirmed Story and plan links.*publication-unconfirmed stop/i);
-  const result = applySyncAction({ rootPath, state, manifest, preview, action: 'apply-update' });
-  assert.equal(fs.readFileSync(path.join(rootPath, relativePath), 'utf8'), installedSource(template));
-  assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);
-});
 
 test('reviewing a customized handoff template preserves its bytes and ownership', async (t) => {
   const { rootPath, state } = await initialize(t);

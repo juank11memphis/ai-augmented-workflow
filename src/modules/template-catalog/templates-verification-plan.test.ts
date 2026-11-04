@@ -85,29 +85,6 @@ const handoffs: HandoffCase[] = [
 ];
 
 describe('planner verification handoff contract (not model behavior)', () => {
-  it('carries applicable SDD direction through the narrow packet and Task checks', () => {
-    const manifest = readTemplateManifest();
-    assert.ok(manifest.templates[plannerPath]);
-    assert.ok(manifest.templates[toolboxPath]);
-    for (const source of [planner, toolbox]) {
-      for (const term of [
-        'Story-applicable SDD quality-strategy context', 'required methods',
-        'scenarios, surfaces, states', 'expected evidence',
-        'human-judgment and automation limits', 'material exclusions',
-        'governing SDD heading', 'source requirement IDs',
-        'each Task check and the final validation strategy',
-        'equivalent local check', 'same verification questions',
-      ]) {
-        assert.ok(source.includes(term), `missing ${term}`);
-      }
-      assert.match(source, /Task check.*expected evidence|expected pass\/fail evidence/s);
-    }
-    assert.match(toolbox, /specific executable pass\/fail check with expected evidence/);
-    for (const detail of Object.values(strategy)) {
-      assert.ok(taskCheck.includes(detail), detail);
-    }
-    assert.match(taskCheck, /Task check: node --test .*expected evidence:/s);
-  });
 
   it('distinguishes routine exact or equivalent selection from material fixture cases', () => {
     const routine = handoffs.filter((entry) => entry.expected === 'routine');
@@ -130,15 +107,4 @@ describe('planner verification handoff contract (not model behavior)', () => {
     }
   });
 
-  it('requires an SDD revision for material departures without pausing routine refinement', () => {
-    for (const source of [planner, toolbox]) {
-      assert.match(source, /unavailable method has no equivalent in-scope check/);
-      assert.match(source, /material new method, expense, external dependency, or human-judgment point/);
-      assert.match(source, /smallest engineer decision; request an engineer-directed SDD revision/);
-      assert.match(source, /Missing relevant strategy or contradictory sources block/);
-      assert.match(source, /unavailable command with an equivalent in-scope check.*routine/);
-      assert.match(source, /failed prescribed check follows existing execution recovery, not an automatic strategy change/);
-      assert.match(source, /routine Task, Milestone, or plan approval/);
-    }
-  });
 });

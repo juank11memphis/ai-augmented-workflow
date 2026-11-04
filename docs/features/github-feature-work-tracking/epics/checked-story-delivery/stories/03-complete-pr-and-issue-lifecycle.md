@@ -6,7 +6,7 @@
 
 [Checked Story Delivery](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 
@@ -32,22 +32,21 @@ As an Epic reviewer, I want verified Story work consolidated in one human-review
 
 ## Acceptance Criteria
 
-- **AC-01 — Verified Story integration:** A Story issue closes only after its checked draft PR is made ready and verified squash-merged into the observed Epic branch; the next Story uses that updated head (BRD REQ-08, REQ-10). Verification: test.
-- **AC-02 — Human Epic review:** The Epic PR links every merged Story PR and reports actual checks and limits; it stays open for human review and is not merged automatically (BRD REQ-08, REQ-10). Verification: test.
-- **AC-03 — Verified issue closure:** The Epic issue closes only after its human-reviewed PR merge is verified, and the Feature issue closes only after all Epic PR merges are verified; no native PR-to-issue link is required (BRD REQ-08). Verification: test.
-- **AC-04 — Ambiguous effect stop:** Uncertain merge or closure effects are read back before retrying or announcing completion (BRD REQ-08, REQ-10). Verification: test.
+- **AC-01 — Verified Story integration:** A Story issue closes only after its checked draft PR is made ready and verified squash-merged into the observed Epic branch; the next Story uses that updated head (BRD REQ-08, REQ-10). Verification: inspect shipped guidance and actual PR merge/base/head readbacks before closure or next-Story selection.
+- **AC-02 — Human Epic review:** The Epic PR links every merged Story PR and reports actual checks and limits; it stays open for human review and is not merged automatically (BRD REQ-08, REQ-10). Verification: inspect the open Epic PR, linked merged Story PRs, and its reported evidence and limits.
+- **AC-03 — Verified issue closure:** The Epic issue closes only after its human-reviewed PR merge is verified, and the Feature issue closes only after all Epic PR merges are verified; no native PR-to-issue link is required (BRD REQ-08). Verification: inspect shipped closure guidance and actual merge/issue readbacks when those effects occur.
+- **AC-04 — Ambiguous effect stop:** Uncertain merge or closure effects are read back before retrying or announcing completion (BRD REQ-08, REQ-10). Verification: inspect the readback and stop rules in shipped guidance; do not infer success from an uncertain effect.
 - **AC-05 — Completion message:** Compact completion output shows the verified Epic PR and the Feature's actual open or complete state, matching the binding UX mockup (BRD REQ-08). Verification: visual comparison.
 
 ## Verification Expectations
 
-- Deterministic fake-host scenarios cover draft-to-ready Story PR, required check and merge-policy facts, verified squash merge before Story closure, human Epic merge before Epic closure, all Epic merges before Feature closure, ambiguous effects, and no native-link dependency.
-- Output assertions and final-Epic-review visual comparison cover verified-completion status. Static guidance checks cannot prove live GitHub or agent behavior.
+- Review shipped guidance and actual available PR/merge evidence for draft-to-ready Story PR, required host checks and merge-policy facts, verified squash merge before Story closure, human Epic merge before Epic closure, all Epic merges before Feature closure, ambiguous effects, and no native-link dependency. Test-local fake hosts do not prove agent behavior.
+- Compare verified-completion guidance with the binding UX mockup at the existing Story and final Epic PR gates. Do not claim Markdown wording assertions or a test-local output renderer establish live GitHub behavior or visual fidelity.
 - Planned Task and Story checks remain required. No separate behavioral QA, disposable-repository integration, or live-model eval is required.
 
 ## Validation
 
-- Focused deterministic guidance/fake-host tests, then `pnpm verify` after changes stabilize.
-- Applicable Sibu template-manifest and sync lifecycle checks with fakes.
+- `pnpm verify` after changes stabilize, plus applicable deterministic template-manifest/sync lifecycle and packed-runtime checks for changed distributed guidance.
 
 ## Domain Context
 

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "258",
+  "templateVersion": "263",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "82",
+      "version": "87",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Aligns planning handoff with confirmed Story and plan links and an explicit publication-unconfirmed stop."
+        "Requires human-reviewed Epic PR merge readback before Epic issue closure, and verified Epic merges before Feature issue closure and completion messages."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

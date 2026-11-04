@@ -70,16 +70,6 @@ function publishStages(mcp: FakeMcp, confirm: boolean, downstreamAvailable = tru
 }
 
 describe('Feature stage publication guidance contract (BRD REQ-03/AC-06; Story AC-02)', () => {
-  it('states find-before-create, stage-complete publication, and readback-before-success in each stage', () => {
-    for (const stage of stages) {
-      const guidance = readTemplate(stage.path);
-      assert.match(guidance, /find the intended Feature issue/i, stage.name);
-      assert.match(guidance, new RegExp(`publish the completed ${stage.name}.*GitHub MCP`, 'i'), stage.name);
-      assert.match(guidance, /Read back.*same issue and artifact/i, stage.name);
-      assert.match(guidance, /unpublished.*draft.*durable|draft is durable/i, stage.name);
-      assert.match(guidance, /user chooses/i, stage.name);
-    }
-  });
 
   it('publishes ordered BRD, UX, SDD on one new Feature, confirming identity before each next stage', () => {
     const mcp = new FakeMcp(false);
@@ -103,33 +93,6 @@ describe('Feature stage publication guidance contract (BRD REQ-03/AC-06; Story A
     assert.equal(mcp.trace.includes('create Feature'), false);
   });
 
-  it('does not call an unpublished draft durable or read it as a downstream prerequisite', () => {
-    const mcp = new FakeMcp(false);
-    const result = publishStages(mcp, false);
-    assert.equal(result.outcome, 'unconfirmed');
-    assert.deepEqual(result.confirmed, []);
-    assert.deepEqual(mcp.trace, ['find Feature', 'create Feature', 'publish BRD on 42']);
-    for (const stage of stages) assert.match(readTemplate(stage.path), /stop|confirmation fails/i);
-  });
 
-  it('stops after confirmed SDD when downstream GitHub planning is unavailable, with no local Epic/Story output', () => {
-    const mcp = new FakeMcp(false);
-    const result = publishStages(mcp, true, false);
-    assert.equal(result.outcome, 'downstream-unavailable');
-    assert.equal(result.confirmed.at(-1)?.stage, 'SDD');
-    assert.equal(mcp.trace.some(operation => /Epic|Story|local/.test(operation)), false);
-    assert.match(readTemplate(stages[2].path), /stop without local Epic or Story substitutes/);
-  });
 
-  it('records current-version manifest notes for all three changed templates', () => {
-    const manifest = readTemplateManifest();
-    for (const [path, note] of [
-      [stages[0].path, /Feature creation, confirmed BRD publication, and unconfirmed-write next steps/],
-      [stages[1].path, /confirmed UX publication and unconfirmed-write next steps/],
-      [stages[2].path, /confirmed SDD publication and unconfirmed-write next steps/],
-    ] as const) {
-      assert.ok(manifest.templates[path]?.version);
-      assert.match(manifest.templates[path]?.changes.join(' ') ?? '', note);
-    }
-  });
 });

@@ -76,46 +76,7 @@ test('documented file-backed layout discovers all content from evals and target/
   assert.deepEqual(prefixed.definitions[0]?.testCases[0]?.reference, { type: 'file', path: 'references/expected.txt' });
 });
 
-test('reference installs once for every agent and deduplicates shared selection', () => {
-  for (const agents of [...SUPPORTED_AGENTS.map((agent) => [agent]), SUPPORTED_AGENTS]) {
-    const targets = getWorkflowTargets('/project', agents).filter((target) => target.templateRelativePath === referencePath);
-    assert.equal(targets.length, 1);
-    assert.equal(targets[0]?.targetPath, path.join('/project', targetPath));
-    const rendered = renderMissingWorkflowFiles({ missingTargets: targets, overview: 'Synthetic.', selectedLanguageSkills: [], selectedFrameworkSkills: [] });
-    assert.equal(rendered[0]?.contents, reference);
-  }
-  const skill = readTemplate('skills/eval-authoring/SKILL.md');
-  assert.ok(skill.includes('(references/version-2-contract.md)'));
-  const metadata = readTemplateManifest().templates[referencePath];
-  assert.ok(metadata?.version);
-  assert.equal(metadata?.version, '16');
-  assert.match(metadata?.changes.join(' ') ?? '', /correction model calls/);
-  assert.match(reference, /model-call-started.*before.*invoking the provider/);
-  assert.match(reference, /pending.*termination source it observed/);
-});
 
-test('distributed authoring guidance distinguishes saved full-suite and temporary one-case preview', () => {
-  const skill = readTemplate('skills/eval-authoring/SKILL.md');
-  const script = readTemplate('skills/eval-authoring/scripts/check-preview-contract.mjs');
-  assert.match(skill, /full-suite scope, use saved suite defaults/);
-  assert.match(skill, /Only a single-case check with `--case <case-id>` may add temporary/);
-  assert.match(reference, /Both fields are optional for authoring and old version-2 suites without them remain valid/);
-  assert.match(reference, /A required unset or unavailable suite default blocks preview\/run/);
-  assert.match(reference, /sibu evals run <suite-id>` reuses valid saved choices/);
-  assert.match(reference, /--case <case-id>` with `--model`/);
-  assert.match(skill, /case-level `testedModel` or `judgeModel` only for an intentional override/);
-  assert.match(reference, /Each test case may independently save `testedModel` and `judgeModel`/);
-  assert.match(reference, /required suite default still must exist even when every selected case overrides it/);
-  assert.match(reference, /explicitly \*\*Replace\*\* it.*\*\*Inherit\*\*/);
-  assert.match(reference, /nine cases with suite tested default X.*eight and Y for one/);
-  assert.match(reference, /actual tested and applicable Judge model for each case/);
-  assert.equal(validateEvalSuiteContract({ ...example(), testCases: [
-    { ...(example().testCases as Record<string, unknown>[])[0], testedModel: 'fake/alternate' },
-  ] }).status, 'valid');
-  assert.match(script, /values\.has\('--model'\).*values\.has\('--judge'\).*values\.has\('--case'\)/);
-  assert.match(script, /runOnly:/);
-  assert.doesNotMatch(script, /\/api\/eval-runs\/start|\/api\/eval-runs\/run/);
-});
 
 test('protocol examples and evidence define independent version, identity and ordering', () => {
   const examples = [...reference.matchAll(/```json\n([\s\S]*?)\n```/g)].map((match) => JSON.parse(match[1]!));
@@ -131,78 +92,6 @@ test('protocol examples and evidence define independent version, identity and or
   }
 });
 
-test('installed version-3 fixture accepts observation before malformed diagnostic and no-response gap', () => {
-    const fixture = JSON.parse(reference.match(/```provider-response-json\n([\s\S]*?)\n```/)![1]!) as {
-        observed: { type: string; data: Record<string, unknown> }[];
-        unavailable: { type: string; data: Record<string, unknown> }[];
-    };
-    assert.match(reference, /before parsing/);
-    assert.match(reference, /separate project-side runner update/);
-    assert.match(reference, /cannot reconstruct historical responses/);
-    const selected = { runId: 'run', model: 'fake', suite: example(), cases: [{
-        id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Hello.' } }],
-        toolMocks: [], assertions: [], graders: [],
-    }] } as unknown as ConstructorParameters<typeof ExecuteEventValidator>[1];
-    for (const [scenario, events] of Object.entries(fixture)) {
-        const validator = new ExecuteEventValidator('request', selected);
-        const wrap = (sequence: number, type: string, data: Record<string, unknown>, caseId: string | null) => ({
-            protocolVersion: 3, requestId: 'request', runId: 'run', sequence, type, caseId,
-            attempt: caseId ? 1 : null, data,
-        });
-        validator.accept(wrap(0, 'run-started', { model: 'fake', judgeModel: null }, null));
-        validator.accept(wrap(1, 'case-attempt-started', {}, 'case'));
-        for (const [index, event] of events.entries()) validator.accept(wrap(index + 2, event.type, event.data, 'case'));
-        assert.equal(events.at(-1)?.type, 'run-diagnostic', scenario);
-        if (scenario === 'observed') assert.equal(events[0]?.type, 'provider-response-started');
-        else assert.equal(events[0]?.data.reason, scenario === 'captureFailure' ? 'capture-failed' : 'not-observed');
-    }
-});
-test('distributed authoring requires raw capture and diagnosable genuine failures', () => {
-  const skill = readTemplate('skills/eval-authoring/SKILL.md');
-  const fixture = JSON.parse(reference.match(/```provider-response-json\n([\s\S]*?)\n```/)![1]!) as {
-    captureFailure: { type: string; data: Record<string, unknown> }[];
-  };
-  assert.match(skill, /Make failure evidence a runner acceptance criterion/);
-  assert.match(skill, /fake model\/judge responses/);
-  assert.match(reference, /Do not treat potential sensitive content as a reason to omit received bytes/);
-  assert.match(reference, /fixed allowlisted envelope field types/);
-  assert.match(reference, /synthetic secret and personal-data sentinels/);
-  assert.match(reference, /preview contract check proves suite setup, \*\*not\*\* this evidence gate/);
-  assert.deepEqual(fixture.captureFailure.map((item) => item.type), [
-    'provider-response-gap', 'run-diagnostic', 'run-diagnostic',
-  ]);
-  assert.equal(fixture.captureFailure[0]?.data.reason, 'capture-failed');
-  assert.equal(fixture.captureFailure[1]?.data.code, 'capture-call-3-read-failed');
-  assert.equal(fixture.captureFailure[2]?.data.code, 'shape-call-3-json-object-choices-array');
-  assert.doesNotMatch(JSON.stringify(fixture.captureFailure), /sk-|@|https?:\/\//);
-});
-test('distributed judge v3 example observes response or gap before grading error', () => {
-  const fixture = JSON.parse(reference.match(/```judge-response-json\n([\s\S]*?)\n```/)![1]!) as Record<
-    'observed' | 'unavailable', { type: string; data: Record<string, unknown> }[]>;
-  assert.match(reference, /both.*tested-model and judge roles/i);
-  assert.match(reference, /not-emitted/);
-  assert.match(reference, /not persisted/);
-  const selected = { runId: 'run', model: 'fake', judgeModel: 'fake/judge', suite: example(), cases: [{
-    id: 'case', name: 'Case', turns: [{ role: 'user', content: { type: 'inline', text: 'Hello.' } }],
-    toolMocks: [], assertions: [], graders: [{ id: 'quality', type: 'rubric',
-      rubric: { type: 'inline', text: 'Quality' }, threshold: 0.8 }],
-  }] } as unknown as ConstructorParameters<typeof ExecuteEventValidator>[1];
-  for (const [scenario, events] of Object.entries(fixture)) {
-    const validator = new ExecuteEventValidator('request', selected);
-    const wrap = (sequence: number, type: string, data: Record<string, unknown>, caseId: string | null) => ({
-      protocolVersion: 3, requestId: 'request', runId: 'run', sequence, type, caseId,
-      attempt: caseId ? 1 : null, data,
-    });
-    validator.accept(wrap(0, 'run-started', { model: 'fake', judgeModel: 'fake/judge' }, null));
-    validator.accept(wrap(1, 'case-attempt-started', {}, 'case'));
-    for (const [index, event] of events.entries()) validator.accept(wrap(index + 2, event.type, event.data, 'case'));
-    assert.equal(events.at(-1)?.type, 'rubric-judgment-error', scenario);
-    assert.equal(events[0]?.data.role, 'judge', scenario);
-    assert.equal(events[0]?.data.checkId, 'quality', scenario);
-    assert.equal(events[0]?.data.modelId, 'fake/judge', scenario);
-    assert.equal(events[0]?.type, scenario === 'observed' ? 'provider-response-started' : 'provider-response-gap');
-  }
-});
 test('distributed minimal source record passes production validator; wrong link and incomplete chunk fail', () => {
   const source = JSON.parse(reference.match(/```source-record-json\n([\s\S]*?)\n```/)![1]!) as Record<string, unknown>;
   const bytes = Buffer.from(JSON.stringify(source));

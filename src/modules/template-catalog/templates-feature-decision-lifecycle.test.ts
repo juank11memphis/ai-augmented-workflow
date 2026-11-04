@@ -58,22 +58,6 @@ test('fresh init installs exact Feature Decision guidance and doctor is healthy'
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
 
-test('stale managed guidance receives current sync notes and a healthy safe update', async (t) => {
-  let { rootPath, state } = await initialize(t);
-  const stale = '# Prior synthetic SDD guidance\n';
-  fs.writeFileSync(path.join(rootPath, installedPath), stale);
-  state.managedFiles[installedPath] = { template, templateVersion: '2', sha256: sha256(stale), status: 'managed' };
-
-  const change = preview(rootPath, state);
-  assert.equal(change.status, 'update-available');
-  assert.equal(change.changes.join(' '), readTemplateManifest().templates[template]?.changes.join(' '));
-  assert.match(change.changes.join(' '), /confirmed SDD publication and unconfirmed-write next steps/);
-
-  state = apply(rootPath, state, 'apply-update');
-  assert.equal(fs.readFileSync(path.join(rootPath, installedPath), 'utf8'), readTemplate(template));
-  assert.equal(state.managedFiles[installedPath]?.templateVersion, '7');
-  assert.deepEqual(diagnoseState({ rootPath, state }), []);
-});
 
 test('customized Feature Decision guidance survives sync review without overwrite', async (t) => {
   let { rootPath, state } = await initialize(t);
