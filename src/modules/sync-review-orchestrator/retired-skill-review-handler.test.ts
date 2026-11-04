@@ -8,6 +8,7 @@ import { sha256 } from '../../shared/hash.js';
 import type { SibuState } from '../../shared/types.js';
 import { inspectWorkflow } from '../workflow-health-inspector/retirement-inspection.js';
 import { lookupSkillIdentity, parseSkillRetirements } from '../template-catalog/retirements.js';
+import { readTemplateManifest } from '../template-catalog/index.js';
 import { createRetiredSkillFileAdapter } from './retired-skill-file-adapter.js';
 import { previewRetiredSkill } from './retired-skill-preview.js';
 import { applyRetiredSkillReview, type RetiredSkillApplyPorts } from './retired-skill-review-handler.js';
@@ -108,7 +109,7 @@ test('cleanup preserves shared retired B guidance, selection, doctor finding and
     assert.equal(fs.existsSync(path.join(f.root, skillPath)), false);
     assert.equal(f.state().managedFiles[skillPath], undefined);
     assert.equal(f.state().managedFiles[routingPath]?.sha256, sha256(f.bytes(routingPath)));
-    assert.equal(f.state().managedFiles[routingPath]?.templateVersion, '56');
+    assert.equal(f.state().managedFiles[routingPath]?.templateVersion, readTemplateManifest().templates[routingPath]?.version);
     assert.equal(f.state().managedFiles[routingPath]?.status, 'managed');
     assert.match(f.bytes(routingPath), /^- older-skill guidance$/m);
     assert.doesNotMatch(f.bytes(routingPath), /^- former-skill guidance$/m);

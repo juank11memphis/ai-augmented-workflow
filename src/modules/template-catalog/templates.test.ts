@@ -245,7 +245,7 @@ describe('UX expert Business Domain Model grounding', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     const groundingTerms = ['domain language', 'user-facing concepts', 'rules', 'states', 'workflows', 'boundaries'];
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /confirmed UX publication and unconfirmed-write next steps/i);
     assert.equal(manifest.templates['docs/business-domain-model.md'], undefined);
 
     assert.match(contents, /docs\/product-vision\.md/);
@@ -253,7 +253,7 @@ describe('UX expert Business Domain Model grounding', () => {
     assert.match(contents, /docs\/features\/<feature-slug>\/brd\.md/);
     assert.match(contents, /business-domain-model-writer/);
     assert.match(contents, /Read product vision, Business Domain Model, and BRD/i);
-    assert.match(contents, /product artifact such as `docs\/features\/<feature-slug>\/brd\.md` that defines goals, scope, and acceptance criteria/i);
+    assert.match(contents, /published Feature BRD artifact for planned work, or a local BRD for explicitly local work, defining goals, scope, and acceptance criteria/i);
     assert.doesNotMatch(contents, /implementation code/i);
 
     for (const groundingTerm of groundingTerms) {

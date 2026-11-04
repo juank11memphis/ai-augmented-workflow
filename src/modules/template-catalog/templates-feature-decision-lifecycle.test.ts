@@ -67,11 +67,11 @@ test('stale managed guidance receives current sync notes and a healthy safe upda
   const change = preview(rootPath, state);
   assert.equal(change.status, 'update-available');
   assert.equal(change.changes.join(' '), readTemplateManifest().templates[template]?.changes.join(' '));
-  assert.match(change.changes.join(' '), /individual Mermaid diagrams/);
+  assert.match(change.changes.join(' '), /confirmed SDD publication and unconfirmed-write next steps/);
 
   state = apply(rootPath, state, 'apply-update');
   assert.equal(fs.readFileSync(path.join(rootPath, installedPath), 'utf8'), readTemplate(template));
-  assert.equal(state.managedFiles[installedPath]?.templateVersion, '4');
+  assert.equal(state.managedFiles[installedPath]?.templateVersion, '7');
   assert.deepEqual(diagnoseState({ rootPath, state }), []);
 });
 

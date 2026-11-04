@@ -20,9 +20,12 @@ describe('SAD/SDD instruction contracts (static, not model behavior)', () => {
 
   it('requires grounded feature design and routes real architecture changes upstream', () => {
     const sdd = readTemplate(`skills/${writers[1]}/SKILL.md`);
-    for (const concept of ['docs/features/<feature-slug>/sdd.md', 'docs/architecture.md', 'docs/features/<feature-slug>/brd.md', 'docs/features/<feature-slug>/ux.md', 'source BRD requirement IDs', 'verify IDs resolve', 'security/concurrency', 'quality strategy', 'without copying the entire SAD']) {
+    for (const concept of ['docs/features/<feature-slug>/sdd.md', 'docs/architecture.md', 'docs/features/<feature-slug>/brd.md', 'source BRD requirement IDs', 'verify IDs resolve', 'security/concurrency', 'quality strategy', 'without copying the entire SAD']) {
       assert.ok(sdd.includes(concept), concept);
     }
+    assert.match(sdd, /For planned feature work, read the published BRD and required UX issue artifacts through GitHub MCP, not unpublished drafts or local substitutes/);
+    assert.match(sdd, /local feature files only for explicitly local work/);
+    assert.match(sdd, /The local SDD path below applies only to explicitly local work, not as a planned-feature fallback/);
     assert.match(sdd, /missing required UX routes to `ux-expert`/);
     assert.match(sdd, /pause SDD work/);
     assert.match(sdd, /Do not edit the SAD or invent new modules/);
@@ -102,7 +105,7 @@ describe('atomic SAD/SDD distribution and consumer contracts', () => {
     for (const writer of writers) {
       const source = `skills/${writer}/SKILL.md`;
       assert.ok(MANDATORY_SKILLS.some((skill) => skill.templateRelativePath === source));
-      assert.match(manifest.templates[source]?.changes.join(' ') ?? '', writer === 'software-architecture-writer' ? /next step/ : /individual Mermaid diagrams/);
+      assert.match(manifest.templates[source]?.changes.join(' ') ?? '', writer === 'software-architecture-writer' ? /next step/ : /confirmed SDD publication and unconfirmed-write next steps/);
       for (const agent of SUPPORTED_AGENTS) {
         const targets = getSkillTargetsForAgents(MANDATORY_SKILLS.find((skill) => skill.templateRelativePath === source)!, [agent]);
         assert.ok(targets.some((target) => target.templateRelativePath === source && target.targetRelativePath === `.agents/skills/${writer}/SKILL.md`));

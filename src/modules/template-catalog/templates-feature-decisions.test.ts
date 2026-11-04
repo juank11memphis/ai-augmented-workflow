@@ -59,13 +59,15 @@ test('decision records do not grant operational or final Epic authority', () => 
   assert.match(discovery, /Preserve those operational and final human gates/);
 });
 
-test('manifest versions and current user-facing sync notes describe scenario-separated diagrams', () => {
+test('current SDD sync notes describe publication feedback while guidance retains separate diagrams', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '250');
+  assert.equal(manifest.templateVersion, '254');
   const template = manifest.templates['skills/software-design-writer/SKILL.md'];
-  assert.equal(template?.version, '4');
+  assert.equal(template?.version, '7');
   const notes = template?.changes.join(' ') ?? '';
-  assert.match(notes, /Separates happy-path, failure, and edge scenarios into individual Mermaid diagrams/);
-  assert.match(notes, /instead of combining outcomes in one diagram/);
+  assert.match(notes, /confirmed SDD publication and unconfirmed-write next steps/);
   assert.doesNotMatch(notes, /concrete verification proposal|settled approach in the SDD quality strategy/);
+  assert.match(skill, /one scenario per Mermaid diagram/);
+  assert.match(skill, /each meaningful failure or edge case that needs visual explanation its own titled diagram/);
+  assert.match(skill, /rather than packing alternative outcomes into the main flow or one omnibus diagram/);
 });
