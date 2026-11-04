@@ -17,13 +17,13 @@ Act as a senior UX/UI designer. Turn a sufficiently clear BRD into usable, simpl
 
 - `docs/product-vision.md`.
 - `docs/business-domain-model.md`.
-- A product artifact such as `docs/features/<feature-slug>/brd.md` that defines goals, scope, and acceptance criteria.
+- A published Feature BRD artifact for planned work, or a local BRD for explicitly local work, defining goals, scope, and acceptance criteria.
 - Confirmation from the request or source artifact that the feature has UI impact.
 - Enough user or product context to design affected surfaces, flows, responsive layouts, states, accessibility requirements, and binding mockups.
 
 ### What this skill writes
 
-- `docs/features/<feature-slug>/ux.md`.
+- The UX Feature issue artifact for planned work, or `docs/features/<feature-slug>/ux.md` only for explicitly local work.
 
 ### When this skill stops
 
@@ -47,7 +47,7 @@ Read `docs/product-vision.md` and apply only relevant implications: target user,
 
 Read `docs/business-domain-model.md` and apply only relevant domain language, user-facing concepts, business rules, states, workflows, and boundaries. Use this grounding to keep labels, flows, interaction states, errors, recovery paths, and boundaries aligned with reviewed business meaning.
 
-Require a product artifact such as `docs/features/<feature-slug>/brd.md` that defines goal, scope, and acceptance criteria. If the user has only an idea, route to `business-requirements-writer` first. If the artifact says there is no UI impact, say so and do not invent UI work.
+Require the authoritative BRD: the published Feature artifact for planned work, or `docs/features/<feature-slug>/brd.md` for explicitly local work. It must define goal, scope, and acceptance criteria. If the user has only an idea, route to `business-requirements-writer` first. If the artifact says there is no UI impact, say so and do not invent UI work.
 
 ## UX quality bar
 
@@ -132,6 +132,8 @@ Responsive guidance:
 
 For planned feature work, use the published BRD issue artifact from GitHub MCP as the prerequisite, not an unpublished draft or local substitute. Find the intended Feature issue in the project's GitHub repository before creating one; retain its confirmed issue identity and link as the stable parent/index. After the existing interview and final check-in, publish the completed UX document through GitHub MCP as the UX issue artifact on that Feature issue. Read back the same issue and artifact to confirm its identity and link before announcing success or permitting SDD to read it. On an uncertain write, read back before retrying; do not create a duplicate Feature issue. If confirmation fails, state only confirmed effects, stop, and do not call the in-session draft durable. After confirmation, show the Feature issue link and UX artifact link, then suggest SDD as the next stage without starting it; the user chooses progression.
 
+At planned-stage entry, read only the published BRD from the intended Feature issue through GitHub MCP into session context once per need. Vision and domain model remain repo-local. If BRD is missing, unpublished, or inconsistent with its Feature issue, stop UX work, name the missing prerequisite and next GitHub check; never use a local BRD substitute or create an on-disk feature-artifact cache. Before publishing, identify repository, Feature issue, and UX artifact. A call response alone is not confirmation: read back exact issue and UX content, identity, and link. After timeout or uncertain update, reconcile a confirmed effect without duplicate retry; retry only if readback establishes absence. If readback cannot establish a consistent effect, separate confirmed facts from uncertain effects, name UX publication as blocked and the next check or access repair, and stop SDD handoff. Do not log private artifact bodies, credentials, raw prompts, or large payloads.
+
 The local path convention below applies only to explicitly local UX work and is not a planned-feature fallback.
 
 Write to `docs/features/<feature-slug>/ux.md` using the feature artifact slug. Keep same-feature artifacts together; do not write UX specs in product, software design, story, or implementation-plan files.
@@ -198,6 +200,6 @@ Only include the full UX spec when the user explicitly asks for inline review in
 
 Reference the source BRD requirement IDs addressed by each UX flow; preserve its user needs, behavior, rules, and acceptance criteria.
 
-Use `docs/features/<feature-slug>/brd.md` as the business source. Qualify references with that source path and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
+Use the published Feature BRD artifact as the planned-work business source, or `docs/features/<feature-slug>/brd.md` for explicitly local work. Qualify references with that source and verify IDs resolve to its entries. Surface missing, invalid, or conflicting references for focused clarification; do not invent requirements or claim unsupported coverage.
 
 Require sufficient BRD context, not approval fields, signatures, draft/approved status, or a sign-off ceremony. A user request selects the next stage; do not automatically execute later stages. Missing or conflicting decisions still require clarification. Preserve stage prerequisites, required UX, code-change permissions, and story-level implementation review.

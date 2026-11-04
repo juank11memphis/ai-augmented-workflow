@@ -83,10 +83,10 @@ describe('planned feature readiness guidance contract (not agent behavior)', () 
 
   it('ships current-version sync notes for both changed managed templates', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '252');
-    assert.equal(manifest.templates['AGENTS.md']?.version, '57');
-    assert.equal(manifest.templates['skills/business-requirements-writer/SKILL.md']?.version, '5');
-    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /Gates planned feature work/);
-    assert.match(manifest.templates['skills/business-requirements-writer/SKILL.md']?.changes.join(' ') ?? '', /Requires GitHub readiness/);
+    assert.equal(manifest.templateVersion, '253');
+    assert.equal(manifest.templates['AGENTS.md']?.version, '58');
+    assert.equal(manifest.templates['skills/business-requirements-writer/SKILL.md']?.version, '6');
+    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /selective published Feature reads/);
+    assert.match(manifest.templates['skills/business-requirements-writer/SKILL.md']?.changes.join(' ') ?? '', /Separates confirmed BRD publication/);
   });
 });

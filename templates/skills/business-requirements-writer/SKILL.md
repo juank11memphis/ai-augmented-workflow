@@ -26,8 +26,8 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 
 ### What this skill writes
 
-- `docs/features/<feature-slug>/brd.md`.
-- The containing `docs/features/<feature-slug>/` directory when needed.
+- The BRD Feature issue artifact for planned work.
+- `docs/features/<feature-slug>/brd.md` and its containing directory only for explicitly local work.
 
 ### When this skill stops
 
@@ -106,6 +106,8 @@ If the Capabilities Map is missing:
 For planned feature work, first follow the project AGENTS.md GitHub readiness gate before creating the Feature issue or first feature artifact: establish this project's GitHub remote, then verify usable GitHub MCP issue create/read, native sub-issue, and issue-artifact read/write access in that same repository. Config presence is not access. On missing remote or MCP capability, stop with the distinct project-instruction message and next action; create no Feature issue, artifact, or local fallback. Keep local setup, maintenance, and narrow fixes independent. Normal host mutation permission still applies.
 
 After the existing discovery and final check-in, find the intended Feature issue in that repository before creating one; use its confirmed issue identity and link as the stable parent/index. Publish the completed BRD through GitHub MCP as the BRD issue artifact on that Feature issue. Read back that same issue and artifact to confirm its identity and link before reporting publication or allowing downstream use. If a write is uncertain, read back before retrying; never create a duplicate Feature issue or claim an unpublished in-session draft is durable. If confirmation fails, report only confirmed effects and stop. After confirmation, show the Feature issue link and BRD artifact link, then suggest UX for UI-changing work or SDD when prerequisites are ready; the user chooses whether to start that stage. If downstream GitHub Epic/Story planning is unavailable after SDD publication, stop rather than writing local substitutes.
+
+For planned work, project-wide vision, domain model, and capabilities map remain repo-local; do not read an unpublished local BRD as a Feature prerequisite or write an on-disk feature-artifact cache. Before creating or updating, identify repository, Feature issue, and BRD artifact. A call response alone is not confirmation: read back exact issue and BRD content, identity, and link. After a timeout or uncertain result, reconcile a confirmed effect without repeating the write; retry only after readback establishes absence. If readback is unavailable or inconsistent, state confirmed facts separately from uncertain effects, name BRD publication as blocked and the next check or access repair, and stop downstream work. Do not log private artifact bodies, credentials, raw prompts, or large payloads.
 
 For planned feature work, the GitHub Feature issue artifact is authoritative; the local path convention below does not authorize a substitute file. For other explicitly local BRD work, when asked to create a file, write the BRD to:
 
@@ -349,7 +351,7 @@ When shaping a BRD, prefer:
 
 ## Final response behavior
 
-After writing the file, name the path, then briefly list what changed in bullets. End with one concrete, context-appropriate next action for the user, such as UX for a UI-changing feature or software design once its prerequisites are ready; suggest it without starting the next stage. Do not paste the full BRD unless requested.
+For explicitly local work, after writing the file, name the path, then briefly list what changed in bullets. For planned work, report the confirmed Feature and BRD artifact links, or the blocked action and next step if publication remains uncertain. End with one concrete, context-appropriate next action for the user, such as UX for a UI-changing feature or software design once its prerequisites are ready; suggest it without starting the next stage. Do not paste the full BRD unless requested.
 
 Only include the full BRD when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/features/<feature-slug>/brd.md`.
 

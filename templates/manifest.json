@@ -1,5 +1,5 @@
 {
-  "templateVersion": "252",
+  "templateVersion": "253",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "57",
+      "version": "58",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Gates planned feature work on the project GitHub remote and usable same-repository MCP capabilities before the first artifact, without affecting local commands."
+        "Requires selective published Feature reads and readback before treating uncertain issue or document writes as complete."
       ]
     },
     ".codex/config.toml": {
@@ -184,10 +184,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "17",
+      "version": "18",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Publishes completed UX guidance to the existing Feature issue and confirms its artifact link before SDD handoff."
+        "Reads only the published Feature BRD for planned UX work and pauses on uncertain UX publication instead of using a local draft."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
@@ -338,10 +338,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Requires GitHub readiness, reuses the intended Feature issue, and confirms BRD artifact publication before downstream use."
+        "Separates confirmed BRD publication from uncertain writes and prevents duplicate retries or local feature-artifact caching."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
@@ -352,10 +352,10 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "5",
+      "version": "6",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Publishes and confirms the SDD artifact on the Feature issue, then stops if downstream GitHub Epic and Story planning is unavailable."
+        "Reads published BRD and required UX only, and stops SDD handoff when artifact readback cannot confirm publication."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {

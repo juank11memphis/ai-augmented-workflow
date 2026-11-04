@@ -123,9 +123,9 @@ describe('Feature stage publication guidance contract (BRD REQ-03/AC-06; Story A
 
   it('records current-version manifest notes for all three changed templates', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '252');
+    assert.equal(manifest.templateVersion, '253');
     for (const [path, version] of [
-      [stages[0].path, '5'], [stages[1].path, '17'], [stages[2].path, '5'],
+      [stages[0].path, '6'], [stages[1].path, '18'], [stages[2].path, '6'],
     ]) {
       assert.equal(manifest.templates[path]?.version, version);
       assert.match(manifest.templates[path]?.changes.join(' ') ?? '', /Feature issue|Feature/);
