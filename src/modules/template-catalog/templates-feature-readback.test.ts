@@ -179,9 +179,9 @@ describe('selective Feature readback guidance (BRD REQ-03/REQ-09, AC-06; Story A
 
   it('records current-version user-facing sync notes for each changed template', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '253');
+    assert.equal(manifest.templateVersion, '254');
     for (const [path, version] of [
-      ['AGENTS.md', '58'], [stagePaths.BRD, '6'], [stagePaths.UX, '18'], [stagePaths.SDD, '6'],
+      ['AGENTS.md', '59'], [stagePaths.BRD, '7'], [stagePaths.UX, '19'], [stagePaths.SDD, '7'],
     ]) {
       assert.equal(manifest.templates[path]?.version, version);
       assert.match(manifest.templates[path]?.changes.join(' ') ?? '', /published|publication|readback|read/i);

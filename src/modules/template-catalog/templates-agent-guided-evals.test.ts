@@ -89,7 +89,7 @@ test('agent-guided skill and current-version sync metadata ship together', () =>
   const manifest = readTemplateManifest();
   const entry = manifest.templates[path];
   assert.match(skill, /name: agent-guided-evals/);
-    assert.equal(manifest.templateVersion, '253');
+    assert.equal(manifest.templateVersion, '254');
   assert.equal(entry?.version, '7');
   assert.match(entry?.description ?? '', /Mandatory shared Codex and Claude Code guidance/);
   assert.deepEqual(entry?.changes, [
@@ -134,10 +134,10 @@ test('eval troubleshooting route stays distinct from mandatory authoring and bro
 
 test('AGENTS route metadata reflects the current template version', () => {
   const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '253');
-    assert.equal(manifest.templates['AGENTS.md']?.version, '58');
+    assert.equal(manifest.templateVersion, '254');
+    assert.equal(manifest.templates['AGENTS.md']?.version, '59');
   assert.deepEqual(manifest.templates['AGENTS.md']?.changes, [
-    'Requires selective published Feature reads and readback before treating uncertain issue or document writes as complete.',
+    'Adds compact and wide planned-feature terminal feedback for readiness, creation, publication, and unconfirmed writes.',
   ]);
   assert.equal(manifest.templates[path]?.version, '7');
 });

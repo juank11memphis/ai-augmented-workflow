@@ -123,12 +123,13 @@ describe('Feature stage publication guidance contract (BRD REQ-03/AC-06; Story A
 
   it('records current-version manifest notes for all three changed templates', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '253');
-    for (const [path, version] of [
-      [stages[0].path, '6'], [stages[1].path, '18'], [stages[2].path, '6'],
-    ]) {
-      assert.equal(manifest.templates[path]?.version, version);
-      assert.match(manifest.templates[path]?.changes.join(' ') ?? '', /Feature issue|Feature/);
+    for (const [path, note] of [
+      [stages[0].path, /Feature creation, confirmed BRD publication, and unconfirmed-write next steps/],
+      [stages[1].path, /confirmed UX publication and unconfirmed-write next steps/],
+      [stages[2].path, /confirmed SDD publication and unconfirmed-write next steps/],
+    ] as const) {
+      assert.ok(manifest.templates[path]?.version);
+      assert.match(manifest.templates[path]?.changes.join(' ') ?? '', note);
     }
   });
 });

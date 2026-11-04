@@ -1,5 +1,5 @@
 {
-  "templateVersion": "253",
+  "templateVersion": "254",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "58",
+      "version": "59",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Requires selective published Feature reads and readback before treating uncertain issue or document writes as complete."
+        "Adds compact and wide planned-feature terminal feedback for readiness, creation, publication, and unconfirmed writes."
       ]
     },
     ".codex/config.toml": {
@@ -184,10 +184,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "18",
+      "version": "19",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Reads only the published Feature BRD for planned UX work and pauses on uncertain UX publication instead of using a local draft."
+        "Shows confirmed UX publication and unconfirmed-write next steps in accessible terminal feedback."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
@@ -338,10 +338,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Separates confirmed BRD publication from uncertain writes and prevents duplicate retries or local feature-artifact caching."
+        "Shows Feature creation, confirmed BRD publication, and unconfirmed-write next steps in terminal feedback."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
@@ -352,10 +352,10 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "6",
+      "version": "7",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Reads published BRD and required UX only, and stops SDD handoff when artifact readback cannot confirm publication."
+        "Shows confirmed SDD publication and unconfirmed-write next steps in accessible terminal feedback."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {

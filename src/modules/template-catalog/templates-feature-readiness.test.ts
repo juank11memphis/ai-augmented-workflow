@@ -63,7 +63,7 @@ describe('planned feature readiness guidance contract (not agent behavior)', () 
     assert.deepEqual(attemptFeatureStart(ready.repository, { ...ready, repository: 'other/project' }), { outcome: 'missing-mcp', writes: [] });
     assert.match(routing, /that same repository/);
     assert.match(routing, /Host permission for each external mutation remains required at its action boundary/);
-    assert.match(brd, /normal host mutation permission still applies/);
+    assert.match(brd, /normal host mutation permission still applies/i);
   });
 
   it('keeps local setup, maintenance, and narrow fixes independent of GitHub', () => {
@@ -83,10 +83,10 @@ describe('planned feature readiness guidance contract (not agent behavior)', () 
 
   it('ships current-version sync notes for both changed managed templates', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '253');
-    assert.equal(manifest.templates['AGENTS.md']?.version, '58');
-    assert.equal(manifest.templates['skills/business-requirements-writer/SKILL.md']?.version, '6');
-    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /selective published Feature reads/);
-    assert.match(manifest.templates['skills/business-requirements-writer/SKILL.md']?.changes.join(' ') ?? '', /Separates confirmed BRD publication/);
+    assert.equal(manifest.templateVersion, '254');
+    assert.equal(manifest.templates['AGENTS.md']?.version, '59');
+    assert.equal(manifest.templates['skills/business-requirements-writer/SKILL.md']?.version, '7');
+    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /terminal feedback/);
+    assert.match(manifest.templates['skills/business-requirements-writer/SKILL.md']?.changes.join(' ') ?? '', /terminal feedback/);
   });
 });

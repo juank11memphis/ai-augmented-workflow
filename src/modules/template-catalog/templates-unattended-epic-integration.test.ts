@@ -90,10 +90,10 @@ describe('future packaged verified Story integration contract', () => {
 
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '253');
+    assert.equal(manifest.templateVersion, '254');
     assert.equal(manifest.templates[templatePath]?.version, '79');
-    assert.equal(manifest.templates['AGENTS.md']?.version, '58');
+    assert.equal(manifest.templates['AGENTS.md']?.version, '59');
     assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
-    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /selective published Feature reads and readback/);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /compact and wide planned-feature terminal feedback/);
   });
 });
