@@ -1,0 +1,28 @@
+# Step: Create native Epic and Story issue hierarchy
+
+## Goal
+
+Make prompt-owned Scrum planning create or find one Feature's Epic sub-issues and each Epic's Story sub-issues, with settled definitions and acceptance criteria in the owning issues.
+
+## Scope
+
+- Task ID: GFW-S02-T01; Milestone ID: GFW-S02-M01 (navigable GitHub planning hierarchy); Status: done; Depends on: none.
+- Story-plan view: GFW-S02, `docs/features/github-feature-work-tracking/epics/shared-feature-records/stories/02-plan-epics-and-stories-in-github.md`. Sources: `docs/features/github-feature-work-tracking/epics/shared-feature-records/epic_brief.md`; `docs/features/github-feature-work-tracking/brd.md` REQ-02/REQ-09, AC-02/AC-06; `docs/features/github-feature-work-tracking/sdd.md` Ownership and Boundaries, Start and publish a feature stage (first Mermaid sequence), State, Safety, and Operational Visibility, Quality Strategy and Planned Evidence; `docs/features/github-feature-work-tracking/ux.md` Publish feature documents, Resume and hand off Story work, Binding Mockups; `docs/architecture.md` 5. Solution strategy and dependency rules, 8. Cross-cutting concepts; `docs/business-domain-model.md` GitHub Issue Hierarchy and Story Implementation Plan; `docs/capabilities-map.md` Organize GitHub feature work, Place feature artifacts in GitHub, Read GitHub artifacts selectively. Selected architecture: `.agents/skills/command-pattern/SKILL.md`; no CLI command/handler/port/adapter is introduced because the SDD places remote delivery in prompt-owned guidance.
+- Coverage: M01/T01 → Story AC-01; M01/T02 and checked follow-ups T02-R1/T02-R2 → AC-02 and regression integrity of AC-01/AC-03; M02/T03 → AC-03; M02/T04 → AC-04. M01 evidence: deterministic fake-MCP hierarchy/plan-artifact contracts plus restored path-disjoint reviewer and upstream template-contract checks. M02 evidence: selective-read/readback and terminal-output assertions, then stabilized validation.
+- Task/status list: T01 done → T02 done → T03 done → T02-R1 done → T02-R2 pending → T04 pending. Flags: none (Epic Feature Flags and Story Deployability). Story-local append-only log: `docs/features/github-feature-work-tracking/epics/shared-feature-records/stories/02-plan-epics-and-stories-in-github.impl_plan/progress.jsonl`; each execution entry records Task ID, outcome, actual check result, commit reference when present, blocker, and gotchas. Keep existing execution entries and append only verified follow-up outcomes; no new execution evidence or commit is claimed by this revision.
+- Durable conventions: after independent exact-plan review/acceptance, each checked Task gets one scoped commit only after its pass/fail check and every Done-when condition has evidence. The main agent owns branch, PR, and continuation gates; do not fabricate approval metadata. Existing Story-plan review, Task-commit, and final Epic human-review controls remain. Current local plan files are this transition's planning output, not a requirement to create duplicate local files in the target GitHub workflow. No Feature Decision ID applies. Fake-MCP/static tests do not prove live agent or GitHub behavior.
+- Story acceptance criteria: AC-01; source decisions: BRD REQ-02/AC-02 and SDD Start and publish a feature stage require native Feature→Epic→Story sub-issue levels, definitions in their issues, intended target before write, and no local Epic/Story copies. On-demand pointers: `docs/features/github-feature-work-tracking/sdd.md` Ownership and Boundaries, first Mermaid sequence under Start and publish a feature stage, Quality Strategy and Planned Evidence; `docs/features/github-feature-work-tracking/ux.md` Publish feature documents. Applicable skills: `.agents/skills/clean-code/SKILL.md`, `.agents/skills/typescript/SKILL.md`, `.agents/skills/ai-prompt-engineer-master/SKILL.md`, `.agents/skills/sibu-template-change/SKILL.md`, `.agents/skills/structured-logging/SKILL.md`, `.agents/skills/command-pattern/SKILL.md`.
+- In the prompt-owned Scrum planning template, replace local Epic/Story output as the authoritative destination with find-before-create GitHub issue identities, native parent operations, and confirmed links. Preserve existing slicing, settled scope, acceptance criteria, sequence, source traceability, and human decisions; do not add separate Task issues or a GitHub Projects dependency.
+- Keep GitHub MCP as the external boundary. No new CLI runtime module, on-disk artifact cache, local-only fallback, or exporter dependency. If an executable CLI slice becomes necessary, stop for a material scope/architecture decision rather than inventing one.
+
+## Files
+
+- `templates/skills/scrum-master-planner/SKILL.md`
+- `templates/manifest.json`
+- `src/modules/template-catalog/templates-feature-issue-hierarchy.test.ts` (new focused test)
+
+## Done when
+
+- Task check: `pnpm build` then `node --test bin/modules/template-catalog/templates-feature-issue-hierarchy.test.js`; pass: both exit 0 and named fake-MCP scenarios prove native Feature→Epic→Story parent identities, reuse without duplicates, definitions/ACs on the correct issue, and no local Epic/Story output; expected evidence: test names, zero duplicate create calls, correct parent IDs, and static prompt-contract assertions. This answers SDD hierarchy/fake-MCP method, not live agent compliance.
+- The guidance stops if the required native sub-issue operation is unavailable, without substituting a flat link list or local files. The user-visible success path has a confirmed relevant issue link (AC-01 groundwork for AC-04).
+- Template global/per-file versions and current-version user-facing sync notes are updated. Touched `.ts` test files remain at or below 500 lines; final source-size gate is required.
