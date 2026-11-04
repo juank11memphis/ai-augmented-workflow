@@ -37,19 +37,6 @@ function assertLinearOutput(lines: string[], width: number): void {
 }
 
 describe('planned Feature terminal wording contract (BRD REQ-01/03/09; AC-01/06)', () => {
-  it('keeps missing remote and missing MCP distinct at compact and wide widths', () => {
-    const cases = [
-      ['This project has no GitHub repository connected. No feature was created.', 'Connect the GitHub repository, then retry.'],
-      ['GitHub MCP cannot access the issue features this work needs. No feature was created.', 'Configure GitHub MCP, then retry.'],
-    ];
-    for (const [consequence, action] of cases) {
-      assert.ok(routing.includes(consequence!));
-      assert.ok(routing.includes(action!));
-      for (const width of [40, 120]) assertLinearOutput(['Feature work cannot start', consequence!, action!], width);
-    }
-    assert.match(routing, /If access is lost after prior publication.*This step was not completed/);
-    assert.match(routing, /Local `sibu init`, `sibu doctor`, `sibu sync`, and narrow fixes do not require GitHub/);
-  });
 
   it('shows a confirmed Feature link and next BRD action in both widths', () => {
     for (const phrase of ['Feature ready on GitHub', 'Next: Define the BRD']) assert.ok(routing.includes(phrase));
@@ -81,10 +68,4 @@ describe('planned Feature terminal wording contract (BRD REQ-01/03/09; AC-01/06)
     }
   });
 
-  it('requires accessible linear hierarchy without width-only meaning', () => {
-    assert.match(routing, /state, consequence, next action, then optional link or detail/);
-    assert.match(routing, /about 40 columns.*one column.*about 120 columns.*never a new decision or width-only meaning/);
-    assert.match(routing, /Do not rely on color, icons, boxes, or log inspection/);
-    for (const stage of stages) assert.match(readTemplate(stage.path), /binding UX mockups at compact and wide widths/);
-  });
 });

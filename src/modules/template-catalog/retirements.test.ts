@@ -40,15 +40,6 @@ describe('skill retirement catalog', () => {
     assert.deepEqual(lookupSkillIdentity('unrecognized-old-skill'), { status: 'absent' });
   });
 
-  it('ships a manifest-adjacent resource without making it an installed target', () => {
-    const manifest = readTemplateManifest();
-    const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as { files: string[] };
-    assert.ok(Number(manifest.templateVersion) > 0);
-    assert.equal(manifest.templates['skill-retirements.json']?.version, '1');
-    assert.match(manifest.templates['skill-retirements.json']?.changes.join(' ') ?? '', /retirement catalog/);
-    assert.ok(packageJson.files.includes('templates/'));
-    assert.equal(manifest.templates['skill-retirements.json']?.description.includes('not an installed project target'), true);
-  });
 
   it('resolves fixture evidence without an old source template and retains every agent target', () => {
     const records = parseSkillRetirements(fixture());

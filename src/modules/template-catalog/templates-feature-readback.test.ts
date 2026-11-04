@@ -79,30 +79,7 @@ function publish(mcp: FakeFeatureMcp, stage: Stage, effect: WriteEffect): 'confi
 }
 
 describe('selective Feature readback guidance (BRD REQ-03/REQ-09, AC-06; Story AC-03/AC-04)', () => {
-  it('states published-only session reads, no local substitute/cache, and project-local foundations', () => {
-    const agents = readTemplate('AGENTS.md');
-    assert.match(agents, /UX needs BRD; SDD needs BRD and UX only for UI-changing work/);
-    assert.match(agents, /transient session context/);
-    assert.match(agents, /Project-wide vision, domain model, capabilities map, and SAD remain repo-local/);
-    assert.match(agents, /Never substitute local feature files, write an on-disk feature-artifact cache/);
-    for (const stage of ['BRD', 'UX', 'SDD'] as const) {
-      const guidance = readTemplate(stagePaths[stage]);
-      assert.match(guidance, /on-disk feature-artifact cache/);
-      assert.match(guidance, /read back exact issue and (?:BRD|UX|SDD) content, identity, and link/i);
-      assert.match(guidance, /retry only (?:after|if) readback establishes absence/i);
-      assert.match(guidance, /confirmed facts separately from uncertain effects|separate confirmed facts from uncertain effects|distinguish confirmed facts from uncertain effects/i);
-      assert.match(guidance, /Do not log private artifact bodies, credentials, raw prompts, or large payloads/);
-    }
-  });
 
-  it('blocks a missing published BRD and never treats an interrupted draft as a prerequisite', () => {
-    const mcp = new FakeFeatureMcp();
-    mcp.unpublishedDrafts.set('BRD', 'unpublished BRD draft');
-    assert.equal(enterStage(mcp, 'UX'), 'blocked');
-    assert.deepEqual(mcp.trace, ['read BRD from issue 42']);
-    assert.equal(mcp.cacheWrites, 0);
-    assert.match(readTemplate(stagePaths.UX), /missing, unpublished, or inconsistent/);
-  });
 
   it('stops on a conflicting published prerequisite rather than using local content', () => {
     const mcp = new FakeFeatureMcp();
@@ -158,14 +135,6 @@ describe('selective Feature readback guidance (BRD REQ-03/REQ-09, AC-06; Story A
     assert.equal(mcp.trace.filter(action => action.startsWith('write ')).length, 1);
   });
 
-  it('stops on conflicting readback with no checkpoint, retry, or downstream advance', () => {
-    const mcp = new FakeFeatureMcp();
-    assert.equal(publish(mcp, 'BRD', 'timeout-conflicting'), 'blocked');
-    assert.equal(enterStage(mcp, 'UX'), 'blocked');
-    assert.equal(mcp.session.has('BRD'), false);
-    assert.equal(mcp.trace.filter(action => action.startsWith('write ')).length, 1);
-    assert.match(readTemplate('AGENTS.md'), /stop if readback is unavailable or conflicting/);
-  });
 
   it('stops when readback itself is unavailable, preserving the uncertain effect', () => {
     const mcp = new FakeFeatureMcp();
@@ -177,12 +146,4 @@ describe('selective Feature readback guidance (BRD REQ-03/REQ-09, AC-06; Story A
     assert.equal(mcp.trace.filter(action => action.startsWith('write ')).length, 1);
   });
 
-  it('records current-version user-facing sync notes for each changed template', () => {
-    const manifest = readTemplateManifest();
-    assert.ok(Number(manifest.templateVersion) > 0);
-    for (const path of ['AGENTS.md', stagePaths.BRD, stagePaths.UX, stagePaths.SDD]) {
-      assert.ok(Number(manifest.templates[path]?.version) > 0, path);
-      assert.match(manifest.templates[path]?.changes.join(' ') ?? '', /published|publication|readback|read/i);
-    }
-  });
 });

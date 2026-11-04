@@ -6,7 +6,7 @@
 
 [Checked Story Delivery](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 
@@ -32,21 +32,20 @@ As an engineer, I want each checked Task pushed with matching Story progress and
 
 ## Acceptance Criteria
 
-- **AC-01 — Checked remote commit:** A Task is not published until its prescribed check passes and its scoped commit is confirmed on the remote Story branch (BRD REQ-05). Verification: test.
-- **AC-02 — Matching Story progress:** The Story checklist and progress artifact identify the same completed Task and pushed commit, with check evidence and next-work context; a partial or ambiguous update is not called a handoff (BRD REQ-04, REQ-05). Verification: test.
-- **AC-03 — Early draft PR:** After the first checked Task is pushed, the in-progress Story has one confirmed draft PR against its Epic branch; later Tasks update the same branch and PR without a routine continuation choice (BRD REQ-08). Verification: test.
+- **AC-01 — Checked remote commit:** A Task is not published until its prescribed check passes and its scoped commit is confirmed on the remote Story branch (BRD REQ-05). Verification: inspect the check result, scoped commit, and remote branch readback.
+- **AC-02 — Matching Story progress:** The Story checklist and progress artifact identify the same completed Task and pushed commit, with check evidence and next-work context; a partial or ambiguous update is not called a handoff (BRD REQ-04, REQ-05). Verification: compare confirmed Story issue/artifact and remote commit identities; stop on missing or conflicting evidence.
+- **AC-03 — Early draft PR:** After the first checked Task is pushed, the in-progress Story has one confirmed draft PR against its Epic branch; later Tasks update the same branch and PR without a routine continuation choice (BRD REQ-08). Verification: inspect the draft PR identity, head/base, and subsequent branch updates.
 - **AC-04 — Honest status:** Compact and wide success or partial-publication output identifies only confirmed effects and follows the UX checkpoint hierarchy (BRD REQ-04, REQ-05). Verification: visual comparison.
 
 ## Verification Expectations
 
-- Deterministic fake-Git/MCP/host scenarios cover check-before-commit, matching pushed hash and Story status, failed or uncertain issue update, draft PR creation after the first Task, one-Task Story, and later Task reuse of the same PR.
-- Output assertions and final-Epic-review visual comparison cover the compact handoff and wide routine-continuation mockups. Static guidance tests cannot prove live agent behavior.
+- Check results, scoped commit and push readbacks, Story checklist/progress identities, and draft PR head/base provide the evidence for the actual checked-Task handoff. Failed or uncertain publication stops rather than being inferred from a test-local fake scenario.
+- Review the shipped prompt guidance against the compact handoff and medium/wide routine-continuation mockups at the existing Story and final Epic PR gates. Do not claim static text assertions or test-local output renderers prove agent behavior or visual fidelity.
 - No live GitHub, disposable-repository integration, live-model eval, or separate human QA gate is required.
 
 ## Validation
 
-- Focused deterministic guidance/fake-host tests, then `pnpm verify` after changes stabilize.
-- Applicable Sibu template-manifest and sync lifecycle checks with fakes.
+- `pnpm verify` after changes stabilize, plus applicable deterministic template-manifest/sync lifecycle and packed-runtime checks for changed distributed guidance.
 
 ## Domain Context
 

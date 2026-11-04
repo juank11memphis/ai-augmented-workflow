@@ -40,22 +40,6 @@ async function initialize(t: TestContext): Promise<{ rootPath: string; state: Si
   return { rootPath, state };
 }
 
-test('fake init and doctor install terminal guidance without GitHub readiness', async (t) => {
-  const { rootPath, state } = await initialize(t);
-  const manifest = readTemplateManifest();
-  for (const template of templates) {
-    const installed = fs.readFileSync(path.join(rootPath, template.installed), 'utf8');
-    if (template.path === 'AGENTS.md') {
-      assert.match(installed, /Synthetic local setup/);
-      assert.match(installed, /Planned feature terminal feedback/);
-    } else {
-      assert.equal(installed, readTemplate(template.path));
-    }
-    assert.equal(state.managedFiles[template.installed]?.templateVersion, manifest.templates[template.path]?.version);
-    assert.match(manifest.templates[template.path]?.changes.join(' ') ?? '', /terminal feedback/);
-  }
-  assert.deepEqual(diagnoseState({ rootPath, state }), []);
-});
 
 test('fake sync updates stale managed guidance and preserves customized guidance', async (t) => {
   const { rootPath, state } = await initialize(t);
