@@ -6,7 +6,7 @@
 
 [Checked Story Delivery](../epic_brief.md)
 
-**Status:** ready-for-planning
+**Status:** in-progress
 
 ## User Story
 
