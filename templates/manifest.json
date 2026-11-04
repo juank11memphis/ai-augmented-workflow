@@ -1,5 +1,5 @@
 {
-  "templateVersion": "257",
+  "templateVersion": "258",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -135,17 +135,17 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "23",
+      "version": "24",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Reads only confirmed published feature prerequisites and verifies ambiguous Epic or Story writes before retrying."
+        "Shows confirmed hierarchy links and next planning action, while pausing on unconfirmed Epic or Story publication."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "38",
+      "version": "39",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Uses selective published Story prerequisites and readback for uncertain plan, checklist, and progress writes."
+        "Shows confirmed Story plan links and next review action, while pausing on unconfirmed planning publication."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "81",
+      "version": "82",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Stops planning handoff on missing published context and reads back uncertain Story planning writes before retrying."
+        "Aligns planning handoff with confirmed Story and plan links and an explicit publication-unconfirmed stop."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {

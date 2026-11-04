@@ -75,7 +75,7 @@ test('stale managed handoff guidance offers a current note and updates safely', 
   assert.ok(preview);
   assert.equal(preview.status, 'update-available');
   assert.deepEqual(preview.changes, manifest.templates[template]?.changes);
-  assert.match(preview.changes.join(' '), /Starts the first unintegrated Story.*separate human start prompt/i);
+  assert.match(preview.changes.join(' '), /confirmed Story and plan links.*publication-unconfirmed stop/i);
   const result = applySyncAction({ rootPath, state, manifest, preview, action: 'apply-update' });
   assert.equal(fs.readFileSync(path.join(rootPath, relativePath), 'utf8'), installedSource(template));
   assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);

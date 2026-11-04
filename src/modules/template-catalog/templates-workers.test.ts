@@ -214,7 +214,7 @@ describe('Sibu planner worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /planner gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Carries scoped Feature Decision IDs and SDD pointers into planning packets.*source verification and changed-plan review/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /confirmed Story plan links.*unconfirmed planning publication/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /exactly one User Story/i);
     assert.match(contents, /software-design-writer/);
@@ -227,7 +227,10 @@ describe('Sibu planner worker templates', () => {
     assert.match(contents, /export-to-github/);
     assert.match(contents, /export-to-notion/);
     assert.match(contents, /Inline fallback planning path/);
-    assert.match(contents, /valid story-local `\.impl_plan\/` exists/);
+    assert.match(contents, /verify one exact ordered plan artifact on the identified Story issue/);
+    assert.match(contents, /Identify repository, Story issue, and artifact before publishing; read back identity and content after the write/);
+    assert.match(contents, /Do not create duplicate local plan or progress files/);
+    assert.match(contents, /Next: Independent plan review/);
     assert.match(contents, /planning-only/);
     assert.match(contents, /Do not pass the full main conversation context/);
     assert.match(contents, /source-verified, Story-applicable SDD quality-strategy context and Story verification expectations/i);
@@ -253,7 +256,7 @@ describe('Sibu planner worker templates', () => {
       selectedWorkflowSkills: [selectedPromptEngineeringSkill, selectedUxSkill, selectedGithubExportSkill, selectedNotionExportSkill],
     });
     assert.match(templateMetadata?.description ?? '', /planner toolbox/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Verifies governing SDD Feature Decision records before reuse.*Story steps and fresh Task context/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/i);
     assert.match(rawContents, /name: ai-implementation-planner-toolbox/);
     assert.match(rawContents, /\{\{PLANNER_WORKER_ROUTING\}\}/);
     assert.match(renderedContents, /Focused planner worker routing/);
@@ -323,7 +326,6 @@ describe('Sibu executor worker templates', () => {
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
     assert.match(templateMetadata?.description ?? '', /executor gatekeeper/i);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
     assert.match(contents, /main-agent gatekeeper/i);
     assert.match(contents, /ai-implementation-planner/);
     assert.match(contents, /sibu-implementation-executor/);

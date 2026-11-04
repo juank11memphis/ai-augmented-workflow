@@ -285,13 +285,13 @@ Apply these authoring rules to newly created Epics and Stories only; do not retr
 
 ## Final response behavior
 
-After confirmed issue publication, final-answer with only:
+After confirmed issue publication, final-answer in a short, linear handoff with only:
 
-- the relevant confirmed Feature, Epic, or Story issue links
-- the number of Epics and User Stories
+- `Feature ready on GitHub` and the confirmed Feature issue link, then the relevant confirmed Epic and Story issue links needed to navigate the new hierarchy
+- the number of Epics and User Stories, and `Next: Plan the first Story` (or the actual next planning action)
 - any source-scope items intentionally left unresolved or captured as risks
 
-Do not paste artifact bodies, excerpts, outlines, story text, acceptance criteria, or section summaries. Do not present an unconfirmed write as complete. Only include generated artifacts when the user explicitly asks for inline review in the current request.
+At compact width, show one link and one next action per line; at medium and wide widths, group confirmed Feature/Epic/Story links for orientation without a dashboard or width-only meaning. Use only readback-confirmed issue links. If an Epic or Story write is unconfirmed, say `Epic or Story publication was not confirmed on GitHub`, name the affected issue or parent and what was confirmed, then `Next work is paused. Check GitHub access, then retry.` Do not print a success heading or link for the uncertain effect. Do not paste artifact bodies, excerpts, outlines, story text, acceptance criteria, or section summaries. Only include generated artifacts when the user explicitly asks for inline review in the current request.
 
 ## BRD handoff
 

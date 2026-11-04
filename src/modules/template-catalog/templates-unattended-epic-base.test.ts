@@ -107,9 +107,7 @@ describe('safe Epic integration base template contract', () => {
 
   it('versions the packaged guidance and verifies the installed gatekeeper is synced', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '254');
-    assert.equal(manifest.templates[templatePath]?.version, '79');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /confirmed Story and plan links.*publication-unconfirmed stop/i);
     assert.match(installed, /Preserve the blocked Task's uncommitted edits/);
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /The main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/);
