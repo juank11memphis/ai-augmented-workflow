@@ -1,5 +1,5 @@
 {
-  "templateVersion": "261",
+  "templateVersion": "262",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "85",
+      "version": "86",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Adds current-remote resumption and protected-local-work checks before choosing or publishing a checked Task."
+        "Guards Story PR readiness and squash merge with current host evidence, and requires verified Story issue closure before the next Story."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
