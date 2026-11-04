@@ -1,5 +1,5 @@
 {
-  "templateVersion": "254",
+  "templateVersion": "255",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -135,10 +135,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "21",
+      "version": "22",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Carries each Story's applicable SDD verification methods, coverage, evidence, human limits, and exclusions into reviewable expectations without adding approval gates."
+        "Publishes Epic and Story definitions in native Feature-to-Epic-to-Story GitHub issue hierarchy, reuses matching issues, and stops when sub-issue access or publication confirmation is missing."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
