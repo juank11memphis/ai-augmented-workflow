@@ -64,6 +64,8 @@ When selected architecture guidance is present, treat it as binding execution an
 
 ## Required source context gate
 
+For GitHub Story planning handoff, identify the repository and exact Story issue, then read only the required published Epic/Story definitions and Feature source artifacts through GitHub MCP into transient session context. Verify identity and current content; reuse unchanged context rather than repeatedly reading it. Do not download a feature folder, persist an on-disk feature-artifact cache, or promote a local/unpublished draft to authority. Missing, stale, conflicting, or inaccessible prerequisites or issue-artifact capability stop planning before plan publication, review, or Task dispatch. Keep this rule within planning handoff; it grants no later Task, PR, or resumption action.
+
 For a Story request, the user must provide or clearly identify one User Story or implementation plan folder:
 
 ```txt
@@ -198,6 +200,8 @@ The main agent owns this message-only gate before the first executor dispatch. D
 ### Reviewable plan identity
 
 For GitHub feature work, use the exact plan artifact on the identified Story issue as reviewable content. The Story issue body holds only a compact ordered Task ID/status checklist; a separate issue artifact holds concise append-only progress. Identify repository, Story issue, plan artifact, and progress artifact before a write; read back exact artifact identity/content after publication or an uncertain response before calling it durable or dispatching any Task. Do not create duplicate local plan/progress files. These planning/publication rules do not activate Task execution, push, PR, or cross-machine handoff in this increment; stop at an unsupported later checkpoint.
+
+For an ambiguous issue or artifact write, read back that exact target and compare identity and intended content before retrying. A matching effect is confirmed and must not be repeated; a verified unchanged target may be retried only after readback; changed, conflicting, missing-access, or still-uncertain state stops without downstream review or Task dispatch. Distinguish confirmed Story checklist, plan-artifact, and progress-artifact effects from uncertain effects in the stop report; include only safe identifiers and failure categories, never full private content or credentials.
 
 Identify one exact reviewable plan version from the current Story plan content: source decisions and references, acceptance-criteria coverage, Milestone outcomes and ordered Task IDs, Task scopes/dependencies, and each Task's prescribed executable check and expected evidence. Include any reviewable conventions that constrain implementation. Exclude execution-only Task status, Milestone progress, run log, commit references, and approval/progress metadata; these cannot silently change accepted scope or checks. A stable content digest or explicit version label may identify the version only if it is reproducibly tied to that reviewable content. If separation is ambiguous, or the identity cannot be established, pause and clarify rather than treating an old acceptance as current.
 

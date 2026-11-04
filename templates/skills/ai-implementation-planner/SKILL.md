@@ -79,6 +79,8 @@ For an overlapping failure in a still-uncommitted checked Task, the main agent i
 
 ## Required source context gate
 
+For GitHub feature work, resolve the identified Story and its Epic issue first, then read only their required published Feature BRD, SDD, and UI-impact UX artifacts through GitHub MCP into transient session context. Confirm repository, issue/artifact identity, and current content; do not treat local or unpublished drafts as settled. Reuse unchanged session context rather than repeatedly fetching it. Do not download a feature folder, write local feature artifacts, or persist an on-disk cache. Missing, stale, conflicting, or inaccessible prerequisites or required issue/artifact capability stop planning before delegation or publication; name the affected target.
+
 Before delegating or planning inline, verify these paths exist and are coherent:
 
 ```txt
@@ -139,6 +141,8 @@ Do not include exporter skills such as `export-to-github` or `export-to-notion` 
 The worker must use only the packet, the toolbox, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 
 After the worker returns for GitHub feature work, verify one exact ordered plan artifact on the identified Story issue instead of requiring a story-local `.impl_plan/` folder. Identify repository, Story issue, and artifact before publishing; read back identity and content after the write, including after an uncertain response, before calling it durable or dispatching a Task. Do not create duplicate local plan or progress files. Use inline fallback only when spawning or resuming the worker is unavailable or failed because the host cannot support it.
+
+Apply the same target readback to the Story checklist and separate progress artifact. After a timeout or ambiguous update, compare the identified target's current content with the intended content before any retry: confirmed match means no retry; verified unchanged absence may permit a retry; changed, conflicting, or inaccessible content stops. Do not advance to review or Task dispatch while any required publication is unconfirmed. Report confirmed issue, plan-artifact, and progress-artifact effects separately from uncertain ones, using safe IDs and failure categories rather than full private content or credentials.
 
 ## Inline fallback planning path
 

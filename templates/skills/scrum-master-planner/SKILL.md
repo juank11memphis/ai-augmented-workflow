@@ -55,6 +55,8 @@ docs/features/<feature-slug>/sdd.md
 docs/features/<feature-slug>/ux.md  # when the feature has UI impact
 ```
 
+Resolve these artifacts on the identified Feature issue, confirming each artifact identity and published content before using it. A local or unpublished draft is not a settled prerequisite. Read each unchanged prerequisite once per planning session; reuse session context instead of repeatedly fetching it. Do not download a feature folder, persist an on-disk feature-artifact cache, or write local feature artifacts. If required content is missing, stale, conflicting, or inaccessible, name the affected artifact and stop before downstream planning or writes.
+
 Also read `docs/product-vision.md` when it exists and the planning decision depends on product fit, scope boundaries, user value, or success signals.
 
 Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, data/state implications, and verification-relevant risks. The SDD is authoritative; do not create a separate companion.
@@ -77,6 +79,8 @@ If an input is missing:
 ## GitHub issue hierarchy
 
 Identify the intended GitHub repository and existing Feature issue before any write. Confirm GitHub MCP can read issues and create native sub-issues in that repository. For each planned Epic, find an existing matching Epic under that Feature before creating one; use its confirmed issue ID as the parent for its Stories. For each Story, find a matching Story under its intended Epic before creating one. Reuse matching issues rather than duplicating them; if identity or parentage conflicts, stop for reconciliation. Use native parent operations, not a flat list of issue links. Confirm each created or reused parent relationship by readback before proceeding. If a write response is uncertain, read back the intended parent and child before any retry. Never infer success or blindly repeat creation.
+
+Before updating an Epic or Story body, identify its repository, issue ID, and intended content. After a confirmed response or an ambiguous response such as a timeout, read back that exact issue and compare identity, parentage, and content. If the intended effect is present, do not retry. If absent and the target is unchanged, retry only after that readback; if access, identity, parentage, or content conflicts, stop without retry or downstream Story creation. Report confirmed Epic and Story effects separately from uncertain ones; never call an uncertain publication complete. Status and logs may include safe issue IDs and failure categories, but not credentials or full private artifact bodies.
 
 Put the Epic brief structure and settled Epic acceptance criteria in the Epic issue body. Put the User Story structure and settled Story acceptance criteria in the Story issue body. Do not create local Epic/Story Markdown files or directories as a fallback. GitHub MCP remains the external access boundary; do not add a CLI runtime engine, on-disk cache, exporter dependency, separate Task issues, or GitHub Projects dependency.
 
