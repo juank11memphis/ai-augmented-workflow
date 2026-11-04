@@ -83,9 +83,9 @@ describe('Milestone planner instruction and fixture contract', () => {
     assert.match(planner, /one ordered step file per bounded Task/);
     assert.match(planner, /`## Files` lists expected touchpoints, not an exhaustive edit allowlist/);
     assert.match(planner, /review-driven revision of an existing Story plan/i);
-    assert.match(toolbox, /Apply the smallest source-aligned fixes to affected step files/i);
+    assert.match(toolbox, /Apply the smallest source-aligned fixes to affected Tasks/i);
     assert.match(toolbox, /Omission of an adjacent file alone is not a scope blocker/);
-    assert.match(planner, /current Story-level review and approval controls remain in force/);
+    assert.match(planner, /Story-level implementation review/i);
   });
 
   it('covers one-Milestone and multi-Milestone plans with durable state', () => {

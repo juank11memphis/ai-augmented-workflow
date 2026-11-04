@@ -68,7 +68,7 @@ describe('Scrum planner native GitHub issue hierarchy contract', () => {
     assert.deepEqual(mcp.createCalls.map(({ kind, parentId }) => ({ kind, parentId })), [
       { kind: 'Epic', parentId: 1 }, { kind: 'Story', parentId: result.epic.id },
     ]);
-    assert.match(guidance, /relevant confirmed Feature, Epic, or Story issue links/);
+    assert.match(guidance, /confirmed Feature issue link, then the relevant confirmed Epic and Story issue links/);
   });
 
   it('reuses matching native children without duplicate create calls', () => {
@@ -88,6 +88,6 @@ describe('Scrum planner native GitHub issue hierarchy contract', () => {
     assert.equal(mcp.createCalls.length, 0);
     assert.match(guidance, /native sub-issue operation is unavailable.*stop; do not substitute flat links or local files/);
     assert.match(guidance, /If a write response is uncertain, read back the intended parent and child before any retry/);
-    assert.match(guidance, /Do not present an unconfirmed write as complete/);
+    assert.match(guidance, /Do not print a success heading or link for the uncertain effect/);
   });
 });
