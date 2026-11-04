@@ -10,7 +10,7 @@ const rawSentinel = 'SYNTHETIC_RAW_PROVIDER_RESPONSE_SECRET';
 const caseIds = ['done-a', 'done-b', 'approximate-price',
   ...Array.from({ length: 14 }, (_, index) => `later-${index}`)];
 
-type Scenario = 'report-only' | 'exit-only' | 'report-plus-exit' | 'timeout' | 'malformed-trailing';
+type Scenario = 'report-only' | 'exit-only' | 'report-plus-exit' | 'malformed-trailing';
 type CliResult = { json: Record<string, unknown>; stderr: string; stdout: string };
 
 function invoke(root: string, operation: 'run' | 'result', ...args: string[]): CliResult {
@@ -42,7 +42,7 @@ function runner(scenario: Scenario): string {
       emit('run-diagnostic','approximate-price',{code:'malformed-output',message:'${rawSentinel}'});
       ${report ? "emit('run-completed',null,{status:'error',code:'malformed-output'});" : ''}
       ${scenario === 'malformed-trailing' ? `process.stdout.write(JSON.stringify({private:'${rawSentinel}'})+'\\n');` : ''}
-      ${scenario === 'timeout' ? "process.on('SIGTERM',()=>{}); setInterval(()=>{},1000);" : `process.exit(${scenario === 'exit-only' ? 7 : scenario === 'report-plus-exit' ? 8 : 0});`}
+      process.exit(${scenario === 'exit-only' ? 7 : scenario === 'report-plus-exit' ? 8 : 0});
     } else process.exit(2);`;
 }
 
@@ -63,7 +63,7 @@ function assertSafe(result: CliResult): void {
   assert.doesNotMatch(result.stdout + result.stderr, /SYNTHETIC_RAW_PROVIDER_RESPONSE_SECRET/);
 }
 
-for (const scenario of ['report-only', 'exit-only', 'report-plus-exit', 'timeout', 'malformed-trailing'] as const) {
+for (const scenario of ['report-only', 'exit-only', 'report-plus-exit', 'malformed-trailing'] as const) {
   test(`compiled CLI preserves ${scenario} provenance and incomplete checkpoint in local artifacts`, async () => {
     const project = await fixture(scenario);
     try {
@@ -120,7 +120,7 @@ for (const scenario of ['report-only', 'exit-only', 'report-plus-exit', 'timeout
         : scenario === 'report-plus-exit' ? { stage: 'runner-report', runnerReport: { status: 'error', code: 'malformed-output' },
           processExit: { code: 8 } }
         : scenario === 'exit-only' ? { stage: 'unexpected-process-exit', processExit: { code: 7 } }
-        : scenario === 'timeout' ? { stage: 'timeout' } : { stage: 'protocol-rejection' };
+        : { stage: 'protocol-rejection' };
       if (scenario === 'malformed-trailing') {
         const rejected = manifest.failureProvenance as typeof manifest.failureProvenance & { protocolRejection: {
           sequence: number; eventType: string; code: string; byteCount: number; capturedByteCount: number; locator: string } };

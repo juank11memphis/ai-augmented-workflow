@@ -81,6 +81,18 @@ test('malformed trailing event keeps the last incomplete checkpoint and a protoc
   assert.doesNotMatch(JSON.stringify(h.logs), /PRIVATE_RESPONSE/);
 });
 
+test('runner timeout preserves an incomplete attempt and its provenance', async () => {
+  const h = fixture([start, { type: 'diagnostic', caseId: 'case', attempt: 1, code: 'malformed-output' }],
+    { status: 'error', reason: 'runner-timeout', failureProvenance: { stage: 'timeout' } });
+  assert.equal((await executeEvalRun(command, h.ports)).status, 'error');
+  assert.deepEqual(h.finals[0]?.provenance, { stage: 'timeout' });
+  assert.deepEqual(h.snapshots.at(-1)?.failureProvenance, { stage: 'timeout' });
+  assert.equal(h.snapshots.at(-1)?.outcome, 'incomplete');
+  assert.deepEqual(h.snapshots.at(-1)?.diagnostics, ['malformed-output']);
+  assert.deepEqual(h.snapshots.at(-1)?.turns, []);
+  assert.deepEqual(h.snapshots.at(-1)?.assertions, []);
+});
+
 test('failed provenance persistence returns storage-failed without a saved claim', async () => {
   const h = fixture([start], { status: 'error', reason: 'runner-timeout', failureProvenance: { stage: 'timeout' } }, true);
   assert.equal((await executeEvalRun(command, h.ports)).status, 'storage-failed');
