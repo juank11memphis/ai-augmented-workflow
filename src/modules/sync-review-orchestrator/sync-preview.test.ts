@@ -253,20 +253,20 @@ describe('getSyncPreviews', () => {
     assert.equal(applied.state.managedFiles[architectureTargetPath]?.template, selectedArchitectureSkill.templateRelativePath);
   });
 
-  it('records the implied exporter skill only when sync adoption is applied', () => {
-    const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['github']);
+  it('records the implied Notion exporter only when sync adoption is applied', () => {
+    const rootPath = createCleanInitializedRepoWithSelectedMcpServers(['notion']);
     const state = readState(rootPath);
     const manifest = readTemplateManifest();
-    const skillPreview = getSyncPreview(rootPath, state, '.agents/skills/export-to-github/SKILL.md');
+    const skillPreview = getSyncPreview(rootPath, state, '.agents/skills/export-to-notion/SKILL.md');
 
     const skipped = applySyncAction({ rootPath, state, manifest, preview: skillPreview, action: 'skip' });
     const applied = applySyncAction({ rootPath, state, manifest, preview: skillPreview, action: 'apply-update' });
 
     assert.equal(skipped.changedState, false);
     assert.deepEqual(skipped.state.selectedWorkflowSkills, []);
-    assert.deepEqual(applied.state.selectedWorkflowSkills, ['export-to-github']);
-    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/export-to-github/SKILL.md')), true);
-    assert.ok(applied.state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
+    assert.deepEqual(applied.state.selectedWorkflowSkills, ['export-to-notion']);
+    assert.equal(fs.existsSync(path.join(rootPath, '.agents/skills/export-to-notion/SKILL.md')), true);
+    assert.ok(applied.state.managedFiles['.agents/skills/export-to-notion/SKILL.md']);
   });
 });
 

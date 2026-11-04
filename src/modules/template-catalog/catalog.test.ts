@@ -48,7 +48,6 @@ describe('resolveSelectableSkillById', () => {
     assertResolvedSkill('postgresql-expert', 'database');
     assertResolvedSkill('ai-prompt-engineer-master', 'workflow');
     assertResolvedSkill('ux-expert', 'workflow');
-    assertResolvedSkill('export-to-github', 'workflow');
     assertResolvedSkill('export-to-notion', 'workflow');
   });
 
@@ -112,20 +111,20 @@ describe('resolveSelectableMcpServerById', () => {
   });
 });
 
-describe('export workflow skill MCP pairings', () => {
-  it('identifies MCP servers required by exporter workflow skills', () => {
+describe('Notion workflow skill MCP pairing', () => {
+  it('identifies the MCP server required by Notion export', () => {
     assert.deepEqual(
-      getMcpServersRequiredByWorkflowSkills(['export-to-github', 'export-to-notion']).map((server) => server.id),
-      ['github', 'notion']
+      getMcpServersRequiredByWorkflowSkills(['export-to-notion']).map((server) => server.id),
+      ['notion']
     );
 
     assert.deepEqual(getMcpServersRequiredByWorkflowSkills(['ai-prompt-engineer-master', 'ux-expert']), []);
   });
 
-  it('identifies exporter workflow skills implied by selected MCP servers', () => {
+  it('does not imply a workflow skill from GitHub MCP', () => {
     assert.deepEqual(
       getWorkflowSkillsImpliedByMcpServers(['github', 'notion']).map((skill) => skill.id),
-      ['export-to-github', 'export-to-notion']
+      ['export-to-notion']
     );
 
     assert.deepEqual(

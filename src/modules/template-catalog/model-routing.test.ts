@@ -243,7 +243,7 @@ describe('model recommendation catalog', () => {
   it('fails exact tuple resolution instead of applying a fallback', () => {
     const catalog = loadModelRecommendationCatalog();
     assert.throws(
-      () => resolveModelRecommendation(catalog, { agentEnvironment: 'codex', role: 'github-exporter', workloadClass: 'unknown' as never }),
+      () => resolveModelRecommendation(catalog, { agentEnvironment: 'codex', role: 'notion-exporter', workloadClass: 'unknown' as never }),
       /No model recommendation exists/
     );
   });

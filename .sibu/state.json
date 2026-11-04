@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "249",
+  "templateVersion": "264",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-10-22T17:22:41.599Z",
+  "updatedAt": "2026-11-04T21:30:15.729Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -16,7 +16,6 @@
   "selectedWorkflowSkills": [
     "ai-prompt-engineer-master",
     "ux-expert",
-    "export-to-github",
     "export-to-notion"
   ],
   "selectedDatabaseSkills": [],
@@ -118,21 +117,22 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "56",
-      "sha256": "9225af798246ffbde84e7951ca4f51d97cd7715ff954af2be8e8ca66bcf2cbd5",
-      "status": "managed"
+      "templateVersion": "59",
+      "sha256": "dbee3cf7c777f9f2d5c79f87999c4beaa41ed9a681b374d424c85c51dbca3a58",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "60"
     },
     ".codex/config.toml": {
       "template": ".codex/config.toml",
       "templateVersion": "4",
-      "sha256": "d92dc6c22832deba58d7ba9031f244abf2636692f402ea7bd66ae691f4c69b9e",
+      "sha256": "636eaecf45418296b78b6dcbb5202282f189ec9d09a1b2db197ae8d382c10f4c",
       "status": "customized",
       "lastReviewedTemplateVersion": "4",
       "managedEntries": {
         "/model_instructions_file": "8ae1eda72a7222aa9098eed1c69305fd8e12f23bb6cfab38f9dbeb859c44ebf1",
         "agents/enabled": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
         "agents/max_concurrent_threads_per_session": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
-        "mcp_servers.github/url": "0880035d3197d286fe131100b47ade9e729549fa92d47e82704f8dca5f318229",
+        "mcp_servers.github/url": "9f772301825873985d9cc162f446d5c3e8981da8f9be47026973875319742922",
         "mcp_servers.github/bearer_token_env_var": "5ac6a1bc2bd9540cb23aa6c477f182c81bc5b3c6b7a17e9b785668ecb9b4fd06",
         "mcp_servers.github.tools.issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3",
         "mcp_servers.github.tools.sub_issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3"
@@ -146,7 +146,7 @@
         "mcp_servers.github.tools.issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3",
         "mcp_servers.github.tools.sub_issue_write/approval_mode": "6ef4cbc4f3f0a1af3187e96c208a6b7737cfa1cdfe40d84822a94d8d5eea0ac3"
       },
-      "managedEntriesProtected": false
+      "managedEntriesProtected": true
     },
     "GEMINI.md": {
       "template": "GEMINI.md",
@@ -209,34 +209,33 @@
     },
     ".agents/skills/business-requirements-writer/SKILL.md": {
       "template": "skills/business-requirements-writer/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "765d30b538177704c596f2fa1a637dba0e74d0ad0de679cce35a4133005fca49",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "3"
+      "templateVersion": "7",
+      "sha256": "5aecfda9c7a2b9b8cc4551304ce61d1a4e90185ed13bfccbb7b20fc7c13fdf99",
+      "status": "managed"
     },
     ".agents/skills/software-design-writer/SKILL.md": {
       "template": "skills/software-design-writer/SKILL.md",
-      "templateVersion": "4",
-      "sha256": "4ee9086052295f27f0937b8878d11bae64ffbb93c13dca8ff9f61190c11c96ad",
+      "templateVersion": "7",
+      "sha256": "2844c5597efd7ff58aa7fddaf012f1292f7c6ade2a1e5713f47f6b00a4337a04",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "20",
-      "sha256": "f06a469666f4e415f4bab5329094c9ce9328b3fe890806e514195ea5a9ac72e9",
-      "status": "customized",
-      "lastReviewedTemplateVersion": "21"
+      "templateVersion": "24",
+      "sha256": "c02daa9b2419b10463a993e40e51affd4b546a3cc6522af28d22be14a2144c0d",
+      "status": "managed"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "36",
-      "sha256": "e85d3f710f7d5b42dafacacded36ac92b0eb2e9d29660b1a04d13be7d9c1de4d",
-      "status": "managed"
+      "templateVersion": "39",
+      "sha256": "ffd052ae3bad059711e1dac2220e5bb89b280be3b58c3e02858bd426343caf57",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "40"
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
-      "templateVersion": "24",
-      "sha256": "0f7b7043053501cc8968a9f88b45979895e700f440e35fbbb706fc7e9611d27c",
+      "templateVersion": "25",
+      "sha256": "19816b08470ecf65678d22dc1a62a5f9fb0320b35684d470ba74dfa1018b049a",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
@@ -247,9 +246,10 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "79",
-      "sha256": "c3b9bd5469eb45bcda7caf2b4ab1477a85c8fc05032257b8a4ca28fab3cb2d7a",
-      "status": "managed"
+      "templateVersion": "87",
+      "sha256": "e6d2bf4f4f3ed55a77cd283d2d9d9ee888ee96d1a4b014f656f301144d1428bc",
+      "status": "customized",
+      "lastReviewedTemplateVersion": "88"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
@@ -259,8 +259,8 @@
     },
     ".agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "6e91f129300e8e47b12dd21f39ccb4b858d2d738c9422047377069626ad8cf79",
+      "templateVersion": "8",
+      "sha256": "959fb7c13718f5fbbab1a73b1eb736e3c6d2d4bed6b23641892e2709da3c7793",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
@@ -283,8 +283,8 @@
     },
     ".agents/skills/eval-authoring/references/version-2-contract.md": {
       "template": "skills/eval-authoring/references/version-2-contract.md",
-      "templateVersion": "15",
-      "sha256": "3759119547a5c9be327535facc2357aea1f69004ff8c79a3c023b7994f8d3bba",
+      "templateVersion": "16",
+      "sha256": "ee4c434824e735ad5783962e3120a85d2ce05b208bb40f9cb1d6690c24a7bd75",
       "status": "managed"
     },
     ".agents/skills/feature-idea-capture/SKILL.md": {
@@ -313,20 +313,8 @@
     },
     ".agents/skills/ux-expert/SKILL.md": {
       "template": "skills/ux-expert/SKILL.md",
-      "templateVersion": "16",
-      "sha256": "5eda6a6214c1da19813e0fd0f7c13fd286011e2e9b91c63c299c366a10406332",
-      "status": "managed"
-    },
-    ".agents/skills/export-to-github/SKILL.md": {
-      "template": "skills/export-to-github/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "7c306b85aedfbeab60bc1e0abdbac8f267f681b23dbaffc58d61080106265769",
-      "status": "managed"
-    },
-    ".codex/agents/github-exporter.toml": {
-      "template": ".codex/agents/github-exporter.toml",
-      "templateVersion": "4",
-      "sha256": "b2e6334db720320ea92664db53dbfae224eafd5c2a2df8be1387a0ab8482452f",
+      "templateVersion": "19",
+      "sha256": "44dd2e2c5d972c5873d85ae9ec950b44eda91677f61fd4869801c39a962d686e",
       "status": "managed"
     },
     ".agents/skills/export-to-notion/SKILL.md": {
@@ -359,12 +347,6 @@
       "sha256": "c548d73b70a022a3cbf2cfeb4cf110ce94f6cd0e5fe8534d597e0fc7fc537e5a",
       "status": "managed"
     },
-    ".gemini/agents/github-exporter.md": {
-      "template": ".gemini/agents/github-exporter.md",
-      "templateVersion": "2",
-      "sha256": "ee604348903e397c9584d2b51cd1c63756899f43a09ad7d584528a6a8fe55807",
-      "status": "managed"
-    },
     ".gemini/agents/notion-exporter.md": {
       "template": ".gemini/agents/notion-exporter.md",
       "templateVersion": "4",
@@ -387,12 +369,6 @@
       "template": ".claude/agents/sibu-architecture-reviewer.md",
       "templateVersion": "2",
       "sha256": "c548d73b70a022a3cbf2cfeb4cf110ce94f6cd0e5fe8534d597e0fc7fc537e5a",
-      "status": "managed"
-    },
-    ".claude/agents/github-exporter.md": {
-      "template": ".claude/agents/github-exporter.md",
-      "templateVersion": "2",
-      "sha256": "ee604348903e397c9584d2b51cd1c63756899f43a09ad7d584528a6a8fe55807",
       "status": "managed"
     },
     ".claude/agents/notion-exporter.md": {

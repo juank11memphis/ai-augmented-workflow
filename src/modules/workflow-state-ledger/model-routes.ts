@@ -13,7 +13,6 @@ const SIBU_ROLES: readonly SibuModelRole[] = [
   'implementation-planner',
   'implementation-executor',
   'architecture-reviewer',
-  'github-exporter',
   'notion-exporter',
 ];
 const WORKLOAD_CLASSES: readonly ModelWorkloadClass[] = ['bounded', 'demanding', 'high-risk'];

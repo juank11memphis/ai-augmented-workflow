@@ -86,25 +86,25 @@ describe('stopSelectedSkill', () => {
   });
 
   it('stops supplemental managed files owned by a selected skill', () => {
-    const exportToGithub = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-github');
+    const exportToNotion = SELECTABLE_WORKFLOW_SKILLS.find((skill) => skill.id === 'export-to-notion');
 
-    assert.ok(exportToGithub);
+    assert.ok(exportToNotion);
 
-    const originalSupplementalTargets = exportToGithub.supplementalTargetsByAgent;
-    exportToGithub.supplementalTargetsByAgent = {
+    const originalSupplementalTargets = exportToNotion.supplementalTargetsByAgent;
+    exportToNotion.supplementalTargetsByAgent = {
       codex: [
         {
-          templateRelativePath: 'skills/export-to-github/SKILL.md',
-          targetRelativePath: '.codex/agents/github-exporter.toml',
+          templateRelativePath: 'skills/export-to-notion/SKILL.md',
+          targetRelativePath: '.codex/agents/notion-exporter.toml',
         },
       ],
     };
 
     try {
-      const rootPath = createInitializedRepoWithExportToGithub();
+      const rootPath = createInitializedRepoWithExportToNotion();
 
       const state = JSON.parse(fs.readFileSync(path.join(rootPath, '.sibu/state.json'), 'utf8'));
-      const result = stopSelectedSkill({ rootPath, state, skillName: 'export-to-github' });
+      const result = stopSelectedSkill({ rootPath, state, skillName: 'export-to-notion' });
 
       assert.equal(result.status, 'stopped');
       if (result.status !== 'stopped') {
@@ -112,14 +112,14 @@ describe('stopSelectedSkill', () => {
       }
 
       assert.deepEqual(result.state.selectedWorkflowSkills, []);
-      assert.equal(result.state.managedFiles['.agents/skills/export-to-github/SKILL.md']?.status, 'unmanaged');
-      assert.equal(result.state.managedFiles['.codex/agents/github-exporter.toml']?.status, 'unmanaged');
+      assert.equal(result.state.managedFiles['.agents/skills/export-to-notion/SKILL.md']?.status, 'unmanaged');
+      assert.equal(result.state.managedFiles['.codex/agents/notion-exporter.toml']?.status, 'unmanaged');
       assert.deepEqual(
         result.stoppedPaths.map((stoppedPath) => stoppedPath.relativePath),
-        ['.agents/skills/export-to-github/SKILL.md', '.codex/agents/github-exporter.toml']
+        ['.agents/skills/export-to-notion/SKILL.md', '.codex/agents/notion-exporter.toml']
       );
     } finally {
-      exportToGithub.supplementalTargetsByAgent = originalSupplementalTargets;
+      exportToNotion.supplementalTargetsByAgent = originalSupplementalTargets;
     }
   });
 
@@ -204,13 +204,13 @@ function createInitializedRepoWithPostgresqlExpert(): string {
   return rootPath;
 }
 
-function createInitializedRepoWithExportToGithub(): string {
+function createInitializedRepoWithExportToNotion(): string {
   const rootPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-stop-skill-test-'));
   temporaryRoots.push(rootPath);
   const selectedAgents = [getSupportedAgent('codex')];
   const selectedLanguageSkills: SelectableLanguageSkill[] = [];
   const selectedFrameworkSkills: SelectableFrameworkSkill[] = [];
-  const selectedWorkflowSkills: SelectableWorkflowSkill[] = [getWorkflowSkill('export-to-github')];
+  const selectedWorkflowSkills: SelectableWorkflowSkill[] = [getWorkflowSkill('export-to-notion')];
   const selectedArchitectureSkill: SelectableArchitectureSkill | undefined = undefined;
   const targets = getWorkflowTargets(rootPath, selectedAgents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills);
   const files = renderMissingWorkflowFiles({

@@ -11,7 +11,6 @@ const roles = [
     ['skills/ai-implementation-planner/SKILL.md', 'implementation-planner', 'sibu-implementation-planner'],
     ['skills/ai-implementation-plan-executor/SKILL.md', 'implementation-executor', 'sibu-implementation-executor'],
     ['skills/ai-implementation-plan-executor/SKILL.md', 'architecture-reviewer', 'sibu-architecture-reviewer'],
-    ['skills/export-to-github/SKILL.md', 'github-exporter', 'github-exporter'],
     ['skills/export-to-notion/SKILL.md', 'notion-exporter', 'notion-exporter'],
  ] as const;
 const effortRule = /(?:explicit[^\n]*model[^\n]*reasoning effort|`model`[^\n]*`reasoning_effort`[^\n]*explicit|explicit[^\n]*`model`[^\n]*`reasoning_effort`)/i;
@@ -47,7 +46,7 @@ describe('Sibu-provided sub-agent model routing', () => {
 
 
 
-    it('resolves all five role keys, saves only an explicit selection, and reuses exact state', () => {
+    it('resolves all four role keys, saves only an explicit selection, and reuses exact state', () => {
         const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sibu-spawn-routes-'));
         const statePath = path.join(root, '.sibu', 'state.json');
         fs.mkdirSync(path.dirname(statePath));
@@ -74,7 +73,7 @@ describe('Sibu-provided sub-agent model routing', () => {
                 assert.equal(resolveProjectModelRoute({ ...key, workloadClass: 'high-risk' }, root).status, 'missing');
             }
             const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-            assert.equal(state.modelRoutes.length, 5);
+            assert.equal(state.modelRoutes.length, 4);
             assert.equal(resolveProjectModelRoute({ type: 'models:resolve', agentEnvironment: 'codex', role: 'user-created-agent', workloadClass: 'bounded' }, root).status, 'unsupported');
         } finally {
             fs.rmSync(root, { recursive: true, force: true });

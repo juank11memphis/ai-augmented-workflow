@@ -214,7 +214,7 @@ describe('writeSibuState', () => {
 
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as SibuState;
 
-    assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert', 'export-to-github', 'export-to-notion']);
+    assert.deepEqual(state.selectedWorkflowSkills, ['ai-prompt-engineer-master', 'ux-expert', 'export-to-notion']);
     assert.deepEqual(state.selectedDatabaseSkills, ['postgresql-expert']);
     assert.deepEqual(state.managedFiles['.agents/skills/business-domain-model-writer/SKILL.md'], {
       template: 'skills/business-domain-model-writer/SKILL.md',
@@ -237,7 +237,6 @@ describe('writeSibuState', () => {
     assert.ok(state.managedFiles['.agents/skills/feature-idea-capture/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ai-prompt-engineer-master/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/ux-expert/SKILL.md']);
-    assert.ok(state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/export-to-notion/SKILL.md']);
     assert.ok(state.managedFiles['.agents/skills/postgresql-expert/SKILL.md']);
     assert.equal(state.managedFiles['docs/business-domain-model.md'], undefined);
@@ -250,7 +249,6 @@ describe('writeSibuState', () => {
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `feature-idea-capture`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ai-prompt-engineer-master`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `ux-expert`/);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-notion`/);
     assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `postgresql-expert`/);
   });

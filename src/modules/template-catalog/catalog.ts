@@ -157,39 +157,6 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
     },
   },
   {
-    id: 'export-to-github',
-    name: 'Export to GitHub',
-    description: "Install guidance for exporting a named feature's Epics and User Stories to GitHub using the configured GitHub MCP server",
-    routingInstruction:
-      "For exporting a feature's Epics and User Stories to GitHub issues or sub-issues, use `export-to-github`.",
-    templateRelativePath: 'skills/export-to-github/SKILL.md',
-    targetRelativePathsByAgent: {
-      codex: '.agents/skills/export-to-github/SKILL.md',
-      gemini: '.agents/skills/export-to-github/SKILL.md',
-      claude: '.agents/skills/export-to-github/SKILL.md',
-    },
-    supplementalTargetsByAgent: {
-      codex: [
-        {
-          templateRelativePath: '.codex/agents/github-exporter.toml',
-          targetRelativePath: '.codex/agents/github-exporter.toml',
-        },
-      ],
-      gemini: [
-        {
-          templateRelativePath: '.gemini/agents/github-exporter.md',
-          targetRelativePath: '.gemini/agents/github-exporter.md',
-        },
-      ],
-      claude: [
-        {
-          templateRelativePath: '.claude/agents/github-exporter.md',
-          targetRelativePath: '.claude/agents/github-exporter.md',
-        },
-      ],
-    },
-  },
-  {
     id: 'export-to-notion',
     name: 'Export to Notion',
     description: "Install guidance for exporting a named feature's BRD, UX design, and software design to Notion using the configured Notion MCP server",
@@ -225,8 +192,7 @@ export const SELECTABLE_WORKFLOW_SKILLS: SelectableWorkflowSkill[] = [
 ];
 
 
-const EXPORT_WORKFLOW_SKILL_MCP_REQUIREMENTS: Record<Extract<WorkflowSkillId, 'export-to-github' | 'export-to-notion'>, McpServerId> = {
-  'export-to-github': 'github',
+const EXPORT_WORKFLOW_SKILL_MCP_REQUIREMENTS: Record<Extract<WorkflowSkillId, 'export-to-notion'>, McpServerId> = {
   'export-to-notion': 'notion',
 };
 
@@ -254,7 +220,7 @@ export function getWorkflowSkillsImpliedByMcpServers(mcpServerIds: McpServerId[]
 }
 
 function getRequiredMcpServerIdForWorkflowSkill(workflowSkillId: WorkflowSkillId): McpServerId | undefined {
-  if (workflowSkillId === 'export-to-github' || workflowSkillId === 'export-to-notion') {
+  if (workflowSkillId === 'export-to-notion') {
     return EXPORT_WORKFLOW_SKILL_MCP_REQUIREMENTS[workflowSkillId];
   }
 

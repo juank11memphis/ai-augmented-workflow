@@ -136,7 +136,7 @@ Build a narrow planner packet for the worker. The packet must include:
 - a request for one or more outcome-grouped Milestones and ordered checked Tasks, with Story acceptance-criteria coverage, durable status/conventions/progress setup, and current-executor-compatible step files
 - expected output format: plan folder, ordered step files created or updated, source artifacts and skills used, and risks/blockers
 
-Do not include exporter skills such as `export-to-github` or `export-to-notion` in the planner packet.
+Do not include `export-to-notion` in the planner packet.
 
 The worker must use only the packet, the toolbox, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 

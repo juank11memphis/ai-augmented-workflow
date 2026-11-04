@@ -2,7 +2,7 @@ export type AgentId = 'codex' | 'gemini' | 'claude';
 export type LanguageSkillId = 'typescript' | 'golang';
 export type FrameworkSkillId = 'nextjs' | 'react';
 export type ArchitectureSkillId = 'ddd-hexagonal' | 'command-pattern' | 'layered-architecture';
-export type WorkflowSkillId = 'ai-prompt-engineer-master' | 'ux-expert' | 'export-to-github' | 'export-to-notion';
+export type WorkflowSkillId = 'ai-prompt-engineer-master' | 'ux-expert' | 'export-to-notion';
 export type DatabaseSkillId = 'postgresql-expert';
 export type McpServerId = 'github' | 'notion';
 export type NpmVersionLookupMode = 'live' | 'offline';
@@ -12,7 +12,6 @@ export type SibuModelRole =
   | 'implementation-planner'
   | 'implementation-executor'
   | 'architecture-reviewer'
-  | 'github-exporter'
   | 'notion-exporter';
 export type ModelWorkloadClass = 'bounded' | 'demanding' | 'high-risk';
 export type ModelRouteAgentEnvironment = 'codex';

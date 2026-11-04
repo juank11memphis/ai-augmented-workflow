@@ -124,7 +124,7 @@ Build a narrow executor packet for the worker. The packet must include:
 - selected transition-delivery route: `direct foreground`, `main-mediated foreground`, or `completion-only evidence`, including which actor owns any available user-visible delivery
 - main-owned transition-delivery context: selected foreground route, sole user-visible delivery owner, a unique transition ID for this phase invocation, and any delivered transition keys that must not be replayed
 
-Do not include exporter skills such as `export-to-github` or `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
+Do not include `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
 
 The worker must use only the packet, the toolbox, listed skill files including the selected architecture skill, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 

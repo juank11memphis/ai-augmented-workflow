@@ -212,7 +212,6 @@ flowchart TB
 flowchart TB
   maintenance["Prompts, exports + workflow maintenance"]
   maintenance --> promptEngineer["ai-prompt-engineer-master"]
-  maintenance --> exportGithub["export-to-github"]
   maintenance --> exportNotion["export-to-notion"]
   maintenance --> templateChange["sibu-template-change"]
 ```
@@ -242,7 +241,6 @@ flowchart TB
 | `ddd-hexagonal` | DDD/hexagonal architecture | Bundled optional | Work needs domain/application/infrastructure boundaries, ports, adapters, or dependency-direction guidance. |
 | `layered-architecture` | Layered architecture | Bundled optional | Work needs presentation, application, domain, and infrastructure layering guidance. |
 | `ai-prompt-engineer-master` | Prompt and template quality | Installed here | You are creating, rewriting, compressing, or evaluating prompts or reusable AI instructions. |
-| `export-to-github` | GitHub issue export | Installed here | You need to export a feature's Epics and User Stories to GitHub issues and sub-issues. |
 | `export-to-notion` | Notion documentation export | Installed here | You need to export local BRDs, UX designs, or software designs to Notion. |
 | `sibu-template-change` | Sibu template maintenance | Installed here | You change files under `templates/` or template manifest metadata and need safe lifecycle validation. |
 

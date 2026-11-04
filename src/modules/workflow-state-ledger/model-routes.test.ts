@@ -35,7 +35,6 @@ describe('model route state validation', () => {
       'implementation-planner',
       'implementation-executor',
       'architecture-reviewer',
-      'github-exporter',
       'notion-exporter',
     ];
     const workloads: ModelRoute['workloadClass'][] = ['bounded', 'demanding', 'high-risk'];

@@ -5,7 +5,7 @@ enabled = true
 max_concurrent_threads_per_session = 2
 
 [mcp_servers.github]
-url = "https://api.githubcopilot.com/mcp/"
+url = "https://api.githubcopilot.com/mcp/?features=issue_artifacts"
 bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
 [mcp_servers.github.tools.issue_write]
@@ -30,4 +30,7 @@ approval_mode = "approve"
 approval_mode = "approve"
 
 [mcp_servers.github.tools.push_files]
+approval_mode = "approve"
+
+[mcp_servers.github.tools.issue_artifact_write]
 approval_mode = "approve"

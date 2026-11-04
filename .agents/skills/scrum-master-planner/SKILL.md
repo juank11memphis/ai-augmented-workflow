@@ -13,7 +13,7 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 Turn a sufficiently clear BRD and software design into the smallest useful Scrum planning structure: Epics and User Stories that are clear enough for a team to implement and validate.
 
-This skill owns delivery planning artifacts. It does not own product vision, feature definition, software design, code implementation, or project-management tool automation.
+This skill owns delivery planning definitions in GitHub issues. It does not own product vision, feature definition, software design, code implementation, or a CLI GitHub delivery engine.
 
 ## Pipeline Contract
 
@@ -26,9 +26,9 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 
 ### What this skill writes
 
-- `docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md`.
-- `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<user-story-slug>.md`.
-- Supporting Epic and Story directories under the same feature tree when needed.
+- Epic issues as native sub-issues of the existing Feature issue.
+- Story issues as native sub-issues of exactly one Epic issue.
+- Settled definitions and acceptance criteria in each owning issue body, not duplicate local Epic or Story files.
 
 ### When this skill stops
 
@@ -36,6 +36,7 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 - The feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - A prior artifact is obviously incomplete or invalid in a way its owning stage should repair.
 - The request belongs to another pipeline stage, such as product definition, software design, UX design, implementation planning, or implementation execution.
+- The project GitHub repository, Feature issue identity, GitHub MCP issue access, or native sub-issue operation is unavailable. Name the missing prerequisite and stop; do not substitute flat links or local files.
 
 ### What this skill must not do
 
@@ -46,7 +47,7 @@ This skill owns delivery planning artifacts. It does not own product vision, fea
 
 ## Required inputs
 
-Before planning, read:
+Before planning, read only the published prerequisites needed for this stage through GitHub MCP into session context:
 
 ```txt
 docs/features/<feature-slug>/brd.md
@@ -54,48 +55,42 @@ docs/features/<feature-slug>/sdd.md
 docs/features/<feature-slug>/ux.md  # when the feature has UI impact
 ```
 
+Resolve these artifacts on the identified Feature issue, confirming each artifact identity and published content before using it. A local or unpublished draft is not a settled prerequisite. Read each unchanged prerequisite once per planning session; reuse session context instead of repeatedly fetching it. Do not download a feature folder, persist an on-disk feature-artifact cache, or write local feature artifacts. If required content is missing, stale, conflicting, or inaccessible, name the affected artifact and stop before downstream planning or writes.
+
 Also read `docs/product-vision.md` when it exists and the planning decision depends on product fit, scope boundaries, user value, or success signals.
 
 Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, data/state implications, and verification-relevant risks. The SDD is authoritative; do not create a separate companion.
 
-If the feature has UI impact and `docs/features/<feature-slug>/ux.md` is missing, stop and ask the user to create the UX spec with `ux-expert` before Scrum planning.
+If the feature has UI impact and its published `ux.md` artifact is missing, stop and ask the user to create it with `ux-expert` before Scrum planning. Do not write a local feature-artifact cache.
 
 When `ux.md` includes mockups, treat them as binding UI goals. Epics and Stories must preserve the mockup structure, hierarchy, visible content, dominant interactions, major visual emphasis, and breakpoint-specific layout. Do not redesign the UI in Scrum planning; create delivery slices that implement the approved UX.
 
 ## Hard start rule
 
-Do not create Epics or User Stories if either the BRD or software design is missing.
+Do not create Epic or Story issues if either published BRD or software design artifact is missing.
 
 If an input is missing:
 
 1. Stop.
 2. Say which file is missing.
-3. Ask the user to create the missing artifact first.
+3. Ask the user to publish the missing artifact first.
 4. Do not invent planning scope from partial context.
 
-## Output locations
+## GitHub issue hierarchy
 
-For a feature at:
+Identify the intended GitHub repository and existing Feature issue before any write. Confirm GitHub MCP can read issues and create native sub-issues in that repository. For each planned Epic, find an existing matching Epic under that Feature before creating one; use its confirmed issue ID as the parent for its Stories. For each Story, find a matching Story under its intended Epic before creating one. Reuse matching issues rather than duplicating them; if identity or parentage conflicts, stop for reconciliation. Use native parent operations, not a flat list of issue links. Confirm each created or reused parent relationship by readback before proceeding. If a write response is uncertain, read back the intended parent and child before any retry. Never infer success or blindly repeat creation.
 
-```txt
-docs/features/<feature-slug>/brd.md
-```
+Before updating an Epic or Story body, identify its repository, issue ID, and intended content. After a confirmed response or an ambiguous response such as a timeout, read back that exact issue and compare identity, parentage, and content. If the intended effect is present, do not retry. If absent and the target is unchanged, retry only after that readback; if access, identity, parentage, or content conflicts, stop without retry or downstream Story creation. Report confirmed Epic and Story effects separately from uncertain ones; never call an uncertain publication complete. Status and logs may include safe issue IDs and failure categories, but not credentials or full private artifact bodies.
 
-write Epics and User Stories under:
-
-```txt
-docs/features/<feature-slug>/epics/<epic-slug>/epic_brief.md
-docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<user-story-slug>.md
-```
+Put the Epic brief structure and settled Epic acceptance criteria in the Epic issue body. Put the User Story structure and settled Story acceptance criteria in the Story issue body. Do not create local Epic/Story Markdown files or directories as a fallback. GitHub MCP remains the external access boundary; do not add a CLI runtime engine, on-disk cache, exporter dependency, separate Task issues, or GitHub Projects dependency.
 
 Rules:
 
-- Every User Story must belong to exactly one Epic.
-- Never create orphan User Stories outside an Epic folder.
-- Use kebab-case slugs for Epic folders and User Story filenames.
-- Prefix every User Story filename with a two-digit execution order within its Epic, such as `01-`, `02-`, or `03-`.
+- Every User Story must belong to exactly one Epic issue, and each Epic issue to the Feature issue.
+- Never create orphan Story issues or duplicate issues under a different parent.
+- Give Epic and Story issues stable IDs and clear titles; preserve a two-digit Story execution order within its Epic, such as `01`, `02`, or `03`.
 - Use the same order number for User Stories that can be developed in parallel within the same Epic.
-- Keep all artifacts for the feature under the same `docs/features/<feature-slug>/` tree.
+- Keep issue definitions in their owning issues, not local feature-tree copies.
 
 ## Planning rule
 
@@ -146,9 +141,9 @@ If a proposed slice needs a flag, pause **before** finalizing its Epic or Storie
 - If the user accepts, read the target project's `docs/architecture.md` for its project-wide flag mechanism. Reuse an established mechanism without asking how flags work again. If it is missing or ambiguous, ask once how the project should support flags (existing framework, external service, or project-local mechanism). If the user has no preference, give a concise recommendation and obtain an explicit choice. Pause for a user-directed `software-architecture-writer` update to the project SAD; do not invent or record a mechanism only in this feature's SDD.
 - With a clear project SAD mechanism, pause for a user-directed `software-design-writer` revision of this feature's SDD. It must record feature-specific flag-off and flag-on behavior, defaults, migration conditions, and safety implications. Ask only for missing feature-specific behavior. Do not edit the SAD or SDD here. Resume planning only after both sources are available and consistent; reread the revised SDD before writing flagged artifacts.
 
-### 3. Write each Epic brief
+### 3. Write each Epic issue definition
 
-Each `epic_brief.md` should use this structure:
+Each Epic issue body should use this structure:
 
 ```md
 # <Epic Name> Epic Brief
@@ -171,7 +166,7 @@ Each `epic_brief.md` should use this structure:
 - <What this Epic intentionally does not cover.>
 
 ## User Stories and Sequence
-1. [<Story ID and title>](./stories/<order>-<user-story-slug>.md) — <outcome; dependencies or `none`>
+1. <Story ID and title, with confirmed Story issue link when published> — <outcome; dependencies or `none`>
 
 ## Feature Flags
 - <`none`, or each named coarse capability-level flag and the Stories that use it>
@@ -183,17 +178,17 @@ Each `epic_brief.md` should use this structure:
 - <Only meaningful dependencies, risks, or sequencing notes.>
 ```
 
-Use this section order and keep the Epic brief short. Record meaningful cross-Story dependencies and an explicit completion condition; do not group unrelated outcomes or only technical layers. Reference applicable source sections and valid BRD requirement IDs rather than copying upstream contracts. For a flagged Epic, name each coarse flag (ideally one per independent capability) and its Story users. Create and link a final Story dedicated to removing all flag code introduced by the Epic **at the same time** as the flagged Stories. The Epic cannot be marked done while those code references remain. Do not assert or check production deployment.
+Use this section order and keep the Epic definition short. Record meaningful cross-Story dependencies and an explicit completion condition; do not group unrelated outcomes or only technical layers. Reference applicable source sections and valid BRD requirement IDs rather than copying upstream contracts. For a flagged Epic, name each coarse flag (ideally one per independent capability) and its Story users. Create and link a final Story dedicated to removing all flag code introduced by the Epic **at the same time** as the flagged Stories. The Epic cannot be marked done while those code references remain. Do not assert or check production deployment.
 
 ### 4. Sequence and write User Stories
 
-Within each Epic, decide the order of execution before writing User Story files. Use the lowest practical sequence number for the first story that should be implemented, then increment only when later stories depend on earlier work. If two or more stories can be developed at the same time, give them the same order number.
+Within each Epic, decide the order of execution before writing Story issues. Use the lowest practical sequence number for the first story that should be implemented, then increment only when later stories depend on earlier work. If two or more stories can be developed at the same time, give them the same order number.
 
 Each new User Story should be independently understandable, reviewable in one sitting, and deployable as one working vertical increment. Prefer one primary bounded context and name necessary cross-context collaboration. Split unrelated behaviors or a horizontal-only layer rather than finalizing an incomplete Story.
 
 A User Story represents a shippable increment that can move from backlog to Done and be merged safely on its own. It may be hidden behind feature flags, internal-only paths, disabled defaults, or incomplete parent-Epic workflows, but it must leave the product in a valid deployable state without requiring unmerged sibling Stories.
 
-Use this structure:
+Use this structure in each Story issue body:
 
 ```md
 # <User Story Title>
@@ -201,7 +196,7 @@ Use this structure:
 **Story ID:** <stable ID>
 
 ## Epic
-[<Epic Name>](./epic_brief.md)
+<Epic name and confirmed parent issue link>
 
 **Status:** draft | ready-for-planning | in-progress | done
 
@@ -278,7 +273,7 @@ Before finishing, verify:
 
 - every MVP scope item from the BRD is covered by at least one Epic or Story, or intentionally left out with a reason
 - every Story belongs to exactly one Epic
-- every Story filename includes a two-digit execution order prefix
+- every Story issue has a two-digit execution order in its title or definition
 - Stories with the same order number are actually parallelizable
 - every Story can be merged and deployed safely on its own, even if its user-facing value is gated or incomplete until the Epic is done
 - flagged Epics inventory each flag and Story user, include a final flag-code removal Story, and remain incomplete while those references remain
@@ -286,17 +281,17 @@ Before finishing, verify:
 - no Story adds scope that is absent from the BRD or software design
 - acceptance criteria are testable enough for a reviewer
 
-Apply these authoring rules to newly created Epics and Stories only; do not retrofit existing planning artifacts or change downstream implementation-planner behavior.
+Apply these authoring rules to newly created Epics and Stories only; do not retrofit existing planning artifacts or change downstream implementation-planner behavior. Confirm the native Feature→Epic→Story parent IDs and relevant issue links before reporting success. If confirmation fails, report the unconfirmed step and pause downstream work, rather than presenting a completed hierarchy.
 
 ## Final response behavior
 
-After writing files, final-answer with only:
+After confirmed issue publication, final-answer in a short, linear handoff with only:
 
-- the Epic directories created or updated
-- the number of Epics and User Stories
+- `Feature ready on GitHub` and the confirmed Feature issue link, then the relevant confirmed Epic and Story issue links needed to navigate the new hierarchy
+- the number of Epics and User Stories, and `Next: Plan the first Story` (or the actual next planning action)
 - any source-scope items intentionally left unresolved or captured as risks
 
-Do not paste artifact bodies, excerpts, outlines, story text, acceptance criteria, or section summaries. Only include generated artifacts when the user explicitly asks for inline review in the current request.
+At compact width, show one link and one next action per line; at medium and wide widths, group confirmed Feature/Epic/Story links for orientation without a dashboard or width-only meaning. Use only readback-confirmed issue links. If an Epic or Story write is unconfirmed, say `Epic or Story publication was not confirmed on GitHub`, name the affected issue or parent and what was confirmed, then `Next work is paused. Check GitHub access, then retry.` Do not print a success heading or link for the uncertain effect. Do not paste artifact bodies, excerpts, outlines, story text, acceptance criteria, or section summaries. Only include generated artifacts when the user explicitly asks for inline review in the current request.
 
 ## BRD handoff
 

@@ -1,5 +1,5 @@
 {
-  "templateVersion": "263",
+  "templateVersion": "264",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "59",
+      "version": "60",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Adds compact and wide planned-feature terminal feedback for readiness, creation, publication, and unconfirmed writes."
+        "Removes routing to the retired GitHub export skill; planned feature work uses GitHub issues directly."
       ]
     },
     ".codex/config.toml": {
@@ -142,10 +142,10 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "39",
+      "version": "40",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Shows confirmed Story plan links and next review action, while pausing on unconfirmed planning publication."
+        "Removes obsolete GitHub exporter guidance from planner handoffs."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "87",
+      "version": "88",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Requires human-reviewed Epic PR merge readback before Epic issue closure, and verified Epic merges before Feature issue closure and completion messages."
+        "Removes obsolete GitHub exporter guidance from executor handoffs."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -197,25 +197,11 @@
         "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
-    "skills/export-to-github/SKILL.md": {
-      "version": "7",
-      "description": "Selectable GitHub export skill for publishing a named feature's Epics and User Stories to GitHub issues and native sub-issues.",
-      "changes": [
-        "Routes background GitHub exporter spawns with an explicit model and reasoning effort before delegation."
-      ]
-    },
     "skills/export-to-notion/SKILL.md": {
       "version": "9",
       "description": "Selectable Notion export skill for publishing a named feature's core documentation files to Notion.",
       "changes": [
         "Routes background Notion exporter spawns with an explicit model and reasoning effort before delegation."
-      ]
-    },
-    ".codex/agents/github-exporter.toml": {
-      "version": "4",
-      "description": "Codex GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
-      "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".codex/agents/notion-exporter.toml": {
@@ -225,25 +211,11 @@
         "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
       ]
     },
-    ".claude/agents/github-exporter.md": {
-      "version": "2",
-      "description": "Claude GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
-      "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
-      ]
-    },
     ".claude/agents/notion-exporter.md": {
       "version": "4",
       "description": "Claude Notion exporter sub-agent for Sibu feature documentation exports.",
       "changes": [
         "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
-      ]
-    },
-    ".gemini/agents/github-exporter.md": {
-      "version": "2",
-      "description": "Gemini GitHub exporter sub-agent for Sibu feature Epic and User Story exports.",
-      "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
       ]
     },
     ".gemini/agents/notion-exporter.md": {

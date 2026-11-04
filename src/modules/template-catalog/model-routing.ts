@@ -7,7 +7,6 @@ export const SIBU_MODEL_ROLES = [
   'implementation-planner',
   'implementation-executor',
   'architecture-reviewer',
-  'github-exporter',
   'notion-exporter',
 ] as const;
 export const MODEL_WORKLOAD_CLASSES = ['bounded', 'demanding', 'high-risk'] as const;
@@ -17,7 +16,7 @@ export const MODEL_REASONING_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max',
 const CATALOG_VERSION_PATTERN = /^(\d{4}-\d{2}-\d{2})\.([1-9]\d*)$/;
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const HISTORY_BASE_VERSION = '2026-09-23.2';
-const HISTORY_BASE_SHA256 = '6e829c04a1a6cee39a51f3dbfb3f436096980367327af6f57c93ee5e57ec8e04';
+const HISTORY_BASE_SHA256 = '5fa93c7167591b70ad1f28931d61bc3bfc6f0995ad0717099c04fa62e79b3e65';
 
 export type RecommendationAgentEnvironment = (typeof RECOMMENDATION_AGENT_ENVIRONMENTS)[number];
 export type { ModelReasoningEffort, ModelWorkloadClass, SibuModelRole } from '../../shared/types.js';

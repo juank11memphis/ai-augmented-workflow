@@ -72,7 +72,7 @@ describe('handleInitProject', () => {
     assert.equal(state.mcpServerConfigs, undefined);
   });
 
-  it('includes the GitHub export skill as a companion when GitHub MCP is selected', async () => {
+  it('keeps GitHub MCP independent of optional workflow skills', async () => {
     const rootPath = createTemporaryRoot();
     process.chdir(rootPath);
     let excludedWorkflowSkillIds: WorkflowSkillId[] | undefined;
@@ -90,11 +90,9 @@ describe('handleInitProject', () => {
 
     const state = readState(rootPath);
 
-    assert.deepEqual(excludedWorkflowSkillIds, ['export-to-github']);
+    assert.deepEqual(excludedWorkflowSkillIds, []);
     assert.deepEqual(state.selectedMcpServers, ['github']);
-    assert.deepEqual(state.selectedWorkflowSkills, ['export-to-github']);
-    assert.ok(state.managedFiles['.agents/skills/export-to-github/SKILL.md']);
-    assert.match(fs.readFileSync(path.join(rootPath, 'AGENTS.md'), 'utf8'), /use `export-to-github`/);
+    assert.deepEqual(state.selectedWorkflowSkills, []);
   });
 
   it('includes the Notion export skill as a companion and still asks for Notion docs parent page', async () => {

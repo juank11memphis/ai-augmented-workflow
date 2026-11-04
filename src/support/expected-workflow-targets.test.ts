@@ -168,20 +168,15 @@ describe('getWorkflowTargets', () => {
 
 
 
-  it('includes exporter skill targets when selected', () => {
-    const selectedWorkflowSkills = SELECTABLE_WORKFLOW_SKILLS.filter((skill) => skill.id === 'export-to-github' || skill.id === 'export-to-notion');
+  it('includes Notion exporter skill targets when selected', () => {
+    const selectedWorkflowSkills = SELECTABLE_WORKFLOW_SKILLS.filter((skill) => skill.id === 'export-to-notion');
     const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS, [], [], undefined, selectedWorkflowSkills);
     const targetPaths = getRelativeTargetPaths(targets);
 
-    assert.equal(targetPaths.includes('.agents/skills/export-to-github/SKILL.md'), true);
     assert.equal(targetPaths.includes('.agents/skills/export-to-notion/SKILL.md'), true);
-    assert.equal(targetPaths.includes('.codex/agents/github-exporter.toml'), true);
     assert.equal(targetPaths.includes('.codex/agents/notion-exporter.toml'), true);
-    assert.equal(targetPaths.includes('.claude/agents/github-exporter.md'), true);
     assert.equal(targetPaths.includes('.claude/agents/notion-exporter.md'), true);
-    assert.equal(targetPaths.includes('.gemini/agents/github-exporter.md'), true);
     assert.equal(targetPaths.includes('.gemini/agents/notion-exporter.md'), true);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-github/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/export-to-notion/SKILL.md').length, 1);
     assertNoInvalidTargets(targets);
   });

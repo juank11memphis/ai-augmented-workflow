@@ -77,9 +77,8 @@ describe('askForNewArchitectureSkill', () => {
 
 describe('getPromptableWorkflowSkills', () => {
   it('excludes workflow skills that are already implied by MCP selections', () => {
-    const skills = getPromptableWorkflowSkills(['export-to-github', 'export-to-notion']);
+    const skills = getPromptableWorkflowSkills(['export-to-notion']);
 
-    assert.equal(skills.some((skill) => skill.id === 'export-to-github'), false);
     assert.equal(skills.some((skill) => skill.id === 'export-to-notion'), false);
     assert.equal(skills.some((skill) => skill.id === 'ai-prompt-engineer-master'), true);
     assert.equal(skills.some((skill) => skill.id === 'ux-expert'), true);
