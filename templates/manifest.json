@@ -1,5 +1,5 @@
 {
-  "templateVersion": "254",
+  "templateVersion": "258",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -135,31 +135,31 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "21",
+      "version": "24",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Carries each Story's applicable SDD verification methods, coverage, evidence, human limits, and exclusions into reviewable expectations without adding approval gates."
+        "Shows confirmed hierarchy links and next planning action, while pausing on unconfirmed Epic or Story publication."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "36",
+      "version": "39",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Carries scoped Feature Decision IDs and SDD pointers into planning packets while retaining source verification and changed-plan review."
+        "Shows confirmed Story plan links and next review action, while pausing on unconfirmed planning publication."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Verifies governing SDD Feature Decision records before reuse and carries relevant pointers into Story steps and fresh Task context."
+        "Returns exact transient plan content for GitHub Story artifacts without requiring duplicate local planning files."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "79",
+      "version": "82",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Starts the first unintegrated Story of an identified Epic without a separate human start prompt, while preserving source and plan-review gates."
+        "Aligns planning handoff with confirmed Story and plan links and an explicit publication-unconfirmed stop."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -359,10 +359,10 @@
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Reviews planned verification against SDD methods, coverage, evidence, and human limits while separating bounded findings from material risks."
+        "Accepts exact GitHub Story, plan, and source artifact identities for independent read-only plan review."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {

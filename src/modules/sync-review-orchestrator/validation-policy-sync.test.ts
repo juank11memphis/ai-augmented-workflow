@@ -41,9 +41,9 @@ describe('repository-aware validation guidance lifecycle', () => {
       const preview = findManagedPreview(rootPath, state, validationSkill);
       assert.equal(preview.status, 'update-available');
       const expectedNotes: Record<string, RegExp> = {
-        'skills/ai-implementation-planner/SKILL.md': /Carries scoped Feature Decision IDs and SDD pointers into planning packets/,
-        'skills/ai-implementation-planner-toolbox/SKILL.md': /Verifies governing SDD Feature Decision records before reuse/,
-        'skills/ai-implementation-plan-executor/SKILL.md': /Starts the first unintegrated Story.*separate human start prompt/,
+        'skills/ai-implementation-planner/SKILL.md': /confirmed Story plan links.*unconfirmed planning publication/,
+        'skills/ai-implementation-planner-toolbox/SKILL.md': /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/,
+        'skills/ai-implementation-plan-executor/SKILL.md': /confirmed Story and plan links.*publication-unconfirmed stop/,
         'skills/ai-implementation-executor-toolbox/SKILL.md': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD/,
       };
       const expectedNote = expectedNotes[validationSkill.template];

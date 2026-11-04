@@ -252,12 +252,12 @@ describe('authoring templates delegate export to dedicated exporter skills', () 
     const manifest = readTemplateManifest();
     const templateMetadata = manifest.templates[templatePath];
     const contents = readTemplate(templatePath);
-    assert.match(templateMetadata?.changes.join('\n') ?? '', /SAD|SDD/i);
+    assert.match(templateMetadata?.changes.join('\n') ?? '', /confirmed hierarchy links|planning action|unconfirmed Epic or Story publication/i);
     assert.doesNotMatch(contents, /Mandatory GitHub export gate/i);
     assert.doesNotMatch(contents, /GitHub export gate outcome/i);
     assert.doesNotMatch(contents, /Create GitHub Issues for these Epics and User Stories/i);
-    assert.match(contents, /After writing files, final-answer with only:/i);
-    assert.match(contents, /the Epic directories created or updated/i);
+    assert.match(contents, /After confirmed issue publication, final-answer/i);
+    assert.match(contents, /confirmed Feature issue link/i);
     assert.match(contents, /the number of Epics and User Stories/i);
   });
 });

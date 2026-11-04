@@ -79,6 +79,8 @@ For an overlapping failure in a still-uncommitted checked Task, the main agent i
 
 ## Required source context gate
 
+For GitHub feature work, resolve the identified Story and its Epic issue first, then read only their required published Feature BRD, SDD, and UI-impact UX artifacts through GitHub MCP into transient session context. Confirm repository, issue/artifact identity, and current content; do not treat local or unpublished drafts as settled. Reuse unchanged session context rather than repeatedly fetching it. Do not download a feature folder, write local feature artifacts, or persist an on-disk cache. Missing, stale, conflicting, or inaccessible prerequisites or required issue/artifact capability stop planning before delegation or publication; name the affected target.
+
 Before delegating or planning inline, verify these paths exist and are coherent:
 
 ```txt
@@ -115,11 +117,13 @@ When the host exposes any usable sub-agent spawn capability and `sibu-implementa
 
 Build a narrow planner packet for the worker. The packet must include:
 
+- for GitHub feature work, the identified repository and exact Story issue identity, authoritative source issue/artifact identities with transient content, and the plan/progress artifact targets; request exact reviewable plan content plus compact issue-body checklist without local plan/progress output. A local Story-plan folder or feature-source file is not mandatory.
+
 - exactly one User Story path
 - Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
 - the source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, and applicable SAD/SDD module ownership and dependency constraints; for uncertain fine-grained references, give the full authoritative path and a locate-relevant-context instruction instead
 - relevant Feature Decision IDs and exact SDD path/section pointers for the worker to verify against the governing record; never pass a packet summary as approval evidence
-- for review-driven revision, the current plan folder and reviewed identity, the complete finding/risk packet, and a request to address actionable findings minimally while reporting any material-decision blocker
+- for review-driven revision, the current plan-artifact identity and reviewed content fingerprint (or legacy local folder/identity), the complete finding/risk packet, and a request to address actionable findings minimally while reporting any material-decision blocker
 - for executor-discovered bounded regression revision, the current plan folder and accepted identity, actual failed check, earlier same-Story Task attribution, bounded repair outcome, blocked Task and preserved-edit inventory, and a request for one ordered follow-up Task before the blocked Task without implementation edits
 - for overlapping uncommitted Task continuation, the current plan folder and accepted identity, exact failed check and evidence, attempted fixes, bounded repair outcome, same Task ID and preserved unstaged edit inventory, and a request to revise only that Task without implementation edits
 - source-verified, Story-applicable SDD quality-strategy context and Story verification expectations: required methods, coverage (including scenarios, surfaces, states, and relevant UX breakpoints), expected evidence, human-judgment and automation limits, and material exclusions. Include the governing SDD heading and source requirement IDs; omit unrelated feature-wide detail without dropping an applicable constraint
@@ -136,7 +140,11 @@ Do not include exporter skills such as `export-to-github` or `export-to-notion` 
 
 The worker must use only the packet, the toolbox, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 
-After the worker returns, verify that a valid story-local `.impl_plan/` exists with ordered `.md` step files for exactly that story. If it does not, repair through the same worker when possible. Use inline fallback only when spawning or resuming the worker is unavailable or failed because the host cannot support it.
+After the worker returns for GitHub feature work, verify one exact ordered plan artifact on the identified Story issue instead of requiring a story-local `.impl_plan/` folder. Identify repository, Story issue, and artifact before publishing; read back identity and content after the write, including after an uncertain response, before calling it durable or dispatching a Task. Do not create duplicate local plan or progress files. Use inline fallback only when spawning or resuming the worker is unavailable or failed because the host cannot support it.
+
+After confirmed plan, Story checklist, and progress publication, report `Story plan ready on GitHub`, the confirmed Story issue link and plan artifact link, and `Next: Independent plan review` (or the actual next action). At compact width, keep each link and action on its own line; at medium and wide widths, keep the Feature/Epic/Story context and direct Story/plan links together when readable. Do not show a Task-ready or execution-success state here. If any publication remains unconfirmed, report `<affected artifact or Story> was not confirmed on GitHub`, distinguish confirmed effects from the uncertain effect, and say `Next work is paused. Check GitHub access, then retry.` Never print the ready heading or a success link for an uncertain effect.
+
+Apply the same target readback to the Story checklist and separate progress artifact. After a timeout or ambiguous update, compare the identified target's current content with the intended content before any retry: confirmed match means no retry; verified unchanged absence may permit a retry; changed, conflicting, or inaccessible content stops. Do not advance to review or Task dispatch while any required publication is unconfirmed. Report confirmed issue, plan-artifact, and progress-artifact effects separately from uncertain ones, using safe IDs and failure categories rather than full private content or credentials.
 
 ## Inline fallback planning path
 
@@ -170,6 +178,8 @@ Before writing validation steps, narrowly inspect repository-owned definitions a
 - Preserve failure handling and all review, repair, approval, commit, and continuation controls.
 
 ## Output location
+
+For GitHub feature work, publish the exact reviewable plan as a Story issue artifact, keep only a compact ordered Task ID/status checklist in the Story issue body, and append concise check/commit/blocker evidence to a separate progress artifact. Keep drafts transient until publication is confirmed. Changed plan content requires a new fingerprint and independent review; status/progress-only updates do not. The local step-file format below remains a legacy/local workflow convention, not a required output or source input for this GitHub workflow.
 
 Write one Markdown file per implementation step under a story-local implementation plan folder:
 
