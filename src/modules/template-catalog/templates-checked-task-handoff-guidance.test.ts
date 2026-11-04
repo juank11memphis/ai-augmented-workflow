@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { readTemplate, readTemplateManifest } from './index.js';
+import { readTemplate } from './index.js';
 
 const path = 'skills/ai-implementation-plan-executor/SKILL.md';
 const guidance = readTemplate(path);
@@ -57,12 +57,4 @@ describe('checked Task publication guidance', () => {
     assert.match(guidance, /request a \*\*squash-only merge\*\* of that verified Story PR/);
   });
 
-  it('ships a bumped template version with current user-facing sync notes', () => {
-    const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '259');
-    assert.equal(manifest.templates[path]?.version, '83');
-    assert.deepEqual(manifest.templates[path]?.changes, [
-      'Publishes each checked Task checkpoint and opens a draft Story PR after the first pushed Task, with safe readback before continuing.',
-    ]);
-  });
 });

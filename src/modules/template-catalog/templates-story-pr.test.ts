@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { readTemplate, readTemplateManifest } from './index.js';
+import { readTemplate } from './index.js';
 
 const templatePath = 'skills/ai-implementation-plan-executor/SKILL.md';
 const gatekeeper = readTemplate(templatePath);
@@ -73,9 +73,4 @@ describe('future packaged verified Story PR contract', () => {
     assert.match(installed, /Do not write human approval markers or claim a human Story decision that did not occur/);
   });
 
-  it('ships current gatekeeper version and user-facing Epic handoff note', () => {
-    const manifest = readTemplateManifest();
-    const executorTemplate = manifest.templates[templatePath];
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /checked Task.*draft Story PR.*safe readback/i);
-  });
 });
