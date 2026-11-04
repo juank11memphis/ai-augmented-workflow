@@ -71,7 +71,7 @@ describe('targeted handoff instruction contracts', () => {
     const manifest = readTemplateManifest();
     const expectedNotes = {
       'ai-implementation-planner': /confirmed Story plan links.*unconfirmed planning publication/,
-      'ai-implementation-plan-executor': /confirmed Story and plan links.*publication-unconfirmed stop/,
+      'ai-implementation-plan-executor': /compact, medium, and wide checked Task handoff messages.*pauses honestly on partial publication/,
       'ai-implementation-planner-toolbox': /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/,
       'ai-implementation-executor-toolbox': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD.*missing or changed choices/,
     } as const;

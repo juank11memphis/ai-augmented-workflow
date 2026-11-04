@@ -91,7 +91,8 @@ describe('future packaged verified Story integration contract', () => {
   it('versions both changed templates with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
     assert.equal(manifest.templates['AGENTS.md']?.version, '59');
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /confirmed Story and plan links.*publication-unconfirmed stop/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /compact, medium, and wide checked Task handoff messages/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /pauses honestly on partial publication/i);
     assert.match(manifest.templates['AGENTS.md']?.changes.join(' ') ?? '', /compact and wide planned-feature terminal feedback/);
   });
 });

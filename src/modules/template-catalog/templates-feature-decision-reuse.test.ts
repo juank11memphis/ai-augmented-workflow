@@ -128,7 +128,7 @@ test('manifest bumps every changed template with replacement user-facing current
     assert.equal(template?.changes.length, 1, role);
     assert.match(
       template.changes[0] ?? '',
-      role === 'executor' ? /confirmed Story and plan links.*publication-unconfirmed stop/
+      role === 'executor' ? /compact, medium, and wide checked Task handoff messages.*pauses honestly on partial publication/
         : role === 'planner' ? /confirmed Story plan links.*unconfirmed planning publication/i
           : role === 'plannerWorker' ? /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/i
             : /Feature Decision|eval targets and coverage/,

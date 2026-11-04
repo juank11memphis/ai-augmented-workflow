@@ -88,7 +88,8 @@ describe('future packaged Epic handoff contract', () => {
 
   it('versions the changed packaged gatekeeper with current sync notes and synced Epic handoff', () => {
     const manifest = readTemplateManifest();
-    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /confirmed Story and plan links.*publication-unconfirmed stop/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /compact, medium, and wide checked Task handoff messages/i);
+    assert.match(manifest.templates[templatePath]?.changes.join(' ') ?? '', /pauses honestly on partial publication/i);
     const installed = readFileSync(join(process.cwd(), '.agents', templatePath), 'utf8');
     assert.match(installed, /## Integrate verified Story: one safe squash-only PR merge/);
     assert.match(installed, /main agent, never the Task executor, creates or updates \*\*one Story PR\*\*/i);
