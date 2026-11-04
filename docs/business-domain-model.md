@@ -23,6 +23,7 @@ Inside this domain:
 - repo-wide model routing for Sibu-provided sub-agent roles
 - required architecture skill selection from Sibu's fixed catalog
 - the AI-Augmented Development Pipeline for planned feature work
+- GitHub-backed planned feature artifacts and progress, with no local-only feature path
 - hard-stop prerequisite checks between pipeline artifacts
 - small, reviewable AI-assisted work practices
 - bounded, sequential story-branch execution through checked tasks and automatically advanced milestones, with human stops for material decisions and final epic review
@@ -69,6 +70,8 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **MCP Server**: an external tool-connection endpoint that lets an AI agent access capabilities such as GitHub, Notion, Gmail, or other services.
 - **MCP Selection**: the user's choice to configure one or more MCP servers for supported agents in a project.
 - **MCP Configuration**: repo-local agent configuration that tells an agent how to connect to selected MCP servers without embedding secrets.
+- **Feature Issue**: the GitHub parent issue for one planned feature, holding its BRD, UX, and SDD artifacts and its Epic sub-issues.
+- **GitHub Issue Hierarchy**: a Feature issue with Epic sub-issues and Story sub-issues beneath each Epic; checked Tasks are tracked within each Story issue rather than as separate issues.
 - **Sibu-Provided Sub-agent Role**: a named delegated role distributed by Sibu, such as an implementation planner, executor, or specialist reviewer. User-created agents remain outside Sibu's model-routing responsibility.
 - **Workload Class**: a provider-neutral description of the scope, ambiguity, and risk of work delegated to a Sibu-provided sub-agent role. It supports recommendations without naming a provider model.
 - **Model Route**: the repo-wide, user-selected model and reasoning-effort choice for one Sibu-provided sub-agent role, workload class, and supported agent environment.
@@ -113,12 +116,12 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Human Plan Decision**: when a material finding or risk cannot be resolved safely through revision, the user's choice to accept the current reviewed plan, request changes, or defer it; accepted unresolved warnings remain visible.
 - **Epic Branch**: the integration branch for one Epic, created before its Stories and updated by their sequentially merged work.
 - **Story Branch**: the isolated branch for one User Story, created from the current Epic Branch and receiving checked Task commits before its Story Pull Request.
-- **Progress Log**: compact task-by-task execution history, including outcome, commit reference, decisions, gotchas, and blockers for later fresh-context runs.
+- **Progress Log**: compact task-by-task execution history, including outcome, commit reference, decisions, gotchas, and blockers for later fresh-context runs; its authoritative home is the Story issue's progress artifact.
 - **Failure Inventory**: a compact, complete account of failures from a blocked check, grouped by likely cause and linked to the affected Task, expected contract, and owning paths; it distinguishes evidence from attribution.
 - **Blocked Task Recovery**: bounded, reviewed work to resolve a Task blocker without losing its uncommitted edits, weakening checks, or treating a failed run as passed.
 - **Same-Task Continuation**: a freshly reviewed revision of the blocked Task that preserves its uncommitted edits and single-commit authority when the bounded repair overlaps those edits.
 - **Follow-up Checked Task**: a freshly reviewed, path-disjoint repair Task performed before resuming a blocked Task when the failure and ownership are clear.
-- **Story Pull Request**: the traceable integration record for one completed Story, merged without routine human review into its Epic Branch only after required checks and evidence pass.
+- **Story Pull Request**: the traceable integration record for one Story, opened early as a draft while checked work continues and merged without routine human review into its Epic Branch only after required checks and evidence pass.
 - **Epic Pull Request**: the final human review surface for one completed Epic; it links the merged Story Pull Requests and summarizes all completed work, verification, and noteworthy blockers or recoveries.
 - **Hard Stop**: a skill refusal to proceed when required prerequisite artifacts or decisions are missing.
 - **Small Work Loop**: Sibu's preferred development behavior: define a focused task, inspect context, plan its scope and checks, change, validate, and record the checked outcome for final Epic review.
@@ -141,6 +144,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Check Failure vs Story Regression vs Baseline Failure**: a failed run is an observation, not proof that the active Story caused it. Attribution compares focused failures with the observed Epic/base head and distinguishes pre-existing failures and host/test-runner problems.
 - **Specialist Outcome vs Plan Acceptance**: a complete review with no findings or unresolved risks permits automatic acceptance of its exact plan; actionable findings trigger revision and fresh review, while unresolved material decisions require human choice.
 - **Task vs User Story**: Tasks are fresh-context execution units; User Stories are deployable slices whose acceptance criteria govern the plan.
+- **Feature artifact authority vs session context**: Feature, Epic, and Story issues and their artifacts are authoritative for planned feature documents and progress. Agents read relevant artifacts through GitHub MCP into session context without an on-disk artifact cache; project-wide Product Vision, Business Domain Model, Capabilities Map, and SAD remain repo-local.
 - **Architecture Skill vs Architecture Model**: users may think in terms of an architecture model, but Sibu expresses that choice as a selected architecture skill from its fixed catalog. This feature does not define or expand the catalog.
 - **Required Selection vs Default Choice**: requiring a user to choose an architecture skill is not the same as Sibu choosing one by default. The user must make the explicit choice.
 - **MCP Server vs Skill**: an MCP server provides external tool access; a skill provides workflow guidance. A skill may tell an agent when or how to use a tool, but it is not the tool itself.
@@ -160,7 +164,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Workflow Adoption & State Tracking**: establishes Sibu in a repo and records what Sibu manages, including the required selected architecture skill.
 - **Workflow Configuration Management**: lets users intentionally change selected workflow guidance, architecture guidance, tool integrations, and repo-wide sub-agent model routes after initialization while preserving safety and state consistency.
 - **Workflow Maintenance & Sync Review**: detects drift and known skill retirement, then helps users review, repair, update, clean up, customize, skip, or unmanage workflow files.
-- **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work, selected architecture guidance, reviewed story plans, bounded checked execution, human decisions on material blockers, sequential Story PR integration, and final Epic PR review.
+- **AI-Augmented Development Pipeline**: enforces the artifact chain for planned feature/product work, selected architecture guidance, GitHub-backed feature artifacts, reviewed story plans, bounded checked execution, human decisions on material blockers, sequential Story PR integration, and final Epic PR review.
 - **Local Evals Workbench**: helps users discover Evaluation Targets, approve deep risk-based coverage, create repo-local eval suites, run all or one test case against a selected compatible model, inspect results, analyze one failed assertion at a time, review concrete repair proposals, approve project file mutations, and rerun eval scope. An agent-guided mode adds a conversational path through the same eval loop without replacing the existing workbench UI or eval-authoring guidance.
 - **Maintainer Release Support**: helps Sibu maintainers prepare, validate, publish, and recover Sibu releases without turning release automation into an end-user workflow.
 
@@ -169,11 +173,11 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Template Catalog**: provides Sibu-managed source templates for workflow files and skills.
 - **Skill Guidance**: supplies focused workflows for product vision, business domain modeling, project-level software architecture documents, BRDs, per-feature software design documents, Scrum planning, implementation planning, execution, selected architecture guidance, and eval authoring.
 - **Agent Support Selection**: helps choose which agent support files and configurations belong in a project and maintains explicit, repo-wide model routes for Sibu-provided sub-agent roles.
-- **MCP / Tool Configuration Support**: helps users select optional MCP servers, renders agent-specific configuration, and keeps external tool access separate from stored credentials.
+- **MCP / Tool Configuration Support**: helps users select MCP servers, renders agent-specific configuration, and keeps external tool access separate from stored credentials. GitHub MCP access is required before planned feature work begins, but not for local init, doctor, or sync.
 
 #### Generic / External Subdomains
 
-- **Source Control Hosting**: external systems such as GitHub may hold issues, PRs, and repositories.
+- **Source Control Hosting**: GitHub holds the repository, planned feature issues, issue artifacts, and PRs; it remains external even while its feature records are authoritative.
 - **Documentation Workspaces**: external systems such as Notion may receive exported artifacts.
 - **MCP Servers**: external tool-access endpoints that agents may connect to when the user selects them.
 - **AI Models and Coding Agents**: external providers and tools that execute or assist with AI work.
@@ -237,6 +241,7 @@ flowchart TB
   Maintenance --> State
   Maintenance --> LocalChoices
   Pipeline --> Artifacts
+  Pipeline -. "tracks feature work" .-> Tools
   LocalEvals --> EvalArtifacts
   LocalEvals --> ProjectFiles
   ArchitectureGuidance --> Artifacts
@@ -263,6 +268,8 @@ flowchart TB
 ```
 
 This map emphasizes Sibu's subdomains rather than every operational relationship. Core subdomains define Sibu's main business value; supporting subdomains provide reusable workflow assets and optional integration setup. Workflow Configuration Management is distinct from first-time adoption and maintenance: it handles intentional post-init changes rather than initial setup or drift repair. Repo-wide sub-agent model routes are project-owned configuration for Sibu-provided roles; the external models and coding agents remain outside Sibu's domain. Architecture skill selection is required at adoption time, and architecture skill replacement is a high-impact configuration change rather than ordinary drift repair. Maintainer Release Support is also core, but maintainer-facing: it protects Sibu's own release process rather than a consumer project's installed workflow. User Control & Trust governs the core workflows as a cross-cutting principle rather than a separate subdomain. Project-owned outputs remain under developer/team ownership, while MCP servers, agents, editors, and external tools stay outside Sibu's core domain.
+
+Planned feature-specific artifacts live in the project's GitHub repository. GitHub remains external even when its Feature, Epic, and Story issues and artifacts are authoritative; project-wide pipeline documents and local workflow setup/maintenance remain repo-local.
 
 ## Domain Concepts & Conceptual Diagram
 
@@ -362,7 +369,7 @@ A project-owned output created or updated by a skill. Examples include Product V
 
 #### Business Requirements Document (BRD)
 
-The per-feature business-definition artifact at `docs/features/<feature-slug>/brd.md`, authored through `business-requirements-writer`. It captures business need, objectives, stakeholder needs, scope, typed requirements, business rules, and acceptance criteria. Stable feature-local IDs link requirements to objectives and downstream work without a separate tracking system. Discovery remains conversational; the user decides when to continue, without a BRD approval chain.
+The per-feature business-definition artifact, authored through `business-requirements-writer` and published on the Feature issue as an issue artifact. It captures business need, objectives, stakeholder needs, scope, typed requirements, business rules, and acceptance criteria. Stable feature-local IDs link requirements to objectives and downstream work without a separate tracking system. Discovery remains conversational; the user decides when to continue, without a BRD approval chain.
 
 #### Software Architecture Document (SAD)
 
@@ -370,7 +377,7 @@ The project-level architectural source of truth at `docs/architecture.md`. Its b
 
 #### Software Design Document (SDD)
 
-The per-feature implementation-oriented design at `docs/features/<feature-slug>/sdd.md`. It uses the feature BRD, project SAD, selected architecture skill, and required UX context to explain how the feature works internally. It references BRD requirement IDs and existing SAD modules instead of redefining system architecture. At least one Mermaid diagram explains the main flow: a sequence diagram by default, or a justified alternative when no meaningful interaction flow exists. Implementation checklists remain separate.
+The per-feature implementation-oriented design, published as a Feature issue artifact. It uses the feature BRD, project SAD, selected architecture skill, and required UX context to explain how the feature works internally. It references BRD requirement IDs and existing SAD modules instead of redefining system architecture. At least one Mermaid diagram explains the main flow: a sequence diagram by default, or a justified alternative when no meaningful interaction flow exists. Implementation checklists remain separate.
 
 During design discovery, the SDD also captures each known applicable Feature Decision, its scope, and the human's explicit approval before the design is finalized. For example, planned eval work may need confirmed Evaluation Targets and an approved Eval Coverage Plan. An unchanged approved decision is reused by downstream planning and implementation without a repeat approval request; a material change to that decision or its scope requires renewed approval. This is decision-specific evidence, not SDD sign-off metadata.
 
@@ -419,7 +426,17 @@ Before Story execution, the Epic receives its own branch. Stories run one at a t
 
 When a check blocks a Task, Sibu records a complete but compact Failure Inventory rather than relying on truncated output or a failure count. It groups failures by likely cause, traces them to the Task, expected contract, and owning paths, then compares focused failures with the observed Epic/base head in isolation. This distinguishes an active-Story regression from a pre-existing failure or host/test-runner failure without claiming certainty the evidence does not support. A clearly attributable, bounded pre-existing failure may receive a reviewed, checked prerequisite repair when ownership and safety are clear. A bounded repair that overlaps the blocked Task's uncommitted edits remains a reviewed Same-Task Continuation, including when the underlying bug predates the Story; the Task keeps its edits and single-commit authority. A clear, path-disjoint same-Story regression may instead become a reviewed Follow-up Checked Task, executed before the blocked Task resumes. After repairs, Sibu reruns checks made stale by them. Ambiguous attribution, unsafe overlap or Git state, material decisions, or non-converging repair stops for the human. Recovery does not waive the original Task goal, checks, evidence, or plan review. Separate Behavioral QA and eval-suite execution are not part of this recovery workflow.
 
-Every Story has one or more Milestones, grouped by reviewable outcome rather than a task-count quota. After each earlier Milestone's Tasks pass their checks, receive scoped commits, and record progress, the next Milestone proceeds without routine human approval. Ambiguity, consequential architecture or scope changes, security/privacy/data/dependency decisions, failed checks, missing evidence, or unsafe integration stop unattended work for a human or planner decision. Human-requested changes to completed work become new or revised planned Tasks with their own checks and fresh plan review and conditional acceptance before execution resumes. After the final Milestone passes, the Story Pull Request is verified, squash-merged into the Epic Branch, and closed without routine human review. Separate manual or automated Behavioral QA is not part of this Story merge; planned Task and Story checks remain mandatory. Only then does the next Story branch from the updated Epic Branch. Once every planned Story is integrated and Epic-level verification passes, the Epic Pull Request presents the complete work for human review, links all merged Story Pull Requests, and summarizes what happened, including value, verification, and noteworthy blockers or recoveries. The human reviews that Epic PR; separate Behavioral QA is not a workflow expectation or gate. This workflow does not own production deployment.
+Every Story has one or more Milestones, grouped by reviewable outcome rather than a task-count quota. After each earlier Milestone's Tasks pass their checks, receive scoped commits, and record progress, the next Milestone proceeds without routine human approval. Ambiguity, consequential architecture or scope changes, security/privacy/data/dependency decisions, failed checks, missing evidence, or unsafe integration stop unattended work for a human or planner decision. Human-requested changes to completed work become new or revised planned Tasks with their own checks and fresh plan review and conditional acceptance before execution resumes. An in-progress Story opens a draft Pull Request after its first checked Task is pushed. After the final Milestone passes, the Story Pull Request is verified, made ready for integration, squash-merged into the Epic Branch, and closed without routine human review. Separate manual or automated Behavioral QA is not part of this Story merge; planned Task and Story checks remain mandatory. Only then does the next Story branch from the updated Epic Branch. Once every planned Story is integrated and Epic-level verification passes, the Epic Pull Request presents the complete work for human review, links all merged Story Pull Requests, and summarizes what happened, including value, verification, and noteworthy blockers or recoveries. The human reviews that Epic PR; separate Behavioral QA is not a workflow expectation or gate. This workflow does not own production deployment.
+
+#### Feature-Work Tracking and Cross-Machine Handoff
+
+Planned feature work requires the project's GitHub repository and usable GitHub MCP before the first feature artifact is created. A Feature issue holds the BRD, UX, and SDD as issue artifacts; Epics are its sub-issues, and Stories are sub-issues of their Epic. Epic and Story descriptions and acceptance criteria live in their issues, not duplicate local planning files. Tasks remain a compact checklist within the Story issue. The Story's implementation plan and concise progress record live as issue artifacts, with enough completed-Task status, check evidence, commit references, and next-work context for a fresh agent to resume. A draft Story PR opens after the first checked Task is pushed and remains the visible code-work surface. Native PR-to-issue linking is outside this version; the Epic PR still links all merged Story PRs for human review. A Story issue closes after its PR merges into the Epic Branch; the Epic issue closes after its human-reviewed Epic PR merges. GitHub Projects remain out of scope.
+
+An agent reads only the relevant Feature, Epic, and Story artifacts through GitHub MCP into session context; it does not create an on-disk artifact cache or duplicate local feature files. BRD, UX, and SDD changes publish to the Feature issue when their respective stage finishes, so downstream work reads the published version. An interrupted draft not yet published may need to be redone. The agent need not reread every artifact after every Task in one session. Project-wide documents remain repo-local. An unavailable required GitHub artifact stops dependent work rather than being invented from stale context.
+
+A checked Task is a cross-machine handoff point only after its commit is pushed and its Story checklist and progress artifact record matching completion. Clear push and update responses can establish that checkpoint; ambiguous or conflicting effects require remote readback before claiming handoff. An incomplete Task has no ownership or in-progress state: another engineer may start it from the last verified remote checkpoint. Before resuming and before publishing completed work, the agent checks the remote branch, issue, and draft PR state. If another engineer completed the Task, the returning agent discards only local edits confidently attributable to that superseded Task, reconciles with the remote workflow state, and moves to the next appropriate Task, Story branch, or Epic review. Ambiguous or unrelated local edits must not be discarded automatically; disagreement between Git and issue progress stops for reconciliation.
+
+Local workflow initialization, health inspection, and sync remain available without GitHub. Planned feature work has no local-only path: an absent GitHub repository remote, missing GitHub MCP, or unavailable required issue and artifact capabilities stop the affected stage before it creates a feature artifact. Missing access never causes a silent local fallback.
 
 #### Local Evals Workbench
 
@@ -499,12 +516,14 @@ define focused task
 - A **Selected Architecture Skill** has exactly one catalog choice recorded in state and one installed guidance target for each selected agent that supports skill files.
 - A **Workflow Configuration Change** has a user intent, selected option, affected workflow files, readiness checks, and resulting state updates.
 - An **MCP Configuration** has a selected server, target agent, connection metadata, and references to credential environment variables when needed.
+- A **Feature Issue** belongs to the project's GitHub repository, holds the feature's BRD, UX, and SDD artifacts, and contains its Epic sub-issues.
+- A **GitHub Issue Hierarchy** has one Feature issue, its Epic sub-issues, each Epic's Story sub-issues, and compact Task status within each Story.
 - A **Sibu-Provided Sub-agent Role** has a stable role identifier, purpose, supported workload classes, supported agent environment, and route state for each role-and-workload combination.
 - A **Workload Class** has provider-neutral scope, ambiguity, reasoning, validation, and risk characteristics.
 - A **Model Route** has one sub-agent role, one workload class, one supported agent environment, one concrete model identifier, one reasoning effort, selection origin, and last-reviewed catalog version.
 - A **Model Recommendation Catalog** has a version, supported agent environments, role-to-workload assignments, provider mappings, concise research-informed rationales, review dates, and user-facing change notes.
 - A **Model Route Review** has a triggering condition, current route when present, current recommendation, user decision, and resulting recorded route.
-- An **Artifact** has a path, purpose, source context, review state, and downstream consumers.
+- An **Artifact** has an authoritative location, purpose, source context, review state, and downstream consumers. Planned feature artifacts live in GitHub; project-wide documents remain repo-local.
 - A **Feature Decision** has a purpose, applicable downstream gate, approved choice, scope, and human approval evidence; materially changing the choice or scope invalidates that approval.
 - A **Story Implementation Plan** has one User Story, one or more ordered Milestones, bounded Tasks, acceptance-criteria coverage, and a reviewed version.
 - A **Milestone** has a reviewable outcome and one or more Tasks; earlier Milestones advance after verified Task evidence.
@@ -515,6 +534,7 @@ define focused task
 - An **Epic Branch** belongs to one Epic and contains its sequentially integrated Stories.
 - A **Story Branch** belongs to one User Story, starts from the current Epic Branch, and contains its verified Task commits.
 - A **Progress Log** records Task outcomes, commit references, decisions, gotchas, and blockers for later runs.
+- One planned **Feature** has one authoritative GitHub issue for its BRD, UX, and SDD artifacts; each **Epic** and **Story** has one authoritative issue, and each Story has its own plan and progress artifacts.
 - A **Story Pull Request** targets its Epic Branch and records the Story's change, value, verification, and automatic integration outcome.
 - An **Epic Pull Request** targets the project's integration branch and records the final human review outcome, linked merged Story Pull Requests, and an account of work and verification across the Epic.
 - A **Local Eval Artifact** has a project path, purpose, eval scope, expected/reference context, ownership status, and relationship to one or more suites or test cases.
@@ -604,7 +624,9 @@ define focused task
 - Cleanup of a retired skill must also address Sibu-managed routing references to it, while preserving user-written references for explicit review rather than silently changing them.
 - The current retirement lifecycle does not withdraw architecture skills or offer their cleanup. The selected architecture skill remains governed by the existing intentional replacement rules; an initialized workflow must not be left without selected architecture guidance.
 - Users can customize or unmanage workflow files when Sibu defaults no longer fit.
-- Optional non-architecture skills and MCP integrations are user-selected and may be changed after initialization.
+- Optional non-architecture skills and non-GitHub MCP integrations are user-selected and may be changed after initialization. GitHub MCP is required for planned feature work, not for local setup or maintenance.
+- Planned feature work requires the project's GitHub repository and usable GitHub MCP before its first feature artifact. Missing access stops the stage without local fallback.
+- Feature, Epic, and Story issues and their artifacts are authoritative for feature-specific documents and progress. Agents read relevant artifacts into session context and publish completed stage or checked-Task outcomes; no on-disk artifact cache is required or created.
 - Architecture skill replacement is allowed only as an intentional high-impact configuration change after Sibu strongly warns the user about downstream consequences.
 - Sibu must not commit, store, or embed secrets in generated MCP configuration.
 - Sibu must not silently inherit the parent model for a Sibu-provided sub-agent role that requires an explicit route.
@@ -626,11 +648,14 @@ define focused task
 - Every Task must have an objective, executable check specified by the planner before the executor starts; the executor must not invent or weaken it.
 - No Task is done or committed without its check passing; ambiguous or uncheckable Tasks are revised before unattended execution.
 - A failed aggregate check is not complete recovery evidence until its failures are inventoried and focused failures are compared with the observed Epic/base head; a baseline or host failure must not be presented as an active-Story regression without evidence.
-- Recovery cannot weaken planned checks, discard a blocked Task's edits, claim a failed run passed, or bypass fresh review of a changed plan. Checks made stale by a repair must run again.
+- Recovery cannot weaken planned checks, discard an active blocked Task's edits, claim a failed run passed, or bypass fresh review of a changed plan. Checks made stale by a repair must run again. A different engineer's verified completion of that same Task is a separate supersession case, not blocked-Task recovery.
 - The architecture reviewer is independent and read-only, reviews plans before execution, prioritizes over-engineering and premature optimization, and does not review code.
 - Every changed plan must receive a fresh architecture review and conditional acceptance before execution resumes from that plan.
 - Review findings must be evidence-based and visible; their severity does not override the human's authority to accept risks explicitly.
 - Each Epic uses its own branch; each User Story branches from the current Epic Branch in planned order, and each completed Task has a scoped commit with its Task ID.
+- Cross-machine continuation starts only from verified pushed Task commits and matching issue progress. An unfinished Task may be restarted by another engineer without an in-progress claim; a returning agent must detect a completed Task before resuming and must not overwrite another engineer's work.
+- Planned feature work does not require a GitHub read or write after every local code edit, but every completed checked Task must publish its commit and matching Story progress before another machine can resume from it.
+- Superseded unfinished edits may be discarded only when confidently attributable to that Task; unrelated or ambiguous edits require a stop rather than a broad reset.
 - Human-requested changes must become planned, checked Tasks with fresh plan review and conditional acceptance before executor work resumes.
 - A Story cannot integrate into its Epic Branch until its required checks and evidence pass; integration must not erase its traceable Story PR.
 - Separate manual or automated Behavioral QA is outside the planned-feature delivery workflow and is not a Story merge or Epic review prerequisite. Planned Task and Story checks remain required.
@@ -673,6 +698,8 @@ define focused task
 - When local edits exist, Sibu should present review options instead of overwriting automatically.
 - When a managed file is missing, Sibu may offer to repair it during sync.
 - When an MCP server is selected, Sibu should render agent-specific configuration that references credentials safely rather than storing secret values.
+- When planned feature work starts, Sibu should require the project's GitHub repository and configured, available GitHub MCP capabilities for Feature, Epic, and Story issues, native sub-issues, and issue artifacts before creating the first feature artifact. Native PR-to-issue linking is not required in this version.
+- When a GitHub-mode BRD, UX document, or SDD stage finishes, Sibu should publish its authoritative artifact on the Feature issue before downstream work relies on it.
 - When a Sibu-provided sub-agent role is needed, the workflow should first classify the delegated task using provider-neutral workload criteria.
 - When the resulting role-and-workload combination has no saved route, the workflow should pause, present the current compatible recommendation, ask the user to choose, and record that repo-wide choice before spawning the role.
 - When a saved model route is available, future runs should reuse it without asking again.
@@ -697,6 +724,9 @@ define focused task
 - When a blocked Task has a bounded, attributable repair, Sibu should use reviewed Same-Task Continuation for overlapping edits or a reviewed Follow-up Checked Task for a clear path-disjoint same-Story regression. A safe pre-existing failure may receive a reviewed, checked prerequisite repair; uncertainty, unsafe state, material decisions, or non-convergence returns to the human.
 - When a human requests changes during execution or PR review, the planner should turn them into new or revised checked Tasks before an executor acts.
 - When a Story's final Milestone is verified, its PR should clearly explain the changes, value, and validation; after integration checks pass, it is squash-merged into the Epic Branch without routine human review.
+- When a checked Task completes, Sibu should push its commit and record compact Task status plus sufficient plan and progress context on the Story issue for another engineer to continue from the next Task.
+- When the first checked Task is pushed for an in-progress GitHub-mode Story, Sibu should open its draft Story PR; later checked Tasks update the same branch and PR without a routine human pause.
+- When an agent resumes GitHub-backed work, it should compare remote issue, PR, and branch state before choosing a Task or branch; if another engineer completed its unfinished Task, it should discard only attributable superseded edits, reconcile safely, and continue from the current workflow state.
 - When the software design's verification approach is settled, Sibu should distinguish planned checks from separate manual or automated Behavioral QA and state that the latter is outside its planned-feature delivery workflow.
 - When every Story is integrated, the Epic PR should link all merged Story PRs and give the human a clear account of the complete work, value, verification, blockers, and recoveries.
 - When reviewer recommendations or authoritative artifacts conflict, or execution requires a material decision, the main agent should surface the evidence and alternatives to the human rather than choose autonomously.
@@ -814,17 +844,21 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 4. **Plan Decision**: a complete review without findings or unresolved risks is accepted automatically; unresolved material decisions stop for the human.
 5. **Plan Revised When Needed**: the planner changes the plan; a fresh architecture review and conditional acceptance apply to the new version before execution.
 6. **Story Branch Opened**: execution uses one branch from the current Epic Branch for the active User Story after plan acceptance.
-7. **Task Executed and Checked**: a fresh executor performs one Task, runs the prescribed check, makes a Task-specific commit only on pass, and records the result in the progress log. Blockers stop execution for planner or human intervention.
+7. **Task Executed and Checked**: a fresh executor performs one Task, runs the prescribed check, makes a Task-specific commit only on pass, and records the result in the progress log. The commit and matching Story progress are published as the cross-machine checkpoint. Blockers stop execution for planner or human intervention.
 8. **Blocked Task Diagnosed and Recovered When Safe**: failures are inventoried and compared with the observed Epic/base head. A bounded repair receives fresh plan review, preserves blocked edits, and uses Same-Task Continuation for overlap or a separate checked repair when path-disjoint. Stale checks run again; uncertainty or unsafe state stops for the human.
 9. **Milestone Verified and Advanced**: after all Tasks pass, receive scoped commits, and record progress, an earlier Milestone advances without routine human approval. Blockers or material decisions stop execution for human input.
-10. **Story PR Integrated**: after final Story checks and evidence pass, its PR is squash-merged into the Epic Branch without routine human review or a separate Behavioral QA gate. The next Story then branches from that updated Epic Branch.
+10. **Story PR Integrated**: an in-progress Story's PR opens as a draft after its first checked Task is pushed. After final Story checks and evidence pass, the PR is made ready and squash-merged into the Epic Branch without routine human review or a separate Behavioral QA gate. The next Story then branches from that updated Epic Branch.
 11. **Epic PR Reviewed**: after every Story is integrated and Epic-level verification passes, the human reviews the Epic PR with linked Story PRs and a complete summary. This review does not stand in for separate Behavioral QA, which is outside this workflow. Production deployment is not handled by this lifecycle.
+
+Feature, Epic, and Story issues represent this lifecycle, Story artifacts hold the plan and compact progress history, and Task handoffs require pushed commits consistent with issue progress. A Story issue closes after its PR merges into the Epic Branch; the Epic issue closes after its human-reviewed Epic PR merges. The Feature issue closes after all its Epic PRs are verified merged. Native PR-to-issue linking is not needed for these verified closure actions.
 
 ### Domain Events
 
 - **Workflow Initialized**: a repo adopts Sibu and records initial workflow metadata.
 - **Workflow Health Checked**: Sibu inspects workflow state without changing files.
 - **Workflow Configuration Changed**: the user intentionally changes selected skills, architecture guidance, or MCP/tool integrations after initialization.
+- **Feature Work Readiness Failed**: the project's GitHub repository or required GitHub MCP access is unavailable before planned feature work can create its first artifact.
+- **Feature Artifact Published**: a BRD, UX document, or SDD reaches its stage checkpoint and becomes available as an authoritative Feature issue artifact.
 - **Architecture Skill Selected**: the user chooses one architecture skill during workflow adoption and Sibu records and installs it.
 - **Architecture Skill Replacement Requested**: the user asks to change the selected architecture skill after initialization.
 - **Architecture Skill Replacement Warned**: Sibu explains the likely downstream impact before applying the replacement.
@@ -869,6 +903,8 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 - **Story Branch Opened**: execution begins on a branch dedicated to one User Story, based on the current Epic Branch.
 - **Task Check Passed**: the executor's prescribed check passes for one Task.
 - **Task Committed**: one checked Task is recorded in a scoped branch commit.
+- **Task Handoff Published**: a checked Task's commit is pushed and its Story issue records consistent progress for cross-machine continuation.
+- **Task Superseded**: another engineer completed the same previously unfinished Task, requiring the returning agent to reconcile before further work.
 - **Task Blocked**: ambiguity, missing check, or repeated failure stops unattended work and is logged.
 - **Failure Inventory Recorded**: the blocked check's failures are grouped by likely cause and linked to the Task, contract, and owning paths.
 - **Failure Attribution Established**: focused comparison with the observed Epic/base head identifies a sufficiently clear active-Story, pre-existing, or host/test-runner cause for bounded recovery.
@@ -877,7 +913,8 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 - **Milestone Verified**: all Tasks in a Milestone have passing checks, scoped commits, and recorded progress.
 - **Milestone Advanced**: an earlier verified Milestone yields to the next without routine human approval.
 - **Human Decision Needed**: ambiguity, a consequential change, or a blocker stops unattended execution for a focused decision.
-- **Story Pull Request Opened**: the completed Story is proposed for integration into its Epic Branch with a clear change, value, and verification summary.
+- **Draft Story Pull Request Opened**: after the first checked Task is pushed, an in-progress GitHub-mode Story gains a visible draft PR against its Epic Branch.
+- **Story Pull Request Ready**: the completed Story has passed required checks and evidence gates, so its PR is ready for integration into its Epic Branch.
 - **Story Pull Request Merged**: after verification, the Story is squash-merged into the Epic Branch without routine human review.
 - **Epic Pull Request Opened**: all Story PRs are linked and the integrated Epic work, verification, and noteworthy blockers or recoveries are summarized for human review.
 - **Epic Review Completed**: the human completes the final review of the Epic PR.
@@ -915,6 +952,9 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 - Local dashboard execution is in initial scope; headless CI execution, multi-model comparison, and real external-tool calls are deferred.
 - Sibu's strongest product value comes from reliable workflow setup, maintenance, and responsible AI collaboration patterns.
 - The AI-Augmented Development Pipeline is enforced for planned product/feature work when the relevant skills are triggered.
+- Planned feature work uses a Feature issue with Epic and Story sub-issues, compact checked-Task status, issue artifacts, and an early draft Story PR. GitHub Projects and native PR-to-issue linking are outside this version.
+- There is no local-only planned-feature mode, mode switch, migration, backfill, or compatibility path in this version. Local init, doctor, and sync do not require GitHub.
+- Issue artifact version history is not a workflow requirement in this version. GitHub issue artifacts are an external, changing capability, so readiness must be verified rather than assumed.
 - Normal repo work and narrow fixes should stay lightweight and do not require the full pipeline by default.
 - Users want strong defaults, but they also need local control over languages, frameworks, agents, architecture guidance, eval artifacts, and managed files.
 - Initial model routing covers only Sibu-provided sub-agent roles and stores shared repo-wide choices; unrelated user-created agents and private per-developer overrides are outside the initial scope.
@@ -945,6 +985,8 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 - **Artifact isolation vs deliberate override**: Sibu should prevent accidental source-control and LLM-context pollution from run artifacts, while recognizing that a user can deliberately override local safeguards.
 - **Skill boundaries**: each skill must stay focused on its owned artifact while still handing off enough context to downstream skills.
 - **External tool evolution**: agents, models, editors, MCP servers, and collaboration tools will keep changing, so Sibu must avoid hard-coding its business identity around any single external tool.
+- **GitHub collaboration vs partial local work**: pushed checked Tasks can hand off across machines; uncommitted mid-Task edits cannot. The workflow permits a second engineer to restart an unfinished Task, then safely reconciles superseded local edits when the first engineer returns.
+- **GitHub authority vs remote-read latency**: agents load only relevant artifacts into session context and avoid needless rereads, but do not persist an on-disk artifact cache. An unpublished interrupted planning draft may be lost. A checked Task is not shareable until its branch and Story progress are published together; ambiguous partial publication stops rather than claiming handoff.
 - **Recommendation freshness vs research**: release-and-sync updates are less immediate than live provider discovery, but they keep recommendations reviewable, reproducible, and grounded in documented maintainer judgment.
 - **Cost vs expected quality**: the cheapest available model is not necessarily the best route; Sibu must prioritize expected role-and-workload suitability before optimizing cost, while avoiding guarantees it cannot substantiate.
 - **Team consistency vs personal preference**: initial routes are shared repo-wide for predictable collaboration; private per-developer overrides may require a future extension.

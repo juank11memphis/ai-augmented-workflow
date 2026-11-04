@@ -6,7 +6,7 @@ Sibu helps individual software engineers and small to medium-sized teams build s
 
 It exists because the current AI development landscape feels like everyone is running their own private race against time. New tools, models, workflows, agents, editors, prompts, and practices appear constantly. Some of them are genuinely useful, but putting them together into a working development environment is hard, fragile, and different for every team.
 
-Sibu turns that chaos into a practical workflow. It is a CLI that helps developers set up and maintain an AI-augmented working environment: shared agent instructions, skills, templates, safety rules, sync checks, and conventions that make AI collaboration faster, clearer, and more responsible.
+Sibu turns that chaos into a practical workflow. It is a CLI that helps developers set up and maintain an AI-augmented working environment: shared agent instructions, skills, templates, safety rules, sync checks, and conventions that make AI collaboration faster, clearer, and more responsible. Setup and maintenance stay local; planned feature work uses GitHub as its shared home for feature artifacts and progress.
 
 Sibu is not here to replace the engineer. It is here to amplify the engineer.
 
@@ -29,9 +29,9 @@ Sibu should feel human, confident, and rooted. It should sound like a tool that 
 
 ## Product North Star
 
-A developer should be able to run `sibu init` in a repo with no AI workflow, start working immediately, and feel guided into a better way of collaborating with AI.
+A developer should be able to run `sibu init` in a repo with no AI workflow and feel guided into a better way of collaborating with AI. Local setup should not wait on GitHub, while planned feature work begins only when the repo's GitHub connection is ready.
 
-The ideal outcome is simple: a developer can define a feature clearly, let its small, checked stories progress through an epic without routine review pauses, and review the complete result before accepting it. They feel proud of both the speed and the quality of the work.
+The ideal outcome is simple: a developer can define a feature clearly in GitHub, let its small, checked stories progress through an epic without routine review pauses, and review the complete result before accepting it. Another engineer can resume at a checked Task boundary from the same GitHub context and pushed code. They feel proud of both the speed and the quality of the work.
 
 Sibu succeeds when AI stops feeling like a pile of disconnected experiments and starts feeling like a reliable development loop.
 
@@ -63,7 +63,7 @@ Sibu addresses this by packaging proven AI-augmented development practices into 
 
 ## Product Positioning
 
-Sibu is a CLI that stays beside the developer while they set up and maintain an AI-augmented working environment.
+Sibu is a CLI that stays beside the developer while they set up and maintain an AI-augmented working environment. A GitHub repository and configured GitHub MCP are required when they use Sibu's planned-feature pipeline, but not to initialize, inspect, or maintain the local workflow.
 
 It is part workflow kit, part template manager, part agent onboarding system, but the primary experience should feel like a CLI companion: direct, useful, and grounded in the repo.
 
@@ -95,6 +95,8 @@ It should push developers toward:
 Sibu should be flexible everywhere else.
 
 Users should be able to select the languages, frameworks, agents, and architecture guidance that fit their project. If they decide a managed skill or workflow file no longer fits, they should be able to unmanage it and take full ownership from that point forward.
+
+For planned feature work, GitHub is a deliberate constraint rather than an optional tracking mode. Feature documents, issues, plans, and progress belong in the project's GitHub repository so checked work can be handed from one engineer to another. Sibu should not offer a separate local-only feature-tracking path. This does not turn GitHub into a requirement for local workflow setup or maintenance.
 
 The framework should provide strong defaults, not a cage.
 
@@ -131,11 +133,13 @@ Sibu should be transparent about:
 - what is out of date
 - what it will not overwrite automatically
 
-When local edits exist, Sibu should protect them. When updates are available, Sibu should explain them. When a user wants to drift, Sibu should allow it.
+When local edits exist, Sibu should protect them. When updates are available, Sibu should explain them. When a user wants to drift, Sibu should allow it. This control applies to project-owned workflow files; it does not promise an alternative local destination for planned feature artifacts.
 
 ## Trust and Quality
 
 Sibu must never remove user agency in the name of convenience. Its default planned-feature workflow may progress through an epic without routine human review after each story, but it must stop rather than guess when a material decision or blocker arises. The engineer reviews the completed epic before accepting it.
+
+If GitHub or its MCP connection is unavailable when planned feature work needs it, Sibu should stop that work clearly rather than write a local substitute or imply that progress was shared. Local init, doctor, and sync remain useful without GitHub access.
 
 It should avoid destructive actions unless the user explicitly asks for them or confirms the plan. It should not silently overwrite customized workflow files. It should not hide template updates behind vague messages. It should not imply that AI-generated work is trustworthy just because it completed.
 
@@ -176,12 +180,12 @@ It should not try to become an AI code editor, coding copilot, or any other full
 
 Sibu should also reject the fantasy that high-quality software comes from giving AI a vague goal and trusting an unexamined result. It can advance a well-defined epic unattended, but it must not hide failures, improvise consequential decisions, or bypass the engineer's final review.
 
-Sibu should empower users to use AI to amplify their own judgment, speed, and craft. It should sell fewer routine interruptions, not replacement of the engineer.
+Sibu should empower users to use AI to amplify their own judgment, speed, and craft. It should sell fewer routine interruptions, not replacement of the engineer. It should not become a general project-management platform; GitHub holds planned feature work, while Sibu guides the quality and handoffs of that work.
 
 ## Success Signal
 
 Sibu is working when a new user can enter a repo with no AI environment, run `sibu init`, and quickly understand how to work with the framework.
 
-They define a real feature and its boundaries. Sibu guides the work into small, checked stories, progresses through the epic without routine review pauses, and presents a coherent, traceable result for human review. The code is clean. The workflow makes sense. They feel proud.
+With a GitHub repository and MCP ready for feature work, they define a real feature and its boundaries. Sibu guides the work into small, checked stories, publishes each checked Task handoff, progresses through the epic without routine review pauses, and presents a coherent, traceable result for human review. The code is clean. The workflow makes sense. They feel proud.
 
 That feeling is the signal: velocity without shame, speed without slop, AI without surrendering ownership.

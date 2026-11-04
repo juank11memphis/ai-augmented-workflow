@@ -15,7 +15,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 #### Workflow Adoption & State Tracking
 
 - **Initialize repo workflow**: bootstrap Sibu into an uninitialized repo so the project can begin using a repo-local AI-augmented development workflow.
-- **Orchestrate initial setup choices**: guide first-time choices for agents, required architecture guidance, optional skills, and optional MCP/tool support by coordinating the relevant supporting capabilities.
+- **Orchestrate initial setup choices**: guide first-time choices for agents, required architecture guidance, optional skills, and MCP/tool support by coordinating the relevant supporting capabilities; GitHub is not required to complete local setup.
 - **Require architecture skill selection**: ensure `sibu init` cannot complete until the user explicitly chooses one architecture skill from Sibu's existing fixed catalog, without Sibu choosing a default.
 - **Install selected workflow files**: create repo-local workflow files from selected Sibu templates while preserving that those files belong to the project.
 - **Install selected architecture guidance**: create the workflow guidance files and routing context for the selected architecture skill as part of the initialized workflow.
@@ -59,7 +59,7 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Surface upstream gaps**: stop and identify missing or insufficient product, domain, feature, design, or planning context instead of inventing downstream decisions.
 - **Keep progression user-directed**: require sufficiently clear upstream context, while letting the user choose when to request the next artifact without BRD, SAD, or SDD approval statuses, signatures, or sign-off gates.
 - **Preserve artifact ownership boundaries**: keep each skill focused on its owned artifact instead of producing unrelated downstream outputs.
-- **Carry reviewed context downstream**: use accepted upstream artifacts as the source of truth for later planning and implementation work.
+- **Carry reviewed context downstream**: use accepted repo-local project artifacts and authoritative GitHub feature artifacts for later planning and implementation work.
 - **Reuse approved feature decisions**: carry each unchanged, explicitly approved SDD Feature Decision into the downstream work it governs without asking the human again; stop when a required decision is missing or its choice or scope changed materially.
 - **Keep operational authority separate**: never treat an approved Feature Decision as permission for access, destructive actions, model-route choices, or final Epic acceptance.
 - **Carry architecture guidance downstream**: use the repo's selected architecture skill as required context for project SAD authoring, feature SDD authoring, implementation planning, and implementation execution.
@@ -70,20 +70,29 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 - **Explain feature behavior visually**: include a main-flow Mermaid sequence diagram in each SDD, allowing a justified alternative for changes without meaningful interaction flow.
 - **Route architectural changes upstream**: pause SDD work that changes module boundaries or system-wide decisions and direct the user to update the SAD first; keep architecture-compatible details in the SDD.
 - **Keep AI work reviewable**: guide work into small, explicit, validated chunks whose outcomes remain traceable for final Epic review.
+- **Require GitHub readiness for feature work**: stop planned feature work before its first artifact unless the project has a GitHub repository and usable GitHub MCP access; keep init, doctor, and sync available without GitHub.
+- **Place feature artifacts in GitHub**: make GitHub issues and issue artifacts authoritative for planned feature BRD, UX, SDD, Epic, Story, plan, and progress outputs while project-wide documents stay repo-local.
+- **Organize GitHub feature work**: create a Feature issue holding BRD, UX, and SDD artifacts, with native Epic sub-issues, Story sub-issues, and compact checked-Task status inside each Story issue; do not require duplicate local Epic or Story files.
+- **Publish stage-complete documents**: publish each BRD, UX, and SDD to the Feature issue when its stage finishes, so downstream work can read the authoritative version.
+- **Read GitHub artifacts selectively**: load only the feature artifacts needed for the current stage or Task through GitHub MCP into agent session context, without creating an on-disk artifact cache or rereading unchanged context after every edit.
 - **Plan stories into outcome milestones and tasks**: turn one deployable story into at least one outcome-grouped milestone and bounded, ordered tasks without a task-count quota.
 - **Define executable task checks before execution**: give each task its own objective pass/fail check and distilled context; split or clarify uncheckable tasks rather than delegating vague work.
 - **Challenge plan complexity early**: obtain independent architecture review of the exact plan version, emphasizing over-engineering and premature optimization as well as architecture fit, scope, and check quality; do not send code to the architecture reviewer.
 - **Resolve plan findings before execution**: revise actionable reviewer findings, obtain fresh review of every changed plan, and explain unresolved material decisions or risks plainly to the human.
 - **Gate execution on exact-plan review**: automatically accept a complete review with no findings or unresolved risks and start execution; stop for unresolved material decisions, and block missing or stale reviews.
 - **Prepare an Epic integration branch**: create one branch for the Epic before its Stories begin and preserve it as the integration base for their work.
-- **Execute checked tasks on a Story branch**: branch the active Story from the current Epic branch, run one bounded task per fresh-context executor iteration, commit only after its prescribed check passes, and retain concise progress history.
+- **Execute checked tasks on a Story branch**: branch the active Story from the current Epic branch, run one bounded task per fresh-context executor iteration, commit only after its prescribed check passes, and retain concise progress history in the Story issue artifact.
+- **Publish checked-Task handoffs**: push each checked Task commit and record matching status, check evidence, commit reference, and next-work context in the Story issue and its progress artifact so another engineer can continue; verify ambiguous publication before claiming handoff.
+- **Resume work across machines**: compare remote issue, PR, and branch state before resuming or publishing work; restart unfinished Tasks from the last verified pushed checkpoint without an in-progress claim, and move to the next appropriate Task, Story, or Epic review when prior work is complete.
+- **Reconcile superseded local work safely**: when another engineer has completed an unfinished Task, discard only edits confidently attributable to that superseded Task, preserve unrelated or ambiguous edits, and stop on conflicting Git or issue evidence instead of overwriting work.
 - **Stop on executor blockers**: escalate ambiguity, missing checks, repeated failures, undeclared flags, or material scope changes instead of permitting executor improvisation.
 - **Inventory blocked-check failures**: preserve a compact, complete account of failures grouped by likely cause and tied to the affected Task, expected contract, and owning paths.
 - **Attribute failures against the Epic baseline**: compare focused failures with the observed Epic/base head so pre-existing and host/test-runner failures are not mistaken for active-Story regressions.
 - **Recover blocked Tasks safely**: coordinate freshly reviewed, checked repairs when attribution, ownership, scope, and Git state are clear; preserve the blocked Task's edits, continue within that Task for overlapping repairs, and use separate checked repairs only when safe and path-disjoint.
 - **Revalidate recovery outcomes**: rerun checks made stale by repairs and require the original Task goal, checks, evidence, and single scoped commit before advancing; stop for ambiguity, material decisions, unsafe state, or non-convergence.
 - **Advance through checked milestones**: record each milestone's verified outcome and advance to the next without routine human approval; stop for ambiguity, material decisions, failed checks, or other blockers.
-- **Integrate verified Stories sequentially**: after the active Story's checks and evidence pass, open a clear Story PR and squash-merge it into the Epic branch without routine human review; start the next planned Story only from the updated Epic branch.
+- **Integrate verified Stories sequentially**: open a draft Story PR after its first checked Task is pushed; after final checks and evidence pass, make it ready and squash-merge it into the Epic branch without routine human review. Start the next planned Story only from the updated Epic branch.
+- **Close completed GitHub issues**: close Story and Epic issues after verifying their respective PR merges, and close the Feature issue after every Epic PR is verified merged; do not require native PR-to-issue linking. Keep the Epic PR's existing links to merged Story PRs for final human review.
 - **Verify Story PR handoff facts**: establish required-check and merge-policy facts from available external source-control access before integration, preferring available MCP access and stopping rather than guessing when facts cannot be verified.
 - **Stop unsafe integration**: pause rather than merge or advance when Story checks, required evidence, or integration safety are unresolved.
 - **Present a consolidated Epic PR**: after all planned Stories are integrated and Epic-level verification passes, open one PR for human review that links every merged Story PR and condenses their work, value, checks, blockers, retries, and recoveries.
@@ -172,16 +181,17 @@ User Control & Trust is treated as a cross-cutting principle rather than a stand
 
 #### MCP / Tool Configuration Support
 
-- **Select tool integrations**: let users choose optional MCP/tool connections that fit their workflow.
+- **Select tool integrations**: let users choose MCP/tool connections that fit their workflow without making GitHub configuration a prerequisite for local setup and maintenance.
+- **Establish GitHub readiness**: require configured and available GitHub MCP access to Feature, Epic, and Story issues, native sub-issues, and issue artifacts before planned feature work starts; stop dependent work when access is missing rather than falling back to local tracking.
 - **Render safe tool configuration**: generate agent-specific tool configuration that references credentials safely instead of storing secrets.
-- **Keep external tools optional**: preserve Sibu's boundary from GitHub, Notion, MCP servers, editors, AI agents, and other external systems.
+- **Keep external tools conditional**: preserve Sibu's boundary from GitHub, Notion, MCP servers, editors, AI agents, and other external systems; GitHub access is required for planned feature work, while other integrations remain optional.
 - **Separate configuration from credentials**: help users configure access paths while keeping secret values outside Sibu-managed files.
 
 ### Generic / External Capabilities
 
 Sibu may coordinate with external systems, but it does not own their capabilities.
 
-- **Source control hosting**: external systems such as GitHub may hold repositories, issues, pull requests, checks, and review workflows.
+- **Source control hosting**: external systems such as GitHub may hold repositories, issues, sub-issues, issue artifacts, pull requests, checks, and review workflows.
 - **Documentation workspaces**: external systems such as Notion may receive exported planning artifacts.
 - **MCP servers**: external tool-access endpoints provide capabilities to agents when selected by the user.
 - **AI models and coding agents**: external providers and tools assist with AI work, but Sibu does not provide the models or replace engineer judgment.
@@ -200,10 +210,13 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **AI-Augmented Development Pipeline** depends on **Skill Guidance**, because the pipeline is enforced through focused skills and their prerequisite checks.
 - **Feature decision reuse** depends on **Skill Guidance** identifying and recording applicable approved choices during SDD authoring before the **AI-Augmented Development Pipeline** hands them to planning and implementation.
 - **AI-Augmented Development Pipeline** depends on **Workflow Adoption & State Tracking** for a selected architecture skill before SAD authoring, SDD authoring, implementation planning, or implementation execution proceeds.
+- **Planned feature work** depends on **MCP / Tool Configuration Support** to establish available GitHub access for Feature, Epic, and Story issues, native sub-issues, and issue artifacts before its first feature artifact. Access loss stops dependent work rather than changing its tracking authority.
+- **GitHub feature-document handoff** publishes the BRD, UX, and SDD to the Feature issue at each stage boundary before downstream work reads them. Unpublished in-session drafts are not durable across interrupted sessions.
 - **AI-Augmented Development Pipeline** depends on **Agent Support Selection** before spawning a Sibu-provided sub-agent: the delegated task must be classified, then an explicit saved route for that role-and-workload combination must be reused or an absent/unavailable route must be resolved by the user first.
 - **Plan architecture review** depends on one complete story plan, project SAD, feature SDD, selected architecture guidance, and task-level objective checks; it precedes any unattended execution.
 - **Conditional plan acceptance** depends on a complete review of the exact plan version: no findings or unresolved risks permits automatic execution; actionable findings require revision and fresh review, while unresolved material decisions stop for the human.
 - **Checked task execution** depends on an accepted plan, the active Story branch from the current Epic branch, task-specific checks, relevant conventions, and progress history.
+- **Cross-machine continuation** depends on a pushed checked-Task commit and matching Story issue progress; resumption checks current remote issue, draft PR when present, and branch state before choosing work. Uncommitted mid-Task edits are not a handoff point.
 - **Blocked Task recovery** depends on a complete failure inventory, focused comparison with the observed Epic/base head, preserved uncommitted edits, clear repair ownership, and fresh review of any changed plan; affected checks must pass again before progression.
 - **Checked milestone progression** follows each verified milestone without a routine human pause; material decisions and blockers still stop unattended execution, and changed plans require fresh review.
 - **Sequential Story integration** depends on verified Story completion, established required-check and merge-policy facts from external source control, and safe squash-merge into the Epic branch; the next Story starts only from the updated Epic branch.
@@ -232,7 +245,11 @@ Sibu may coordinate with external systems, but it does not own their capabilitie
 - **Architecture replacement risk**: replacing architecture guidance is allowed, but future feature work should define the exact warning, confirmation, and repair experience carefully.
 - **Architecture-skill retirement**: this capability is deferred; current retirement detection and cleanup cover only mandatory and optional non-architecture skills.
 - **Skill selection depth**: optional skills may start as template choices, but could evolve into richer recommendations based on project type.
-- **MCP/tool configuration maturity**: tool integrations are optional and changing quickly, so Sibu should keep them configurable without making them core product identity.
+- **MCP/tool configuration maturity**: non-GitHub integrations remain optional and changing; GitHub MCP is required for planned feature work but not for local setup or maintenance.
+- **GitHub feature boundary**: planned feature work requires the project's GitHub repository and usable GitHub MCP before its first artifact. It uses a Feature issue, Epic and Story sub-issues, compact Task status, issue artifacts, and an early draft Story PR. GitHub Projects and native PR-to-issue linking are out of scope; local-only feature work, mode switching, migration, and backfill are not part of this version.
+- **Remote-read and checkpoint balance**: agents read relevant GitHub feature artifacts into session context without an on-disk cache. Stage-complete feature documents and each checked Task publish authoritative checkpoints; an interrupted unpublished planning draft may need to be redone, and a failed or ambiguous push/update cannot be presented as a completed cross-machine handoff.
+- **Issue-artifact maturity**: GitHub issue artifacts are an external preview capability. Sibu verifies required access rather than assuming availability and does not rely on artifact version history in this version.
+- **Parallel work without claims**: there is no in-progress Task ownership state. Another engineer may restart an unfinished Task from the last pushed checkpoint; a returning engineer's superseded edits are discarded only when clearly attributable, with ambiguous local work protected.
 - **Template update explainability**: sync quality depends on meaningful update notes, not just version numbers.
 - **Pipeline strictness**: Sibu must balance enforcing artifact prerequisites and required architecture guidance with staying lightweight for narrow fixes.
 - **Plan-review host compatibility**: supported agents may differ in sub-agent availability; the workflow must keep the plan-review and human-decision gates intact without assuming concurrent reviewers.
