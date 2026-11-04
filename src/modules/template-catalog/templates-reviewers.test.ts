@@ -14,7 +14,7 @@ describe('plan-only architecture reviewer', () => {
   const toolbox = readTemplate(toolboxPath);
 
   it('requires exact plan identity and independently verifies authoritative sources', () => {
-    for (const expected of ['exactly one User Story', 'reviewable plan identity and content', 'Epic brief', 'source BRD', 'project SAD', 'feature SDD with embedded diagrams', 'selected architecture guidance', 'source-verified **start here**']) {
+    for (const expected of ['exactly one GitHub Story issue identity', 'one plan-artifact identity', 'exact transient plan content', 'stable reviewable-content fingerprint', 'Epic', 'BRD', 'project SAD', 'feature SDD with embedded diagrams', 'selected architecture guidance', 'source-verified **start here**']) {
       assert.ok(toolbox.includes(expected), expected);
     }
     assert.match(toolbox, /Independently verify references against the full authoritative paths and the actual plan/i);
@@ -50,7 +50,7 @@ describe('plan-only architecture reviewer', () => {
     for (const { scenario, evidence } of cases) {
       assert.match(toolbox, evidence, scenario);
     }
-    assert.match(toolbox, /Reviewed plan identity: <exact identity and plan path>/i);
+    assert.match(toolbox, /Reviewed plan identity: <Story issue, plan artifact, and stable content fingerprint>/i);
     assert.doesNotMatch(toolbox, /Inspect the actual current local diff/i);
   });
 
