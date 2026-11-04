@@ -1,5 +1,5 @@
 {
-  "templateVersion": "250",
+  "templateVersion": "251",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "56",
+      "version": "57",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate."
+        "Gates planned feature work on the project GitHub remote and usable same-repository MCP capabilities before the first artifact, without affecting local commands."
       ]
     },
     ".codex/config.toml": {
@@ -338,10 +338,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "3",
+      "version": "4",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Summarizes BRD changes in bullets and suggests a relevant next step without starting it."
+        "Requires GitHub readiness before planned BRD publication and stops unsupported downstream GitHub planning without a local substitute."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
