@@ -95,8 +95,12 @@ test('stale managed copies of all five skills show current sync notes, update sa
     assert.match(
       change.changes[0] ?? '',
       template.endsWith('/ai-implementation-plan-executor/SKILL.md')
-        ? /Starts the first unintegrated Story.*separate human start prompt/i
-        : /Feature Decision|eval targets and coverage/i,
+        ? /confirmed Story and plan links.*publication-unconfirmed stop/i
+        : template.endsWith('/ai-implementation-planner/SKILL.md')
+          ? /confirmed Story plan links.*unconfirmed planning publication/i
+          : template.endsWith('/ai-implementation-planner-toolbox/SKILL.md')
+            ? /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/i
+            : /Feature Decision|eval targets and coverage/i,
       template,
     );
     current = applySyncAction({ rootPath, state: current, manifest, preview: change, action: 'apply-update' }).state;

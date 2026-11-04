@@ -75,9 +75,7 @@ describe('future packaged verified Story PR contract', () => {
 
   it('ships current gatekeeper version and user-facing Epic handoff note', () => {
     const manifest = readTemplateManifest();
-    assert.equal(manifest.templateVersion, '250');
     const executorTemplate = manifest.templates[templatePath];
-    assert.equal(executorTemplate?.version, '79');
-    assert.match(executorTemplate?.changes.join(' ') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
+    assert.match(executorTemplate?.changes.join(' ') ?? '', /confirmed Story and plan links.*publication-unconfirmed stop/i);
   });
 });

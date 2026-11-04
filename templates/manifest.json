@@ -1,5 +1,5 @@
 {
-  "templateVersion": "250",
+  "templateVersion": "258",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "56",
+      "version": "59",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes existing Sibu eval runs and troubleshooting to the shared agent-guided skill while keeping eval artifact authoring separate."
+        "Adds compact and wide planned-feature terminal feedback for readiness, creation, publication, and unconfirmed writes."
       ]
     },
     ".codex/config.toml": {
@@ -135,31 +135,31 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "21",
+      "version": "24",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Carries each Story's applicable SDD verification methods, coverage, evidence, human limits, and exclusions into reviewable expectations without adding approval gates."
+        "Shows confirmed hierarchy links and next planning action, while pausing on unconfirmed Epic or Story publication."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "36",
+      "version": "39",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Carries scoped Feature Decision IDs and SDD pointers into planning packets while retaining source verification and changed-plan review."
+        "Shows confirmed Story plan links and next review action, while pausing on unconfirmed planning publication."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Verifies governing SDD Feature Decision records before reuse and carries relevant pointers into Story steps and fresh Task context."
+        "Returns exact transient plan content for GitHub Story artifacts without requiring duplicate local planning files."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "79",
+      "version": "82",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Starts the first unintegrated Story of an identified Epic without a separate human start prompt, while preserving source and plan-review gates."
+        "Aligns planning handoff with confirmed Story and plan links and an explicit publication-unconfirmed stop."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
@@ -184,10 +184,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "16",
+      "version": "19",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Aligns independent project SAD/BRD branches and self-contained feature SDD contracts with embedded diagrams; preserves ownership and review safeguards."
+        "Shows confirmed UX publication and unconfirmed-write next steps in accessible terminal feedback."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
@@ -338,10 +338,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "3",
+      "version": "7",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Summarizes BRD changes in bullets and suggests a relevant next step without starting it."
+        "Shows Feature creation, confirmed BRD publication, and unconfirmed-write next steps in terminal feedback."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
@@ -352,17 +352,17 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "4",
+      "version": "7",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Separates happy-path, failure, and edge scenarios into individual Mermaid diagrams when visual explanation is needed, instead of combining outcomes in one diagram."
+        "Shows confirmed SDD publication and unconfirmed-write next steps in accessible terminal feedback."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Reviews planned verification against SDD methods, coverage, evidence, and human limits while separating bounded findings from material risks."
+        "Accepts exact GitHub Story, plan, and source artifact identities for independent read-only plan review."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {

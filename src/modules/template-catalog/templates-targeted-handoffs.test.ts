@@ -70,9 +70,9 @@ describe('targeted handoff instruction contracts', () => {
   it('versions each distributed skill with current user-facing sync notes', () => {
     const manifest = readTemplateManifest();
     const expectedNotes = {
-      'ai-implementation-planner': /Carries scoped Feature Decision IDs and SDD pointers into planning packets.*changed-plan review/,
-      'ai-implementation-plan-executor': /Starts the first unintegrated Story.*separate human start prompt/,
-      'ai-implementation-planner-toolbox': /Verifies governing SDD Feature Decision records before reuse.*fresh Task context/,
+      'ai-implementation-planner': /confirmed Story plan links.*unconfirmed planning publication/,
+      'ai-implementation-plan-executor': /confirmed Story and plan links.*publication-unconfirmed stop/,
+      'ai-implementation-planner-toolbox': /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/,
       'ai-implementation-executor-toolbox': /Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD.*missing or changed choices/,
     } as const;
     for (const [name, expectedNote] of Object.entries(expectedNotes)) {

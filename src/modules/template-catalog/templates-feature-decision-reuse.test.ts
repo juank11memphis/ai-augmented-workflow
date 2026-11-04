@@ -119,15 +119,19 @@ test('Feature Decisions cannot bypass operational or final Epic gates', () => {
 
 test('manifest bumps every changed template with replacement user-facing current-version sync notes', () => {
   const manifest = readTemplateManifest();
-  assert.equal(manifest.templateVersion, '250');
-  const versions = { planner: '36', plannerWorker: '24', executor: '79', executorWorker: '31', eval: '11' };
+  const unchangedVersions = { executorWorker: '31', eval: '11' } as const;
   for (const role of Object.keys(paths) as (keyof typeof paths)[]) {
     const template = manifest.templates[paths[role]];
-    assert.equal(template?.version, versions[role], role);
+    if (role in unchangedVersions) {
+      assert.equal(template?.version, unchangedVersions[role as keyof typeof unchangedVersions], role);
+    }
     assert.equal(template?.changes.length, 1, role);
     assert.match(
       template.changes[0] ?? '',
-      role === 'executor' ? /Starts the first unintegrated Story.*separate human start prompt/ : /Feature Decision|eval targets and coverage/,
+      role === 'executor' ? /confirmed Story and plan links.*publication-unconfirmed stop/
+        : role === 'planner' ? /confirmed Story plan links.*unconfirmed planning publication/i
+          : role === 'plannerWorker' ? /transient plan content.*GitHub Story artifacts.*without requiring duplicate local planning files/i
+            : /Feature Decision|eval targets and coverage/,
     );
     assert.doesNotMatch(template.changes[0] ?? '', /Extends same-Task|Reports named Epic checks|byte-exact capture/);
   }

@@ -88,7 +88,7 @@ describe('checked Task execution template contract', () => {
     assert.match(toolbox, /Never modify, stage, or commit those preserved edits/i);
     assert.match(planner, /Do not require or invent a prior reviewer finding/i);
     assert.match(plannerToolbox, /failed check and evidence, attribution to an earlier checked Task in the same Story/i);
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /compact and wide planned-feature terminal feedback/i);
     assert.match(gatekeeper, /AFK recovery for a cross-Task validation regression/i);
   });
 
@@ -109,7 +109,6 @@ describe('checked Task execution template contract', () => {
     assert.match(plannerToolbox, /Preserve its outcome, check, expected evidence, dependencies, Task ID, single-commit authority/i);
     assert.match(toolbox, /reviewed continuation of the \*\*same uncommitted Task\*\*/i);
     assert.match(toolbox, /do not use a new invocation to repeat an unchanged failure without evidence-guided progress/i);
-    assert.match(manifest.templates['skills/ai-implementation-plan-executor/SKILL.md']?.changes.join('') ?? '', /Starts the first unintegrated Story.*separate human start prompt/i);
   });
 
   it('requires declared flag checks and stops on an undeclared flag', () => {
@@ -135,7 +134,7 @@ describe('checked Task execution template contract', () => {
       assert.match(wrapper, /Never approve your own work.*stash, reset/i);
       assert.match(manifest.templates[path]?.changes.join('') ?? '', /checked Task/i);
     }
-    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /Routes existing Sibu eval runs and troubleshooting.*agent-guided skill.*eval artifact authoring separate/i);
+    assert.match(manifest.templates['AGENTS.md']?.changes.join('') ?? '', /compact and wide planned-feature terminal feedback/i);
     assert.match(manifest.templates['skills/ai-implementation-executor-toolbox/SKILL.md']?.changes.join('') ?? '', /Task/i);
     assert.match(gatekeeper, /post-commit evidence gap/i);
     assert.match(readTemplate('AGENTS.md'), /checked-Task executor may commit only its scoped Task after the prescribed check passes/i);

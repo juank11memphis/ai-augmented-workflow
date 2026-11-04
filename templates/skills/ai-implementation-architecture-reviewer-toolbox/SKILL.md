@@ -9,7 +9,7 @@ Review one exact Story plan version in a fresh context. Do not review implementa
 
 ## Required packet and source authority
 
-Require exactly one User Story and one story-local implementation-plan folder; the reviewable plan identity and content; Story, Epic brief, source BRD, project SAD, feature SDD with embedded diagrams, UX when applicable, selected architecture guidance and applicable skills; source-verified **start here** references; and read-only/output constraints. If a source, plan, identity, or applicable constraint is missing or contradictory, report the gap and stop. Do not infer a version from execution status or progress.
+Require exactly one GitHub Story issue identity and one plan-artifact identity, exact transient plan content and stable reviewable-content fingerprint; exact authoritative Epic, BRD, project SAD, feature SDD with embedded diagrams, and UX issue/artifact identities and transient content when applicable; selected architecture guidance and applicable skills; source-verified **start here** references; and read-only/output constraints. Verify each source against its identified authoritative issue/artifact, not a packet summary. Neither a story-local plan folder nor local feature-source files are required. If a source, plan, identity, or applicable constraint is missing or contradictory, report the gap and stop. Do not infer a version from execution status or progress. A legacy local Story/plan packet is acceptable only for a local workflow, not as a fallback for a GitHub Story.
 
 Begin at the supplied BRD IDs, SDD headings/diagrams, SAD/SDD module boundaries and dependencies. Independently verify references against the full authoritative paths and the actual plan, expanding to wider sections when needed. A packet summary does not override source authority or preselect findings. No code diff, changed-file list, or executor validation summary is review evidence.
 
@@ -34,7 +34,7 @@ On a revised plan, independently assess the whole exact version before reporting
 Return only a concise conversational packet:
 
 ```text
-Reviewed plan identity: <exact identity and plan path>
+Reviewed plan identity: <Story issue, plan artifact, and stable content fingerprint>
 Over-engineering: <findings or none>
 Premature optimization: <findings or none>
 Architecture and contract fit: <findings or none>

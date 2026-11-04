@@ -156,17 +156,19 @@ describe('deployable Scrum authoring contract', () => {
     assert.doesNotMatch(removal, /production.deployment evidence/i);
   });
 
-  it('preserves upstream gates, output paths, user control, and new-artifact-only scope', () => {
+  it('preserves upstream gates, GitHub issue authority, user control, and new-issue-only scope', () => {
     assert.match(skill, /BRD or software design is missing/);
     assert.match(skill, /feature has UI impact and `ux\.md` is missing/);
-    assert.match(skill, /epics\/<epic-slug>\/epic_brief\.md/);
-    assert.match(skill, /stories\/<order>-<user-story-slug>\.md/);
+    assert.match(skill, /Epic issues as native sub-issues of the existing Feature issue/);
+    assert.match(skill, /Story issues as native sub-issues of exactly one Epic issue/);
+    assert.match(skill, /settled definitions and acceptance criteria in each owning issue body, not duplicate local Epic or Story files/i);
+    assert.match(skill, /Do not create local Epic\/Story Markdown files or directories as a fallback/);
     assert.match(skill, /newly created Epics and Stories only/);
     assert.match(skill, /do not retrofit existing planning artifacts/);
     assert.match(skill, /A user request selects the next stage/);
     assert.match(skill, /ask whether the user wants to use flags/);
     const manifest = readTemplateManifest();
-    assert.match(manifest.templates['skills/scrum-master-planner/SKILL.md']?.changes.join(' ') ?? '', /SDD verification methods.*human limits.*without adding approval gates/i);
+    assert.match(manifest.templates['skills/scrum-master-planner/SKILL.md']?.changes.join(' ') ?? '', /confirmed hierarchy links.*unconfirmed Epic or Story publication/i);
   });
 });
 
