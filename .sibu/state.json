@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "269",
+  "templateVersion": "273",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-11-05T21:26:21.747Z",
+  "updatedAt": "2026-11-05T23:12:33.609Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -117,8 +117,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "61",
-      "sha256": "c4ba9aaa9af6f291d8acecf1c9d95b29e6b8c3f096dbaf7d0ac63a064f97f0ea",
+      "templateVersion": "63",
+      "sha256": "7dfede83d913b297d0aa025639634286713b153b8d027d203e03b57a6775245c",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -220,8 +220,8 @@
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "25",
-      "sha256": "9cd58228dd7aa3a92ef09d473344a548cc65f23e70d6f765e7be7e96551a91f0",
+      "templateVersion": "28",
+      "sha256": "a5150868ec79ddd6dff62df73bbfc7990b5daaca1664a6dec4ab05d5d329c423",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
@@ -433,6 +433,18 @@
       "template": "skills/higher-value-testing-guidance/SKILL.md",
       "templateVersion": "1",
       "sha256": "4be831a7b263d0842e721fab3bf92701e0b6bf85d02272cf66168e755e0b31cb",
+      "status": "managed"
+    },
+    ".agents/skills/scrum-master-planner-toolbox/SKILL.md": {
+      "template": "skills/scrum-master-planner-toolbox/SKILL.md",
+      "templateVersion": "2",
+      "sha256": "209e8c68dde7095b639edca3b863a62b35c28c5c4b78c6e0971b8ece1c7738b7",
+      "status": "managed"
+    },
+    ".codex/agents/sibu-epic-story-planner.toml": {
+      "template": ".codex/agents/sibu-epic-story-planner.toml",
+      "templateVersion": "2",
+      "sha256": "9502ab819ee9bf089ab75ca980afd22ae598d90d74c6ddf4351ea5ef3283df0d",
       "status": "managed"
     }
   }
