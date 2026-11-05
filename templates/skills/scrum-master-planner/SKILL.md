@@ -303,7 +303,7 @@ Apply these authoring rules to newly created Epics and Stories only; do not retr
 
 ## Final response behavior
 
-### Codex delegated result
+### Delegated planning result
 
 Follow the binding published Feature UX mockups. Use plain text in screen-reader order: one state heading, consequence/result, **one** next action, then optional confirmed links/details. At about 40 columns, keep one short fact or link per line; at about 80 columns, each Epic name/link may share a line; at about 120 columns, add Feature orientation only, never a new decision or width-only meaning. Do not rely on color, boxes, icons, or logs. A direct question is the next action; do not add another instruction to answer it.
 
