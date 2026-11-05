@@ -1,5 +1,5 @@
 {
-  "templateVersion": "269",
+  "templateVersion": "271",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "61",
+      "version": "62",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes code-writing tasks to shared higher-value testing guidance without requiring a new test."
+        "Routes Codex Epic-and-Story planning through its dedicated Sibu worker while leaving Claude and Gemini planning unchanged."
       ]
     },
     ".codex/config.toml": {
@@ -142,10 +142,17 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "25",
+      "version": "26",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Separates observable deliverable acceptance from behavioral verification and keeps excluded methods out of Story expectations."
+        "Adds Codex model-route and delegated planning handoff, including confirmed GitHub results and compact terminal states."
+      ]
+    },
+    "skills/scrum-master-planner-toolbox/SKILL.md": {
+      "version": "1",
+      "description": "Codex-only Epic and Story planning worker toolbox for direct GitHub publication and compact handoff.",
+      "changes": [
+        "Adds focused worker guidance for published artifact reads, native hierarchy readback, and material-question handoff."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
@@ -237,6 +244,13 @@
       "description": "Codex Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
         "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
+      ]
+    },
+    ".codex/agents/sibu-epic-story-planner.toml": {
+      "version": "1",
+      "description": "Codex-only Epic and Story planning worker definition.",
+      "changes": [
+        "Adds one focused Codex worker for GitHub Epic and Story planning with a compact confirmed handoff."
       ]
     },
     ".claude/agents/sibu-implementation-planner.md": {

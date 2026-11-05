@@ -12,7 +12,8 @@ export type SibuModelRole =
   | 'implementation-planner'
   | 'implementation-executor'
   | 'architecture-reviewer'
-  | 'notion-exporter';
+  | 'notion-exporter'
+  | 'epic-story-planner';
 export type ModelWorkloadClass = 'bounded' | 'demanding' | 'high-risk';
 export type ModelRouteAgentEnvironment = 'codex';
 export type ModelReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra';

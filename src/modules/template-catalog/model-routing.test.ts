@@ -25,23 +25,23 @@ describe('model recommendation catalog', () => {
     const before = { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale };
     selected.model = 'gpt-6-sol';
     selected.reasoningEffort = 'medium';
-    draft.catalogVersion = '2026-09-23.10';
-    draft.releases = Array.from({ length: 8 }, (_, index) => ({
-      version: `2026-09-23.${index + 3}`,
-      changes: index === 7 ? [{ agentEnvironment: selected.agentEnvironment, role: selected.role,
+    draft.catalogVersion = '2026-11-05.10';
+    draft.releases = [(draft.releases as unknown[])[0], ...Array.from({ length: 9 }, (_, index) => ({
+      version: `2026-11-05.${index + 2}`,
+      changes: index === 8 ? [{ agentEnvironment: selected.agentEnvironment, role: selected.role,
         workloadClass: selected.workloadClass, before,
         after: { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale },
         reason: 'Updated expected-cost guidance.' }] : [],
-    }));
+    }))];
     const catalog = parseModelRecommendationCatalog(draft);
     const key = { agentEnvironment: 'codex' as const, role: 'implementation-planner' as const, workloadClass: 'bounded' as const };
-    assert.equal(reviewRecommendationSince(catalog, key, '2026-09-23.9').status, 'changed');
-    assert.equal(reviewRecommendationSince(catalog, key, '2026-09-23.10').status, 'unchanged');
-    assert.equal(reviewRecommendationSince(catalog, key, '2026-09-23.11').status, 'unavailable');
-    draft.historyBaseVersion = '2026-09-23.11';
+    assert.equal(reviewRecommendationSince(catalog, key, '2026-11-05.9').status, 'changed');
+    assert.equal(reviewRecommendationSince(catalog, key, '2026-11-05.10').status, 'unchanged');
+    assert.equal(reviewRecommendationSince(catalog, key, '2026-11-05.11').status, 'unavailable');
+    draft.historyBaseVersion = '2026-11-05.11';
     assert.throws(() => parseModelRecommendationCatalog(draft), /history is invalid/);
     draft.historyBaseVersion = '2026-09-23.2';
-    (draft.releases as Array<{ version: string }>)[7].version = '2026-09-23.9';
+    (draft.releases as Array<{ version: string }>)[9].version = '2026-11-05.9';
     assert.throws(() => parseModelRecommendationCatalog(draft), /ordered/);
   });
   it('reviews only documented route-scoped changes across releases', () => {
@@ -51,41 +51,43 @@ describe('model recommendation catalog', () => {
     const before = { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale };
     selected.model = 'gpt-6-sol'; selected.reasoningEffort = 'medium';
     const after = { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale };
-    draft.catalogVersion = '2026-09-23.4';
+    draft.catalogVersion = '2026-11-05.3';
     draft.releases = [
-      { version: '2026-09-23.3', changes: [{ agentEnvironment: 'codex', role: selected.role,
+      (draft.releases as unknown[])[0],
+      { version: '2026-11-05.2', changes: [{ agentEnvironment: 'codex', role: selected.role,
         workloadClass: selected.workloadClass, before, after, reason: 'Similar expected fit with revised cost guidance.' }] },
-      { version: '2026-09-23.4', changes: [] },
+      { version: '2026-11-05.3', changes: [] },
     ];
     const catalog = parseModelRecommendationCatalog(draft);
     assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' }, '2026-09-23.2').status, 'changed');
     assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-planner', workloadClass: 'bounded' }, '2026-09-23.2').status, 'unchanged');
-    assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' }, '2026-09-23.3').status, 'unchanged');
+    assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' }, '2026-11-05.2').status, 'unchanged');
     assert.equal(reviewRecommendationSince(catalog, { agentEnvironment: 'codex', role: 'implementation-executor', workloadClass: 'bounded' }, '2026-09-23.1').status, 'unavailable');
-    (draft.releases as Array<{ version: string }>)[0].version = '2026-09-23.4';
+    (draft.releases as Array<{ version: string }>)[1].version = '2026-11-05.3';
     assert.throws(() => parseModelRecommendationCatalog(draft), /ordered|gap/);
-    (draft.releases as Array<{ version: string }>)[0].version = '2026-09-23.3';
-    (draft.releases as Array<{ version: string }>)[1].version = '2026-09-23.5';
-    draft.catalogVersion = '2026-09-23.5';
+    (draft.releases as Array<{ version: string }>)[1].version = '2026-11-05.2';
+    (draft.releases as Array<{ version: string }>)[2].version = '2026-11-05.4';
+    draft.catalogVersion = '2026-11-05.4';
     assert.throws(() => parseModelRecommendationCatalog(draft), /gap/);
-    (draft.releases as Array<{ version: string }>)[1].version = '2026-09-23.4';
-    draft.catalogVersion = '2026-09-23.4';
-    ((draft.releases as Array<{ changes: Array<{ reason: string }> }>)[0].changes[0]).reason = ' ';
+    (draft.releases as Array<{ version: string }>)[2].version = '2026-11-05.3';
+    draft.catalogVersion = '2026-11-05.3';
+    ((draft.releases as Array<{ changes: Array<{ reason: string }> }>)[1].changes[0]).reason = ' ';
     assert.throws(() => parseModelRecommendationCatalog(draft), /note/);
   });
   it('does not treat unrecorded same-day or cross-day versions as reviewable history', () => {
     const draft = mutableCatalog();
-    draft.catalogVersion = '2026-09-25.1';
+    draft.catalogVersion = '2026-11-07.1';
     draft.releases = [
-      { version: '2026-09-24.1', changes: [] },
-      { version: '2026-09-25.1', changes: [] },
+      (draft.releases as unknown[])[0],
+      { version: '2026-11-06.1', changes: [] },
+      { version: '2026-11-07.1', changes: [] },
     ];
     const catalog = parseModelRecommendationCatalog(draft);
     const key = { agentEnvironment: 'codex' as const, role: 'implementation-executor' as const, workloadClass: 'bounded' as const };
-    for (const version of ['2026-09-23.3', '2026-09-24.2']) {
+    for (const version of ['2026-09-23.3', '2026-11-06.2']) {
       assert.equal(reviewRecommendationSince(catalog, key, version).status, 'unavailable');
     }
-    for (const version of ['2026-09-23.2', '2026-09-24.1', '2026-09-25.1']) {
+    for (const version of ['2026-09-23.2', '2026-11-06.1', '2026-11-07.1']) {
       assert.equal(reviewRecommendationSince(catalog, key, version).status, 'unchanged');
     }
   });
@@ -94,8 +96,8 @@ describe('model recommendation catalog', () => {
     recommendations(draft)[0].model = 'gpt-6-sol';
     assert.throws(() => parseModelRecommendationCatalog(draft), /does not match current guidance/);
 
-    draft.catalogVersion = '2026-09-23.3';
-    draft.releases = [{ version: '2026-09-23.3', changes: [] }];
+    draft.catalogVersion = '2026-11-05.2';
+    draft.releases = [(draft.releases as unknown[])[0], { version: '2026-11-05.2', changes: [] }];
     assert.throws(() => parseModelRecommendationCatalog(draft), /does not match current guidance/);
   });
   it('validates the history base and the first release against every route', () => {
@@ -127,17 +129,34 @@ describe('model recommendation catalog', () => {
     const after = { model: 'gpt-6-sol', reasoningEffort: 'low', rationale: current.rationale };
     current.model = after.model;
     current.reasoningEffort = after.reasoningEffort;
-    mismatchedFirstChange.catalogVersion = '2026-09-23.3';
-    mismatchedFirstChange.releases = [{ version: '2026-09-23.3', changes: [{ agentEnvironment: current.agentEnvironment,
+    mismatchedFirstChange.catalogVersion = '2026-11-05.2';
+    mismatchedFirstChange.releases = [(mismatchedFirstChange.releases as unknown[])[0], { version: '2026-11-05.2', changes: [{ agentEnvironment: current.agentEnvironment,
       role: current.role, workloadClass: current.workloadClass, before, after, reason: 'Revised task-fit guidance.' }] }];
     assert.throws(() => parseModelRecommendationCatalog(mismatchedFirstChange), /change chain is inconsistent/);
+  });
+  it('records new planner routes only as additions without rewriting historical guidance', () => {
+    const catalog = loadModelRecommendationCatalog();
+    assert.equal(catalog.historyBaseRecommendations.length, 12);
+    assert.equal(catalog.historyBaseRecommendations.some((entry) => entry.role === 'epic-story-planner'), false);
+    assert.equal(catalog.releases[0].additions.length, 3);
+    for (const workloadClass of MODEL_WORKLOAD_CLASSES) {
+      const key = { agentEnvironment: 'codex' as const, role: 'epic-story-planner' as const, workloadClass };
+      assert.equal(reviewRecommendationSince(catalog, key, catalog.historyBaseVersion).status, 'unavailable');
+      assert.equal(reviewRecommendationSince(catalog, key, catalog.catalogVersion).status, 'unchanged');
+    }
+    const missingAddition = mutableCatalog();
+    (missingAddition.releases as Array<{ additions: unknown[] }>)[0].additions.pop();
+    assert.throws(() => parseModelRecommendationCatalog(missingAddition), /missing route additions/);
+    const rewrittenAddition = mutableCatalog();
+    (rewrittenAddition.releases as Array<{ additions: Array<Record<string, unknown>> }>)[0].additions[0].model = 'different-model';
+    assert.throws(() => parseModelRecommendationCatalog(rewrittenAddition), /does not match current guidance/);
   });
   it('contains an independently addressable Codex recommendation for every role and workload', () => {
     const catalog = loadModelRecommendationCatalog();
 
     assert.equal(catalog.schemaVersion, 1);
-    assert.equal(catalog.catalogVersion, '2026-09-23.2');
-    assert.equal(catalog.reviewedAt, '2026-09-23T00:00:00.000Z');
+    assert.equal(catalog.catalogVersion, '2026-11-05.1');
+    assert.equal(catalog.reviewedAt, '2026-11-05T00:00:00.000Z');
     assert.equal(catalog.recommendations.length, SIBU_MODEL_ROLES.length * MODEL_WORKLOAD_CLASSES.length);
 
     for (const role of SIBU_MODEL_ROLES) {
