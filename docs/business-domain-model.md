@@ -72,7 +72,11 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **MCP Configuration**: repo-local agent configuration that tells an agent how to connect to selected MCP servers without embedding secrets.
 - **Feature Issue**: the GitHub parent issue for one planned feature, holding its BRD, UX, and SDD artifacts and its Epic sub-issues.
 - **GitHub Issue Hierarchy**: a Feature issue with Epic sub-issues and Story sub-issues beneath each Epic; checked Tasks are tracked within each Story issue rather than as separate issues.
-- **Sibu-Provided Sub-agent Role**: a named delegated role distributed by Sibu, such as an implementation planner, executor, or specialist reviewer. User-created agents remain outside Sibu's model-routing responsibility.
+- **Sibu-Provided Sub-agent Role**: a named delegated role distributed by Sibu, including a feature-status scout, BRD/UX/SDD stage owners, one Epic-and-Story planning owner, implementation planners, executors, and specialist reviewers. User-created agents remain outside Sibu's model-routing responsibility.
+- **Feature Status Scout**: a read-only Sibu-provided sub-agent used by the orchestrator to list features or locate one feature's current stage and progress across Feature, Epic, Story, and PR records. It reports a compact evidence-linked status and uncertainty, not a decision or a new source of truth.
+- **Epic-and-Story Planning Sub-agent**: one Sibu-provided role responsible for the Scrum planning stage, creating both Epic and User Story issues and their native hierarchy from the confirmed feature design, then returning a concise verified handoff to the orchestrator.
+- **Feature Stage Sub-agent**: the Sibu-provided BRD, UX, or SDD role responsible for one complete feature-document stage, including its user interview, relevant GitHub reads and writes, and publication readback. It returns a concise outcome to the orchestrator rather than relaying every interview exchange.
+- **Feature Stage Handoff**: the return of a stage outcome, authoritative artifact link, and any blocker or out-of-stage decision to the orchestrator, which coordinates the next stage or upstream revision.
 - **Workload Class**: a provider-neutral description of the scope, ambiguity, and risk of work delegated to a Sibu-provided sub-agent role. It supports recommendations without naming a provider model.
 - **Model Route**: the repo-wide, user-selected model and reasoning-effort choice for one Sibu-provided sub-agent role, workload class, and supported agent environment.
 - **Provider Mapping**: the translation from a provider-neutral workload class and sub-agent role to a concrete model and reasoning-effort recommendation for one supported agent environment.
@@ -144,7 +148,7 @@ Sibu may integrate with external tools, agents, editors, model providers, GitHub
 - **Check Failure vs Story Regression vs Baseline Failure**: a failed run is an observation, not proof that the active Story caused it. Attribution compares focused failures with the observed Epic/base head and distinguishes pre-existing failures and host/test-runner problems.
 - **Specialist Outcome vs Plan Acceptance**: a complete review with no findings or unresolved risks permits automatic acceptance of its exact plan; actionable findings trigger revision and fresh review, while unresolved material decisions require human choice.
 - **Task vs User Story**: Tasks are fresh-context execution units; User Stories are deployable slices whose acceptance criteria govern the plan.
-- **Feature artifact authority vs session context**: Feature, Epic, and Story issues and their artifacts are authoritative for planned feature documents and progress. Agents read relevant artifacts through GitHub MCP into session context without an on-disk artifact cache; project-wide Product Vision, Business Domain Model, Capabilities Map, and SAD remain repo-local.
+- **Feature artifact authority vs session context**: Feature, Epic, and Story issues and their artifacts are authoritative for planned feature documents and progress. Stage sub-agents read and publish their relevant artifacts through GitHub MCP without an on-disk artifact cache; project-wide Product Vision, Business Domain Model, Capabilities Map, and SAD remain repo-local.
 - **Architecture Skill vs Architecture Model**: users may think in terms of an architecture model, but Sibu expresses that choice as a selected architecture skill from its fixed catalog. This feature does not define or expand the catalog.
 - **Required Selection vs Default Choice**: requiring a user to choose an architecture skill is not the same as Sibu choosing one by default. The user must make the explicit choice.
 - **MCP Server vs Skill**: an MCP server provides external tool access; a skill provides workflow guidance. A skill may tell an agent when or how to use a tool, but it is not the tool itself.
@@ -345,7 +349,23 @@ An external tool-access endpoint selected by the user and configured for support
 
 #### Sibu-Provided Sub-agent Role
 
-A named delegated role distributed and invoked by Sibu's workflow, such as an implementation planner, executor, or architecture reviewer. Model routing applies only to these Sibu-provided roles in the initial scope, not to unrelated user-created agents.
+A named delegated role distributed and invoked by Sibu's workflow, including the feature-status scout, BRD/UX/SDD stage owners, one Epic-and-Story planning owner, implementation planners, executors, and architecture reviewers. Model routing applies to these Sibu-provided roles, not to unrelated user-created agents.
+
+#### Feature Status Scout
+
+A read-only helper invoked by the orchestrator when a user asks which features exist, how one is progressing, or to continue a feature whose current stage is not established. It inspects the relevant authoritative GitHub Feature, Epic, Story, artifact, branch, and PR records as needed, then returns a compact status with supporting links and any ambiguity. It does not publish, mutate, decide the next stage, or maintain a separate status artifact. The orchestrator applies workflow rules and communicates the next action. A later stage owner may re-read required artifacts to verify freshness rather than treating the scout's summary as authoritative content.
+
+#### Feature Stage Sub-agent
+
+The BRD, UX, or SDD role owns its full feature-document stage: it conducts a continuous user interview, reads only required context, prepares its stage artifact, performs its own necessary GitHub operations, and verifies publication on the Feature issue. It does not make the user repeat stage answers through the orchestrator. The BRD itself records relevant product decisions; no separate decision artifact or routine issue comments are needed for them.
+
+#### Feature Stage Handoff
+
+A concise return from the stage owner to the orchestrator with the stage result, confirmed artifact identity and link, and any unresolved blocker or decision outside the stage's authority. The orchestrator coordinates stage transitions and material decisions without becoming a relay for every interview turn or GitHub operation.
+
+#### Epic-and-Story Planning Sub-agent
+
+One role owns the planning stage from confirmed BRD, SDD, and required UX through Epic and User Story issue publication. It conducts any needed planning clarification with the user, reads the relevant authoritative inputs, performs its own GitHub issue and hierarchy operations, and verifies the published results. It returns a concise outcome, issue links, and blockers to the orchestrator rather than full planning transcripts. It does not authorize implementation; the orchestrator asks the user for the final execution-start decision.
 
 #### Workload Class
 
@@ -627,6 +647,11 @@ define focused task
 - Optional non-architecture skills and non-GitHub MCP integrations are user-selected and may be changed after initialization. GitHub MCP is required for planned feature work, not for local setup or maintenance.
 - Planned feature work requires the project's GitHub repository and usable GitHub MCP before its first feature artifact. Missing access stops the stage without local fallback.
 - Feature, Epic, and Story issues and their artifacts are authoritative for feature-specific documents and progress. Agents read relevant artifacts into session context and publish completed stage or checked-Task outcomes; no on-disk artifact cache is required or created.
+- BRD, UX, and SDD stage sub-agents own their respective interviews and GitHub operations, including readback of publication. The orchestrator owns handoffs and material decisions, not routine stage tool calls.
+- One Epic-and-Story planning sub-agent owns both planning levels and their GitHub publication and verification. The orchestrator retains the final user authorization before execution begins.
+- The feature-status scout is read-only and reports evidence and uncertainty across the full planned-feature lifecycle; it must not make workflow decisions, mutate GitHub, or create a parallel status record.
+- A stage sub-agent must stop and return a needed change to Product Vision, Business Domain Model, Capabilities Map, or SAD to the orchestrator; it must not silently edit an upstream project document. If SDD discovery requires a BRD change, the orchestrator coordinates BRD revision and then resumes SDD from the confirmed revision.
+- Relevant product decisions belong in the BRD itself; stage delegation does not require a separate decision artifact or routine issue comments.
 - Architecture skill replacement is allowed only as an intentional high-impact configuration change after Sibu strongly warns the user about downstream consequences.
 - Sibu must not commit, store, or embed secrets in generated MCP configuration.
 - Sibu must not silently inherit the parent model for a Sibu-provided sub-agent role that requires an explicit route.
@@ -700,6 +725,10 @@ define focused task
 - When an MCP server is selected, Sibu should render agent-specific configuration that references credentials safely rather than storing secret values.
 - When planned feature work starts, Sibu should require the project's GitHub repository and configured, available GitHub MCP capabilities for Feature, Epic, and Story issues, native sub-issues, and issue artifacts before creating the first feature artifact. Native PR-to-issue linking is not required in this version.
 - When a GitHub-mode BRD, UX document, or SDD stage finishes, Sibu should publish its authoritative artifact on the Feature issue before downstream work relies on it.
+- When a BRD, UX, or SDD stage is requested, its Sibu-provided stage sub-agent should conduct the interview and own the necessary GitHub reads, publication, and readback, then return a concise confirmed handoff to the orchestrator.
+- When Epic and Story planning is requested, one Sibu-provided planning sub-agent should clarify the plan, create and verify the issue hierarchy in GitHub, and return concise links and status to the orchestrator; no execution starts until the user gives a separate final authorization.
+- When the orchestrator needs a feature inventory or must locate a feature's current stage, it should delegate the relevant GitHub inspection to the feature-status scout, then use the compact report to determine and communicate the next step. Stage owners still verify the authoritative inputs they need.
+- When a stage owner finds an upstream project-document gap or an out-of-stage decision, it should stop and return the issue to the orchestrator for direction rather than revising another stage's artifact itself.
 - When a Sibu-provided sub-agent role is needed, the workflow should first classify the delegated task using provider-neutral workload criteria.
 - When the resulting role-and-workload combination has no saved route, the workflow should pause, present the current compatible recommendation, ask the user to choose, and record that repo-wide choice before spawning the role.
 - When a saved model route is available, future runs should reuse it without asking again.
@@ -829,12 +858,13 @@ In an **Agent-Guided Eval Session**, the same suite selection, run, analysis, pr
 #### AI-Augmented Development Artifact Lifecycle
 
 1. **Prerequisite Artifact Exists**: upstream artifact is present and sufficient.
-2. **Skill Invoked**: the appropriate skill is triggered for the requested work.
-3. **Hard-Stop Check**: the skill verifies required inputs before proceeding.
+2. **Stage Owner Invoked**: for BRD, UX, or SDD, the orchestrator invokes the corresponding Sibu-provided stage sub-agent through the role-and-workload model route; other artifacts retain their existing skill ownership.
+3. **Hard-Stop Check and Interview**: the stage owner verifies prerequisites and conducts its own continuous user interview. It returns an upstream gap or out-of-stage decision to the orchestrator rather than changing another artifact.
 4. **Applicable Feature Decisions Resolved**: during SDD authoring, known required human choices receive explicit scoped approval; unanswered choices pause SDD finalization.
-5. **Artifact Created or Updated**: the skill produces its owned artifact.
-6. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. Sufficiently clear BRDs, SADs, and SDDs need no artifact-wide approval status, signature, or sign-off gate; story-plan acceptance and execution safeguards remain in force.
-7. **Downstream Input**: the artifact and its unchanged approved Feature Decisions become the basis for the next pipeline stage.
+5. **Artifact Published and Verified**: the stage owner uses GitHub directly to create or update its Feature issue artifact and reads it back before claiming success.
+6. **Stage Handoff**: the stage owner returns a concise result and confirmed artifact link to the orchestrator. If SDD discovery requires BRD revision, the orchestrator routes that revision through the BRD stage owner before SDD resumes.
+7. **User Chooses Progression**: the user reviews or corrects the artifact and decides when to request the next stage. Sufficiently clear BRDs, SADs, and SDDs need no artifact-wide approval status, signature, or sign-off gate; story-plan acceptance and execution safeguards remain in force.
+8. **Downstream Input**: the artifact and its unchanged approved Feature Decisions become the basis for the next pipeline stage.
 
 #### Epic and Story Planning and Execution Lifecycle
 
@@ -859,6 +889,10 @@ Feature, Epic, and Story issues represent this lifecycle, Story artifacts hold t
 - **Workflow Configuration Changed**: the user intentionally changes selected skills, architecture guidance, or MCP/tool integrations after initialization.
 - **Feature Work Readiness Failed**: the project's GitHub repository or required GitHub MCP access is unavailable before planned feature work can create its first artifact.
 - **Feature Artifact Published**: a BRD, UX document, or SDD reaches its stage checkpoint and becomes available as an authoritative Feature issue artifact.
+- **Feature Stage Handed Off**: a BRD, UX, or SDD stage sub-agent returns its confirmed artifact identity and concise outcome to the orchestrator.
+- **Epic-and-Story Plan Handed Off**: the planning sub-agent returns confirmed Epic and Story issue links and a concise completion or blocker report to the orchestrator for the execution-start decision.
+- **Feature Status Reported**: the read-only scout returns a compact, evidence-linked inventory or current-state report, including uncertainty, for the orchestrator to interpret.
+- **Upstream Revision Requested**: a stage sub-agent returns a necessary upstream artifact change or out-of-stage decision to the orchestrator; SDD resumes only after any required BRD revision is confirmed.
 - **Architecture Skill Selected**: the user chooses one architecture skill during workflow adoption and Sibu records and installs it.
 - **Architecture Skill Replacement Requested**: the user asks to change the selected architecture skill after initialization.
 - **Architecture Skill Replacement Warned**: Sibu explains the likely downstream impact before applying the replacement.
@@ -958,6 +992,8 @@ Feature, Epic, and Story issues represent this lifecycle, Story artifacts hold t
 - Normal repo work and narrow fixes should stay lightweight and do not require the full pipeline by default.
 - Users want strong defaults, but they also need local control over languages, frameworks, agents, architecture guidance, eval artifacts, and managed files.
 - Initial model routing covers only Sibu-provided sub-agent roles and stores shared repo-wide choices; unrelated user-created agents and private per-developer overrides are outside the initial scope.
+- BRD, UX, SDD, and combined Epic-and-Story planning are delegated to Sibu-provided sub-agents in this version. Product Vision, Business Domain Model, and Capabilities Map remain with the orchestrator; their possible future delegation is outside this scope.
+- Feature-status reconnaissance is a separate read-only Sibu-provided role for orchestrator use across the full feature lifecycle. It is not a GitHub operations proxy for stage owners and does not eliminate their necessary freshness checks.
 - Initial recommendation support may provide only a Codex provider mapping, while workload classes and route concepts remain provider-neutral for future supported agent environments.
 - Model awareness is release-and-sync driven: a model becomes recommendable after Sibu maintainers research it and publish a catalog update, not merely because a provider announces or exposes it.
 - Current Codex guidance may recommend Luna with high reasoning for bounded work and Sol with medium reasoning for demanding or high-risk work. Astra is not currently recommended because of cost, but users may still select it explicitly.
