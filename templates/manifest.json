@@ -1,5 +1,5 @@
 {
-  "templateVersion": "265",
+  "templateVersion": "266",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "60",
+      "version": "61",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Removes routing to the retired GitHub export skill; planned feature work uses GitHub issues directly."
+        "Routes code-writing tasks to shared higher-value testing guidance without requiring a new test."
       ]
     },
     ".codex/config.toml": {
@@ -62,6 +62,13 @@
       "description": "Mandatory clean-code skill installed once at the shared .agents/skills workspace path.",
       "changes": [
         "Adds a hard 500-line completion gate for touched source files and requires cohesive responsibility-based splitting."
+      ]
+    },
+    "skills/higher-value-testing-guidance/SKILL.md": {
+      "version": "1",
+      "description": "Mandatory shared guidance for choosing valuable, maintainable tests for code changes.",
+      "changes": [
+        "Adds value-based test selection guidance without coverage quotas or mandatory new tests."
       ]
     },
     "skills/product-vision-writer/SKILL.md": {
@@ -149,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "25",
+      "version": "26",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Returns exact transient plan content for GitHub Story artifacts without requiring duplicate local planning files."
+        "Routes code-changing plans to shared testing guidance while keeping Task checks mandatory."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
@@ -163,10 +170,10 @@
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "31",
+      "version": "32",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Requires fresh checked Tasks to verify applicable Feature Decisions in the SDD and stop only work affected by missing or changed choices."
+        "Routes code-changing execution to shared testing guidance without making new tests mandatory."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
