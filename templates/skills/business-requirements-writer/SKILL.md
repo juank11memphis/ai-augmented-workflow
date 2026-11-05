@@ -26,8 +26,7 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 
 ### What this skill writes
 
-- The BRD Feature issue artifact for planned work.
-- `docs/features/<feature-slug>/brd.md` and its containing directory only for explicitly local work.
+- The BRD issue artifact on the confirmed Feature issue.
 
 ### When this skill stops
 
@@ -111,13 +110,7 @@ For planned work, project-wide vision, domain model, and capabilities map remain
 
 For planned-work terminal feedback, follow the project AGENTS.md terminal contract and binding UX mockups at compact and wide widths. After confirmed creation, show `Feature ready on GitHub`, `<Feature name>: <Feature issue link>`, then `Next: Define the BRD`. After confirmed BRD readback, show `BRD published`, `Feature: <name>`, `BRD: <artifact link>`, then `Next: UX design` for UI-changing work or `Next: Software design` otherwise. If BRD publication remains unconfirmed, show `BRD was not confirmed on GitHub`, `The Feature artifact could not be verified. Next work is paused.`, then `Check GitHub access, then retry.` Do not present an unconfirmed draft as published.
 
-For planned feature work, the GitHub Feature issue artifact is authoritative; the local path convention below does not authorize a substitute file. For other explicitly local BRD work, when asked to create a file, write the BRD to:
-
-```txt
-docs/features/<feature-slug>/brd.md
-```
-
-Use a short kebab-case feature slug that matches the feature name. Keep all artifacts for the same feature together under `docs/features/<feature-slug>/`.
+The GitHub Feature issue artifact is the only BRD output. Draft in transient session context; do not create a local feature BRD or on-disk feature-artifact cache.
 
 Do not write the BRD to software design, UX, user story, implementation plan, or backlog files unless the user explicitly asks for a separate artifact after the BRD exists.
 
@@ -129,8 +122,8 @@ If the user asks for a BRD from an idea in `docs/feature-ideas.md`, read the rel
 - Use the idea as a seed for the first discovery question, not as complete feature intent.
 - Keep asking one focused question at a time until the usual required context is resolved: problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, constraints, Business Domain Model fit, and Capability Coverage.
 - Preserve the hard-start requirements for `docs/product-vision.md`, `docs/business-domain-model.md`, and `docs/capabilities-map.md`.
-- After the local `docs/features/<feature-slug>/brd.md` file is successfully written, remove the promoted idea from `docs/feature-ideas.md` while preserving the rest of the file.
-- Do not delete the idea before the BRD file exists, and do not remove unrelated ideas or headings.
+- After the BRD issue artifact is published and read back, remove the promoted idea from `docs/feature-ideas.md` while preserving the rest of the file.
+- Do not delete the idea before confirmed BRD publication, and do not remove unrelated ideas or headings.
 
 ## Interview posture
 
@@ -305,15 +298,9 @@ Do not include:
 
 If technical or UX decisions come up, either capture the resolved product-level implication as a constraint or ask follow-up questions before drafting. Do not add unresolved technical or UX decisions as open questions in the BRD.
 
-### 6. Save the document
+### 6. Publish the document
 
-For explicitly local BRD work, create the feature directory if needed and save the document at:
-
-```txt
-docs/features/<feature-slug>/brd.md
-```
-
-If the file already exists, read it first. Treat the request as a revision when the user asks to revise, clarify, or update the BRD. Ask before overwriting an existing BRD when the user appears to be asking for a separate new feature.
+Publish the BRD to the identified Feature issue through GitHub MCP, then read back that same artifact. Treat an update request as a revision of the existing artifact; reconcile identity before writing to avoid duplicates.
 
 ## Writing style
 
@@ -353,9 +340,9 @@ When shaping a BRD, prefer:
 
 ## Final response behavior
 
-For explicitly local work, after writing the file, name the path, then briefly list what changed in bullets. For planned work, report the confirmed Feature and BRD artifact links, or the blocked action and next step if publication remains uncertain. End with one concrete, context-appropriate next action for the user, such as UX for a UI-changing feature or software design once its prerequisites are ready; suggest it without starting the next stage. Do not paste the full BRD unless requested.
+Report the confirmed Feature and BRD artifact links, or the blocked action and next step if publication remains uncertain. End with one concrete, context-appropriate next action for the user, such as UX for a UI-changing feature or software design once its prerequisites are ready; suggest it without starting the next stage. Do not paste the full BRD unless requested.
 
-Only include the full BRD when the user explicitly asks for inline review in the current request. If file writes are unavailable, provide the Markdown content and state that it is intended for `docs/features/<feature-slug>/brd.md`.
+Only include the full BRD when the user explicitly asks for inline review in the current request.
 
 ## SAD and SDD handoff
 

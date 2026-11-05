@@ -1,5 +1,5 @@
 {
-  "templateVersion": "264",
+  "templateVersion": "265",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -184,10 +184,10 @@
       ]
     },
     "skills/ux-expert/SKILL.md": {
-      "version": "19",
+      "version": "20",
       "description": "Selectable UX expert skill for UI-changing features, responsive design, flows, states, accessibility, and binding mockups.",
       "changes": [
-        "Shows confirmed UX publication and unconfirmed-write next steps in accessible terminal feedback."
+        "Publishes UX only to the Feature issue artifact and removes local feature-file output."
       ]
     },
     "skills/architecture/layered-architecture/SKILL.md": {
@@ -310,10 +310,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Shows Feature creation, confirmed BRD publication, and unconfirmed-write next steps in terminal feedback."
+        "Publishes BRDs only to Feature issue artifacts and removes local feature-file output."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
@@ -324,10 +324,10 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "7",
+      "version": "8",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Shows confirmed SDD publication and unconfirmed-write next steps in accessible terminal feedback."
+        "Publishes SDDs only to Feature issue artifacts and removes local feature-file output."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {

@@ -1,8 +1,8 @@
 {
   "sibuVersion": "1.0.0",
-  "templateVersion": "264",
+  "templateVersion": "265",
   "generatedAt": "2026-04-15T02:46:31.069Z",
-  "updatedAt": "2026-11-04T21:30:15.729Z",
+  "updatedAt": "2026-11-05T00:01:32.393Z",
   "selectedAgents": [
     "codex",
     "gemini",
@@ -209,14 +209,14 @@
     },
     ".agents/skills/business-requirements-writer/SKILL.md": {
       "template": "skills/business-requirements-writer/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "5aecfda9c7a2b9b8cc4551304ce61d1a4e90185ed13bfccbb7b20fc7c13fdf99",
+      "templateVersion": "8",
+      "sha256": "44418ae110790f4f16eca1197e7a4a1788652d8cda4f78bd548dfbd31def6082",
       "status": "managed"
     },
     ".agents/skills/software-design-writer/SKILL.md": {
       "template": "skills/software-design-writer/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "2844c5597efd7ff58aa7fddaf012f1292f7c6ade2a1e5713f47f6b00a4337a04",
+      "templateVersion": "8",
+      "sha256": "fc173d9e73f7d6577c4dcdced292eea6297d12052a9431959f09c48591e8d111",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
@@ -313,8 +313,8 @@
     },
     ".agents/skills/ux-expert/SKILL.md": {
       "template": "skills/ux-expert/SKILL.md",
-      "templateVersion": "19",
-      "sha256": "44dd2e2c5d972c5873d85ae9ec950b44eda91677f61fd4869801c39a962d686e",
+      "templateVersion": "20",
+      "sha256": "6a627117f27f191ec377dad6eef3a86b4c4f0a1042255e60d872c2e0feb2113e",
       "status": "managed"
     },
     ".agents/skills/export-to-notion/SKILL.md": {
