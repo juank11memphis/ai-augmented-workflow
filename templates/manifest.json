@@ -1,5 +1,5 @@
 {
-  "templateVersion": "272",
+  "templateVersion": "273",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -9,10 +9,10 @@
       ]
     },
     "AGENTS.md": {
-      "version": "62",
+      "version": "63",
       "description": "Project-level agent instructions and Sibu maintenance guidance.",
       "changes": [
-        "Routes Codex Epic-and-Story planning through its dedicated Sibu worker while leaving Claude and Gemini planning unchanged."
+        "Routes Epic-and-Story planning through the worker only where the installed agent environment provides it, preserving direct planning elsewhere."
       ]
     },
     ".codex/config.toml": {
@@ -142,17 +142,17 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "27",
+      "version": "28",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Clarifies the delegated planning result heading without changing the Codex-only pilot boundary."
+        "Uses environment-neutral delegated planning guidance while preserving the worker availability and direct-planning boundaries."
       ]
     },
     "skills/scrum-master-planner-toolbox/SKILL.md": {
-      "version": "1",
-      "description": "Codex-only Epic and Story planning worker toolbox for direct GitHub publication and compact handoff.",
+      "version": "2",
+      "description": "Epic and Story planning worker toolbox for direct GitHub publication and compact handoff.",
       "changes": [
-        "Adds focused worker guidance for published artifact reads, native hierarchy readback, and material-question handoff."
+        "Uses a role-focused description without changing the worker's GitHub publication and handoff rules."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {

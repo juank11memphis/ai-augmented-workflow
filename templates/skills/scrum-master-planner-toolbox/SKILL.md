@@ -1,6 +1,6 @@
 ---
 name: scrum-master-planner-toolbox
-description: Focused Codex worker rules for planning one Feature's Epic and Story hierarchy on GitHub.
+description: Focused worker rules for planning one Feature's Epic and Story hierarchy on GitHub.
 ---
 
 # Scrum Master Planner Toolbox
