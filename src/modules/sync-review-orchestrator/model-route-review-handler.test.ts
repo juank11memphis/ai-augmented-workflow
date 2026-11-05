@@ -13,7 +13,7 @@ const unrelatedRoute: ModelRoute = { ...route, workloadClass: 'demanding', model
 
 function fixture(options: { catalogRevision?: number; savedVersion?: string; reviews?: ModelRouteReview[];
   rationaleOnly?: boolean } = {}) {
-  const catalogRevision = options.catalogRevision ?? 3;
+  const catalogRevision = options.catalogRevision ?? 2;
   const draft = structuredClone(loadModelRecommendationCatalog()) as unknown as Record<string, unknown>;
   const recommendations = draft.recommendations as Array<Record<string, unknown>>;
   const selected = recommendations.find((entry) => entry.role === route.role && entry.workloadClass === route.workloadClass)!;
@@ -23,15 +23,15 @@ function fixture(options: { catalogRevision?: number; savedVersion?: string; rev
   } else {
     selected.model = 'gpt-6-sol'; selected.reasoningEffort = 'medium';
   }
-  draft.catalogVersion = `2026-09-23.${catalogRevision}`;
-  draft.releases = Array.from({ length: catalogRevision - 2 }, (_, index) => ({
-    version: `2026-09-23.${index + 3}`,
-    changes: index + 3 === catalogRevision ? [{ agentEnvironment: route.agentEnvironment, role: route.role,
+  draft.catalogVersion = `2026-11-05.${catalogRevision}`;
+  draft.releases = [...(draft.releases as object[]), ...Array.from({ length: catalogRevision - 1 }, (_, index) => ({
+    version: `2026-11-05.${index + 2}`,
+    changes: index + 2 === catalogRevision ? [{ agentEnvironment: route.agentEnvironment, role: route.role,
       workloadClass: route.workloadClass, before,
       after: { model: selected.model, reasoningEffort: selected.reasoningEffort, rationale: selected.rationale },
       reason: options.rationaleOnly ? 'Revised expected-fit research for bounded tasks.'
         : 'Similar expected fit at lower expected cost.' }] : [],
-  }));
+  }))];
   const catalog = parseModelRecommendationCatalog(draft);
   let routes = [{ ...route, catalogVersionAtSelection: options.savedVersion ?? route.catalogVersionAtSelection }, unrelatedRoute];
   let reviews: ModelRouteReview[] = options.reviews ?? [];
@@ -73,9 +73,9 @@ it('previews the exact changed route and leaves missing and unrelated routes alo
 
 it('uses a retained .10 marker instead of an older .9 route selection', () => {
   const selectedAt = route.selectedAt;
-  const test = fixture({ catalogRevision: 10, savedVersion: '2026-09-23.9', reviews: [{
+  const test = fixture({ catalogRevision: 10, savedVersion: '2026-11-05.9', reviews: [{
     agentEnvironment: route.agentEnvironment, role: route.role, workloadClass: route.workloadClass,
-    routeSelectedAt: selectedAt, catalogVersion: '2026-09-23.10',
+    routeSelectedAt: selectedAt, catalogVersion: '2026-11-05.10',
   }] });
   const preview = handleModelRouteReview({ type: 'preview' }, test.ports);
   assert.equal(preview.status, 'preview');

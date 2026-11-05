@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { ModelRoute } from '../../shared/types.js';
-import { isModelRoutes } from './model-routes.js';
+import { isModelRouteReviews, isModelRoutes } from './model-routes.js';
 
 const boundedRoute: ModelRoute = {
   agentEnvironment: 'codex',
@@ -36,11 +36,15 @@ describe('model route state validation', () => {
       'implementation-executor',
       'architecture-reviewer',
       'notion-exporter',
+      'epic-story-planner',
     ];
     const workloads: ModelRoute['workloadClass'][] = ['bounded', 'demanding', 'high-risk'];
     const routes = roles.flatMap((role) => workloads.map((workloadClass) => ({ ...boundedRoute, role, workloadClass })));
 
     assert.equal(isModelRoutes(routes), true);
+    assert.equal(isModelRouteReviews(routes.map((route) => ({ agentEnvironment: route.agentEnvironment,
+      role: route.role, workloadClass: route.workloadClass, routeSelectedAt: route.selectedAt,
+      catalogVersion: route.catalogVersionAtSelection }))), true);
   });
 
   it('rejects malformed key, value, and selection fields', () => {

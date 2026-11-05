@@ -15,6 +15,24 @@ Turn a sufficiently clear BRD and software design into the smallest useful Scrum
 
 This skill owns delivery planning definitions in GitHub issues. It does not own product vision, feature definition, software design, code implementation, or a CLI GitHub delivery engine.
 
+## Delegated planning gate
+
+When the installed workflow defines `sibu-epic-story-planner` for the current agent environment, the main agent is the gatekeeper and sole human-facing voice; that worker owns the Epic-and-Story planning and GitHub writes below. The sections after this gate remain the planning rules for both the worker and environments without that worker. An environment without a defined worker keeps its direct planning flow. If the worker is defined but host support or its selected route is unavailable, stop instead of silently planning in the main context.
+
+Before routing, identify the repository from its Git remote and the requested Feature issue. Confirm usable GitHub MCP access to that same repository for issue read/write, issue-artifact read, and native sub-issue operations. Identify the published BRD, SDD, and required UX artifacts and their issue-scoped identities without loading full bodies into the main context; the worker reads their content. Missing, conflicting, unpublished, or inaccessible prerequisites stop planning with one named next check. Do not use local feature files or an on-disk cache as substitutes.
+
+Classify this planning request before each spawn: `bounded` for clear narrow repeatable work, `demanding` for ambiguous or multi-step work, and `high-risk` for security, privacy, destructive actions, persisted-data migration, or consequential architecture decisions. Choose the higher-risk class when uncertain; briefly explain a high-risk choice and let the user correct it. Resolve exactly `sibu models resolve --agent <environment> --role epic-story-planner --workload <class> --json`, using the current agent environment. Never infer a worker route from the main agent's model. Apply the Sibu-provided sub-agent model-route protocol in `AGENTS.md` to the returned versioned state:
+
+- `configured`: use the exact saved model and reasoning effort, even if user-selected rather than currently recommended. If catalog guidance is unavailable, disclose that; do not invent a replacement.
+- `missing`: present the current recommendation, expected fit, relative cost/speed, and non-guarantee; obtain an explicit `Use recommended`, `Choose another`, or `Cancel` choice before saving or spawning. Save with the returned catalog version and state basis. On conflict, re-resolve and re-review; on failed save, offer retry, one-time use without saving, or cancel.
+- `workflow-unavailable`, `unsupported`, or `recommendation-unavailable`: do not spawn; report the returned recovery guidance. If the host rejects a selected model/effort, preserve a saved route and pause for the protocol's explicit replacement choice. Never retry with a silent substitute or claim a rejected pair is available.
+
+Spawn only the named worker with explicit selected model **and** reasoning effort, including one-time use. Send a narrow packet containing the Feature issue identity/link, published artifact identities, agreed constraints, selected relevant skills, the planning boundary, and the compact output contract; do not forward full issue bodies or the whole conversation. The worker reads authoritative sources directly through GitHub MCP and owns matching-issue lookup, native hierarchy, publication, and readback. The main agent owns route choice, material questions, stage feedback, and execution authorization.
+
+Show the planning-start state once after route selection. If the worker returns a material question, present one focused question with its consequence; after the user settles it, resume the **same** planning request with the answer and confirmed issue identities. If the answer changes an upstream artifact, have its owning stage publish the correction first. Do not fabricate an answer, create dependent issues from uncertain work, or start a fresh planning request unnecessarily. A worker blocker or uncertain publication pauses downstream work; distinguish confirmed partial effects without a success heading.
+
+Accept a completed handoff only with readback-confirmed Epic names/links, native parentage, and Story count. Do not request or print full sources, all Story links, issue bodies, or tool logs. Use the delegated terminal states below; planning completion alone never authorizes implementation.
+
 ## Pipeline Contract
 
 ### What this skill needs
@@ -284,6 +302,18 @@ Before finishing, verify:
 Apply these authoring rules to newly created Epics and Stories only; do not retrofit existing planning artifacts or change downstream implementation-planner behavior. Confirm the native Feature→Epic→Story parent IDs and relevant issue links before reporting success. If confirmation fails, report the unconfirmed step and pause downstream work, rather than presenting a completed hierarchy.
 
 ## Final response behavior
+
+### Delegated planning result
+
+Follow the binding published Feature UX mockups. Use plain text in screen-reader order: one state heading, consequence/result, **one** next action, then optional confirmed links/details. At about 40 columns, keep one short fact or link per line; at about 80 columns, each Epic name/link may share a line; at about 120 columns, add Feature orientation only, never a new decision or width-only meaning. Do not rely on color, boxes, icons, or logs. A direct question is the next action; do not add another instruction to answer it.
+
+- Start: `Planning started`; `I’m preparing Epics and Stories.`; `Next: I’ll report the result.` Show once, not after each GitHub operation.
+- Material question: `Planning paused`, the specific consequence, then one focused question. After a settled answer, show `Planning resumed`, `Your answer is being applied.`, `Next: I’ll report the result.`
+- Confirmed result: `Planning ready on GitHub`, the readback-confirmed Epic and Story counts, then `Next: Start implementation? (yes/no)`, followed by confirmed Epic names and direct links. Do not list every Story URL. A `no` leaves GitHub planning available without starting execution.
+- Unavailable host/route: `Planning cannot start`, the unavailable-planner consequence and `This step was not completed.`, then one recovery action consistent with the model-route protocol. Do not imply earlier confirmed work was lost.
+- Unconfirmed publication: `Epic or Story publication was not confirmed on GitHub`, `Planning is paused. Do not use these issues for implementation yet.`, then `Next: Check GitHub access, then retry.` Name the affected issue only when known; show confirmed effects separately and no uncertain success link.
+
+### Existing direct-planning result
 
 After confirmed issue publication, final-answer in a short, linear handoff with only:
 

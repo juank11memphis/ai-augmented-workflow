@@ -8,6 +8,13 @@ export const SIBU_MODEL_ROLES = [
   'implementation-executor',
   'architecture-reviewer',
   'notion-exporter',
+  'epic-story-planner',
+] as const;
+const HISTORY_BASE_ROLES = [
+  'implementation-planner',
+  'implementation-executor',
+  'architecture-reviewer',
+  'notion-exporter',
 ] as const;
 export const MODEL_WORKLOAD_CLASSES = ['bounded', 'demanding', 'high-risk'] as const;
 export const RECOMMENDATION_AGENT_ENVIRONMENTS = ['codex'] as const;
@@ -49,6 +56,7 @@ export type ModelRecommendationCatalog = Readonly<{
 export type RecommendationRelease = Readonly<{
   version: string;
   changes: readonly RecommendationChange[];
+  additions: readonly ModelRecommendation[];
 }>;
 
 export type RecommendationChange = Readonly<{
@@ -85,6 +93,9 @@ export function reviewRecommendationSince(
       (savedVersion !== catalog.historyBaseVersion && !catalog.releases.some((release) => release.version === savedVersion))) {
     return { status: 'unavailable' };
   }
+  if (!catalog.historyBaseRecommendations.some((entry) => routeKey(entry) === routeKey(key)) &&
+      !catalog.releases.some((release) => compareCatalogVersions(release.version, savedVersion) <= 0 &&
+        release.additions.some((entry) => routeKey(entry) === routeKey(key)))) return { status: 'unavailable' };
   const changes = catalog.releases
     .filter((release) => compareCatalogVersions(release.version, savedVersion) > 0)
     .flatMap((release) => release.changes.filter((change) => routeKey(change) === routeKey(key)));
@@ -156,16 +167,18 @@ export function parseModelRecommendationCatalog(value: unknown): ModelRecommenda
   }
   const historyBaseRecommendations = value.historyBaseRecommendations.map(parseRecommendation);
   const baseKeys = historyBaseRecommendations.map(routeKey);
-  if (new Set(baseKeys).size !== baseKeys.length || baseKeys.length !== expectedKeys.length ||
-      expectedKeys.some((key) => !baseKeys.includes(key))) {
+  const historicalKeys = RECOMMENDATION_AGENT_ENVIRONMENTS.flatMap((agentEnvironment) =>
+    HISTORY_BASE_ROLES.flatMap((role) => MODEL_WORKLOAD_CLASSES.map((workloadClass) => routeKey({ agentEnvironment, role, workloadClass }))));
+  if (new Set(baseKeys).size !== baseKeys.length || baseKeys.length !== historicalKeys.length ||
+      historicalKeys.some((key) => !baseKeys.includes(key))) {
     throw new Error('Model recommendation history base has duplicate or incomplete route mappings.');
   }
   const baseDigest = createHash('sha256').update(JSON.stringify(historyBaseRecommendations)).digest('hex');
   if (value.historyBaseVersion !== HISTORY_BASE_VERSION || baseDigest !== HISTORY_BASE_SHA256) {
     throw new Error('Model recommendation history base must remain fixed across releases.');
   }
-  const baseByKey = new Map(historyBaseRecommendations.map((entry) => [routeKey(entry), entry]));
   const releases = value.releases.map(parseRelease);
+  const guidanceByKey = new Map(historyBaseRecommendations.map((entry) => [routeKey(entry), pickGuidance(entry)]));
   let previousVersion = value.historyBaseVersion;
   for (const release of releases) {
     if (compareCatalogVersions(release.version, previousVersion) <= 0 ||
@@ -175,19 +188,27 @@ export function parseModelRecommendationCatalog(value: unknown): ModelRecommenda
     if (releaseDay === previousDay && BigInt(releaseSequence) !== BigInt(previousSequence) + 1n) {
       throw new Error('Model recommendation release history has a version gap.');
     }
+    for (const addition of release.additions) {
+      const key = routeKey(addition);
+      if (guidanceByKey.has(key)) throw new Error('Model recommendation release duplicates an existing route.');
+      guidanceByKey.set(key, pickGuidance(addition));
+    }
+    for (const change of release.changes) {
+      const key = routeKey(change);
+      const previous = guidanceByKey.get(key);
+      if (!previous || JSON.stringify(previous) !== JSON.stringify(change.before)) {
+        throw new Error('Model recommendation change chain is inconsistent.');
+      }
+      guidanceByKey.set(key, change.after);
+    }
     previousVersion = release.version;
   }
   if (previousVersion !== value.catalogVersion) throw new Error('Model recommendation release history does not reach the current catalog.');
+  if (guidanceByKey.size !== expectedKeys.length || expectedKeys.some((key) => !guidanceByKey.has(key))) {
+    throw new Error('Model recommendation release history is missing route additions.');
+  }
   for (const recommendation of recommendations) {
-    const base = baseByKey.get(routeKey(recommendation));
-    if (!base) throw new Error('Model recommendation history base is incomplete.');
-    const changes = releases.flatMap((release) => release.changes.filter((change) => routeKey(change) === routeKey(recommendation)));
-    let guidance = pickGuidance(base);
-    for (const change of changes) {
-      if (JSON.stringify(guidance) !== JSON.stringify(change.before)) throw new Error('Model recommendation change chain is inconsistent.');
-      guidance = change.after;
-    }
-    if (JSON.stringify(guidance) !== JSON.stringify(pickGuidance(recommendation))) {
+    if (JSON.stringify(guidanceByKey.get(routeKey(recommendation))) !== JSON.stringify(pickGuidance(recommendation))) {
       throw new Error('Model recommendation release history does not match current guidance.');
     }
   }
@@ -208,7 +229,12 @@ function parseRelease(value: unknown): RecommendationRelease {
   if (!isRecord(value) || !isCatalogVersion(value.version) || !Array.isArray(value.changes)) throw new Error('Invalid model recommendation release.');
   const changes = value.changes.map(parseChange);
   if (new Set(changes.map(routeKey)).size !== changes.length) throw new Error('Duplicate route change in release.');
-  return Object.freeze({ version: value.version, changes: Object.freeze(changes) });
+  if (value.additions !== undefined && !Array.isArray(value.additions)) throw new Error('Invalid model recommendation route additions.');
+  const additions = ((value.additions ?? []) as unknown[]).map(parseRecommendation);
+  if (new Set(additions.map(routeKey)).size !== additions.length || additions.some((entry) => changes.some((change) => routeKey(change) === routeKey(entry)))) {
+    throw new Error('Duplicate model recommendation route addition.');
+  }
+  return Object.freeze({ version: value.version, changes: Object.freeze(changes), additions: Object.freeze(additions) });
 }
 
 function parseChange(value: unknown): RecommendationChange {

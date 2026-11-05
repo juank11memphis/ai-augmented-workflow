@@ -87,3 +87,24 @@ test('fake sync shows current notes, updates managed guidance, and protects cust
   assert.equal(result.state.managedFiles[customized]?.status, 'customized');
   assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);
 });
+
+test('fake sync offers the current Scrum guidance to a stale managed installation', async (t) => {
+  const { rootPath, state } = await initialize(t);
+  const template = templates[0];
+  const installed = installedPath(template);
+  const prior = '# Prior synthetic Scrum guidance\n';
+  fs.writeFileSync(path.join(rootPath, installed), prior);
+  state.managedFiles[installed] = {
+    template, templateVersion: '1', sha256: sha256(prior), status: 'managed',
+  };
+
+  const manifest = readTemplateManifest();
+  const preview = getSyncPreviews({ rootPath, state, manifest }).find((item) => item.relativePath === installed);
+  assert.ok(preview);
+  assert.equal(preview.status, 'update-available');
+  assert.deepEqual(preview.changes, manifest.templates[template]?.changes);
+  const result = applySyncAction({ rootPath, state, manifest, preview, action: 'apply-update' });
+  assert.equal(fs.readFileSync(path.join(rootPath, installed), 'utf8'), readTemplate(template));
+  assert.equal(result.state.managedFiles[installed]?.templateVersion, manifest.templates[template]?.version);
+  assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);
+});

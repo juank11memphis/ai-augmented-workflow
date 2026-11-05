@@ -72,3 +72,25 @@ test('fake sync updates stale managed guidance and preserves customized guidance
   assert.equal(result.state.managedFiles[customized.installed]?.status, 'customized');
   assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);
 });
+
+test('fake sync offers current AGENTS guidance to a stale managed installation', async (t) => {
+  const { rootPath, state } = await initialize(t);
+  const template = templates[0];
+  const prior = '# Prior synthetic agent guidance\n';
+  fs.writeFileSync(path.join(rootPath, template.installed), prior);
+  state.managedFiles[template.installed] = {
+    template: template.path, templateVersion: '1', sha256: sha256(prior), status: 'managed',
+  };
+
+  const manifest = readTemplateManifest();
+  const preview = getSyncPreviews({ rootPath, state, manifest }).find((item) => item.relativePath === template.installed);
+  assert.ok(preview);
+  assert.equal(preview.status, 'update-available');
+  assert.deepEqual(preview.changes, manifest.templates[template.path]?.changes);
+  const result = applySyncAction({ rootPath, state, manifest, preview, action: 'apply-update' });
+  const updatedBody = fs.readFileSync(path.join(rootPath, template.installed), 'utf8');
+  assert.notEqual(updatedBody, prior);
+  assert.equal(result.state.managedFiles[template.installed]?.sha256, sha256(updatedBody));
+  assert.equal(result.state.managedFiles[template.installed]?.templateVersion, manifest.templates[template.path]?.version);
+  assert.deepEqual(diagnoseState({ rootPath, state: result.state }), []);
+});

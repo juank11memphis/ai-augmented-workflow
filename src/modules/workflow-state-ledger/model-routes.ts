@@ -14,6 +14,7 @@ const SIBU_ROLES: readonly SibuModelRole[] = [
   'implementation-executor',
   'architecture-reviewer',
   'notion-exporter',
+  'epic-story-planner',
 ];
 const WORKLOAD_CLASSES: readonly ModelWorkloadClass[] = ['bounded', 'demanding', 'high-risk'];
 const REASONING_EFFORTS: readonly ModelReasoningEffort[] = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
