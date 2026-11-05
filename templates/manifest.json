@@ -1,5 +1,5 @@
 {
-  "templateVersion": "266",
+  "templateVersion": "268",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -317,10 +317,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Publishes BRDs only to Feature issue artifacts and removes local feature-file output."
+        "Asks which success outcomes have evidence in this delivery and keeps deferred, unverified benefits out of current acceptance criteria."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
@@ -331,10 +331,10 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Publishes SDDs only to Feature issue artifacts and removes local feature-file output."
+        "Requires each proposed verification method to name the concrete activity, owner, timing, and pass/fail evidence, including whether human QA is required."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
