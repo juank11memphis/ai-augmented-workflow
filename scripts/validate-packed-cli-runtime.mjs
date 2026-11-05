@@ -130,10 +130,10 @@ function validateInstalledSyncReview({ installedPackageRoot, installedExecutable
     }
     const reason = rationaleOnly ? 'Fixture research revised expected-fit guidance.'
       : 'Fixture research suggests similar expected fit at lower expected cost.';
-    catalog.catalogVersion = '2026-09-23.3';
-    catalog.releases = [{ version: catalog.catalogVersion, changes: [{ agentEnvironment: entry.agentEnvironment,
+    catalog.catalogVersion = '2026-11-05.2';
+    catalog.releases.push({ version: catalog.catalogVersion, changes: [{ agentEnvironment: entry.agentEnvironment,
       role: entry.role, workloadClass: entry.workloadClass, before,
-      after: { model: entry.model, reasoningEffort: entry.reasoningEffort, rationale: entry.rationale }, reason }] }];
+      after: { model: entry.model, reasoningEffort: entry.reasoningEffort, rationale: entry.rationale }, reason }] });
     writeFileSync(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
     runInstalledSyncChoices({ installedExecutable, npmBinPath, fixtureProjectPath, statePath, savedState,
       catalogVersion: catalog.catalogVersion, reason, expectedModel: entry.model,
@@ -195,11 +195,19 @@ async function validateInstalledModelCatalog(installedPackageRoot) {
   const highRisk = catalogModule.resolveModelRecommendation(catalog, {
     agentEnvironment: 'codex', role: 'architecture-reviewer', workloadClass: 'high-risk',
   });
-  if (catalog.catalogVersion !== '2026-09-23.2' || catalog.reviewedAt !== '2026-09-23T00:00:00.000Z') {
+  if (catalog.catalogVersion !== '2026-11-05.1' || catalog.reviewedAt !== '2026-11-05T00:00:00.000Z') {
     throw new Error(`Unexpected installed model catalog metadata: ${catalog.catalogVersion}/${catalog.reviewedAt}.`);
   }
-  if (catalog.historyBaseVersion !== catalog.catalogVersion || catalog.releases.length !== 0) {
-    throw new Error('Installed catalog must not claim undocumented historical recommendation changes.');
+  const addition = catalog.releases[0];
+  if (catalog.historyBaseVersion !== '2026-09-23.2' || catalog.historyBaseRecommendations.length !== 12 ||
+      catalog.recommendations.length !== 15 || catalog.releases.length !== 1 ||
+      addition.version !== catalog.catalogVersion || addition.changes.length !== 0 || addition.additions.length !== 3 ||
+      !['bounded', 'demanding', 'high-risk'].every((workloadClass) => addition.additions.some((entry) =>
+        entry.agentEnvironment === 'codex' && entry.role === 'epic-story-planner' && entry.workloadClass === workloadClass)) ||
+      !catalog.historyBaseRecommendations.every((historical) => catalog.recommendations.some((current) =>
+        current.agentEnvironment === historical.agentEnvironment && current.role === historical.role &&
+        current.workloadClass === historical.workloadClass && JSON.stringify(current) === JSON.stringify(historical)))) {
+    throw new Error('Installed catalog must preserve its historical base and one three-route additive release.');
   }
   if (bounded.model !== 'gpt-6-luna' || bounded.reasoningEffort !== 'low') {
     throw new Error(`Expected installed bounded recommendation to be GPT-6 Luna/low, got ${bounded.model}/${bounded.reasoningEffort}.`);
