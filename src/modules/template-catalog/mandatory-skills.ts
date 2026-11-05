@@ -38,6 +38,14 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     },
   },
   {
+    templateRelativePath: 'skills/higher-value-testing-guidance/SKILL.md',
+    targetRelativePathsByAgent: {
+      codex: '.agents/skills/higher-value-testing-guidance/SKILL.md',
+      gemini: '.agents/skills/higher-value-testing-guidance/SKILL.md',
+      claude: '.agents/skills/higher-value-testing-guidance/SKILL.md',
+    },
+  },
+  {
     templateRelativePath: 'skills/product-vision-writer/SKILL.md',
     targetRelativePathsByAgent: {
       codex: '.agents/skills/product-vision-writer/SKILL.md',
