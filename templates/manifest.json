@@ -1,5 +1,5 @@
 {
-  "templateVersion": "268",
+  "templateVersion": "269",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -142,38 +142,38 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "24",
+      "version": "25",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Shows confirmed hierarchy links and next planning action, while pausing on unconfirmed Epic or Story publication."
+        "Separates observable deliverable acceptance from behavioral verification and keeps excluded methods out of Story expectations."
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "40",
+      "version": "41",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Removes obsolete GitHub exporter guidance from planner handoffs."
+        "Allows objective Task delivery checks without treating them as new outcome-verification methods or overriding SDD exclusions."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "26",
+      "version": "27",
       "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
       "changes": [
-        "Routes code-changing plans to shared testing guidance while keeping Task checks mandatory."
+        "Distinguishes checked deliverable completion from outcome proof so planners preserve agreed verification limits."
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "88",
+      "version": "89",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Removes obsolete GitHub exporter guidance from executor handoffs."
+        "Keeps every Task check mandatory while accepting bounded artifact-delivery evidence without overclaiming unverified behavior."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "32",
+      "version": "33",
       "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
       "changes": [
-        "Routes code-changing execution to shared testing guidance without making new tests mandatory."
+        "Requires evidence for each Task deliverable while preserving SDD exclusions and reporting unverified behavior honestly."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -317,10 +317,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Asks which success outcomes have evidence in this delivery and keeps deferred, unverified benefits out of current acceptance criteria."
+        "Defines business outcomes and observable delivery acceptance without choosing verification methods before software design."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
@@ -331,17 +331,17 @@
       ]
     },
     "skills/software-design-writer/SKILL.md": {
-      "version": "9",
+      "version": "10",
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
-        "Requires each proposed verification method to name the concrete activity, owner, timing, and pass/fail evidence, including whether human QA is required."
+        "Separates feature outcome verification from ordinary Task delivery evidence and preserves explicit exclusions."
       ]
     },
     "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "8",
+      "version": "9",
       "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
       "changes": [
-        "Accepts exact GitHub Story, plan, and source artifact identities for independent read-only plan review."
+        "Reviews Task deliverable checks separately from outcome methods and rejects claims that artifact evidence proves excluded behavior."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {

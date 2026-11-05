@@ -22,7 +22,7 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 - `docs/product-vision.md`.
 - `docs/business-domain-model.md`.
 - `docs/capabilities-map.md`.
-- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, in-delivery evidence boundaries, constraints, Product Vision fit, Business Domain Model fit, and Capability Coverage.
+- Enough user-provided feature intent to define the feature problem, target user/scenario, business goal, MVP boundary, out-of-scope boundary, success signals, delivery acceptance boundaries, constraints, Product Vision fit, Business Domain Model fit, and Capability Coverage.
 
 ### What this skill writes
 
@@ -45,7 +45,7 @@ This skill owns the product/business shape of a feature. It does not own UI inte
 - Do not invent missing product direction, domain model coverage, subdomains, or capabilities in the final BRD.
 - Do not skip the interview or the final “I am clear; are you good?” check-in before writing. Once the user confirms there is nothing else to cover, write without requiring a recap, artifact approval, or separate summary confirmation.
 - Do not duplicate or rewrite the product vision; apply only the relevant implications to the feature.
-- Do not leave material product, scope, success, verification-boundary, constraint, domain fit, or capability coverage questions unresolved in the final BRD; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
+- Do not leave material product, scope, success, delivery-acceptance, constraint, domain fit, or capability coverage questions unresolved in the final BRD; keep interviewing until the user answers, confirms an assumption, or explicitly excludes the topic.
 
 ## Required source of truth
 
@@ -132,13 +132,13 @@ Be deliberately interrogative before drafting. The BRD should reflect the user's
 This interview is mandatory and non-skippable. Even when the user provides extensive initial context, existing docs, repo code, or a raw idea file, ask at least one explicit user-facing discovery question before drafting or writing the BRD. Treat repository artifacts, prior conversation, existing product docs, and initial context as useful but provisional: they can shape better questions, but they must not replace the interview or become the full source of truth for feature intent, scope, success, constraints, or user value. Keep asking focused follow-up questions until the feature decisions are clear enough to defend. Before drafting, always perform one final check-in in the spirit of: “I am clear on my end. Are you good, or is there anything else you want to cover before I proceed?” If the user adds context, incorporate or clarify it before writing.
 
 - Ask one focused question at a time about remaining material gaps. Do not mechanically re-ask adequately settled questions; use existing answers to guide meaningful follow-ups. There is no question-count limit.
-- Keep asking until you have complete practical understanding and explicit user alignment; do not optimize for a short interview. For each proposed success signal and acceptance criterion, establish what observable evidence the delivery will provide, who will judge it when human judgment is needed, or whether the outcome is explicitly deferred as an unverified hypothesis. Ask one focused question at a time; do not choose unit, integration, or other technical test methods here.
+- Keep asking until you have complete practical understanding and explicit user alignment; do not optimize for a short interview. Distinguish each desired business outcome from a condition for accepting this delivery. If an outcome cannot be observed in this delivery, name it as a later hypothesis or risk rather than a proven acceptance criterion. Ask one focused question at a time; leave test methods, check commands, timing, and verification ownership to the SDD and Task plan.
 - Walk down each feature decision branch one by one, resolving dependencies between product, scope, success, constraint, domain-fit, and capability-coverage decisions before drafting.
 - When useful, provide your recommended answer or a concise default assumption with the question so the user can confirm, correct, or reject it quickly.
 - If a question can be answered by reading repository artifacts, inspect those artifacts instead of asking.
 - Prefer follow-up questions over filling gaps with plausible invention.
 - Treat "100% understanding" as: feature intent, target user, scenario, user problem, business goal, MVP boundary, out-of-scope boundary, success signals, and known constraints are all clear enough to defend in the BRD.
-- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals and their agreed evidence boundaries, constraints, Business Domain Model fit, and Capability Coverage are clear enough to defend in the BRD.
+- Treat "enough context" as: feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals and delivery acceptance boundaries, constraints, Business Domain Model fit, and Capability Coverage are clear enough to defend in the BRD.
 - If the user gives a partial answer, acknowledge the useful part and ask the next most important unresolved question.
 - Do not ask a large questionnaire all at once.
 
@@ -224,10 +224,10 @@ Ask every question needed to remove material ambiguity, but only one at a time. 
 - what must be included in the first version
 - which Business Domain Model concepts, rules, states, workflows, or boundaries materially shape the scope
 - what should stay out of scope
-- which outcomes will be verified during this delivery, by what observable business-level evidence and whose judgment, and which are intentionally deferred
+- which observable deliverables or behaviors define acceptance of this delivery, and which desired outcomes remain later hypotheses
 - known constraints and risks
 
-Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, in-delivery evidence boundaries, constraints, Business Domain Model fit, and Capability Coverage are clear enough to avoid invention. Do not draft a BRD with an `Open Questions` section.
+Draft only once feature intent, target user/scenario, desired outcome, MVP boundary, out-of-scope boundary, success signals, delivery acceptance boundaries, constraints, Business Domain Model fit, and Capability Coverage are clear enough to avoid invention. Do not draft a BRD with an `Open Questions` section.
 
 If the conversation stalls, offer a concise default assumption for the next unresolved point and ask the user to confirm or correct it before proceeding.
 
@@ -242,7 +242,7 @@ Write concise business-level Markdown with this consistent core. Keep objectives
 <Problem or opportunity, affected users, and intended value.>
 
 ## Objectives and Measurable Success
-- OBJ-01 — <Business outcome and agreed observable evidence for this delivery, or an explicitly deferred, unverified hypothesis. Do not claim a deferred outcome has been measured.>
+- OBJ-01 — <Desired business outcome and success signal; mark an outcome not observable in this delivery as an unverified later hypothesis.>
 
 ## Stakeholders and Needs
 <Who needs what and why, including affected non-user stakeholders where relevant.>
@@ -251,13 +251,13 @@ Write concise business-level Markdown with this consistent core. Keep objectives
 <First useful business scope and explicit exclusions.>
 
 ## Requirements
-- REQ-01 — Type: <business / stakeholder / functional / quality / transition, as applicable>; Objectives: OBJ-01. <Specific, testable need or required behavior; relevant RULE- IDs where useful.>
+- REQ-01 — Type: <business / stakeholder / functional / quality / transition, as applicable>; Objectives: OBJ-01. <Specific need or required behavior with an observable delivery boundary; relevant RULE- IDs where useful.>
 
 ## Business Rules
 - RULE-01 — <Business policy or condition governing behavior, not an implementation choice.>
 
 ## Business Acceptance Criteria
-- AC-01 (REQ-01) — <Observable condition showing the requirement is satisfied using evidence included in this delivery. Do not use a future, excluded observation as current acceptance evidence.>
+- AC-01 (REQ-01) — <Observable delivery condition for this requirement. Do not claim that a delivered artifact proves an untested behavioral outcome.>
 
 ## Product Vision Fit
 <Relevant purpose, audience, principles, and boundaries.>
@@ -271,7 +271,7 @@ Write concise business-level Markdown with this consistent core. Keep objectives
 
 Add workflows, constraints, assumptions, dependencies, risks, or other feature-specific sections only when meaningful. Small features need the core, not empty enterprise sections; complex features need proportionate detail and deeper discovery. State when no additional business rule applies rather than inventing one to fill a section.
 
-Never fabricate numeric targets. Clarify unknown success measures with the user; agree on observable in-delivery evidence or explicitly defer the outcome rather than inventing precision. Keep desired but unverified benefits distinct from acceptance criteria, and state their deferred evaluation boundary plainly. If the user excludes the evidence needed to verify a proposed criterion, revise or remove that criterion before publication; do not leave a downstream SDD to silently drop it. Resolve material uncertainty before writing.
+Never fabricate numeric targets. Clarify unknown success signals with the user without selecting technical verification methods. Keep desired but unverified benefits distinct from delivery acceptance criteria, and state their later evaluation boundary plainly. An acceptance criterion may require an observable artifact without claiming the artifact proves live behavior. If no observable delivery condition can express a proposed criterion, revise or defer that criterion before publication rather than asking a downstream SDD to silently drop it. Resolve material uncertainty before writing.
 
 ### Lightweight traceability
 
