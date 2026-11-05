@@ -100,6 +100,18 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       gemini: '.agents/skills/scrum-master-planner/SKILL.md',
       claude: '.agents/skills/scrum-master-planner/SKILL.md',
     },
+    supplementalTargetsByAgent: {
+      codex: [
+        {
+          templateRelativePath: 'skills/scrum-master-planner-toolbox/SKILL.md',
+          targetRelativePath: '.agents/skills/scrum-master-planner-toolbox/SKILL.md',
+        },
+        {
+          templateRelativePath: '.codex/agents/sibu-epic-story-planner.toml',
+          targetRelativePath: '.codex/agents/sibu-epic-story-planner.toml',
+        },
+      ],
+    },
   },
   {
     templateRelativePath: 'skills/ai-implementation-planner/SKILL.md',
