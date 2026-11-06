@@ -1,5 +1,5 @@
 {
-  "templateVersion": "273",
+  "templateVersion": "274",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -170,10 +170,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "89",
+      "version": "90",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Keeps every Task check mandatory while accepting bounded artifact-delivery evidence without overclaiming unverified behavior."
+        "Attempts a verified Story PR squash merge without routine GitHub branch-policy or required-check preflight; reports any host rejection and stops safely."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
