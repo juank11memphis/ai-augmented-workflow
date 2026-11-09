@@ -19,7 +19,7 @@ describe('SAD/SDD instruction contracts (static, not model behavior)', () => {
 
 describe('atomic SAD/SDD distribution and consumer contracts', () => {
 
-  for (const consumer of ['scrum-master-planner', 'ai-implementation-planner', 'ai-implementation-plan-executor', 'ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox']) {
+  for (const consumer of ['scrum-master-planner', 'ai-implementation-planner', 'ai-implementation-plan-executor']) {
   }
 
   for (const source of ['skills/export-to-notion/SKILL.md', '.codex/agents/notion-exporter.toml', '.gemini/agents/notion-exporter.md', '.claude/agents/notion-exporter.md']) {

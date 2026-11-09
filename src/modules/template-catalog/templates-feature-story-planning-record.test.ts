@@ -5,9 +5,7 @@ import { describe, it } from 'node:test';
 import { readTemplate } from './index.js';
 
 const planner = readTemplate('skills/ai-implementation-planner/SKILL.md');
-const plannerWorker = readTemplate('skills/ai-implementation-planner-toolbox/SKILL.md');
 const executor = readTemplate('skills/ai-implementation-plan-executor/SKILL.md');
-const reviewer = readTemplate('skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md');
 
 const repository = 'owner/project';
 const storyIssue = 42;
@@ -71,7 +69,6 @@ describe('GFW-S02-T02 Story planning record', () => {
       `publish:${progressArtifact}`, `read:${progressArtifact}`,
     ]);
     expectContracts(planner, ['compact ordered Task ID/status checklist', 'read back identity and content', 'Do not create duplicate local plan or progress files']);
-    expectContracts(plannerWorker, ['exact plan content', 'Do not write local plan/progress files']);
   });
 
   it('refuses unpublished or changed plan and leaves status/progress-only updates valid', () => {
@@ -101,11 +98,9 @@ describe('GFW-S02-T02 Story planning record', () => {
     assert.equal(Object.hasOwn(packet, 'localSourcePaths'), false);
     assert.equal(mcp.calls.some(({ operation }) => operation === 'local-write'), false);
     expectContracts(executor, ['independent', 'read-only', 'stable fingerprint', 'local plan folder']);
-    expectContracts(reviewer, ['GitHub Story issue identity', 'plan-artifact identity', 'transient content', 'read-only', 'local feature-source files']);
   });
 
   it('preserves Task and PR gates without activating later handoff', () => {
     expectContracts(executor, ['specific, objective, executable pass/fail check', 'expected passing evidence', 'one passing, scoped Task-ID-linked Conventional Commit', 'verified Story integration gate', 'unsupported later checkpoint']);
-    expectContracts(reviewer, ['Never modify repository files', 'Do not return an approval verdict']);
   });
 });

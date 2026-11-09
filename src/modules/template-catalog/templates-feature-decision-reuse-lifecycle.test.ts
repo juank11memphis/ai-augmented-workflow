@@ -12,9 +12,7 @@ import { readTemplateManifest, renderTemplateForSync, SELECTABLE_ARCHITECTURE_SK
 
 const templates = [
   'skills/ai-implementation-planner/SKILL.md',
-  'skills/ai-implementation-planner-toolbox/SKILL.md',
   'skills/ai-implementation-plan-executor/SKILL.md',
-  'skills/ai-implementation-executor-toolbox/SKILL.md',
   'skills/eval-authoring/SKILL.md',
 ];
 const architecture = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === 'command-pattern')!;
@@ -65,7 +63,7 @@ function preview(rootPath: string, state: SibuState, template: string) {
   return found;
 }
 
-test('fresh init distributes current bytes and versions for all five decision-reuse skills; doctor is healthy', async (t) => {
+test('fresh init distributes current bytes and versions for remaining decision-reuse skills; doctor is healthy', async (t) => {
   const { rootPath, state } = await initialize(t);
   for (const template of templates) {
     const relativePath = installedPath(template);
@@ -79,7 +77,7 @@ test('fresh init distributes current bytes and versions for all five decision-re
 });
 
 
-test('sync review preserves bytes and customized ownership for all five changed skills', async (t) => {
+test('sync review preserves bytes and customized ownership for remaining changed skills', async (t) => {
   const { rootPath, state } = await initialize(t);
   const custom = new Map<string, string>();
   for (const template of templates) {

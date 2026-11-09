@@ -19,9 +19,7 @@ import { getSyncPreviews } from './sync-preview.js';
 
 const VALIDATION_SKILL_CASES = [
   skillCase('ai-implementation-planner', '23'),
-  skillCase('ai-implementation-planner-toolbox', '10'),
   skillCase('ai-implementation-plan-executor', '64'),
-  skillCase('ai-implementation-executor-toolbox', '14'),
 ] as const;
 const temporaryRoots: string[] = [];
 

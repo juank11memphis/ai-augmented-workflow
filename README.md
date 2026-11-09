@@ -189,9 +189,7 @@ flowchart TB
   delivery --> uxExpert["ux-expert"]
   delivery --> technicalDesign["software-design-writer"]
   delivery --> implementationPlanner["ai-implementation-planner"]
-  delivery --> implementationPlannerToolbox["ai-implementation-planner-toolbox"]
   delivery --> implementationExecutor["ai-implementation-plan-executor"]
-  delivery --> implementationExecutorToolbox["ai-implementation-executor-toolbox"]
 ```
 
 ```mermaid
@@ -228,9 +226,8 @@ flowchart TB
 | `ux-expert` | UX design guidance | Bundled optional | You need UX design, interaction, flow, layout, or experience guidance. |
 | `software-design-writer` | Implementation-oriented design | Installed here | You have a sufficiently clear BRD and need a concise technical direction before planning stories. |
 | `ai-implementation-planner` | Story implementation steps | Installed here | You need an approved user story turned into small, executable implementation-plan files. |
-| `ai-implementation-planner-toolbox` | Planner sub-agent rules | Installed here | A Sibu implementation planner worker needs worker-only rules for creating a story-local implementation plan. |
 | `ai-implementation-plan-executor` | Plan execution | Installed here | You want an agent to execute a story implementation plan, stop for review, then commit after approval. |
-| `ai-implementation-executor-toolbox` | Executor sub-agent rules | Installed here | A Sibu implementation executor worker needs worker-only rules for executing one story plan with validation. |
+| `sibu sync` retirement review | Retired worker guidance | Built in | Review removal of unchanged managed toolbox copies. Customized copies remain as unmanaged files; review surfaced references in your own files rather than expecting Sibu to rewrite them. |
 | `clean-code` | General code quality | Installed here | Any task writes or modifies code and should stay clear, simple, focused, and readable. |
 | `typescript` | TypeScript guidance | Installed here | A task changes `.ts` or `.tsx` files and needs practical TypeScript discipline. |
 | `react` | React component design | Bundled optional | Work creates or edits React components, props, state ownership, or presentation boundaries. |

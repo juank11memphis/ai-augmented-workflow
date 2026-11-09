@@ -6,10 +6,7 @@ export {
   renderMissingWorkflowFiles,
   renderSkillRouting,
   renderTemplateForSync,
-  renderWorkerToolboxRouting,
-  renderWorkerToolboxRoutingPlaceholders,
 } from './templates.js';
-export type { WorkerToolboxRoutingProfile } from './templates.js';
 export { loadSkillRetirements, lookupSkillIdentity, parseSkillRetirements } from './retirements.js';
 export type { RetirementAgent, RetirementCategory, SkillIdentity, SkillRetirement } from './retirements.js';
 export {

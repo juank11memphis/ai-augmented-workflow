@@ -103,10 +103,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     supplementalTargetsByAgent: {
       codex: [
         {
-          templateRelativePath: 'skills/scrum-master-planner-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/scrum-master-planner-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.codex/agents/sibu-epic-story-planner.toml',
           targetRelativePath: '.codex/agents/sibu-epic-story-planner.toml',
         },
@@ -123,29 +119,17 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     supplementalTargetsByAgent: {
       codex: [
         {
-          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.codex/agents/sibu-implementation-planner.toml',
           targetRelativePath: '.codex/agents/sibu-implementation-planner.toml',
         },
       ],
       gemini: [
         {
-          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.gemini/agents/sibu-implementation-planner.md',
           targetRelativePath: '.gemini/agents/sibu-implementation-planner.md',
         },
       ],
       claude: [
-        {
-          templateRelativePath: 'skills/ai-implementation-planner-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
-        },
         {
           templateRelativePath: '.claude/agents/sibu-implementation-planner.md',
           targetRelativePath: '.claude/agents/sibu-implementation-planner.md',
@@ -163,14 +147,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
     supplementalTargetsByAgent: {
       codex: [
         {
-          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
-        },
-        {
-          templateRelativePath: 'skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.codex/agents/sibu-implementation-executor.toml',
           targetRelativePath: '.codex/agents/sibu-implementation-executor.toml',
         },
@@ -181,14 +157,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
       ],
       gemini: [
         {
-          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
-        },
-        {
-          templateRelativePath: 'skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-        },
-        {
           templateRelativePath: '.gemini/agents/sibu-implementation-executor.md',
           targetRelativePath: '.gemini/agents/sibu-implementation-executor.md',
         },
@@ -198,14 +166,6 @@ export const MANDATORY_SKILLS: SkillTemplate[] = [
         },
       ],
       claude: [
-        {
-          templateRelativePath: 'skills/ai-implementation-executor-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
-        },
-        {
-          templateRelativePath: 'skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-          targetRelativePath: '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-        },
         {
           templateRelativePath: '.claude/agents/sibu-implementation-executor.md',
           targetRelativePath: '.claude/agents/sibu-implementation-executor.md',

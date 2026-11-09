@@ -1,4 +1,69 @@
 {
   "schemaVersion": 1,
-  "retirements": []
+  "retirements": [
+    {
+      "id": "scrum-master-planner-toolbox",
+      "category": "mandatory",
+      "explanation": "The worker role now carries this guidance. Sibu sync can remove an unchanged managed copy after review, preserves a customized copy as unmanaged, and surfaces user-written references for review without rewriting them.",
+      "formerTemplateRelativePath": "skills/scrum-master-planner-toolbox/SKILL.md",
+      "formerTargetsByAgent": {
+        "codex": [".agents/skills/scrum-master-planner-toolbox/SKILL.md"],
+        "gemini": [".agents/skills/scrum-master-planner-toolbox/SKILL.md"],
+        "claude": [".agents/skills/scrum-master-planner-toolbox/SKILL.md"]
+      },
+      "generatedRoutingTargetsByAgent": {
+        "codex": ["AGENTS.md"],
+        "gemini": ["AGENTS.md", "GEMINI.md"],
+        "claude": ["AGENTS.md", "CLAUDE.md"]
+      }
+    },
+    {
+      "id": "ai-implementation-planner-toolbox",
+      "category": "mandatory",
+      "explanation": "The worker role now carries this guidance. Sibu sync can remove an unchanged managed copy after review, preserves a customized copy as unmanaged, and surfaces user-written references for review without rewriting them.",
+      "formerTemplateRelativePath": "skills/ai-implementation-planner-toolbox/SKILL.md",
+      "formerTargetsByAgent": {
+        "codex": [".agents/skills/ai-implementation-planner-toolbox/SKILL.md"],
+        "gemini": [".agents/skills/ai-implementation-planner-toolbox/SKILL.md"],
+        "claude": [".agents/skills/ai-implementation-planner-toolbox/SKILL.md"]
+      },
+      "generatedRoutingTargetsByAgent": {
+        "codex": ["AGENTS.md"],
+        "gemini": ["AGENTS.md", "GEMINI.md"],
+        "claude": ["AGENTS.md", "CLAUDE.md"]
+      }
+    },
+    {
+      "id": "ai-implementation-architecture-reviewer-toolbox",
+      "category": "mandatory",
+      "explanation": "The worker role now carries this guidance. Sibu sync can remove an unchanged managed copy after review, preserves a customized copy as unmanaged, and surfaces user-written references for review without rewriting them.",
+      "formerTemplateRelativePath": "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md",
+      "formerTargetsByAgent": {
+        "codex": [".agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md"],
+        "gemini": [".agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md"],
+        "claude": [".agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md"]
+      },
+      "generatedRoutingTargetsByAgent": {
+        "codex": ["AGENTS.md"],
+        "gemini": ["AGENTS.md", "GEMINI.md"],
+        "claude": ["AGENTS.md", "CLAUDE.md"]
+      }
+    },
+    {
+      "id": "ai-implementation-executor-toolbox",
+      "category": "mandatory",
+      "explanation": "The worker role now carries this guidance. Sibu sync can remove an unchanged managed copy after review, preserves a customized copy as unmanaged, and surfaces user-written references for review without rewriting them.",
+      "formerTemplateRelativePath": "skills/ai-implementation-executor-toolbox/SKILL.md",
+      "formerTargetsByAgent": {
+        "codex": [".agents/skills/ai-implementation-executor-toolbox/SKILL.md"],
+        "gemini": [".agents/skills/ai-implementation-executor-toolbox/SKILL.md"],
+        "claude": [".agents/skills/ai-implementation-executor-toolbox/SKILL.md"]
+      },
+      "generatedRoutingTargetsByAgent": {
+        "codex": ["AGENTS.md"],
+        "gemini": ["AGENTS.md", "GEMINI.md"],
+        "claude": ["AGENTS.md", "CLAUDE.md"]
+      }
+    }
+  ]
 }

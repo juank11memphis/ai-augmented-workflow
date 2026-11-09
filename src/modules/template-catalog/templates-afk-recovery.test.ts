@@ -40,13 +40,11 @@ function route(scenario: Case): Route {
   return scenario.attribution === 'pre-existing' ? 'prerequisite' : 'follow-up';
 }
 
-const names = ['ai-implementation-plan-executor', 'ai-implementation-planner', 'ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox'] as const;
+const names = ['ai-implementation-plan-executor', 'ai-implementation-planner'] as const;
 const template = Object.fromEntries(names.map((name) => [name, readTemplate(`skills/${name}/SKILL.md`)])) as Record<(typeof names)[number], string>;
 const installed = Object.fromEntries(names.map((name) => [name, readFileSync(new URL(`../../../.agents/skills/${name}/SKILL.md`, import.meta.url), 'utf8')])) as Record<(typeof names)[number], string>;
 const main = template['ai-implementation-plan-executor'];
 const planner = template['ai-implementation-planner'];
-const plannerWorker = template['ai-implementation-planner-toolbox'];
-const executorWorker = template['ai-implementation-executor-toolbox'];
 
 function includesAll(text: string, phrases: string[]): void {
   for (const phrase of phrases) assert.ok(text.includes(phrase), `missing contract: ${phrase}`);
@@ -64,14 +62,13 @@ describe('AFK reviewed recovery guidance and disposable scenarios', () => {
   });
 
   it('AC-02: overlap preserves original Task, unstaged edits, and one commit', () => {
-    for (const text of [main, planner, plannerWorker, executorWorker]) {
+    for (const text of [main, planner]) {
       includesAll(text, ['pre-existing', 'same', 'Task', 'preserved', 'unstaged', 'commit']);
     }
-    includesAll(executorWorker, ['original goal', 'prescribed check', 'expected evidence', 'single eventual scoped commit']);
   });
 
   it('AC-03: disjoint prerequisite or earlier-Task repair has a separate checked commit and resumes later', () => {
-    for (const text of [main, planner, plannerWorker, executorWorker]) {
+    for (const text of [main, planner]) {
       includesAll(text, ['path-disjoint', 'pre-existing', 'earlier', 'checked', 'commit']);
     }
     includesAll(main, ['resume the blocked Task in fresh context', 'own passing executable check']);
@@ -86,24 +83,19 @@ describe('AFK reviewed recovery guidance and disposable scenarios', () => {
     const scopedCommit = [...repairPaths];
     assert.ok(scopedCommit.every((path) => !blockedEdits.has(path)));
     includesAll(main, ['every preserved unstaged path and index state', 'scoped commit must exclude the blocked edits']);
-    includesAll(executorWorker, ['Before staging, verify the packet', 'excluding the blocked Task']);
   });
 
   it('AC-04: original goal, every Done when item, stale checks, and current results gate advance', () => {
     includesAll(main, ['original goal', 'exact prescribed check', 'every `Done when` item', 'previously passing final checks', 'Only current passing evidence']);
-    includesAll(executorWorker, ['original goal', '**every** `Done when` item', 'made stale by changed paths']);
   });
 
   it('AC-05: unsafe state, ambiguity, material decisions, and non-convergence stop', () => {
     includesAll(main, ['Changed heads or identity', 'staged/unrelated/ambiguous edits', 'material decision', 'non-converging attempts', 'focused human decision', 'host/test-runner failure or unresolved classification']);
-    includesAll(executorWorker, ['Changed plan identity or heads', 'unrelated/staged/ambiguous edits', 'failed checks', 'non-convergence stop']);
   });
 
   it('managed installed guidance matches distributed text; customized planner is protected', () => {
     const anchors = {
       'ai-implementation-plan-executor': '### AFK reviewed recovery after blocked checks',
-      'ai-implementation-planner-toolbox': 'For AFK blocked-check recovery revisions',
-      'ai-implementation-executor-toolbox': 'For AFK recovery, keep the main-agent route',
     } as const;
     for (const [name, anchor] of Object.entries(anchors)) {
       const expected = template[name as keyof typeof anchors];
