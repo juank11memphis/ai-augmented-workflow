@@ -1,5 +1,5 @@
 {
-  "templateVersion": "280",
+  "templateVersion": "281",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -268,24 +268,24 @@
       ]
     },
     ".codex/agents/sibu-implementation-executor.toml": {
-      "version": "7",
+      "version": "8",
       "description": "Codex Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Makes executor instructions self-sufficient for reviewed Story work and checked Tasks, with evidence-based scoped commits and main-owned Story control."
+        "Restores explicit executor mode-selection wording while preserving existing authority boundaries."
       ]
     },
     ".claude/agents/sibu-implementation-executor.md": {
-      "version": "7",
+      "version": "8",
       "description": "Claude Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Makes executor instructions self-sufficient for reviewed Story work and checked Tasks, with evidence-based scoped commits and main-owned Story control."
+        "Restores explicit executor mode-selection wording while preserving existing authority boundaries."
       ]
     },
     ".gemini/agents/sibu-implementation-executor.md": {
-      "version": "7",
+      "version": "8",
       "description": "Gemini Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Makes executor instructions self-sufficient for reviewed Story work and checked Tasks, with evidence-based scoped commits and main-owned Story control."
+        "Restores explicit executor mode-selection wording while preserving existing authority boundaries."
       ]
     },
     ".codex/hooks.json": {
