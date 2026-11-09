@@ -1,5 +1,5 @@
 {
-  "templateVersion": "278",
+  "templateVersion": "279",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -268,24 +268,24 @@
       ]
     },
     ".codex/agents/sibu-implementation-executor.toml": {
-      "version": "6",
+      "version": "7",
       "description": "Codex Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Routes one checked Task with a prescribed check and limited passing commit authority while preserving final Story review."
+        "Makes executor instructions self-sufficient for reviewed Story work and checked Tasks, with evidence-based scoped commits and main-owned Story control."
       ]
     },
     ".claude/agents/sibu-implementation-executor.md": {
-      "version": "6",
+      "version": "7",
       "description": "Claude Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Routes one checked Task with a prescribed check and limited passing commit authority while preserving final Story review."
+        "Makes executor instructions self-sufficient for reviewed Story work and checked Tasks, with evidence-based scoped commits and main-owned Story control."
       ]
     },
     ".gemini/agents/sibu-implementation-executor.md": {
-      "version": "6",
+      "version": "7",
       "description": "Gemini Sibu implementation executor worker for fresh-context story execution.",
       "changes": [
-        "Routes one checked Task with a prescribed check and limited passing commit authority while preserving final Story review."
+        "Makes executor instructions self-sufficient for reviewed Story work and checked Tasks, with evidence-based scoped commits and main-owned Story control."
       ]
     },
     ".codex/hooks.json": {
