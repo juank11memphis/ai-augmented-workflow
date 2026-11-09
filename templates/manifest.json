@@ -1,5 +1,5 @@
 {
-  "templateVersion": "275",
+  "templateVersion": "276",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -247,10 +247,10 @@
       ]
     },
     ".codex/agents/sibu-epic-story-planner.toml": {
-      "version": "2",
+      "version": "3",
       "description": "Codex-only Epic and Story planning worker definition.",
       "changes": [
-        "Uses a role-focused agent description while retaining the Codex-only target."
+        "Makes the Epic and Story planner self-sufficient for one Feature, including published-source inputs, GitHub readback, material-decision stops, and a concise handoff without a separate toolbox."
       ]
     },
     ".claude/agents/sibu-implementation-planner.md": {
