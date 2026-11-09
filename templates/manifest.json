@@ -1,11 +1,11 @@
 {
-  "templateVersion": "281",
+  "templateVersion": "282",
   "templates": {
     "skill-retirements.json": {
-      "version": "1",
+      "version": "2",
       "description": "Package-only evidence for explicitly retired non-architecture Sibu skills; not an installed project target.",
       "changes": [
-        "Adds an empty, validated retirement catalog so future withdrawn skills can be identified without guessing from missing templates."
+        "Records four retired worker toolboxes so sync can review removal of unchanged managed copies, preserve customized copies, and surface user references without rewriting them."
       ]
     },
     "AGENTS.md": {
@@ -148,13 +148,6 @@
         "Gives the Epic and Story planning worker a self-contained assignment packet for GitHub publication and handoff."
       ]
     },
-    "skills/scrum-master-planner-toolbox/SKILL.md": {
-      "version": "2",
-      "description": "Epic and Story planning worker toolbox for direct GitHub publication and compact handoff.",
-      "changes": [
-        "Uses a role-focused description without changing the worker's GitHub publication and handoff rules."
-      ]
-    },
     "skills/ai-implementation-planner/SKILL.md": {
       "version": "42",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
@@ -162,25 +155,11 @@
         "Replaces planner toolbox and inline planning requirements with a self-contained worker packet and clear unavailable-worker stop."
       ]
     },
-    "skills/ai-implementation-planner-toolbox/SKILL.md": {
-      "version": "27",
-      "description": "Worker-only planner toolbox skill for fresh-context Sibu implementation planner sub-agents.",
-      "changes": [
-        "Distinguishes checked deliverable completion from outcome proof so planners preserve agreed verification limits."
-      ]
-    },
     "skills/ai-implementation-plan-executor/SKILL.md": {
       "version": "91",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
         "Replaces executor toolbox and inline execution requirements with a checked-Task worker packet while preserving review and commit gates."
-      ]
-    },
-    "skills/ai-implementation-executor-toolbox/SKILL.md": {
-      "version": "33",
-      "description": "Worker-only executor toolbox skill for fresh-context Sibu implementation executor sub-agents.",
-      "changes": [
-        "Requires evidence for each Task deliverable while preserving SDD exclusions and reporting unverified behavior honestly."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
@@ -349,13 +328,6 @@
       "description": "Authors the feature SDD at sdd.md.",
       "changes": [
         "Separates feature outcome verification from ordinary Task delivery evidence and preserves explicit exclusions."
-      ]
-    },
-    "skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md": {
-      "version": "9",
-      "description": "Worker-only toolbox for independent, read-only architecture review of one exact Sibu Story plan.",
-      "changes": [
-        "Reviews Task deliverable checks separately from outcome methods and rejects claims that artifact evidence proves excluded behavior."
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {
