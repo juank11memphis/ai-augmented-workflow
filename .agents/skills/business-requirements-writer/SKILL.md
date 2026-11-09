@@ -273,6 +273,8 @@ Add workflows, constraints, assumptions, dependencies, risks, or other feature-s
 
 Never fabricate numeric targets. Clarify unknown success signals with the user without selecting technical verification methods. Keep desired but unverified benefits distinct from delivery acceptance criteria, and state their later evaluation boundary plainly. An acceptance criterion may require an observable artifact without claiming the artifact proves live behavior. If no observable delivery condition can express a proposed criterion, revise or defer that criterion before publication rather than asking a downstream SDD to silently drop it. Resolve material uncertainty before writing.
 
+Before publication, inspect every acceptance criterion for verification-method language such as "a review finds," "tests pass," or "an eval shows." Rewrite it as the observable condition the delivery must satisfy; leave who verifies it, how, and when to the SDD and Task plan. For example, prefer "The distributed role guidance has no competing copy of a shared rule" over "A review finds no duplicate rules." Do not weaken the required outcome when removing the method.
+
 ### Lightweight traceability
 
 Use feature-local unique OBJ-, REQ-, RULE-, and AC- identifiers. Preserve existing IDs when editing or reordering entries. Allocate new IDs for new entries; do not renumber existing entries or reuse removed IDs for unrelated entries. Read existing entries and available revision context before allocating IDs; clarify uncertain prior IDs rather than guessing.

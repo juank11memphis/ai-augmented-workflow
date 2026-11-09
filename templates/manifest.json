@@ -1,5 +1,5 @@
 {
-  "templateVersion": "274",
+  "templateVersion": "275",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -331,10 +331,10 @@
       ]
     },
     "skills/business-requirements-writer/SKILL.md": {
-      "version": "10",
+      "version": "11",
       "description": "Mandatory Business Requirements Document authoring skill.",
       "changes": [
-        "Defines business outcomes and observable delivery acceptance without choosing verification methods before software design."
+        "Adds a pre-publication check to keep BRD acceptance criteria free of test, review, and eval methods, leaving verification choices to software design."
       ]
     },
     "skills/software-architecture-writer/SKILL.md": {
