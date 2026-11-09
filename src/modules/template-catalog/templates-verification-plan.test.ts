@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { readTemplate, readTemplateManifest } from './index.js';
-
-const plannerPath = 'skills/ai-implementation-planner/SKILL.md';
-const toolboxPath = 'skills/ai-implementation-planner-toolbox/SKILL.md';
-const planner = readTemplate(plannerPath);
-const toolbox = readTemplate(toolboxPath);
 
 // Hand-written handoff examples check the policy boundary, not agent behavior.
 const strategy = {

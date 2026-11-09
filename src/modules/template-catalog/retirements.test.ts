@@ -28,14 +28,15 @@ function fixture() {
 }
 
 describe('skill retirement catalog', () => {
-  it('loads a valid empty package resource without declaring a historical retirement', () => {
-    assert.deepEqual(loadSkillRetirements(), []);
-    assert.deepEqual(JSON.parse(readTemplate('skill-retirements.json')), { schemaVersion: 1, retirements: [] });
+  it('loads the current retired toolbox identities without treating them as active', () => {
+    const retirements = loadSkillRetirements();
+    assert.equal(retirements.length, 4);
+    assert.equal((JSON.parse(readTemplate('skill-retirements.json')) as { retirements: unknown[] }).retirements.length, 4);
     assert.deepEqual(lookupSkillIdentity('clean-code'), { status: 'active' });
     assert.deepEqual(lookupSkillIdentity('typescript'), { status: 'active' });
-    for (const id of ['ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox',
+    for (const id of ['scrum-master-planner-toolbox', 'ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox',
       'ai-implementation-architecture-reviewer-toolbox']) {
-      assert.deepEqual(lookupSkillIdentity(id), { status: 'active' });
+      assert.equal(lookupSkillIdentity(id).status, 'retired');
     }
     assert.deepEqual(lookupSkillIdentity('unrecognized-old-skill'), { status: 'absent' });
   });
@@ -87,18 +88,17 @@ describe('skill retirement catalog', () => {
     assert.throws(() => parseSkillRetirements(duplicateTarget), /Overlapping/);
   });
 
-  it('rejects retirement overlap with an active supplemental skill identity, template, or target', () => {
-    for (const id of ['ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox',
-      'ai-implementation-architecture-reviewer-toolbox']) {
+  it('rejects retirement overlap with an active skill identity, template, or target', () => {
+    for (const id of ['eval-authoring', 'agent-guided-evals']) {
       const activeId = fixture();
       activeId.retirements[0]!.id = id;
       assert.throws(() => parseSkillRetirements(activeId), /Duplicate, active/);
     }
     const activeTemplate = fixture();
-    activeTemplate.retirements[0]!.formerTemplateRelativePath = 'skills/ai-implementation-planner-toolbox/SKILL.md';
+    activeTemplate.retirements[0]!.formerTemplateRelativePath = 'skills/eval-authoring/SKILL.md';
     assert.throws(() => parseSkillRetirements(activeTemplate), /Duplicate, active/);
     const activeTarget = fixture();
-    activeTarget.retirements[0]!.formerTargetsByAgent.codex = ['.agents/skills/ai-implementation-executor-toolbox/SKILL.md'];
+    activeTarget.retirements[0]!.formerTargetsByAgent.codex = ['.agents/skills/eval-authoring/SKILL.md'];
     assert.throws(() => parseSkillRetirements(activeTarget), /Overlapping/);
   });
 });
