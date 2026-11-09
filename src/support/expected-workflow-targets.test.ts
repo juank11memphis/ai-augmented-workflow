@@ -63,9 +63,6 @@ describe('getWorkflowTargets', () => {
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/agent-guided-evals/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/capabilities-map-writer/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/typescript/SKILL.md').length, 1);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/scrum-master-planner-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.filter((relativePath) => relativePath === '.codex/agents/sibu-epic-story-planner.toml').length, 1);
     assert.equal(targetPaths.includes('.agents/skills/software-architecture-writer/SKILL.md'), true);
     assert.equal(targetPaths.includes('.agents/skills/feature-idea-capture/SKILL.md'), true);
@@ -97,11 +94,6 @@ describe('getWorkflowTargets', () => {
     const targets = getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS);
     const targetPaths = getRelativeTargetPaths(targets);
 
-    assert.equal(targetPaths.includes('.agents/skills/ai-implementation-planner-toolbox/SKILL.md'), true);
-    assert.equal(targetPaths.includes('.agents/skills/ai-implementation-executor-toolbox/SKILL.md'), true);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-planner-toolbox/SKILL.md').length, 1);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-executor-toolbox/SKILL.md').length, 1);
-    assert.equal(targetPaths.filter((relativePath) => relativePath === '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md').length, 1);
     assert.equal(targetPaths.includes('.codex/agents/sibu-implementation-planner.toml'), true);
     assert.equal(targetPaths.includes('.codex/agents/sibu-implementation-executor.toml'), true);
     assert.equal(targetPaths.includes('.codex/agents/sibu-architecture-reviewer.toml'), true);
@@ -114,54 +106,34 @@ describe('getWorkflowTargets', () => {
     assertNoInvalidTargets(targets);
   });
 
-  it('installs the Epic and Story planner worker and toolbox for Codex only', () => {
-    const toolboxPath = '.agents/skills/scrum-master-planner-toolbox/SKILL.md';
+  it('installs the Epic and Story planner worker for Codex only', () => {
     const workerPath = '.codex/agents/sibu-epic-story-planner.toml';
 
     for (const agentId of ['codex', 'claude', 'gemini'] as const) {
       const paths = getRelativeTargetPaths(getWorkflowTargets(ROOT_PATH, [getSupportedAgent(agentId)]));
-      assert.equal(paths.includes(toolboxPath), agentId === 'codex');
       assert.equal(paths.includes(workerPath), agentId === 'codex');
-      assert.equal(paths.filter((path) => path === toolboxPath).length, agentId === 'codex' ? 1 : 0);
       assert.equal(paths.filter((path) => path === workerPath).length, agentId === 'codex' ? 1 : 0);
       assertNoInvalidTargets(getWorkflowTargets(ROOT_PATH, [getSupportedAgent(agentId)]));
     }
 
     const allPaths = getRelativeTargetPaths(getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS));
-    assert.equal(allPaths.filter((path) => path === toolboxPath).length, 1);
     assert.equal(allPaths.filter((path) => path === workerPath).length, 1);
   });
 
-  it('resolves shared reviewer toolboxes once and only selected-host reviewer wrappers', () => {
+  it('resolves only selected-host reviewer wrappers', () => {
     const hostCases = [
       { id: 'codex', extension: 'toml' },
       { id: 'claude', extension: 'md' },
       { id: 'gemini', extension: 'md' },
     ] as const;
-    const sharedToolboxes = [
-      '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
-    ];
-
     for (const selectedHost of hostCases) {
       const targets = getWorkflowTargets(ROOT_PATH, [getSupportedAgent(selectedHost.id)]);
       const targetPaths = getRelativeTargetPaths(targets);
-
-      for (const toolboxPath of sharedToolboxes) {
-        assert.equal(targetPaths.filter((targetPath) => targetPath === toolboxPath).length, 1);
-      }
 
       for (const host of hostCases) {
         const wrapperPath = `.${host.id}/agents/sibu-architecture-reviewer.${host.extension}`;
         assert.equal(targetPaths.includes(wrapperPath), host.id === selectedHost.id, `${selectedHost.id} selection: ${wrapperPath}`);
       }
-
-      assert.equal(targetPaths.includes('.agents/skills/ai-implementation-planner-toolbox/SKILL.md'), true);
-      assert.equal(targetPaths.includes('.agents/skills/ai-implementation-executor-toolbox/SKILL.md'), true);
-    }
-
-    const allTargetPaths = getRelativeTargetPaths(getWorkflowTargets(ROOT_PATH, SUPPORTED_AGENTS));
-    for (const toolboxPath of sharedToolboxes) {
-      assert.equal(allTargetPaths.filter((targetPath) => targetPath === toolboxPath).length, 1);
     }
   });
 
@@ -241,14 +213,10 @@ describe('getWorkflowTargets', () => {
       '.agents/skills/business-requirements-writer/SKILL.md',
       '.agents/skills/software-design-writer/SKILL.md',
       '.agents/skills/scrum-master-planner/SKILL.md',
-      '.agents/skills/scrum-master-planner-toolbox/SKILL.md',
       '.codex/agents/sibu-epic-story-planner.toml',
       '.agents/skills/ai-implementation-planner/SKILL.md',
-      '.agents/skills/ai-implementation-planner-toolbox/SKILL.md',
       '.codex/agents/sibu-implementation-planner.toml',
       '.agents/skills/ai-implementation-plan-executor/SKILL.md',
-      '.agents/skills/ai-implementation-executor-toolbox/SKILL.md',
-      '.agents/skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
       '.codex/agents/sibu-implementation-executor.toml',
       '.codex/agents/sibu-architecture-reviewer.toml',
       '.agents/skills/eval-authoring/SKILL.md',

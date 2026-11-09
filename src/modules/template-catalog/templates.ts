@@ -62,15 +62,6 @@ function isTemplateManifest(value: unknown): value is TemplateManifest {
   );
 }
 
-export type WorkerToolboxRoutingProfile = 'planner' | 'executor';
-
-type OptionalRoutingSkill =
-  | SelectableLanguageSkill
-  | SelectableFrameworkSkill
-  | SelectableArchitectureSkill
-  | SelectableDatabaseSkill
-  | SelectableWorkflowSkill;
-
 export function renderTemplateForSync({
   templateRelativePath,
   currentPath,
@@ -102,7 +93,6 @@ export function renderTemplateForSync({
   }
 
   contents = renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
-  contents = renderWorkerToolboxRoutingPlaceholders(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
 
   return contents;
 }
@@ -146,7 +136,6 @@ export function renderMissingWorkflowFiles({
     }
 
     contents = renderSkillRouting(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
-    contents = renderWorkerToolboxRoutingPlaceholders(contents, selectedLanguageSkills, selectedFrameworkSkills, selectedArchitectureSkill, selectedWorkflowSkills, selectedDatabaseSkills);
 
     return {
       label: target.label,
@@ -173,128 +162,6 @@ export function renderSkillRouting(
     .join('\n');
 
   return contents.replace('{{OPTIONAL_SKILL_ROUTING}}', optionalRouting);
-}
-
-export function renderWorkerToolboxRouting({
-  profile,
-  selectedLanguageSkills,
-  selectedFrameworkSkills,
-  selectedArchitectureSkill,
-  selectedWorkflowSkills = [],
-  selectedDatabaseSkills = [],
-}: {
-  profile: WorkerToolboxRoutingProfile;
-  selectedLanguageSkills: SelectableLanguageSkill[];
-  selectedFrameworkSkills: SelectableFrameworkSkill[];
-  selectedArchitectureSkill?: SelectableArchitectureSkill;
-  selectedWorkflowSkills?: SelectableWorkflowSkill[];
-  selectedDatabaseSkills?: SelectableDatabaseSkill[];
-}): string {
-  const selectedSkills = collectWorkerRelevantSkills({
-    selectedLanguageSkills,
-    selectedFrameworkSkills,
-    selectedArchitectureSkill,
-    selectedWorkflowSkills,
-    selectedDatabaseSkills,
-  });
-  const selectedArchitectureSection = selectedArchitectureSkill
-    ? `### Selected architecture guidance
-- Required: read \`${getSharedSkillTargetPath(selectedArchitectureSkill)}\` before ${profile === 'planner' ? 'writing implementation plan steps' : 'executing or reviewing implementation steps'}.
-- Treat this selected architecture guidance as binding for boundaries, dependency direction, sequencing, and reviewable constraints.
-- If the selected architecture skill path is missing or unavailable, stop and tell the main agent to direct the user to run \`sibu sync\`; do not choose, infer, or substitute architecture guidance.`
-    : `### Selected architecture guidance
-- No selected architecture skill was provided to this worker routing profile.
-- Hard-stop architecture-dependent ${profile} work and tell the main agent to direct the user to run \`sibu sync\` to repair workflow configuration.
-- Do not choose, infer, or substitute architecture guidance from repository structure.`;
-  const selectedSkillLines = selectedSkills.map((skill) => `- ${skill.name}: read \`${getSharedSkillTargetPath(skill)}\` when relevant. ${skill.routingInstruction}`);
-  const selectedSkillsSection =
-    selectedSkillLines.length > 0
-      ? selectedSkillLines.join('\n')
-      : '- No optional implementation-relevant Sibu skills are selected for this project. Use source artifacts and flag unmapped patterns as risks instead of guessing silently.';
-
-  return `## Focused ${profile} worker routing
-
-- Always read and apply \`.agents/skills/clean-code/SKILL.md\` before ${profile === 'planner' ? 'writing implementation plan steps' : 'editing code or running story execution'}.
-- Read the worker toolbox skill path provided in the main-agent packet before doing work.
-- Read every required skill path listed in the packet. If a required skill path is missing, stop and report the blocker to the main agent.
-- Read optional installed skill paths only when they are relevant to the story, touched files, source artifacts, or validation work.
-- Treat distilled skill constraints from the packet as binding task constraints.
-- If an optional relevant skill is not installed and you encounter an unmapped language, framework, database, or architecture pattern, do not guess silently; continue only when safe and flag the gap as a ${profile === 'planner' ? 'plan risk' : 'Review Gate risk'}.
-
-${selectedArchitectureSection}
-
-### Optional installed skills relevant to ${profile} work
-${profile === 'executor' ? '- Structured Logging: read `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior.\n' : ''}${selectedSkillsSection}`;
-}
-
-export function renderWorkerToolboxRoutingPlaceholders(
-  contents: string,
-  selectedLanguageSkills: SelectableLanguageSkill[],
-  selectedFrameworkSkills: SelectableFrameworkSkill[],
-  selectedArchitectureSkill?: SelectableArchitectureSkill,
-  selectedWorkflowSkills: SelectableWorkflowSkill[] = [],
-  selectedDatabaseSkills: SelectableDatabaseSkill[] = []
-): string {
-  const placeholderProfiles: Array<{ placeholder: string; profile: WorkerToolboxRoutingProfile }> = [
-    { placeholder: '{{PLANNER_WORKER_ROUTING}}', profile: 'planner' },
-    { placeholder: '{{EXECUTOR_WORKER_ROUTING}}', profile: 'executor' },
-  ];
-  let renderedContents = contents;
-
-  for (const { placeholder, profile } of placeholderProfiles) {
-    if (!renderedContents.includes(placeholder)) {
-      continue;
-    }
-
-    renderedContents = renderedContents.replace(
-      placeholder,
-      renderWorkerToolboxRouting({
-        profile,
-        selectedLanguageSkills,
-        selectedFrameworkSkills,
-        selectedArchitectureSkill,
-        selectedWorkflowSkills,
-        selectedDatabaseSkills,
-      })
-    );
-  }
-
-  return renderedContents;
-}
-
-function collectWorkerRelevantSkills({
-  selectedLanguageSkills,
-  selectedFrameworkSkills,
-  selectedArchitectureSkill,
-  selectedWorkflowSkills,
-  selectedDatabaseSkills,
-}: {
-  selectedLanguageSkills: SelectableLanguageSkill[];
-  selectedFrameworkSkills: SelectableFrameworkSkill[];
-  selectedArchitectureSkill?: SelectableArchitectureSkill;
-  selectedWorkflowSkills: SelectableWorkflowSkill[];
-  selectedDatabaseSkills: SelectableDatabaseSkill[];
-}): OptionalRoutingSkill[] {
-  const implementationRelevantWorkflowSkills = selectedWorkflowSkills.filter((skill) =>
-    skill.id === 'ai-prompt-engineer-master' || skill.id === 'ux-expert'
-  );
-
-  return [
-    ...selectedLanguageSkills,
-    ...selectedFrameworkSkills,
-    ...selectedDatabaseSkills,
-    ...implementationRelevantWorkflowSkills,
-  ];
-}
-
-function getSharedSkillTargetPath(skill: OptionalRoutingSkill): string {
-  const sharedTargetPath = Object.values(skill.targetRelativePathsByAgent).find((targetPath) => targetPath !== undefined);
-
-  if (!sharedTargetPath) {
-    throw new Error(`Selectable skill ${skill.id} has no target path.`);
-  }
-
-  return sharedTargetPath;
 }
 
 export function extractProjectOverview(filePath: string): string | undefined {

@@ -13,10 +13,7 @@ import { readTemplateManifest, renderTemplateForSync, SELECTABLE_ARCHITECTURE_SK
 const templates = [
   'skills/scrum-master-planner/SKILL.md',
   'skills/ai-implementation-planner/SKILL.md',
-  'skills/ai-implementation-planner-toolbox/SKILL.md',
-  'skills/ai-implementation-architecture-reviewer-toolbox/SKILL.md',
   'skills/ai-implementation-plan-executor/SKILL.md',
-  'skills/ai-implementation-executor-toolbox/SKILL.md',
 ];
 const architecture = SELECTABLE_ARCHITECTURE_SKILLS.find((skill) => skill.id === 'command-pattern')!;
 
@@ -66,7 +63,7 @@ test('verification handoff templates install with current bytes and healthy stat
 
 test('reviewing a customized handoff template preserves its bytes and ownership', async (t) => {
   const { rootPath, state } = await initialize(t);
-  const template = templates[4]!;
+  const template = templates[2]!;
   const relativePath = `.agents/${template}`;
   const customized = `${fs.readFileSync(path.join(rootPath, relativePath), 'utf8')}\nLocal synthetic customization.\n`;
   fs.writeFileSync(path.join(rootPath, relativePath), customized);

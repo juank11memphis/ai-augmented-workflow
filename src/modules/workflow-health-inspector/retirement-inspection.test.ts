@@ -86,7 +86,7 @@ test('separates an unrecognized recorded skill, excludes architecture and user-c
   assert.equal(findings[0]?.evidence.length, 2);
 });
 
-test('recognizes all mandatory supplemental toolbox skills while retaining unknown findings', () => {
+test('does not infer real toolbox retirements from an unrelated synthetic retirement fixture', () => {
   const recorded = state();
   for (const id of ['ai-implementation-planner-toolbox', 'ai-implementation-executor-toolbox',
     'ai-implementation-architecture-reviewer-toolbox']) {
@@ -94,7 +94,10 @@ test('recognizes all mandatory supplemental toolbox skills while retaining unkno
   }
   recorded.managedFiles['.agents/skills/unknown-skill/SKILL.md'] = managed('skills/unknown-skill/SKILL.md');
   assert.deepEqual(inspect(recorded).map((finding) => [finding.kind, finding.skillId]),
-    [['unrecognized-skill', 'unknown-skill']]);
+    [['unrecognized-skill', 'ai-implementation-planner-toolbox'],
+      ['unrecognized-skill', 'ai-implementation-executor-toolbox'],
+      ['unrecognized-skill', 'ai-implementation-architecture-reviewer-toolbox'],
+      ['unrecognized-skill', 'unknown-skill']]);
 });
 
 test('deferred evidence remains while resolved unmanaged copies and routing disappear', () => {
