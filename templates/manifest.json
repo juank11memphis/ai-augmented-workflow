@@ -1,5 +1,5 @@
 {
-  "templateVersion": "276",
+  "templateVersion": "277",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -240,10 +240,10 @@
       ]
     },
     ".codex/agents/sibu-implementation-planner.toml": {
-      "version": "3",
+      "version": "4",
       "description": "Codex Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
+        "Makes one-Story planning self-sufficient with explicit source, skill, quality, stop, and plan handoff requirements without a separate toolbox."
       ]
     },
     ".codex/agents/sibu-epic-story-planner.toml": {
@@ -254,17 +254,17 @@
       ]
     },
     ".claude/agents/sibu-implementation-planner.md": {
-      "version": "3",
+      "version": "4",
       "description": "Claude Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
+        "Makes one-Story planning self-sufficient with explicit source, skill, quality, stop, and plan handoff requirements without a separate toolbox."
       ]
     },
     ".gemini/agents/sibu-implementation-planner.md": {
-      "version": "3",
+      "version": "4",
       "description": "Gemini Sibu implementation planner worker for fresh-context story planning.",
       "changes": [
-        "Adds concise reporting guidance for delegated agent sessions without weakening required outputs or blockers."
+        "Makes one-Story planning self-sufficient with explicit source, skill, quality, stop, and plan handoff requirements without a separate toolbox."
       ]
     },
     ".codex/agents/sibu-implementation-executor.toml": {
