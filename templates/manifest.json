@@ -1,5 +1,5 @@
 {
-  "templateVersion": "279",
+  "templateVersion": "280",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -142,10 +142,10 @@
       ]
     },
     "skills/scrum-master-planner/SKILL.md": {
-      "version": "28",
+      "version": "29",
       "description": "Mandatory Scrum planner skill for creating pragmatic Epics and User Stories from sufficient BRD context and self-contained feature SDDs.",
       "changes": [
-        "Uses environment-neutral delegated planning guidance while preserving the worker availability and direct-planning boundaries."
+        "Gives the Epic and Story planning worker a self-contained assignment packet for GitHub publication and handoff."
       ]
     },
     "skills/scrum-master-planner-toolbox/SKILL.md": {
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-planner/SKILL.md": {
-      "version": "41",
+      "version": "42",
       "description": "Mandatory AI implementation planner gatekeeper for routing one User Story into story-local implementation step files.",
       "changes": [
-        "Allows objective Task delivery checks without treating them as new outcome-verification methods or overriding SDD exclusions."
+        "Replaces planner toolbox and inline planning requirements with a self-contained worker packet and clear unavailable-worker stop."
       ]
     },
     "skills/ai-implementation-planner-toolbox/SKILL.md": {
@@ -170,10 +170,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "90",
+      "version": "91",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Attempts a verified Story PR squash merge without routine GitHub branch-policy or required-check preflight; reports any host rejection and stops safely."
+        "Replaces executor toolbox and inline execution requirements with a checked-Task worker packet while preserving review and commit gates."
       ]
     },
     "skills/ai-implementation-executor-toolbox/SKILL.md": {
