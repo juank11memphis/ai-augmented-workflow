@@ -1,5 +1,5 @@
 {
-  "templateVersion": "277",
+  "templateVersion": "278",
   "templates": {
     "skill-retirements.json": {
       "version": "1",
@@ -359,24 +359,24 @@
       ]
     },
     ".codex/agents/sibu-architecture-reviewer.toml": {
-      "version": "2",
+      "version": "3",
       "description": "Codex worker definition for read-only Sibu architecture review.",
       "changes": [
-        "Guides Codex plan-only architecture review with exact version context and read-only limits."
+        "Makes Codex architecture review self-sufficient with exact plan and source inputs, read-only limits, and concise findings handoff."
       ]
     },
     ".claude/agents/sibu-architecture-reviewer.md": {
-      "version": "2",
+      "version": "3",
       "description": "Claude worker definition for read-only Sibu architecture review.",
       "changes": [
-        "Guides Claude plan-only architecture review with exact version context and read-only limits."
+        "Makes Claude architecture review self-sufficient with exact plan and source inputs, read-only limits, and concise findings handoff."
       ]
     },
     ".gemini/agents/sibu-architecture-reviewer.md": {
-      "version": "2",
+      "version": "3",
       "description": "Gemini worker definition for read-only Sibu architecture review.",
       "changes": [
-        "Guides Gemini plan-only architecture review with exact version context and read-only limits."
+        "Makes Gemini architecture review self-sufficient with exact plan and source inputs, read-only limits, and concise findings handoff."
       ]
     },
     "skills/eval-authoring/references/version-2-contract.md": {
