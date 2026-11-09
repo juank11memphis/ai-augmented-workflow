@@ -15,7 +15,7 @@ For planned-feature **Feature Decisions**, carry relevant stable IDs and exact S
 
 Review and accept one exact Story plan before execution while preserving Sibu's checked-evidence and workflow-control guarantees. This main-agent gatekeeper verifies or creates the plan and obtains an independent read-only architecture review. If that complete review has no findings or unresolved risks, accept the exact plan automatically and proceed directly to execution. Otherwise route actionable findings or risks to the planner for a minimal revision and obtain a fresh independent review without a routine human pause. Stop for material decisions or risks that cannot be safely resolved. It keeps verified Story integration, any final Story commit, and feature continuation under main-agent control; a Task executor alone may commit its own checked Task.
 
-When a compatible sub-agent spawn capability is available and permitted by the host, always delegate bounded file editing and validation to `sibu-implementation-executor` using a narrow packet and the executor toolbox. Execute inline only when sub-agent spawning is unavailable or blocked by host capability limits. Do not skip the verified Story integration gate.
+Delegate bounded file editing and validation to `sibu-implementation-executor` with a self-sufficient narrow assignment packet. If spawning or resuming is unavailable, stop rather than executing inline. Do not skip the verified Story integration gate.
 
 ## Pipeline Contract
 
@@ -25,13 +25,12 @@ When a compatible sub-agent spawn capability is available and permitted by the h
 - Ordered implementation step files in that `.impl_plan/` folder, creating them through the planner route when missing, then reviewing the resulting plan before execution.
 - The story, Epic brief, BRD, and `sdd.md` as the authoritative software design artifact for the selected plan.
 - `docs/features/<feature-slug>/ux.md` only when the story, any step, or feature has UI impact.
-- The executor toolbox skill at `.agents/skills/ai-implementation-executor-toolbox/SKILL.md` when sub-agent spawning is available.
 - Selected architecture guidance for the workflow.
 - Required and relevant installed skill paths for the executor packet, including `clean-code` and `structured-logging` when the story touches observability-relevant code.
 
 ### What this skill writes
 
-- Code, docs, tests, or other repo changes required by all unapproved implementation steps in the story plan, either through the executor worker or inline fallback.
+- Code, docs, tests, or other repo changes required by accepted implementation Tasks through the executor worker.
 - Story status and verified/integrated progress metadata at their respective execution and observed-merge gates.
 - Only scoped checked-Task commits before Story PR integration; the main agent opens the draft Story PR after the first published Task checkpoint and validates and commits any remaining eligible Story change before making that PR ready.
 - Missing story-local implementation step files by routing through `ai-implementation-planner`, then immediately continuing into plan review without a separate plan-generation approval gate.
@@ -101,18 +100,21 @@ Read the embedded diagrams in `sdd.md` and preserve their boundaries, flows, dat
 
 Before a planner or initial `implementation` executor spawn, curate one current reference set for the selected story. Verify required source paths under the gates above. Derive candidate BRD IDs from the story, Epic brief, and plan when available; verify each against `docs/features/<feature-slug>/brd.md`. Use source evidence to identify governing SDD headings and embedded diagrams, plus applicable SAD/SDD module ownership and dependency constraints and required or relevant installed skill paths. Prefer stable IDs, exact headings, or unambiguous diagram descriptions under headings; do not guess anchors, line numbers, or references from keywords alone. Reuse this verified set in role-specific planner and initial executor packets, and refresh it for a new story or materially changed source. A separately invoked planner curates its own set.
 
-Label references **start here**, never an exclusive reading list or replacement for the full authoritative paths. When a fine-grained ID, heading, diagram, or boundary is uncertain, supply the full source path and tell the worker to locate relevant context there. Missing required sources or selected architecture guidance remain hard stops; fallback does not waive a prerequisite. The plan-review packet uses the independent reviewer contract below.
+Label references **start here**, never an exclusive reading list or replacement for the full authoritative paths. When a fine-grained ID, heading, diagram, or boundary is uncertain, supply the full source path and tell the worker to locate relevant context there. Missing required sources or selected architecture guidance remain hard stops. The plan-review packet uses the independent reviewer contract below.
 
 ## Required sub-agent execution path
 
-Only after the currently reviewed plan version is accepted automatically on a clean review or explicitly by the human for a stopped material decision or residual risk, when the host exposes any usable sub-agent spawn capability and `sibu-implementation-executor` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu executor worker after plan acceptance, subject to host tool policy. Do not choose inline execution merely because worker progress is completion-only, or because inline execution is simpler or faster.
+Only after the currently reviewed plan version is accepted automatically on a clean review or explicitly by the human for a stopped material decision or residual risk, spawn `sibu-implementation-executor`. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use that worker after plan acceptance, subject to host tool policy. If the worker is unavailable, stop without bypassing the review or execution gate.
 
 Build a narrow executor packet for the worker. The packet must include:
 
 - exactly one User Story path or story-local `.impl_plan/` folder
 - story, Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
 - for `implementation` mode, the current source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, applicable SAD/SDD module ownership and dependency constraints, and required or relevant skill paths; use full-path discovery instructions for uncertain fine-grained references without omitting a required source
-- executor toolbox path: `.agents/skills/ai-implementation-executor-toolbox/SKILL.md`
+- assignment rules: work only in the named mode and accepted Story/Task scope; read required sources and skills, preserve SDD diagrams and selected architecture boundaries, and stop for missing or contradictory packet fields, unsafe Git state, credentials, undeclared flags, material decisions, or stale plan acceptance
+- for `checked-task`, the single next ordered Task ID, dedicated Story branch, accepted plan fingerprint and status/progress locations, owning area and expected touchpoints, exact prescribed check and passing evidence for every `Done when` item, conventions, recent progress, and on-demand source pointers; do not replace the check or claim live behavior from a deliverable-only check
+- for legacy `implementation` or authorized `repair`, ordered steps and validation expectations; repair also requires one review packet, exact authorized changes, snapshot identity, changed-file scope, and prior evidence; findings alone do not authorize editing
+- execution limits: at most two evidence-guided in-scope fix-and-rerun attempts for a checked Task, then one scoped Task-ID Conventional Commit only after check and evidence pass; append actual progress after commit; never stash, reset, rebase, self-approve, create final Story approval metadata, or take PR/merge authority
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`, and including `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
@@ -126,11 +128,11 @@ Build a narrow executor packet for the worker. The packet must include:
 
 Do not include `export-to-notion` in the executor packet. Do not include `structured-logging` for stories limited to trivial pure logic with no observability-relevant behavior.
 
-The worker must use only the packet, the toolbox, listed skill files including the selected architecture skill, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
+The worker must use only the packet, listed skill files including the selected architecture skill, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
 
 ## Foreground progress delivery
 
-Select one route: direct worker-visible progress, main-mediated progress, or completion-only evidence. A usable completion-only worker still executes foreground; do not replay stale start or finish transitions. If spawning or resuming is unavailable or blocked, the main may execute inline under worker toolbox constraints. Before each foreground phase invocation, assign a fresh opaque transition ID, unique across the story workflow, including authorized continuations. Pass it in the worker packet. The sole user-visible owner tracks delivered `(transition ID, edge)` keys and forwards each available live start or finish at most once. Reuse the same ID for both edges of one invocation, but assign a new ID to every later invocation of the same phase. Completion-only delivery may omit live transitions without changing execution ownership.
+Select one route: direct worker-visible progress, main-mediated progress, or completion-only evidence. A usable completion-only worker still executes foreground; do not replay stale start or finish transitions. If spawning or resuming is unavailable or blocked, stop execution. Before each foreground phase invocation, assign a fresh opaque transition ID, unique across the story workflow, including authorized continuations. Pass it in the worker packet. The sole user-visible owner tracks delivered `(transition ID, edge)` keys and forwards each available live start or finish at most once. Reuse the same ID for both edges of one invocation, but assign a new ID to every later invocation of the same phase. Completion-only delivery may omit live transitions without changing execution ownership.
 
 ## Fallback matrix
 
@@ -141,9 +143,9 @@ Use host capability metadata from workflow target planning guidance to choose th
 1. **Direct foreground worker:** spawn `sibu-implementation-executor` when the host makes its progress directly user-visible; the worker owns live progress delivery.
 2. **Mediated foreground worker:** otherwise spawn when the host relays worker progress to the main agent before completion; the main forwards those live transitions and can mediate user feedback back to the same resumable worker.
 3. **Completion-only worker:** otherwise spawn the usable worker. Do not replay stale live transitions; disclose that live progress was unavailable.
-4. **Inline compressed-context fallback:** only when spawning or resuming is unavailable or blocked by host/tool policy, the main agent executes the story inline using compressed context, the same source gates, and the same toolbox/packet constraints.
+4. **Unavailable worker:** if spawning or resuming is unavailable or blocked by host/tool policy, pause and report the affected execution step; do not substitute main-agent execution.
 
-All implementation execution stays in the foreground; never detach it or continue it as background work. Fallback must be graceful. If a foreground worker is available but reports a task blocker, do not inline around it; surface the blocker or ask for the missing input. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
+All implementation execution stays in the foreground; never detach it or continue it as background work. If a worker reports a task blocker, surface the blocker or ask for the missing input. Do not tell users to use unsupported worker modes, and do not install or invoke unsupported host-specific worker files.
 
 ## Repository-aware validation policy
 
