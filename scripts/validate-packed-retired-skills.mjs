@@ -8,6 +8,24 @@ const skillId = 'former-packed-skill';
 const skillCopy = `.agents/skills/${skillId}/SKILL.md`;
 const sourceTemplate = `skills/${skillId}/SKILL.md`;
 const explanation = 'The packed fixture workflow is no longer provided.';
+const retiredToolboxIds = [
+  'scrum-master-planner-toolbox',
+  'ai-implementation-planner-toolbox',
+  'ai-implementation-architecture-reviewer-toolbox',
+  'ai-implementation-executor-toolbox',
+];
+const toolboxExplanation = 'The worker role now carries this guidance. Sibu sync can remove an unchanged managed copy after review, preserves a customized copy as unmanaged, and surfaces user-written references for review without rewriting them.';
+
+function expectedToolboxRetirement(id) {
+  const formerTarget = `.agents/skills/${id}/SKILL.md`;
+  return {
+    id, category: 'mandatory', explanation: toolboxExplanation,
+    formerTemplateRelativePath: `skills/${id}/SKILL.md`,
+    formerTargetsByAgent: { codex: [formerTarget], gemini: [formerTarget], claude: [formerTarget] },
+    generatedRoutingTargetsByAgent: { codex: ['AGENTS.md'], gemini: ['AGENTS.md', 'GEMINI.md'],
+      claude: ['AGENTS.md', 'CLAUDE.md'] },
+  };
+}
 
 function projectBytes(root) {
   const result = {};
@@ -53,13 +71,17 @@ export async function validatePackedRetiredSkills({ workspace, installedPackageR
   npmBinPath, prepareFixtureProject, runInstalledSibu }) {
   const resource = path.join(installedPackageRoot, 'templates/skill-retirements.json');
   assert.ok(existsSync(resource), 'Installed package omitted the retirement resource.');
-  assert.deepEqual(JSON.parse(readFileSync(resource, 'utf8')), { schemaVersion: 1, retirements: [] });
+  const packagedRetirements = retiredToolboxIds.map(expectedToolboxRetirement);
+  assert.deepEqual(JSON.parse(readFileSync(resource, 'utf8')),
+    { schemaVersion: 1, retirements: packagedRetirements },
+    'Installed package must contain exactly the four toolbox retirements.');
   assert.ok(!existsSync(path.join(installedPackageRoot, 'templates', sourceTemplate)),
     'Fixture must not depend on a historical source template.');
 
   const catalog = await import(pathToFileURL(path.join(installedPackageRoot,
     'bin/modules/template-catalog/index.js')).href);
-  assert.deepEqual(catalog.loadSkillRetirements(), [], 'Installed catalog must be empty by default.');
+  assert.deepEqual(catalog.loadSkillRetirements(), packagedRetirements,
+    'Installed catalog did not load the four packaged toolbox retirements.');
 
   const fixtureWorkspace = path.join(workspace, 'retired-skill');
   mkdirSync(fixtureWorkspace);
@@ -113,8 +135,9 @@ export async function validatePackedRetiredSkills({ workspace, installedPackageR
   assert.ok(undeclared.includes(`Unrecognized skill: ${skillId}`),
     'Undeclared fixture skill was not reported as unrecognized.');
   assertDoctorFinding(undeclared, false);
-  writeFileSync(resource, `${JSON.stringify({ schemaVersion: 1, retirements: [retirement] }, null, 2)}\n`);
-  assert.deepEqual(catalog.loadSkillRetirements(), [retirement],
+  const fixtureRetirements = [...packagedRetirements, retirement];
+  writeFileSync(resource, `${JSON.stringify({ schemaVersion: 1, retirements: fixtureRetirements }, null, 2)}\n`);
+  assert.deepEqual(catalog.loadSkillRetirements(), fixtureRetirements,
     'Installed loader did not read the injected package resource.');
 
   const beforeDoctor = projectBytes(project);
@@ -154,5 +177,5 @@ export async function validatePackedRetiredSkills({ workspace, installedPackageR
     assert.equal(after[name], beforeDoctor[name], `${name} changed during cleanup.`);
   }
   assertDoctorFinding(runDoctor(runInstalledSibu, installedExecutable, npmBinPath, project), false);
-  console.log('[validate-packed-runtime] Installed retirement resource, keep, cleanup, and doctor sequence passed.');
+  console.log('[validate-packed-runtime] Four packaged retirements and generic fixture keep, cleanup, and doctor sequence passed.');
 }
