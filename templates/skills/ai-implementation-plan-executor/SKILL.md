@@ -9,6 +9,8 @@ description: Gatekeep one Sibu story plan through independent plan review, condi
 
 Keep conversational responses short and answer only what was asked. Do not add adjacent advice, alternatives, or background unless needed for correctness, safety, required discovery, artifact quality, validation, blockers, or an explicit user request. This does not weaken any required interviews, hard stops, output formats, final response rules, or review/approval gates in this skill.
 
+In any PR description, write the **Plan review history** section as concise Markdown bullets, with one bullet per review iteration or finding disposition rather than prose paragraphs.
+
 ## Purpose
 
 For planned-feature **Feature Decisions**, carry relevant stable IDs and exact SDD path/section pointers through the curated Story-plan and fresh checked-Task packets. They are navigation, never approval evidence: read the authoritative SDD record and compare its named gate, explicit human-approved choice, scope, and current work before reuse. An unchanged match needs no duplicate feature-specific approval question. Missing, ambiguous, materially changed, or newly discovered required decisions stop only affected work for an explicit human answer and revised SDD record; an edited record alone is not renewed approval. Unrelated prose edits and unrelated valid decisions do not invalidate approval. Preserve changed-plan independent review and separate Git base/target, model-route, credential, external/destructive action, and final human Epic-review gates; no Feature Decision grants operational permission or SDD-wide approval.

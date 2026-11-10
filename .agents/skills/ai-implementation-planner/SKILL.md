@@ -11,7 +11,7 @@ Keep conversational responses short and answer only what was asked. Do not add a
 
 ## Purpose
 
-Route exactly one approved User Story into a valid story-local implementation plan. This skill is the main-agent gatekeeper for planning: it verifies the story, required source artifacts, UX requirements when relevant, and skill context before planning work begins. When a sub-agent spawn capability is available and permitted by the host, always spawn `sibu-implementation-planner` using a narrow packet and the planner toolbox. Use the inline fallback rules only when sub-agent spawning is unavailable or blocked by host capability limits.
+Route exactly one approved User Story into a valid implementation plan. This main-agent gatekeeper verifies the story, required source artifacts, UX requirements when relevant, and skill context before planning. Delegate to `sibu-implementation-planner` with a self-sufficient narrow packet. If spawning or resuming is unavailable, stop rather than planning inline.
 
 This planner is normally an internal helper for `ai-implementation-plan-executor`; after a valid plan exists, implementation must continue immediately through the executor unless the user explicitly requested planning-only.
 
@@ -19,24 +19,22 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 
 ### What this skill needs
 
-- Exactly one User Story file at `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md`.
-- The story's `epic_brief.md`.
-- The feature's `brd.md`.
-- The feature's `sdd.md` as the authoritative software design artifact, including any feature-level quality strategy.
+- Exactly one identified GitHub Story issue, or one legacy local User Story file.
+- The Story's Epic issue or legacy `epic_brief.md`.
+- The published Feature BRD and SDD artifacts, or their legacy local files; the SDD is authoritative and includes any feature-level quality strategy.
 - The story's verification expectations and any technical-design quality strategy needed to plan validation steps.
 - A source-verified inventory of flags declared by the Epic and its Stories, including any declared final-removal work; use `Flags: none` when none exist and never invent one.
-- `docs/features/<feature-slug>/ux.md` only when the story or feature has UI impact.
-- The planner toolbox skill at `.agents/skills/ai-implementation-planner-toolbox/SKILL.md` when sub-agent spawning is available.
+- The published UX artifact or legacy local `ux.md` only when the story or feature has UI impact.
 - Selected architecture guidance for the workflow.
 - Required and relevant installed skill paths for the planner packet, including `clean-code`.
 
 ### What this skill writes
 
-- Story-local implementation step files under `docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.impl_plan/*.md`, either through the planner worker or inline fallback.
+- A GitHub Story plan artifact, compact issue-body checklist, and separate progress artifact for GitHub feature work; story-local step files remain a legacy/local convention.
 
 ### When this skill stops
 
-- The user does not provide or clearly identify exactly one User Story file.
+- The user does not provide or clearly identify exactly one User Story.
 - Any required source artifact is missing, incomplete, or invalid in a way its owning stage should repair.
 - The story or feature has UI impact and `ux.md` is missing; direct the user to `ux-expert`.
 - The request belongs to another pipeline stage, such as writing production code, executing an existing implementation plan, creating stories, or performing another pipeline stage.
@@ -55,13 +53,13 @@ This planner is normally an internal helper for `ai-implementation-plan-executor
 
 ## Selected architecture guidance gate
 
-Before delegating or planning inline, identify and read the workflow's selected architecture skill. If selected architecture guidance is missing, unavailable, or ambiguous, hard-stop and tell the user to run `sibu sync` to repair Sibu workflow configuration. Do not choose architecture guidance, infer it from repository structure, or continue with generic architecture assumptions.
+Before delegating, identify and read the workflow's selected architecture skill. If selected architecture guidance is missing, unavailable, or ambiguous, hard-stop and tell the user to run `sibu sync` to repair Sibu workflow configuration. Do not choose architecture guidance, infer it from repository structure, or continue with generic architecture assumptions.
 
 When selected architecture guidance is present, treat it as binding planning context. Apply it to story-local implementation step sequencing, boundaries, dependency direction, and reviewable constraints while still trusting `sdd.md` for feature-specific Deep Module boundaries.
 
 ## Required input
 
-The user must provide or clearly identify exactly one User Story file:
+The user must provide or clearly identify exactly one GitHub Story issue or legacy local User Story file:
 
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
@@ -81,7 +79,7 @@ For an overlapping failure in a still-uncommitted checked Task, the main agent i
 
 For GitHub feature work, resolve the identified Story and its Epic issue first, then read only their required published Feature BRD, SDD, and UI-impact UX artifacts through GitHub MCP into transient session context. Confirm repository, issue/artifact identity, and current content; do not treat local or unpublished drafts as settled. Reuse unchanged session context rather than repeatedly fetching it. Do not download a feature folder, write local feature artifacts, or persist an on-disk cache. Missing, stale, conflicting, or inaccessible prerequisites or required issue/artifact capability stop planning before delegation or publication; name the affected target.
 
-Before delegating or planning inline, verify these paths exist and are coherent:
+Before delegating, verify the GitHub issue and published artifact identities and content above. For legacy local planning, verify these paths exist and are coherent:
 
 ```txt
 docs/features/<feature-slug>/epics/<epic-slug>/stories/<order>-<story-slug>.md
@@ -105,21 +103,21 @@ When the BRD or software design includes Deep Module guidance, treat it as requi
 
 For a standalone planner invocation, curate a fresh reference set for the one assigned story before delegation. When the implementation executor invokes this planner for the same story, accept its current source-verified reference set instead of repeating selection; verify again if the story or a material source has changed. Use the story and Epic brief (and existing plan when available) to identify candidate BRD requirement IDs, verify every ID against the full `docs/features/<feature-slug>/brd.md` source, then identify governing headings and embedded diagrams in `docs/features/<feature-slug>/sdd.md` by reading source evidence. Report applicable module ownership and dependency constraints from the SDD, reading the relevant `docs/architecture.md` section when needed to verify SAD-owned boundaries rather than rereading the full SAD by default. Include required or relevant installed skill paths. Use stable IDs, exact headings, or an unambiguous diagram description under its heading—not guessed anchors, line numbers, or keyword matches alone.
 
-The reference set is a **start here** navigation aid, not a substitute for authoritative files or a complete requirement catalog. For any ID, heading, diagram, or boundary that cannot be verified reliably, retain its full source path and instruct the worker to locate relevant context there. Missing required artifacts or selected architecture guidance still hard-stop under the gates above; a fallback path does not waive them.
+The reference set is a **start here** navigation aid, not a substitute for authoritative files or a complete requirement catalog. For any ID, heading, diagram, or boundary that cannot be verified reliably, retain its full source path and instruct the worker to locate relevant context there. Missing required artifacts or selected architecture guidance still hard-stop under the gates above.
 
 For a planned feature with applicable **Feature Decisions**, include each relevant stable decision ID and exact `sdd.md` path/section pointer in the reference set and planner packet. These are navigation, not approval evidence: read the governing SDD record and compare its named downstream gate, explicit human-approved choice, and scope with the current Story before reuse. An unchanged matching decision needs no duplicate approval question; an absent, ambiguous, materially changed, or newly discovered required decision stops only affected planning for an explicit human answer and revised SDD record. Do not infer renewed approval from an edited record, invalidate another decision because unrelated SDD prose changed, or treat generic SDD approval as a decision. Preserve source verification and independent review of changed Story-plan content.
 
 ## Required sub-agent planning path
 
-Before each `sibu-implementation-planner` spawn, classify the delegated planning task before resolving `--role implementation-planner` through the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. Follow its saved, first-use, unavailable, save-failed, one-time, and cancellation branches. Disclose the chosen route and pass both selected `model` and `reasoning_effort` explicitly in the host spawn; no parent inheritance or silent fallback. If the host cannot accept both explicit values, stop this launch. This changes route selection only, not the fresh-context planner packet or inline capability fallback below.
+Before each `sibu-implementation-planner` spawn, classify the delegated planning task before resolving `--role implementation-planner` through the Sibu-provided sub-agent model-route protocol in `AGENTS.md`. Follow its saved, first-use, unavailable, save-failed, one-time, and cancellation branches. Disclose the chosen route and pass both selected `model` and `reasoning_effort` explicitly in the host spawn; no parent inheritance or silent fallback. If the host cannot accept both explicit values, stop this launch. This changes route selection only, not the fresh-context planner packet.
 
-When the host exposes any usable sub-agent spawn capability and `sibu-implementation-planner` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the Sibu planner worker, subject to host tool policy. Do not choose inline planning merely because it is simpler or faster.
+When `sibu-implementation-planner` is available, spawn that worker. Treat a user request to plan, implement, execute, continue, or work through a Sibu User Story or Epic as authorization to use the planner worker, subject to host tool policy. If spawning is unavailable, stop rather than substituting main-agent planning.
 
 Build a narrow planner packet for the worker. The packet must include:
 
 - for GitHub feature work, the identified repository and exact Story issue identity, authoritative source issue/artifact identities with transient content, and the plan/progress artifact targets; request exact reviewable plan content plus compact issue-body checklist without local plan/progress output. A local Story-plan folder or feature-source file is not mandatory.
 
-- exactly one User Story path
+- exactly one GitHub Story issue identity/link or legacy User Story path
 - Epic brief, BRD, software design with embedded diagrams, and UX path when relevant
 - the source-verified story reference set as targeted starting context: applicable BRD IDs, governing SDD headings and diagram descriptions, and applicable SAD/SDD module ownership and dependency constraints; for uncertain fine-grained references, give the full authoritative path and a locate-relevant-context instruction instead
 - relevant Feature Decision IDs and exact SDD path/section pointers for the worker to verify against the governing record; never pass a packet summary as approval evidence
@@ -128,7 +126,10 @@ Build a narrow planner packet for the worker. The packet must include:
 - for overlapping uncommitted Task continuation, the current plan folder and accepted identity, exact failed check and evidence, attempted fixes, bounded repair outcome, same Task ID and preserved unstaged edit inventory, and a request to revise only that Task without implementation edits
 - source-verified, Story-applicable SDD quality-strategy context and Story verification expectations: required methods, coverage (including scenarios, surfaces, states, and relevant UX breakpoints), expected evidence, human-judgment and automation limits, and material exclusions. Include the governing SDD heading and source requirement IDs; omit unrelated feature-wide detail without dropping an applicable constraint
 - the source-verified Epic/Story flag inventory (`Flags: none` when unflagged), declared final-removal Story if any, and a stop instruction for any undeclared flag need
-- planner toolbox path: `.agents/skills/ai-implementation-planner-toolbox/SKILL.md`
+- assignment rules: read the Story, Epic, BRD, SDD diagrams, applicable UX, selected architecture, and required skills; use verified references as navigation rather than source authority; stop for missing or conflicting sources, an unapproved Feature Decision, unsafe ownership, or a material decision
+- plan contract: outcome-grouped Milestones and ordered stable-ID checked Tasks covering every Story criterion; each Task names owning area, dependencies, applicable skills, exact executable pass/fail check, expected evidence, and what that check cannot prove; preserve applicable SDD quality methods, human limits, exclusions, and declared flag inventory without inventing a flag
+- revision contract: verify the exact current plan identity before edits, minimally resolve supplied findings or bounded failure, preserve completed Task evidence and unrelated plan content, and return a new identity for fresh independent review; never self-approve or edit implementation code
+- publication contract: for GitHub work, return exact reviewable plan content, a compact Story checklist, and separate concise progress content for main-owned publication/readback; do not write local feature artifacts or an on-disk cache
 - required skill paths, always including `.agents/skills/clean-code/SKILL.md`
 - selected architecture skill path as required architecture context
 - relevant optional installed skill paths only when applicable, such as TypeScript, React, Next.js, UX Expert, PostgreSQL Expert, or AI Prompt Engineer Master
@@ -138,33 +139,13 @@ Build a narrow planner packet for the worker. The packet must include:
 
 Do not include `export-to-notion` in the planner packet.
 
-The worker must use only the packet, the toolbox, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context.
+The worker must use only the packet, listed skill files, source artifacts, and narrow repo inspection required for the story. Do not pass the full main conversation context. Missing or contradictory packet fields stop the assignment.
 
-After the worker returns for GitHub feature work, verify one exact ordered plan artifact on the identified Story issue instead of requiring a story-local `.impl_plan/` folder. Identify repository, Story issue, and artifact before publishing; read back identity and content after the write, including after an uncertain response, before calling it durable or dispatching a Task. Do not create duplicate local plan or progress files. Use inline fallback only when spawning or resuming the worker is unavailable or failed because the host cannot support it.
+After the worker returns for GitHub feature work, verify one exact ordered plan artifact on the identified Story issue instead of requiring a story-local `.impl_plan/` folder. Identify repository, Story issue, and artifact before publishing; read back identity and content after the write, including after an uncertain response, before calling it durable or dispatching a Task. Do not create duplicate local plan or progress files. If spawning or resuming is unavailable, report the blocker without planning inline.
 
 After confirmed plan, Story checklist, and progress publication, report `Story plan ready on GitHub`, the confirmed Story issue link and plan artifact link, and `Next: Independent plan review` (or the actual next action). At compact width, keep each link and action on its own line; at medium and wide widths, keep the Feature/Epic/Story context and direct Story/plan links together when readable. Do not show a Task-ready or execution-success state here. If any publication remains unconfirmed, report `<affected artifact or Story> was not confirmed on GitHub`, distinguish confirmed effects from the uncertain effect, and say `Next work is paused. Check GitHub access, then retry.` Never print the ready heading or a success link for an uncertain effect.
 
 Apply the same target readback to the Story checklist and separate progress artifact. After a timeout or ambiguous update, compare the identified target's current content with the intended content before any retry: confirmed match means no retry; verified unchanged absence may permit a retry; changed, conflicting, or inaccessible content stops. Do not advance to review or Task dispatch while any required publication is unconfirmed. Report confirmed issue, plan-artifact, and progress-artifact effects separately from uncertain ones, using safe IDs and failure categories rather than full private content or credentials.
-
-## Inline fallback planning path
-
-Use inline fallback only when no compatible sub-agent spawn/resume capability is available, the host/tool policy blocks spawning, or the planner worker cannot be reached for capability reasons. If spawning is available but the worker reports a task blocker, do not inline around it; surface the blocker or ask for the missing input.
-
-Before writing step files inline, read and apply:
-
-- `clean-code` always
-- relevant installed language skills such as `typescript` for `.ts` or `.tsx` work
-- relevant installed framework skills such as `react` or `nextjs`
-- the selected installed architecture skill such as `command-pattern`, `ddd-hexagonal`, or `layered-architecture`; if it is missing, stop and direct repair to `sibu sync`
-- relevant installed database skills such as `postgresql-expert`
-- `ux-expert` only when UI/UX implementation planning is in scope and the skill is installed
-- `ai-prompt-engineer-master` when prompt, agent, or reusable AI instruction templates are in scope
-
-If a required skill path is missing, stop and report the blocker. If an optional relevant skill is not installed and the story involves an unmapped language, framework, database, or architecture pattern, continue only when safe and flag the gap as a plan risk.
-
-Inline plans must preserve the same verification expectations given to planner workers. For each Task check, identify whether it proves a deliverable was completed or applies an SDD outcome-verification method; state its pass/fail evidence and what it does not prove. The final validation strategy preserves all applicable SDD methods, human limits, and exclusions. Choose an exact repository command, fixture, equivalent local check, or more precise evidence without asking again when it stays within that direction. Turn the Story's expectations into concrete validation steps, not only a generic final test command. Consider unit, acceptance/integration, edge/failure, and regression checks only when applicable; an excluded method is not reintroduced because a Task needs an executable completion check. When a deeper check is relevant but omitted, include a short skip rationale and any residual risks.
-
-If a required SDD method is infeasible or insufficient, an unavailable method has no equivalent in-scope check, a substitution no longer answers the same verification question, or an in-scope strategic scenario or surface is uncovered, stop affected planning. Do not stop merely because an intentionally unverified outcome has no behavior test: give its deliverable an objective completion check, keep the behavioral limit visible, and never claim the check proves the excluded outcome. If no objective evidence can show a required deliverable is complete without changing an upstream limit, or a material new method, expense, external dependency, or human judgment is truly needed, stop with the smallest engineer decision and request an owner-directed upstream revision. Missing relevant strategy or contradictory sources block rather than invite a guessed check. Do not amend the SDD or add routine Task, Milestone, or plan approval.
 
 ## Repository-aware validation policy
 

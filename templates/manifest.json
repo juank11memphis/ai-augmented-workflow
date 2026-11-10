@@ -1,5 +1,5 @@
 {
-  "templateVersion": "282",
+  "templateVersion": "283",
   "templates": {
     "skill-retirements.json": {
       "version": "2",
@@ -156,10 +156,10 @@
       ]
     },
     "skills/ai-implementation-plan-executor/SKILL.md": {
-      "version": "91",
+      "version": "92",
       "description": "Mandatory AI implementation plan executor gatekeeper for checked Story execution, integration, and continuation.",
       "changes": [
-        "Replaces executor toolbox and inline execution requirements with a checked-Task worker packet while preserving review and commit gates."
+        "Formats Plan review history in PR descriptions as concise bullet lists."
       ]
     },
     "skills/feature-idea-capture/SKILL.md": {
